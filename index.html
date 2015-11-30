@@ -1,0 +1,233 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Topljets2015 by pfs</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/github-light.css">
+    <meta name="viewport" content="width=device-width">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>Topljets2015</h1>
+        <p>l+jets top analysis</p>
+
+        <p class="view"><a href="https://github.com/pfs/TopLJets2015">View the Project on GitHub <small>pfs/TopLJets2015</small></a></p>
+
+
+        <ul>
+          <li><a href="https://github.com/pfs/TopLJets2015/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/pfs/TopLJets2015/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/pfs/TopLJets2015">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <h1>
+<a id="topljets2015" class="anchor" href="#topljets2015" aria-hidden="true"><span class="octicon octicon-link"></span></a>TopLJets2015</h1>
+
+<h2>
+<a id="analysis-twiki" class="anchor" href="#analysis-twiki" aria-hidden="true"><span class="octicon octicon-link"></span></a>Analysis twiki</h2>
+
+<p>Please keep 
+<a href="https://twiki.cern.ch/twiki/bin/view/Main/TopLJ2015Analysis">https://twiki.cern.ch/twiki/bin/view/Main/TopLJ2015Analysis</a>
+up to date with the on-going tasks and results</p>
+
+<h2>
+<a id="installation-instructions" class="anchor" href="#installation-instructions" aria-hidden="true"><span class="octicon octicon-link"></span></a>Installation instructions</h2>
+
+<p>To execute in your lxplus work area.</p>
+
+<pre><code>cmsrel CMSSW_7_4_14
+cd CMSSW_7_4_14/src
+cmsenv
+git cms-merge-topic ikrav:egm_id_7.4.12_v1
+git clone git@github.com:pfs/TopLJets2015.git
+scram b -j 9
+</code></pre>
+
+<h2>
+<a id="running-ntuple-creation" class="anchor" href="#running-ntuple-creation" aria-hidden="true"><span class="octicon octicon-link"></span></a>Running ntuple creation</h2>
+
+<p>First time create a symbolic link to the jet energy corrections files</p>
+
+<pre><code>ln -s data/Summer15_25nsV6_DATA.db
+ln -s data/Summer15_25nsV6_MC.db
+</code></pre>
+
+<p>To run locally the ntuplizer, for testing purposes</p>
+
+<pre><code>cmsRun test/runMiniAnalyzer_cfg.py runOnData=False/True outFilename=MiniEvents.root
+</code></pre>
+
+<p>To submit a list of samples, described in a json file to the grid you can use the following script.</p>
+
+<pre><code>python scripts/submitToGrid.py -j data/samples_Run2015.json -c ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/runMiniAnalyzer_cfg.py --lfn my_output_directory_in_eos -s
+</code></pre>
+
+<p>Partial submission can be made adding "-o csv_list" as an option
+Don't forget to init the environment for crab3 (e.g. <a href="https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookCRAB3Tutorial">https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookCRAB3Tutorial</a>).</p>
+
+<p>As soon as ntuple production starts to finish, to move from crab output directories to a simpler directory structure which can be easily parsed by the local analysis run </p>
+
+<pre><code>python scripts/checkProductionIntegrity.py -i /store/group/phys_top/psilva/4a77bd2 -o /store/cmst3/user/psilva/LJets2015/5736a2c
+</code></pre>
+
+<p>If "--cleanup" is passed, the original crab directories in EOS are removed.</p>
+
+<h2>
+<a id="preparing-the-analysis" class="anchor" href="#preparing-the-analysis" aria-hidden="true"><span class="octicon octicon-link"></span></a>Preparing the analysis</h2>
+
+<p>After ntuples are processed start by creating the json files with the list of runs/luminosity sections processed, e.g. as:</p>
+
+<pre><code>crab report grid/crab_Data13TeV_SingleElectron_2015D_v3
+</code></pre>
+
+<p>Then you can merge the json files for the same dataset to get the full list of run/lumi sections to analyse</p>
+
+<pre><code>mergeJSON.py grid/crab_Data13TeV_SingleElectron_2015D_v3/results/lumiSummary.json grid/crab_Data13TeV_SingleElectron_2015D_v4/results/lumiSummary.json --output data/SingleElectron_lumiSummary.json
+</code></pre>
+
+<p>You can then run the brilcalc tool to get the integrated luminosity in total and per run (see <a href="https://twiki.cern.ch/twiki/bin/view/CMS/2015LumiNormtag">https://twiki.cern.ch/twiki/bin/view/CMS/2015LumiNormtag</a> for more details).</p>
+
+<pre><code>brilcalc lumi --normtag /afs/cern.ch/user/c/cmsbril/public/normtag_json/OfflineNormtagV1.json -i data/SingleElectron_lumiSummary.json
+</code></pre>
+
+<p>Use the table which is printed out to update the "lumiPerRun" method in ReadTree.cc.
+That will be used to monitor the event yields per run in order to identify outlier runs.</p>
+
+<ul>
+<li>Pileup weighting. To update the pileup distributions run the script below. It will store the data pileup distributions for different min.bias cross section in data/pileupWgts.root</li>
+</ul>
+
+<pre><code>python scripts/runPileupEstimation.py --json data/SingleElectron_lumiSummary.json
+</code></pre>
+
+<ul>
+<li>B-tagging. To apply corrections to the simulation one needs the expected efficiencies stored somwewhere. The script below will project the jet pT spectrum from the TTbar sample before and after applying b-tagging, to compute the expecte efficiencies. The result will be stored in data/expTageff.root</li>
+</ul>
+
+<pre><code>python scripts/saveExpectedBtagEff.py 
+</code></pre>
+
+<ul>
+<li>MC normalization. This will loop over all the samples available in EOS and produce a normalization cache (weights to normalize MC). The file will be available in data/genweights.pck</li>
+</ul>
+
+<pre><code>python scripts/produceNormalizationCache.py -i /store/cmst3/user/psilva/LJets2015/5736a2c
+</code></pre>
+
+<p>You're now ready to start locally the analysis.</p>
+
+<h2>
+<a id="running-locally-the-analysis" class="anchor" href="#running-locally-the-analysis" aria-hidden="true"><span class="octicon octicon-link"></span></a>Running locally the analysis</h2>
+
+<p>The analysis (histogram filling, final selection) is in src/ReadTree.cc.
+Recompile (scram b) everytime you change it so that you can test the new features.
+To test the code on a single file to produce plots.</p>
+
+<pre><code>python scripts/runLocalAnalysis.py -i MiniEvents.root
+</code></pre>
+
+<p>To run the code on a set of samples, listed in a json file you can run it as follows:</p>
+
+<pre><code>python scripts/runLocalAnalysis.py -i /store/cmst3/user/psilva/LJets2015/5736a2c -n 8 -o analysis_muplus   --ch 13   --charge 1
+python scripts/runLocalAnalysis.py -i /store/cmst3/user/psilva/LJets2015/5736a2c -n 8 -o analysis_muminus  --ch 13   --charge -1
+python scripts/runLocalAnalysis.py -i /store/cmst3/user/psilva/LJets2015/5736a2c -n 8 -o analysis_munoniso --ch 1300
+</code></pre>
+
+<p>The first time it runs over the directory it will compute the normalization factor for MC
+such that the distributions will correspond to 1/pb of data.
+The normalization factor is given by (xsec / N generated events)
+where xsec is stored in the json file, and N generated events is summed up
+from the "counter" histogram stored in the the files to process for each process.
+The first time it also computes the pileup weights on a sample-by-sample basis
+by taking the ratio of the of the putrue distribution to the pileup distribution estimated in data.
+Both the normalization factors and the pileup weights are stored under the "analysis" directory
+in a cache file called ".xsecweights.pck".
+After the jobs have run you can merge the outputs with</p>
+
+<pre><code>./scripts/mergeOutputs.py analysis_muplus
+./scripts/mergeOutputs.py analysis_muminus
+./scripts/mergeOutputs.py analysis_munoniso/
+</code></pre>
+
+<p>To plot the output of the local analysis you can run the following:</p>
+
+<pre><code>python scripts/plotter.py -i analysis_muplus/ -j data/samples_Run2015.json -l 2093.6
+python scripts/plotter.py -i analysis_muminus/ -j data/samples_Run2015.json -l 2093.6
+python scripts/plotter.py -i analysis_munoniso/ -j data/samples_Run2015.json -l 2093.6
+</code></pre>
+
+<p>After the plotters are created one can run the QCD estimation normalization, by fitting the MET distribution.
+The script will also produce the QCD templates using the data from the sideband region. It runs as</p>
+
+<pre><code>python scripts/runQCDEstimation.py --iso analysis_muplus/plots/plotter.root --noniso analysis_munoniso/plots/plotter.root --out analysis_muplus/
+python scripts/runQCDEstimation.py --iso analysis_muminus/plots/plotter.root --noniso analysis_munoniso/plots/plotter.root --out analysis_muminus/
+</code></pre>
+
+<p>The output is a ROOT file called Data_QCDMultijets.root which can now be used in addition to the predictions of all the other backgrounds.
+To include it in the final plots you can run the plotter script again (see instructions above).</p>
+
+<h2>
+<a id="cross-section-fitting" class="anchor" href="#cross-section-fitting" aria-hidden="true"><span class="octicon octicon-link"></span></a>Cross section fitting</h2>
+
+<p>We use the Higgs combination tool to perform the fit of the production cross section.
+(cf. <a href="https://twiki.cern.ch/twiki/bin/viewauth/CMS/SWGuideHiggsAnalysisCombinedLimit">https://twiki.cern.ch/twiki/bin/viewauth/CMS/SWGuideHiggsAnalysisCombinedLimit</a> for details of the release to use).
+It currently has to be run from a CMSSW_7_1_5 release.
+To create the datacard you can run the following script</p>
+
+<pre><code>python scripts/createDataCard.py -i analysis_muplus/plots/plotter.root -o analysis_muplus/datacard -d njetsnbtags
+python scripts/createDataCard.py -i analysis_muminus/plots/plotter.root -o analysis_muminus/datacard -d njetsnbtags
+</code></pre>
+
+<p>Combine the two datacards above into the final one</p>
+
+<pre><code>mkdir -p analysis_mu/datacard
+cd analysis_mu/datacard
+combineCards.py muplus=../../analysis_muplus/datacard/datacard.dat muminus=../../analysis_muminus/datacard/datacard.dat &gt; datacard.dat
+cd -
+</code></pre>
+
+<p>Run the fits and show the results</p>
+
+<pre><code>python scripts/fitCrossSection.py "#mu^{+}"=analysis_muplus/datacard/datacard.dat -o analysis_muplus/datacard
+python scripts/fitCrossSection.py "#mu^{-}"=analysis_muminus/datacard/datacard.dat -o analysis_muminus/datacard
+python scripts/fitCrossSection.py "#mu^{#pm}"=analysis_mu/datacard/datacard.dat -o analysis_mu/datacard
+</code></pre>
+
+<p>After all is run you can also compare the results with</p>
+
+<pre><code>python scripts/fitCrossSection.py "#mu^{+}"=analysis_muplus/datacard/datacard.dat  "#mu^{-}"=analysis_muminus/datacard/datacard.dat  "#mu^{#pm}"=analysis_mu/datacard/datacard.dat --noFit
+</code></pre>
+
+<h2>
+<a id="updating-the-code" class="anchor" href="#updating-the-code" aria-hidden="true"><span class="octicon octicon-link"></span></a>Updating the code</h2>
+
+<p>Commit your changes regularly with</p>
+
+<pre><code>git commit -a -m'comment on the changes made'
+</code></pre>
+
+<p>Push to your forked repository</p>
+
+<pre><code>git push git@github.com:MYGITHUBLOGIN/TopLJets2015.git
+</code></pre>
+
+<p>From the github area of the repository cleak on the green button "Compare,review and create a pull request"
+to create the PR to merge with your colleagues.</p>
+      </section>
+      <footer>
+        <p>This project is maintained by <a href="https://github.com/pfs">pfs</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="javascripts/scale.fix.js"></script>
+    
+  </body>
+</html>
