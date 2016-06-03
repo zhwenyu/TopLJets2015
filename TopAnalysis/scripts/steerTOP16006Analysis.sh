@@ -201,8 +201,7 @@ case $WHAT in
 		elif [ "${i}${j}" = "eminus" ]; then
 		    title="e^{-}";
 		fi
-		echo -e "[ ${RED} Running the fit for ${title} ${NC} ]"
-		continue
+		echo -e "[ ${RED} Running the fit for ${title} ${NC} ]"	
 		python scripts/fitCrossSection.py "${title}"=${outdir}/analysis_${i}${j}/datacard/datacard.dat -o ${outdir}/analysis_${i}${j}/datacard; 
 	    done
 	    
@@ -212,7 +211,6 @@ case $WHAT in
 		    title="e"
 	    fi
 	    echo -e "[ ${RED} Running the fit for ${title} ${NC} ]"
-	    continue
             python scripts/fitCrossSection.py "${title}"=${outdir}/analysis_${i}/datacard/datacard.dat -o ${outdir}/analysis_${i}/datacard;
 
 	done
@@ -224,7 +222,6 @@ case $WHAT in
                 title="e^{-}/#mu^{-}";
             fi
 	    echo -e "[ ${RED} Running the fit for ${title} ${NC} ]"
-	    continue
             python scripts/fitCrossSection.py "${title}"=${outdir}/analysis_${j}/datacard/datacard.dat -o ${outdir}/analysis_${j}/datacard;
 	done
 
