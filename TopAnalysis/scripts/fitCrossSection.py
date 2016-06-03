@@ -48,7 +48,7 @@ def prepareFitScript(datacard,POIs,unblind=False):
         if parameter=='r':
             fitScript.write('\n## max likelihood fit\n')
             fitScript.write('echo \"Running MaxLikelihoodFit for r\"\n')
-            fitScript.write('combine workspace.root -M MaxLikelihoodFit -t -1 --expectSignal=1 -m 0\n')
+            fitScript.write('combine workspace.root -M MaxLikelihoodFit -t -1 --expectSignal=1 -m 0 --robustFit=1\n')
             fitScript.write('mv mlfit.root mlfit_exp.root\n')
             
             fitScript.write('\n## impacts\n')
@@ -65,7 +65,7 @@ def prepareFitScript(datacard,POIs,unblind=False):
             fitScript.write('#done\n\n')
 
             if unblind:
-                fitScript.write('combine workspace.root -M MaxLikelihoodFit -m 0\n')
+                fitScript.write('combine workspace.root -M MaxLikelihoodFit -m 0 --robustFit=1\n')
                 fitScript.write('mv mlfit.root mlfit_obs.root\n')
                             
         fitScript.write('\n## function of %s\n'%parameter)
