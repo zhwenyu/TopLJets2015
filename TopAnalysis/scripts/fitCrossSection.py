@@ -61,7 +61,7 @@ def prepareFitScript(datacard,POIs,unblind=False):
             fitScript.write('echo \n"To run toys  re-run runCombine.sh uncommenting the appropriate lines\n')
             fitScript.write('#rscan=(0.9 1.0 1.1)\n')
             fitScript.write('#for r in ${rscan[@]}; do\n')
-            fitScript.write('#\t combine workspace.root -M MaxLikelihoodFit -t 100 --expectSignal=${r} -m ${r} --toysFrequentist --noErrors --minos none;\n')
+            fitScript.write('#\t combine workspace.root -M MaxLikelihoodFit -t 100 --expectSignal=${r} -m ${r} --toysFrequentist --noErrors --minos none --robustFit=1;\n')
             fitScript.write('#done\n\n')
 
             if unblind:
