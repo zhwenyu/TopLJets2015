@@ -202,7 +202,7 @@ case $WHAT in
 		    title="e^{-}";
 		fi
 		echo -e "[ ${RED} Running the fit for ${title} ${NC} ]"	
-		python scripts/fitCrossSection.py "${title}"=${outdir}/analysis_${i}${j}/datacard/datacard.dat -o ${outdir}/analysis_${i}${j}/datacard; 
+		python scripts/fitCrossSection.py "${title}"=${outdir}/analysis_${i}${j}/datacard/datacard.dat -o ${outdir}/analysis_${i}${j}/datacard --unblind; 
 	    done
 	    
 	    #combined per channel
@@ -211,7 +211,7 @@ case $WHAT in
 		    title="e"
 	    fi
 	    echo -e "[ ${RED} Running the fit for ${title} ${NC} ]"
-            python scripts/fitCrossSection.py "${title}"=${outdir}/analysis_${i}/datacard/datacard.dat -o ${outdir}/analysis_${i}/datacard;
+            python scripts/fitCrossSection.py "${title}"=${outdir}/analysis_${i}/datacard/datacard.dat -o ${outdir}/analysis_${i}/datacard --unblind;
 
 	done
 
@@ -222,7 +222,7 @@ case $WHAT in
                 title="e^{-}/#mu^{-}";
             fi
 	    echo -e "[ ${RED} Running the fit for ${title} ${NC} ]"
-            python scripts/fitCrossSection.py "${title}"=${outdir}/analysis_${j}/datacard/datacard.dat -o ${outdir}/analysis_${j}/datacard;
+            python scripts/fitCrossSection.py "${title}"=${outdir}/analysis_${j}/datacard/datacard.dat -o ${outdir}/analysis_${j}/datacard --unblind;
 	done
 
 	#final combination
@@ -313,7 +313,7 @@ case $WHAT in
 		    title="e^{-}";
 		fi
 		echo -e "[ ${RED} Running the fit for ${title} ${NC} ]"
-		python scripts/fitCrossSection.py "${title}"=${outdir}/analysis_${i}${j}/datacard_shape/datacard.dat -o ${outdir}/analysis_${i}${j}/datacard_shape; 
+		python scripts/fitCrossSection.py "${title}"=${outdir}/analysis_${i}${j}/datacard_shape/datacard.dat -o ${outdir}/analysis_${i}${j}/datacard_shape --unblind; 
 	    done
 	    
 	    #combined per channel
@@ -322,7 +322,7 @@ case $WHAT in
 		    title="e"
 	    fi
 	    echo -e "[ ${RED} Running the fit for ${title} ${NC} ]"
-            python scripts/fitCrossSection.py "${title}"=${outdir}/analysis_${i}/datacard_shape/datacard.dat -o ${outdir}/analysis_${i}/datacard_shape;
+            python scripts/fitCrossSection.py "${title}"=${outdir}/analysis_${i}/datacard_shape/datacard.dat -o ${outdir}/analysis_${i}/datacard_shape --unblind;
 
 	done
 
@@ -334,7 +334,7 @@ case $WHAT in
             fi
 	    continue
 	    echo -e "[ ${RED} Running the fit for ${title} ${NC} ]"
-            python scripts/fitCrossSection.py "${title}"=${outdir}/analysis_${j}/datacard_shape/datacard.dat -o ${outdir}/analysis_${j}/datacard_shape;
+            python scripts/fitCrossSection.py "${title}"=${outdir}/analysis_${j}/datacard_shape/datacard.dat -o ${outdir}/analysis_${j}/datacard_shape --unblind;
 	done
 
 	#final cobmination
