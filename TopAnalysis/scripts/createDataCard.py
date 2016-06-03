@@ -236,7 +236,7 @@ def main():
                     upShapeH    = expVarShapes[proc].ProjectionX('%s%dUp'%(proc,isyst),   ybin+1, ybin+1)
 
                     #set as shape only if in the list
-                    if systVar in signalShapeOnlyExpSysts : 
+                    if systVar in shapeOnlyExpSysts : 
                         downShapeH.Scale(exp[proc].Integral()/downShapeH.Integral())
                         upShapeH.Scale(exp[proc].Integral()/upShapeH.Integral())
 
