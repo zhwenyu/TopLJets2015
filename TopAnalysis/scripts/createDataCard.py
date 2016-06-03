@@ -216,7 +216,7 @@ def main():
         _,expVarShapes=getDistsFrom(directory=fIn.Get('%sshapes_%s_exp'%(opt.dist,cat)))
         expVarShapes=filterShapeList(expVarShapes,signalList,rawSignalList)
         nExpSysts=expVarShapes[signalList[0]].GetNbinsY()/2
-        signalShapeOnlyExpSysts=['Pileup']
+        shapeOnlyExpSysts=['Pileup']
         for isyst in xrange(1,nExpSysts+1):
             
             #test which variations are significant
@@ -236,7 +236,7 @@ def main():
                     upShapeH    = expVarShapes[proc].ProjectionX('%s%dUp'%(proc,isyst),   ybin+1, ybin+1)
 
                     #set as shape only if in the list
-                    if systVar in signalShapeOnlyExpSysts and proc in signalList:
+                    if systVar in signalShapeOnlyExpSysts : 
                         downShapeH.Scale(exp[proc].Integral()/downShapeH.Integral())
                         upShapeH.Scale(exp[proc].Integral()/upShapeH.Integral())
 
