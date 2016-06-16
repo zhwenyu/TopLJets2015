@@ -80,6 +80,13 @@ def prepareFitScript(datacard,POIs,unblind=False):
             fitScript.write('combine obs_plr_scan_%s.root -M MultiDimFit -P %s --algo=grid --points=100 %s %s -m 0 --freezeNuisances all --snapshotName "MultiDimFit"\n'%(parameter,parameter,rangeOpt,poiOpt))
             fitScript.write('mv higgsCombineTest.MultiDimFit.mH0.root obs_plr_scan_stat_%s.root\n'%parameter)
 
+        fitScript.write('echo \"To run pole mass fit uncomment the appropriate lines\n')
+        fitScript.write('#text2workspace.py datacard.dat -P TopLJets2015.TopAnalysis.TopPoleMass:topPoleMass -m 172.5 --PO verbose --PO param=${CMSSW_BASE}/src/HiggsAnalysis/CombinedLimit/python/xsecvsmpole.dat -o workspace_mpole.root\n')
+        fitScript.write('#combine workspace_mpole.root -M MultiDimFit -P mpole -t -1 --algo=grid --points=100 --setPhysicsModelParameters mpole=172.5  -m 0 --setPhysicsModelParameterRanges mpole=165,185\n')
+        fitScript.write('#mv higgsCombineTest.MultiDimFit.mH0.root exp_plr_scan_mpole.root\n')
+        fitScript.write('#combine workspace_mpole.root -M MultiDimFit -P mpole --algo=grid --points=100 --setPhysicsModelParameters mpole=172.5  -m 0 --setPhysicsModelParameterRanges mpole=165,185\n')
+        fitScript.write('#mv higgsCombineTest.MultiDimFit.mH0.root obs_plr_scan_mpole.root\n')
+
     fitScript.write('\n# 2D likelihood scans\n')
     for i in xrange(0,len(POIs)):
         for j in xrange(i+1,len(POIs)):
