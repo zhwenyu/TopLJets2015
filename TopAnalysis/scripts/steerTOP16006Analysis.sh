@@ -1,3 +1,4 @@
+
 #!/bin/bash
 
 WHAT=$1; 
@@ -44,18 +45,19 @@ case $WHAT in
 	;;
     SEL )
 	echo -e "[ ${RED} Submitting the selection for the signal regions ${NC} ]"
-	python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} --runSysts -o ${outdir}/analysis_muplus   --ch 13   --charge 1 
-	python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} --runSysts -o ${outdir}/analysis_muminus  --ch 13   --charge -1
-	python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} --runSysts -o ${outdir}/analysis_eplus   --ch 11   --charge 1
-	python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} --runSysts -o ${outdir}/analysis_eminus  --ch 11   --charge -1
+	#python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} --runSysts -o ${outdir}/analysis_muplus   --ch 13   --charge 1 
+	#python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} --runSysts -o ${outdir}/analysis_muminus  --ch 13   --charge -1
+	#python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} --runSysts -o ${outdir}/analysis_eplus   --ch 11   --charge 1
+	#python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} --runSysts -o ${outdir}/analysis_eminus  --ch 11   --charge -1
 	
 	echo -e "[ ${RED} Submitting the selection for the control regions ${NC} ]"
-	python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue}            -o ${outdir}/analysis_munoniso --ch 1300
-	python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue}            -o ${outdir}/analysis_enoniso --ch 1100
-	python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} --runSysts -o ${outdir}/analysis_z --ch 21
+	#python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue}            -o ${outdir}/analysis_munoniso --ch 1300
+	python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue}            -o ${outdir}/analysis_enoniso --ch 1100 
+	#python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} --runSysts -o ${outdir}/analysis_z --ch 21
 	;;
     MERGE )
 	a=(muplus muminus munoniso eplus eminus enoniso z)
+	a=(enoniso)
 	for i in ${a[@]}; do
 	    echo -e "[ ${RED} Merging ${i} ${NC} ]"
 	    ./scripts/mergeOutputs.py ${outdir}/analysis_${i};
@@ -63,11 +65,12 @@ case $WHAT in
 	;;
     PLOT )
 	a=(muplus  muminus munoniso eplus eminus enoniso)	
+	a=(enoniso)
 	for i in ${a[@]}; do
 	    echo -e "[ ${RED} Creating plotter for ${i} ${NC} ]";
 	    python scripts/plotter.py -i ${outdir}/analysis_${i}/ --puNormSF puwgtctr  -j data/samples_Run2015.json -l ${lumi} --silent;
 	done
-
+	exit -1
 	a=(muplus muminus eplus eminus)
 	for i in ${a[@]}; do
 	    echo -e "[ ${RED} Creating syst plotter for ${i} ${NC} ]";
@@ -76,6 +79,7 @@ case $WHAT in
 	;;
     BKG )
 	a=(mu e)
+	a=(e)
 	b=(plus minus)
 	for i in ${a[@]}; do
 	    for j in ${b[@]}; do
@@ -87,8 +91,8 @@ case $WHAT in
 	done
 	;;
     FINALPLOT )
-	a=(munoniso muplus muminus)
-	a=(enoniso eplus eminus) # z)
+	a=(munoniso muplus muminus enoniso eplus eminus z)
+	a=(enoniso eplus eminus)
 	for i in ${a[@]}; do
 	    echo -e "[ ${RED} Creating plotter for ${i} ${NC} ]";
 	    python scripts/plotter.py -i ${outdir}/analysis_${i}/ \
@@ -119,7 +123,7 @@ case $WHAT in
 	done
 	;;
     WWW )
-	a=(munoniso enoniso muplus muminus eplus eminus z)
+	a=(munoniso muplus muminus enoniso eplus eminus z)
 	for i in ${a[@]}; do
 	    echo -e "[ ${RED} Moving plots for ${i} ${NC} ]"
 	    rm -rf ${wwwdir}/${i}
@@ -133,7 +137,7 @@ case $WHAT in
 	;;
     CinC )
 	echo -e "[ ${RED} Creating datacards ${NC} ]"
-	a=(mu e)
+	a=(mu e)	
 	b=(plus minus)
 	finalDataCards=""
 	minusDataCards=""
@@ -201,7 +205,7 @@ case $WHAT in
 		elif [ "${i}${j}" = "eminus" ]; then
 		    title="e^{-}";
 		fi
-		echo -e "[ ${RED} Running the fit for ${title} ${NC} ]"	
+		echo -e "[ ${RED} Running the fit for ${title} ${NC} ]"		
 		python scripts/fitCrossSection.py "${title}"=${outdir}/analysis_${i}${j}/datacard/datacard.dat -o ${outdir}/analysis_${i}${j}/datacard --unblind; 
 	    done
 	    
@@ -244,11 +248,13 @@ case $WHAT in
 		python scripts/createDataCard.py --signal ${signal} \
 		    -i ${outdir}/analysis_${i}${j}/plots/${sigplotter} --systInput ${outdir}/analysis_${i}${j}/plots/syst_plotter.root \
 		    -o  ${outdir}/analysis_${i}${j}/datacard_shape  -q ${outdir}/analysis_${i}${j}/.qcdscalefactors.pck \
-		    -d metpt -c 1j0t,2j0t,3j0t,4j0t;
+		    -d metpt -c 1j0t,2j0t,3j0t,4j0t \
+		    --rebin 10;
 		python scripts/createDataCard.py --signal ${signal} \
 		    -i ${outdir}/analysis_${i}${j}/plots/${sigplotter} --systInput ${outdir}/analysis_${i}${j}/plots/syst_plotter.root \
 		    -o  ${outdir}/analysis_${i}${j}/datacard_shape  -q ${outdir}/analysis_${i}${j}/.qcdscalefactors.pck \
 		    -d minmlb -c 1j1t,2j1t,2j2t,3j1t,3j2t,4j1t,4j2t;
+		     # --rebin 5 \
 
 		cd ${outdir}/analysis_${i}${j}/datacard_shape;
 		combineCards.py ${i}${j}1j0t=datacard_1j0t.dat \
@@ -271,7 +277,7 @@ case $WHAT in
 		cd -
 	    done
 
-	    #channel conbination
+	    #channel combination
 	    echo "Combining datacards for ch=${i} from ${chDataCards}"
 	    mkdir -p ${outdir}/analysis_${i}/datacard_shape
 	    cd ${outdir}/analysis_${i}/datacard_shape
@@ -295,7 +301,7 @@ case $WHAT in
 	echo "Combining datacards for all - channels from ${minusDataCards}"
 	mkdir -p ${outdir}/analysis_minus/datacard_shape/
 	cd ${outdir}/analysis_minus/datacard_shape/
-	combineCards.py ${mimusDataCards} > datacard.dat
+	combineCards.py ${minusDataCards} > datacard.dat
 	cd -
 
 	a=("mu" "e")
@@ -322,8 +328,8 @@ case $WHAT in
 		    title="e"
 	    fi
 	    echo -e "[ ${RED} Running the fit for ${title} ${NC} ]"
+	    continue
             python scripts/fitCrossSection.py "${title}"=${outdir}/analysis_${i}/datacard_shape/datacard.dat -o ${outdir}/analysis_${i}/datacard_shape --unblind;
-
 	done
 
 	#combined per charge
@@ -332,15 +338,14 @@ case $WHAT in
 	    if [ "${j}" = "minus" ]; then
                 title="e^{-}/#mu^{-}";
             fi
-	    continue
 	    echo -e "[ ${RED} Running the fit for ${title} ${NC} ]"
             python scripts/fitCrossSection.py "${title}"=${outdir}/analysis_${j}/datacard_shape/datacard.dat -o ${outdir}/analysis_${j}/datacard_shape --unblind;
 	done
 
 	#final cobmination
 	echo -e "[ ${RED} Running the final ${NC} ]"
-        python scripts/fitCrossSection.py "e/#mu"=${outdir}/analysis/datacard_shape/datacard.dat -o ${outdir}/analysis/datacard_shape --unblind;
-
+        #python scripts/fitCrossSection.py "e/#mu"=${outdir}/analysis/datacard_shape/datacard.dat -o ${outdir}/analysis/datacard_shape --unblind;
+	
 	;;
     
     GENSTOP)
