@@ -298,7 +298,7 @@ def main():
             datacard.write('jmax *\n')
             datacard.write('kmax *\n')
             datacard.write('-'*50+'\n')
-            datacard.write('shapes *        * shapes.root %s%s%s_mlb/$PROCESS $SYSTEMATIC/$PROCESS\n'%(lbCat,lfs,cat))
+            datacard.write('shapes *        * shapes.root %s%s%s_mlb/$PROCESS %s%s%s_$SYSTEMATIC/$PROCESS\n'%(lbCat,lfs,cat,lbCat,lfs,cat))
             datacard.write('-'*50+'\n')
             datacard.write('bin 1\n')
             datacard.write('observation %3.1f\n' % obs.Integral())
@@ -463,8 +463,8 @@ def main():
                 if len(upShapes)==0 : continue
 
                 #export to shapes file
-                saveToShapesFile(outFile,downShapes,systVar+'Down')
-                saveToShapesFile(outFile,upShapes,systVar+'Up')
+                saveToShapesFile(outFile,downShapes,lbCat+lfs+cat+"_"+systVar+'Down')
+                saveToShapesFile(outFile,upShapes,lbCat+lfs+cat+"_"+systVar+'Up')
 
                 #write to datacard
                 datacard.write('%26s shape'%systVar)
@@ -549,8 +549,8 @@ def main():
                 if len(upShapes)==0 : continue
 
                 #export to shapes file
-                saveToShapesFile(outFile,downShapes,systVar+'Down')
-                saveToShapesFile(outFile,upShapes,systVar+'Up')
+                saveToShapesFile(outFile,downShapes,lbCat+lfs+cat+"_"+systVar+'Down')
+                saveToShapesFile(outFile,upShapes,lbCat+lfs+cat+"_"+systVar+'Up')
 
                 #write to datacard
                 datacard.write('%26s shape'%systVar)

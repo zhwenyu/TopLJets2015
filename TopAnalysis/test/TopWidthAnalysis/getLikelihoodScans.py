@@ -64,7 +64,7 @@ for wid in rawWidList :
             yax.SetTitle("-2 #times ln(L_{alt}/L_{null})")
             lfsPlot.SetTitle("")
 
-        lfsPlot.SetLineColor((ROOT.kBlue - blueShift[i/2] if i%2==0 else ROOT.kOrange - orngShift[(i-1)/2]))
+        lfsPlot.SetLineColor((ROOT.kOrange - orngShift[i/2] if i%2==0 else ROOT.kBlue - blueShift[(i-1)/2]))
         c.cd()
         lfsPlot.Draw(("SAME" if i > 0 else ""))
         i+=1
