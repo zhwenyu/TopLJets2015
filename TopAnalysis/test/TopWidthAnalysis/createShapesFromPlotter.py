@@ -6,7 +6,9 @@ import commands
 import getpass
 import pickle
 
+
 ROOT.gSystem.Load("libHiggsAnalysisCombinedLimit")
+ROOT.gROOT.SetBatch()
 
 def replaceBadCharacters(inputStr):
     newStr = inputStr
@@ -103,7 +105,7 @@ def getMergedDists(fIn,basedir='',addList=None,addTitle='',
     exp={}
     for wid in widList :
         dirName='%s%s'%(basedir,wid)
-        print dirName
+        #print dirName
         directory = fIn.Get(dirName)
         if wid == nomWid :
             obs,mergeExp=getDistsFrom(directory=directory,addList=addList,addTitle=addTitle,keyFilter=keyFilter)
@@ -111,14 +113,14 @@ def getMergedDists(fIn,basedir='',addList=None,addTitle='',
                 newName=key
                 if key in sigList :
                     newName=('%s%s'%(key,wid.replace('.','p')))
-                print " - " +newName
+                #print " - " +newName
                 exp[newName]=mergeExp[key].Clone(newName)
         else :
             _,mergeExp=getDistsFrom(directory=directory,addList=addList,addTitle=addTitle,keyFilter=keyFilter)
             for key in mergeExp :
                 if key in sigList :
                     newName=('%s%s'%(key,wid.replace('.','p')))
-                    print " - " +newName
+                    #print " - " +newName
                     exp[newName]=mergeExp[key].Clone(newName)
                 else : continue
     return obs,exp
@@ -148,6 +150,29 @@ def saveToShapesFile(outFile,shapeColl,directory=''):
         shapeColl[key].Write(key,ROOT.TObject.kOverwrite)
     fOut.Close()
 
+"""
+make an MC truth dataset (sigs+bkgs)
+"""
+def makeMCTruthHist(hypothesis,sigList,dists):
+    outputHist=None
+    firstLoop=True
+    print "Producing MC Truth data for hypothesis %s"%hypothesis
+
+    for sig in sigList :
+        sigHist=dists["%s%s"%(sig,hypothesis)].Clone()
+        if firstLoop :
+            outputHist=sigHist.Clone()
+            firstLoop=False
+        else :
+            outputHist.Add(sigHist)
+    for dist in dists :
+        isSig=False
+        for sig in sigList :
+            if sig in dist : isSig=True
+        if isSig : continue
+        bkgHist=dists[dist].Clone()
+        outputHist.Add(sigHist)
+    return outputHist
 
 """
 steer the script
@@ -157,16 +182,18 @@ def main():
     #configuration
     usage = 'usage: %prog [options]'
     parser = optparse.OptionParser(usage)
-    parser.add_option('-i', '--input',     dest='input',     help='input plotter',                                    default=None,            type='string')
-    parser.add_option(      '--systInput', dest='systInput', help='input plotter for systs from alternative samples', default=None,            type='string')
-    parser.add_option('-d', '--dist',      dest='dist',      help='distribution',                                     default='mlb',           type='string')
-    parser.add_option('-s', '--signal',    dest='signal',    help='signal (csv)',                                     default='tbart,tW',      type='string')
-    parser.add_option('-w', '--wids',      dest='widList',   help='signal widths',                                    default='0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0',type='string')
-    parser.add_option('-c', '--cat',       dest='cat',       help='categories (csv)',                                 default='1b,2b',         type='string')
-    parser.add_option('-o', '--output',    dest='output',    help='output directory',                                 default='datacards',     type='string')
-    parser.add_option(      '--addSigs',   dest='addSigs',   help='signal processes to add',                          default=False,           action='store_true')
-    parser.add_option(      '--lfs',       dest='lfsInput',  help='lepton final states to consider',                  default='EE,EM,MM',  type='string')
-    parser.add_option(      '--lbCat',     dest='lbCat',     help='lepton final states to consider',                  default='highpt,lowpt',  type='string')
+    parser.add_option('-i', '--input',     dest='input',     help='input plotter',                            default=None,            type='string')
+    parser.add_option(      '--systInput', dest='systInput', help='input plotter for systs from alt samples', default=None,            type='string')
+    parser.add_option('-d', '--dist',      dest='dist',      help='distribution',                             default='mlb',           type='string')
+    parser.add_option('-s', '--signal',    dest='signal',    help='signal (csv)',                             default='tbart,tW',      type='string')
+    parser.add_option('-c', '--cat',       dest='cat',       help='categories (csv)',                         default='1b,2b',         type='string')
+    parser.add_option('-o', '--output',    dest='output',    help='output directory',                         default='datacards',     type='string')
+    parser.add_option(      '--addSigs',   dest='addSigs',   help='signal processes to add',                  default=False,           action='store_true')
+    parser.add_option(      '--lfs',       dest='lfsInput',  help='lepton final states to consider',          default='EE,EM,MM',  type='string')
+    parser.add_option(      '--lbCat',     dest='lbCat',     help='lepton final states to consider',          default='highpt,lowpt',  type='string')
+    parser.add_option(      '--truth',  dest='truthDataset', help='make data out of MC truth',                default='',  type='string')
+    parser.add_option('-w', '--wids',   dest='widList',      help='signal widths',  default='0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0',type='string')
+    parser.add_option('--noshapes',     dest='skipMakingShapes', help='jump straight to morphing',  default=False, action='store_true')
     (opt, args) = parser.parse_args()
 
     # parse the channels, lb categories to consider
@@ -266,6 +293,7 @@ def main():
 
     #loop over lepton final states
     for (lbCat,lfs,cat) in [(a,b,c) for a in lbCatList for b in lfsList for c in catList] :
+        if opt.skipMakingShapes : break
         obs=ROOT.TH1F('','',100,0,100)
         exp={}
         #nominal expectations
@@ -276,7 +304,7 @@ def main():
         #exp=filterShapeList(exp,signalList,rawSignalList) ???
 
         nomShapes=exp.copy()
-        nomShapes['data_obs']=obs
+        nomShapes['data_obs']= obs if opt.truthDataset=="" else makeMCTruthHist(opt.truthDataset,signalList,exp)
         saveToShapesFile(outFile,nomShapes,('%s%s%s_%s'%(lbCat,lfs,cat,opt.dist)))
 
         #loop over categories, widths
@@ -605,6 +633,7 @@ def main():
         massDim=ROOT.RooBinning(len(masses)-1,0,len(masses)-1)
         refGrid=ROOT.RooMomentMorphND.Grid(widthDim,massDim)
 
+        tcanvas=ROOT.TCanvas("%s"%(modSig),"",800,600)
         for lbCat,ch,cat in [(lbCat,ch,cat) for lbCat in ['highpt'] for ch in ['EM'] for cat in ['2b']]:
             for imass in xrange(0,len(masses)):
                 mass,url,proc=masses[imass]
@@ -620,16 +649,24 @@ def main():
                     name='%s_m%d'%(dirname,int(10*mass))
                     data=ROOT.RooDataHist(name,name,ROOT.RooArgList(ws.var("x")),h)
                     pdf=ROOT.RooHistPdf(name+"_pdf",name+"_pdf",ROOT.RooArgSet(ws.var("x")),data)
+
+
+                    #tcanvas.cd();
+                    #pdf.Draw()
+                    #raw_input();
+                    #tcanvas.clear();
                     getattr(ws,'import')(pdf,ROOT.RooCmdArg())
 
                     #add pdf to the grid
-                    print 'Adding',pdf.GetName(),'@ (',iwid,imass,')'
-                    refGrid.addPdf(ws.pdf(pdf.GetName()),iwid,imass)
+                    widLoc  = iwid
+                    massLoc = imass % (len(masses) / len(signalList))
+                    print 'Adding',pdf.GetName(),'@ (',widLoc,massLoc,')'
+                    refGrid.addPdf(ws.pdf(pdf.GetName()),widLoc,massLoc)
                 tfIn.Close()
 
         # produce morphed pdf
-        ws.factory('alpha[0,3]')
-        ws.factory('beta[0,3]')
+        ws.factory('alpha[0,%i]'%(len(masses) / len(signalList)))
+        ws.factory('beta[0,%i]'%(len(widths)))
         pdf=ROOT.RooMomentMorphND('widmorphpdf','widmorphpdf',
                                   ROOT.RooArgList( ws.var('alpha'), ws.var('beta') ),
                                   ROOT.RooArgList( ws.var('x') ),
@@ -731,6 +768,122 @@ def main():
         datacard.write('-'*50+'\n')
 
         datacard.close()
+
+    ######################
+    # MAKE MORPH VALIDATION PLOTS
+    ######################
+    outFile='%s/shapes.root'%(opt.output)
+    fOut=ROOT.TFile.Open(outFile)
+    fOut.cd()
+    totalHist=None
+    isFirst=False
+    canvas=ROOT.TCanvas()
+    ROOT.gStyle.SetOptStat(0)
+    status=ROOT.TLatex()
+
+    zLimList={ "tbart": 3.5e-04, "tW": 2.5e-04 }
+    n2DScan=60
+    n3DScan=120
+
+    from PIL import Image, ImageSequence
+    from images2gif import writeGif
+
+    for sig in signalList :
+        rotScanAlphaImgs = []
+        rotScanBetaImgs  = []
+        alphaScanImgs    = []
+        betaScanImgs     = []
+
+        os.mkdir('%s/gifplots_%s'%(opt.output,sig))
+        workspace=fOut.Get("sigws_%s"%sig);
+        morphPDF= workspace.pdf("widmorphpdf")
+
+        mlbVar  = workspace.var("x")
+        alphaVar= workspace.var("alpha")
+        betaVar = workspace.var("beta")
+
+        # create 3D plots that rotate the camera
+        for theta in xrange(0,359,int(360/n3DScan)) :
+            histAlpha = mlbVar.createHistogram("Morphing against mass variations",alphaVar)
+            histBeta  = mlbVar.createHistogram("Morphing against width variations",betaVar)
+
+            morphPDF.fillHistogram(histAlpha,ROOT.RooArgList(mlbVar,alphaVar))
+            morphPDF.fillHistogram(histBeta ,ROOT.RooArgList(mlbVar,betaVar))
+
+            histAlpha.GetYaxis().SetTitleOffset(1.75)
+            histAlpha.GetYaxis().SetTitle("Generator-level mass")
+            histAlpha.GetXaxis().SetTitleOffset(1.75)
+            histAlpha.GetXaxis().SetTitle("M(l,b) [GeV]")
+            histAlpha.GetZaxis().SetRangeUser(0,zLimList[sig])
+            histAlpha.Draw("SURF1")
+            status.DrawLatexNDC(0.75,0.02,"#beta=%3.2f"%(betaVar.getVal()))
+            ROOT.gPad.SetPhi(theta)
+
+            canvas.SaveAs("%s/gifplots_%s/rotscanalpha_%s_%i.png"%(opt.output,sig,sig,theta))
+            canvas.Clear()
+
+            histBeta.GetYaxis().SetTitleOffset(1.75)
+            histBeta.GetYaxis().SetTitle("Generator-level width")
+            histBeta.GetXaxis().SetTitleOffset(1.75)
+            histBeta.GetXaxis().SetTitle("M(l,b) [GeV]")
+            histBeta.GetZaxis().SetRangeUser(0,zLimList[sig])
+            histBeta.Draw("SURF1")
+            status.DrawLatexNDC(0.75,0.02,"#alpha=%3.2f"%(alphaVar.getVal()))
+            ROOT.gPad.SetPhi(theta)
+
+            canvas.SaveAs("%s/gifplots_%s/rotscanbeta_%s_%i.png"%(opt.output,sig,sig,theta))
+            canvas.Clear()
+
+            imgAlpha=Image.open("%s/gifplots_%s/rotscanalpha_%s_%i.png"%(opt.output,sig,sig,theta))
+            rotScanAlphaImgs+=[imgAlpha]
+
+            imgBeta=Image.open("%s/gifplots_%s/rotscanbeta_%s_%i.png"%(opt.output,sig,sig,theta))
+            rotScanBetaImgs+=[imgBeta]
+
+        # create 2D plots that scan in variables
+        for step in xrange(0,n2DScan) :
+            alphaStep=alphaVar.getMin()+(alphaVar.getMax()-alphaVar.getMin())/n2DScan*step
+            betaStep = betaVar.getMin()+( betaVar.getMax()- betaVar.getMin())/n2DScan*step
+
+            alphaVar.setVal(alphaStep);
+            betaVar.setVal( betaStep);
+
+            histAlpha = mlbVar.createHistogram("Morphing against mass variations",alphaVar)
+            histBeta  = mlbVar.createHistogram("Morphing against width variations",betaVar)
+
+            morphPDF.fillHistogram(histAlpha,ROOT.RooArgList(mlbVar,alphaVar))
+            morphPDF.fillHistogram(histBeta ,ROOT.RooArgList(mlbVar,betaVar))
+
+            histAlpha.GetYaxis().SetTitle("Generator-level mass")
+            histAlpha.GetXaxis().SetTitle("M(l,b) [GeV]")
+            histAlpha.GetZaxis().SetRangeUser(0,zLimList[sig])
+            histAlpha.Draw("COLZ")
+            status.DrawLatexNDC(0.25,0.02,"#beta=%3.2f"%(betaVar.getVal()))
+
+            canvas.SaveAs("%s/gifplots_%s/betascan_%s_%i.png"%(opt.output,sig,sig,step))
+            canvas.Clear()
+
+            histBeta.GetYaxis().SetTitle("Generator-level width")
+            histBeta.GetXaxis().SetTitle("M(l,b) [GeV]")
+            histBeta.GetZaxis().SetRangeUser(0,zLimList[sig])
+            histBeta.Draw("COLZ")
+            status.DrawLatexNDC(0.25,0.02,"#alpha=%3.2f"%(alphaVar.getVal()))
+
+            canvas.SaveAs("%s/gifplots_%s/alphascan_%s_%i.png"%(opt.output,sig,sig,step))
+            canvas.Clear()
+
+            imgAlpha=Image.open("%s/gifplots_%s/alphascan_%s_%i.png"%(opt.output,sig,sig,step))
+            alphaScanImgs+=[imgAlpha]
+
+            imgBeta=Image.open("%s/gifplots_%s/betascan_%s_%i.png"%(opt.output,sig,sig,step))
+            betaScanImgs+=[imgBeta]
+
+        # make gif files from arrays
+        writeGif("%s/gifplots_%s/alphascan_%s.gif"%(opt.output,sig,sig),alphaScanImgs,duration=.05)
+        writeGif("%s/gifplots_%s/betascan_%s.gif"%( opt.output,sig,sig), betaScanImgs,duration=.05)
+        writeGif("%s/gifplots_%s/rotscanalpha_%s.gif"%(opt.output,sig,sig),rotScanAlphaImgs,duration=.1)
+        writeGif("%s/gifplots_%s/rotscanbeta_%s.gif"%( opt.output,sig,sig), rotScanBetaImgs,duration=.1)
+
 
 """
 for execution from another script

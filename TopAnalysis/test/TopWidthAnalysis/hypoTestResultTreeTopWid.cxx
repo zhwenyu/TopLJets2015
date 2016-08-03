@@ -1,3 +1,6 @@
+#include "CMS_lumi.C"
+#include "tdrstyle.C"
+
 TF1 *gnull = new TF1("gnull","gaus");
 TF1 *galt  = new TF1("galt", "gaus");
 
@@ -53,7 +56,8 @@ void hypoTestResultTreeTopWid(TString fOutName, double mass, double rValue=1.0,
             RooStats::HypoTestResult *toy = dynamic_cast<RooStats::HypoTestResult *>(toyDir->Get(k->GetName()));
             if (toy == 0) continue;
             std::cout << " - " << k->GetName() << std::endl;
-            RooStats::SamplingDistribution * bDistribution = toy->GetNullDistribution(), * sDistribution = toy->GetAltDistribution();
+            RooStats::SamplingDistribution * bDistribution = toy->GetNullDistribution(), 
+                                           * sDistribution = toy->GetAltDistribution();
             const std::vector<Double_t> & bdist   = bDistribution->GetSamplingDistribution();
             const std::vector<Double_t> & bweight = bDistribution->GetSampleWeights();
             for (int j = 0, nj = bdist.size(); j < nj; ++j) {
@@ -80,6 +84,7 @@ void hypoTestResultTreeTopWid(TString fOutName, double mass, double rValue=1.0,
      */
 
     c->cd();
+    setTDRStyle();
 
     std::cout << "Creating plots" << std::endl;
     TH1D *hnull = new TH1D("hnull","Null Hypothesis",100,-20,20);
@@ -92,8 +97,10 @@ void hypoTestResultTreeTopWid(TString fOutName, double mass, double rValue=1.0,
 
     hnull->SetLineColor(kBlue);
     hnull->SetStats(false);
-    hnull->GetXaxis()->SetTitle("-2*ln(L_{alt}#/L_o)");
-    hnull->GetYaxis()->SetTitle("Toys");
+    hnull->GetXaxis()->SetTitle("-2*ln(L_{alt}#/L_{null})");
+    hnull->GetXaxis()->SetTitleSize(0.04);
+    hnull->GetXaxis()->SetTitleOffset(1.2);
+    hnull->GetYaxis()->SetTitle("Pseudoexperiments");
     halt->SetLineColor(kOrange);
     halt->SetStats(false);
     hnull->Draw();
@@ -103,6 +110,8 @@ void hypoTestResultTreeTopWid(TString fOutName, double mass, double rValue=1.0,
     TString plotName = TString(lfs)+"_"+TString(wid);
 
     c->SetTitle(plotName+" Toys");
+
+    CMS_lumi(c,4,0); 
     c->SaveAs(plotName+".pdf");
     c->SaveAs(plotName+".png");
 
