@@ -5,6 +5,7 @@ import json
 import sys
 import os
 from TopLJets2015.TopAnalysis.storeTools import getEOSlslist
+import MT2Calculator
 
 """
 Take the ratio of two Breit-Wigner functions at fixed mass as a reweighting factor
@@ -32,7 +33,7 @@ def runTopWidthAnalysis(fileName,
                         outFileName,
                         widthList=[0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0],
                         systs=['','puup','pudn','btagup','btagdn','jerup','jerdn','jesup','jesdn','lesup','lesdn']):
-        
+
     print '....analysing',fileName,'with output @',outFileName
 
     #check if this is data beforehand
@@ -58,7 +59,7 @@ def runTopWidthAnalysis(fileName,
     bwigner.FixParameter(2,smWidth)
 
     #book histograms
-    observablesH={}    
+    observablesH={}
 
     #MC truth control histograms
     for w in widthList:
@@ -84,12 +85,23 @@ def runTopWidthAnalysis(fileName,
             observablesH[var]=ROOT.TH1F(var,';Dilepton invariant mass [GeV];Events',30,0,300)
             var=j+b+'_njets'
             observablesH[var]=ROOT.TH1F(var,';Jet multiplicity;Events',6,2,8)
-            
+
             for s in systs:
                 for i in ['lowpt','highpt']:
                     for w in widthList:
                         var=s+i+j+b+'_mlb_%3.1fw'%w
                         observablesH[var]=ROOT.TH1F(var,';Mass(lepton,jet) [GeV];l+j pairs',30,0,300)
+                        var=s+i+j+b+'_incmlb_%3.1fw'%w
+                        observablesH[var]=ROOT.TH1F(var,';Mass(lepton,jet) (Inclusive) [GeV];l+j pairs',30,0,300)
+                        var=s+i+j+b+'_sncmlb_%3.1fw'%w
+                        observablesH[var]=ROOT.TH1F(var,';Mass(lepton,jet) (Semi-Inclusive) [GeV];l+j pairs',30,0,300)
+                        var=s+i+j+b+'_mdrmlb_%3.1fw'%w
+                        observablesH[var]=ROOT.TH1F(var,';Mass(lepton,jet) (Minimum #Delta R) [GeV];l+j pairs',30,0,300)
+                        var=s+i+j+b+'_minmlb_%3.1fw'%w
+                        observablesH[var]=ROOT.TH1F(var,';Mass(lepton,jet) (Minimum) [GeV];l+j pairs',30,0,300)
+                        var=s+i+j+b+'_mt2mlb_%3.1fw'%w
+                        observablesH[var]=ROOT.TH1F(var,';Mass(lepton,jet) (M_{T2} Method) [GeV];l+j pairs',30,0,300)
+
                         if w!=1.0 or len(s)>0 : continue
                         var=i+j+b+'_pairing'
                         observablesH[var]=ROOT.TH1F(var,';Pairing;l+j pairs',2,0,2)
@@ -133,14 +145,14 @@ def runTopWidthAnalysis(fileName,
         #determine weighting factors for the width
         tops={}
         tmassList=[]
-        for it in xrange(0,tree.nt): 
+        for it in xrange(0,tree.nt):
             if it>1 : break
             tid=tree.t_id[it]
             tops[ tid ] = ROOT.TLorentzVector()
             tops[ tid ].SetPtEtaPhiM(tree.t_pt[it],tree.t_eta[it],tree.t_phi[it],tree.t_m[it])
             tmassList.append( tops[tid].M() )
         widthWeight={}
-        for w in widthList: 
+        for w in widthList:
             widthWeight[w]=weightTopWidth(tmassList,bwigner,w*smWidth,smWidth)
 
             #paranoid check
@@ -152,23 +164,23 @@ def runTopWidthAnalysis(fileName,
         #preselect the b-jets (central b-tag, b-tag up, b-tag dn, jer up, jer dn, jes up, jes dn)
         bjets=( [], [], [], [], [], [], [] )
         for ij in xrange(0,tree.nj):
-                        
+
             jp4=ROOT.TLorentzVector()
             jp4.SetPtEtaPhiM(tree.j_pt[ij],tree.j_eta[ij],tree.j_phi[ij],tree.j_m[ij])
-            
+
             for ibit in xrange(0,3):
                 btagVal=((tree.j_btag[ij] >> ibit) & 0x1)
 
                 if btagVal==0: continue
                 bjets[ibit].append( (ij,jp4) )
-                
+
                 if ibit>0: continue
 
                 jres=ROOT.TMath.Abs(1-tree.j_jer[ij])
                 bjets[3].append( (ij,jp4*(1+jres)) )
                 bjets[4].append( (ij,jp4*(1-jres)) )
-                
-                jscale=tree.j_jes[ij]       
+
+                jscale=tree.j_jes[ij]
                 bjets[5].append( (ij,jp4*(1+jscale)) )
                 bjets[6].append( (ij,jp4*(1-jscale)) )
 
@@ -182,7 +194,7 @@ def runTopWidthAnalysis(fileName,
         #global control histos
         nbtags=len(bjets[0])
         if nbtags>2 : nbtags=2
-        btagcat='1b' if nbtags==1 else '2b'                        
+        btagcat='1b' if nbtags==1 else '2b'
 
         if nbtags>0:
             var=evcat+btagcat+'_mll'
@@ -192,7 +204,7 @@ def runTopWidthAnalysis(fileName,
         if abs(tree.cat)==11*11 or abs(tree.cat)==13*13:
             if ROOT.TMath.Abs(dilepton.M()-91)<15 : continue
             if dilepton.M()<20: continue
-        
+
         if nbtags>0:
             var=evcat+"_evcount"
             observablesH[var].Fill(nbtags-1,baseEvWeight)
@@ -200,6 +212,25 @@ def runTopWidthAnalysis(fileName,
             observablesH[var].Fill(tree.met_pt,baseEvWeight)
             var=evcat+btagcat+'_njets'
             observablesH[var].Fill(tree.nj,baseEvWeight)
+
+        # setup mlb calculations
+        mlbTypes  = ["min","mdr","inc","snc","mt2"]
+        ptCatList = ["highpt", "lowpt"]
+        bTagCats  = ["1b", "2b"]
+        evCatList = ["EE", "EM", "MM"]
+        mlbMap = {}
+        for s,ptC,evC,btC,mC,w in [(s,a,b,c,d,e) for s in systs
+                for a in ptCatList
+                for b in evCatList
+                for c in bTagCats
+                for d in mlbTypes
+                for e in widthList]:
+            initVals = [(float('inf'),0)]
+            if mC == "inc" or mC == "snc" : initVals = []
+            mlbMap["%s%s%s%s_%smlb_%3.1fw"%(s,ptC,evC,btC,mC,w)] = initVals
+
+        metForMT2 = ROOT.TLorentzVector()
+        metForMT2.SetPtPhiM(tree.met_pt, tree.met_eta, tree.met_phi, tree.met_m)
 
         #pair with the leptons
         for il in xrange(0,2):
@@ -209,10 +240,10 @@ def runTopWidthAnalysis(fileName,
             lscale=tree.l_les[il]
 
             for s in systs:
-                
+
                 #event weight
                 evWeight=baseEvWeight
-                
+
                 #base lepton kinematics
                 lp4=ROOT.TLorentzVector(stdlp4)
 
@@ -233,13 +264,13 @@ def runTopWidthAnalysis(fileName,
                 nbtags=len(bjets[ijhyp])
                 if nbtags<1 : continue
                 if nbtags>2 : nbtags=2
-                btagcat='1b' if nbtags==1 else '2b'                
+                btagcat='1b' if nbtags==1 else '2b'
                 for ib in xrange(0,nbtags):
 
                     ij,jp4 = bjets[ijhyp][ib]
 
                     #MC truth for this pair
-                    pairFullyMatchedAtGen=True if (tree.gl_id[il]!=0 and abs(tree.gj_flav[ij])==5) else False
+                    pairFullyMatchedAtGen = (tree.gl_id[il]!=0 and abs(tree.gj_flav[ij])==5)
                     assignmentType,tmass,genmlb=1,0.0,0.0
                     if pairFullyMatchedAtGen and tree.nt>0:
 
@@ -252,7 +283,7 @@ def runTopWidthAnalysis(fileName,
 
                         #correctness of the assignment can be checked by op. charge
                         if tree.gl_id[il]*tree.gj_flav[ij]<0 : assignmentType=0
- 
+
                         #top mass (parton level)
                         try:
                             if tree.gl_id[il]<0 : tmass=tops[6].M()
@@ -271,27 +302,104 @@ def runTopWidthAnalysis(fileName,
                     mlb=(lp4+jp4).M()
                     ptlb=(lp4+jp4).Pt()
                     ptCat='lowpt' if ptlb<100 else 'highpt'
-                    
+                    dRlb=lp4.deltaR(jp4)
+
+                    # calculate mt2 only in the last loop
+                    mt2=float('inf')
+                    if il == 1 and ib == nbjets-1:
+                        # get other lepton
+                        tlp=ROOT.TLorentzVector()
+                        tlp.SetPtEtaPhiM(tree.l_pt[0],tree.l_eta[0],tree.l_phi[0],tree.l_m[0])
+                        if s=="lesup" :
+                            tlp*=(1+tree.l_les[0])
+                        if s=="lesdown" :
+                            tlp*=(1-tree.l_les[0])
+                        if nbjets==1 :
+                            # calculate mt2 assuming the bjet could come from either t quark
+                            mt2=min(calcMt2(lp4+jp4,tlp,metForMT2), calcMt2(lp4,tlp+jp4,metForMT2))
+                        else if nbjets==2 :
+                            _,tb = bjets[ijhyp][0]
+                            mt2=min(calcMt2(lp4+jp4,tlp+tb,metForMT2), calcMt2(lp4+tb,tlp+jp4,metForMT2))
+
+
                     #fill histos
-                    if s=='': 
+                    if s=='':
                         var=evcat+btagcat+'_ptlb'
                         observablesH[var].Fill(ptlb,evWeight)
 
+                    # keep the old way of storing mlb
                     for w in widthList:
+                        mlbWt = evWeight * widthWeight[w]
+
                         var=s+ptCat+evcat+btagcat+'_mlb_%3.1fw'%w
-                        observablesH[var].Fill(mlb,evWeight*widthWeight[w])
+                        observablesH[var].Fill(mlb,mlbWt)
+
+                        # fill inclusive mlb
+                        var=s+ptCat+evcat+btagcat+'_incmlb_%3.1fw'%w
+                        mlbMap[var] += [(mlb,mlbWt)]
+
+                        # fill semi-inclusive mlb (to sort later)
+                        var=s+ptCat+evcat+btagcat+'_sncmlb_%3.1fw'%w
+                        mlbMap[var] += [(mlb,mlbWt)]+[(dRlb,0)]
+
+                        # fill min mlb
+                        var=s+ptCat+evcat+btagcat+'_minmlb_%3.1fw'%w
+                        if mlb < mlbMap[var][0] :
+                            mlbMap[var] = [(mlb,mlbWt)]
+
+                        # fill mdr mlb
+                        var=s+ptCat+evcat+btagcat+'_mdrmlb_%3.1fw'%w
+                        if mlb < mlbMap[var][0] and dRlb<0.4 :
+                            mlbMap[var] = [(mlb,mlbWt)]
+
+                        # fill mt2 mlb
+                        var=s+ptCat+evcat+btagcat+'_mt2mlb_%3.1fw'%w
+                        if mt2 < mlbMap[var][0] :
+                            mlbMap[var] = [(mlb,mlbWt)]
 
                         #only for standard width and syst variations
                         if w!=1.0 or len(s)>0 : continue
                         var=s+ptCat+evcat+btagcat+'_pairing'
                         observablesH[var].Fill(assignmentType,evWeight*widthWeight[w])
-                        
+
+    # fill all relevant histos
+    for histoName in mlbMap :
+        # make sure there's one entry for appropriate mlb
+        if len(mlbMap[histoName]) > 1:
+            if "min" in histoName or
+                "mdr" in histoName or
+                "mt2" in histoName :
+                    print "WARNING: storing more than one mlb for %s"%histoName
+        # perform snc reduction
+        if "snc" in histoName:
+            if len(mlbMap[histoName]) % 2 == 1 :
+                print "WARNING: incorrect structure for %s"%histoName
+            minDR2=[(float('inf'),0,float('inf')),(float('inf'),0,float('inf'))]
+
+            # get pair with lowest DR separation
+            for i in range(0,len(mlbMap[histoName],2) :
+                mlb,wt = mlbMap[histoName][i]
+                mdr,_  = mlbMap[histoName][i+1]
+
+                if mdr < minDR2[0][2] :
+                    minDR2[1] = minDR2[0]
+                    minDR2[0] = (mlb,wt,dr)
+                else if mdr < minDR2[1][2] :
+                    minDR2[1] = (mlb,wt,dr)
+
+            mlbMap[histoName] = [(mlb,wt) for mlb,wt,_ in minDR2]
+
+        # fill
+        for mlb,wt in mlbMap[histoName] :
+            if mlb == float('inf') : continue
+            observablesH[histoName].Fill(mlb,wt)
+
     #save results
     fOut=ROOT.TFile.Open(outFileName,'RECREATE')
     for var in observablesH: observablesH[var].Write()
     fOut.Close()
 
- 
+
 """
 Wrapper for when the analysis is run in parallel
 """
@@ -304,7 +412,7 @@ def runTopWidthAnalysisPacked(args):
         print "  Problem with", name, "continuing without"
         print 50*'<'
         return False
-    
+
 """
 Create analysis tasks
 """
@@ -326,7 +434,7 @@ def createAnalysisTasks(opt):
     #list of files to analyse
     tasklist=[]
     for filename in file_list:
-        baseFileName=os.path.basename(filename)      
+        baseFileName=os.path.basename(filename)
         tag,ext=os.path.splitext(baseFileName)
         if len(onlyList)>0:
             processThis=False
@@ -361,21 +469,21 @@ def main():
 	usage = 'usage: %prog [options]'
 	parser = optparse.OptionParser(usage)
 	parser.add_option('-i', '--input',
-                          dest='input',   
+                          dest='input',
                           default='/afs/cern.ch/user/p/psilva/work/TopWidth',
                           help='input directory with the files [default: %default]')
 	parser.add_option('--jobs',
-                          dest='jobs', 
+                          dest='jobs',
                           default=1,
                           type=int,
                           help='# of jobs to process in parallel the trees [default: %default]')
 	parser.add_option('--only',
-                          dest='only', 
+                          dest='only',
                           default='',
                           type='string',
                           help='csv list of tags to process')
 	parser.add_option('-o', '--output',
-                          dest='output', 
+                          dest='output',
                           default='analysis',
                           help='Output directory [default: %default]')
 	parser.add_option('-q', '--queue',
@@ -384,11 +492,11 @@ def main():
                           help='Batch queue to use [default: %default]')
 	(opt, args) = parser.parse_args()
 
-        ROOT.FWLiteEnabler.enable() 
+        ROOT.FWLiteEnabler.enable()
 	os.system('mkdir -p %s' % opt.output)
 
         createAnalysisTasks(opt)
-        
+
 
 if __name__ == "__main__":
 	sys.exit(main())
