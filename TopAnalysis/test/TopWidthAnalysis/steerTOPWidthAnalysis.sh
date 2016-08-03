@@ -36,6 +36,7 @@ CMSSW_7_6_3dir=~/CMSSW_8_0_8_patch1/src/
 case $WHAT in
     SHAPES )
         cd ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/
+        export PYTHONPATH=$PYTHONPATH:/usr/lib64/python2.6/site-packages/
         python test/TopWidthAnalysis/createShapesFromPlotter.py \
                 -i ${outdir}/analysis/plots/plotter.root \
                 -s tbart,tW -o ${outdir}/datacards/ \
