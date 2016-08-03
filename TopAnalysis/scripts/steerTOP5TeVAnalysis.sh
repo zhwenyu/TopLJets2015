@@ -1,9 +1,10 @@
 #!/bin/bash
 
 WHAT=$1; 
-UNBLIND=$2
+NBINS=$2
+UNBLIND=$3
 if [ "$#" -lt 1 ]; then 
-    echo "steerTOP5TeVAnalysis.sh <SEL/MERGE/BKG/PLOT/WWW/PREPAREFIT/FIT>";
+    echo "steerTOP5TeVAnalysis.sh <SEL/MERGE/BKG/PLOT/WWW/PREPAREFIT/FIT/SHOWFIT>";
     echo "        SEL          - selects data and MC";
     echo "        MERGE        - merge the output of the jobs";
     echo "        BKG          - runs the background estimation from sidebands";
@@ -11,6 +12,7 @@ if [ "$#" -lt 1 ]; then
     echo "        WWW          - moves the plots to an afs-web-based area";    
     echo "        PREPAREFIT   - create datacards for the fit"
     echo "        FIT          - run the cross section fit (may need a special CMSSW release to use combine) if 1 is passed as well it will unblind"
+    echo "        SHOWFIT      - show summary plots"
     exit 1; 
 fi
 
@@ -86,27 +88,27 @@ case $WHAT in
 	    -i ${outdir}/analysis_mu/plots/plotter.root \
 	    --systInput ${outdir}/analysis_mu/plots/syst_plotter.root \
             -q ${outdir}/analysis_mu/.qcdscalefactors.pck \
-	    -o ${outdir}/analysis_mu/datacard \
+	    -o ${outdir}/analysis_mu/datacard_${NBINS} \
 	    --specs TOP-16-015 \
 	    --signal tbart \
             -d mjj \
 	    -c 0b,1b,2b \
 	    --addBinByBin 0.3 \
-	    --rebin 2;
+	    --rebin ${NBINS};
 	
 	a=(0b 1b 2b)
 	for i in ${a[@]}; do	
-	    python scripts/projectShapeUncs.py ${outdir}/analysis_mu/datacard/shapes_${i}.root btag,othertag,jes,jer;
-	    python scripts/projectShapeUncs.py ${outdir}/analysis_mu/datacard/shapes_${i}.root ttPartonShower,Hadronizer,ttFactScale,ttRenScale,ttCombScale;
-	    python scripts/projectShapeUncs.py ${outdir}/analysis_mu/datacard/shapes_${i}.root wFactScale,wRenScale,wCombScale W;
+	    python scripts/projectShapeUncs.py ${outdir}/analysis_mu/datacard_${NBINS}/shapes_${i}.root btag,othertag,jes,jer;
+	    python scripts/projectShapeUncs.py ${outdir}/analysis_mu/datacard_${NBINS}/shapes_${i}.root ttPartonShower,Hadronizer,ttFactScale,ttRenScale,ttCombScale;
+	    python scripts/projectShapeUncs.py ${outdir}/analysis_mu/datacard_${NBINS}/shapes_${i}.root wFactScale,wRenScale,wCombScale W;
 	done
-	mkdir -p ${wwwdir}/shapes
-	mv *.{png,pdf} ${wwwdir}/shapes;
-	cp test/index.php ${wwwdir}/shapes;
+	mkdir -p ${wwwdir}/shapes_${NBINS}
+	mv *.{png,pdf} ${wwwdir}/shapes_${NBINS};
+	cp test/index.php ${wwwdir}/shapes_${NBINS};
 	;;
     FIT )
 	echo -e "[ ${RED} $CMSSW_BASE will be used - make sure combine is compatible and is installed ${NC} ]"
-	cd ${outdir}/analysis_mu/datacard;
+	cd ${outdir}/analysis_mu/datacard_${NBINS};
 	combineCards.py m0b=datacard_0b.dat m1b=datacard_1b.dat m2b=datacard_2b.dat > datacard.dat;
 	text2workspace.py datacard.dat -m 0 -o workspace.root
         
@@ -119,7 +121,7 @@ case $WHAT in
 	combine workspace.root -M MultiDimFit ${commonOpts} --algo=grid --points=100 -S 0;
 	mv higgsCombineTest.MultiDimFit.mH0.root exp_plr_scan_stat_r.root
 
-	commonOpts="--redefineSignalPOIs btag -P btag --expectSignal=1 --algo=grid --points=100 --setPhysicsModelParameterRanges btag=-2,2:r=0,2 -m 0";	
+	commonOpts="-t -1 --redefineSignalPOIs btag -P btag --expectSignal=1 --algo=grid --points=100 --setPhysicsModelParameterRanges btag=-2,2:r=0,2 -m 0";	
 	combine workspace.root -M MultiDimFit ${commonOpts};
 	mv higgsCombineTest.MultiDimFit.mH0.root exp_plr_scan_btag.root
 	combine workspace.root -M MultiDimFit ${commonOpts} -S 0;
@@ -147,7 +149,12 @@ case $WHAT in
 	cd -
 	;;
     SHOWFIT )
-	cardsDir=${outdir}/analysis_mu/datacard;
+	echo -e "[ ${RED} Fit plots will be made available in ${wwwdir}/fits ${NC}]";
+	cardsDir=${outdir}/analysis_mu/datacard_${NBINS};
 	python scripts/fitSummaryPlots.py "#mu"=${cardsDir}/datacard.dat --POIs r,btag --label "27.9 pb^{-1} (5.02 TeV)" -o ${cardsDir};
+	mkdir ${wwwdir}/fits_${NBINS};
+	mv ${cardsDir}/*.{png,pdf,C} ${wwwdir}/fits_${NBINS}/;
+	cp test/index.php ${wwwdir}/fits_${NBINS};
 	;;
+
 esac
