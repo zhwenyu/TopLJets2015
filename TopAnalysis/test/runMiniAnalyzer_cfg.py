@@ -85,6 +85,17 @@ if not options.runOnData:
     process.pseudoTop.leptonMaxEta=cms.double(2.5)
     process.pseudoTop.jetMaxEta=cms.double(5.0)
 
+#EGM smearer https://twiki.cern.ch/twiki/bin/view/CMS/EGMSmearer
+process.load('Configuration.StandardSequences.Services_cff')
+process.RandomNumberGeneratorService = cms.Service("RandomNumberGeneratorService",
+                                                   calibratedPatElectrons  = cms.PSet( initialSeed = cms.untracked.uint32(81),
+                                                                                       engineName = cms.untracked.string('TRandom3'),
+                                                                                       )
+                                                   )
+process.load('EgammaAnalysis.ElectronTools.calibratedElectronsRun2_cfi')
+print 'Using calibrated electrons with corrections from',process.calibratedPatElectrons.correctionFile
+process.calibratedPatElectrons.isMC=True if options.runOnData else False
+
 # Set up electron ID (VID framework)
 from PhysicsTools.SelectorUtils.tools.vid_id_tools import *
 dataFormat = DataFormat.MiniAOD
@@ -93,6 +104,7 @@ my_id_modules = ['RecoEgamma.ElectronIdentification.Identification.mvaElectronID
                  'RecoEgamma.ElectronIdentification.Identification.cutBasedElectronID_Spring15_25ns_V1_cff'] 
 for idmod in my_id_modules:
     setupAllVIDIdsInModule(process,idmod,setupVIDElectronSelection)
+
 
 #jet energy corrections
 process.load('JetMETCorrections.Configuration.DefaultJEC_cff')
@@ -115,6 +127,6 @@ process.TFileService = cms.Service("TFileService",
                                    )
 
 if options.runOnData:
-    process.p = cms.Path(process.egmGsfElectronIDSequence*process.customizeJetToolsSequence*process.analysis)
+    process.p = cms.Path(process.calibratedPatElectrons*process.egmGsfElectronIDSequence*process.customizeJetToolsSequence*process.analysis)
 else:
-    process.p = cms.Path(process.egmGsfElectronIDSequence*process.customizeJetToolsSequence*process.pseudoTop*process.analysis)
+    process.p = cms.Path(process.calibratedPatElectrons*process.egmGsfElectronIDSequence*process.customizeJetToolsSequence*process.pseudoTop*process.analysis)
