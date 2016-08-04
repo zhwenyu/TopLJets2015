@@ -3,17 +3,21 @@ import re
 from sys import argv
 import os.path
 import ROOT
+
+ROOT.gROOT.SetBatch(true)
+
 from pprint import pprint
 from optparse import OptionParser
 parser = OptionParser(
-    usage="%prog [options] [label=datacard.txt | datacard.txt]",
-    epilog="Collects quantiles information from signal statistics output and turns it into a nice TGraph and LaTeX table. Format of .txt files is stats__<wid>_<lfs>.txt"
+    usage="%prog [options]",
+    epilog="Collects quantiles information from signal statistics output and turns it into a nice TGraph and LaTeX table. Format of .txt files is stats__<wid>_<lfs>_<dist>.txt"
     )
-parser.add_option("-i",    type="string", dest="indir"  , default="./"            ,   help="directory to look for stats files in")
-parser.add_option("--wid", type="string", dest="widList", default="0p5w,2p0w,3p0w,4p0w",   help="a list of widths to look for in stats filenames")
-parser.add_option("--lfs", type="string", dest="lfsList", default=""              ,   help="a list of lepton final states to look for in stats filenames")
-parser.add_option("-o",    type="string", dest="outdir" , default="./"   ,   help="the base filename for the quantiles plot")
-parser.add_option("--axisOverwrite", type="string", dest="aoverList" , default=""   ,   help="Axis labels to use if desired")
+parser.add_option("-i",    type="string", dest="indir"  , default="./",     help="directory to look for stats files in")
+parser.add_option("-o",    type="string", dest="outdir" , default="./",     help="the base filename for the quantiles plot")
+parser.add_option("--lfs", type="string", dest="lfsList", default="",       help="a list of lepton final states to look for in stats filenames")
+parser.add_option("--dist",type="string", dest="dist"   , default="incmlb", help="the observable distribution to look at")
+parser.add_option("--wid", type="string", dest="widList", default="0p5w,1p0w,1p5w,2p0w,2p5w,3p0w,3p5w,4p0w,4p5w,5p0w", help="a list of widths to look for in stats filenames")
+parser.add_option("--axisOverwrite", type="string", dest="aoverList", default="", help="Axis labels to use if desired")
 
 (options, args) = parser.parse_args()
 
@@ -57,7 +61,7 @@ for i in xrange(0,nPoints) :
 # loop over widths, lfs, parse array info
 i=0
 for wid,lfs in [(wid,lfs) for wid in rawWidList for lfs in rawLfsList]:
-    statsFileName="%s/stats__%s_%s.txt"%(options.indir,wid,lfs)
+    statsFileName="%s/stats__%s_%s_%s.txt"%(options.indir,wid,lfs,dist)
     for line in open(statsFileName,"r"):
         if "nulquant" in line :
             tline = map(float,line.split(";")[1:8]);
@@ -127,7 +131,7 @@ CP.SetTextSize(0.05)
 CP.Draw()
 
 # Lumi
-CMSLineLumi="#sqrt{s}=13 TeV, 2.1 fb^{-1}"
+CMSLineLumi="#sqrt{s}=13 TeV, 2.3 fb^{-1}"
 CP1=ROOT.TLatex(0.67,0.92, CMSLineLumi)
 CP1.SetNDC(ROOT.kTRUE)
 CP1.SetTextSize(0.04)
