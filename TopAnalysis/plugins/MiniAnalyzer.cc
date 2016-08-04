@@ -58,6 +58,8 @@
 #include "SimDataFormats/GeneratorProducts/interface/LHEEventProduct.h"
 #include "SimDataFormats/GeneratorProducts/interface/GenEventInfoProduct.h"
 
+#include "DataFormats/EgammaCandidates/interface/GsfElectron.h"
+
 #include "TopLJets2015/TopAnalysis/interface/rochcor2016.h"
 
 #include "TLorentzVector.h"
@@ -593,7 +595,7 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
       ev_.l_eta[ev_.nl]=calibe->eta();
       ev_.l_phi[ev_.nl]=calibe->phi();
       ev_.l_mass[ev_.nl]=calibe->mass();
-      ev_.l_scaleUnc[ev_.nl]=1.0;
+      ev_.l_scaleUnc[ev_.nl]=calibe->p4Error(reco::GsfElectron::P4_PFLOW_COMBINATION);
       ev_.l_miniIso[ev_.nl]=getMiniIsolation(pfcands,&el,0.05, 0.2, 10., false);
       //ev_.l_relIso[ev_.nl]=fullCutFlowData.getValueCutUpon(9);
       ev_.l_relIso[ev_.nl]=(calibe->chargedHadronIso()+ max(0., calibe->neutralHadronIso() + calibe->photonIso()  - 0.5*calibe->puChargedHadronIso()))/calibe->pt();     
