@@ -63,6 +63,7 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev)
   t->Branch("l_eta",      ev.l_eta,     "l_eta[nl]/F");
   t->Branch("l_phi",      ev.l_phi,     "l_phi[nl]/F");
   t->Branch("l_mass",     ev.l_mass,    "l_mass[nl]/F");
+  t->Branch("l_scaleUnc",       ev.l_scaleUnc,      "l_scaleUnc[nl]/F");
   t->Branch("l_chargedHadronIso", ev.l_chargedHadronIso, "l_chargedHadronIso[nl]/F");
   t->Branch("l_miniIso",          ev.l_miniIso,          "l_miniIso[nl]/F");
   t->Branch("l_relIso",           ev.l_relIso,           "l_relIso[nl]/F");
@@ -176,6 +177,7 @@ void attachToMiniEventTree(TTree *t,MiniEvent_t &ev,bool full)
   t->SetBranchAddress("l_eta",      ev.l_eta);
   t->SetBranchAddress("l_phi",      ev.l_phi);
   t->SetBranchAddress("l_mass",     ev.l_mass);
+  t->SetBranchAddress("l_scaleUnc",       ev.l_scaleUnc);
   t->SetBranchAddress("l_chargedHadronIso", ev.l_chargedHadronIso);
   t->SetBranchAddress("l_miniIso",          ev.l_miniIso);
   t->SetBranchAddress("l_relIso",           ev.l_relIso);

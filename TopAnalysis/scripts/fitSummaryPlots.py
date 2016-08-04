@@ -122,7 +122,7 @@ def show1DLikelihoodScan(resultsSet,parameter='r',output='./',label=''):
 """
 2D likelihood scan
 """
-def show2DLikelihoodScan(resultsSet,parameters,label):
+def show2DLikelihoodScan(resultsSet,parameters,output,label):
 
     c=ROOT.TCanvas('c','c',500,500)
     c.SetTopMargin(0.05)
@@ -130,19 +130,20 @@ def show2DLikelihoodScan(resultsSet,parameters,label):
     c.SetBottomMargin(0.1)
     c.SetRightMargin(0.05)
     
-    contours = array('d',[1.0,3.84])
-
+    #see Table 33.2 @ http://pdg.lbl.gov/2011/reviews/rpp2011-rev-statistics.pdf
+    #contours = array('d',[2.30,4.61,5.99,6.18,9.21,11.83])
+    contours = array('d',[1.0,2.71,3.84,4.00,6.63,9.00])
 
     #likelihood scans
     nllGrs={}
-    colors=[1, ROOT.kOrange-1,  ROOT.kRed+1, ROOT.kMagenta-9, ROOT.kBlue-7]
+    colors=[1, ROOT.kOrange, ROOT.kRed+1, ROOT.kMagenta-9, ROOT.kBlue-7]
     ires=0
+    frame=None
     for title,datacard in resultsSet:
         ires+=1
         dir=os.path.dirname(datacard)
-        files=[('#splitline{expected}{#scale[0.8]{(stat+syst)} }', 'exp_plr_scan',      1, 1),
+        files=[('#splitline{expected}{#scale[0.8]{(stat+syst)} }', 'exp_plr_scan',      3, 3),
                ('#splitline{observed}{#scale[0.8]{(stat+syst)}}',  'obs_plr_scan',      1, 3)]
-
 
         for ftitle,f,lstyle,lwidth in files:
 
@@ -153,32 +154,56 @@ def show2DLikelihoodScan(resultsSet,parameters,label):
             if not fIn : continue
             tree=fIn.Get('limit')
 
-            for ll,ul,tag in [(1-0.99,1.0,'99cl'),(1-0.68,1.0,'68cl'),(1-0.95,1.0,'95cl'),(1-0.99,1.0,'99cl')]:
-                c.Clear()    
-                nllGrs[ftitle].append( ROOT.ll2dContourPlot(tree,parameters[0],parameters[1],ll,ul) )
+            #fill the 2D likelihood histogram
+            xmin,xmax=0,2
+            ymin,ymax=0,2
+            if parameters[1]=='btag' : ymin,ymax=0.8,1.2
+            hcont=ROOT.TH2D('hcont','%s;%s;%s'%(ftitle,POItitles[parameters[0]],POItitles[parameters[1]]),
+                            50,xmin,xmax,50,ymin,ymax)
+            hcont.SetContour(len(contours),contours)
+            for ientry in xrange(0,tree.GetEntriesFast()) : 
+                tree.GetEntry(ientry)
+                x=getattr(tree,parameters[0])
+                y=getattr(tree,parameters[1])
+                if parameters[1]=='btag': y=y*0.1+1.0
+                hcont.Fill(x,y,2*tree.deltaNLL)
+
+            #draw the contours and save them
+            c.Clear()
+            hcont.Draw('contz list')
+            c.Update()
+            contGrs = ROOT.gROOT.GetListOfSpecials().FindObject("contours")
+            for name,title,idx in [ (f+'68cl','68%CL',0),
+                                    (f+'95cl','95%CL',2)]:                
+                nllGrs[ftitle].append( contGrs.At(idx).At(0) )
+                nllGrs[ftitle][-1].SetName(name)
                 nllGrs[ftitle][-1].SetTitle(title)
-                nllGrs[ftitle][-1].SetLineStyle(lstyle)
-                nllGrs[ftitle][-1].SetMarkerStyle(1)
-                nllGrs[ftitle][-1].SetFillStyle(1001)
-                nllGrs[ftitle][-1].SetFillColor(colors[ires-1])
+                nllGrs[ftitle][-1].SetFillStyle(0)
+                nllGrs[ftitle][-1].SetFillColor(0)
+                lcolor=colors[len(nllGrs[ftitle])-1]
+                nllGrs[ftitle][-1].SetLineColor(lcolor)
                 nllGrs[ftitle][-1].SetLineWidth(lwidth)
-                nllGrs[ftitle][-1].SetLineColor(colors[ires-1])
-                nllGrs[ftitle][-1].SetLineWidth(2)
-                nllGrs[ftitle][-1].SetMarkerColor(colors[ires-1])
-                            
+                nllGrs[ftitle][-1].SetLineStyle(lstyle)
+                nllGrs[ftitle][-1].SetMarkerColor(lcolor)
+                nllGrs[ftitle][-1].SetMarkerStyle(1)
+
+            if frame is None: 
+                frame=hcont.Clone('frame')
+                frame.Reset('ICE')
+                frame.SetDirectory(0)
+            hcont.Delete()
+
     #show 2D likelihood scan
-    c=ROOT.TCanvas('c','c',500,500)
-    c.SetTopMargin(0.05)
-    c.SetLeftMargin(0.12)
-    c.SetBottomMargin(0.1)
-    c.SetRightMargin(0.05)
-    frame=ROOT.TH2F('frame','frame',10,0.8,1.2,10,-3,3)
+    c.Clear()
     frame.Draw()
+    frame.GetYaxis().SetTitleSize(0.045)
+    frame.GetYaxis().SetTitleOffset(1.1)
+    frame.GetXaxis().SetTitleSize(0.045)
     allLegs=[]
     ileg=0
     for ftitle in nllGrs:
         if len(nllGrs[ftitle])==0 : continue
-        allLegs.append( ROOT.TLegend(0.15+ileg*0.15,0.92,0.3+ileg*0.15,0.85-0.04*len(nllGrs[ftitle]) ) )
+        allLegs.append( ROOT.TLegend(0.15+ileg*0.15,0.93,0.3+ileg*0.15,0.85-0.04*len(nllGrs[ftitle]) ) )
         allLegs[-1].SetTextFont(42)
         allLegs[-1].SetTextSize(0.035)
         allLegs[-1].SetBorderSize(0)
@@ -186,16 +211,17 @@ def show2DLikelihoodScan(resultsSet,parameters,label):
         allLegs[-1].SetFillColor(0)
         allLegs[-1].SetHeader(ftitle)
         for gr in nllGrs[ftitle]:
-            gr.Draw('f')
-            allLegs[-1].AddEntry(gr,gr.GetTitle(),'f')
+            gr.Draw('l')
+            allLegs[-1].AddEntry(gr,gr.GetTitle(),'l')
         ileg+=1
     for leg in allLegs: leg.Draw()
 
-    drawCMSlabel(label=label)
-   
+    drawCMSlabel(label=label)   
     c.Modified()
     c.Update()
-    raw_input()
+    for ext in ['png','pdf','C']:
+        c.SaveAs('%s/nll2d_%svs%s.%s'%(output,parameters[0],parameters[1],ext))
+   
 
 """
 compare prefit and postfit nuisances
@@ -205,7 +231,7 @@ compare prefit and postfit nuisances
 """
 def compareNuisances(resultsSet,output,label):
    
-    colors=[{'exp':ROOT.kGray,'obs':1}, 
+    colors=[{'exp':ROOT.kGray+1,'obs':1}, 
             {'exp':ROOT.kOrange,'obs':ROOT.kOrange-1}]
     postFitNuisGr={}
     nuisCorrelationH={}
@@ -242,7 +268,7 @@ def compareNuisances(resultsSet,output,label):
             nuisCorrelationH[key]=ROOT.TH1F('nuiscorrelationgr_%s'%''.join(key),';Nuisance;Correlation with #mu=#sigma/#sigma_{th}',npars,0,npars)
             nuisCorrelationH[key].SetLineColor(colors[resCtr-1][fit])
             nuisCorrelationH[key].SetFillColor(colors[resCtr-1][fit])
-            fillStyle=1001 if fit=='obs' else 3002
+            fillStyle=1001 if fit=='obs' else 3001
             nuisCorrelationH[key].SetFillStyle(fillStyle)
             nuisCorrelationH[key].SetDirectory(0)
             
@@ -408,17 +434,11 @@ def main():
     for parameter in POIs:
         show1DLikelihoodScan(resultsSet=resultsSet,parameter=parameter,label=opt.label,output=opt.output)
 
-    #for i in xrange(0,len(POIs)):
-    #    for j in xrange(i+1,len(POIs)):
-    #        show2DLikelihoodScan(resultsSet,parameters=[POIs[i],POIs[j]],label=opt.label)
+    for i in xrange(0,len(POIs)):
+        for j in xrange(i+1,len(POIs)):
+            show2DLikelihoodScan(resultsSet,parameters=[POIs[i],POIs[j]],output=opt.output,label=opt.label)
 
     compareNuisances(resultsSet=resultsSet,output=opt.output,label=opt.label)
-
-    #ROOT.gROOT.LoadMacro('src/RootTools.cc+')
-
-    
-    
-            
 
 """
 for execution from another script

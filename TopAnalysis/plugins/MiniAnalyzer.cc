@@ -58,6 +58,8 @@
 #include "SimDataFormats/GeneratorProducts/interface/LHEEventProduct.h"
 #include "SimDataFormats/GeneratorProducts/interface/GenEventInfoProduct.h"
 
+#include "TopLJets2015/TopAnalysis/interface/rochcor2016.h"
+
 #include "TLorentzVector.h"
 #include "TH1.h"
 #include "TH1F.h"
@@ -97,6 +99,8 @@ private:
                          float r_iso_min, float r_iso_max, float kt_scale,
                          bool charged_only);
 
+  bool ICHEP2016isMediumMuon(const reco::Muon & recoMu);
+
   // member data 
   edm::EDGetTokenT<GenEventInfoProduct> generatorToken_;
   edm::EDGetTokenT<GenEventInfoProduct> generatorevtToken_;
@@ -113,7 +117,7 @@ private:
   edm::EDGetTokenT<reco::VertexCollection> vtxToken_;
   edm::EDGetTokenT<double> rhoToken_;
   edm::EDGetTokenT<pat::MuonCollection> muonToken_;
-  edm::EDGetTokenT<edm::View<pat::Electron>  >  electronToken_;
+  edm::EDGetTokenT<edm::View<pat::Electron>  >  electronToken_,calibElectronToken_;
   edm::EDGetTokenT<edm::View<pat::Jet> > jetToken_;
   edm::EDGetTokenT<pat::METCollection> metToken_, puppiMetToken_;
   edm::EDGetTokenT<pat::PackedCandidateCollection> pfToken_;
@@ -124,6 +128,9 @@ private:
   edm::EDGetTokenT<edm::ValueMap<vid::CutFlowResult> > eleTightIdFullInfoMapToken_;
 
   std::unordered_map<std::string,TH1F*> histContainer_;
+
+  //muon rochester corrections
+  rochcor2016 *rochcor_;
 
   PFJetIDSelectionFunctor pfjetIDLoose_;
 
@@ -180,8 +187,13 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig) :
 {
   //now do what ever initialization is needed
   electronToken_ = mayConsume<edm::View<pat::Electron> >(iConfig.getParameter<edm::InputTag>("electrons"));
+  calibElectronToken_ = mayConsume<edm::View<pat::Electron> >(iConfig.getParameter<edm::InputTag>("calibElectrons"));
   elTriggersToUse_ = iConfig.getParameter<std::vector<std::string> >("elTriggersToUse");
   muTriggersToUse_ = iConfig.getParameter<std::vector<std::string> >("muTriggersToUse");
+
+  
+  //start the rochester correction tool
+  rochcor_=new rochcor2016(2016);
 
   //  usesResource("TFileService");
 
@@ -463,13 +475,35 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
   iEvent.getByToken(muonToken_, muons);
   for (const pat::Muon &mu : *muons) 
     { 
+
+      //correct the 4-momentum
+      TLorentzVector p4;
+      p4.SetPtEtaPhiM(mu.pt(),mu.eta(),mu.phi(),mu.mass());
+      float qter(1.0);
+      try{
+	if(iEvent.isRealData())
+	  {
+	    rochcor_->momcor_data(p4, mu.charge(), 0, qter);
+	  }
+	else
+	  {
+	    int ntrk=mu.innerTrack()->hitPattern().trackerLayersWithMeasurement();
+	    rochcor_->momcor_data(p4, mu.charge(), ntrk, qter);
+	  }
+      }
+      catch(...)
+	{
+	  //probably no inner track...
+	}
+
       //kinematics
-      bool passPt( mu.pt() > 10 );
-      bool passEta(fabs(mu.eta()) < 2.4 );
+      bool passPt( p4.Pt() > 10 );
+      bool passEta(fabs(p4.Eta()) < 2.4 );
       if(!passPt || !passEta) continue;
 
       //ID
-      bool isMedium(muon::isMediumMuon(mu));
+      //bool isMediumStd(muon::isMediumMuon(mu));
+      bool isMedium(ICHEP2016isMediumMuon(mu));
       bool isTight(muon::isTightMuon(mu,primVtx));
       if(!isMedium) continue;
 
@@ -487,14 +521,15 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
 	  break;
 	}	 
       ev_.l_charge[ev_.nl]=mu.charge();
-      ev_.l_pt[ev_.nl]=mu.pt();
-      ev_.l_eta[ev_.nl]=mu.eta();
-      ev_.l_phi[ev_.nl]=mu.phi();
-      ev_.l_mass[ev_.nl]=mu.mass();
+      ev_.l_pt[ev_.nl]=p4.Pt();
+      ev_.l_eta[ev_.nl]=p4.Eta();
+      ev_.l_phi[ev_.nl]=p4.Phi();
+      ev_.l_mass[ev_.nl]=p4.M();
+      ev_.l_scaleUnc[ev_.nl]=qter;
       ev_.l_pid[ev_.nl]=(isMedium | (isTight<<1));
       ev_.l_chargedHadronIso[ev_.nl]=mu.pfIsolationR04().sumChargedHadronPt;
       ev_.l_miniIso[ev_.nl]=getMiniIsolation(pfcands,&mu,0.05,0.2, 10., false);
-      ev_.l_relIso[ev_.nl]=(mu.pfIsolationR04().sumChargedHadronPt + max(0., mu.pfIsolationR04().sumNeutralHadronEt + mu.pfIsolationR04().sumPhotonEt - 0.5*mu.pfIsolationR04().sumPUPt))/mu.pt();
+      ev_.l_relIso[ev_.nl]=(mu.pfIsolationR04().sumChargedHadronPt + max(0., mu.pfIsolationR04().sumNeutralHadronEt + mu.pfIsolationR04().sumPhotonEt - 0.5*mu.pfIsolationR04().sumPUPt))/p4.Pt();
       ev_.l_ip3d[ev_.nl] = -9999.;
       ev_.l_ip3dsig[ev_.nl] = -9999;
       if(mu.innerTrack().get())
@@ -504,7 +539,7 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
 	  ev_.l_ip3dsig[ev_.nl] = ip3dRes.second.significance();
 	}   
       ev_.nl++;    
-      ev_.nleptons += ( isTight && mu.pt()>25); 
+      ev_.nleptons += ( isTight && p4.Pt()>25); 
     }
   
   // ELECTRON SELECTION: cf. https://twiki.cern.ch/twiki/bin/view/CMS/CutBasedElectronIdentificationRun2
@@ -514,17 +549,19 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
   iEvent.getByToken(eleTightIdMapToken_ ,tight_id_decisions);
   edm::Handle<edm::ValueMap<vid::CutFlowResult> > tight_id_cutflow_data;
   iEvent.getByToken(eleTightIdFullInfoMapToken_,tight_id_cutflow_data);
-  edm::Handle<edm::View<pat::Electron> >    electrons;
+  edm::Handle<edm::View<pat::Electron> >    electrons,calibElectrons;
   iEvent.getByToken(electronToken_, electrons);    
+  iEvent.getByToken(calibElectronToken_, calibElectrons);    
   Int_t nele(0);
   for (const pat::Electron &el : *electrons) 
     {        
       const auto e = electrons->ptrAt(nele); 
+      const auto calibe = calibElectrons->ptrAt(nele); 
       nele++;
 
       //kinematics cuts
-      bool passPt(el.pt() > 15.0);
-      bool passEta(fabs(el.eta()) < 2.5 && (fabs(el.superCluster()->eta()) < 1.4442 || fabs(el.superCluster()->eta()) > 1.5660));
+      bool passPt(calibe->pt() > 15.0);
+      bool passEta(fabs(calibe->eta()) < 2.5 && (fabs(calibe->superCluster()->eta()) < 1.4442 || fabs(calibe->superCluster()->eta()) > 1.5660));
       if(!passPt || !passEta) continue;
      
       //look up id decisions
@@ -552,14 +589,15 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
 	}	 
       ev_.l_pid[ev_.nl]=(passVetoId | (passTightId<<1) | (passTightIdExceptIso<<2));
       ev_.l_charge[ev_.nl]=el.charge();
-      ev_.l_pt[ev_.nl]=el.pt();
-      ev_.l_eta[ev_.nl]=el.eta();
-      ev_.l_phi[ev_.nl]=el.phi();
-      ev_.l_mass[ev_.nl]=el.mass();
+      ev_.l_pt[ev_.nl]=calibe->pt();
+      ev_.l_eta[ev_.nl]=calibe->eta();
+      ev_.l_phi[ev_.nl]=calibe->phi();
+      ev_.l_mass[ev_.nl]=calibe->mass();
+      ev_.l_scaleUnc[ev_.nl]=1.0;
       ev_.l_miniIso[ev_.nl]=getMiniIsolation(pfcands,&el,0.05, 0.2, 10., false);
       //ev_.l_relIso[ev_.nl]=fullCutFlowData.getValueCutUpon(9);
-      ev_.l_relIso[ev_.nl]=(el.chargedHadronIso()+ max(0., el.neutralHadronIso() + el.photonIso()  - 0.5*el.puChargedHadronIso()))/el.pt();     
-      ev_.l_chargedHadronIso[ev_.nl]=el.chargedHadronIso();
+      ev_.l_relIso[ev_.nl]=(calibe->chargedHadronIso()+ max(0., calibe->neutralHadronIso() + calibe->photonIso()  - 0.5*calibe->puChargedHadronIso()))/calibe->pt();     
+      ev_.l_chargedHadronIso[ev_.nl]=calibe->chargedHadronIso();
       ev_.l_ip3d[ev_.nl] = -9999.;
       ev_.l_ip3dsig[ev_.nl] = -9999;
       if(el.gsfTrack().get())
@@ -569,7 +607,7 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
 	  ev_.l_ip3dsig[ev_.nl] = ip3dRes.second.significance();
 	}
       ev_.nl++;
-      ev_.nleptons += (passTightIdExceptIso && el.pt()>25);
+      ev_.nleptons += (passTightIdExceptIso && calibe->pt()>25);
     }
 
   // JETS
@@ -674,6 +712,21 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
       ev_.npf++;
     }
 }
+
+//
+bool MiniAnalyzer::ICHEP2016isMediumMuon(const reco::Muon & recoMu) 
+{
+  bool goodGlob = recoMu.isGlobalMuon() && 
+    recoMu.globalTrack()->normalizedChi2() < 3 && 
+    recoMu.combinedQuality().chi2LocalPosition < 12 && 
+    recoMu.combinedQuality().trkKink < 20; 
+  bool isMedium = muon::isLooseMuon(recoMu) && 
+    recoMu.innerTrack()->validFraction() > 0.49 && 
+    muon::segmentCompatibility(recoMu) > (goodGlob ? 0.303 : 0.451); 
+  return isMedium; 
+}
+
+
 
 // ------------ method called for each event  ------------
 void MiniAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
