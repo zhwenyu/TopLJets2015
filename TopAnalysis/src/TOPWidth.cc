@@ -9,6 +9,7 @@
 
 #include "TopLJets2015/TopAnalysis/interface/MiniEvent.h"
 #include "TopLJets2015/TopAnalysis/interface/TOP-16-006.h"
+#include "TopLJets2015/TopAnalysis/interface/LeptonEfficiencyWrapper.h"
 #include "TopLJets2015/TopAnalysis/interface/TOPWidth.h"
 #include "TopLJets2015/TopAnalysis/interface/BtagUncertaintyComputer.h"
 
@@ -75,7 +76,7 @@ void RunTopWidth(TString filename,
 
   cout << "...producing " << outname << " from " << nentries << " events" << endl;
 
-  //PILEUP WEIGHTINGc
+  //PILEUP WEIGHTING
   std::vector<TGraph *>puWgtGr;
   if(!ev.isData)
     {
@@ -106,27 +107,7 @@ void RunTopWidth(TString filename,
     }
     
   //LEPTON EFFICIENCIES
-  TString lepEffUrl(era+"/muonEfficiencies.root");
-  gSystem->ExpandPathName(lepEffUrl);
-  std::map<TString,TH2 *> lepEffH;
-  if(!ev.isData)
-    {
-      TFile *fIn=TFile::Open(lepEffUrl);
-      lepEffH["m_sel"]=(TH2 *)fIn->Get("m_sel");
-      lepEffH["m_trig"]=(TH2 *)fIn->Get("m_trig");      
-      for(auto& it : lepEffH) it.second->SetDirectory(0);
-      fIn->Close();
-    }
-
-  lepEffUrl=era+"/electronEfficiencies.root";
-  gSystem->ExpandPathName(lepEffUrl);
-  if(!ev.isData)
-    {
-      TFile *fIn=TFile::Open(lepEffUrl);
-      lepEffH["e_sel"]=(TH2 *)fIn->Get("EGamma_SF2D");
-      for(auto& it : lepEffH) it.second->SetDirectory(0);
-      fIn->Close();
-    }
+  LeptonEfficiencyWrapper lepEffH(ev.isData,era);
 
   //B-TAG CALIBRATION
   TString btagUncUrl(era+"/btagSFactors.csv");
@@ -177,7 +158,7 @@ void RunTopWidth(TString filename,
   std::map<TString, TH1 *> allPlots;
   addGenScanCounters(allPlots,f);
   std::map<TString, TH2 *> all2dPlots;
-  allPlots["puwgtctr"] = new TH1F("puwgtctr","Weight sums",2,0,2);
+  allPlots["puwgtctr"] = new TH1F("puwgtctr","Weight sums",4,0,4);
 
   std::vector<TString> lfsVec = { "EE", "EM", "MM" };
   for(size_t ilfs=0; ilfs<lfsVec.size(); ilfs++)   
@@ -228,18 +209,9 @@ void RunTopWidth(TString filename,
       resetTopWidthEvent(twev);
       if(iev%10000==0) printf ("\r [%3.0f/100] done",100.*(float)(iev)/(float)(nentries));
 
-      //account for pu weights and effect on normalization
-      float puWeight(1.0),puWeightUp(1.0),puWeightDown(1.0);
-      if(!ev.isData) 
-	{
-	  puWeight=puWgtGr[0]->Eval(ev.putrue);  
-	  allPlots["puwgtctr"]->Fill(0.,1.0);
-	  allPlots["puwgtctr"]->Fill(1.,puWeight);
-	}
-
       //select good leptons
       std::vector<TLorentzVector> leptons;
-      std::vector<int> selLeptons;
+      std::vector<int> selLeptons,selLeptonsId;
       for(int il=0; il<ev.nl; il++)
 	{
 	  bool passTightKin(ev.l_pt[il]>20 && fabs(ev.l_eta[il])<2.5);
@@ -249,6 +221,7 @@ void RunTopWidth(TString filename,
 	  if(passTightKin && passTightId && passTightIso) 
 	    {
 	      selLeptons.push_back(il);
+	      selLeptonsId.push_back(ev.l_id[il]);
 	      TLorentzVector lp4;
 	      lp4.SetPtEtaPhiM(ev.l_pt[il],ev.l_eta[il],ev.l_phi[il],ev.l_mass[il]);
 	      leptons.push_back(lp4);
@@ -259,26 +232,13 @@ void RunTopWidth(TString filename,
       bool hasEETrigger(((ev.elTrigger>>2)&0x3)!=0);
       bool hasMMTrigger(((ev.muTrigger>>2)&0x3)!=0);
       bool hasEMTrigger(((ev.elTrigger>>4)&0x3)!=0);
-      if(!ev.isData)
-	{	 
-	  hasEETrigger=true;
-	  hasMMTrigger=true;
-	  hasEMTrigger=true;
-	}
-      else
-	{
-	  if(requireEETriggers && !hasEETrigger) continue;
-	  if(requireMMTriggers && !hasMMTrigger) continue;
-	  if(requireEMTriggers && !hasEMTrigger) continue;
-	}
-      
+
       //decide the channel
       TString chTag("");
       if(selLeptons.size()<2) continue;
       if(abs(ev.l_id[ selLeptons[0] ]*ev.l_id[ selLeptons[1] ])==11*13      && hasEMTrigger) chTag="EM";
       else if(abs(ev.l_id[ selLeptons[0] ]*ev.l_id[ selLeptons[1] ])==13*13 && hasMMTrigger) chTag="MM";
       else if(abs(ev.l_id[ selLeptons[0] ]*ev.l_id[ selLeptons[1] ])==11*11 && hasEETrigger) chTag="EE";
-      if(chTag=="") continue;
 
       //select jets
       std::vector<int> genJetsFlav,genJetsHadFlav, btagStatus;
@@ -378,49 +338,60 @@ void RunTopWidth(TString filename,
 	  nbtags += isBTagged;
 	  if(isBTagged) bJetPulls.push_back( getPullVector(ev,k) );	  
 	}
-      
-      //at least two jets in the event are required
-      if(jets.size()<2) continue;
 
+      //
       //event weight
+      //
       float wgt(1.0);
+      std::vector<float> puWgts(3,1.0);
+      EffCorrection_t lepSelCorrWgt(1.0,0.0), triggerCorrWgt(1.0,0.0);
       if(!ev.isData)
 	{
-	  //update lepton selection scale factors, if found
-	  float lepTriggerSF(1.0),lepSelSF(1.0);
-	  for(UInt_t il=0; il<leptons.size(); il++)
-	    {
-	      TString prefix(abs(ev.l_id[il])==11 ? "e" : "m");
-	      float minEtaForEff( lepEffH[prefix+"_sel"]->GetXaxis()->GetXmin() ), maxEtaForEff( lepEffH[prefix+"_sel"]->GetXaxis()->GetXmax()-0.01 );
-	      float etaForEff=TMath::Max(TMath::Min(float(fabs(leptons[il].Eta())),maxEtaForEff),minEtaForEff);
-	      Int_t etaBinForEff=lepEffH[prefix+"_sel"]->GetXaxis()->FindBin(etaForEff);
-	      
-	      float minPtForEff( lepEffH[prefix+"_sel"]->GetYaxis()->GetXmin() ), maxPtForEff( lepEffH[prefix+"_sel"]->GetYaxis()->GetXmax()-0.01 );
-	      float ptForEff=TMath::Max(TMath::Min(float(leptons[il].Pt()),maxPtForEff),minPtForEff);
-	      Int_t ptBinForEff=lepEffH[prefix+"_sel"]->GetYaxis()->FindBin(ptForEff);
-		  		  
-	      lepSelSF=(lepEffH[prefix+"_sel"]->GetBinContent(etaBinForEff,ptBinForEff));	      
-	    }
-	 
-	  //https://indico.cern.ch/event/539804/contributions/2196937/attachments/1291290/1923328/TopTriggers2016v2.pdf
-	  if(era.Contains("2015"))
-	    {
-	      if(chTag=="EE") lepTriggerSF=0.930;
-	      if(chTag=="MM") lepTriggerSF=0.894;
-	      if(chTag=="EM") lepTriggerSF=0.931;
-	    }
-	  else
-	    {
-	      if(chTag=="EE") lepTriggerSF=0.93;
-              if(chTag=="MM") lepTriggerSF=0.87;
-              if(chTag=="EM") lepTriggerSF=0.88;
-	    }
- 
-	  //update nominal event weight
+	  //MC normalization weight
 	  float norm( normH ? normH->GetBinContent(1) : 1.0);
-	  wgt=lepTriggerSF*lepSelSF*puWeight*norm;
+
+	  //account for pu weights and effect on normalization
+	  if(!ev.isData) 
+	    {
+	      allPlots["puwgtctr"]->Fill(0.,1.0);
+	      for(size_t iwgt=0; iwgt<3; iwgt++)
+		{
+		  puWgts[iwgt]=puWgtGr[iwgt]->Eval(ev.putrue);  
+		  allPlots["puwgtctr"]->Fill(iwgt+1,puWgts[iwgt]);
+		}
+	    }
+
+	  //trigger/id+iso efficiency corrections
+	  triggerCorrWgt=lepEffH.getTriggerCorrection(selLeptonsId,leptons);
+	  for(size_t il=0; il<leptons.size(); il++)
+	    {
+	      EffCorrection_t selSF=lepEffH.getOfflineCorrection(selLeptonsId[il],leptons[il].Pt(),leptons[il].Eta());
+	      lepSelCorrWgt.second = sqrt( pow(lepSelCorrWgt.first*selSF.second,2)+pow(lepSelCorrWgt.second*selSF.first,2));
+	      lepSelCorrWgt.first *= selSF.first;
+	    }
+	  
+	  //update nominal event weight
+	  wgt=triggerCorrWgt.first*triggerCorrWgt.first*lepSelCorrWgt.first*puWgts[0]*norm;
 	  if(ev.ttbar_nw>0) wgt*=ev.ttbar_w[0];
 	}
+
+      //all done... physics
+      //preselection
+      if(!ev.isData)
+	{	 
+	  hasEETrigger=true;
+	  hasMMTrigger=true;
+	  hasEMTrigger=true;
+	}
+      else
+	{
+	  if(requireEETriggers && !hasEETrigger) continue;
+	  if(requireMMTriggers && !hasMMTrigger) continue;
+	  if(requireEMTriggers && !hasEMTrigger) continue;
+	}
+      if(chTag=="") continue;
+      if(jets.size()<2) continue;
+
       
       //nominal selection control histograms
       allPlots["nvtx_"+chTag]->Fill(ev.nvtx,wgt);
@@ -442,7 +413,7 @@ void RunTopWidth(TString filename,
 	  twev.l_phi[il]=leptons[il].Phi();
 	  twev.l_m[il]=leptons[il].M();
 	  twev.l_id[il]=ev.l_id[ selLeptons[il] ];
-	  twev.l_les[il]=getLeptonEnergyScaleUncertainty(twev.l_id[il],twev.l_pt[il],twev.l_eta[il]);
+	  twev.l_les[il]= twev.l_id[il]==13 ? ev.l_scaleUnc[ selLeptons[il] ] : getLeptonEnergyScaleUncertainty(twev.l_id[il],twev.l_pt[il],twev.l_eta[il]);
 	  for(Int_t ig=0; ig<ev.ng; ig++)
 	    {
 	      if(abs(ev.g_id[ig])!=ev.l_id[ selLeptons[il] ]) continue;
@@ -517,10 +488,14 @@ void RunTopWidth(TString filename,
       if(chTag=="MM") twev.cat=13*13;
       if(chTag=="EM") twev.cat=11*13;
       if(chTag=="EE") twev.cat=11*11;
-      twev.nw=3;
+      twev.nw=7;
       twev.weight[0]=wgt;
-      twev.weight[1]=wgt*puWeightUp/puWeight;
-      twev.weight[2]=wgt*puWeightDown/puWeight;
+      twev.weight[1]=wgt*puWgts[1]/puWgts[0];
+      twev.weight[2]=wgt*puWgts[2]/puWgts[0];
+      twev.weight[3]=wgt*(triggerCorrWgt.first+triggerCorrWgt.second)/triggerCorrWgt.first;
+      twev.weight[4]=wgt*(triggerCorrWgt.first-triggerCorrWgt.second)/triggerCorrWgt.first;
+      twev.weight[5]=wgt*(lepSelCorrWgt.first+lepSelCorrWgt.second)/lepSelCorrWgt.first;
+      twev.weight[6]=wgt*(lepSelCorrWgt.first-lepSelCorrWgt.second)/lepSelCorrWgt.first;
       if(ev.ttbar_nw>0)
 	{
 	  twev.nw+=15;

@@ -52,7 +52,7 @@ source /cvmfs/cms.cern.ch/crab3/crab.sh
 ```
 As soon as ntuple production starts to finish, to move from crab output directories to a simpler directory structure which can be easily parsed by the local analysis runThe merging can be run locally if needed by using the checkProductionIntegrity.py script
 ```
-python scripts/submitCheckProductionIntegrity.py -i /store/group/phys_top/psilva/0303b65 -o /store/cmst3/user/psilva/LJets2016/0303b65
+python scripts/submitCheckProductionIntegrity.py -i /store/group/phys_top/psilva/121d8f2 -o /store/cmst3/user/psilva/LJets2016/121d8f2
 ```
 
 ## Preparing the analysis 
@@ -79,11 +79,11 @@ python scripts/runPileupEstimation.py --json data/era2016/Data13TeV_DoubleMuon_l
 ```
 * B-tagging. To apply corrections to the simulation one needs the expected efficiencies stored somwewhere. The script below will project the jet pT spectrum from the TTbar sample before and after applying b-tagging, to compute the expecte efficiencies. The result will be stored in data/expTageff.root
 ```
-python scripts/saveExpectedBtagEff.py -i /store/cmst3/user/psilva/LJets2016/f423545/MC13TeV_TTJets_powheg -o data/era2016/expTageff.root;
+python scripts/saveExpectedBtagEff.py -i /store/cmst3/user/psilva/LJets2016/121d8f2/MC13TeV_TTJets_powheg -o data/era2016/expTageff.root;
 ```
 * MC normalization. This will loop over all the samples available in EOS and produce a normalization cache (weights to normalize MC). The file will be available in data/genweights.pck
 ```
-python scripts/produceNormalizationCache.py -i /store/cmst3/user/psilva/LJets2016/f423545 -o data/era2016/genweights.root
+python scripts/produceNormalizationCache.py -i /store/cmst3/user/psilva/LJets2016/121d8f2 -o data/era2016/genweights.root
 ```
 You're now ready to start locally the analysis.
 
