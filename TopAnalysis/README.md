@@ -52,7 +52,7 @@ source /cvmfs/cms.cern.ch/crab3/crab.sh
 ```
 As soon as ntuple production starts to finish, to move from crab output directories to a simpler directory structure which can be easily parsed by the local analysis runThe merging can be run locally if needed by using the checkProductionIntegrity.py script
 ```
-python scripts/submitCheckProductionIntegrity.py -i /store/group/phys_top/psilva/f423545 -o /store/cmst3/user/psilva/LJets2016/f423545
+python scripts/submitCheckProductionIntegrity.py -i /store/group/phys_top/psilva/0303b65 -o /store/cmst3/user/psilva/LJets2016/0303b65
 ```
 
 ## Preparing the analysis 
@@ -64,12 +64,12 @@ crab report grid/crab_Data13TeV_DoubleMuon_2016B
 ``` 
 Then you can merge the json files for the same dataset to get the full list of run/lumi sections to analyse
 ```
-mergeJSON.py grid/crab_Data13TeV_DoubleMuon_2016B/results/processedLumis.json grid/crab_Data13TeV_DoubleMuon_2015B/results/processedLumis.json --output data/era2016/Data13TeV_DoubleMuon_lumis.json
+mergeJSON.py grid/crab_Data13TeV_DoubleMuon_2016B/results/processedLumis.json grid/crab_Data13TeV_DoubleMuon_2015C/results/processedLumis.json grid/crab_Data13TeV_DoubleMuon_2015D/results/processedLumis.json --output data/era2016/Data13TeV_DoubleMuon_lumis.json
 ```
 You can then run the brilcalc tool to get the integrated luminosity in total and per run (see https://twiki.cern.ch/twiki/bin/view/CMS/2015LumiNormtag for more details).
 ```
 export PATH=$HOME/.local/bin:/afs/cern.ch/cms/lumi/brilconda-1.0.3/bin:$PATH
-brilcalc lumi -b "STABLE BEAMS" -i data/era2016/Data13TeV_DoubleMuon_lumis.json
+brilcalc lumi --normtag /afs/cern.ch/user/l/lumipro/public/normtag_file/normtag_DATACERT.json -i data/era2016/Data13TeV_DoubleMuon_lumis.json
 ```
 Use the table which is printed out to update the "lumiPerRun" method in ReadTree.cc.
 That will be used to monitor the event yields per run in order to identify outlier runs.

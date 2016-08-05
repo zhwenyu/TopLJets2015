@@ -77,8 +77,8 @@ def main():
             moveIndividualFiles=True
             if len(file_list)>0:
                 #subgroupMerge = int( raw_input('This set has %d files. Merge into groups? (enter 0 if no merging)' % len(file_list)) )
-                subgroupMerge=100 if 'Data' in dsetname else 40 
-                if 'TTJets' in dsetname : subgroupMerge=25
+                subgroupMerge=10 if 'Data' in dsetname else 20 
+                if 'TTJets' in dsetname : subgroupMerge=10
                 if '/store/cmst3/group/hintt' in opt.inDir: subgroupMerge=10 if '/data' in dsetname else 3
 
                 if subgroupMerge>0:
