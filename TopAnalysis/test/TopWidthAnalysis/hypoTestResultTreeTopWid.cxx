@@ -32,10 +32,12 @@ void hypoTestResultTreeTopWid(TString fOutName,
                               const char *poiName="r", 
                               double numToys=1000,
                               const char *lfs="",
-                              const char *wid="1p0w", 
+                              TString wid="1p0w", 
                               const char *dist="mlb", 
                               bool unblind = false) 
 {
+    if(wid == "1p0w") return;
+    
     if (gROOT->GetListOfFiles()->GetSize() == 0) {
         std::cerr << "ERROR: you have to open at least one root file" << std::endl;
     }
@@ -179,6 +181,10 @@ void hypoTestResultTreeTopWid(TString fOutName,
 
     Double_t galtNorm = galt->Integral(-1000,1000);
     Double_t gnullNorm=gnull->Integral(-1000,1000);
+    
+    if(galtNorm == 0 or gnullNorm == 0) {
+        std::cout<< " \n\nWARNING : INTEGRAL OF ONE FIT IS 0 \n\n " << std::endl;
+    }
 
     Double_t separation = 0;
     if(hnullstat->GetMean() <= haltstat->GetMean()) {
@@ -222,14 +228,14 @@ void hypoTestResultTreeTopWid(TString fOutName,
     std::cout << " - getting density exceeding medians... " << std::endl;
     Double_t nullExceededDensity=0;
     Double_t  altExceededDensity=0;
-    Double_t nullFitMedian = gnull->Mean(); 
-    Double_t  altFitMedian =  galt->Mean(); 
+    Double_t nullFitMedian = gnull->GetParameter("Mean"); 
+    Double_t  altFitMedian =  galt->GetParameter("Mean"); 
     if(nullFitMedian < altFitMedian) {
-      nullExceededDensity=gnull->Integral(altFitMedian,1000);
-       altExceededDensity= galt->Integral(-1000,nullFitMedian);
+      nullExceededDensity=gnull->Integral(altFitMedian,1000)/gnullNorm;
+       altExceededDensity= galt->Integral(-1000,nullFitMedian)/galtNorm;
     } else {
-      nullExceededDensity=gnull->Integral(-1000,altFitMedian);
-       altExceededDensity= galt->Integral(nullFitMedian,1000);
+      nullExceededDensity=gnull->Integral(-1000,altFitMedian)/gnullNorm;
+       altExceededDensity= galt->Integral(nullFitMedian,1000)/galtNorm;
     }
 
     Double_t CLsExp = altExceededDensity/0.5;
@@ -254,9 +260,13 @@ void hypoTestResultTreeTopWid(TString fOutName,
                                 TString("_")+dist+
                                 TString(".txt")).Data(), 
                       std::ofstream::out);
-    ofs << TMath::ErfInverse(separation)          << " \\sigma" << " # separation \n"
-        << TMath::ErfInverse(nullExceededDensity) << " \\sigma" << " # null exceeded density \n"
-        << TMath::ErfInverse(altExceededDensity)  << " \\sigma" << " # alt exceeded density\n"
+    ofs << TMath::ErfInverse(separation)          << "$\\sigma$" << " # separation \n"
+        << TMath::ErfInverse(nullExceededDensity) << "$\\sigma$" << " # null exceeded density \n"
+        << TMath::ErfInverse(altExceededDensity)  << "$\\sigma$" << " # alt exceeded density\n"
+        << xint                << " #  xint\n"
+        << separation          << " #  sep\n"
+        << altExceededDensity  << " #  aed\n"
+        << nullExceededDensity << " #  ned\n"
         << CLsExp << " # cls expected \n";
 
     if(unblind) {

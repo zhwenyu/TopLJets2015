@@ -5,7 +5,7 @@ import json
 import sys
 import os
 from TopLJets2015.TopAnalysis.storeTools import getEOSlslist
-#import MT2Calculator
+import MT2Calculator
 
 """
 Take the ratio of two Breit-Wigner functions at fixed mass as a reweighting factor
@@ -229,8 +229,8 @@ def runTopWidthAnalysis(fileName,
             if mC == "inc" or mC == "snc" : initVals = []
             mlbMap["%s%s%s%s_%smlb_%3.1fw"%(s,ptC,evC,btC,mC,w)] = initVals
 
-        #metForMT2 = ROOT.TLorentzVector()
-        #metForMT2.SetPtEtaPhiM(tree.met_pt, tree.met_eta, tree.met_phi, tree.met_m)
+        metForMT2 = ROOT.TLorentzVector()
+        metForMT2.SetPtEtaPhiM(tree.met_pt, 0, tree.met_phi, 0)
 
         #pair with the leptons
         for il in xrange(0,2):
@@ -306,20 +306,22 @@ def runTopWidthAnalysis(fileName,
 
                     # calculate mt2 only in the last loop
                     mt2=float('inf')
-                    #if il == 1 and ib == nbtags-1:
-                    #    # get other lepton
-                    #    tlp=ROOT.TLorentzVector()
-                    #    tlp.SetPtEtaPhiM(tree.l_pt[0],tree.l_eta[0],tree.l_phi[0],tree.l_m[0])
-                    #    if s=="lesup" :
-                    #        tlp*=(1+tree.l_les[0])
-                    #    if s=="lesdown" :
-                    #        tlp*=(1-tree.l_les[0])
-                    #    if nbtags==1 :
-                    #        # calculate mt2 assuming the bjet could come from either t quark
-                    #        mt2=min(calcMt2(lp4+jp4,tlp,metForMT2), calcMt2(lp4,tlp+jp4,metForMT2))
-                    #    elif nbtags==2 :
-                    #        _,tb = bjets[ijhyp][0]
-                    #        mt2=min(calcMt2(lp4+jp4,tlp+tb,metForMT2), calcMt2(lp4+tb,tlp+jp4,metForMT2))
+                    if il == 1 and ib == nbtags-1:
+                        # get other lepton
+                        tlp=ROOT.TLorentzVector()
+                        tlp.SetPtEtaPhiM(tree.l_pt[0],tree.l_eta[0],tree.l_phi[0],tree.l_m[0])
+                        if s=="lesup" :
+                            tlp*=(1+tree.l_les[0])
+                        if s=="lesdown" :
+                            tlp*=(1-tree.l_les[0])
+                        if nbtags==1 :
+                            # calculate mt2 assuming the bjet could come from either t quark
+                            mt2=min(MT2Calculator.calcMt2(lp4+jp4,tlp,metForMT2),
+                                    MT2Calculator.calcMt2(lp4,tlp+jp4,metForMT2))
+                        elif nbtags==2 :
+                            _,tb = bjets[ijhyp][0]
+                            mt2=min(MT2Calculator.calcMt2(lp4+jp4,tlp+tb,metForMT2),
+                                    MT2Calculator.calcMt2(lp4+tb,tlp+jp4,metForMT2))
 
 
                     #fill histos

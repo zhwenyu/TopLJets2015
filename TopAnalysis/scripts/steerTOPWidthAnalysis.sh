@@ -33,8 +33,8 @@ case $ERA in
 esac
 
 summaryeosdir=/store/cmst3/group/top/summer2016/TopWidth_${ERA}
-outdir=~/work/TopWidth_${ERA}_nomt2
-wwwdir=~/www/TopWidth_${ERA}_nomt2
+outdir=~/work/TopWidth_${ERA}
+wwwdir=~/www/TopWidth_${ERA}
 
 
 RED='\e[31m'
