@@ -52,7 +52,7 @@ source /cvmfs/cms.cern.ch/crab3/crab.sh
 ```
 As soon as ntuple production starts to finish, to move from crab output directories to a simpler directory structure which can be easily parsed by the local analysis runThe merging can be run locally if needed by using the checkProductionIntegrity.py script
 ```
-python scripts/submitCheckProductionIntegrity.py -i /store/group/phys_top/psilva/f423545 -o /store/cmst3/user/psilva/LJets2016/f423545
+python scripts/submitCheckProductionIntegrity.py -i /store/group/phys_top/psilva/121d8f2 -o /store/cmst3/user/psilva/LJets2016/121d8f2
 ```
 
 ## Preparing the analysis 
@@ -64,12 +64,12 @@ crab report grid/crab_Data13TeV_DoubleMuon_2016B
 ``` 
 Then you can merge the json files for the same dataset to get the full list of run/lumi sections to analyse
 ```
-mergeJSON.py grid/crab_Data13TeV_DoubleMuon_2016B/results/processedLumis.json grid/crab_Data13TeV_DoubleMuon_2015B/results/processedLumis.json --output data/era2016/Data13TeV_DoubleMuon_lumis.json
+mergeJSON.py grid/crab_Data13TeV_DoubleMuon_2016B/results/processedLumis.json grid/crab_Data13TeV_DoubleMuon_2015C/results/processedLumis.json grid/crab_Data13TeV_DoubleMuon_2015D/results/processedLumis.json --output data/era2016/Data13TeV_DoubleMuon_lumis.json
 ```
 You can then run the brilcalc tool to get the integrated luminosity in total and per run (see https://twiki.cern.ch/twiki/bin/view/CMS/2015LumiNormtag for more details).
 ```
 export PATH=$HOME/.local/bin:/afs/cern.ch/cms/lumi/brilconda-1.0.3/bin:$PATH
-brilcalc lumi -b "STABLE BEAMS" -i data/era2016/Data13TeV_DoubleMuon_lumis.json
+brilcalc lumi --normtag /afs/cern.ch/user/l/lumipro/public/normtag_file/normtag_DATACERT.json -i data/era2016/Data13TeV_DoubleMuon_lumis.json
 ```
 Use the table which is printed out to update the "lumiPerRun" method in ReadTree.cc.
 That will be used to monitor the event yields per run in order to identify outlier runs.
@@ -79,11 +79,11 @@ python scripts/runPileupEstimation.py --json data/era2016/Data13TeV_DoubleMuon_l
 ```
 * B-tagging. To apply corrections to the simulation one needs the expected efficiencies stored somwewhere. The script below will project the jet pT spectrum from the TTbar sample before and after applying b-tagging, to compute the expecte efficiencies. The result will be stored in data/expTageff.root
 ```
-python scripts/saveExpectedBtagEff.py -i /store/cmst3/user/psilva/LJets2016/f423545/MC13TeV_TTJets_powheg -o data/era2016/expTageff.root;
+python scripts/saveExpectedBtagEff.py -i /store/cmst3/user/psilva/LJets2016/121d8f2/MC13TeV_TTJets_powheg -o data/era2016/expTageff.root;
 ```
 * MC normalization. This will loop over all the samples available in EOS and produce a normalization cache (weights to normalize MC). The file will be available in data/genweights.pck
 ```
-python scripts/produceNormalizationCache.py -i /store/cmst3/user/psilva/LJets2016/f423545 -o data/era2016/genweights.root
+python scripts/produceNormalizationCache.py -i /store/cmst3/user/psilva/LJets2016/121d8f2 -o data/era2016/genweights.root
 ```
 You're now ready to start locally the analysis.
 
