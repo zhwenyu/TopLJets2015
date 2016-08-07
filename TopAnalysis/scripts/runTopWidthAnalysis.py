@@ -96,7 +96,7 @@ def runTopWidthAnalysis(fileName,
                         var=s+i+j+b+'_sncmlb_%3.1fw'%w
                         observablesH[var]=ROOT.TH1F(var,';Mass(lepton,jet) (Semi-Inclusive) [GeV];l+j pairs',30,0,300)
                         var=s+i+j+b+'_mdrmlb_%3.1fw'%w
-                        observablesH[var]=ROOT.TH1F(var,';Mass(lepton,jet) (Minimum #Delta R) [GeV];l+j pairs',30,0,300)
+                        observablesH[var]=ROOT.TH1F(var,';Mass(lepton,jet) (#DeltaR Matching) [GeV];l+j pairs',30,0,300)
                         var=s+i+j+b+'_minmlb_%3.1fw'%w
                         observablesH[var]=ROOT.TH1F(var,';Mass(lepton,jet) (Minimum) [GeV];l+j pairs',30,0,300)
                         var=s+i+j+b+'_mt2mlb_%3.1fw'%w
@@ -351,7 +351,7 @@ def runTopWidthAnalysis(fileName,
 
                         # fill mdr mlb
                         var=s+ptCat+evcat+btagcat+'_mdrmlb_%3.1fw'%w
-                        if mlb < mlbMap[var][0] and dRlb<=0.4 :
+                        if mlb < mlbMap[var][0] and dRlb<=1 :
                             mlbMap[var] = [(mlb,mlbWt)]
 
                         # fill mt2 mlb

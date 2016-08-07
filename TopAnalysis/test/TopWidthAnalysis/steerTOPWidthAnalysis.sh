@@ -75,13 +75,17 @@ case $WHAT in
                 -o ${outdir}_old/datacards/ \
                 -i ${outdir}_old/analysis/plots/plotter.root \
                 --systInput ${outdir}_old/analysis/plots/syst_plotter.root \
-                --noshapes
+                --noshapes --makesens
     ;;
     MERGE_DATACARDS )
         cd ${CMSSW_7_4_7dir}
         eval `scramv1 runtime -sh`
         for dist in ${dists[*]} ; do
         for twid in ${wid[*]} ; do
+
+        if [[ "${twid}" == "1p0w" ]] ; then
+            continue
+        fi
 
         # for a given width, merge all
         allcmd="python ${CMSSW_BASE}/src/HiggsAnalysis/CombinedLimit/scripts/combineCards.py "
@@ -90,28 +94,32 @@ case $WHAT in
             # for a given width and lbcat, merge all
             lbccmd="python ${CMSSW_BASE}/src/HiggsAnalysis/CombinedLimit/scripts/combineCards.py "
             for tlfs in ${lfs[*]} ; do
+
                 # for a given width, lfs, and lbcat, merge all
                 lfscmd="python ${CMSSW_BASE}/src/HiggsAnalysis/CombinedLimit/scripts/combineCards.py "
-
                 for tCat in ${cat[*]} ; do
+                    if [[ "${tlbCat}${tlfs}${tCat}" == "lowptMM1b" ]]; then
+                        echo "Skipping lowptMM1b"
+                        continue
+                    fi
                     cardname="${tlbCat}${tlfs}${tCat}=${cardsdir}/datacard__${twid}_${tlbCat}${tlfs}${tCat}_${dist}.dat"
                     allcmd="${allcmd} ${cardname} "
                     lbccmd="${lbccmd} ${cardname} "
                     lfscmd="${lfscmd} ${cardname} "
                 done
 
-                echo $lfscmd
-                echo " "
+                #echo $lfscmd
+                #echo " "
                 lfscmd="${lfscmd} > ${cardsdir}/datacard__${twid}_${tlbCat}${tlfs}_${dist}.dat"
             done
 
-            echo $lbccmd
-            echo " "
+            #echo $lbccmd
+            #echo " "
             lbccmd="${lbccmd} > ${cardsdir}/datacard__${twid}_${tlbCat}_${dist}.dat"
         done
 
-        echo $allcmd
-        echo " "
+        #echo $allcmd
+        #echo " "
         allcmd="${allcmd} > ${cardsdir}/datacard__${twid}_${dist}.dat"
             
         eval $allcmd

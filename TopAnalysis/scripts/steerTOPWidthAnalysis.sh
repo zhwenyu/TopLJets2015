@@ -33,7 +33,7 @@ case $ERA in
 esac
 
 summaryeosdir=/store/cmst3/group/top/summer2016/TopWidth_${ERA}
-outdir=~/work/TopWidth_${ERA}
+outdir=/afs/cern.ch/work/e/ecoleman/public/TopWidth/TopWidth_${ERA}_808p1
 wwwdir=~/www/TopWidth_${ERA}
 
 
@@ -56,7 +56,12 @@ case $WHAT in
 	cp test/index.php ${wwwdir}/sel
 	;;
     ANA )
-	python scripts/runTopWidthAnalysis.py -i ${summaryeosdir} -o ${outdir}/analysis -q ${queue};
+        #cd ~/CMSSW_7_6_3/src/
+        #eval `scramv1 runtime -sh`
+
+        cd ~/CMSSW_8_0_8_patch1/src/TopLJets2015/TopAnalysis
+        eval `scramv1 runtime -sh`
+	    python scripts/runTopWidthAnalysis.py -i ${summaryeosdir} -o ${outdir}/analysis -q ${queue};
 	;;
     MERGE )
 	./scripts/mergeOutputs.py ${outdir}/analysis;
