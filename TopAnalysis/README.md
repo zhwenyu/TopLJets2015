@@ -79,7 +79,10 @@ python scripts/runPileupEstimation.py --json data/era2016/Data13TeV_DoubleMuon_l
 ```
 * B-tagging. To apply corrections to the simulation one needs the expected efficiencies stored somwewhere. The script below will project the jet pT spectrum from the TTbar sample before and after applying b-tagging, to compute the expecte efficiencies. The result will be stored in data/expTageff.root
 ```
-python scripts/saveExpectedBtagEff.py -i /store/cmst3/user/psilva/LJets2016/121d8f2/MC13TeV_TTJets_powheg -o data/era2016/expTageff.root;
+for i in "_powheg" "_herwig" "_scaledown" "_scaleup"; do
+    python scripts/saveExpectedBtagEff.py -i /store/cmst3/user/psilva/LJets2015/121d8f2/MC13TeV_TTJets${i} -o data/era2016/expTageff${i}.root;
+done
+mv data/era2016/expTageff_powheg.root data/era2016/expTageff.root
 ```
 * MC normalization. This will loop over all the samples available in EOS and produce a normalization cache (weights to normalize MC). The file will be available in data/genweights.pck
 ```
@@ -113,7 +116,7 @@ before submitting the jobs to the batch. After the jobs have run you can merge t
 ```
 To plot the output of the local analysis you can run the following:
 ```
-python scripts/plotter.py -i analysis_muplus/   -j data/era2016/samples.json  -l 3977.28
+python scripts/plotter.py -i analysis_muplus/   -j data/era2016/samples.json  -l 11377
 ```
 After the plotters are created one can run the QCD estimation normalization, by fitting the MET distribution.
 The script will also produce the QCD templates using the data from the sideband region. It runs as

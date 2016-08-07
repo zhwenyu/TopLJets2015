@@ -21,8 +21,8 @@ fi
 export LSB_JOB_REPORT_MAIL=N
 
 queue=2nd
-githash=f423545
-lumi=3977.28
+githash=121d8f2
+lumi=11377
 eosdir=/store/cmst3/user/psilva/LJets2016/${githash}
 case $ERA in
     era2015)
@@ -41,7 +41,6 @@ RED='\e[31m'
 NC='\e[0m'
 case $WHAT in
     SEL )
-	queue=local
 	python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} -o ${outdir} --era ${ERA} -m TOPWidth::RunTopWidth --ch 0;
 	;;
     MERGESEL )

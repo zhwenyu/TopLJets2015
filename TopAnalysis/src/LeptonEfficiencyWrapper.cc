@@ -3,6 +3,11 @@
 #include "TFile.h"
 #include "TSystem.h"
 
+#include <iostream>
+
+
+using namespace std;
+
 //
 LeptonEfficiencyWrapper::LeptonEfficiencyWrapper(bool isData,TString era)
 {
@@ -14,23 +19,23 @@ LeptonEfficiencyWrapper::LeptonEfficiencyWrapper(bool isData,TString era)
 void LeptonEfficiencyWrapper::init(TString era)
 {
   //2015 dataset
-  if(era.Contains("2015"))
+  if(era.Contains("era2015"))
     {
       era_=2015;
       TString lepEffUrl(era+"/muonEfficiencies.root");
       gSystem->ExpandPathName(lepEffUrl);
       TFile *fIn=TFile::Open(lepEffUrl);
-      (*this)["m_sel"]=(TH2 *)fIn->Get("m_sel");
-      (*this)["m_sel"]->SetDirectory(0);
-      (*this)["m_singleleptrig"]=(TH2 *)fIn->Get("m_singleleptrig");
-      (*this)["m_singleleptrig"]->SetDirectory(0);
+      lepEffH_["m_sel"]=(TH2 *)fIn->Get("m_sel");
+      lepEffH_["m_sel"]->SetDirectory(0);
+      lepEffH_["m_singleleptrig"]=(TH2 *)fIn->Get("m_singleleptrig");
+      lepEffH_["m_singleleptrig"]->SetDirectory(0);
       fIn->Close();
       
       lepEffUrl=era+"/electronEfficiencies.root";
       gSystem->ExpandPathName(lepEffUrl);
       fIn=TFile::Open(lepEffUrl);
-      (*this)["e_sel"]=(TH2 *)fIn->Get("EGamma_SF2D");
-      (*this)["e_sel"]->SetDirectory(0);
+      lepEffH_["e_sel"]=(TH2 *)fIn->Get("EGamma_SF2D");
+      lepEffH_["e_sel"]->SetDirectory(0);
       fIn->Close();
     }
 
@@ -41,37 +46,37 @@ void LeptonEfficiencyWrapper::init(TString era)
       TString lepEffUrl(era+"/SingleMuonTrigger_Z_RunBCD_prompt80X_7p65.root");
       gSystem->ExpandPathName(lepEffUrl);
       TFile *fIn=TFile::Open(lepEffUrl);
-      (*this)["m_singleleptrig"]=(TH2 *)fIn->Get("IsoMu22_OR_IsoTkMu22_PtEtaBins_Run273158_to_274093/efficienciesDATA");
-      (*this)["m_singleleptrig"]->SetDirectory(0);
+      lepEffH_["m_singleleptrig"]=(TH2 *)fIn->Get("IsoMu22_OR_IsoTkMu22_PtEtaBins_Run273158_to_274093/efficienciesDATA")->Clone();
+      lepEffH_["m_singleleptrig"]->SetDirectory(0);
       fIn->Close();
 
       lepEffUrl=era+"/MuonID_Z_RunBCD_prompt80X_7p65.root";
       gSystem->ExpandPathName(lepEffUrl);
       fIn=TFile::Open(lepEffUrl);      
-      (*this)["m_sel"]=(TH2 *)fIn->Get("MC_NUM_TightIDandIPCut_DEN_genTracks_PAR_pt_spliteta_bin1/pt_abseta_ratio");
-      (*this)["m_sel"]->SetDirectory(0);
+      lepEffH_["m_sel"]=(TH2 *)fIn->Get("MC_NUM_TightIDandIPCut_DEN_genTracks_PAR_pt_spliteta_bin1/abseta_pt_ratio")->Clone();
+      lepEffH_["m_sel"]->SetDirectory(0);
       fIn->Close();
 
-      lepEffUrl=era+"/MuonISO_Z_RunBCD_prompt80X_7p65.root";
+      lepEffUrl=era+"/MuonIso_Z_RunBCD_prompt80X_7p65.root";
       gSystem->ExpandPathName(lepEffUrl);
       fIn=TFile::Open(lepEffUrl);      
-      TH2 *isoH=(TH2 *)fIn->Get("MC_NUM_TightRelIso_DEN_TightID_PAR_pt_spliteta_bin1/pt_abseta_ratio");
-      for(Int_t xbin=1; xbin<=((*this)["m_sel"])->GetNbinsX(); xbin++)
-	for(Int_t ybin=1; ybin<=((*this)["m_sel"])->GetNbinsY(); ybin++)
+      TH2 *isoH=(TH2 *)fIn->Get("MC_NUM_TightRelIso_DEN_TightID_PAR_pt_spliteta_bin1/abseta_pt_ratio");
+      for(Int_t xbin=1; xbin<=(lepEffH_["m_sel"])->GetNbinsX(); xbin++)
+	for(Int_t ybin=1; ybin<=(lepEffH_["m_sel"])->GetNbinsY(); ybin++)
 	  {
-	    float sfid((*this)["m_sel"]->GetBinContent(xbin,ybin)), sfiso(isoH->GetBinContent(xbin,ybin));
-	    float sfidUnc((*this)["m_sel"]->GetBinError(xbin,ybin)), sfisoUnc(isoH->GetBinError(xbin,ybin));
+	    float sfid(lepEffH_["m_sel"]->GetBinContent(xbin,ybin)), sfiso(isoH->GetBinContent(xbin,ybin));
+	    float sfidUnc(lepEffH_["m_sel"]->GetBinError(xbin,ybin)), sfisoUnc(isoH->GetBinError(xbin,ybin));
 	    float sf(sfid*sfiso), sfUnc(sqrt(pow(sfid*sfisoUnc,2)+pow(sfidUnc*sfiso,2)));
-	    (*this)["m_sel"]->SetBinContent(xbin,ybin,sf);
-	    (*this)["m_sel"]->SetBinError(xbin,ybin,sfUnc);
+	    lepEffH_["m_sel"]->SetBinContent(xbin,ybin,sf);
+	    lepEffH_["m_sel"]->SetBinError(xbin,ybin,sfUnc);
 	  }
       fIn->Close();
       
       lepEffUrl=era+"/egammaEff_tight_SF2D.root";
       gSystem->ExpandPathName(lepEffUrl);
       fIn=TFile::Open(lepEffUrl);
-      (*this)["e_sel"]=(TH2 *)fIn->Get("EGamma_SF2D");
-      (*this)["e_sel"]->SetDirectory(0);
+      lepEffH_["e_sel"]=(TH2 *)fIn->Get("EGamma_SF2D")->Clone();
+      lepEffH_["e_sel"]->SetDirectory(0);     
       fIn->Close();
     }
 }
@@ -80,6 +85,7 @@ void LeptonEfficiencyWrapper::init(TString era)
 EffCorrection_t LeptonEfficiencyWrapper::getTriggerCorrection(std::vector<int> pdgId,std::vector<TLorentzVector> leptons)
 {
   EffCorrection_t corr(1.0,0.0);
+  if(pdgId.size()<1 || leptons.size()<1) return corr;
   if(era_==2015)
     {
       if(leptons.size()>=2)
@@ -94,7 +100,7 @@ EffCorrection_t LeptonEfficiencyWrapper::getTriggerCorrection(std::vector<int> p
 	  TString hname(abs(pdgId[0])==11 ? "e" : "m");
 	  hname += "_singleleptrig";
 
-	  TH2 *h=(*this)[hname];
+	  TH2 *h=lepEffH_[hname];
 	  float minEtaForEff( h->GetXaxis()->GetXmin() ), maxEtaForEff( h->GetXaxis()->GetXmax()-0.01 );
 	  float etaForEff=TMath::Max(TMath::Min(float(fabs(leptons[0].Eta())),maxEtaForEff),minEtaForEff);
 	  Int_t etaBinForEff=h->GetXaxis()->FindBin(etaForEff);
@@ -178,19 +184,15 @@ EffCorrection_t LeptonEfficiencyWrapper::getTriggerCorrection(std::vector<int> p
 	{
 	  TString hname(abs(pdgId[0])==11 ? "e" : "m");
 	  hname += "_singleleptrig";
-	  if( this->find(hname)!=this->end() )
+
+	  if( lepEffH_.find(hname)!=lepEffH_.end() )
 	    {
-	      TH2 *h=(*this)[hname];
+	      TH1 *h=lepEffH_[hname];
 	      float minEtaForEff( h->GetXaxis()->GetXmin() ), maxEtaForEff( h->GetXaxis()->GetXmax()-0.01 );
 	      float etaForEff=TMath::Max(TMath::Min(float(fabs(leptons[0].Eta())),maxEtaForEff),minEtaForEff);
 	      Int_t etaBinForEff=h->GetXaxis()->FindBin(etaForEff);
-	      
-	      float minPtForEff( h->GetYaxis()->GetXmin() ), maxPtForEff( h->GetYaxis()->GetXmax()-0.01 );
-	      float ptForEff=TMath::Max(TMath::Min(float(leptons[0].Pt()),maxPtForEff),minPtForEff);
-	      Int_t ptBinForEff=h->GetYaxis()->FindBin(ptForEff);
-	      
-	      corr.first=h->GetBinContent(etaBinForEff,ptBinForEff);
-	      corr.second=h->GetBinContent(etaBinForEff,ptBinForEff);
+	      corr.first=h->GetBinContent(etaBinForEff);
+	      corr.second=h->GetBinContent(etaBinForEff);
 	    }
 	}
     }
@@ -206,9 +208,9 @@ EffCorrection_t LeptonEfficiencyWrapper::getOfflineCorrection(int pdgId,float pt
   //update correction from histo, if found
   TString hname(abs(pdgId)==11 ? "e" : "m");
   hname+="_sel";
-  if( this->find(hname)!=this->end() )
+  if( lepEffH_.find(hname)!=lepEffH_.end() )
     {
-      TH2 *h=(*this)[hname];
+      TH2 *h=lepEffH_[hname];
       float minEtaForEff( h->GetXaxis()->GetXmin() ), maxEtaForEff( h->GetXaxis()->GetXmax()-0.01 );
       float etaForEff=TMath::Max(TMath::Min(float(fabs(eta)),maxEtaForEff),minEtaForEff);
       Int_t etaBinForEff=h->GetXaxis()->FindBin(etaForEff);
@@ -226,5 +228,5 @@ EffCorrection_t LeptonEfficiencyWrapper::getOfflineCorrection(int pdgId,float pt
 
 LeptonEfficiencyWrapper::~LeptonEfficiencyWrapper()
 {
-  for(auto& it : (*this)) it.second->Delete();
+  //for(auto& it : lepEffH_) it.second->Delete();
 }

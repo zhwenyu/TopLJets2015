@@ -47,6 +47,9 @@ void RunTopWidth(TString filename,
 
   bool isTTbar( filename.Contains("_TTJets") );
 
+  //LEPTON EFFICIENCIES
+  LeptonEfficiencyWrapper lepEffH(filename.Contains("Data13TeV"),era);
+
   //prepare output
   TopWidthEvent_t twev;
   TString baseName=gSystem->BaseName(outname); 
@@ -78,37 +81,8 @@ void RunTopWidth(TString filename,
 
   //PILEUP WEIGHTING
   std::vector<TGraph *>puWgtGr;
-  if(!ev.isData)
-    {
-      TString puWgtUrl(era+"/pileupWgts.root");
-      gSystem->ExpandPathName(puWgtUrl);
-      TFile *fIn=TFile::Open(puWgtUrl);
-      for(size_t i=0; i<3; i++)
-	{
-	  TString grName("pu_nom");
-          if(i==1) grName="pu_down";
-          if(i==2) grName="pu_up";
-	  TGraph *puData=(TGraph *)fIn->Get(grName);
-	  Float_t totalData=puData->Integral();
-	  TH1 *tmp=(TH1 *)puTrue->Clone("tmp");
-	  for(Int_t xbin=1; xbin<=tmp->GetXaxis()->GetNbins(); xbin++)
-	    {
-	      Float_t yexp=puTrue->GetBinContent(xbin);
-	      Double_t xobs,yobs;
-	      puData->GetPoint(xbin-1,xobs,yobs);
-	      tmp->SetBinContent(xbin, yexp>0 ? yobs/(totalData*yexp) : 0. );
-	    }
-	  TGraph *gr=new TGraph(tmp);
-	  grName.ReplaceAll("pu","puwgts");
-	  gr->SetName(grName);
-	  puWgtGr.push_back( gr );
-	  tmp->Delete();
-	}
-    }
+  if(!ev.isData) puWgtGr=getPileupWeights(era,puTrue);
     
-  //LEPTON EFFICIENCIES
-  LeptonEfficiencyWrapper lepEffH(ev.isData,era);
-
   //B-TAG CALIBRATION
   TString btagUncUrl(era+"/btagSFactors.csv");
   gSystem->ExpandPathName(btagUncUrl);
@@ -229,16 +203,30 @@ void RunTopWidth(TString filename,
 	}
       
       //check if triggers have fired
-      bool hasEETrigger(((ev.elTrigger>>2)&0x3)!=0);
+      bool hasEETrigger(((ev.elTrigger>>1)&0x3)!=0);
       bool hasMMTrigger(((ev.muTrigger>>2)&0x3)!=0);
-      bool hasEMTrigger(((ev.elTrigger>>4)&0x3)!=0);
+      bool hasEMTrigger(((ev.elTrigger>>2)&0x3)!=0);
+      if(!ev.isData)
+	{	 
+	  hasEETrigger=true;
+	  hasMMTrigger=true;
+	  hasEMTrigger=true;
+	}
+      else
+	{
+	  if(requireEETriggers) { hasMMTrigger=false; hasEMTrigger=false; }
+	  if(requireMMTriggers) { hasEETrigger=false; hasEMTrigger=false; }
+	  if(requireEMTriggers) { hasEETrigger=false; hasMMTrigger=false; }
+	}
 
       //decide the channel
       TString chTag("");
-      if(selLeptons.size()<2) continue;
-      if(abs(ev.l_id[ selLeptons[0] ]*ev.l_id[ selLeptons[1] ])==11*13      && hasEMTrigger) chTag="EM";
-      else if(abs(ev.l_id[ selLeptons[0] ]*ev.l_id[ selLeptons[1] ])==13*13 && hasMMTrigger) chTag="MM";
-      else if(abs(ev.l_id[ selLeptons[0] ]*ev.l_id[ selLeptons[1] ])==11*11 && hasEETrigger) chTag="EE";
+      if(selLeptons.size()>=2)
+	{
+	  if(abs(ev.l_id[ selLeptons[0] ]*ev.l_id[ selLeptons[1] ])==11*13      && hasEMTrigger) chTag="EM";
+	  else if(abs(ev.l_id[ selLeptons[0] ]*ev.l_id[ selLeptons[1] ])==13*13 && hasMMTrigger) chTag="MM";
+	  else if(abs(ev.l_id[ selLeptons[0] ]*ev.l_id[ selLeptons[1] ])==11*11 && hasEETrigger) chTag="EE";
+	}
 
       //select jets
       std::vector<int> genJetsFlav,genJetsHadFlav, btagStatus;
@@ -351,23 +339,23 @@ void RunTopWidth(TString filename,
 	  float norm( normH ? normH->GetBinContent(1) : 1.0);
 
 	  //account for pu weights and effect on normalization
-	  if(!ev.isData) 
+	  allPlots["puwgtctr"]->Fill(0.,1.0);
+	  for(size_t iwgt=0; iwgt<3; iwgt++)
 	    {
-	      allPlots["puwgtctr"]->Fill(0.,1.0);
-	      for(size_t iwgt=0; iwgt<3; iwgt++)
-		{
-		  puWgts[iwgt]=puWgtGr[iwgt]->Eval(ev.putrue);  
-		  allPlots["puwgtctr"]->Fill(iwgt+1,puWgts[iwgt]);
-		}
+	      puWgts[iwgt]=puWgtGr[iwgt]->Eval(ev.putrue);  
+	      allPlots["puwgtctr"]->Fill(iwgt+1,puWgts[iwgt]);
 	    }
-
-	  //trigger/id+iso efficiency corrections
-	  triggerCorrWgt=lepEffH.getTriggerCorrection(selLeptonsId,leptons);
-	  for(size_t il=0; il<leptons.size(); il++)
+	
+	  if(chTag!="")
 	    {
-	      EffCorrection_t selSF=lepEffH.getOfflineCorrection(selLeptonsId[il],leptons[il].Pt(),leptons[il].Eta());
-	      lepSelCorrWgt.second = sqrt( pow(lepSelCorrWgt.first*selSF.second,2)+pow(lepSelCorrWgt.second*selSF.first,2));
-	      lepSelCorrWgt.first *= selSF.first;
+	      //trigger/id+iso efficiency corrections
+	      triggerCorrWgt=lepEffH.getTriggerCorrection(selLeptonsId,leptons);
+	      for(size_t il=0; il<2; il++)
+		{
+		  EffCorrection_t selSF=lepEffH.getOfflineCorrection(selLeptonsId[il],leptons[il].Pt(),leptons[il].Eta());
+		  lepSelCorrWgt.second = sqrt( pow(lepSelCorrWgt.first*selSF.second,2)+pow(lepSelCorrWgt.second*selSF.first,2));
+		  lepSelCorrWgt.first *= selSF.first;
+		}
 	    }
 	  
 	  //update nominal event weight
@@ -377,18 +365,6 @@ void RunTopWidth(TString filename,
 
       //all done... physics
       //preselection
-      if(!ev.isData)
-	{	 
-	  hasEETrigger=true;
-	  hasMMTrigger=true;
-	  hasEMTrigger=true;
-	}
-      else
-	{
-	  if(requireEETriggers && !hasEETrigger) continue;
-	  if(requireMMTriggers && !hasMMTrigger) continue;
-	  if(requireEMTriggers && !hasEMTrigger) continue;
-	}
       if(chTag=="") continue;
       if(jets.size()<2) continue;
 
@@ -536,7 +512,7 @@ void RunTopWidth(TString filename,
     }
   
   //close input file
-  f->Close();
+  //f->Close();
 
   //save histos to file  
   fOut->cd();

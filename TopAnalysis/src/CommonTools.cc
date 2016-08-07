@@ -221,6 +221,36 @@ float getLeptonEnergyScaleUncertainty(int l_id,float l_pt,float l_eta)
   return unc;
 }
 
+//
+std::vector<TGraph *> getPileupWeights(TString era,TH1 *puTrue)
+{
+  std::vector<TGraph *>puWgtGr;
+  TString puWgtUrl(era+"/pileupWgts.root");
+  gSystem->ExpandPathName(puWgtUrl);
+  TFile *fIn=TFile::Open(puWgtUrl);
+  for(size_t i=0; i<3; i++)
+    {
+      TString grName("pu_nom");
+      if(i==1) grName="pu_down";
+      if(i==2) grName="pu_up";
+      TGraph *puData=(TGraph *)fIn->Get(grName);
+      Float_t totalData=puData->Integral();
+      TH1 *tmp=(TH1 *)puTrue->Clone("tmp");
+      for(Int_t xbin=1; xbin<=tmp->GetXaxis()->GetNbins(); xbin++)
+	{
+	  Float_t yexp=puTrue->GetBinContent(xbin);
+	  Double_t xobs,yobs;
+	  puData->GetPoint(xbin-1,xobs,yobs);
+	  tmp->SetBinContent(xbin, yexp>0 ? yobs/(totalData*yexp) : 0. );
+	}
+      TGraph *gr=new TGraph(tmp);
+      grName.ReplaceAll("pu","puwgts");
+      gr->SetName(grName);
+      puWgtGr.push_back( gr );
+      tmp->Delete();
+    }
+  return puWgtGr;
+}
 
 //
 FactorizedJetCorrector *getFactorizedJetEnergyCorrector(TString baseDir, bool isMC)
