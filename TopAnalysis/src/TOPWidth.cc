@@ -379,11 +379,11 @@ void RunTopWidth(TString filename,
       //all done... physics
       //preselection
       if(chTag=="") continue;
-
       
       //nominal selection control histograms
       allPlots["nvtx_"+chTag]->Fill(ev.nvtx,wgt);
-      allPlots["mll_"+chTag]->Fill((leptons[0]+leptons[1]).M(),wgt);
+      float mll((leptons[0]+leptons[1]).M());
+      allPlots["mll_"+chTag]->Fill(mll,wgt);
       std::map<Int_t,Float_t>::iterator rIt=lumiMap.find(ev.run);
       if(rIt!=lumiMap.end())
 	{
@@ -391,8 +391,12 @@ void RunTopWidth(TString filename,
 	  allPlots["ratevsrun_"+chTag]->Fill(runCtr,1.e+6/rIt->second);
 	}
 
+      if(mll<12) continue;
+      allPlots["njets_"+chTag]->Fill(jets.size(),wgt);
+
       if(jets.size()<2) continue;
 
+      //save leptons
       twev.nl=TMath::Min(2,(int)leptons.size());
       for(int il=0; il<twev.nl; il++)
 	{
@@ -425,6 +429,7 @@ void RunTopWidth(TString filename,
 	    }
 	}
       
+      //save jets
       twev.nj=jets.size();
       for(int ij=0; ij<(int)jets.size(); ij++)
 	{
@@ -466,7 +471,7 @@ void RunTopWidth(TString filename,
 	    }
 	  
 	}
-      allPlots["njets_"+chTag]->Fill(twev.nj,wgt);
+
       allPlots["nbtags_"+chTag]->Fill(nbtags,wgt);
       if(nbtags>1)
 	{

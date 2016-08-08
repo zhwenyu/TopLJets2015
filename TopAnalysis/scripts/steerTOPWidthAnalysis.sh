@@ -23,11 +23,13 @@ export LSB_JOB_REPORT_MAIL=N
 queue=2nd
 githash=121d8f2
 lumi=11377
+lumiUnc=0.062
 eosdir=/store/cmst3/user/psilva/LJets2016/${githash}
 case $ERA in
     era2015)
 	githash=8c1e7c9;
 	lumi=2267.84
+	lumiUnc=0.027
 	eosdir=/store/cmst3/user/psilva/LJets2015/${githash}
 	;;
 esac
@@ -47,7 +49,7 @@ case $WHAT in
 	./scripts/mergeOutputs.py ${outdir} True;	
 	;;
     PLOTSEL )
-	python scripts/plotter.py -i ${outdir} --puNormSF puwgtctr  -j data/${ERA}/samples.json -l ${lumi};	
+	python scripts/plotter.py -i ${outdir} --puNormSF puwgtctr  -j data/${ERA}/samples.json -l ${lumi} --saveLog --mcUnc ${lumiUnc};	
 	;;
     WWWSEL )
 	mkdir -p ${wwwdir}/sel
