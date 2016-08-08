@@ -80,7 +80,7 @@ python scripts/runPileupEstimation.py --json data/era2016/Data13TeV_DoubleMuon_l
 * B-tagging. To apply corrections to the simulation one needs the expected efficiencies stored somwewhere. The script below will project the jet pT spectrum from the TTbar sample before and after applying b-tagging, to compute the expecte efficiencies. The result will be stored in data/expTageff.root
 ```
 for i in "_powheg" "_herwig" "_scaledown" "_scaleup"; do
-    python scripts/saveExpectedBtagEff.py -i /store/cmst3/user/psilva/LJets2015/121d8f2/MC13TeV_TTJets${i} -o data/era2016/expTageff${i}.root;
+    python scripts/saveExpectedBtagEff.py -i /store/cmst3/user/psilva/LJets2016/121d8f2/MC13TeV_TTJets${i} -o data/era2016/expTageff${i}.root;
 done
 mv data/era2016/expTageff_powheg.root data/era2016/expTageff.root
 ```

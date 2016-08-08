@@ -84,15 +84,13 @@ void RunTopWidth(TString filename,
   if(!ev.isData) puWgtGr=getPileupWeights(era,puTrue);
     
   //B-TAG CALIBRATION
-  TString btagUncUrl(era+"/btagSFactors.csv");
-  gSystem->ExpandPathName(btagUncUrl);
   std::vector<BTagCalibrationReader *> sfbReaders, sflReaders;
-  TString btagEffExpUrl(era+"/expTageff.root");
-  gSystem->ExpandPathName(btagEffExpUrl);
   std::map<TString, TGraphAsymmErrors *> expBtagEff, expBtagEffPy8;
   BTagSFUtil myBTagSFUtil;
   if(!ev.isData)
     {
+      TString btagUncUrl(era+"/btagSFactors.csv");
+      gSystem->ExpandPathName(btagUncUrl);
       BTagCalibration btvcalib("csvv2", btagUncUrl.Data());
       sfbReaders.push_back( new BTagCalibrationReader(&btvcalib, BTagEntry::OP_MEDIUM, "mujets", "central") );
       sflReaders.push_back( new BTagCalibrationReader(&btvcalib, BTagEntry::OP_MEDIUM, "incl", "central") );
@@ -101,6 +99,8 @@ void RunTopWidth(TString filename,
       sfbReaders.push_back( new BTagCalibrationReader(&btvcalib, BTagEntry::OP_MEDIUM, "mujets", "down") );
       sflReaders.push_back( new BTagCalibrationReader(&btvcalib, BTagEntry::OP_MEDIUM, "incl", "down") );
 
+      TString btagEffExpUrl(era+"/expTageff.root");
+      gSystem->ExpandPathName(btagEffExpUrl);
       TFile *beffIn=TFile::Open(btagEffExpUrl);
       expBtagEffPy8["b"]=(TGraphAsymmErrors *)beffIn->Get("b");
       expBtagEffPy8["c"]=(TGraphAsymmErrors *)beffIn->Get("c");
@@ -128,6 +128,10 @@ void RunTopWidth(TString filename,
   JetCorrectorParameters *jecParam = new JetCorrectorParameters(jecUncUrl.Data(),"Total");
   JetCorrectionUncertainty *jecUnc = new JetCorrectionUncertainty( *jecParam );
 
+  //for data only get the lumi per run map                                                                                                                                                                         
+  std::map<Int_t,Float_t> lumiMap;
+  if(ev.isData) lumiMap=lumiPerRun(era);
+
   //BOOK HISTOGRAMS
   std::map<TString, TH1 *> allPlots;
   addGenScanCounters(allPlots,f);
@@ -139,6 +143,15 @@ void RunTopWidth(TString filename,
     { 
       TString tag(lfsVec[ilfs]);
       allPlots["nvtx_"+tag]  = new TH1F("nvtx_"+tag,";Vertex multiplicity;Events",30,0,30);
+      allPlots["mll_"+tag]  = new TH1F("mll_"+tag,";Dilepton invariant mass [GeV];Events",20,0,200);
+      if(lumiMap.size()) 
+	{
+	  allPlots["ratevsrun_"+tag] = new TH1F("ratevsrun_"+tag,";Run number; Events/pb",lumiMap.size(),0,lumiMap.size());
+	  Int_t runCtr(0);
+          for(std::map<Int_t,Float_t>::iterator it=lumiMap.begin(); it!=lumiMap.end(); it++,runCtr++)
+            allPlots["ratevsrun_"+tag]->GetXaxis()->SetBinLabel(runCtr+1,Form("%d",it->first));
+	}
+
       for(int i=0; i<2; i++)
 	{
 	  TString pf(Form("l%d",i));	  
@@ -203,7 +216,7 @@ void RunTopWidth(TString filename,
 	}
       
       //check if triggers have fired
-      bool hasEETrigger(((ev.elTrigger>>1)&0x3)!=0);
+      bool hasEETrigger(((ev.elTrigger>>1)&0x1)!=0);
       bool hasMMTrigger(((ev.muTrigger>>2)&0x3)!=0);
       bool hasEMTrigger(((ev.elTrigger>>2)&0x3)!=0);
       if(!ev.isData)
@@ -366,11 +379,19 @@ void RunTopWidth(TString filename,
       //all done... physics
       //preselection
       if(chTag=="") continue;
-      if(jets.size()<2) continue;
 
       
       //nominal selection control histograms
       allPlots["nvtx_"+chTag]->Fill(ev.nvtx,wgt);
+      allPlots["mll_"+chTag]->Fill((leptons[0]+leptons[1]).M(),wgt);
+      std::map<Int_t,Float_t>::iterator rIt=lumiMap.find(ev.run);
+      if(rIt!=lumiMap.end())
+	{
+	  Int_t runCtr=std::distance(lumiMap.begin(),rIt);
+	  allPlots["ratevsrun_"+chTag]->Fill(runCtr,1.e+6/rIt->second);
+	}
+
+      if(jets.size()<2) continue;
 
       twev.nl=TMath::Min(2,(int)leptons.size());
       for(int il=0; il<twev.nl; il++)

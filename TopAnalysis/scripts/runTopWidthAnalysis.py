@@ -317,7 +317,7 @@ def runTopWidthAnalysis(fileName,
                         if nbjets==1 :
                             # calculate mt2 assuming the bjet could come from either t quark
                             mt2=min(calcMt2(lp4+jp4,tlp,metForMT2), calcMt2(lp4,tlp+jp4,metForMT2))
-                        else if nbjets==2 :
+                        elif nbjets==2 :
                             _,tb = bjets[ijhyp][0]
                             mt2=min(calcMt2(lp4+jp4,tlp+tb,metForMT2), calcMt2(lp4+tb,tlp+jp4,metForMT2))
 
@@ -366,10 +366,8 @@ def runTopWidthAnalysis(fileName,
     for histoName in mlbMap :
         # make sure there's one entry for appropriate mlb
         if len(mlbMap[histoName]) > 1:
-            if "min" in histoName or
-                "mdr" in histoName or
-                "mt2" in histoName :
-                    print "WARNING: storing more than one mlb for %s"%histoName
+            if "min" in histoName or "mdr" in histoName or "mt2" in histoName :
+                print "WARNING: storing more than one mlb for %s"%histoName
         # perform snc reduction
         if "snc" in histoName:
             if len(mlbMap[histoName]) % 2 == 1 :
@@ -377,14 +375,14 @@ def runTopWidthAnalysis(fileName,
             minDR2=[(float('inf'),0,float('inf')),(float('inf'),0,float('inf'))]
 
             # get pair with lowest DR separation
-            for i in range(0,len(mlbMap[histoName],2) :
+            for i in xrange(0,len(mlbMap[histoName],2)) :
                 mlb,wt = mlbMap[histoName][i]
                 mdr,_  = mlbMap[histoName][i+1]
 
                 if mdr < minDR2[0][2] :
                     minDR2[1] = minDR2[0]
                     minDR2[0] = (mlb,wt,dr)
-                else if mdr < minDR2[1][2] :
+                elif mdr < minDR2[1][2] :
                     minDR2[1] = (mlb,wt,dr)
 
             mlbMap[histoName] = [(mlb,wt) for mlb,wt,_ in minDR2]

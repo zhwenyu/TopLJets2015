@@ -32,7 +32,7 @@ case $ERA in
 	;;
 esac
 
-summaryeosdir=/store/cmst3/group/top/summer2016/TopWidth_${ERA}
+summaryeosdir=/store/cmst3/group/top/summer2016/TopWidth_${ERA}_ichep
 outdir=~/work/TopWidth_${ERA}
 wwwdir=~/www/TopWidth_${ERA}
 
