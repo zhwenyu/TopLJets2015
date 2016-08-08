@@ -106,6 +106,7 @@ class Plot(object):
         c.SetTopMargin(0)
         c.SetRightMargin(0.00)
 
+
         #holds the main plot
         c.cd()
         p1 = None
@@ -115,6 +116,7 @@ class Plot(object):
             p1.SetLeftMargin(0.12)
             p1.SetTopMargin(0.01)
             p1.SetBottomMargin(0.01)
+            if self.wideCanvas and len(self.mc)==0 : p1.SetBottomMargin(0.12)
         else:
             p1=ROOT.TPad('p1','p1',0.0,0.0,1.0,1.0)
             p1.SetRightMargin(0.05)
@@ -215,6 +217,9 @@ class Plot(object):
         frame.GetYaxis().SetTitleOffset(1.3)
         frame.GetXaxis().SetTitleSize(0.0)
         frame.GetXaxis().SetLabelSize(0.0)
+        if self.wideCanvas and totalMC is None : 
+            frame.GetXaxis().SetLabelSize(0.03)
+            frame.GetXaxis().SetTitleSize(0.035)
         frame.Draw()
         if totalMC is not None   : 
             if noStack: stack.Draw('nostack same')

@@ -25,16 +25,17 @@ githash=121d8f2
 lumi=11377
 lumiUnc=0.062
 eosdir=/store/cmst3/user/psilva/LJets2016/${githash}
+summaryeosdir=/store/cmst3/group/top/summer2016/TopWidth_${ERA}_ichep
 case $ERA in
     era2015)
 	githash=8c1e7c9;
 	lumi=2267.84
 	lumiUnc=0.027
 	eosdir=/store/cmst3/user/psilva/LJets2015/${githash}
+	summaryeosdir=/store/cmst3/group/top/summer2016/TopWidth_${ERA}
 	;;
 esac
 
-summaryeosdir=/store/cmst3/group/top/summer2016/TopWidth_${ERA}_ichep
 outdir=~/work/TopWidth_${ERA}
 wwwdir=~/www/TopWidth_${ERA}
 
@@ -63,7 +64,7 @@ case $WHAT in
 	./scripts/mergeOutputs.py ${outdir}/analysis;
 	;;
     BKG )
-	python scripts/plotter.py      -i ${outdir}/analysis  -j data/${ERA}/samples.json  -l ${lumi} --onlyData --only mll -o dy_plotter.root;        
+	python scripts/plotter.py -i ${outdir}/analysis  -j data/${ERA}/samples.json  -l ${lumi} --onlyData --only mll -o dy_plotter.root;        
 	python scripts/runDYRinRout.py --in ${outdir}/analysis/plots/dy_plotter.root --categs 1b,2b --out ${outdir}/analysis/plots/;
 	;;
     PLOT )
