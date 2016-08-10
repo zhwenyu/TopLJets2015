@@ -176,7 +176,7 @@ def runTopWidthAnalysis(fileName,
                 
                 #reset b-tag bit to 0 if flavour is not the one to vary
                 if shiftHeavyFlav is not None:
-                    hadflav=abs(tree.gj_hadflav[ij])
+                    hadFlav=abs(tree.gj_hadflav[ij])
                     if shiftHeavyFlav :
                         if hadFlav!=4 and hadFlav!=5 : ibit=0
                     else:
