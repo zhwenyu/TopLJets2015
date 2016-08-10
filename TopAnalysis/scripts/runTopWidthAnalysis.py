@@ -96,7 +96,7 @@ def runTopWidthAnalysis(fileName,
                         var=s+i+j+b+'_sncmlb_%3.1fw'%w
                         observablesH[var]=ROOT.TH1F(var,';Mass(lepton,jet) (Semi-Inclusive) [GeV];l+j pairs',30,0,300)
                         var=s+i+j+b+'_mdrmlb_%3.1fw'%w
-                        observablesH[var]=ROOT.TH1F(var,';Mass(lepton,jet) (#DeltaR Matching) [GeV];l+j pairs',30,0,300)
+                        observablesH[var]=ROOT.TH1F(var,';Mass(lepton,jet) (Minimum #Delta R) [GeV];l+j pairs',30,0,300)
                         var=s+i+j+b+'_minmlb_%3.1fw'%w
                         observablesH[var]=ROOT.TH1F(var,';Mass(lepton,jet) (Minimum) [GeV];l+j pairs',30,0,300)
                         var=s+i+j+b+'_mt2mlb_%3.1fw'%w

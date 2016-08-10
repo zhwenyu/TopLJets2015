@@ -7,11 +7,19 @@
 #include "TopLJets2015/TopAnalysis/interface/MiniEvent.h"
 
 #include "TVector2.h"
+#include "TGraph.h"
+#include "TSystem.h"
+#include "TFile.h"
+#include "TH1.h"
+#include "TString.h"
+
+#include <vector>
 
 enum FlavourSplitting {NOFLAVOURSPLITTING=0, UDSGSPLITTING=1, CSPLITTING=4, BSPLITTING=5 };
 
-std::map<Int_t,Float_t> lumiPerRun();
+std::map<Int_t,Float_t> lumiPerRun(TString era="era2015");
 Float_t computeMT(TLorentzVector &a, TLorentzVector &b);
+std::vector<TGraph *> getPileupWeights(TString era,TH1 *puTrue);
 FactorizedJetCorrector *getFactorizedJetEnergyCorrector(TString,bool);
 std::vector<float> getJetResolutionScales(float pt, float eta, float genjpt);
 float getLeptonEnergyScaleUncertainty(int l_id,float l_pt,float l_eta);

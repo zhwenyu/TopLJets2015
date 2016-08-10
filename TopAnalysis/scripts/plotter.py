@@ -24,6 +24,7 @@ class Plot(object):
         self.plotformats = ['pdf','png']
         self.savelog = False
         self.ratiorange = (0.76,1.24)
+        self.mcUnc=0
 
     def add(self, h, title, color, isData,spImpose):
         h.SetTitle(title)
@@ -105,6 +106,7 @@ class Plot(object):
         c.SetTopMargin(0)
         c.SetRightMargin(0.00)
 
+
         #holds the main plot
         c.cd()
         p1 = None
@@ -114,6 +116,7 @@ class Plot(object):
             p1.SetLeftMargin(0.12)
             p1.SetTopMargin(0.01)
             p1.SetBottomMargin(0.01)
+            if self.wideCanvas and len(self.mc)==0 : p1.SetBottomMargin(0.12)
         else:
             p1=ROOT.TPad('p1','p1',0.0,0.0,1.0,1.0)
             p1.SetRightMargin(0.05)
@@ -214,6 +217,9 @@ class Plot(object):
         frame.GetYaxis().SetTitleOffset(1.3)
         frame.GetXaxis().SetTitleSize(0.0)
         frame.GetXaxis().SetLabelSize(0.0)
+        if self.wideCanvas and totalMC is None : 
+            frame.GetXaxis().SetLabelSize(0.03)
+            frame.GetXaxis().SetTitleSize(0.035)
         frame.Draw()
         if totalMC is not None   : 
             if noStack: stack.Draw('nostack same')
@@ -253,7 +259,7 @@ class Plot(object):
             ratioframe=frame.Clone('ratioframe')
             ratioframe.GetYaxis().SetTitle('Ratio')
             ratioframe.GetYaxis().SetRangeUser(self.ratiorange[0], self.ratiorange[1])
-            self._garbageList.append(frame)
+            self._garbageList.append(ratioframe)
             ratioframe.GetYaxis().SetNdivisions(5)
             ratioframe.GetYaxis().SetLabelSize(0.18)        
             ratioframe.GetYaxis().SetTitleSize(0.2)
@@ -261,13 +267,23 @@ class Plot(object):
             ratioframe.GetXaxis().SetLabelSize(0.15)
             ratioframe.GetXaxis().SetTitleSize(0.2)
             ratioframe.GetXaxis().SetTitleOffset(0.8)
-            ratioframe.Draw()
-
+            ratioframe.SetFillStyle(3001)
+            ratioframe.SetFillColor(ROOT.kGray+2)
+            totalMCnoUnc=totalMC.Clone('totalMCnounc')
+            self._garbageList.append(totalMCnoUnc)
+            for xbin in xrange(1,totalMC.GetNbinsX()+1):
+                ratioframe.SetBinContent(xbin,1)
+                val=totalMC.GetBinContent(xbin)
+                totalMCnoUnc.SetBinError(xbin,0.)
+                if val==0 : continue
+                totalUnc=ROOT.TMath.Sqrt((totalMC.GetBinError(xbin)/val)**2+self.mcUnc**2)
+                ratioframe.SetBinError(xbin,totalUnc)
+            ratioframe.Draw('e2')
             try:
                 ratio=self.dataH.Clone('ratio')
                 ratio.SetDirectory(0)
                 self._garbageList.append(ratio)
-                ratio.Divide(totalMC)
+                ratio.Divide(totalMCnoUnc)
                 gr=ROOT.TGraphAsymmErrors(ratio)
                 gr.SetMarkerStyle(self.data.GetMarkerStyle())
                 gr.SetMarkerSize(self.data.GetMarkerSize())
@@ -388,6 +404,7 @@ def main():
     #configuration
     usage = 'usage: %prog [options]'
     parser = optparse.OptionParser(usage)
+    parser.add_option(     '--mcUnc',        dest='mcUnc'  ,      help='common MC related uncertainty (e.g. lumi)',        default=0,              type=float)
     parser.add_option('-j', '--json',        dest='json'  ,      help='json with list of files',        default=None,              type='string')
     parser.add_option(      '--signalJson',  dest='signalJson',  help='signal json list',               default=None,              type='string')
     parser.add_option('-i', '--inDir',       dest='inDir' ,      help='input directory',                default=None,              type='string')
@@ -499,6 +516,7 @@ def main():
     os.system('mkdir -p %s' % outDir)
     os.system('rm %s/%s'%(outDir,opt.outName))
     for p in plots : 
+        plots[p].mcUnc=opt.mcUnc
         if opt.saveLog    : plots[p].savelog=True
         skipPlot=False
         if opt.onlyData and plots[p].dataH is None: skipPlot=True 

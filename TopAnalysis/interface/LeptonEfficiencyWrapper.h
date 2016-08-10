@@ -8,10 +8,9 @@
 #include <vector>
 #include <map>
 
-typedef std::map<TString,TH2 *> LeptonEfficiency_t;
 typedef std::pair<float,float> EffCorrection_t;
 
-class LeptonEfficiencyWrapper : public LeptonEfficiency_t
+class LeptonEfficiencyWrapper 
 {
  public:
   LeptonEfficiencyWrapper(bool isData,TString era);
@@ -19,8 +18,9 @@ class LeptonEfficiencyWrapper : public LeptonEfficiency_t
   EffCorrection_t getOfflineCorrection(int pdgId,float pt,float eta);
   ~LeptonEfficiencyWrapper();  
  private:
-  int era_;
   void init(TString era);
+  int era_;
+  std::map<TString,TH2 *> lepEffH_;
 };
 
 #endif
