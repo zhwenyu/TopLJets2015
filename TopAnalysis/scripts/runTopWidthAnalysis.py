@@ -176,8 +176,8 @@ def runTopWidthAnalysis(fileName,
                 
                 #reset b-tag bit to 0 if flavour is not the one to vary
                 if shiftHeavyFlav is not None:
-                    hadflav=abs(tree.j_hadflav[ij])
-                    if shiftHeavyFlat :
+                    hadflav=abs(tree.gj_hadflav[ij])
+                    if shiftHeavyFlav :
                         if hadFlav!=4 and hadFlav!=5 : ibit=0
                     else:
                         if hadFlav==4 or hadFlav==5 : ibit=0
@@ -189,7 +189,7 @@ def runTopWidthAnalysis(fileName,
                 bjets[ibit].append( (ij,jp4) )
 
                 #use standard b-tag decision for JES/JER variations
-                if shitHeavyFlav is not None : continue
+                if shiftHeavyFlav is not None : continue
 
                 jres=ROOT.TMath.Abs(1-tree.j_jer[ij])
                 bjets[5].append( (ij,jp4*(1+jres)) )
