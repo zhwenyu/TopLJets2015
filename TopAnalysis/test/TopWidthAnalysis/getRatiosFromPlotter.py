@@ -14,8 +14,7 @@ def main():
     usage = 'usage: %prog [options]'
     parser = optparse.OptionParser(usage)
     parser.add_option('-i', '--inDir',       dest='inDir' ,      help='input directory',                default="./plotter.root",       type='string')
-    parser.add_option('-d', '--divideFile',  dest='inDiv' ,      help='comparison input plotter',       default="./plotter.root",       type='string')
-    parser.add_option('-o', '--outName',     dest='outName' ,    help='name of the output file',        default='mcratio_plotter.root', type='string')
+    parser.add_option('-d', '--divideFile',  dest='inDiv' ,      help='comparison input plotter',       default="./mcratio_plotter.root",       type='string')
     parser.add_option('-l', '--lumi',        dest='lumi' ,       help='lumi to print out',              default=41.6,                   type=float)
     parser.add_option(      '--saveLog',     dest='saveLog' ,    help='save log versions of the plots', default=False,             action='store_true')
     parser.add_option('--wids',  dest='wids'  , help='widths to compare to nominal in div', default="4.0",                   type='string')
@@ -41,7 +40,7 @@ def main():
     sigList =opt.sigs.split(',')
 
     # useful settings (currenty magic)
-    divWid="4.0"
+    divWid="1.0"
 
     #show plots
     ROOT.gStyle.SetOptTitle(0)
@@ -49,16 +48,15 @@ def main():
     ROOT.gROOT.SetBatch(True)
     outDir='./genvalidation'
     os.system('mkdir -p %s' % outDir)
-    os.system('rm %s/%s'%(outDir,opt.outName))
 
     # collect a list of all distributions to plot
     plots = [("%s_%sw/%s_%sw_%s"%(dist,wid,dist,wid,sig),
-        "%s_%sw/%s_%sw_%s"%(dist,divWid,dist,divWid,sig))
+        "%s_%sw/%s_%sw_%s widthx4"%(dist,divWid,dist,divWid,sig))
                 for dist in distList
                 for wid in widList
                 for sig in sigList]
     plots+= [("%s%s%s_%s_%sw/%s%s%s_%s_%sw_%s"%(ptC,ch,bc,obs,wid,ptC,ch,bc,obs,wid,sig),
-        "%s%s%s_%s_%sw/%s%s%s_%s_%sw_%s"%(ptC,ch,bc,obs,divWid,ptC,ch,bc,obs,divWid,sig))
+        "%s%s%s_%s_%sw/%s%s%s_%s_%sw_%s widthx4"%(ptC,ch,bc,obs,divWid,ptC,ch,bc,obs,divWid,sig))
                 for ptC in ptChList
                 for ch in chList
                 for bc in bcatList
@@ -94,6 +92,16 @@ def main():
 
         CMS_lumi.CMS_lumi(canvas,4,0)
         canvas.SaveAs("%s/%s.pdf"%(outDir,p[0].split('/')[1].replace('.','w').replace('#','').replace('{','').replace('}','')))
+
+        miniCanvas=ROOT.TCanvas()
+        miniCanvas.SetCanvasSize(400,100)
+        miniCanvas.cd()
+
+        divHist.GetYaxis().SetTitle("")
+        divHist.GetXaxis().SetTitle("")
+        divHist.Draw()
+
+        miniCanvas.SaveAs("%s/mini_%s.pdf"%(outDir,p[0].split('/')[1].replace('.','w').replace('#','').replace('{','').replace('}','')))
 
 
 
