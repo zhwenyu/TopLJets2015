@@ -74,6 +74,7 @@ def main():
     CMS_lumi.extraOverCmsTextSize=0.5
     CMS_lumi.relPosX=0.18
 
+
     for p in plots :
         canvas=ROOT.TCanvas()
         if opt.saveLog : canvas.SetLogy()
@@ -87,21 +88,58 @@ def main():
         divHist.GetYaxis().SetTitle("Events (4 #times#Gamma_{SM}) / Events (Reweighted)")
         divHist.GetYaxis().SetRangeUser(0.7,1.3)
         divHist.SetTitle("")
+        divHist.SetMarkerColor(ROOT.kBlack)
 
         divHist.Draw()
 
         CMS_lumi.CMS_lumi(canvas,4,0)
         canvas.SaveAs("%s/%s.pdf"%(outDir,p[0].split('/')[1].replace('.','w').replace('#','').replace('{','').replace('}','')))
 
+    for wid,obs,sig in [(a,b,c) for a in widList for b in obsList for c in sigList]:
         miniCanvas=ROOT.TCanvas()
-        miniCanvas.SetCanvasSize(400,100)
+        miniCanvas.SetCanvasSize(300*len(chList), 200*len(ptChList)*len(bcatList))
+        miniCanvas.Clear()
+
         miniCanvas.cd()
+        miniCanvas.Divide(len(chList),len(bcatList)*len(ptChList))
 
-        divHist.GetYaxis().SetTitle("")
-        divHist.GetXaxis().SetTitle("")
-        divHist.Draw()
+        info=ROOT.TLatex()
+        info.SetTextSize(0.02)
 
-        miniCanvas.SaveAs("%s/mini_%s.pdf"%(outDir,p[0].split('/')[1].replace('.','w').replace('#','').replace('{','').replace('}','')))
+        i=1
+        for (iptC,ich,ibc) in [(iptC,ich,ibc)
+                for iptC in range(len(ptChList))
+                for ich  in range(len(chList))
+                for ibc  in range(len(bcatList))] :
+
+            miniCanvas.cd(len(chList)*len(bcatList)*iptC + len(chList)*ibc + (ich + 1))
+            ROOT.gPad.SetGrid(1,1)
+            ptC = ptChList[iptC]
+            ch  = chList[ich]
+            bc  = bcatList[ibc]
+
+            wgtHist=wgtFin.Get("%s%s%s_%s_%sw/%s%s%s_%s_%sw_%s"%(ptC,ch,bc,obs,wid,ptC,ch,bc,obs,wid,sig))
+            divHist=divFin.Get("%s%s%s_%s_%sw/%s%s%s_%s_%sw_%s widthx4"%(ptC,ch,bc,obs,divWid,ptC,ch,bc,obs,divWid,sig))
+
+            #divHist.Divide(wgtHist)
+
+            divHist.GetYaxis().SetTitle("Events / Reweighted Events")
+            divHist.GetYaxis().SetTitleSize(0.065)
+            divHist.GetYaxis().SetRangeUser(0.7,1.3)
+            divHist.GetXaxis().SetTitleSize(0.065)
+            divHist.SetTitle("")
+            divHist.SetMarkerColor(ROOT.kBlack)
+
+            divHist.Draw()
+
+            info.SetTextSize(0.06)
+            info.DrawLatexNDC(0.20,0.95,"%s %s %s"%(ptC,ch,bc))
+
+            #CMS_lumi.CMS_lumi(miniCanvas,4,0)
+
+            i+=1
+
+        miniCanvas.SaveAs("%s/RatioGrid_%s_%s_%s.pdf"%(outDir,obs,sig,wid.replace('#','').replace('{','').replace('}','')))
 
 
 

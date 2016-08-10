@@ -243,11 +243,11 @@ def main():
         if ttIsSig : ttRateSystList += ["tbart%s"%wid]
 
     rateSysts=[
-          ('lumi_13TeV',       1.027,    'lnN',    []                   ,['Multijetsdata']),
+          ('lumi_13TeV',       1.062,    'lnN',    []                   ,['Multijetsdata']),
           #('DYnorm_th',        1.038,    'lnN',    ['DYl','DYc','DYb']  ,[]),
           #('Wnorm_th',         1.037,    'lnN',    ['Wl' ,'Wc','Wb']    ,[]),
-          ('DYnorm_th',        1.038,    'lnN',    ['DY']  ,[]),
-          ('Wnorm_th',         1.037,    'lnN',    ['W']   ,[]),
+          ('DYnorm_th',        1.30,     'lnN',    ['DY']  ,[]),
+          ('Wnorm_th',         1.30,     'lnN',    ['W']   ,[]),
           ('tWnorm_th',        1.054,    'lnN',    tWRateSystList,[]),
           ('tnorm_th',         1.044,    'lnN',    ['tch']              ,[]),
           ('VVnorm_th',        1.20,     'lnN',    ['Multiboson']       ,[]),
@@ -262,28 +262,49 @@ def main():
     MtopMap={}
     ttPartonMap={}
     tWinterfMap={}
+    MEMap={
+            "muF" : {},
+            "muR" : {},
+            "tot" : {}
+            }
     for wid in modWidList :
         MtopMap[    'tbart%s'%wid]=['tbartm=169.5%s'  %(wid),'tbartm=175.5%s'%(wid)]
         ttPartonMap['tbart%s'%wid]=['tbartscaledown%s'%(wid),'tbartscaleup%s'%(wid)]
         MtopMap[    'tW%s'   %wid]=['tWm=169.5%s'     %(wid),'tWm=175.5%s'   %(wid)]
         ttPartonMap['tW%s'   %wid]=['tWscaledown%s'   %(wid),'tWscaleup%s'   %(wid)]
 
+        MEMap["muF"]['tbart%s'%wid]=['tbartgen3%s'%(wid),'tbartgen4%s' %(wid)]
+        MEMap["muR"]['tbart%s'%wid]=['tbartgen5%s'%(wid),'tbartgen8%s' %(wid)]
+        MEMap["tot"]['tbart%s'%wid]=['tbartgen6%s'%(wid),'tbartgen10%s'%(wid)]
+
+        MEMap["muF"]['tW%s'%wid]=['tWgen3%s'%(wid),'tWgen4%s' %(wid)]
+        MEMap["muR"]['tW%s'%wid]=['tWgen5%s'%(wid),'tWgen8%s' %(wid)]
+        MEMap["tot"]['tW%s'%wid]=['tWgen6%s'%(wid),'tWgen10%s'%(wid)]
+
         tWinterfMap['tW%s'   %wid]=['tWDS%s'   %(wid)]
 
     sampleSysts=[
           #ttbar modelling
-          ('Mtop'          , MtopMap    , True ,  True, False),
-          ('ttPartonShower', ttPartonMap, False , True, False),
+          ('Mtop'          , MtopMap    , True , True, False),
+          ('ttPartonShower', ttPartonMap, False, True, False),
           #tWinterference
-          #('tWttinterf'    , tWinterfMap, False , True, True)
+          #('tWttinterf'    , tWinterfMap, False, True, True) TODO
+          #ME generator
+          ('MEmuF'         , MEMap["muF"], False, True, False),
+          ('MEmuR'         , MEMap["muR"], False, True, False),
+          ('MEtot'         , MEMap["tot"], False, True, False)
     ]
 
     genSysts=[
-        ('jes',  False,False,False),
-        ('les',  False,False,False),
-        ('jer',  False,False,False),
-        ('btag', False,False,False),
-        ('pu',   False,False,False)
+        ('jes',   False,False,False),
+        ('les',   False,False,False),
+        ('ltag',  False,False,False),
+        ('trig',  False,False,False),
+        ('sel',   False,False,False),
+        ('toppt', False,False,False),
+        ('jer',   False,False,False),
+        ('btag',  False,False,False),
+        ('pu',     True,False,False)
     ]
 
     # prepare output directory
