@@ -228,5 +228,5 @@ CMS_lumi.CMS_lumi(c,4,0)
 # save plots
 c.Modified()
 c.Update()
-c.SaveAs(options.outdir+"quantiles.pdf")
-c.SaveAs(options.outdir+"quantiles.png")
+c.SaveAs(options.outdir+"quantiles_%s.pdf"%options.dist)
+c.SaveAs(options.outdir+"quantiles_%s.png"%options.dist)

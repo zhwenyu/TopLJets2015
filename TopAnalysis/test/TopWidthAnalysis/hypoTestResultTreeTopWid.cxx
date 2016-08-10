@@ -115,46 +115,11 @@ void hypoTestResultTreeTopWid(TString fOutName,
     }
 
     tree->Write();
-
-    /*
-     * Storing plots
-     */
-
-    c->cd();
-    setTDRStyle();
-
-    std::cout << "Creating plots" << std::endl;
-    TH1D *hnull = new TH1D("hnull","Null Hypothesis",100,-20,20);
-    TH1D *halt  = new TH1D("halt" ,"Alternate Hypothesis",100,-20,20);
-    TH1D *hnullstat = new TH1D("hnullstat","Null Hypothesis",5000,-1000,1000);
-    TH1D *haltstat  = new TH1D("haltstat" ,"Alternate Hypothesis",5000,-1000,1000);
-
-    tree->Draw("-2*q>>hnull","type>0","goff");
-    tree->Draw("-2*q>>halt" ,"type<0","goff");
-
-    hnull->SetLineColor(kBlue);
-    hnull->SetStats(false);
-    hnull->GetXaxis()->SetTitle("-2*ln(L_{alt}#/L_{null})");
-    hnull->GetXaxis()->SetTitleSize(0.04);
-    hnull->GetXaxis()->SetTitleOffset(1.2);
-    hnull->GetYaxis()->SetTitle("Pseudoexperiments");
-    halt->SetLineColor(kOrange);
-    halt->SetStats(false);
-    hnull->Draw();
-    halt->Draw("SAME");
-
-    c->BuildLegend(0.7,0.8,0.88,0.88);
-    TString plotName = TString(lfs)+"_"+TString(wid)+"_"+TString(dist);
-
-    c->SetTitle(plotName+" Toys");
-
-    CMS_lumi(c,4,0); 
-    c->SaveAs(plotName+".pdf");
-    c->SaveAs(plotName+".png");
-
     /*
      * Outputting LaTeX table with useful statistics
      */
+    TH1D *hnullstat = new TH1D("hnullstat","Null Hypothesis",5000,-1000,1000);
+    TH1D *haltstat  = new TH1D("haltstat" ,"Alternate Hypothesis",5000,-1000,1000);
     
     tree->Draw("-2*q>>hnullstat","type>0","goff");
     tree->Draw("-2*q>>haltstat" ,"type<0","goff");
@@ -284,6 +249,49 @@ void hypoTestResultTreeTopWid(TString fOutName,
             ofs << outq_alt[i] << ";";
         }
     ofs.close();
+
+
+    /*
+     * Storing plots
+     */
+
+    c->cd();
+    setTDRStyle();
+
+    std::cout << "Creating plots" << std::endl;
+
+    Double_t plotMinMax = TMath::Max(TMath::Abs(gnull->GetParameter("Mean")-3*gnull->GetParameter(2)),
+                                     TMath::Abs( galt->GetParameter("Mean")-3* galt->GetParameter(2)));
+
+    TH1D *hnull = new TH1D("hnull","Null Hypothesis",TMath::FloorNint(2*plotMinMax*100/40),-plotMinMax,plotMinMax);
+    TH1D *halt  = new TH1D("halt" ,"Alternate Hypothesis",TMath::FloorNint(2*plotMinMax*100/40),-plotMinMax,plotMinMax);
+
+    tree->Draw("-2*q>>hnull","type>0","goff");
+    tree->Draw("-2*q>>halt" ,"type<0","goff");
+
+    hnull->SetLineColor(kBlue);
+    hnull->SetStats(false);
+    hnull->GetXaxis()->SetTitle("-2*ln(L_{alt}#/L_{null})");
+    hnull->GetXaxis()->SetTitleSize(0.04);
+    hnull->GetXaxis()->SetTitleOffset(1.2);
+    hnull->GetYaxis()->SetTitle("Pseudoexperiments");
+    halt->SetLineColor(kOrange);
+    halt->SetStats(false);
+    hnull->Draw();
+    halt->Draw("SAME");
+
+    TLegend *leg = new TLegend(0.7,0.8,0.88,0.88);
+    leg->AddEntry(hnull,TString("#Gamma_{SM} Hypothesis"),"L");
+    leg->AddEntry(halt,TString(wid).ReplaceAll("p",".").ReplaceAll("w","")+TString("#times#Gamma_{SM} Hypothesis"),"L");
+    leg->Draw();
+
+    TString plotName = TString(lfs)+"_"+TString(wid)+"_"+TString(dist);
+    c->SetTitle(plotName+" Toys");
+
+    CMS_lumi(c,4,0); 
+    c->SetLeftMargin(c->GetLeftMargin()*1.5);
+    c->SaveAs(plotName+".pdf");
+    c->SaveAs(plotName+".png");
 
     /* 
      * Cleanup

@@ -12,6 +12,7 @@ lumi=2267.84
 
 lfs=(EE EM MM)
 wid=(0p5w 1p0w 1p5w 2p0w 2p5w 3p0w 3p5w 4p0w 4p5w 5p0w)
+dists=(minmlb incmlb sncmlb mt2mlb mdrmlb)
 cat=(1b 2b)
 lbCat=(highpt lowpt)
 
@@ -27,6 +28,7 @@ CMSSW_7_6_3dir=~/CMSSW_8_0_8_patch1/src/
 # --> +++++ highptEE2b + highptEE1b + lowptEE2b + lowptEE1b  
 # --> +++++ highptMM2b + highptMM1b + lowptMM2b + lowptMM1b  
 
+for dist in ${dists[*]}; do
 
 for twid in ${wid[*]}
 do
@@ -143,8 +145,11 @@ do
     python getLikelihoodScans.py -i ${outdir}/ -o ${outdir}/
 done
 
+done
+
 # copy to web directory
 mkdir -p ${wwwdir}/ana07032016
 cp ${outdir}/attempt1/plots/*.{png,pdf} ${wwwdir}/ana07032016/       
 cp ${outdir}/*.{png,pdf} ${wwwdir}/ana07032016/        
 cp ${wwwdir}/ana/index.php ${wwwdir}/ana07032016/
+

@@ -50,12 +50,12 @@ class Plot(object):
                 h.SetDirectory(0)
                 h.SetMarkerStyle(1)
                 h.SetMarkerColor(color)
-                if spImpose : 
+                if spImpose :
                     self.spimpose[title]=h
                     h.SetFillStyle(0)
                     h.SetLineColor(color)
                     h.SetLineWidth(2)
-                else : 
+                else :
                     h.SetLineColor(ROOT.kBlack)
                     h.SetLineWidth(1)
                     h.SetFillColor(color)
@@ -134,7 +134,7 @@ class Plot(object):
         leg = ROOT.TLegend(0.45, iniy-dy*ndy, 0.95, iniy+0.05)
 
         leg.SetBorderSize(0)
-        leg.SetFillStyle(0)        
+        leg.SetFillStyle(0)
         leg.SetTextFont(43)
         leg.SetTextSize(12)
         nlegCols = 0
@@ -144,13 +144,13 @@ class Plot(object):
             leg.AddEntry( self.data, self.data.GetTitle(),'p')
             nlegCols += 1
         for h in self.mc:
-            
+
             #compare
             if noStack:
                 refH=self.mc.values()[0]
                 if refH!=self.mc[h]:
                     chi2=refH.Chi2Test( self.mc[h], 'WW CHI2')
-                    pval=refH.Chi2Test( self.mc[h], 'WW')     
+                    pval=refH.Chi2Test( self.mc[h], 'WW')
                     self.mc[h].SetTitle('#splitline{%s}{#chi^{2}=%3.1f (p-val: %3.3f)}'%(self.mc[h].GetTitle(),chi2,pval))
                 else:
                     refH.SetLineWidth(2)
@@ -172,9 +172,9 @@ class Plot(object):
             if noStack:
                 self.mc[h].SetFillStyle(0)
                 self.mc[h].SetLineColor(self.mc[h].GetFillColor())
-                
+
             stack.Add(self.mc[h],'hist')
-            
+
             try:
                 totalMC.Add(self.mc[h])
             except:
@@ -188,7 +188,7 @@ class Plot(object):
                 if self.dataH is None : return
                 if self.dataH.Integral()==0: return
         elif self.dataH is None : return
-        elif self.dataH.Integral()==0 : return 
+        elif self.dataH.Integral()==0 : return
 
 
         frame = totalMC.Clone('frame') if totalMC is not None else self.dataH.Clone('frame')
@@ -196,7 +196,7 @@ class Plot(object):
         if noStack:
             maxY=stack.GetStack().At(0).GetMaximum()/1.25
         elif totalMC:
-            maxY = totalMC.GetMaximum() 
+            maxY = totalMC.GetMaximum()
             if self.dataH:
                 if maxY<self.dataH.GetMaximum():
                     maxY=self.dataH.GetMaximum()
@@ -215,7 +215,7 @@ class Plot(object):
         frame.GetXaxis().SetTitleSize(0.0)
         frame.GetXaxis().SetLabelSize(0.0)
         frame.Draw()
-        if totalMC is not None   : 
+        if totalMC is not None   :
             if noStack: stack.Draw('nostack same')
             else      : stack.Draw('hist same')
         for m in self.spimpose:
@@ -255,7 +255,7 @@ class Plot(object):
             ratioframe.GetYaxis().SetRangeUser(self.ratiorange[0], self.ratiorange[1])
             self._garbageList.append(frame)
             ratioframe.GetYaxis().SetNdivisions(5)
-            ratioframe.GetYaxis().SetLabelSize(0.18)        
+            ratioframe.GetYaxis().SetLabelSize(0.18)
             ratioframe.GetYaxis().SetTitleSize(0.2)
             ratioframe.GetYaxis().SetTitleOffset(0.25)
             ratioframe.GetXaxis().SetLabelSize(0.15)
@@ -433,12 +433,12 @@ def main():
 
     onlyList=opt.only.split(',')
 
-    #read plots 
+    #read plots
     plots={}
     report=''
     for slist,isSignal in [ (samplesList,False),(signalSamplesList,True) ]:
         if slist is None: continue
-        for tag,sample in slist: 
+        for tag,sample in slist:
             xsec=sample[0]
             isData=sample[1]
             doFlavourSplitting=sample[6]
@@ -460,7 +460,7 @@ def main():
                     wgt=puCorrH.GetBinContent(2)
                     if wgt>0 :
                         puNormSF=nonWgt/wgt
-                        if puNormSF>1.3 or puNormSF<0.7 : 
+                        if puNormSF>1.3 or puNormSF<0.7 :
                             puNormSF=1
                             report += '%s wasn\'t be scaled as too large SF was found (probably low stats)\n' % sp[0]
                         else :
@@ -470,21 +470,21 @@ def main():
                     for tkey in fIn.GetListOfKeys():
                         key=tkey.GetName()
                         keep=False if len(onlyList)>0 else True
-                        for pname in onlyList: 
+                        for pname in onlyList:
                             if pname in key: keep=True
                         if not keep: continue
                         obj=fIn.Get(key)
                         if not obj.InheritsFrom('TH1') : continue
-                        if not isData and not '(data)' in sp[1]: 
+                        if not isData and not '(data)' in sp[1]:
                             sfVal=1.0
                             for procToScale in procSF:
                                 if sp[1]==procToScale:
                                     #if procToScale in sp[1]:
-                                    for pcat in procSF[procToScale]:                                    
+                                    for pcat in procSF[procToScale]:
                                         if pcat not in key: continue
                                         sfVal=procSF[procToScale][pcat][0]
                                      #print 'Applying scale factor for ',sp[1],key,sfVal
-                            obj.Scale(xsec*opt.lumi*puNormSF*sfVal)                    
+                            obj.Scale(xsec*opt.lumi*puNormSF*sfVal)
                         if opt.rebin>1:  obj.Rebin(opt.rebin)
                         if not key in plots : plots[key]=Plot(key)
                         plots[key].add(h=obj,title=sp[1],color=sp[2],isData=sample[1],spImpose=isSignal)
@@ -498,10 +498,10 @@ def main():
     outDir=opt.inDir+'/plots'
     os.system('mkdir -p %s' % outDir)
     os.system('rm %s/%s'%(outDir,opt.outName))
-    for p in plots : 
+    for p in plots :
         if opt.saveLog    : plots[p].savelog=True
         skipPlot=False
-        if opt.onlyData and plots[p].dataH is None: skipPlot=True 
+        if opt.onlyData and plots[p].dataH is None: skipPlot=True
         if opt.silent : skipPlot=True
         if not skipPlot : plots[p].show(outDir=outDir,lumi=opt.lumi,noStack=opt.noStack,saveTeX=opt.saveTeX)
         plots[p].appendTo('%s/%s'%(outDir,opt.outName))
@@ -512,7 +512,7 @@ def main():
     if len(report) : print report
     print '-'*50
 
-        
+
 """
 for execution from another script
 """

@@ -357,7 +357,7 @@ def runTopWidthAnalysis(fileName,
                         # fill mt2 mlb
                         var=s+ptCat+evcat+btagcat+'_mt2mlb_%3.1fw'%w
                         if mt2 < mlbMap[var][0] :
-                            mlbMap[var] = [(mlb,mlbWt)]
+                            mlbMap[var] = [(mt2,mlbWt)]
 
                         #only for standard width and syst variations
                         if w!=1.0 or len(s)>0 : continue

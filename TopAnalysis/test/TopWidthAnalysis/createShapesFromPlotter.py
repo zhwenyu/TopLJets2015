@@ -45,6 +45,12 @@ def filterShapeList(exp,signalList,rawSignalList):
         newExp[key]=exp[key]
     return newExp
 
+"""
+write shapes from array into RooMomentMorphs and save to RooWorkspace
+"""
+def saveMorphsToRooWorkspace(workspace,dists,name) :
+
+    return
 
 """
 get distributions from file
@@ -269,7 +275,7 @@ def main():
           ('Mtop'          , MtopMap    , True ,  True, False),
           ('ttPartonShower', ttPartonMap, False , True, False),
           #tWinterference
-          ('tWttinterf'    , tWinterfMap, False , True, True)
+          #('tWttinterf'    , tWinterfMap, False , True, True)
     ]
 
     genSysts=[
@@ -302,7 +308,7 @@ def main():
 
     # keep track of progress
     cardIndex=-1
-    numCards =len(rawWidList)*len(lfsList)*len(lbCatList)*len(catList)*len(distList)
+    numCards =(len(rawWidList)-1)*len(lfsList)*len(lbCatList)*len(catList)*len(distList)
 
     #loop over lepton final states
     for (lbCat,lfs,cat,dist) in [(a,b,c,d) for a in lbCatList
@@ -319,10 +325,13 @@ def main():
             obs,exp=getMergedDists(fIn,('%s%s%s_%s_'%(lbCat,lfs,cat,dist)),rawSignalList,'top',widList,nomWid,signalList)
         else :
             obs,exp=getMergedDists(fIn,('%s%s%s_%s_'%(lbCat,lfs,cat,dist)),None,'',widList,nomWid,signalList)
+
+        if not opt.truthDataset=="" :
+            obs=makeMCTruthHist(opt.truthDataset,signalList,exp)
         #exp=filterShapeList(exp,signalList,rawSignalList)
 
         nomShapes=exp.copy()
-        nomShapes['data_obs']= obs if opt.truthDataset=="" else makeMCTruthHist(opt.truthDataset,signalList,exp)
+        nomShapes['data_obs']=obs
         saveToShapesFile(outFile,nomShapes,('%s%s%s_%s'%(lbCat,lfs,cat,dist)))
 
         #loop over categories, widths
@@ -656,7 +665,8 @@ def main():
     canvas=ROOT.TCanvas()
 
     # make workspace for each signal process
-    for sig,dist in [(a,b) for a in ['tbart'] for b in distList]:
+    first=True
+    for sig,dist in [(a,b) for a in signalList for b in distList]:
         modSig=replaceBadCharacters(sig)
 
         # get the proper mass information for this signal
@@ -754,6 +764,173 @@ def main():
         ws.Write()
         fOut.Close()
 
+        ##########################################
+        # produce systematic uncertainties in ws #
+        ##########################################
+        #for lbCat,ch,cat in [(lbCat,ch,cat) for lbCat in lbCatList
+        #        for ch in lfsList
+        #        for cat in catList]:
+
+        #    systSignalList=Mtop+ttParton_tt+ttParton_tW+tWinterf
+
+        #    # sample systematics
+        #    _,genVarShapes = getMergedDists(fIn,
+        #            ('%s%s%s_%s_'%(lbCat,lfs,cat,dist)),
+        #            (rawSignalList if opt.addSigs else None),
+        #            ('top' if opt.addSigs else ''),
+        #            widList,nomWid,systSignalList)
+        #    _,altExp       = getMergedDists(systfIn,
+        #            ('%s%s%s_%s_'%(lbCat,lfs,cat,dist)),
+        #            (rawSignalList if opt.addSigs else None),
+        #            ('top' if opt.addSigs else ''),
+        #            widList,nomWid,systSignalList)
+
+        #    for systVar, procsToApply, normalize, useAltShape, projectRelToNom in sampleSysts:
+
+        #        #prepare shapes and check if variation is significant
+        #        downShapes, upShapes = {}, {}
+
+        #        for iproc in procsToApply:
+        #            nomH=exp[iproc]
+
+        #            #check which shape to use
+        #            if useAltShape:
+
+        #                #get directly from another file
+        #                downH  = altExp[ procsToApply[iproc][0] ]
+        #                if len( procsToApply[iproc] ) > 1 :
+        #                    upH    = altExp[ procsToApply[iproc][1] ]
+        #                else:
+        #                    #if only one variation is available, mirror it
+        #                    upH = downH.Clone( '%s%sUp'%(iproc,systVar) )
+        #                    for xbin in xrange(1,upH.GetNbinsX()+1):
+        #                        diff=upH.GetBinContent(xbin)-nomH.GetBinContent(xbin)
+        #                        upH.SetBinContent(xbin,nomH.GetBinContent(xbin)-diff)
+        #            else:
+
+        #                #project from 2D histo (re-weighted from nominal sample)
+        #                ybinUp, ybinDown = -1, -1
+        #                for ybin in xrange(1,genVarShapes[ iproc ].GetNbinsY()+1):
+        #                    label = genVarShapes[ iproc ].GetYaxis().GetBinLabel(ybin)
+        #                    if procsToApply[iproc][0] in label : ybinDown=ybin
+        #                    if procsToApply[iproc][1] in label : ybinUp=ybin
+
+        #                downH = genVarShapes[ iproc ].ProjectionX('%s%sDown'%(iproc,systVar), ybinDown, ybinDown)
+        #                upH   = genVarShapes[ iproc ].ProjectionX('%s%sUp'%(iproc,systVar),   ybinUp,   ybinUp)
+
+        #            # use do down/up x nom to generate the variation, then mirror it
+        #            if projectRelToNom:
+        #                ratioH=downH.Clone()
+        #                ratioH.Divide(upH)
+        #                for xbin in xrange(1,nomH.GetNbinsX()+1):
+        #                    nomVal=nomH.GetBinContent(xbin)
+        #                    varVal = ratioH.GetBinContent(xbin) * nomVal
+        #                    upH.SetBinContent(xbin, varVal)
+        #                    varVal = varVal- nomVal
+        #                    downH.SetBinContent(xbin, nomVal-varVal)
+
+        #            #normalize (shape only variation is considered)
+        #            if normalize : downH.Scale( nomH.Integral()/downH.Integral() )
+        #            if normalize : upH.Scale( nomH.Integral()/upH.Integral() )
+
+        #            #check if variation is meaningful
+        #            accept = acceptVariationForDataCard(nomH=nomH, upH=upH, downH=downH)
+        #            if not accept : continue
+
+        #            #save
+        #            downShapes[iproc]=downH
+        #            upShapes[iproc]=upH
+
+        #        #check if something has been accepted
+        #        if len(upShapes)==0 : continue
+
+        #        # save to workspace
+        #        for imass in xrange(0,len(masses)):
+        #            mass,url,proc=masses[imass]
+
+        #            if modSig not in replaceBadCharacters(proc) : continue
+
+        #            tfIn=ROOT.TFile.Open(url)
+        #            for iwid in xrange(0,len(widths)):
+
+        #                #get histogram and convert to a PDF
+        #                h=upShapes
+        #                name='%s_m%d'%(dirname,int(10*mass))
+        #                data=ROOT.RooDataHist(name,name,ROOT.RooArgList(ws.var("x")),h)
+        #                pdf=ROOT.RooHistPdf(name+"_pdf",name+"_pdf",ROOT.RooArgSet(ws.var("x")),data)
+        #                pdf.plotOn(axes[iwid],
+        #                        ROOT.RooFit.Name("%3.1f"%mass),
+        #                        ROOT.RooFit.LineColor(ROOT.kOrange+kOrangeList[imass*3]))
+
+        #                getattr(ws,'import')(pdf,ROOT.RooCmdArg())
+
+        #                #add pdf to the grid
+        #                widLoc  = iwid
+        #                massLoc = imass
+        #                print 'Adding',pdf.GetName(),'@ (',iwid,',',imass,')'
+        #                refGrid.addPdf(ws.pdf(pdf.GetName()),
+        #                        iwid,
+        #                        imass)
+
+
+        #    #
+        #    for systVar, normalize, useAltShape, projectRelToNom in genSysts:
+        #        _,genVarShapesUp = getMergedDists((systfIn if useAltShape else fIn),
+        #                ('%sup%s%s%s_%s_'%(systVar,lbCat,lfs,cat,dist)),
+        #                (rawSignalList if opt.addSigs else None),
+        #                ('top' if opt.addSigs else ''),
+        #                widList,nomWid,signalList)
+        #        _,genVarShapesDn = getMergedDists((systfIn if useAltShape else fIn),
+        #                ('%sdn%s%s%s_%s_'%(systVar,lbCat,lfs,cat,dist)),
+        #                (rawSignalList if opt.addSigs else None),
+        #                ('top' if opt.addSigs else ''),
+        #                widList,nomWid,signalList)
+
+        #        #prepare shapes and check if variation is significant
+        #        downShapes, upShapes = {}, {}
+
+        #        for iproc in exp:
+        #            nomH=exp[iproc]
+
+        #            if not iproc in genVarShapesDn :
+        #                continue
+        #            #get directly from another file
+        #            downH  = genVarShapesDn[iproc]
+        #            if iproc in genVarShapesUp:
+        #                upH = genVarShapesUp[iproc]
+        #            else:
+        #                #if only one variation is available, mirror it
+        #                upH = downH.Clone( '%s%sUp'%(iproc,systVar) )
+        #                for xbin in xrange(1,upH.GetNbinsX()+1):
+        #                    diff=upH.GetBinContent(xbin)-nomH.GetBinContent(xbin)
+        #                    upH.SetBinContent(xbin,nomH.GetBinContent(xbin)-diff)
+
+        #            # use do down/up x nom to generate the variation, then mirror it
+        #            if projectRelToNom:
+        #                ratioH=downH.Clone()
+        #                ratioH.Divide(upH)
+        #                for xbin in xrange(1,nomH.GetNbinsX()+1):
+        #                    nomVal=nomH.GetBinContent(xbin)
+        #                    varVal = ratioH.GetBinContent(xbin) * nomVal
+        #                    upH.SetBinContent(xbin, varVal)
+        #                    varVal = varVal- nomVal
+        #                    downH.SetBinContent(xbin, nomVal-varVal)
+
+        #            #normalize (shape only variation is considered)
+        #            if normalize : downH.Scale( nomH.Integral()/downH.Integral() )
+        #            if normalize : upH.Scale( nomH.Integral()/upH.Integral() )
+
+        #            #check if variation is meaningful
+        #            accept = acceptVariationForDataCard(nomH=nomH, upH=upH, downH=downH)
+        #            if not accept : continue
+
+        #            #save
+        #            downShapes[iproc]=downH
+        #            upShapes[iproc]=upH
+
+        #        #check if something has been accepted
+        #        if len(upShapes)==0 : continue
+
         ROOT.gStyle.SetOptStat(0)
         status=ROOT.TLatex()
 
@@ -848,7 +1025,7 @@ def main():
             histAlpha = mlbVar.createHistogram("Morphing against width variations",alphaVar)
             morphPDF.fillHistogram(histAlpha,ROOT.RooArgList(mlbVar,alphaVar))
             histAlpha.GetYaxis().SetTitleOffset(1.1)
-            histAlpha.GetYaxis().SetTitle("Generator-level width [GeV]")
+            histAlpha.GetYaxis().SetTitle("Grid width index")
             histAlpha.GetXaxis().SetTitleOffset(1.35)
             histAlpha.GetXaxis().SetTitle("M(l,b) [GeV]")
             histAlpha.SetTitle("")
@@ -856,7 +1033,7 @@ def main():
             histBeta  = mlbVar.createHistogram("Morphing against mass variations",betaVar)
             morphPDF.fillHistogram(histBeta ,ROOT.RooArgList(mlbVar,betaVar))
             histBeta.GetYaxis().SetTitleOffset(1.1)
-            histBeta.GetYaxis().SetTitle("Generator-level mass [GeV]")
+            histBeta.GetYaxis().SetTitle("Grid mass index")
             histBeta.GetXaxis().SetTitleOffset(1.35)
             histBeta.GetXaxis().SetTitle("M(l,b) [GeV]")
             histBeta.SetTitle("")
@@ -875,11 +1052,12 @@ def main():
                 if theta == 0 : zLimList["mlb"]=histAlpha.GetMaximum()*1.1
                 histAlpha.SetMaximum(zLimList["mlb"])
                 histAlpha.Draw("SURF1")
-                status.DrawLatexNDC(0.75,0.02,"m_{t}=%3.2f GeV"%(betaVar.getVal()))
+                status.DrawLatexNDC(0.75,0.02,"m_{t}=%3.2f GeV"%(betaVar.getVal()*(maxMT-minMT)/betaVar.getMax()+minMT))
                 ROOT.gPad.SetPhi(theta)
 
                 CMS_lumi.CMS_lumi(canvas,4,0)
-                canvas.SetLeftMargin(canvas.GetRightMargin()*1.1)
+                if first:
+                    canvas.SetLeftMargin(canvas.GetRightMargin()*1.1)
 
                 canvas.SaveAs("%s/gifplots_%s_%s/rotscanalpha_%s_%i.png"%(opt.output,sig,dist,sig,theta))
                 canvas.Clear()
@@ -887,11 +1065,12 @@ def main():
                 # mlb vs. width plot for 3D scan
                 histBeta.SetMaximum(zLimList["mlb"])
                 histBeta.Draw("SURF1")
-                status.DrawLatexNDC(0.75,0.02,"#Gamma_{t}=%3.2f GeV"%(alphaVar.getVal()))
+                status.DrawLatexNDC(0.75,0.02,"#Gamma_{t}=%3.2f GeV"%(alphaVar.getVal()*(maxGammaT-minGammaT)/alphaVar.getMax()+minGammaT))
                 ROOT.gPad.SetPhi(theta)
 
                 CMS_lumi.CMS_lumi(canvas,4,0)
-                canvas.SetLeftMargin(canvas.GetRightMargin()*1.1)
+                if first:
+                    canvas.SetLeftMargin(canvas.GetRightMargin()*1.1)
 
                 canvas.SaveAs("%s/gifplots_%s_%s/rotscanbeta_%s_%i.png"%(opt.output,sig,dist,sig,theta))
                 canvas.Clear()
@@ -910,8 +1089,9 @@ def main():
             canvas.SetLogz(False)
 
             CMS_lumi.cmsTextOffset=0.1
-            canvas.SetRightMargin(canvas.GetRightMargin()*2)
-            canvas.SetLeftMargin(canvas.GetLeftMargin()*2)
+            if first:
+                canvas.SetRightMargin(canvas.GetRightMargin()*2)
+                canvas.SetLeftMargin(canvas.GetLeftMargin()*2)
 
             for step in xrange(0,n2DScan) :
                 alphaStep=alphaVar.getMin()+(alphaVar.getMax()-alphaVar.getMin())/n2DScan*step
@@ -936,10 +1116,10 @@ def main():
                 # mlb histo against mass
                 histAlpha.SetTitle("")
                 histAlpha.GetXaxis().SetTitle("M(l,b) [GeV]")
-                histAlpha.GetYaxis().SetTitle("Generator-level width [GeV]")
+                histAlpha.GetYaxis().SetTitle("Grid width index")
                 histAlpha.GetZaxis().SetRangeUser(0,zLimList["mlb"])
                 histAlpha.Draw("COLZ")
-                status.DrawLatexNDC(0.25,0.02,"#Gamma_{t}=%3.2f GeV"%(betaVar.getVal()))
+                status.DrawLatexNDC(0.25,0.02,"m_{t}=%3.2f GeV"%(betaVar.getVal()*(maxMT-minMT)/betaVar.getMax()+minMT))
 
                 CMS_lumi.CMS_lumi(canvas,4,0)
                 canvas.SaveAs("%s/gifplots_%s_%s/betascan_%s_%i.png"%(opt.output,sig,dist,sig,step))
@@ -947,11 +1127,11 @@ def main():
 
                 # mlb histo against width
                 histBeta.SetTitle("")
-                histBeta.GetYaxis().SetTitle("Generator-level width [GeV]")
+                histBeta.GetYaxis().SetTitle("Grid mass index")
                 histBeta.GetXaxis().SetTitle("M(l,b) [GeV]")
                 histBeta.GetZaxis().SetRangeUser(0,zLimList["mlb"])
                 histBeta.Draw("COLZ")
-                status.DrawLatexNDC(0.25,0.02,"m_{t}=%3.2f GeV"%(alphaVar.getVal()))
+                status.DrawLatexNDC(0.25,0.02,"#Gamma_{t}=%3.2f GeV"%(alphaVar.getVal()*(maxGammaT-minGammaT)/alphaVar.getMax()+minGammaT))
 
                 CMS_lumi.CMS_lumi(canvas,4,0)
                 canvas.SaveAs("%s/gifplots_%s_%s/alphascan_%s_%i.png"%(opt.output,sig,dist,sig,step))
@@ -978,10 +1158,8 @@ def main():
                     mlbVar.setVal(  sensHistAlpha.GetYaxis().GetBinCenter(binNumA));
                     f=pdf.getVal()
                     if f!=0 :
-                        dfda=pdf.derivative(ws.var('alpha')).getVal()
-                        dfdb=pdf.derivative(ws.var('beta')).getVal()
                         dfdx=pdf.derivative(ws.var('x')).getVal()
-                        sensHistAlpha.Fill(binNumA,(1/f)*(dfda**2+dfdb**2+dfdx**2))
+                        sensHistAlpha.Fill(binNumA,(1/f)*(dfdx**2))
 
                     # prepare beta sensitivity plots
                     alphaVar.setVal(sensHistAlpha.GetXaxis().GetBinCenter(gifBinA));
@@ -989,14 +1167,12 @@ def main():
                     mlbVar.setVal(   sensHistBeta.GetYaxis().GetBinCenter(binNumB));
                     f=pdf.getVal()
                     if f!=0 :
-                        dfda=pdf.derivative(ws.var('alpha')).getVal()
-                        dfdb=pdf.derivative(ws.var('beta')).getVal()
                         dfdx=pdf.derivative(ws.var('x')).getVal()
-                        sensHistBeta.Fill(binNumB,(1/f)*(dfda**2+dfdb**2+dfdx**2))
+                        sensHistBeta.Fill(binNumB,(1/f)*(dfdx**2))
 
                 # sensitivity of mlb against mass
                 if not opt.noSens :
-                    if step == 0 : zLimList["asens"]=sensHistAlpha.GetMaximum()*1.1
+                    if step == 0 : zLimList["asens"]=sensHistAlpha.GetMaximum()*2
                     sensHistAlpha.SetTitle("")
                     sensHistAlpha.GetXaxis().SetTitle("M(l,b) [GeV]")
                     sensHistAlpha.GetYaxis().SetTitle("Generator-level width [GeV]")
@@ -1011,7 +1187,7 @@ def main():
                     canvas.Clear()
 
                     # sensitivity of mlb against width
-                    if step == 0 : zLimList["bsens"]=sensHistBeta.GetMaximum()*1.1
+                    if step == 0 : zLimList["bsens"]=sensHistBeta.GetMaximum()*2
                     sensHistBeta.SetTitle("")
                     sensHistBeta.GetXaxis().SetTitle("M(l,b) [GeV]")
                     sensHistBeta.GetYaxis().SetTitle("Generator-level mass [GeV]")
@@ -1047,6 +1223,8 @@ def main():
                 writeGif("%s/gifplots_%s_%s/sensalphascan_%s.gif"%(opt.output,sig,dist,sig),sensAlphaScanImgs,duration=.05)
                 writeGif("%s/gifplots_%s_%s/sensbetascan_%s.gif"%(opt.output,sig,dist,sig),sensBetaScanImgs,duration=.05)
 
+            first=False
+
     print "\n Morphed dists created, workspace saved. Producing datacards: \n"
 
     ##################################
@@ -1059,9 +1237,10 @@ def main():
             for dist in distList] :
         # get signal/backgrounds
         obs,exp=getMergedDists(fIn,('%s%s%s_%s_'%(lbCat,ch,cat,dist)),None,'',widList,nomWid,signalList)
+        if not opt.truthDataset=="" :
+            obs=makeMCTruthHist(opt.truthDataset,signalList,exp)
 
         # prepare datacard
-        dirname='%s%s%s_%s_%3.1fw'%(lbCat,ch,cat,dist,widths[iwid])
         datacard=open('%s/datacard_widfit__%s%s%s_%s.dat'%(opt.output,lbCat,ch,cat,dist),'w')
 
         datacard.write('#\n')
@@ -1082,9 +1261,9 @@ def main():
             for sig in modWidList :
                 if sig in proc : isSig=True
             if isSig : continue
-            datacard.write('shapes %10s * shapes.root %s%s%s_%s/$PROCESS $SYSTEMATIC/$PROCESS\n'%(proc,lbCat,ch,cat,dist))
+            datacard.write('shapes %10s * shapes.root %s%s%s_%s/$PROCESS %s%s%s_%s_$SYSTEMATIC/$PROCESS\n'%(proc,lbCat,ch,cat,dist,lbCat,ch,cat,dist))
 
-        datacard.write('shapes data_obs   * shapes.root %s%s%s_%s/$PROCESS $SYSTEMATIC/$PROCESS\n'%(lbCat,ch,cat,dist))
+        datacard.write('shapes data_obs   * shapes.root %s%s%s_%s/$PROCESS %s%s%s_%s_$SYSTEMATIC/$PROCESS\n'%(lbCat,ch,cat,dist,lbCat,ch,cat,dist))
 
         for sig in signalList:
             datacard.write('shapes %10s * shapes.root sigws_$PROCESS_%s:widmorphpdf\n'%(sig,dist))
@@ -1132,14 +1311,204 @@ def main():
         datacard.write('\n')
         datacard.write('-'*50+'\n')
 
-        datacard.close()
 
-    ######################
-    # MAKE MORPH VALIDATION PLOTS
-    ######################
-    #outFile='%s/shapes.root'%(opt.output)
-    #fOut=ROOT.TFile.Open(outFile)
-    #fOut.cd()
+        # rate uncertainties
+        for syst,val,pdf,whiteList,blackList in rateSysts:
+
+            datacard.write('%32s %8s'%(syst,pdf))
+            entryTxt=''
+            try:
+                entryTxt='%15s'%('%3.3f/%3.3f'%(ROOT.TMath.Max(val[0],0.01),val[1]))
+            except:
+                entryTxt='%15s'%('%3.3f'%val)
+
+            for sig in signalList:
+                newSig='%s1p0w'%(sig)
+                if (len(whiteList)==0 and not newSig in blackList) or newSig in whiteList:
+                    datacard.write(entryTxt)
+                else:
+                    datacard.write('%15s'%'-')
+            for proc in exp:
+                isSig=False
+                for sig in modWidList :
+                    if sig in proc : isSig=True
+                if isSig : continue
+                if (len(whiteList)==0 and not proc in blackList) or proc in whiteList:
+                    datacard.write(entryTxt)
+                else:
+                    datacard.write('%15s'%'-')
+            datacard.write('\n')
+
+
+        #systSignalList=Mtop+ttParton_tt+ttParton_tW+tWinterf
+
+        ## sample systematics
+        #_,genVarShapes = getMergedDists(fIn,
+        #        ('%s%s%s_%s_'%(lbCat,lfs,cat,dist)),
+        #        (rawSignalList if opt.addSigs else None),
+        #        ('top' if opt.addSigs else ''),
+        #        widList,nomWid,systSignalList)
+        #_,altExp       = getMergedDists(systfIn,
+        #        ('%s%s%s_%s_'%(lbCat,lfs,cat,dist)),
+        #        (rawSignalList if opt.addSigs else None),
+        #        ('top' if opt.addSigs else ''),
+        #        widList,nomWid,systSignalList)
+
+        #for systVar, procsToApply, normalize, useAltShape, projectRelToNom in sampleSysts:
+
+        #    #prepare shapes and check if variation is significant
+        #    downShapes, upShapes = {}, {}
+
+        #    for iproc in procsToApply:
+        #        nomH=exp[iproc]
+
+        #        #check which shape to use
+        #        if useAltShape:
+
+        #            #get directly from another file
+        #            downH  = altExp[ procsToApply[iproc][0] ]
+        #            if len( procsToApply[iproc] ) > 1 :
+        #                upH    = altExp[ procsToApply[iproc][1] ]
+        #            else:
+        #                #if only one variation is available, mirror it
+        #                upH = downH.Clone( '%s%sUp'%(iproc,systVar) )
+        #                for xbin in xrange(1,upH.GetNbinsX()+1):
+        #                    diff=upH.GetBinContent(xbin)-nomH.GetBinContent(xbin)
+        #                    upH.SetBinContent(xbin,nomH.GetBinContent(xbin)-diff)
+        #        else:
+
+        #            #project from 2D histo (re-weighted from nominal sample)
+        #            ybinUp, ybinDown = -1, -1
+        #            for ybin in xrange(1,genVarShapes[ iproc ].GetNbinsY()+1):
+        #                label = genVarShapes[ iproc ].GetYaxis().GetBinLabel(ybin)
+        #                if procsToApply[iproc][0] in label : ybinDown=ybin
+        #                if procsToApply[iproc][1] in label : ybinUp=ybin
+
+        #            downH = genVarShapes[ iproc ].ProjectionX('%s%sDown'%(iproc,systVar), ybinDown, ybinDown)
+        #            upH   = genVarShapes[ iproc ].ProjectionX('%s%sUp'%(iproc,systVar),   ybinUp,   ybinUp)
+
+        #        # use do down/up x nom to generate the variation, then mirror it
+        #        if projectRelToNom:
+        #            ratioH=downH.Clone()
+        #            ratioH.Divide(upH)
+        #            for xbin in xrange(1,nomH.GetNbinsX()+1):
+        #                nomVal=nomH.GetBinContent(xbin)
+        #                varVal = ratioH.GetBinContent(xbin) * nomVal
+        #                upH.SetBinContent(xbin, varVal)
+        #                varVal = varVal- nomVal
+        #                downH.SetBinContent(xbin, nomVal-varVal)
+
+        #        #normalize (shape only variation is considered)
+        #        if normalize : downH.Scale( nomH.Integral()/downH.Integral() )
+        #        if normalize : upH.Scale( nomH.Integral()/upH.Integral() )
+
+        #        #check if variation is meaningful
+        #        accept = acceptVariationForDataCard(nomH=nomH, upH=upH, downH=downH)
+        #        if not accept : continue
+
+        #        #save
+        #        downShapes[iproc]=downH
+        #        upShapes[iproc]=upH
+
+        #    #check if something has been accepted
+        #    if len(upShapes)==0 : continue
+
+        #    #write to datacard
+        #    datacard.write('%26s shape'%systVar)
+        #    for sig in signalList:
+        #        if ("%s1p0w"%(sig)) in procsToApply and ("%s1p0w"%(sig)) in upShapes:
+        #            datacard.write('%15s'%'1')
+        #        else:
+        #            datacard.write('%15s'%'-')
+        #    for proc in exp:
+        #        isSig=False
+        #        for sig in modWidList :
+        #            if sig in proc : isSig=True
+        #        if isSig : continue
+        #        if proc in procsToApply and proc in upShapes:
+        #            datacard.write('%15s'%'1')
+        #        else:
+        #            datacard.write('%15s'%'-')
+        #    datacard.write('\n')
+
+
+        ##
+        #for systVar, normalize, useAltShape, projectRelToNom in genSysts:
+        #    _,genVarShapesUp = getMergedDists((systfIn if useAltShape else fIn),
+        #            ('%sup%s%s%s_%s_'%(systVar,lbCat,lfs,cat,dist)),
+        #            (rawSignalList if opt.addSigs else None),
+        #            ('top' if opt.addSigs else ''),
+        #            widList,nomWid,signalList)
+        #    _,genVarShapesDn = getMergedDists((systfIn if useAltShape else fIn),
+        #            ('%sdn%s%s%s_%s_'%(systVar,lbCat,lfs,cat,dist)),
+        #            (rawSignalList if opt.addSigs else None),
+        #            ('top' if opt.addSigs else ''),
+        #            widList,nomWid,signalList)
+
+        #    #prepare shapes and check if variation is significant
+        #    downShapes, upShapes = {}, {}
+
+        #    for iproc in exp:
+        #        nomH=exp[iproc]
+
+        #        if not iproc in genVarShapesDn :
+        #            continue
+        #        #get directly from another file
+        #        downH  = genVarShapesDn[iproc]
+        #        if iproc in genVarShapesUp:
+        #            upH = genVarShapesUp[iproc]
+        #        else:
+        #            #if only one variation is available, mirror it
+        #            upH = downH.Clone( '%s%sUp'%(iproc,systVar) )
+        #            for xbin in xrange(1,upH.GetNbinsX()+1):
+        #                diff=upH.GetBinContent(xbin)-nomH.GetBinContent(xbin)
+        #                upH.SetBinContent(xbin,nomH.GetBinContent(xbin)-diff)
+
+        #        # use do down/up x nom to generate the variation, then mirror it
+        #        if projectRelToNom:
+        #            ratioH=downH.Clone()
+        #            ratioH.Divide(upH)
+        #            for xbin in xrange(1,nomH.GetNbinsX()+1):
+        #                nomVal=nomH.GetBinContent(xbin)
+        #                varVal = ratioH.GetBinContent(xbin) * nomVal
+        #                upH.SetBinContent(xbin, varVal)
+        #                varVal = varVal- nomVal
+        #                downH.SetBinContent(xbin, nomVal-varVal)
+
+        #        #normalize (shape only variation is considered)
+        #        if normalize : downH.Scale( nomH.Integral()/downH.Integral() )
+        #        if normalize : upH.Scale( nomH.Integral()/upH.Integral() )
+
+        #        #check if variation is meaningful
+        #        accept = acceptVariationForDataCard(nomH=nomH, upH=upH, downH=downH)
+        #        if not accept : continue
+
+        #        #save
+        #        downShapes[iproc]=downH
+        #        upShapes[iproc]=upH
+
+        #    #check if something has been accepted
+        #    if len(upShapes)==0 : continue
+
+        #    #write to datacard
+        #    datacard.write('%26s shape'%systVar)
+        #    for sig in signalList:
+        #        if ("%s1p0w"%(sig)) in upShapes:
+        #            datacard.write('%15s'%'1')
+        #        else:
+        #            datacard.write('%15s'%'-')
+        #    for proc in exp:
+        #        isSig=False
+        #        for sig in modWidList :
+        #            if sig in proc : isSig=True
+        #        if isSig : continue
+        #        if proc in exp and proc in upShapes:
+        #            datacard.write('%15s'%'1')
+        #        else:
+        #            datacard.write('%15s'%'-')
+        #    datacard.write('\n')
+
+        datacard.close()
 
 
 """
