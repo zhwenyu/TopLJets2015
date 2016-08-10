@@ -344,12 +344,29 @@ void RunTopWidth(TString filename,
       //event weight
       //
       float wgt(1.0);
-      std::vector<float> puWgts(3,1.0);
+      std::vector<float> puWgts(3,1.0),topPtWgts(2,1.0);
       EffCorrection_t lepSelCorrWgt(1.0,0.0), triggerCorrWgt(1.0,0.0);
       if(!ev.isData)
 	{
 	  //MC normalization weight
 	  float norm( normH ? normH->GetBinContent(1) : 1.0);
+
+	  //top pt
+	  Int_t ntops(0);
+          float ptsf(1.0);
+          for(Int_t igen=0; igen<ev.ngtop; igen++)
+            {
+              if(abs(ev.gtop_id[igen])!=6) continue;
+              ntops++;
+              ptsf *= TMath::Exp(0.156-0.00137*ev.gtop_pt[igen]);
+            }
+          if(ptsf>0 && ntops==2)
+            {
+              ptsf=TMath::Sqrt(ptsf);
+              topPtWgts[0]=1./ptsf;
+              topPtWgts[1]=ptsf;
+            }
+
 
 	  //account for pu weights and effect on normalization
 	  allPlots["puwgtctr"]->Fill(0.,1.0);
@@ -379,7 +396,8 @@ void RunTopWidth(TString filename,
       //all done... physics
       //preselection
       if(chTag=="") continue;
-      
+      if(leptons[0].Pt()<30 && leptons[1].Pt()<30) continue;
+
       //nominal selection control histograms
       allPlots["nvtx_"+chTag]->Fill(ev.nvtx,wgt);
       float mll((leptons[0]+leptons[1]).M());
@@ -490,7 +508,7 @@ void RunTopWidth(TString filename,
       if(chTag=="MM") twev.cat=13*13;
       if(chTag=="EM") twev.cat=11*13;
       if(chTag=="EE") twev.cat=11*11;
-      twev.nw=7;
+      twev.nw=9;
       twev.weight[0]=wgt;
       twev.weight[1]=wgt*puWgts[1]/puWgts[0];
       twev.weight[2]=wgt*puWgts[2]/puWgts[0];
@@ -498,10 +516,12 @@ void RunTopWidth(TString filename,
       twev.weight[4]=wgt*(triggerCorrWgt.first-triggerCorrWgt.second)/triggerCorrWgt.first;
       twev.weight[5]=wgt*(lepSelCorrWgt.first+lepSelCorrWgt.second)/lepSelCorrWgt.first;
       twev.weight[6]=wgt*(lepSelCorrWgt.first-lepSelCorrWgt.second)/lepSelCorrWgt.first;
+      twev.weight[7]=wgt*topPtWgts[0];
+      twev.weight[8]=wgt*topPtWgts[1];
       if(ev.ttbar_nw>0)
 	{
 	  twev.nw+=15;
-	  for(size_t iw=1; iw<=15; iw++) twev.weight[2+iw]=wgt*ev.ttbar_w[iw]/ev.ttbar_w[0];
+	  for(size_t iw=1; iw<=15; iw++) twev.weight[8+iw]=wgt*ev.ttbar_w[iw]/ev.ttbar_w[0];
 	}
       twev.nt=0;
       twev.met_pt=ev.met_pt[0];

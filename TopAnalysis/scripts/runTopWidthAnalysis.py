@@ -32,7 +32,7 @@ Analysis loop
 def runTopWidthAnalysis(fileName,
                         outFileName,
                         widthList=[0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0],
-                        systs=['','puup','pudn','btagup','btagdn','jerup','jerdn','jesup','jesdn','lesup','lesdn']):
+                        systs=['','puup','pudn','btagup','btagdn','ltagup','ltagdn','jerup','jerdn','jesup','jesdn','lesup','lesdn','trigup','trigdn','selup','seldn','topptup','topptdn']):
 
     print '....analysing',fileName,'with output @',outFileName
 
@@ -41,6 +41,10 @@ def runTopWidthAnalysis(fileName,
     if isData:
         widthList=[1.0]
         systs=['']
+    else:
+        #generator level systematics for ttbar
+        if 'TTJets' in fileName:
+            for i in xrange(1,16):  systs += ['gen%d'%i]
 
     smWidth=1.324 # all powheg samples have been generated with the width @ 172.5 GeV
     smMass=172.5
@@ -161,28 +165,39 @@ def runTopWidthAnalysis(fileName,
                 observablesH[var].Fill(mtop,baseEvWeight*widthWeight[w])
 
 
-        #preselect the b-jets (central b-tag, b-tag up, b-tag dn, jer up, jer dn, jes up, jes dn)
-        bjets=( [], [], [], [], [], [], [] )
+        #preselect the b-jets (central b-tag, b-tag up, b-tag dn, l-tag up, l-tag dn, jer up, jer dn, jes up, jes dn)
+        bjets=( [], [], [], [], [], [], [], [], [] )
         for ij in xrange(0,tree.nj):
 
             jp4=ROOT.TLorentzVector()
             jp4.SetPtEtaPhiM(tree.j_pt[ij],tree.j_eta[ij],tree.j_phi[ij],tree.j_m[ij])
 
-            for ibit in xrange(0,3):
+            for ibit, shiftHeavyFlav in [ (0,None), (1,True), (2,True), (1,False), (2,False) ]:
+                
+                #reset b-tag bit to 0 if flavour is not the one to vary
+                if shiftHeavyFlav is not None:
+                    hadflav=abs(tree.j_hadflav[ij])
+                    if shiftHeavyFlat :
+                        if hadFlav!=4 and hadFlav!=5 : ibit=0
+                    else:
+                        if hadFlav==4 or hadFlav==5 : ibit=0
+
+                #get b-tag decision
                 btagVal=((tree.j_btag[ij] >> ibit) & 0x1)
 
                 if btagVal==0: continue
                 bjets[ibit].append( (ij,jp4) )
 
-                if ibit>0: continue
+                #use standard b-tag decision for JES/JER variations
+                if shitHeavyFlav is not None : continue
 
                 jres=ROOT.TMath.Abs(1-tree.j_jer[ij])
-                bjets[3].append( (ij,jp4*(1+jres)) )
-                bjets[4].append( (ij,jp4*(1-jres)) )
+                bjets[5].append( (ij,jp4*(1+jres)) )
+                bjets[6].append( (ij,jp4*(1-jres)) )
 
                 jscale=tree.j_jes[ij]
-                bjets[5].append( (ij,jp4*(1+jscale)) )
-                bjets[6].append( (ij,jp4*(1-jscale)) )
+                bjets[7].append( (ij,jp4*(1+jscale)) )
+                bjets[8].append( (ij,jp4*(1-jscale)) )
 
         #build the dilepton
         dilepton=ROOT.TLorentzVector()
@@ -251,14 +266,23 @@ def runTopWidthAnalysis(fileName,
                 ijhyp=0
                 if s=='btagup' : ijhyp=1
                 if s=='btagdn' : ijhyp=2
-                if s=='jerup'  : ijhyp=3
-                if s=='jerdn'  : ijhyp=4
-                if s=='jesup'  : ijhyp=5
-                if s=='jesdn'  : ijhyp=6
+                if s=='ltagup' : ijhyp=3
+                if s=='ltagdn' : ijhyp=4
+                if s=='jerup'  : ijhyp=5
+                if s=='jerdn'  : ijhyp=6
+                if s=='jesup'  : ijhyp=7
+                if s=='jesdn'  : ijhyp=8
                 if s=='lesup'  : lp4 *= (1.0+lscale)
                 if s=='lesdn'  : lp4 *= (1.0-lscale)
                 if s=='puup'   : evWeight=puNormSF*tree.weight[1]
                 if s=='pudn'   : evWeight=puNormSF*tree.weight[2]
+                if s=='trigup':  evWeight=puNormSF*tree.weight[3]
+                if s=='trigdn':  evWeight=puNormSF*tree.weight[4]
+                if s=='selup':  evWeight=puNormSF*tree.weight[5]
+                if s=='seldn':  evWeight=puNormSF*tree.weight[6]
+                if s=='topptup':  evWeight=puNormSF*tree.weight[7]
+                if s=='topptdn':  evWeight=puNormSF*tree.weight[8]
+                if 'gen' in s : evWeight=puNormSF*tree.weight[8+int(s[3:])]
 
                 #btag hypothesis
                 nbtags=len(bjets[ijhyp])
