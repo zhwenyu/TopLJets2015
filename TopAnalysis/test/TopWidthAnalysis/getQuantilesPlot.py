@@ -20,6 +20,7 @@ parser.add_option("--lfs", type="string", dest="lfsList", default="",       help
 parser.add_option("--dist",type="string", dest="dist"   , default="incmlb", help="the observable distribution to look at")
 parser.add_option("--wid", type="string", dest="widList", default="0p5w,1p0w,1p5w,2p0w,2p5w,3p0w,3p5w,4p0w,4p5w,5p0w", help="a list of widths to look for in stats filenames")
 parser.add_option("--axisOverwrite", type="string", dest="aoverList", default="", help="Axis labels to use if desired")
+parser.add_option("--labelWidth", action="store_true", dest="labelWidth", default=False, help="Include the width in the plot information")
 
 (options, args) = parser.parse_args()
 
@@ -164,31 +165,14 @@ if options.dist in [key for key in distToTitle] :
     DistLaTeX.SetTextSize(0.04)
     DistLaTeX.Draw()
 
-    TMassInfo=ROOT.TLatex(.185,.185,"m_{t} = 172.5 GeV")
+    widthInfo=""
+    if options.labelWidth :
+        widthInfo=", #Gamma_{t}=%s#times#Gamma_{SM}"%(rawWidList[0].replace('p','.').replace('w',''))
+    TMassInfo=ROOT.TLatex(.185,.185,"m_{t} = 172.5 GeV%s"%(widthInfo))
     TMassInfo.SetNDC(ROOT.kTRUE)
     TMassInfo.SetTextSize(0.03)
     TMassInfo.Draw()
 
-# CMS text
-#CMSLine="CMS"
-#CP=ROOT.TLatex(0.12,0.92, CMSLine)
-#CP.SetNDC(ROOT.kTRUE)
-#CP.SetTextSize(0.05)
-#CP.Draw()
-#
-## Lumi
-#CMSLineLumi="#sqrt{s}=13 TeV, 2.3 fb^{-1}"
-#CP1=ROOT.TLatex(0.67,0.92, CMSLineLumi)
-#CP1.SetNDC(ROOT.kTRUE)
-#CP1.SetTextSize(0.04)
-#CP1.Draw()
-#
-## ExtraText
-#CMSLineExtra="#bf{#it{Preliminary}}"
-#CP2=ROOT.TLatex(0.195,0.92, CMSLineExtra)
-#CP2.SetNDC(ROOT.kTRUE)
-#CP2.SetTextSize(0.04)
-#CP2.Draw()
 
 # set the bin and axis labels
 xax=totalGraph.GetXaxis()
@@ -216,10 +200,6 @@ leg.AddEntry(quantGraph2sigA,"Alt,  2#sigma","f")
 leg.AddEntry(quantGraph3sigA,"Alt,  3#sigma","f")
 leg.AddEntry(quantGraphExp  ,"Median"       ,"l")
 leg.Draw()
-
-#massAxis=ROOT.TGaxis(-.5,-2.5,10.5,-2.5,.25*1.324,5.25*1.324,505,"")
-#massAxis.SetTitle("Generator-level #Gamma_{t}")
-#massAxis.Draw()
 
 CMS_lumi.relPosX = 0.180
 CMS_lumi.lumiTextSize = 0.55

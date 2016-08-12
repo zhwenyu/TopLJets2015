@@ -16,10 +16,3 @@
 "MC13TeV_TTJets_widthx4"  :     [832,   0, "/TT_widthx4_TuneCUETP8M1_13TeV-powheg-pythia8/RunIISpring16MiniAODv2-PUSpring16_80X_mcRun2_asymptotic_2016_miniAODv2_v0-v1/MINIAODSIM", "t#bar{t} widthx4",          920, true, false, 1],
 "MC13TeV_TTJets_amcatnloFXFX":  [832,    0, "/TTJets_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/RunIISpring16MiniAODv1-PUSpring16RAWAODSIM_80X_mcRun2_asymptotic_2016_v3-v2/MINIAODSIM", "t#bar{t}",          920, true, false, 1]
 }
-
-
-
-
-
-
-

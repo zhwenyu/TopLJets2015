@@ -2,34 +2,53 @@ from plotter import *
 import sys
 import ROOT
 
+ROOT.gROOT.SetBatchMode(True)
+
+import CMS_lumi
+import tdrStyle
+
 from optparse import OptionParser
 parser = OptionParser(
     usage="%prog [options] [label=datacard.txt | datacard.txt]",
     epilog=""
     )
-parser.add_option("-i",    type="string",  dest="indir"  ,   default="~/work/TopWidth_era2015/datacards/shapes.root",   help="file to look for dists in")
-parser.add_option("--wid", type="string",  dest="widList",   default="1",   help="a list of widths to look for in distnames")
-parser.add_option("--lfs", type="string",  dest="lfsList",   default="EM",   help="a list of lepton final states to look for in distnames")
+parser.add_option("-i",     type="string", dest="indir"  ,   default="~/work/TopWidth_era2015/datacards/shapes.root",   help="file to look for dists in")
+parser.add_option("--wid",  type="string", dest="widList",   default="1",   help="a list of widths to look for in distnames")
+parser.add_option("--lfs",  type="string", dest="lfsList",   default="EM",   help="a list of lepton final states to look for in distnames")
 parser.add_option("--lbCh", type="string", dest="lbCatList", default="highpt,lowpt",   help="a list of states to look for in distnames")
 parser.add_option("--cats", type="string", dest="catList",   default="1b,2b",   help="a list of lepton final states to look for in stats filenames")
 parser.add_option("--uncs", type="string", dest="uncList",   default="jer,jes,les,pu,btag",   help="a list of uncertainties to look for")
 parser.add_option("--proc", type="string", dest="procList",  default="tbart",   help="a list of processes to plot")
-parser.add_option("--syst", type="string", dest="systIn",    default="",   help="a list of lepton final states to look for in stats filenames")
-parser.add_option("-o",    type="string",  dest="outdir" ,   default="./",   help="the base filename for the plots")
+parser.add_option("-o",     type="string", dest="outdir" ,   default="./",   help="the base filename for the plots")
+parser.add_option("--obs",
+        type="string",
+        dest="obsList",
+        default="minmlb,mdrmlb,incmlb,sncmlb,mt2mlb",
+        help="a list of observable distributions to consider")
 
 (options, args) = parser.parse_args()
 
 def main():
+    tdrStyle.setTDRStyle()
+
     url = options.indir
 
-    systNameMap= {"jes" : "Jet energy scale",
+    systNameMap= {
+            "jes"           : "Jet energy scale",
             "jer"           : "Jet energy resolution",
             "les"           : "Lepton energy scale",
+            "ltag"          : "Lepton tagging efficiency",
+            "trig"          : "Trigger efficiency",
+            "sel"           : "Selection efficiency",
+            "toppt"         : "Top p_{T}",
             "pu"            : "Pileup",
             "btag"          : "b-tagging",
             "ttPartonShower": "t#bar{t} parton shower scale",
             "tWttinterf"    : "tW/t#bar{t} interference",
-            "Mtop"          : "Top p_T",
+            "Mtop"          : "Top mass",
+            "MEmuF"         : "ME: Factorization scale",
+            "MEmuR"         : "ME: Renormalization scale",
+            "MEtot"         : "ME: Combined variation",
     }
 
     widList   = options.widList.split(',')
@@ -38,6 +57,7 @@ def main():
     catList   = options.catList.split(',')
     procList  = options.procList.split(',')
     uncList   = options.uncList.split(',')
+    obsList   = options.obsList.split(',')
 
     ROOT.gStyle.SetOptTitle(0)
     ROOT.gStyle.SetOptStat(0)
@@ -50,16 +70,17 @@ def main():
     can.SetBottomMargin(0.1)
     can.SetLeftMargin(0.12)
 
-    for wid,lbCat,lfs,cat,proc in [(a,b,c,d,e)
+    for wid,lbCat,lfs,cat,proc,obs in [(a,b,c,d,e,f)
             for a in widList
             for b in lbCatList
             for c in lfsList
             for d in catList
-            for e in procList] :
+            for e in procList
+            for f in obsList] :
 
         print "Starting for %s%s%s_%s%s"%(lbCat,lfs,cat,proc,wid)
 
-        nomH=fIn.Get('%s%s%s_mlb/%s%sw'%(lbCat,lfs,cat,proc,("%2.1f"%float(wid)).replace('.','p')))
+        nomH=fIn.Get('%s%s%s_%s/%s%sw'%(lbCat,lfs,cat,obs,proc,("%2.1f"%float(wid)).replace('.','p')))
         nomH.SetLineWidth(2)
         nomH.SetLineColor(1)
         nomH.SetFillStyle(0)
@@ -67,12 +88,11 @@ def main():
         nomH.GetYaxis().SetTitle("")
         nomH.GetXaxis().SetTitle("Mass(lepton, jet) [GeV]")
 
-        leg= ROOT.TLegend(0.60,0.7,0.80,0.99)
+        leg= ROOT.TLegend(0.60,0.6,0.80,0.99)
         leg.SetFillStyle(0)
         leg.SetBorderSize(0)
         leg.SetTextFont(42)
         leg.SetTextSize(0.035)
-        leg.SetHeader('#bf{CMS} #it{Simulation}')
         leg.AddEntry(nomH,'Nominal','l')
 
         colors=[ROOT.kRed,ROOT.kBlue,ROOT.kGreen+2,ROOT.kOrange,ROOT.kGray,ROOT.kTeal]
@@ -81,8 +101,8 @@ def main():
         for isyst in xrange(0,nSysts):
             key=uncList[isyst]
             color=colors[isyst]
-            hup=fIn.Get('%s%s%s_%sUp/%s%sw'%(lbCat,lfs,cat,key,proc,("%2.1f"%float(wid)).replace('.','p')))
-            hdn=fIn.Get('%s%s%s_%sDown/%s%sw'%(lbCat,lfs,cat,key,proc,("%2.1f"%float(wid)).replace('.','p')))
+            hup=fIn.Get('%s%s%s_%s_%sUp/%s%sw'%(lbCat,lfs,cat,obs,key,proc,("%2.1f"%float(wid)).replace('.','p')))
+            hdn=fIn.Get('%s%s%s_%s_%sDown/%s%sw'%(lbCat,lfs,cat,obs,key,proc,("%2.1f"%float(wid)).replace('.','p')))
             allGr.append( ROOT.TGraphAsymmErrors() )
             for xbin in xrange(1,hup.GetNbinsX()+1):
                 valUp=hup.GetBinContent(xbin)
@@ -113,10 +133,12 @@ def main():
             leg.AddEntry(allGr[-1],key if not systNameMap[key] else systNameMap[key],'f')
 
         leg.Draw()
+
+        CMS_lumi.CMS_lumi(can,4,0)
         can.Modified()
         can.Update()
-        can.SaveAs('%s/UncertaintiesExp_%s%s%s_mlb_%s%sw.pdf'%(options.outdir,lbCat,lfs,cat,proc,("%2.1f"%float(wid)).replace('.','p')))
-        can.SaveAs('%s/UncertaintiesExp_%s%s%s_mlb_%s%sw.png'%(options.outdir,lbCat,lfs,cat,proc,("%2.1f"%float(wid)).replace('.','p')))
+        can.SaveAs('%s/UncertaintiesExp_%s%s%s_%s_%s%sw.pdf'%(options.outdir,lbCat,lfs,cat,obs,proc,("%2.1f"%float(wid)).replace('.','p')))
+        can.SaveAs('%s/UncertaintiesExp_%s%s%s_%s_%s%sw.png'%(options.outdir,lbCat,lfs,cat,obs,proc,("%2.1f"%float(wid)).replace('.','p')))
 
     fIn.Close()
 

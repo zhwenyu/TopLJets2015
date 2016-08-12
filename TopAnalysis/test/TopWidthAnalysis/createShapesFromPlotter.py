@@ -120,14 +120,12 @@ def getMergedDists(fIn,basedir='',addList=None,addTitle='',
                 newName=key
                 if key in sigList :
                     newName=('%s%s'%(key,wid.replace('.','p')))
-                #print " - " +newName
                 exp[newName]=mergeExp[key].Clone(newName)
         else :
             _,mergeExp=getDistsFrom(directory=directory,addList=addList,addTitle=addTitle,keyFilter=keyFilter)
             for key in mergeExp :
                 if key in sigList :
                     newName=('%s%s'%(key,wid.replace('.','p')))
-                    #print " - " +newName
                     exp[newName]=mergeExp[key].Clone(newName)
                 else : continue
     return obs,exp
@@ -254,9 +252,13 @@ def main():
           ('tbartVnorm_th',    1.30,     'lnN',    ['tbartV']           ,[]),
     ]
 
-    Mtop=['tbartm=169.5','tbartm=175.5','tWm=169.5','tWm=175.5']
+    Mtop=['tbartm=169.5','tbartm=175.5']#,'tWm=169.5','tWm=175.5']
     ttParton_tt=['tbartscaledown','tbartscaleup']
     ttParton_tW=['tWscaledown','tWscaleup']
+    ME={    "muF": ['%sgen%i'%(sig,ind) for sig in ['tbart','tW'] for ind in [3,4]],
+            "muR": ['%sgen%i'%(sig,ind) for sig in ['tbart','tW'] for ind in [5,8]],
+            "tot": ['%sgen%i'%(sig,ind) for sig in ['tbart','tW'] for ind in [6,10]]
+            }
     tWinterf=['tWDS']
 
     MtopMap={}
@@ -294,6 +296,8 @@ def main():
           ('MEmuR'         , MEMap["muR"], False, True, False),
           ('MEtot'         , MEMap["tot"], False, True, False)
     ]
+
+    systSignalList=Mtop+ttParton_tt+ttParton_tW+tWinterf+ME["muF"]+ME["muR"]+ME["tot"]
 
     genSysts=[
         ('jes',   False,False,False),
@@ -466,7 +470,6 @@ def main():
                 datacard.close()
                 continue
 
-            systSignalList=Mtop+ttParton_tt+ttParton_tW+tWinterf
 
             # sample systematics
             _,genVarShapes = getMergedDists(fIn,
