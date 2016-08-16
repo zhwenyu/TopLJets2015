@@ -167,14 +167,18 @@ def runTopWidthAnalysis(fileName,
 
         #preselect the b-jets (central b-tag, b-tag up, b-tag dn, l-tag up, l-tag dn, jer up, jer dn, jes up, jes dn)
         bjets=( [], [], [], [], [], [], [], [], [] )
+
+        #define b-tag variations (bit to use, do heavy flavour shift with None=use nominal)
+        btagVars=[ (0,None), (1,True), (2,True), (1,False), (2,False) ] 
         for ij in xrange(0,tree.nj):
 
             jp4=ROOT.TLorentzVector()
             jp4.SetPtEtaPhiM(tree.j_pt[ij],tree.j_eta[ij],tree.j_phi[ij],tree.j_m[ij])
 
-            for ibit, shiftHeavyFlav in [ (0,None), (1,True), (2,True), (1,False), (2,False) ]:
+            for ibvar in xrange(0,len(btagVars)):
                 
                 #reset b-tag bit to 0 if flavour is not the one to vary
+                ibit, shiftHeavyFlav = btagVars[ibvar] 
                 if shiftHeavyFlav is not None:
                     hadFlav=abs(tree.gj_hadflav[ij])
                     if shiftHeavyFlav :
@@ -186,7 +190,7 @@ def runTopWidthAnalysis(fileName,
                 btagVal=((tree.j_btag[ij] >> ibit) & 0x1)
 
                 if btagVal==0: continue
-                bjets[ibit].append( (ij,jp4) )
+                bjets[ibvar].append( (ij,jp4) )
 
                 #use standard b-tag decision for JES/JER variations
                 if shiftHeavyFlav is not None : continue
@@ -210,6 +214,7 @@ def runTopWidthAnalysis(fileName,
         nbtags=len(bjets[0])
         if nbtags>2 : nbtags=2
         btagcat='1b' if nbtags==1 else '2b'
+        if nbtags==0 : btagcat='0b'
 
         if nbtags>0:
             var=evcat+btagcat+'_mll'
