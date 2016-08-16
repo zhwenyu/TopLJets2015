@@ -2,7 +2,7 @@
 
 #include "TopLJets2015/TopAnalysis/interface/CommonTools.h"
 #include "TopLJets2015/TopAnalysis/interface/TOP-16-006.h"
-#include "TopLJets2015/TopAnalysis/interface/TOPWidth.h"
+#include "TopLJets2015/TopAnalysis/interface/TOP-16-019.h"
 #include "TopLJets2015/TopAnalysis/interface/Run5TeVAnalysis.h"
 
 #include "TH1F.h"
@@ -74,7 +74,7 @@ int main(int argc, char* argv[])
 
   //check method to run
   if(method=="TOP-16-006::RunTop16006")    RunTop16006(in,out,channel,charge,FlavourSplitting(flav),normH,runSysts,era);
-  else if(method=="TOPWidth::RunTopWidth") RunTopWidth(in,out,channel,charge,FlavourSplitting(flav),normH,runSysts,era);
+  else if(method=="TOPWidth::RunTop16019") RunTop16019(in,out,channel,charge,FlavourSplitting(flav),normH,runSysts,era);
   else if(method=="Run5TeVAnalysis::Run5TeVAnalysis") Run5TeVAnalysis(in,out,channel,charge,FlavourSplitting(flav),normH,runSysts,era);
   else
     {
