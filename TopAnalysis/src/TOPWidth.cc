@@ -38,8 +38,7 @@ void RunTopWidth(TString filename,
 		 TString era)
 {
 
-  if(filename.Contains("SingleElectron") ||
-     filename.Contains("SingleMuon"))
+  if(filename.Contains("SingleElectron") || filename.Contains("SingleMuon"))
     {
       cout << "Bailing out from analysing " << filename << endl;
       return;
@@ -76,8 +75,9 @@ void RunTopWidth(TString filename,
   if(ev.isData && filename.Contains("DoubleMuon"))     requireMMTriggers=true;
   bool requireEMTriggers(false);
   if(ev.isData && filename.Contains("MuonEG"))         requireEMTriggers=true;
+  //bool vetoEtrigger(false),vetoMtrigger(false);
+  //if(ev.isData && filename.Contains("SingleElectron")) vetoMtrigger=true;
 
-  cout << "...producing " << outname << " from " << nentries << " events" << endl;
 
   //PILEUP WEIGHTING
   std::vector<TGraph *>puWgtGr;
@@ -220,7 +220,7 @@ void RunTopWidth(TString filename,
       bool hasMMTrigger(((ev.muTrigger>>2)&0x3)!=0);
       bool hasEMTrigger(((ev.elTrigger>>2)&0x3)!=0);
       if(!ev.isData)
-	{	 
+	{ 
 	  hasEETrigger=true;
 	  hasMMTrigger=true;
 	  hasEMTrigger=true;
@@ -240,6 +240,7 @@ void RunTopWidth(TString filename,
 	  else if(abs(ev.l_id[ selLeptons[0] ]*ev.l_id[ selLeptons[1] ])==13*13 && hasMMTrigger) chTag="MM";
 	  else if(abs(ev.l_id[ selLeptons[0] ]*ev.l_id[ selLeptons[1] ])==11*11 && hasEETrigger) chTag="EE";
 	}
+
 
       //select jets
       std::vector<int> genJetsFlav,genJetsHadFlav, btagStatus;
@@ -397,6 +398,7 @@ void RunTopWidth(TString filename,
       //preselection
       if(chTag=="") continue;
       if(leptons[0].Pt()<30 && leptons[1].Pt()<30) continue;
+      if(fabs(leptons[0].Eta())>2.1 && fabs(leptons[1].Eta())>2.1) continue;
 
       //nominal selection control histograms
       allPlots["nvtx_"+chTag]->Fill(ev.nvtx,wgt);

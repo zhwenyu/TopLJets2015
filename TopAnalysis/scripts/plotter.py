@@ -27,6 +27,9 @@ class Plot(object):
         self.mcUnc=0
 
     def add(self, h, title, color, isData,spImpose):
+
+        if 'ratevsrun' in self.name and not isData: return
+
         h.SetTitle(title)
         if isData:
             try:
