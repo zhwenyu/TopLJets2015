@@ -243,7 +243,7 @@ def main():
           ('tbartVnorm_th',    1.30,     'lnN',    ['tbartV']           ,[]),
     ]
 
-    Mtop       =['tbartm=169.5','tbartm=175.5']#,'tWm=169.5','tWm=175.5']
+    Mtop       =['tbartm=169.5','tbartm=175.5','tWm=169.5','tWm=175.5']
     ttParton_tt=['tbartscaledown','tbartscaleup']
     ttParton_tW=['tWscaledown','tWscaleup']
     ME={    "muF": ['%sgen%i'%(sig,ind) for sig in ['tbart','tW'] for ind in [3,4]],
@@ -252,7 +252,7 @@ def main():
             }
     tWinterf=['tWDS']
 
-    systSignalList=Mtop+ttParton_tt#+ttParton_tW+tWinterf+ME["muF"]+ME["muR"]+ME["tot"]
+    systSignalList=Mtop+ttParton_tt+ttParton_tW+tWinterf+ME["muF"]+ME["muR"]+ME["tot"]
 
     MtopMap={}
     ttPartonMap={}
@@ -264,20 +264,20 @@ def main():
             }
     for wid in modWidList :
         MtopMap[    'tbart%s'%wid]=['tbartm=169.5%s'  %(wid),'tbartm=175.5%s'%(wid)]
-        #MtopMap[    'tW%s'   %wid]=['tWm=169.5%s'     %(wid),'tWm=175.5%s'   %(wid)]
+        MtopMap[    'tW%s'   %wid]=['tWm=169.5%s'     %(wid),'tWm=175.5%s'   %(wid)]
 
         ttPartonMap['tbart%s'%wid]=['tbartscaledown%s'%(wid),'tbartscaleup%s'%(wid)]
-       # ttPartonMap['tW%s'   %wid]=['tWscaledown%s'   %(wid),'tWscaleup%s'   %(wid)]
+        ttPartonMap['tW%s'   %wid]=['tWscaledown%s'   %(wid),'tWscaleup%s'   %(wid)]
 
-        #tWinterfMap['tW%s'   %wid]=['tWDS%s'   %(wid)]
+        tWinterfMap['tW%s'   %wid]=['tWDS%s'   %(wid)]
 
-        #MEMap["muF"]['tbart%s'%wid]=['tbartgen3%s'%(wid),'tbartgen4%s' %(wid)]
-        #MEMap["muR"]['tbart%s'%wid]=['tbartgen5%s'%(wid),'tbartgen8%s' %(wid)]
-        #MEMap["tot"]['tbart%s'%wid]=['tbartgen6%s'%(wid),'tbartgen10%s'%(wid)]
+        MEMap["muF"]['tbart%s'%wid]=['tbartgen3%s'%(wid),'tbartgen4%s' %(wid)]
+        MEMap["muR"]['tbart%s'%wid]=['tbartgen5%s'%(wid),'tbartgen8%s' %(wid)]
+        MEMap["tot"]['tbart%s'%wid]=['tbartgen6%s'%(wid),'tbartgen10%s'%(wid)]
 
-        #MEMap["muF"]['tW%s'%wid]=['tWgen3%s'%(wid),'tWgen4%s' %(wid)]
-        #MEMap["muR"]['tW%s'%wid]=['tWgen5%s'%(wid),'tWgen8%s' %(wid)]
-        #MEMap["tot"]['tW%s'%wid]=['tWgen6%s'%(wid),'tWgen10%s'%(wid)]
+        MEMap["muF"]['tW%s'%wid]=['tWgen3%s'%(wid),'tWgen4%s' %(wid)]
+        MEMap["muR"]['tW%s'%wid]=['tWgen5%s'%(wid),'tWgen8%s' %(wid)]
+        MEMap["tot"]['tW%s'%wid]=['tWgen6%s'%(wid),'tWgen10%s'%(wid)]
 
 
     sampleSysts=[
@@ -285,21 +285,21 @@ def main():
           ('Mtop'          , MtopMap    , True , True, False),
           ('ttPartonShower', ttPartonMap, False, True, False),
           #tWinterference
-          #('tWttinterf'    , tWinterfMap, False, True, True) TODO
+          ('tWttinterf'    , tWinterfMap, False, True, True) TODO
           #ME generator
-          #('MEmuF'         , MEMap["muF"], False, True, False),
-          #('MEmuR'         , MEMap["muR"], False, True, False),
-          #('MEtot'         , MEMap["tot"], False, True, False)
+          ('MEmuF'         , MEMap["muF"], False, True, False),
+          ('MEmuR'         , MEMap["muR"], False, True, False),
+          ('MEtot'         , MEMap["tot"], False, True, False)
     ]
 
 
     genSysts=[
         ('jes',   False,False,False),
         ('les',   False,False,False),
-        #('ltag',  False,False,False),
-        #('trig',  False,False,False),
-        #('sel',   False,False,False),
-        #('toppt', False,False,False),
+        ('ltag',  False,False,False),
+        ('trig',  False,False,False),
+        ('sel',   False,False,False),
+        ('toppt', False,False,False),
         ('jer',   False,False,False),
         ('btag',  False,False,False),
         ('pu',     True,False,False)

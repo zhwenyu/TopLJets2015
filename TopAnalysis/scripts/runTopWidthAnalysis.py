@@ -167,18 +167,19 @@ def runTopWidthAnalysis(fileName,
 
         #preselect the b-jets (central b-tag, b-tag up, b-tag dn, l-tag up, l-tag dn, jer up, jer dn, jes up, jes dn)
         bjets=( [], [], [], [], [], [], [], [], [] )
+        otherjets=( [], [], [], [], [], [], [], [], [] )
 
         #define b-tag variations (bit to use, do heavy flavour shift with None=use nominal)
-        btagVars=[ (0,None), (1,True), (2,True), (1,False), (2,False) ] 
+        btagVars=[ (0,None), (1,True), (2,True), (1,False), (2,False) ]
         for ij in xrange(0,tree.nj):
 
             jp4=ROOT.TLorentzVector()
             jp4.SetPtEtaPhiM(tree.j_pt[ij],tree.j_eta[ij],tree.j_phi[ij],tree.j_m[ij])
 
             for ibvar in xrange(0,len(btagVars)):
-                
+
                 #reset b-tag bit to 0 if flavour is not the one to vary
-                ibit, shiftHeavyFlav = btagVars[ibvar] 
+                ibit, shiftHeavyFlav = btagVars[ibvar]
                 if shiftHeavyFlav is not None:
                     hadFlav=abs(tree.gj_hadflav[ij])
                     if shiftHeavyFlav :
@@ -368,12 +369,17 @@ def runTopWidthAnalysis(fileName,
                         # calculate mt2 for the highest HT
                         tlpjp4IsHighestHT = ((tlp+jp4).Pt() + (lp4+tb).Pt()) >= ((lp4+jp4).Pt() + (tlp+tb).Pt())
 
-                        if tlpjp4IsHighestHT :
-                            mt2 = MT2Calculator.calcMt2(tlp+jp4,lp4+tb,metForMT2)
-                            mt2ptCat= 'highpt' if ((tlp+jp4).Pt() > 100 or (lp4+tb).Pt() > 100) else 'lowpt'
-                        else :
-                            mt2 = MT2Calculator.calcMt2(tlp+tb,lp4+jp4,metForMT2)
-                            mt2ptCat= 'highpt' if ((lp4+jp4).Pt() > 100 or (tlp+tb).Pt() > 100) else 'lowpt'
+                        try :
+                            if tlpjp4IsHighestHT :
+                                mt2 = MT2Calculator.calcMt2(tlp+jp4,lp4+tb,metForMT2)
+                                mt2ptCat= 'highpt' if ((tlp+jp4).Pt() > 100 or (lp4+tb).Pt() > 100) else 'lowpt'
+                            else :
+                                mt2 = MT2Calculator.calcMt2(tlp+tb,lp4+jp4,metForMT2)
+                                mt2ptCat= 'highpt' if ((lp4+jp4).Pt() > 100 or (tlp+tb).Pt() > 100) else 'lowpt'
+                        except ZeroDivisionError:
+                            mt2=float('inf')
+                            print '\t\t - event has incalculable mt2, skipping... \n'
+
 
 
                     #fill histos
