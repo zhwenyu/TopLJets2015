@@ -31,7 +31,7 @@ Analysis loop
 """
 def runTopWidthAnalysis(fileName,
                         outFileName,
-                        widthList=[0.5,0.75,1.0,1.25,1.5,2.0,2.5,3.0,3.5,4.0],
+                        widthList=[0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0],
                         systs=['','puup','pudn','btagup','btagdn','ltagup','ltagdn','jerup','jerdn','jesup','jesdn','lesup','lesdn','trigup','trigdn','selup','seldn','topptup','topptdn']):
 
     print '....analysing',fileName,'with output @',outFileName
@@ -96,15 +96,15 @@ def runTopWidthAnalysis(fileName,
                         var=s+i+j+b+'_mlb_%3.1fw'%w
                         observablesH[var]=ROOT.TH1F(var,';Mass(lepton,jet) [GeV];l+j pairs',30,0,300)
                         var=s+i+j+b+'_incmlb_%3.1fw'%w
-                        observablesH[var]=ROOT.TH1F(var,';Inclusive Mass(lepton,jet) [GeV];l+j pairs',30,0,300)
+                        observablesH[var]=ROOT.TH1F(var,';Mass(lepton,jet) (Inclusive) [GeV];l+j pairs',30,0,300)
                         #var=s+i+j+b+'_sncmlb_%3.1fw'%w
                         #observablesH[var]=ROOT.TH1F(var,';Mass(lepton,jet) (Semi-Inclusive) [GeV];l+j pairs',30,0,300)
                         #var=s+i+j+b+'_mdrmlb_%3.1fw'%w
                         #observablesH[var]=ROOT.TH1F(var,';Mass(lepton,jet) (Minimum #Delta R) [GeV];l+j pairs',30,0,300)
-                        var=s+i+j+b+'_minmlb_%3.1fw'%w
-                        observablesH[var]=ROOT.TH1F(var,';min Mass(lepton,jet) [GeV];Events',30,0,300)
+                        #var=s+i+j+b+'_minmlb_%3.1fw'%w
+                        #observablesH[var]=ROOT.TH1F(var,';Mass(lepton,jet) (Minimum) [GeV];l+j pairs',30,0,300)
                         var=s+i+j+b+'_mt2mlb_%3.1fw'%w
-                        observablesH[var]=ROOT.TH1F(var,';M_{T2} [GeV];Events',30,0,300)
+                        observablesH[var]=ROOT.TH1F(var,';Mass(lepton,jet) (M_{T2} Method) [GeV];l+j pairs',30,0,300)
 
                         if w!=1.0 or len(s)>0 : continue
                         var=i+j+b+'_pairing'
@@ -115,24 +115,6 @@ def runTopWidthAnalysis(fileName,
     for var in observablesH:
         observablesH[var].SetDirectory(0)
         observablesH[var].Sumw2()
-
-    # setup mlb calculations
-    mlbTypes  = ["min","inc","mt2"] #"mdr","snc"
-    ptCatList = ["highpt", "lowpt"]
-    bTagCats  = ["1b", "2b"]
-    evCatList = ["EE", "EM", "MM"]
-    mlbMap = {}
-    mlbMapInitVals = [(float('inf'),0)]
-    for s,ptC,evC,btC,mC,w in [(s,a,b,c,d,e) for s in systs
-                               for a in ptCatList
-                               for b in evCatList
-                               for c in bTagCats
-                               for d in mlbTypes
-                               for e in widthList]:
-        if mC == "inc" or mC == "snc" : initVals = []
-        mlbMap["%s%s%s%s_%smlb_%3.1fw"%(s,ptC,evC,btC,mC,w)] = mlbMapInitVals
-
-
 
     #open file
     puNormSF=1.0
@@ -195,7 +177,7 @@ def runTopWidthAnalysis(fileName,
             jp4.SetPtEtaPhiM(tree.j_pt[ij],tree.j_eta[ij],tree.j_phi[ij],tree.j_m[ij])
 
             for ibvar in xrange(0,len(btagVars)):
-                
+
                 #reset b-tag bit to 0 if flavour is not the one to vary
                 ibit, shiftHeavyFlav = btagVars[ibvar]
                 if shiftHeavyFlav is not None:
@@ -265,12 +247,24 @@ def runTopWidthAnalysis(fileName,
             var=evcat+btagcat+'_njets'
             observablesH[var].Fill(tree.nj,baseEvWeight)
 
+        # setup mlb calculations
+        mlbTypes  = ["inc","mt2"]#,"snc","min","mdr"]
+        ptCatList = ["highpt", "lowpt"]
+        bTagCats  = ["1b", "2b"]
+        evCatList = ["EE", "EM", "MM"]
+        mlbMap = {}
+        for s,ptC,evC,btC,mC,w in [(s,a,b,c,d,e) for s in systs
+                for a in ptCatList
+                for b in evCatList
+                for c in bTagCats
+                for d in mlbTypes
+                for e in widthList]:
+            initVals = [(float('inf'),0)]
+            if mC == "inc" or mC == "snc" : initVals = []
+            mlbMap["%s%s%s%s_%smlb_%3.1fw"%(s,ptC,evC,btC,mC,w)] = initVals
+
         metForMT2 = ROOT.TLorentzVector()
         metForMT2.SetPtEtaPhiM(tree.met_pt, 0, tree.met_phi, 0)
-
-        #reset mlb computation map
-        #mlbMap = dict.fromkeys( mlbMap.iterkeys(), mlbMapInitVals )
-        for key in mlbMap : mlbMap[key]=mlbMapInitVals
 
         #pair with the leptons
         for il in xrange(0,2):
@@ -387,6 +381,7 @@ def runTopWidthAnalysis(fileName,
                             print '\t\t - event has incalculable mt2, skipping... \n'
 
 
+
                     #fill histos
                     if s=='':
                         var=evcat+btagcat+'_ptlb'
@@ -408,9 +403,9 @@ def runTopWidthAnalysis(fileName,
                         #mlbMap[var] += [(mlb,mlbWt)]+[(dRlb,0)]
 
                         # fill min mlb
-                        var=s+ptCat+evcat+btagcat+'_minmlb_%3.1fw'%w
-                        if mlb < mlbMap[var][0] :
-                            mlbMap[var] = [(mlb,mlbWt)]
+                        #var=s+ptCat+evcat+btagcat+'_minmlb_%3.1fw'%w
+                        #if mlb < mlbMap[var][0] :
+                        #    mlbMap[var] = [(mlb,mlbWt)]
 
                         # fill mdr mlb
                         #var=s+ptCat+evcat+btagcat+'_mdrmlb_%3.1fw'%w
@@ -420,7 +415,8 @@ def runTopWidthAnalysis(fileName,
                         # fill mt2 mlb
                         if il == 1 and ib == nbtags-1 and (mt2ptCat=='highpt' or mt2ptCat=='lowpt'):
                             var=s+mt2ptCat+evcat+btagcat+'_mt2mlb_%3.1fw'%w
-                            mlbMap[var] = [(mt2,mlbWt)]
+                            if mt2 < mlbMap[var][0] :
+                                mlbMap[var] = [(mt2,mlbWt)]
 
                         #only for standard width and syst variations
                         if w!=1.0 or len(s)>0 : continue
@@ -430,27 +426,27 @@ def runTopWidthAnalysis(fileName,
         # fill all relevant histos
         for histoName in mlbMap :
             # make sure there's one entry for appropriate mlb
-            if len(mlbMap[histoName]) > 1:
-                if "min" in histoName or "mdr" in histoName or "mt2" in histoName :
-                    print "WARNING: storing more than one mlb for %s"%histoName
+            #if len(mlbMap[histoName]) > 1:
+            #    if "min" in histoName or "mdr" in histoName or "mt2" in histoName :
+            #        print "WARNING: storing more than one mlb for %s"%histoName
             # perform snc reduction
-            #if "snc" in histoName:
-            #    if len(mlbMap[histoName]) % 2 == 1 :
-            #        print "WARNING: incorrect structure for %s"%histoName
-            #    minDR2=[(float('inf'),0,float('inf')),(float('inf'),0,float('inf'))]
-            #
-            #    # get pair with lowest DR separation
-            #    for i in range(0,len(mlbMap[histoName]),2) :
-            #        mlb,wt = mlbMap[histoName][i]
-            #        mdr,_  = mlbMap[histoName][i+1]
-            #
-            #        if mdr < minDR2[0][2] :
-            #            minDR2[1] = minDR2[0]
-            #            minDR2[0] = (mlb,wt,mdr)
-            #        elif mdr < minDR2[1][2] :
-            #            minDR2[1] = (mlb,wt,mdr)
-            #
-            #    mlbMap[histoName] = [(mlb,wt) for mlb,wt,_ in minDR2]
+            if "snc" in histoName:
+                if len(mlbMap[histoName]) % 2 == 1 :
+                    print "WARNING: incorrect structure for %s"%histoName
+                minDR2=[(float('inf'),0,float('inf')),(float('inf'),0,float('inf'))]
+
+                # get pair with lowest DR separation
+                for i in range(0,len(mlbMap[histoName]),2) :
+                    mlb,wt = mlbMap[histoName][i]
+                    mdr,_  = mlbMap[histoName][i+1]
+
+                    if mdr < minDR2[0][2] :
+                        minDR2[1] = minDR2[0]
+                        minDR2[0] = (mlb,wt,mdr)
+                    elif mdr < minDR2[1][2] :
+                        minDR2[1] = (mlb,wt,mdr)
+
+                mlbMap[histoName] = [(mlb,wt) for mlb,wt,_ in minDR2]
 
             # fill
             for mlb,wt in mlbMap[histoName] :
