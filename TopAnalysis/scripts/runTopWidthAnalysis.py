@@ -364,7 +364,7 @@ def runTopWidthAnalysis(fileName,
                         if nbtags==1 :
                             _,tb = otherjets[ijhyp][0]
                         elif nbtags==2 :
-                            _,tb = nbtags[ijhyp][0]
+                            _,tb = bjets[ijhyp][0]
 
                         # calculate mt2 for the highest HT
                         tlpjp4IsHighestHT = ((tlp+jp4).Pt() + (lp4+tb).Pt()) >= ((lp4+jp4).Pt() + (tlp+tb).Pt())

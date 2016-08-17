@@ -20,7 +20,7 @@ fi
 
 export LSB_JOB_REPORT_MAIL=N
 
-queue=2nd
+queue=2nw
 githash=8db9ad6
 lumi=12870
 lumiUnc=0.062
@@ -58,7 +58,8 @@ case $WHAT in
 	cp test/index.php ${wwwdir}/sel
 	;;
     ANA )
-	python scripts/runTopWidthAnalysis.py -i ${summaryeosdir} -o ${outdir}/analysis -q ${queue};
+	queue=local
+	python scripts/runTopWidthAnalysis.py -i ${summaryeosdir} -o ${outdir}/analysis -q ${queue} --only _dilpowheg;
 	;;
     MERGE )
 	./scripts/mergeOutputs.py ${outdir}/analysis;
