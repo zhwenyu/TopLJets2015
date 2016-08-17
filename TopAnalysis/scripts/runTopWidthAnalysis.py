@@ -99,10 +99,10 @@ def runTopWidthAnalysis(fileName,
                         observablesH[var]=ROOT.TH1F(var,';Mass(lepton,jet) (Inclusive) [GeV];l+j pairs',30,0,300)
                         var=s+i+j+b+'_sncmlb_%3.1fw'%w
                         observablesH[var]=ROOT.TH1F(var,';Mass(lepton,jet) (Semi-Inclusive) [GeV];l+j pairs',30,0,300)
-                        var=s+i+j+b+'_mdrmlb_%3.1fw'%w
-                        observablesH[var]=ROOT.TH1F(var,';Mass(lepton,jet) (Minimum #Delta R) [GeV];l+j pairs',30,0,300)
-                        var=s+i+j+b+'_minmlb_%3.1fw'%w
-                        observablesH[var]=ROOT.TH1F(var,';Mass(lepton,jet) (Minimum) [GeV];l+j pairs',30,0,300)
+                        #var=s+i+j+b+'_mdrmlb_%3.1fw'%w
+                        #observablesH[var]=ROOT.TH1F(var,';Mass(lepton,jet) (Minimum #Delta R) [GeV];l+j pairs',30,0,300)
+                        #var=s+i+j+b+'_minmlb_%3.1fw'%w
+                        #observablesH[var]=ROOT.TH1F(var,';Mass(lepton,jet) (Minimum) [GeV];l+j pairs',30,0,300)
                         var=s+i+j+b+'_mt2mlb_%3.1fw'%w
                         observablesH[var]=ROOT.TH1F(var,';Mass(lepton,jet) (M_{T2} Method) [GeV];l+j pairs',30,0,300)
 
@@ -191,7 +191,7 @@ def runTopWidthAnalysis(fileName,
                 btagVal=((tree.j_btag[ij] >> ibit) & 0x1)
 
                 if btagVal > 0:
-                    bjets[ibit].append( (ij,jp4) )
+                    bjets[ibvar].append( (ij,jp4) )
 
                     #use standard b-tag decision for JES/JER variations
                     if shiftHeavyFlav is not None : continue
@@ -204,7 +204,7 @@ def runTopWidthAnalysis(fileName,
                     bjets[7].append( (ij,jp4*(1+jscale)) )
                     bjets[8].append( (ij,jp4*(1-jscale)) )
                 elif btagVal == 0 :
-                    otherjets[ibit].append( (ij,jp4) )
+                    otherjets[ibvar].append( (ij,jp4) )
 
                     #use standard b-tag decision for JES/JER variations
                     if shiftHeavyFlav is not None : continue
@@ -248,7 +248,7 @@ def runTopWidthAnalysis(fileName,
             observablesH[var].Fill(tree.nj,baseEvWeight)
 
         # setup mlb calculations
-        mlbTypes  = ["min","mdr","inc","snc","mt2"]
+        mlbTypes  = ["inc","snc","mt2"]#,"min","mdr"]
         ptCatList = ["highpt", "lowpt"]
         bTagCats  = ["1b", "2b"]
         evCatList = ["EE", "EM", "MM"]
@@ -403,14 +403,14 @@ def runTopWidthAnalysis(fileName,
                         mlbMap[var] += [(mlb,mlbWt)]+[(dRlb,0)]
 
                         # fill min mlb
-                        var=s+ptCat+evcat+btagcat+'_minmlb_%3.1fw'%w
-                        if mlb < mlbMap[var][0] :
-                            mlbMap[var] = [(mlb,mlbWt)]
+                        #var=s+ptCat+evcat+btagcat+'_minmlb_%3.1fw'%w
+                        #if mlb < mlbMap[var][0] :
+                        #    mlbMap[var] = [(mlb,mlbWt)]
 
                         # fill mdr mlb
-                        var=s+ptCat+evcat+btagcat+'_mdrmlb_%3.1fw'%w
-                        if mlb < mlbMap[var][0] and dRlb<=1 :
-                            mlbMap[var] = [(mlb,mlbWt)]
+                        #var=s+ptCat+evcat+btagcat+'_mdrmlb_%3.1fw'%w
+                        #if mlb < mlbMap[var][0] and dRlb<=1 :
+                        #    mlbMap[var] = [(mlb,mlbWt)]
 
                         # fill mt2 mlb
                         if il == 1 and ib == nbtags-1 and (mt2ptCat=='highpt' or mt2ptCat=='lowpt'):
@@ -426,9 +426,9 @@ def runTopWidthAnalysis(fileName,
         # fill all relevant histos
         for histoName in mlbMap :
             # make sure there's one entry for appropriate mlb
-            if len(mlbMap[histoName]) > 1:
-                if "min" in histoName or "mdr" in histoName or "mt2" in histoName :
-                    print "WARNING: storing more than one mlb for %s"%histoName
+            #if len(mlbMap[histoName]) > 1:
+            #    if "min" in histoName or "mdr" in histoName or "mt2" in histoName :
+            #        print "WARNING: storing more than one mlb for %s"%histoName
             # perform snc reduction
             if "snc" in histoName:
                 if len(mlbMap[histoName]) % 2 == 1 :
