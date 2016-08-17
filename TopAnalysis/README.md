@@ -52,7 +52,7 @@ source /cvmfs/cms.cern.ch/crab3/crab.sh
 ```
 As soon as ntuple production starts to finish, to move from crab output directories to a simpler directory structure which can be easily parsed by the local analysis runThe merging can be run locally if needed by using the checkProductionIntegrity.py script
 ```
-python scripts/submitCheckProductionIntegrity.py -i /store/group/phys_top/psilva/121d8f2 -o /store/cmst3/user/psilva/LJets2016/121d8f2
+python scripts/submitCheckProductionIntegrity.py -i /store/group/phys_top/psilva/8db9ad6 -o /store/cmst3/user/psilva/LJets2016/8db9ad6
 ```
 
 ## Preparing the analysis 
@@ -80,13 +80,13 @@ python scripts/runPileupEstimation.py --json data/era2016/Data13TeV_DoubleMuon_l
 * B-tagging. To apply corrections to the simulation one needs the expected efficiencies stored somwewhere. The script below will project the jet pT spectrum from the TTbar sample before and after applying b-tagging, to compute the expecte efficiencies. The result will be stored in data/expTageff.root
 ```
 for i in "_powheg" "_herwig" "_scaledown" "_scaleup"; do
-    python scripts/saveExpectedBtagEff.py -i /store/cmst3/user/psilva/LJets2016/121d8f2/MC13TeV_TTJets${i} -o data/era2016/expTageff${i}.root;
+    python scripts/saveExpectedBtagEff.py -i /store/cmst3/user/psilva/LJets2016/8db9ad6/MC13TeV_TTJets${i} -o data/era2016/expTageff${i}.root;
 done
 mv data/era2016/expTageff_powheg.root data/era2016/expTageff.root
 ```
 * MC normalization. This will loop over all the samples available in EOS and produce a normalization cache (weights to normalize MC). The file will be available in data/genweights.pck
 ```
-python scripts/produceNormalizationCache.py -i /store/cmst3/user/psilva/LJets2016/121d8f2 -o data/era2016/genweights.root
+python scripts/produceNormalizationCache.py -i /store/cmst3/user/psilva/LJets2016/8db9ad6 -o data/era2016/genweights.root
 ```
 You're now ready to start locally the analysis.
 
@@ -116,7 +116,7 @@ before submitting the jobs to the batch. After the jobs have run you can merge t
 ```
 To plot the output of the local analysis you can run the following:
 ```
-python scripts/plotter.py -i analysis_muplus/   -j data/era2016/samples.json  -l 11377
+python scripts/plotter.py -i analysis_muplus/   -j data/era2016/samples.json  -l 12870
 ```
 After the plotters are created one can run the QCD estimation normalization, by fitting the MET distribution.
 The script will also produce the QCD templates using the data from the sideband region. It runs as

@@ -21,11 +21,11 @@ fi
 export LSB_JOB_REPORT_MAIL=N
 
 queue=2nd
-githash=121d8f2
-lumi=11377
+githash=8db9ad6
+lumi=12870
 lumiUnc=0.062
 eosdir=/store/cmst3/user/psilva/LJets2016/${githash}
-summaryeosdir=/store/cmst3/group/top/summer2016/TopWidth_${ERA}_ichep
+summaryeosdir=/store/cmst3/group/top/summer2016/TopWidth_${ERA}_ichepv2
 case $ERA in
     era2015)
 	githash=8c1e7c9;
@@ -58,8 +58,7 @@ case $WHAT in
 	cp test/index.php ${wwwdir}/sel
 	;;
     ANA )
-	queue=local
-	python scripts/runTopWidthAnalysis.py -i ${summaryeosdir} -o ${outdir}/analysis -q ${queue} --only TTJ;
+	python scripts/runTopWidthAnalysis.py -i ${summaryeosdir} -o ${outdir}/analysis -q ${queue};
 	;;
     MERGE )
 	./scripts/mergeOutputs.py ${outdir}/analysis;
