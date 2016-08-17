@@ -68,7 +68,6 @@ def main():
     import CMS_lumi
 
     tdrStyle.setTDRStyle()
-    #CMS_lumi.lumiText=
     CMS_lumi.lumiTextSize=0.6
     CMS_lumi.extraText="Simulation Preliminary"
     CMS_lumi.extraOverCmsTextSize=0.5
@@ -80,8 +79,8 @@ def main():
         if opt.saveLog : canvas.SetLogy()
         canvas.cd()
 
-        wgtHist=wgtFin.Get(p[0])
-        divHist=divFin.Get(p[1])
+        wgtHist=wgtFin.Get(p[0]).Clone()
+        divHist=divFin.Get(p[1]).Clone()
 
         divHist.Divide(wgtHist)
 
@@ -91,6 +90,14 @@ def main():
         divHist.SetMarkerColor(ROOT.kBlack)
 
         divHist.Draw()
+
+        if "tmass" in p[0] :
+            fit=ROOT.TF1("tm","pol1",150,200)
+            divHist.Fit(fit,"NQ")
+            fit.SetLineColor(ROOT.kRed)
+
+            fit.Draw("SAME")
+
 
         CMS_lumi.CMS_lumi(canvas,4,0)
         canvas.SaveAs("%s/%s.pdf"%(outDir,p[0].split('/')[1].replace('.','w').replace('#','').replace('{','').replace('}','')))
@@ -106,7 +113,6 @@ def main():
         info=ROOT.TLatex()
         info.SetTextSize(0.02)
 
-        i=1
         for (iptC,ich,ibc) in [(iptC,ich,ibc)
                 for iptC in range(len(ptChList))
                 for ich  in range(len(chList))
@@ -118,10 +124,10 @@ def main():
             ch  = chList[ich]
             bc  = bcatList[ibc]
 
-            wgtHist=wgtFin.Get("%s%s%s_%s_%sw/%s%s%s_%s_%sw_%s"%(ptC,ch,bc,obs,wid,ptC,ch,bc,obs,wid,sig))
-            divHist=divFin.Get("%s%s%s_%s_%sw/%s%s%s_%s_%sw_%s widthx4"%(ptC,ch,bc,obs,divWid,ptC,ch,bc,obs,divWid,sig))
+            wgtHist=wgtFin.Get("%s%s%s_%s_%sw/%s%s%s_%s_%sw_%s"%(ptC,ch,bc,obs,wid,ptC,ch,bc,obs,wid,sig)).Clone()
+            divHist=divFin.Get("%s%s%s_%s_%sw/%s%s%s_%s_%sw_%s widthx4"%(ptC,ch,bc,obs,divWid,ptC,ch,bc,obs,divWid,sig)).Clone()
 
-            #divHist.Divide(wgtHist)
+            divHist.Divide(wgtHist)
 
             divHist.GetYaxis().SetTitle("Events / Reweighted Events")
             divHist.GetYaxis().SetTitleSize(0.065)
@@ -137,11 +143,75 @@ def main():
 
             #CMS_lumi.CMS_lumi(miniCanvas,4,0)
 
-            i+=1
-
         miniCanvas.SaveAs("%s/RatioGrid_%s_%s_%s.pdf"%(outDir,obs,sig,wid.replace('#','').replace('{','').replace('}','')))
 
+    # use full dataset for comparison
+    for wid,sig in [(a,c) for a in widList for c in sigList]:
+        miniCanvas=ROOT.TCanvas()
+        miniCanvas.SetCanvasSize(300*2, 200*3)
+        miniCanvas.Clear()
 
+        miniCanvas.cd()
+        miniCanvas.Divide(2,3)
+
+        info=ROOT.TLatex()
+        info.SetTextSize(0.02)
+
+        obsHists={}
+        obsFits={}
+
+        i=1
+        for obs in obsList :
+            obsHists[obs]={}
+            obsHists[obs]["1x"]=None
+            obsHists[obs]["4x"]=None
+            for (iptC,ich,ibc) in [(iptC,ich,ibc)
+                    for iptC in range(len(ptChList))
+                    for ich  in range(len(chList))
+                    for ibc  in range(len(bcatList))] :
+
+                ptC = ptChList[iptC]
+                ch  = chList[ich]
+                bc  = bcatList[ibc]
+
+                wgtHist=wgtFin.Get("%s%s%s_%s_%sw/%s%s%s_%s_%sw_%s"%(ptC,ch,bc,obs,wid,ptC,ch,bc,obs,wid,sig)).Clone()
+                divHist=divFin.Get("%s%s%s_%s_%sw/%s%s%s_%s_%sw_%s widthx4"%(ptC,ch,bc,obs,divWid,ptC,ch,bc,obs,divWid,sig)).Clone()
+
+                if obsHists[obs]["1x"] is None :
+                    obsHists[obs]["1x"]=wgtHist
+                else :
+                    obsHists[obs]["1x"].Add(wgtHist)
+
+                if obsHists[obs]["4x"] is None :
+                    obsHists[obs]["4x"]=divHist
+                else :
+                    obsHists[obs]["4x"].Add(divHist)
+
+            miniCanvas.cd(i)
+            ROOT.gPad.SetGrid(1,1)
+            totObsHist=obsHists[obs]["4x"]
+            totObsHist.Divide(obsHists[obs]["1x"])
+            totObsHist.GetYaxis().SetTitle("Events / Reweighted Events")
+            totObsHist.GetYaxis().SetTitleSize(0.065)
+            totObsHist.GetYaxis().SetRangeUser(0.7,1.3)
+            totObsHist.GetXaxis().SetTitleSize(0.065)
+            totObsHist.SetTitle("")
+            totObsHist.SetMarkerColor(ROOT.kBlack)
+
+            totObsHist.Draw()
+
+            print '\n',obs
+            obsFits[obs]=ROOT.TF1(obs,"pol1",0,300)
+            obsFits[obs].SetLineColor(ROOT.kRed)
+            totObsHist.Fit(obsFits[obs])
+            obsFits[obs].Draw("SAME")
+
+            info.SetTextSize(0.06)
+            info.DrawLatexNDC(0.20,0.95,"%s"%(obs))
+            i+=1
+
+
+        miniCanvas.SaveAs("%s/DistGrid_%s_%s.pdf"%(outDir,sig,wid.replace('#','').replace('{','').replace('}','')))
 
     print '-'*50
     print 'Plots and summary ROOT file can be found in %s' % outDir

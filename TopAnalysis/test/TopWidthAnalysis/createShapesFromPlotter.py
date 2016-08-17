@@ -45,12 +45,6 @@ def filterShapeList(exp,signalList,rawSignalList):
         newExp[key]=exp[key]
     return newExp
 
-"""
-write shapes from array into RooMomentMorphs and save to RooWorkspace
-"""
-def saveMorphsToRooWorkspace(workspace,dists,name) :
-
-    return
 
 """
 get distributions from file
@@ -202,15 +196,17 @@ def main():
     parser.add_option('--noshapes', dest='skipMakingShapes', help='jump straight to morphing',                     default=False, action='store_true')
     parser.add_option('--nomorph',  dest='skipMorphing',     help='do not morph signal dists',                     default=False, action='store_true')
     parser.add_option('--allmorph', dest='allMorphs',        help='make morph validation plots for all cats',      default=False, action='store_true')
-    parser.add_option('--makesens', dest='noSens',           help='make local sensitivity validation (very slow)', default=True, action='store_false')
+    parser.add_option('--makesens', dest='makeSens',         help='make local sensitivity validation (very slow)', default=False, action='store_true')
+    parser.add_option('--novalidation', dest='noValidation', help='do not make any validation plots',              default=False, action='store_true')
     (opt, args) = parser.parse_args()
 
     # parse the dists to consider
     distList = opt.distList.split(',')
 
-    # parse the channels, lb categories to consider
+    # parse the channels, pt(l,b), b categories to consider
     lfsList=opt.lfsInput.split(',')
     lbCatList=opt.lbCat.split(',')
+    catList=opt.cat.split(',')
 
     # what are our signal processes?
     rawSignalList=opt.signal.split(',')
@@ -227,9 +223,6 @@ def main():
     modWidList=widList[:]
     for i in xrange(0,len(widList)) :
         modWidList[i]=widList[i].replace('.','p')
-
-    # what are our categories?
-    catList=opt.cat.split(',')
 
     # HARDCODE systematics
     tWRateSystList=['tW']
@@ -250,7 +243,7 @@ def main():
           ('tbartVnorm_th',    1.30,     'lnN',    ['tbartV']           ,[]),
     ]
 
-    Mtop       =['tbartm=169.5','tbartm=175.5','tWm=169.5','tWm=175.5']
+    Mtop       =['tbartm=169.5','tbartm=175.5']#,'tWm=169.5','tWm=175.5']
     ttParton_tt=['tbartscaledown','tbartscaleup']
     ttParton_tW=['tWscaledown','tWscaleup']
     ME={    "muF": ['%sgen%i'%(sig,ind) for sig in ['tbart','tW'] for ind in [3,4]],
@@ -259,7 +252,7 @@ def main():
             }
     tWinterf=['tWDS']
 
-    systSignalList=Mtop+ttParton_tt+ttParton_tW+tWinterf+ME["muF"]+ME["muR"]+ME["tot"]
+    systSignalList=Mtop+ttParton_tt#+ttParton_tW+tWinterf+ME["muF"]+ME["muR"]+ME["tot"]
 
     MtopMap={}
     ttPartonMap={}
@@ -271,20 +264,20 @@ def main():
             }
     for wid in modWidList :
         MtopMap[    'tbart%s'%wid]=['tbartm=169.5%s'  %(wid),'tbartm=175.5%s'%(wid)]
-        MtopMap[    'tW%s'   %wid]=['tWm=169.5%s'     %(wid),'tWm=175.5%s'   %(wid)]
+        #MtopMap[    'tW%s'   %wid]=['tWm=169.5%s'     %(wid),'tWm=175.5%s'   %(wid)]
 
         ttPartonMap['tbart%s'%wid]=['tbartscaledown%s'%(wid),'tbartscaleup%s'%(wid)]
-        ttPartonMap['tW%s'   %wid]=['tWscaledown%s'   %(wid),'tWscaleup%s'   %(wid)]
+       # ttPartonMap['tW%s'   %wid]=['tWscaledown%s'   %(wid),'tWscaleup%s'   %(wid)]
 
-        tWinterfMap['tW%s'   %wid]=['tWDS%s'   %(wid)]
+        #tWinterfMap['tW%s'   %wid]=['tWDS%s'   %(wid)]
 
-        MEMap["muF"]['tbart%s'%wid]=['tbartgen3%s'%(wid),'tbartgen4%s' %(wid)]
-        MEMap["muR"]['tbart%s'%wid]=['tbartgen5%s'%(wid),'tbartgen8%s' %(wid)]
-        MEMap["tot"]['tbart%s'%wid]=['tbartgen6%s'%(wid),'tbartgen10%s'%(wid)]
+        #MEMap["muF"]['tbart%s'%wid]=['tbartgen3%s'%(wid),'tbartgen4%s' %(wid)]
+        #MEMap["muR"]['tbart%s'%wid]=['tbartgen5%s'%(wid),'tbartgen8%s' %(wid)]
+        #MEMap["tot"]['tbart%s'%wid]=['tbartgen6%s'%(wid),'tbartgen10%s'%(wid)]
 
-        MEMap["muF"]['tW%s'%wid]=['tWgen3%s'%(wid),'tWgen4%s' %(wid)]
-        MEMap["muR"]['tW%s'%wid]=['tWgen5%s'%(wid),'tWgen8%s' %(wid)]
-        MEMap["tot"]['tW%s'%wid]=['tWgen6%s'%(wid),'tWgen10%s'%(wid)]
+        #MEMap["muF"]['tW%s'%wid]=['tWgen3%s'%(wid),'tWgen4%s' %(wid)]
+        #MEMap["muR"]['tW%s'%wid]=['tWgen5%s'%(wid),'tWgen8%s' %(wid)]
+        #MEMap["tot"]['tW%s'%wid]=['tWgen6%s'%(wid),'tWgen10%s'%(wid)]
 
 
     sampleSysts=[
@@ -294,19 +287,19 @@ def main():
           #tWinterference
           #('tWttinterf'    , tWinterfMap, False, True, True) TODO
           #ME generator
-          ('MEmuF'         , MEMap["muF"], False, True, False),
-          ('MEmuR'         , MEMap["muR"], False, True, False),
-          ('MEtot'         , MEMap["tot"], False, True, False)
+          #('MEmuF'         , MEMap["muF"], False, True, False),
+          #('MEmuR'         , MEMap["muR"], False, True, False),
+          #('MEtot'         , MEMap["tot"], False, True, False)
     ]
 
 
     genSysts=[
         ('jes',   False,False,False),
         ('les',   False,False,False),
-        ('ltag',  False,False,False),
-        ('trig',  False,False,False),
-        ('sel',   False,False,False),
-        ('toppt', False,False,False),
+        #('ltag',  False,False,False),
+        #('trig',  False,False,False),
+        #('sel',   False,False,False),
+        #('toppt', False,False,False),
         ('jer',   False,False,False),
         ('btag',  False,False,False),
         ('pu',     True,False,False)
@@ -668,6 +661,7 @@ def main():
 
     import CMS_lumi
     import tdrStyle
+    import numpy
     tdrStyle.setTDRStyle()
 
     print "\n Creating morphed dists\n"
@@ -686,6 +680,14 @@ def main():
     minGammaT=0.5*1.324
     nomGammaT=1.324
     maxGammaT=5.0*1.324
+    distToTitle={
+            "mlb":    "Inclusive M_{lb}",
+            "minmlb": "Minimum M_{lb}",
+            "mdrmlb": "#DeltaR-Filtered M_{lb}",
+            "incmlb": "Inclusive M_{lb}",
+            "sncmlb": "Semi-Inclusive M_{lb}",
+            "mt2mlb": "M_{T2}^{lb} Strategy"
+           }
 
     canvas=ROOT.TCanvas()
 
@@ -698,6 +700,7 @@ def main():
             for d in (['EM'] if not opt.allMorphs else lfsList)
             for e in (['2b'] if not opt.allMorphs else catList)]:
         modSig=replaceBadCharacters(sig)
+        distTitle="M_{lb}" if dist not in distToTitle else distToTitle[dist]
 
         # get the proper mass information for this signal
         masses=[]
@@ -862,6 +865,7 @@ def main():
             refGrid.addBinning(binning)
 
         massAxes=[ws.var('x').frame()]*len(widths)
+        widAxes =[ws.var('x').frame()]*len(masses)
         for imass in xrange(0,len(masses)):
             mass,url,proc=masses[imass]
 
@@ -879,11 +883,17 @@ def main():
                 pdf.plotOn(massAxes[iwid],
                         ROOT.RooFit.Name("%3.1f"%mass),
                         ROOT.RooFit.LineColor(ROOT.kOrange+kOrangeList[imass*3]))
+                pdf.plotOn(widAxes[imass],
+                        ROOT.RooFit.Name("%3.1f"%widths[iwid]),
+                        ROOT.RooFit.LineColor(ROOT.kOrange+kOrangeList[iwid]))
                 getattr(ws,'import')(pdf,ROOT.RooCmdArg())
 
                 #add pdf to the grid
                 print 'Adding',pdf.GetName(),'@ (',iwid,',',imass,')'
-                refGrid.addPdf(ws.pdf(pdf.GetName()),[iwid,imass]+([0]*len(upShapes)))
+                insertVector=numpy.zeros(2+len(upShapes))
+                insertVector[0]=iwid
+                insertVector[1]=imass
+                refGrid.addPdf(ws.pdf(pdf.GetName()),2+len(upShapes),insertVector)
 
                 isyst=0
                 for proc in upShapes :
@@ -909,9 +919,15 @@ def main():
                     dnPdf=ROOT.RooHistPdf(dnName+"_pdf",dnName+"_pdf",ROOT.RooArgSet(ws.var("x")),dnData)
                     getattr(ws,'import')(dnPdf,ROOT.RooCmdArg())
 
+                    insertVector=numpy.zeros(2+len(upShapes))
+                    insertVector[0]=iwid
+                    insertVector[1]=imass
+
                     # add pdfs to grid, setting all other systs to nominal
-                    refGrid.addPdf(ws.pdf(upPdf.GetName()),[iwid,imass]+([0]*isyst+[1] +[0]*(len(upShapes)-isyst-1)))
-                    refGrid.addPdf(ws.pdf(dnPdf.GetName()),[iwid,imass]+([0]*isyst+[-1]+[0]*(len(upShapes)-isyst-1)))
+                    insertVector[2+isyst]=1
+                    refGrid.addPdf(ws.pdf(upPdf.GetName()),2+len(upShapes),insertVector)
+                    insertVector[2+isyst]=-1
+                    refGrid.addPdf(ws.pdf(dnPdf.GetName()),2+len(upShapes),insertVector)
                     isyst+=1
 
             tfIn.Close()
@@ -919,11 +935,13 @@ def main():
         ###############################
         # create input PDF validation #
         ###############################
+        # all masses for one width
         for i in range(0,len(massAxes)) :
+            if opt.noValidation : break
             canvas.cd()
             canvas.SetLogy()
 
-            massAxes[i].GetXaxis().SetTitle("M_{lb}")
+            massAxes[i].GetXaxis().SetTitle("%s [GeV]"%distTitle)
             massAxes[i].GetYaxis().SetTitle("Probability density: lepton-jet pairs")
             massAxes[i].SetTitle("")
             massAxes[i].SetLineWidth(1)
@@ -941,10 +959,41 @@ def main():
             CMS_lumi.lumiTextSize = 0.55
             CMS_lumi.CMS_lumi(canvas,4,0)
             canvas.Update()
-            canvas.SaveAs("%s/inputValidation_%s%s%s_%s_%s.pdf"%(opt.output,lbCat,ch,cat,dist,modWidList[i]))
+            canvas.SaveAs("%s/massInputValidation_%s%s%s_%s_%s.pdf"%(opt.output,lbCat,ch,cat,dist,modWidList[i]))
             canvas.SetGrayscale(True)
             canvas.Update()
-            canvas.SaveAs("%s/gScale__inputValidation_%s%s%s_%s_%s.pdf"%(opt.output,lbCat,ch,cat,dist,modWidList[i]))
+            canvas.SaveAs("%s/gScale__massInputValidation_%s%s%s_%s_%s.pdf"%(opt.output,lbCat,ch,cat,dist,modWidList[i]))
+            canvas.SetGrayscale(False)
+
+        # all widths for one mass
+        canvas.clear()
+        for i in range(0,len(widAxes)) :
+            if opt.noValidation : break
+            canvas.cd()
+            canvas.SetLogy()
+
+            widAxes[i].GetXaxis().SetTitle("%s [GeV]"%distTitle)
+            widAxes[i].GetYaxis().SetTitle("Probability density: lepton-jet pairs")
+            widAxes[i].SetTitle("")
+            widAxes[i].SetLineWidth(1)
+            widAxes[i].Draw()
+
+            leg=ROOT.TLegend(0.65,0.17,0.90,0.37)
+            leg.SetHeader("m_{t} = %3.1f GeV"%masses[i][0])
+            for wid in widths :
+                leg.AddEntry("%3.1f"%(wid),"#Gamma_{t} = %3.1f#times#Gamma_{SM}"%(wid),"L")
+            leg.Draw()
+
+            CMS_lumi.relPosX = 0.180
+            CMS_lumi.extraText = "Simulation Preliminary"
+            CMS_lumi.extraOverCmsTextSize=0.50
+            CMS_lumi.lumiTextSize = 0.55
+            CMS_lumi.CMS_lumi(canvas,4,0)
+            canvas.Update()
+            canvas.SaveAs("%s/widthInputValidation_%s%s%s_%s_%s.pdf"%(opt.output,lbCat,ch,cat,dist,("3.1f"%masses[i][0]).replace('.','p')))
+            canvas.SetGrayscale(True)
+            canvas.Update()
+            canvas.SaveAs("%s/gScale__widthInputValidation_%s%s%s_%s_%s.pdf"%(opt.output,lbCat,ch,cat,dist,("3.1f"%masses[i][0]).replace('.','p')))
             canvas.SetGrayscale(False)
 
         #################################
@@ -971,6 +1020,8 @@ def main():
         ###############################
         # Produce morphing animations #
         ###############################
+        if not opt.allMorphs and not first : continue
+        if opt.noValidation : continue
         ROOT.gStyle.SetOptStat(0)
         status=ROOT.TLatex()
 
@@ -996,7 +1047,7 @@ def main():
         # NOTE: we want to reopen the outfile so that we see what Combine sees.
         #       This is inefficient but it is important validation!
         fOut=ROOT.TFile.Open(outFile)
-        workspace=fOut.Get("sigws_%s_%s"%(sig,dist))
+        workspace=fOut.Get("sigws_%s%s%s_%s_%s"%(lbCat,ch,cat,modSig,dist))
         morphPDF= workspace.pdf("widmorphpdf")
 
         alphaVar= workspace.var("alpha")
@@ -1028,7 +1079,7 @@ def main():
                         ROOT.RooFit.LineColor(ROOT.kOrange+kOrangeList[imass*3]))
                 leg.AddEntry("%3.1f"%(masses[imass][0]),"m_{t} = %3.1f GeV"%(masses[imass][0]),"L")
 
-            histos[i].GetXaxis().SetTitle("M_{lb}")
+            histos[i].GetXaxis().SetTitle("%s [GeV]"%distTitle)
             histos[i].GetYaxis().SetTitle("Morphed density: lepton-jet pairs")
             histos[i].SetTitle("")
             histos[i].SetLineWidth(1)
@@ -1062,7 +1113,7 @@ def main():
         histAlpha.GetYaxis().SetTitleOffset(1.1)
         histAlpha.GetYaxis().SetTitle("Grid width index")
         histAlpha.GetXaxis().SetTitleOffset(1.35)
-        histAlpha.GetXaxis().SetTitle("M(l,b) [GeV]")
+        histAlpha.GetXaxis().SetTitle("%s [GeV]"%distTitle)
         histAlpha.SetTitle("")
 
         histBeta  = mlbVar.createHistogram("Morphing against mass variations",betaVar)
@@ -1070,7 +1121,7 @@ def main():
         histBeta.GetYaxis().SetTitleOffset(1.1)
         histBeta.GetYaxis().SetTitle("Grid mass index")
         histBeta.GetXaxis().SetTitleOffset(1.35)
-        histBeta.GetXaxis().SetTitle("M(l,b) [GeV]")
+        histBeta.GetXaxis().SetTitle("%s [GeV]"%distTitle)
         histBeta.SetTitle("")
 
         CMS_lumi.relPosX = 0.180
@@ -1150,7 +1201,7 @@ def main():
 
             # mlb histo against mass
             histAlpha.SetTitle("")
-            histAlpha.GetXaxis().SetTitle("M(l,b) [GeV]")
+            histAlpha.GetXaxis().SetTitle("%s [GeV]"%distTitle)
             histAlpha.GetYaxis().SetTitle("Grid width index")
             histAlpha.GetZaxis().SetRangeUser(0,zLimList["mlb"])
             histAlpha.Draw("COLZ")
@@ -1163,7 +1214,7 @@ def main():
             # mlb histo against width
             histBeta.SetTitle("")
             histBeta.GetYaxis().SetTitle("Grid mass index")
-            histBeta.GetXaxis().SetTitle("M(l,b) [GeV]")
+            histBeta.GetXaxis().SetTitle("%s [GeV]"%distTitle)
             histBeta.GetZaxis().SetRangeUser(0,zLimList["mlb"])
             histBeta.Draw("COLZ")
             status.DrawLatexNDC(0.25,0.02,"#Gamma_{t}=%3.2f GeV"%(alphaVar.getVal()*(maxGammaT-minGammaT)/alphaVar.getMax()+minGammaT))
@@ -1179,7 +1230,7 @@ def main():
             for ia,ib,ix in [(ia,ib,ix) for ia in range(1,n2DScan+1)
                     for ib in range(1,n2DScan+1)
                     for ix in range(1,31)] :
-                if opt.noSens : break
+                if not opt.makeSens : break
 
                 # get all the bin numbers
                 gifBinA=sensHistAlpha.FindBin(ix*3-1.5,alphaStep)
@@ -1205,13 +1256,13 @@ def main():
                     dfdx=pdf.derivative(ws.var('x')).getVal()
                     sensHistBeta.Fill(binNumB,(1/f)*(dfdx**2))
 
-            if not opt.noSens :
+            if opt.makeSens :
                 ###################################
                 # sensitivity of mlb against mass #
                 ###################################
                 if step == 0 : zLimList["asens"]=sensHistAlpha.GetMaximum()*2
                 sensHistAlpha.SetTitle("")
-                sensHistAlpha.GetXaxis().SetTitle("M(l,b) [GeV]")
+                sensHistAlpha.GetXaxis().SetTitle("%s [GeV]"%distTitle)
                 sensHistAlpha.GetYaxis().SetTitle("Generator-level width [GeV]")
                 sensHistAlpha.GetZaxis().SetRangeUser(0,zLimList["asens"])
                 sensHistAlpha.Draw("COLZ")
@@ -1228,7 +1279,7 @@ def main():
                 ####################################
                 if step == 0 : zLimList["bsens"]=sensHistBeta.GetMaximum()*2
                 sensHistBeta.SetTitle("")
-                sensHistBeta.GetXaxis().SetTitle("M(l,b) [GeV]")
+                sensHistBeta.GetXaxis().SetTitle("%s [GeV]"%distTitle)
                 sensHistBeta.GetYaxis().SetTitle("Generator-level mass [GeV]")
                 sensHistBeta.GetZaxis().SetRangeUser(0,zLimList["bsens"])
                 sensHistBeta.Draw("COLZ")
@@ -1258,7 +1309,7 @@ def main():
         writeGif("%s/gifplots_%s_%s/rotscanalpha_%s.gif"%(opt.output,sig,dist,sig),rotScanAlphaImgs,duration=.1)
         writeGif("%s/gifplots_%s_%s/rotscanbeta_%s.gif"%( opt.output,sig,dist,sig), rotScanBetaImgs,duration=.1)
 
-        if not opt.noSens :
+        if opt.makeSens :
             writeGif("%s/gifplots_%s_%s/sensalphascan_%s.gif"%(opt.output,sig,dist,sig),sensAlphaScanImgs,duration=.05)
             writeGif("%s/gifplots_%s_%s/sensbetascan_%s.gif"%(opt.output,sig,dist,sig),sensBetaScanImgs,duration=.05)
 
@@ -1305,7 +1356,7 @@ def main():
         datacard.write('shapes data_obs   * shapes.root %s%s%s_%s/$PROCESS\n'%(lbCat,ch,cat,dist,lbCat,ch,cat,dist))
 
         for sig in signalList:
-            datacard.write('shapes %10s * shapes.root sigws_$PROCESS_%s:widmorphpdf\n'%(sig,dist))
+            datacard.write('shapes %10s * shapes.root sigws_%s%s%s_$PROCESS_%s:widmorphpdf\n'%(sig,lbCat,ch,cat,dist))
         datacard.write('-'*50+'\n')
 
         # bin names

@@ -21,7 +21,7 @@ outdir=/afs/cern.ch/work/e/ecoleman/public/TopWidth/TopWidth_${ERA}_old/
 cardsdir=${outdir}/datacards
 wwwdir=~/www/TopWidth_${ERA}/
 CMSSW_7_4_7dir=~/CMSSW_7_4_7/src/
-CMSSW_7_6_3dir=~/CMSSW_8_0_8_patch1/src/
+CMSSW_7_6_3dir=~/CMSSW_8_0_8_patch1_2/src/
 
 
 lumi=11377
@@ -98,13 +98,13 @@ case $WHAT in
         eval `scramv1 runtime -sh`
         cd ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/
         export PYTHONPATH=$PYTHONPATH:/usr/lib64/python2.6/site-packages/
-        nohup python test/TopWidthAnalysis/createShapesFromPlotter.py \
+        python test/TopWidthAnalysis/createShapesFromPlotter.py \
                 -s tbart,tW \
                 --dists ${distStr} \
                 -o ${outdir}/datacards/ \
                 -i ${outdir}/analysis/plots/plotter.root \
                 --systInput ${outdir}/analysis/plots/syst_plotter.root \
-                --nomorph &
+                --noshapes --novalidation
     ;;
     MORPHALL ) # get shapes/morphs replacing data with a given width template 
         cd ${CMSSW_7_4_7dir}
