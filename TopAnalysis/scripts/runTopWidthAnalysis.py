@@ -167,18 +167,19 @@ def runTopWidthAnalysis(fileName,
 
         #preselect the b-jets (central b-tag, b-tag up, b-tag dn, l-tag up, l-tag dn, jer up, jer dn, jes up, jes dn)
         bjets=( [], [], [], [], [], [], [], [], [] )
+        otherjets=( [], [], [], [], [], [], [], [], [] )
 
         #define b-tag variations (bit to use, do heavy flavour shift with None=use nominal)
-        btagVars=[ (0,None), (1,True), (2,True), (1,False), (2,False) ] 
+        btagVars=[ (0,None), (1,True), (2,True), (1,False), (2,False) ]
         for ij in xrange(0,tree.nj):
 
             jp4=ROOT.TLorentzVector()
             jp4.SetPtEtaPhiM(tree.j_pt[ij],tree.j_eta[ij],tree.j_phi[ij],tree.j_m[ij])
 
             for ibvar in xrange(0,len(btagVars)):
-                
+
                 #reset b-tag bit to 0 if flavour is not the one to vary
-                ibit, shiftHeavyFlav = btagVars[ibvar] 
+                ibit, shiftHeavyFlav = btagVars[ibvar]
                 if shiftHeavyFlav is not None:
                     hadFlav=abs(tree.gj_hadflav[ij])
                     if shiftHeavyFlav :
@@ -189,19 +190,32 @@ def runTopWidthAnalysis(fileName,
                 #get b-tag decision
                 btagVal=((tree.j_btag[ij] >> ibit) & 0x1)
 
-                if btagVal==0: continue
-                bjets[ibvar].append( (ij,jp4) )
+                if btagVal > 0:
+                    bjets[ibit].append( (ij,jp4) )
 
-                #use standard b-tag decision for JES/JER variations
-                if shiftHeavyFlav is not None : continue
+                    #use standard b-tag decision for JES/JER variations
+                    if shiftHeavyFlav is not None : continue
 
-                jres=ROOT.TMath.Abs(1-tree.j_jer[ij])
-                bjets[5].append( (ij,jp4*(1+jres)) )
-                bjets[6].append( (ij,jp4*(1-jres)) )
+                    jres=ROOT.TMath.Abs(1-tree.j_jer[ij])
+                    bjets[5].append( (ij,jp4*(1+jres)) )
+                    bjets[6].append( (ij,jp4*(1-jres)) )
 
-                jscale=tree.j_jes[ij]
-                bjets[7].append( (ij,jp4*(1+jscale)) )
-                bjets[8].append( (ij,jp4*(1-jscale)) )
+                    jscale=tree.j_jes[ij]
+                    bjets[7].append( (ij,jp4*(1+jscale)) )
+                    bjets[8].append( (ij,jp4*(1-jscale)) )
+                elif btagVal == 0 :
+                    otherjets[ibit].append( (ij,jp4) )
+
+                    #use standard b-tag decision for JES/JER variations
+                    if shiftHeavyFlav is not None : continue
+
+                    jres=ROOT.TMath.Abs(1-tree.j_jer[ij])
+                    otherjets[5].append( (ij,jp4*(1+jres)) )
+                    otherjets[6].append( (ij,jp4*(1-jres)) )
+
+                    jscale=tree.j_jes[ij]
+                    otherjets[7].append( (ij,jp4*(1+jscale)) )
+                    otherjets[8].append( (ij,jp4*(1-jscale)) )
 
         #build the dilepton
         dilepton=ROOT.TLorentzVector()
@@ -335,6 +349,7 @@ def runTopWidthAnalysis(fileName,
 
                     # calculate mt2 only in the last loop
                     mt2=float('inf')
+                    mt2ptCat=''
                     if il == 1 and ib == nbtags-1:
                         # get other lepton
                         tlp=ROOT.TLorentzVector()
@@ -343,14 +358,28 @@ def runTopWidthAnalysis(fileName,
                             tlp*=(1+tree.l_les[0])
                         if s=="lesdown" :
                             tlp*=(1-tree.l_les[0])
+
+                        # get other b-jet (or next highest csv)
+                        tb=None
                         if nbtags==1 :
-                            # calculate mt2 assuming the bjet could come from either t quark
-                            mt2=min(MT2Calculator.calcMt2(lp4+jp4,tlp,metForMT2),
-                                    MT2Calculator.calcMt2(lp4,tlp+jp4,metForMT2))
+                            _,tb = otherjets[ijhyp][0]
                         elif nbtags==2 :
-                            _,tb = bjets[ijhyp][0]
-                            mt2=min(MT2Calculator.calcMt2(lp4+jp4,tlp+tb,metForMT2),
-                                    MT2Calculator.calcMt2(lp4+tb,tlp+jp4,metForMT2))
+                            _,tb = nbtags[ijhyp][0]
+
+                        # calculate mt2 for the highest HT
+                        tlpjp4IsHighestHT = ((tlp+jp4).Pt() + (lp4+tb).Pt()) >= ((lp4+jp4).Pt() + (tlp+tb).Pt())
+
+                        try :
+                            if tlpjp4IsHighestHT :
+                                mt2 = MT2Calculator.calcMt2(tlp+jp4,lp4+tb,metForMT2)
+                                mt2ptCat= 'highpt' if ((tlp+jp4).Pt() > 100 or (lp4+tb).Pt() > 100) else 'lowpt'
+                            else :
+                                mt2 = MT2Calculator.calcMt2(tlp+tb,lp4+jp4,metForMT2)
+                                mt2ptCat= 'highpt' if ((lp4+jp4).Pt() > 100 or (tlp+tb).Pt() > 100) else 'lowpt'
+                        except ZeroDivisionError:
+                            mt2=float('inf')
+                            print '\t\t - event has incalculable mt2, skipping... \n'
+
 
 
                     #fill histos
@@ -380,13 +409,14 @@ def runTopWidthAnalysis(fileName,
 
                         # fill mdr mlb
                         var=s+ptCat+evcat+btagcat+'_mdrmlb_%3.1fw'%w
-                        if mlb < mlbMap[var][0] and dRlb<=0.4 :
+                        if mlb < mlbMap[var][0] and dRlb<=1 :
                             mlbMap[var] = [(mlb,mlbWt)]
 
                         # fill mt2 mlb
-                        var=s+ptCat+evcat+btagcat+'_mt2mlb_%3.1fw'%w
-                        if mt2 < mlbMap[var][0] :
-                            mlbMap[var] = [(mlb,mlbWt)]
+                        if il == 1 and ib == nbtags-1 and (mt2ptCat=='highpt' or mt2ptCat=='lowpt'):
+                            var=s+mt2ptCat+evcat+btagcat+'_mt2mlb_%3.1fw'%w
+                            if mt2 < mlbMap[var][0] :
+                                mlbMap[var] = [(mt2,mlbWt)]
 
                         #only for standard width and syst variations
                         if w!=1.0 or len(s)>0 : continue
@@ -422,7 +452,6 @@ def runTopWidthAnalysis(fileName,
             for mlb,wt in mlbMap[histoName] :
                 if mlb == float('inf') : continue
                 observablesH[histoName].Fill(mlb,wt)
-
 
     #save results
     fOut=ROOT.TFile.Open(outFileName,'RECREATE')

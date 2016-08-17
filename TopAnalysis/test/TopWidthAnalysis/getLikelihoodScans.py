@@ -6,6 +6,9 @@ import ROOT
 from pprint import pprint
 from optparse import OptionParser
 from tdrStyle import setTDRStyle
+
+ROOT.gROOT.SetBatch(True)
+
 import CMS_lumi
 parser = OptionParser(
     usage="%prog [options] [label=datacard.txt | datacard.txt]",
@@ -16,6 +19,7 @@ parser.add_option("--wid", type="string", dest="widList", default="0p5w,1p5w,2p0
 parser.add_option("--lfs", type="string", dest="lfsList", default="step1,step2,step3,step4,step5", help="a list of lepton final states to look for in stats filenames")
 parser.add_option("-o",    type="string", dest="outdir" , default="./", help="the base filename for the quantiles plot")
 parser.add_option("--scanType",    type="string", dest="scanType" , default="scan_Asimov", help="the base filename for the quantiles plot")
+parser.add_option("--dist",    type="string", dest="dist" , default="", help="the observable distribution this scan is for")
 
 (options, args) = parser.parse_args()
 
@@ -25,6 +29,14 @@ rawLfsList=options.lfsList.split(',')
 
 blueShift = [1,2,3,0,6]
 orngShift = [1,3,0,2,9]
+distToTitle={
+        "mlb": ("Inclusive M_{lb}",0.73,0.83),
+        "minmlb": ("Minimum M_{lb}",0.725,0.83),
+        "mdrmlb": ("#DeltaR-Filtered M_{lb}",0.7,0.83),
+        "incmlb": ("Inclusive M_{lb}",0.73,0.83),
+        "sncmlb": ("Semi-Inclusive M_{lb}",0.65,0.83),
+        "mt2mlb": ("M_{T2}^{lb} Strategy",0.73,0.83)
+       }
 
 for wid in rawWidList :
 
@@ -72,34 +84,27 @@ for wid in rawWidList :
         lfsPlot.Draw(("SAME" if i > 0 else ""))
         i+=1
 
+    if options.dist in [key for key in distToTitle] :
+        DistInfo,xpos,ypos=distToTitle[options.dist]
+        DistLaTeX=ROOT.TLatex(xpos,ypos, DistInfo)
+        DistLaTeX.SetNDC(ROOT.kTRUE)
+        DistLaTeX.SetTextSize(0.04)
+        DistLaTeX.Draw()
+
+        widthInfo=", #Gamma_{t}=%s#times#Gamma_{SM}"%(wid.replace('p','.').replace('w',''))
+        TMassInfo=ROOT.TLatex(.185,.185,"m_{t} = 172.5 GeV%s"(widthInfo))
+        TMassInfo.SetNDC(ROOT.kTRUE)
+        TMassInfo.SetTextSize(0.03)
+        TMassInfo.Draw()
 
     # add legend
     # leg.Draw()
 
-    # CMS text
-    #CMSLine="CMS"
-    #CP=ROOT.TLatex(0.12,0.92, CMSLine)
-    #CP.SetNDC(ROOT.kTRUE)
-    #CP.SetTextSize(0.05)
-    #CP.Draw()
-
-    ## Lumi
-    #CMSLineLumi="#sqrt{s}=13 TeV, 2.1 fb^{-1}"
-    #CP1=ROOT.TLatex(0.67,0.92, CMSLineLumi)
-    #CP1.SetNDC(ROOT.kTRUE)
-    #CP1.SetTextSize(0.04)
-    #CP1.Draw()
-
-    ## ExtraText
-    #CMSLineExtra="#bf{#it{Preliminary}}"
-    #CP2=ROOT.TLatex(0.195,0.92, CMSLineExtra)
-    #CP2.SetNDC(ROOT.kTRUE)
-    #CP2.SetTextSize(0.04)
-    #CP2.Draw()
-
     CMS_lumi.relPosX = 0.180
     CMS_lumi.lumiTextSize = 0.55
-    CMS_lumi.CMS_lumi(canvas,4,0)
+    CMS_lumi.extraText = "Simulation Preliminary"
+    CMS_lumi.extraOverCmsTextSize = 0.6
+    CMS_lumi.CMS_lumi(c,4,0)
 
     # save plots
     c.Modified()
