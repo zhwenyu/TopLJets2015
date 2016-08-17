@@ -46,7 +46,7 @@ void LeptonEfficiencyWrapper::init(TString era)
       TString lepEffUrl(era+"/SingleMuonTrigger_Z_RunBCD_prompt80X_7p65.root");
       gSystem->ExpandPathName(lepEffUrl);
       TFile *fIn=TFile::Open(lepEffUrl);
-      lepEffH_["m_singleleptrig"]=(TH2 *)fIn->Get("IsoMu22_OR_IsoTkMu22_PtEtaBins_Run273158_to_274093/efficienciesDATA")->Clone();
+      lepEffH_["m_singleleptrig"]=(TH2 *)fIn->Get("IsoMu22_OR_IsoTkMu22_PtEtaBins_Run273158_to_274093/efficienciesDATA/abseta_pt_DATA")->Clone();
       lepEffH_["m_singleleptrig"]->SetDirectory(0);
       fIn->Close();
 
@@ -191,8 +191,13 @@ EffCorrection_t LeptonEfficiencyWrapper::getTriggerCorrection(std::vector<int> p
 	      float minEtaForEff( h->GetXaxis()->GetXmin() ), maxEtaForEff( h->GetXaxis()->GetXmax()-0.01 );
 	      float etaForEff=TMath::Max(TMath::Min(float(fabs(leptons[0].Eta())),maxEtaForEff),minEtaForEff);
 	      Int_t etaBinForEff=h->GetXaxis()->FindBin(etaForEff);
-	      corr.first=h->GetBinContent(etaBinForEff);
-	      corr.second=h->GetBinContent(etaBinForEff);
+
+	      float minPtForEff( h->GetYaxis()->GetXmin() ), maxPtForEff( h->GetYaxis()->GetXmax()-0.01 );
+	      float ptForEff=TMath::Max(TMath::Min(float(leptons[0].Pt()),maxPtForEff),minPtForEff);
+	      Int_t ptBinForEff=h->GetYaxis()->FindBin(ptForEff);
+
+	      corr.first=h->GetBinContent(etaBinForEff,ptBinForEff);
+	      corr.second=h->GetBinError(etaBinForEff,etaBinForEff);
 	    }
 	}
     }
