@@ -58,8 +58,7 @@ case $WHAT in
 	cp test/index.php ${wwwdir}/sel
 	;;
     ANA )
-	queue=local
-	python scripts/runTopWidthAnalysis.py -i ${summaryeosdir} -o ${outdir}/analysis -q ${queue} --only _dilpowheg;
+	python scripts/runTopWidthAnalysis.py -i ${summaryeosdir} -o ${outdir}/analysis -q ${queue};
 	;;
     MERGE )
 	./scripts/mergeOutputs.py ${outdir}/analysis;
