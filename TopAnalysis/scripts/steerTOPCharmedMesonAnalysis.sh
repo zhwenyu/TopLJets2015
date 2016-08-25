@@ -38,7 +38,7 @@ RED='\e[31m'
 NC='\e[0m'
 case $WHAT in
     SEL )
-	python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} -o ${outdir} --era ${ERA} -m TopCharmedMesonAnalysis::RunTopCharmedMesonAnalysis --ch 0 --only _tW; # --debug;
+	python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} -o ${outdir} --era ${ERA} -m TopCharmedMesonAnalysis::RunTopCharmedMesonAnalysis --ch 0 --only Data;
 	;;
     MERGESEL )
 	./scripts/mergeOutputs.py ${outdir};	

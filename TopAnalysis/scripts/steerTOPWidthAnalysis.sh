@@ -58,8 +58,7 @@ case $WHAT in
 	cp test/index.php ${wwwdir}/sel
 	;;
     ANA )
-	queue=local
-	python scripts/runTopWidthAnalysis.py -i ${summaryeosdir} -o ${outdir}/analysis -q ${queue} --only TTJ;
+	python scripts/runTopWidthAnalysis.py -i ${summaryeosdir} -o ${outdir}/analysis -q ${queue};
 	;;
     MERGE )
 	./scripts/mergeOutputs.py ${outdir}/analysis;
@@ -69,13 +68,24 @@ case $WHAT in
 	python scripts/runDYRinRout.py --in ${outdir}/analysis/plots/dy_plotter.root --categs 1b,2b --out ${outdir}/analysis/plots/;
 	;;
     PLOT )
-	python scripts/plotter.py -i ${outdir}/analysis  -j data/${ERA}/samples.json      -l ${lumi} --mcUnc ${lumiUnc} --only count --saveTeX -o count_plotter.root --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck; 
-        python scripts/plotter.py -i ${outdir}/analysis  -j data/${ERA}/samples.json      -l ${lumi} --mcUnc ${lumiUnc} --onlyData --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck;
-	python scripts/plotter.py -i ${outdir}/analysis  -j data/${ERA}/syst_samples.json -l ${lumi} --mcUnc ${lumiUnc} --silent -o syst_plotter.root;        
+	#python scripts/plotter.py -i ${outdir}/analysis  -j data/${ERA}/samples.json      -l ${lumi} --mcUnc ${lumiUnc} --only count --saveTeX -o count_plotter.root --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck; 
+        #python scripts/plotter.py -i ${outdir}/analysis  -j data/${ERA}/samples.json      -l ${lumi} --mcUnc ${lumiUnc} --onlyData --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck;
+	#python scripts/plotter.py -i ${outdir}/analysis  -j data/${ERA}/syst_samples.json -l ${lumi} --mcUnc ${lumiUnc} --silent -o syst_plotter.root;        
+	#combined plots
+	python test/TopWidthAnalysis/combinePlotsForAllCategories.py ptlb
+	python test/TopWidthAnalysis/combinePlotsForAllCategories.py ptlb EE1b,MM1b,EM1b
+	python test/TopWidthAnalysis/combinePlotsForAllCategories.py ptlb EE2b,MM2b,EM2b
+	python test/TopWidthAnalysis/combinePlotsForAllCategories.py incmlb_1.0w lowptEE1b,lowptMM1b,lowptEM1b
+	python test/TopWidthAnalysis/combinePlotsForAllCategories.py incmlb_1.0w lowptEE2b,lowptMM2b,lowptEM2b
+	python test/TopWidthAnalysis/combinePlotsForAllCategories.py incmlb_1.0w highptEE1b,highptMM1b,highptEM1b
+	python test/TopWidthAnalysis/combinePlotsForAllCategories.py incmlb_1.0w highptEE2b,highptMM2b,highptEM2b
         ;;
     WWW )
         mkdir -p ${wwwdir}/ana
         cp ${outdir}/analysis/plots/*.{png,pdf} ${wwwdir}/ana        
         cp test/index.php ${wwwdir}/ana
+	mkdir -p ${wwwdir}/comb
+        cp plots/*.{root,png,pdf} ${wwwdir}/comb 
+        cp test/index.php ${wwwdir}/comb
 	;;
 esac

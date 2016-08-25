@@ -60,7 +60,7 @@ void RunTopCharmedMesonAnalysis(TString filename,
   if(ev.isData && filename.Contains("SingleElectron")) requireEletrigger=true;
   bool requireMutrigger(false);
   if(ev.isData && filename.Contains("SingleMuon"))     requireMutrigger=true;
-  bool requireEETriggers(true);
+  bool requireEETriggers(false);
   if(ev.isData && filename.Contains("DoubleEG"))       requireEETriggers=true;
   bool requireMMTriggers(false);
   if(ev.isData && filename.Contains("DoubleMuon"))     requireMMTriggers=true;
@@ -185,7 +185,8 @@ void RunTopCharmedMesonAnalysis(TString filename,
 
       //select 1 good lepton
       //cout << "entering lepton selection" << endl;
-      std::vector<int> tightLeptons;
+      std::vector<int> leptonsIdx,leptonsId;;
+      std::vector<TLorentzVector> leptons;
       for(int il=0; il<ev.nl; il++)
 	{
           //cout << "in lepton selection" << endl;
@@ -195,7 +196,11 @@ void RunTopCharmedMesonAnalysis(TString filename,
 	  bool passIso( ev.l_id[il]==13 ? relIso<0.15 : (ev.l_pid[il]>>1)&0x1 ); 
 	  
 	  if(!passTightKin || !passTightId || !passIso) continue;
-	  tightLeptons.push_back(il);
+	  leptonsIdx.push_back(il);
+          leptonsId.push_back( ev.l_id[il] );
+          TLorentzVector lp4;
+          lp4.SetPtEtaPhiM(ev.l_pt[il],ev.l_eta[il],ev.l_phi[il],ev.l_mass[il]);
+          leptons.push_back(lp4);
 	}
       if(debug) cout << "lepton selection DONE" << endl;
 
@@ -225,15 +230,15 @@ void RunTopCharmedMesonAnalysis(TString filename,
       //decide the channel
       if(debug) cout << "decide channel" << endl;
       TString chTag("");
-      if(tightLeptons.size()==1 )
+      if(leptonsIdx.size()==1 )
 	{
-	  if(abs(ev.l_id[ tightLeptons[0] ])==11 && hasEleTrigger) chTag="e";
-	  if(abs(ev.l_id[ tightLeptons[0] ])==13 && hasMuTrigger)  chTag="m";
+	  if(abs(ev.l_id[ leptonsIdx[0] ])==11 && hasEleTrigger) chTag="e";
+	  if(abs(ev.l_id[ leptonsIdx[0] ])==13 && hasMuTrigger)  chTag="m";
           if(debug) cout << "found 1 tight lepton ch=" << chTag << endl;
 	}
-      else if(tightLeptons.size()>=2)
+      else if(leptonsIdx.size()>=2)
 	{
-	  int chId=abs(ev.l_id[ tightLeptons[0] ])*abs(ev.l_id[ tightLeptons[1] ]);
+	  int chId=abs(ev.l_id[ leptonsIdx[0] ])*abs(ev.l_id[ leptonsIdx[1] ]);
 	  if(chId==11*11 && hasEETrigger) chTag="ee";
 	  else if(chId==13*13 && hasMMTrigger) chTag="mm";
 	  else if(chId==11*13 && hasEMTrigger) chTag="em";
@@ -246,19 +251,6 @@ void RunTopCharmedMesonAnalysis(TString filename,
 	}
       if(chTag=="") continue;
       chTag = "_"+chTag;
-
-
-      //save lepton kinematics
-      std::vector<TLorentzVector> leptons;
-      std::vector<int> leptonsId;
-      for(size_t il=0; il<tightLeptons.size(); il++)
-	{
-	  int lepIdx=tightLeptons[il];
-	  leptonsId.push_back( ev.l_id[lepIdx] );
-	  TLorentzVector lp4;
-	  lp4.SetPtEtaPhiM(ev.l_pt[lepIdx],ev.l_eta[lepIdx],ev.l_phi[lepIdx],ev.l_mass[lepIdx]);
-	  leptons.push_back(lp4);
-	}
 
       //select jets
       std::vector<Jet> bJetsVec,allJetsVec;
@@ -321,7 +313,7 @@ void RunTopCharmedMesonAnalysis(TString filename,
 	      myBTagSFUtil.modifyBTagsWithSF(isBTagged,    jetBtagSF,     expEff);
 	    }
 	  if(debug) cout << "b-tagging DONE" << endl;
-
+	  
 	  //save jet
           Jet tmpj(jp4, csv, k);
 	  for(int ipf = 0; ipf < ev.npf; ipf++) {
@@ -336,6 +328,11 @@ void RunTopCharmedMesonAnalysis(TString filename,
           if(isBTagged) bJetsVec.push_back(tmpj);
           allJetsVec.push_back(tmpj);
 	}
+
+      //sort by Pt
+      sort(bJetsVec.begin(),    bJetsVec.end(),   sortJetsByPt);
+      sort(allJetsVec.begin(),  allJetsVec.end(), sortJetsByPt);
+
 
       //
       //event weight
@@ -364,7 +361,6 @@ void RunTopCharmedMesonAnalysis(TString filename,
               topPtWgts[1]=ptsf;
             }
 
-
 	  //account for pu weights and effect on normalization
 	  allPlots["puwgtctr"]->Fill(0.,1.0);
 	  for(size_t iwgt=0; iwgt<3; iwgt++)
@@ -391,9 +387,6 @@ void RunTopCharmedMesonAnalysis(TString filename,
 	  if(ev.ttbar_nw>0) wgt*=ev.ttbar_w[0];
 	}
 
-      //sort by Pt
-      sort(bJetsVec.begin(),    bJetsVec.end(),   sortJetsByPt);
-      sort(allJetsVec.begin(),  allJetsVec.end(), sortJetsByPt);
 
       //request at lest 1 b-jet (+ at least 3 jets in total for l+jets)
       //apply Z+low mass DY/quarkonia veto for same flavour channels      
@@ -406,12 +399,12 @@ void RunTopCharmedMesonAnalysis(TString filename,
 	  if(chTag!="em" && fabs(mll-91)<15) continue;
 	  allPlots["dilp_pt"+chTag]->Fill(ptll,wgt);
 	  allPlots["dilp_m"+chTag]->Fill(mll,wgt);
-	  allPlots["charge"+chTag]->Fill(ev.l_charge[tightLeptons[0]]*ev.l_charge[tightLeptons[1]],wgt);
+	  allPlots["charge"+chTag]->Fill(ev.l_charge[leptonsIdx[0]]*ev.l_charge[leptonsIdx[1]],wgt);
 	}
       else
 	{
 	  if(allJetsVec.size()<3) continue;
-	  allPlots["charge"+chTag]->Fill(ev.l_charge[tightLeptons[0]],wgt);
+	  allPlots["charge"+chTag]->Fill(ev.l_charge[leptonsIdx[0]],wgt);
 	}
 
       //base selection histograms
@@ -445,7 +438,7 @@ void RunTopCharmedMesonAnalysis(TString filename,
       for(size_t ij=0; ij<allJetsVec.size(); ij++)
 	{
 	  if(ij>1) continue;
-	  if(allJetsVec[ij].getCSV()<0.460) continue;
+	  if(allJetsVec[ij].getCSV()<0.) continue;
 	  
 	  std::vector<IdTrack> &tracks=allJetsVec[ij].getTracks();
           allPlots["npf"+chTag]->Fill(tracks.size(),wgt);
@@ -484,7 +477,7 @@ void RunTopCharmedMesonAnalysis(TString filename,
 	      float mass123( kaonCands.size()>0 ? (pfmuCands[0]+pfmuCands[1]+kaonCands[0]).M() : -1);
               allPlots["massJPsi"+chTag]->Fill(mass12,wgt);
 	      allPlots["massJPsi_all"]->Fill(mass12,wgt);
-	      if(mass123>0)
+	      if(mass12>3 && mass12<3.2 && mass123>0)
 		{
 		  allPlots["massJPsiK"+chTag]->Fill(mass123,wgt);
 		  allPlots["massJPsiK_all"]->Fill(mass123,wgt);

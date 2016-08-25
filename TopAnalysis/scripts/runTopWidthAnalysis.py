@@ -31,7 +31,7 @@ Analysis loop
 """
 def runTopWidthAnalysis(fileName,
                         outFileName,
-                        widthList=[0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0],
+                        widthList=[0.2,0.4,0.6,0.8,1.0,1.2,1.4,1.6,2.0,2.2,2.4,2.6,2.8,3.0,3.5,4.0],
                         systs=['','puup','pudn','btagup','btagdn','ltagup','ltagdn','jerup','jerdn','jesup','jesdn','lesup','lesdn','trigup','trigdn','selup','seldn','topptup','topptdn']):
 
     print '....analysing',fileName,'with output @',outFileName
@@ -44,12 +44,14 @@ def runTopWidthAnalysis(fileName,
     else:
         #generator level systematics for ttbar
         if 'TTJets' in fileName:
-            for i in xrange(1,16):  systs += ['gen%d'%i]
+            for i in xrange(1,116):  systs += ['gen%d'%i]
 
     smWidth=1.324 # all powheg samples have been generated with the width @ 172.5 GeV
     smMass=172.5
+    if '166v5' in fileName : smMass=166.5
     if '169v5' in fileName : smMass=169.5
     if '175v5' in fileName : smMass=175.5
+    if '178v5' in fileName : smMass=178.5
 
     #define the relativistic Breit-Wigner function
     bwigner=ROOT.TF1('bwigner',
@@ -88,6 +90,10 @@ def runTopWidthAnalysis(fileName,
             var=j+b+'_mll'
             observablesH[var]=ROOT.TH1F(var,';Dilepton invariant mass [GeV];Events',30,0,300)
             var=j+b+'_njets'
+            observablesH[var]=ROOT.TH1F(var,';Jet multiplicity;Events',6,2,8)
+            var=j+b+'_njetsnonboost'
+            observablesH[var]=ROOT.TH1F(var,';Jet multiplicity;Events',6,2,8)
+            var=j+b+'_njetsboost'
             observablesH[var]=ROOT.TH1F(var,';Jet multiplicity;Events',6,2,8)
 
             for s in systs:
@@ -245,6 +251,18 @@ def runTopWidthAnalysis(fileName,
             var=evcat+btagcat+'_met'
             observablesH[var].Fill(tree.met_pt,baseEvWeight)
             var=evcat+btagcat+'_njets'
+            observablesH[var].Fill(tree.nj,baseEvWeight)
+
+            #check if event has a boosted pair
+            hasBoostedPair=False
+            for il in xrange(0,2):
+                lp4=ROOT.TLorentzVector()
+                lp4.SetPtEtaPhiM(tree.l_pt[il],tree.l_eta[il],tree.l_phi[il],tree.l_m[il])
+                for ib in xrange(0,nbtags):
+                    ij,jp4 = bjets[0][ib]
+                    ptlb=(lp4+jp4).Pt()
+                    if ptlb>100 : hasBoostedPair=True
+            var=evcat+btagcat+'_njetsboost' if hasBoostedPair else evcat+btagcat+'_njetsnonboost'
             observablesH[var].Fill(tree.nj,baseEvWeight)
 
         # setup mlb calculations

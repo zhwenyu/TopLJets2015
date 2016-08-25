@@ -27,7 +27,7 @@ void LeptonEfficiencyWrapper::init(TString era)
       TFile *fIn=TFile::Open(lepEffUrl);
       lepEffH_["m_sel"]=(TH2 *)fIn->Get("m_sel");
       lepEffH_["m_sel"]->SetDirectory(0);
-      lepEffH_["m_singleleptrig"]=(TH2 *)fIn->Get("m_singleleptrig");
+      lepEffH_["m_singleleptrig"]=(TH2 *)fIn->Get("m_trig");
       lepEffH_["m_singleleptrig"]->SetDirectory(0);
       fIn->Close();
       

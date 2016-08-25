@@ -10,7 +10,7 @@
 struct TopWidthEvent_t
 {
   Int_t cat,nw,nl,nj,nt;
-  Float_t weight[100];
+  Float_t weight[1000];
   Float_t l_pt[2],l_eta[2],l_phi[2],l_m[2],l_les[2];
   Int_t l_id[2];
   Float_t gl_pt[2],gl_eta[2],gl_phi[2],gl_m[2];

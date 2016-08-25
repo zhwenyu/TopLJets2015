@@ -30,6 +30,8 @@ def main():
     for dset in dset_list:
         dsetname=dset.split('/')[-1]
 
+        #if not 'pp_TuneCUETP8M1_Hydjet_Min_Bias' : continue
+
         pub_list=getEOSlslist(directory=dset,prepend='')
         for pubDir in pub_list:
 
@@ -37,6 +39,7 @@ def main():
                 print 'Ambiguity found @ <publication-name> for <primary-dataset>=%s , bailing out'%dsetname
                 continue
             pub=pubDir.split('/crab_')[-1]
+            #if not 'V4' in pub : continue
 
             localMerge='python scripts/checkProductionIntegrity.py -i %s -o %s --nocheck --only %s'%(opt.inDir,opt.outDir,pub)
             cmd='bsub -q %s %s/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh \"%s\"' % (opt.queue,cmsswBase,localMerge)

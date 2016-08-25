@@ -1,12 +1,8 @@
-import optparse
-import os,sys
-import json
 import ROOT
 import math
-import pickle
+import os,sys
 
 from TopLJets2015.TopAnalysis.rounding import *
-
 
 """
 A wrapper to store data and MC histograms for comparison
@@ -24,8 +20,12 @@ class Plot(object):
         self.plotformats = ['pdf','png']
         self.savelog = False
         self.ratiorange = (0.76,1.24)
+        self.mcUnc=0
 
     def add(self, h, title, color, isData,spImpose):
+
+        if 'ratevsrun' in self.name and not isData: return
+
         h.SetTitle(title)
         if isData:
             try:
@@ -50,12 +50,12 @@ class Plot(object):
                 h.SetDirectory(0)
                 h.SetMarkerStyle(1)
                 h.SetMarkerColor(color)
-                if spImpose :
+                if spImpose : 
                     self.spimpose[title]=h
                     h.SetFillStyle(0)
                     h.SetLineColor(color)
                     h.SetLineWidth(2)
-                else :
+                else : 
                     h.SetLineColor(ROOT.kBlack)
                     h.SetLineWidth(1)
                     h.SetFillColor(color)
@@ -104,7 +104,7 @@ class Plot(object):
         c.SetLeftMargin(0.0)
         c.SetTopMargin(0)
         c.SetRightMargin(0.00)
-
+        
         #holds the main plot
         c.cd()
         p1 = None
@@ -114,6 +114,7 @@ class Plot(object):
             p1.SetLeftMargin(0.12)
             p1.SetTopMargin(0.01)
             p1.SetBottomMargin(0.01)
+            if self.wideCanvas and len(self.mc)==0 : p1.SetBottomMargin(0.12)
         else:
             p1=ROOT.TPad('p1','p1',0.0,0.0,1.0,1.0)
             p1.SetRightMargin(0.05)
@@ -134,7 +135,7 @@ class Plot(object):
         leg = ROOT.TLegend(0.45, iniy-dy*ndy, 0.95, iniy+0.05)
 
         leg.SetBorderSize(0)
-        leg.SetFillStyle(0)
+        leg.SetFillStyle(0)        
         leg.SetTextFont(43)
         leg.SetTextSize(12)
         nlegCols = 0
@@ -144,13 +145,13 @@ class Plot(object):
             leg.AddEntry( self.data, self.data.GetTitle(),'p')
             nlegCols += 1
         for h in self.mc:
-
+            
             #compare
             if noStack:
                 refH=self.mc.values()[0]
                 if refH!=self.mc[h]:
                     chi2=refH.Chi2Test( self.mc[h], 'WW CHI2')
-                    pval=refH.Chi2Test( self.mc[h], 'WW')
+                    pval=refH.Chi2Test( self.mc[h], 'WW')     
                     self.mc[h].SetTitle('#splitline{%s}{#chi^{2}=%3.1f (p-val: %3.3f)}'%(self.mc[h].GetTitle(),chi2,pval))
                 else:
                     refH.SetLineWidth(2)
@@ -172,9 +173,9 @@ class Plot(object):
             if noStack:
                 self.mc[h].SetFillStyle(0)
                 self.mc[h].SetLineColor(self.mc[h].GetFillColor())
-
+                
             stack.Add(self.mc[h],'hist')
-
+            
             try:
                 totalMC.Add(self.mc[h])
             except:
@@ -188,7 +189,7 @@ class Plot(object):
                 if self.dataH is None : return
                 if self.dataH.Integral()==0: return
         elif self.dataH is None : return
-        elif self.dataH.Integral()==0 : return
+        elif self.dataH.Integral()==0 : return 
 
 
         frame = totalMC.Clone('frame') if totalMC is not None else self.dataH.Clone('frame')
@@ -196,7 +197,7 @@ class Plot(object):
         if noStack:
             maxY=stack.GetStack().At(0).GetMaximum()/1.25
         elif totalMC:
-            maxY = totalMC.GetMaximum()
+            maxY = totalMC.GetMaximum() 
             if self.dataH:
                 if maxY<self.dataH.GetMaximum():
                     maxY=self.dataH.GetMaximum()
@@ -214,8 +215,11 @@ class Plot(object):
         frame.GetYaxis().SetTitleOffset(1.3)
         frame.GetXaxis().SetTitleSize(0.0)
         frame.GetXaxis().SetLabelSize(0.0)
+        if self.wideCanvas and totalMC is None : 
+            frame.GetXaxis().SetLabelSize(0.03)
+            frame.GetXaxis().SetTitleSize(0.035)
         frame.Draw()
-        if totalMC is not None   :
+        if totalMC is not None   : 
             if noStack: stack.Draw('nostack same')
             else      : stack.Draw('hist same')
         for m in self.spimpose:
@@ -253,21 +257,31 @@ class Plot(object):
             ratioframe=frame.Clone('ratioframe')
             ratioframe.GetYaxis().SetTitle('Ratio')
             ratioframe.GetYaxis().SetRangeUser(self.ratiorange[0], self.ratiorange[1])
-            self._garbageList.append(frame)
+            self._garbageList.append(ratioframe)
             ratioframe.GetYaxis().SetNdivisions(5)
-            ratioframe.GetYaxis().SetLabelSize(0.18)
+            ratioframe.GetYaxis().SetLabelSize(0.18)        
             ratioframe.GetYaxis().SetTitleSize(0.2)
             ratioframe.GetYaxis().SetTitleOffset(0.25)
             ratioframe.GetXaxis().SetLabelSize(0.15)
             ratioframe.GetXaxis().SetTitleSize(0.2)
             ratioframe.GetXaxis().SetTitleOffset(0.8)
-            ratioframe.Draw()
-
+            ratioframe.SetFillStyle(3001)
+            ratioframe.SetFillColor(ROOT.kGray+2)
+            totalMCnoUnc=totalMC.Clone('totalMCnounc')
+            self._garbageList.append(totalMCnoUnc)
+            for xbin in xrange(1,totalMC.GetNbinsX()+1):
+                ratioframe.SetBinContent(xbin,1)
+                val=totalMC.GetBinContent(xbin)
+                totalMCnoUnc.SetBinError(xbin,0.)
+                if val==0 : continue
+                totalUnc=ROOT.TMath.Sqrt((totalMC.GetBinError(xbin)/val)**2+self.mcUnc**2)
+                ratioframe.SetBinError(xbin,totalUnc)
+            ratioframe.Draw('e2')
             try:
                 ratio=self.dataH.Clone('ratio')
                 ratio.SetDirectory(0)
                 self._garbageList.append(ratio)
-                ratio.Divide(totalMC)
+                ratio.Divide(totalMCnoUnc)
                 gr=ROOT.TGraphAsymmErrors(ratio)
                 gr.SetMarkerStyle(self.data.GetMarkerStyle())
                 gr.SetMarkerSize(self.data.GetMarkerSize())
@@ -378,144 +392,3 @@ def convertToPoissonErrorGr(h):
             grpois.SetPointEYlow(i, math.sqrt(N))
             grpois.SetPointEYhigh(i,math.sqrt(N))
     return grpois
-
-
-"""
-steer the script
-"""
-def main():
-
-    #configuration
-    usage = 'usage: %prog [options]'
-    parser = optparse.OptionParser(usage)
-    parser.add_option('-j', '--json',        dest='json'  ,      help='json with list of files',        default=None,              type='string')
-    parser.add_option(      '--signalJson',  dest='signalJson',  help='signal json list',               default=None,              type='string')
-    parser.add_option('-i', '--inDir',       dest='inDir' ,      help='input directory',                default=None,              type='string')
-    parser.add_option('-o', '--outName',     dest='outName' ,    help='name of the output file',        default='plotter.root',    type='string')
-    parser.add_option(      '--noStack',     dest='noStack',     help='don\'t stack distributions',     default=False,             action='store_true')
-    parser.add_option(      '--saveLog',     dest='saveLog' ,    help='save log versions of the plots', default=False,             action='store_true')
-    parser.add_option(      '--silent',      dest='silent' ,     help='only dump to ROOT file',         default=False,             action='store_true')
-    parser.add_option(      '--onlyData',    dest='onlyData' ,   help='only plots containing data',     default=False,             action='store_true')
-    parser.add_option(      '--saveTeX',     dest='saveTeX' ,    help='save as tex file as well',       default=False,             action='store_true')
-    parser.add_option(      '--rebin',       dest='rebin',       help='rebin factor',                   default=1,                 type=int)
-    parser.add_option('-l', '--lumi',        dest='lumi' ,       help='lumi to print out',              default=41.6,              type=float)
-    parser.add_option(      '--only',        dest='only',        help='plot only these (csv)',          default='',                type='string')
-    parser.add_option(      '--puNormSF',    dest='puNormSF',    help='Use this histogram to correct pu weight normalization', default=None, type='string')
-    parser.add_option(      '--procSF',      dest='procSF',      help='Use this to scale a given process component e.g. "W":.wjetscalefactors.pck,"DY":dyscalefactors.pck', default=None, type='string')
-    (opt, args) = parser.parse_args()
-
-    #read list of samples
-    jsonFile = open(opt.json,'r')
-    samplesList=json.load(jsonFile,encoding='utf-8').items()
-    jsonFile.close()
-
-    #read list of signal samples
-    signalSamplesList=None
-    try:
-        jsonFile = open(opt.signalJson,'r')
-        signalSamplesList=json.load(jsonFile,encoding='utf-8').items()
-        jsonFile.close()
-    except:
-        pass
-
-
-    #proc SF
-    procSF={}
-    if opt.procSF:
-        procList=opt.procSF.split(',')
-        for newProc in procList:
-            proc,cacheUrl=newProc.split(':')
-            if not os.path.isfile(cacheUrl) : continue
-            cache=open(cacheUrl,'r')
-            procSF[proc]=pickle.load(cache)
-            cache.close()
-            print 'Scale factors added for',proc
-
-    onlyList=opt.only.split(',')
-
-    #read plots
-    plots={}
-    report=''
-    for slist,isSignal in [ (samplesList,False),(signalSamplesList,True) ]:
-        if slist is None: continue
-        for tag,sample in slist:
-            xsec=sample[0]
-            isData=sample[1]
-            doFlavourSplitting=sample[6]
-            subProcs=[(tag,sample[3],sample[4])]
-            if doFlavourSplitting:
-                subProcs=[]
-                for flav in [(1,sample[3]+'+l'),(4,sample[3]+'+c'),(5,sample[3]+'+b',sample[4])]:
-                    subProcs.append(('%d_%s'%(flav[0],tag),flav[1],sample[4]+3*len(subProcs)))
-            for sp in subProcs:
-
-                fIn=ROOT.TFile.Open('%s/%s.root' % ( opt.inDir, sp[0]) )
-                if not fIn : continue
-
-                #fix pileup weighting normalization
-                puNormSF=1
-                if opt.puNormSF and not isData:
-                    puCorrH=fIn.Get(opt.puNormSF)
-                    nonWgt=puCorrH.GetBinContent(1)
-                    wgt=puCorrH.GetBinContent(2)
-                    if wgt>0 :
-                        puNormSF=nonWgt/wgt
-                        if puNormSF>1.3 or puNormSF<0.7 :
-                            puNormSF=1
-                            report += '%s wasn\'t be scaled as too large SF was found (probably low stats)\n' % sp[0]
-                        else :
-                            report += '%s was scaled by %3.3f for pileup normalization\n' % (sp[0],puNormSF)
-
-                try:
-                    for tkey in fIn.GetListOfKeys():
-                        key=tkey.GetName()
-                        keep=False if len(onlyList)>0 else True
-                        for pname in onlyList:
-                            if pname in key: keep=True
-                        if not keep: continue
-                        obj=fIn.Get(key)
-                        if not obj.InheritsFrom('TH1') : continue
-                        if not isData and not '(data)' in sp[1]:
-                            sfVal=1.0
-                            for procToScale in procSF:
-                                if sp[1]==procToScale:
-                                    #if procToScale in sp[1]:
-                                    for pcat in procSF[procToScale]:
-                                        if pcat not in key: continue
-                                        sfVal=procSF[procToScale][pcat][0]
-                                     #print 'Applying scale factor for ',sp[1],key,sfVal
-                            obj.Scale(xsec*opt.lumi*puNormSF*sfVal)
-                        if opt.rebin>1:  obj.Rebin(opt.rebin)
-                        if not key in plots : plots[key]=Plot(key)
-                        plots[key].add(h=obj,title=sp[1],color=sp[2],isData=sample[1],spImpose=isSignal)
-                except:
-                    pass
-
-    #show plots
-    ROOT.gStyle.SetOptTitle(0)
-    ROOT.gStyle.SetOptStat(0)
-    ROOT.gROOT.SetBatch(True)
-    outDir=opt.inDir+'/plots'
-    os.system('mkdir -p %s' % outDir)
-    os.system('rm %s/%s'%(outDir,opt.outName))
-    for p in plots :
-        if opt.saveLog    : plots[p].savelog=True
-        skipPlot=False
-        if opt.onlyData and plots[p].dataH is None: skipPlot=True
-        if opt.silent : skipPlot=True
-        if not skipPlot : plots[p].show(outDir=outDir,lumi=opt.lumi,noStack=opt.noStack,saveTeX=opt.saveTeX)
-        plots[p].appendTo('%s/%s'%(outDir,opt.outName))
-        plots[p].reset()
-
-    print '-'*50
-    print 'Plots and summary ROOT file can be found in %s' % outDir
-    if len(report) : print report
-    print '-'*50
-
-
-"""
-for execution from another script
-"""
-if __name__ == "__main__":
-    sys.exit(main())
-
