@@ -43,7 +43,7 @@ def runTopWidthAnalysis(fileName,
         systs=['']
     else:
         #generator level systematics for ttbar
-        if 'TTJets' in fileName:
+        if 'TTJets' in fileName and 'powheg' in fileName:
             for i in xrange(1,120):  systs += ['gen%d'%i]
 
     smWidth=1.324 # all powheg samples have been generated with the width @ 172.5 GeV
