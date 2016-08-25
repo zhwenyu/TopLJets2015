@@ -1,8 +1,7 @@
-from plotter import *
 import sys
 import ROOT
 
-ROOT.gROOT.SetBatchMode(True)
+ROOT.gROOT.SetBatch()
 
 import CMS_lumi
 import tdrStyle
@@ -12,18 +11,18 @@ parser = OptionParser(
     usage="%prog [options] [label=datacard.txt | datacard.txt]",
     epilog=""
     )
-parser.add_option("-i",     type="string", dest="indir"  ,   default="~/work/TopWidth_era2015/datacards/shapes.root",   help="file to look for dists in")
+parser.add_option("-i",     type="string", dest="indir"  ,   default="/afs/cern.ch/work/e/ecoleman/public/TopWidth/TopWidth_era2016/datacards/shapes.root", help="file to look for dists in")
 parser.add_option("--wid",  type="string", dest="widList",   default="1",   help="a list of widths to look for in distnames")
 parser.add_option("--lfs",  type="string", dest="lfsList",   default="EM",   help="a list of lepton final states to look for in distnames")
 parser.add_option("--lbCh", type="string", dest="lbCatList", default="highpt,lowpt",   help="a list of states to look for in distnames")
 parser.add_option("--cats", type="string", dest="catList",   default="1b,2b",   help="a list of lepton final states to look for in stats filenames")
-parser.add_option("--uncs", type="string", dest="uncList",   default="jer,jes,les,pu,btag",   help="a list of uncertainties to look for")
+parser.add_option("--uncs", type="string", dest="uncList",   default="jes,jer,trig,pu,btag",   help="a list of uncertainties to look for")
 parser.add_option("--proc", type="string", dest="procList",  default="tbart",   help="a list of processes to plot")
 parser.add_option("-o",     type="string", dest="outdir" ,   default="./",   help="the base filename for the plots")
 parser.add_option("--obs",
         type="string",
         dest="obsList",
-        default="minmlb,mdrmlb,incmlb,sncmlb,mt2mlb",
+        default="incmlb,sncmlb,mt2mlb",
         help="a list of observable distributions to consider")
 
 (options, args) = parser.parse_args()
@@ -38,17 +37,18 @@ def main():
             "jer"           : "Jet energy resolution",
             "les"           : "Lepton energy scale",
             "ltag"          : "Lepton tagging efficiency",
-            "trig"          : "Trigger efficiency",
-            "sel"           : "Selection efficiency",
+            "trig"          : "Trigger efficiencies",
+            "sel"           : "Selection efficiencies",
             "toppt"         : "Top p_{T}",
             "pu"            : "Pileup",
-            "btag"          : "b-tagging",
+            "btag"          : "b-tagging efficiencies",
             "ttPartonShower": "t#bar{t} parton shower scale",
             "tWttinterf"    : "tW/t#bar{t} interference",
             "Mtop"          : "Top mass",
             "MEmuF"         : "ME: Factorization scale",
             "MEmuR"         : "ME: Renormalization scale",
             "MEtot"         : "ME: Combined variation",
+            "Herwig"        : "Hardonizer choice"
     }
 
     widList   = options.widList.split(',')
@@ -86,16 +86,20 @@ def main():
         nomH.SetFillStyle(0)
         nomH.Draw('hist')
         nomH.GetYaxis().SetTitle("")
+        nomH.SetMaximum(nomH.GetMaximum()*1.4)
         nomH.GetXaxis().SetTitle("Mass(lepton, jet) [GeV]")
 
-        leg= ROOT.TLegend(0.60,0.6,0.80,0.99)
+        leg= ROOT.TLegend(0.60,0.55,0.75,0.9)
         leg.SetFillStyle(0)
         leg.SetBorderSize(0)
         leg.SetTextFont(42)
         leg.SetTextSize(0.035)
         leg.AddEntry(nomH,'Nominal','l')
 
-        colors=[ROOT.kRed,ROOT.kBlue,ROOT.kGreen+2,ROOT.kOrange,ROOT.kGray,ROOT.kTeal]
+        colors=[ROOT.kRed+1,ROOT.kOrange+9,ROOT.kOrange+8,
+                ROOT.kBlue,ROOT.kBlue-9,ROOT.kGreen+2,
+                ROOT.kGreen-4,
+                ROOT.kMagenta+2,ROOT.kMagenta,ROOT.kMagenta-9]
         allGr=[]
         nSysts=len(uncList)
         for isyst in xrange(0,nSysts):
@@ -134,6 +138,8 @@ def main():
 
         leg.Draw()
 
+        CMS_lumi.relPosX = 0.15
+        CMS_lumi.extraText = "Simulation Preliminary"
         CMS_lumi.CMS_lumi(can,4,0)
         can.Modified()
         can.Update()

@@ -14,11 +14,11 @@ def main():
     usage = 'usage: %prog [options]'
     parser = optparse.OptionParser(usage)
     parser.add_option('-i', '--inDir',       dest='inDir' ,      help='input directory',                default="./plotter.root",       type='string')
-    parser.add_option('-d', '--divideFile',  dest='inDiv' ,      help='comparison input plotter',       default="./mcratio_plotter.root",       type='string')
+    parser.add_option('-d', '--divideFile',  dest='inDiv' ,      help='comparison input plotter',       default="./syst_plotter.root",  type='string')
     parser.add_option('-l', '--lumi',        dest='lumi' ,       help='lumi to print out',              default=41.6,                   type=float)
     parser.add_option(      '--saveLog',     dest='saveLog' ,    help='save log versions of the plots', default=False,             action='store_true')
     parser.add_option('--wids',  dest='wids'  , help='widths to compare to nominal in div', default="4.0",                   type='string')
-    parser.add_option('--obs',   dest='obs'   , help='observables to process', default="incmlb,mdrmlb,sncmlb,minmlb,mt2mlb", type='string')
+    parser.add_option('--obs',   dest='obs'   , help='observables to process', default="incmlb,sncmlb,mt2mlb", type='string')
     parser.add_option('--dists', dest='dists' , help='non-observable distributions to process', default="tmass",             type='string')
     parser.add_option('--sigs',  dest='sigs'  , help='signal processes to plot ratios for',     default="t#bar{t}",          type='string')
     parser.add_option('--ptCh',  dest='ptchs' , help='pt categories to consider',               default="highpt,lowpt",      type='string')
@@ -93,11 +93,13 @@ def main():
 
         if "tmass" in p[0] :
             fit=ROOT.TF1("tm","pol1",150,200)
-            divHist.Fit(fit,"NQ")
+            divHist.Fit(fit)
             fit.SetLineColor(ROOT.kRed)
 
             fit.Draw("SAME")
 
+
+        ROOT.gStyle.SetOptFit(0)
 
         CMS_lumi.CMS_lumi(canvas,4,0)
         canvas.SaveAs("%s/%s.pdf"%(outDir,p[0].split('/')[1].replace('.','w').replace('#','').replace('{','').replace('}','')))
@@ -113,6 +115,8 @@ def main():
         info=ROOT.TLatex()
         info.SetTextSize(0.02)
 
+        divHists={}
+        fits={}
         for (iptC,ich,ibc) in [(iptC,ich,ibc)
                 for iptC in range(len(ptChList))
                 for ich  in range(len(chList))
@@ -120,13 +124,16 @@ def main():
 
             miniCanvas.cd(len(chList)*len(bcatList)*iptC + len(chList)*ibc + (ich + 1))
             ROOT.gPad.SetGrid(1,1)
+            ROOT.gPad.SetBottomMargin(ROOT.gPad.GetBottomMargin()*1.5)
+            ROOT.gStyle.SetOptFit(0)
             ptC = ptChList[iptC]
             ch  = chList[ich]
             bc  = bcatList[ibc]
 
             wgtHist=wgtFin.Get("%s%s%s_%s_%sw/%s%s%s_%s_%sw_%s"%(ptC,ch,bc,obs,wid,ptC,ch,bc,obs,wid,sig)).Clone()
-            divHist=divFin.Get("%s%s%s_%s_%sw/%s%s%s_%s_%sw_%s widthx4"%(ptC,ch,bc,obs,divWid,ptC,ch,bc,obs,divWid,sig)).Clone()
+            divHists["%i %i %i"%(iptC,ich,ibc)]=divFin.Get("%s%s%s_%s_%sw/%s%s%s_%s_%sw_%s widthx4"%(ptC,ch,bc,obs,divWid,ptC,ch,bc,obs,divWid,sig)).Clone()
 
+            divHist=divHists["%i %i %i"%(iptC,ich,ibc)]
             divHist.Divide(wgtHist)
 
             divHist.GetYaxis().SetTitle("Events / Reweighted Events")
@@ -138,6 +145,14 @@ def main():
 
             divHist.Draw()
 
+
+            fits["%i %i %i"%(iptC,ich,ibc)]=ROOT.TF1("%i %i %i"%(iptC,ich,ibc),"pol1",0,300)
+            fits["%i %i %i"%(iptC,ich,ibc)].SetLineColor(ROOT.kRed)
+            divHist.Fit(fits["%i %i %i"%(iptC,ich,ibc)],"NQ")
+
+            fits["%i %i %i"%(iptC,ich,ibc)].Draw("SAME")
+
+
             info.SetTextSize(0.06)
             info.DrawLatexNDC(0.20,0.95,"%s %s %s"%(ptC,ch,bc))
 
@@ -148,11 +163,11 @@ def main():
     # use full dataset for comparison
     for wid,sig in [(a,c) for a in widList for c in sigList]:
         miniCanvas=ROOT.TCanvas()
-        miniCanvas.SetCanvasSize(300*2, 200*3)
+        miniCanvas.SetCanvasSize(300*2, 200* int(1+ROOT.TMath.Ceil(len(obsList)/2)))
         miniCanvas.Clear()
 
         miniCanvas.cd()
-        miniCanvas.Divide(2,3)
+        miniCanvas.Divide(2,int(ROOT.TMath.Ceil(len(obsList)/2))+1)
 
         info=ROOT.TLatex()
         info.SetTextSize(0.02)
@@ -189,6 +204,8 @@ def main():
 
             miniCanvas.cd(i)
             ROOT.gPad.SetGrid(1,1)
+            ROOT.gPad.SetBottomMargin(ROOT.gPad.GetBottomMargin()*1.5)
+            ROOT.gStyle.SetOptFit(0)
             totObsHist=obsHists[obs]["4x"]
             totObsHist.Divide(obsHists[obs]["1x"])
             totObsHist.GetYaxis().SetTitle("Events / Reweighted Events")

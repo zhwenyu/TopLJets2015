@@ -2,7 +2,7 @@
 
 ERA=$1
 STEP=$2
-queue=1nh
+queue=2nd
 
 outdir=/afs/cern.ch/work/e/ecoleman/public/TopWidth/TopWidth_${ERA}_808p1
 cardsdir=${outdir}/datacards
@@ -16,7 +16,7 @@ esac
 
 lfs=(EE EM MM)
 wid=(0p5w 1p0w 1p5w 2p0w 2p5w 3p0w 3p5w 4p0w 4p5w 5p0w)
-dists=(minmlb incmlb sncmlb mt2mlb mdrmlb)
+dists=(incmlb sncmlb mt2mlb)
 cat=(1b 2b)
 lbCat=(highpt lowpt)
 unblind=false
@@ -26,7 +26,7 @@ RED='\e[31m'
 NC='\e[0m'
 
 CMSSW_7_4_7dir=~/CMSSW_7_4_7/src/
-CMSSW_7_6_3dir=~/CMSSW_8_0_8_patch1/src/
+CMSSW_7_6_3dir=~/CMSSW_8_0_8_patch1_2/src/
 
 # highptEM2b 
 # --> +++++ highptEM1b
@@ -178,10 +178,7 @@ done
     case $STEP in
         STATS)
             echo "- getting likelihood scans"
-            for wid in ${wid[*]}
-            do
-                python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getLikelihoodScans.py -i ${outdir}/EMsteps_${dist}/ -o ${outdir}/EMsteps_${dist}/
-            done
+            python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getLikelihoodScans.py -i ${outdir}/EMsteps_${dist}/ -o ${outdir}/EMsteps_${dist}/
         ;;
     esac
 

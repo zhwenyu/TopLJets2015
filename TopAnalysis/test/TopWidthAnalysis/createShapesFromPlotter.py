@@ -104,6 +104,7 @@ def getMergedDists(fIn,basedir='',addList=None,addTitle='',
                    widList=None,nomWid='',sigList=None,keyFilter=''):
     obs=None
     exp={}
+    fIn.Get._creates=True
     for wid in widList :
         dirName='%s%s'%(basedir,wid)
         #print dirName
@@ -243,53 +244,47 @@ def main():
           ('tbartVnorm_th',    1.30,     'lnN',    ['tbartV']           ,[]),
     ]
 
-    Mtop       =['tbartm=169.5','tbartm=175.5','tWm=169.5','tWm=175.5']
+    Mtop       =['tbartm=169.5','tbartm=175.5']#,'tWm=169.5','tWm=175.5']
     ttParton_tt=['tbartscaledown','tbartscaleup']
-    ttParton_tW=['tWscaledown','tWscaleup']
-    ME={    "muF": ['%sgen%i'%(sig,ind) for sig in ['tbart','tW'] for ind in [3,4]],
-            "muR": ['%sgen%i'%(sig,ind) for sig in ['tbart','tW'] for ind in [5,8]],
-            "tot": ['%sgen%i'%(sig,ind) for sig in ['tbart','tW'] for ind in [6,10]]
-            }
+    #ttParton_tW=['tWscaledown','tWscaleup']
+    #ME={    "muF": ['%sgen%i'%(sig,ind) for sig in ['tbart','tW'] for ind in [3,4]],
+    #        "muR": ['%sgen%i'%(sig,ind) for sig in ['tbart','tW'] for ind in [5,8]],
+    #        "tot": ['%sgen%i'%(sig,ind) for sig in ['tbart','tW'] for ind in [6,10]]
+    #        }
     tWinterf=['tWDS']
+    amcNLO  =['tbartamcnloFxFx']
+    Herwig  =['tbartHerwig']
 
-    systSignalList=Mtop+ttParton_tt+ttParton_tW+tWinterf+ME["muF"]+ME["muR"]+ME["tot"]
+    systSignalList=Mtop+ttParton_tt+amcNLO+Herwig#+tWinterf+ttParton_tW
 
     MtopMap={}
     ttPartonMap={}
     tWinterfMap={}
-    MEMap={
-            "muF" : {},
-            "muR" : {},
-            "tot" : {}
-            }
+    amcNLOMap={}
+    HerwigMap={}
+
     for wid in modWidList :
         MtopMap[    'tbart%s'%wid]=['tbartm=169.5%s'  %(wid),'tbartm=175.5%s'%(wid)]
-        MtopMap[    'tW%s'   %wid]=['tWm=169.5%s'     %(wid),'tWm=175.5%s'   %(wid)]
+        #MtopMap[    'tW%s'   %wid]=['tWm=169.5%s'     %(wid),'tWm=175.5%s'   %(wid)]
 
         ttPartonMap['tbart%s'%wid]=['tbartscaledown%s'%(wid),'tbartscaleup%s'%(wid)]
-        ttPartonMap['tW%s'   %wid]=['tWscaledown%s'   %(wid),'tWscaleup%s'   %(wid)]
+        #ttPartonMap['tW%s'   %wid]=['tWscaledown%s'   %(wid),'tWscaleup%s'   %(wid)]
 
-        tWinterfMap['tW%s'   %wid]=['tWDS%s'   %(wid)]
+        amcNLOMap['tbart%s'%wid]=['tbartamcnloFxFx%s'%(wid)]
 
-        MEMap["muF"]['tbart%s'%wid]=['tbartgen3%s'%(wid),'tbartgen4%s' %(wid)]
-        MEMap["muR"]['tbart%s'%wid]=['tbartgen5%s'%(wid),'tbartgen8%s' %(wid)]
-        MEMap["tot"]['tbart%s'%wid]=['tbartgen6%s'%(wid),'tbartgen10%s'%(wid)]
+        HerwigMap['tbart%s'%wid]=['tbartHerwig%s'%(wid)]
 
-        MEMap["muF"]['tW%s'%wid]=['tWgen3%s'%(wid),'tWgen4%s' %(wid)]
-        MEMap["muR"]['tW%s'%wid]=['tWgen5%s'%(wid),'tWgen8%s' %(wid)]
-        MEMap["tot"]['tW%s'%wid]=['tWgen6%s'%(wid),'tWgen10%s'%(wid)]
+        #tWinterfMap['tW%s'   %wid]=['tWDS%s'   %(wid)]
 
 
     sampleSysts=[
           #ttbar modelling
           ('Mtop'          , MtopMap    , True , True, False),
           ('ttPartonShower', ttPartonMap, False, True, False),
+          ('Herwig'        , HerwigMap  , False, True, True),
+          ('amcnloFxFx'    , amcNLOMap  , False, True, True),
           #tWinterference
-          ('tWttinterf'    , tWinterfMap, False, True, True) TODO
-          #ME generator
-          ('MEmuF'         , MEMap["muF"], False, True, False),
-          ('MEmuR'         , MEMap["muR"], False, True, False),
-          ('MEtot'         , MEMap["tot"], False, True, False)
+          #('tWttinterf'    , tWinterfMap, False, True, True),
     ]
 
 
@@ -299,10 +294,13 @@ def main():
         ('ltag',  False,False,False),
         ('trig',  False,False,False),
         ('sel',   False,False,False),
-        ('toppt', False,False,False),
+        ('toppt',  True,False,False),
         ('jer',   False,False,False),
         ('btag',  False,False,False),
-        ('pu',     True,False,False)
+        ('pu',     True,False,False),
+        ('MEmuR', False,False,False),
+        ('MEmuF', False,False,False),
+        ('MEtot', False,False,False),
     ]
 
     # prepare output directory
@@ -315,9 +313,11 @@ def main():
 
     # get data and nominal expectations
     fIn=ROOT.TFile.Open(opt.input)
+    fIn.Get._creates=True
     systfIn=None
     if opt.systInput:
         systfIn=ROOT.TFile.Open(opt.systInput)
+        systfIn.Get._creates=True
 
     # prepare output ROOT file
     if not opt.skipMakingShapes :
@@ -327,7 +327,7 @@ def main():
 
     # keep track of progress
     cardIndex=-1
-    numCards =(len(rawWidList)-1)*len(lfsList)*len(lbCatList)*len(catList)*len(distList)
+    numCards =(len(rawWidList))*len(lfsList)*len(lbCatList)*len(catList)*len(distList)
 
     #loop over lepton final states
     for (lbCat,lfs,cat,dist) in [(a,b,c,d) for a in lbCatList
@@ -351,11 +351,14 @@ def main():
 
         nomShapes=exp.copy()
         nomShapes['data_obs']=obs
+
+        for tSig in signalList :
+            nomShapes['%sNOM'%(tSig)] = exp['%s%s'%(tSig,modNomWid)].Clone()
+
         saveToShapesFile(outFile,nomShapes,('%s%s%s_%s'%(lbCat,lfs,cat,dist)))
 
         #loop over categories, widths
         for wid in modWidList:
-            if modNomWid in wid : continue
 
             cardIndex+=1
             print 'Initiating %s datacard for %s%s%s_%s \t\t [%i/%i]'%(dist,lbCat,lfs,cat,wid,cardIndex,numCards)
@@ -386,7 +389,10 @@ def main():
             datacard.write('\n')
             datacard.write('\t\t\t %32s'%'process')
             for sig in signalList: datacard.write('%15s'%('%s%s'%(sig,modNomWid)))
-            for sig in signalList: datacard.write('%15s'%('%s%s'%(sig,wid)))
+            if modNomWid == wid :
+                for sig in signalList: datacard.write('%15s'%('%sNOM'%(sig)))
+            else :
+                for sig in signalList: datacard.write('%15s'%('%s%s'%(sig,wid)))
             for proc in exp:
                 isSig=False
                 for sig in modWidList :
@@ -497,7 +503,10 @@ def main():
                             upH = downH.Clone( '%s%sUp'%(iproc,systVar) )
                             for xbin in xrange(1,upH.GetNbinsX()+1):
                                 diff=upH.GetBinContent(xbin)-nomH.GetBinContent(xbin)
-                                upH.SetBinContent(xbin,nomH.GetBinContent(xbin)-diff)
+                                if nomH.GetBinContent(xbin)-diff >= 0 :
+                                    upH.SetBinContent(xbin,nomH.GetBinContent(xbin)-diff)
+                                else :
+                                    upH.SetBinContent(xbin,upH.GetBinContent(xbin-1))
                     else:
 
                         #project from 2D histo (re-weighted from nominal sample)
@@ -518,8 +527,12 @@ def main():
                             nomVal=nomH.GetBinContent(xbin)
                             varVal = ratioH.GetBinContent(xbin) * nomVal
                             upH.SetBinContent(xbin, varVal)
+                            if upH.GetBinContent(xbin) <= 0 :
+                                upH.SetBinContent(xbin,1e-010)
                             varVal = varVal- nomVal
                             downH.SetBinContent(xbin, nomVal-varVal)
+                            if downH.GetBinContent(xbin) <= 0 :
+                                downH.SetBinContent(xbin,1e-010)
 
                     #normalize (shape only variation is considered)
                     if normalize : downH.Scale( nomH.Integral()/downH.Integral() )
@@ -532,6 +545,11 @@ def main():
                     #save
                     downShapes[iproc]=downH
                     upShapes[iproc]=upH
+
+                    if modNomWid in iproc:
+                        for tSig in signalList :
+                            downShapes['%sNOM'%tSig]=downH
+                            upShapes['%sNOM'%tSig]=upH
 
                 #check if something has been accepted
                 if len(upShapes)==0 : continue
@@ -566,13 +584,24 @@ def main():
 
             #
             for systVar, normalize, useAltShape, projectRelToNom in genSysts:
+                dirForSyst=('%sup%s%s%s_%s_'%(systVar,lbCat,lfs,cat,dist))
+                if "MEmuF" in systVar : dirForSyst=('gen3%s%s%s_%s_'%(lbCat,lfs,cat,dist))
+                if "MEmuR" in systVar : dirForSyst=('gen5%s%s%s_%s_'%(lbCat,lfs,cat,dist))
+                if "MEtot" in systVar : dirForSyst=('gen6%s%s%s_%s_'%(lbCat,lfs,cat,dist))
+
                 _,genVarShapesUp = getMergedDists((systfIn if useAltShape else fIn),
-                        ('%sup%s%s%s_%s_'%(systVar,lbCat,lfs,cat,dist)),
+                        dirForSyst,
                         (rawSignalList if opt.addSigs else None),
                         ('top' if opt.addSigs else ''),
                         widList,nomWid,signalList)
+
+                dirForSyst=('%sup%s%s%s_%s_'%(systVar,lbCat,lfs,cat,dist))
+                if "MEmuF" in systVar : dirForSyst=('gen4%s%s%s_%s_'%(lbCat,lfs,cat,dist))
+                if "MEmuR" in systVar : dirForSyst=('gen8%s%s%s_%s_'%(lbCat,lfs,cat,dist))
+                if "MEtot" in systVar : dirForSyst=('gen10%s%s%s_%s_'%(lbCat,lfs,cat,dist))
+
                 _,genVarShapesDn = getMergedDists((systfIn if useAltShape else fIn),
-                        ('%sdn%s%s%s_%s_'%(systVar,lbCat,lfs,cat,dist)),
+                        dirForSyst,
                         (rawSignalList if opt.addSigs else None),
                         ('top' if opt.addSigs else ''),
                         widList,nomWid,signalList)
@@ -619,6 +648,11 @@ def main():
                     downShapes[iproc]=downH
                     upShapes[iproc]=upH
 
+                    if modNomWid in iproc:
+                        for tSig in signalList :
+                            downShapes['%sNOM'%tSig]=downH
+                            upShapes['%sNOM'%tSig]=upH
+
                 #check if something has been accepted
                 if len(upShapes)==0 : continue
 
@@ -643,14 +677,14 @@ def main():
                     for sig in modWidList :
                         if sig in proc : isSig=True
                     if isSig : continue
-                    if proc in exp and proc in upShapes:
+                    if proc in upShapes:
                         datacard.write('%15s'%'1')
                     else:
                         datacard.write('%15s'%'-')
                 datacard.write('\n')
 
-        #all done
-        datacard.close()
+            #all done
+            datacard.close()
 
     ##################
     # BEGIN MORPHING #
@@ -663,6 +697,8 @@ def main():
     import tdrStyle
     import numpy
     tdrStyle.setTDRStyle()
+
+    ROOT.RooMsgService.instance().setGlobalKillBelow(ROOT.RooFit.WARNING)
 
     print "\n Creating morphed dists\n"
 
@@ -690,17 +726,21 @@ def main():
            }
 
     canvas=ROOT.TCanvas()
+    procHasUnc={}
 
     # make workspace for each signal process
     first=True
     for sig,dist,lbCat,ch,cat in [(a,b,c,d,e)
-            for a in signalList
-            for b in distList
+            for a in (['tbart'] if not opt.allMorphs else signalList)
+            for b in (['incmlb'] if not opt.allMorphs else distList)
             for c in (['highpt'] if not opt.allMorphs else lbCatList)
             for d in (['EM'] if not opt.allMorphs else lfsList)
             for e in (['2b'] if not opt.allMorphs else catList)]:
         modSig=replaceBadCharacters(sig)
         distTitle="M_{lb}" if dist not in distToTitle else distToTitle[dist]
+
+        if sig == signalList[0] :
+            procHasUnc["%s%s%s_%s"%(lbCat,ch,cat,dist)]={}
 
         # get the proper mass information for this signal
         masses=[]
@@ -740,8 +780,12 @@ def main():
             downShapes[systVar]={}
             upShapes[systVar]={}
 
+            if sig == signalList[0] :
+                procHasUncName="%s%s%s_%s"%(lbCat,ch,cat,dist)
+                procHasUnc[procHasUncName][systVar] = []
+
             for iproc in procsToApply:
-                if sig not in iproc : continue
+                if sig not in iproc and sig != signalList[0] : continue
                 nomH=exp[iproc]
 
                 #check which shape to use
@@ -750,7 +794,7 @@ def main():
                     #get directly from another file
                     downH  = altExp[ procsToApply[iproc][0] ]
                     if len( procsToApply[iproc] ) > 1 :
-                        upH    = altExp[ procsToApply[iproc][1] ]
+                        upH = altExp[ procsToApply[iproc][1] ]
                     else:
                         #if only one variation is available, mirror it
                         upH = downH.Clone( '%s%sUp'%(iproc,systVar) )
@@ -777,8 +821,12 @@ def main():
                         nomVal=nomH.GetBinContent(xbin)
                         varVal = ratioH.GetBinContent(xbin) * nomVal
                         upH.SetBinContent(xbin, varVal)
+                        if upH.GetBinContent(xbin) <= 0 :
+                            upH.SetBinContent(xbin,1e-010)
                         varVal = varVal- nomVal
                         downH.SetBinContent(xbin, nomVal-varVal)
+                        if downH.GetBinContent(xbin) <= 0 :
+                            downH.SetBinContent(xbin,1e-010)
 
                 #normalize (shape only variation is considered)
                 if normalize : downH.Scale( nomH.Integral()/downH.Integral() )
@@ -789,18 +837,36 @@ def main():
                 if not accept : continue
 
                 #save
+                if sig == signalList[0] :
+                    procHasUncName="%s%s%s_%s"%(lbCat,ch,cat,dist)
+                    procHasUnc[procHasUncName][systVar]+=[iproc]
+
+                if sig not in iproc : continue
                 downShapes[systVar][iproc]=downH
                 upShapes[systVar][iproc]=upH
 
 
+
+
         for systVar, normalize, useAltShape, projectRelToNom in genSysts:
+            dirForSyst=('%sup%s%s%s_%s_'%(systVar,lbCat,lfs,cat,dist))
+            if "MEmuF" in systVar : dirForSyst=('gen3%s%s%s_%s_'%(lbCat,lfs,cat,dist))
+            if "MEmuR" in systVar : dirForSyst=('gen5%s%s%s_%s_'%(lbCat,lfs,cat,dist))
+            if "MEtot" in systVar : dirForSyst=('gen6%s%s%s_%s_'%(lbCat,lfs,cat,dist))
+
             _,genVarShapesUp = getMergedDists((systfIn if useAltShape else fIn),
-                    ('%sup%s%s%s_%s_'%(systVar,lbCat,ch,cat,dist)),
+                    dirForSyst,
                     (rawSignalList if opt.addSigs else None),
                     ('top' if opt.addSigs else ''),
                     widList,nomWid,signalList)
+
+            dirForSyst=('%sup%s%s%s_%s_'%(systVar,lbCat,lfs,cat,dist))
+            if "MEmuF" in systVar : dirForSyst=('gen4%s%s%s_%s_'%(lbCat,lfs,cat,dist))
+            if "MEmuR" in systVar : dirForSyst=('gen8%s%s%s_%s_'%(lbCat,lfs,cat,dist))
+            if "MEtot" in systVar : dirForSyst=('gen10%s%s%s_%s_'%(lbCat,lfs,cat,dist))
+
             _,genVarShapesDn = getMergedDists((systfIn if useAltShape else fIn),
-                    ('%sdn%s%s%s_%s_'%(systVar,lbCat,ch,cat,dist)),
+                    dirForSyst,
                     (rawSignalList if opt.addSigs else None),
                     ('top' if opt.addSigs else ''),
                     widList,nomWid,signalList)
@@ -808,8 +874,12 @@ def main():
             downShapes[systVar]={}
             upShapes[systVar]={}
 
+            if sig == signalList[0] :
+                procHasUncName="%s%s%s_%s"%(lbCat,ch,cat,dist)
+                procHasUnc[procHasUncName][systVar] = []
+
             for iproc in exp:
-                if sig not in iproc : continue
+                if sig not in iproc and sig != signalList[0] : continue
                 nomH=exp[iproc]
 
                 if not iproc in genVarShapesDn :
@@ -845,8 +915,15 @@ def main():
                 if not accept : continue
 
                 #save
-                downShapes[systVar][iproc]=downH
-                upShapes[systVar][iproc]=upH
+                if sig in iproc :
+                    downShapes[systVar][iproc]=downH
+                    upShapes[systVar][iproc]=upH
+
+                if sig == signalList[0] :
+                    procHasUncName="%s%s%s_%s"%(lbCat,ch,cat,dist)
+                    print procHasUncName,',',systVar,',',iproc,',',upH.Integral()
+                    procHasUnc[procHasUncName][systVar]+=[iproc]
+
 
 
         ######################
@@ -859,10 +936,12 @@ def main():
         refGrid =ROOT.RooMomentMorphND.Grid(widthDim,massDim)
 
         # add systematics binnings to grid
+        nShapes=0
         for systVar in upShapes :
             if len(upShapes[systVar])==0 : continue
-            binning=ROOT.RooBinning(3,-1,1)
+            binning=ROOT.RooBinning(3,-1,1,"%s"%systVar)
             refGrid.addBinning(binning)
+            nShapes += 1
 
         massAxes=[ws.var('x').frame()]*len(widths)
         widAxes =[ws.var('x').frame()]*len(masses)
@@ -877,6 +956,9 @@ def main():
                 #get histogram and convert to a PDF
                 dirname='%s%s%s_%s_%3.1fw'%(lbCat,ch,cat,dist,widths[iwid])
                 h=tfIn.Get(dirname+"/"+dirname+'_'+proc)
+                if not isinstance(h, ROOT.TH1):
+                    print "\t\tProblem with pdf ",dirName,"/",dirName,"_",proc,"  | Continuing..."
+                    continue
                 name='%s_m%d'%(dirname,int(10*mass))
                 data=ROOT.RooDataHist(name,name,ROOT.RooArgList(ws.var("x")),h)
                 pdf=ROOT.RooHistPdf(name+"_pdf",name+"_pdf",ROOT.RooArgSet(ws.var("x")),data)
@@ -890,44 +972,45 @@ def main():
 
                 #add pdf to the grid
                 print 'Adding',pdf.GetName(),'@ (',iwid,',',imass,')'
-                insertVector=numpy.zeros(2+len(upShapes))
+                insertVector=ROOT.vector('int')(2+nShapes)
                 insertVector[0]=iwid
                 insertVector[1]=imass
-                refGrid.addPdf(ws.pdf(pdf.GetName()),2+len(upShapes),insertVector)
+                refGrid.addPdf(ws.pdf(pdf.GetName()),insertVector)
 
                 isyst=0
-                for proc in upShapes :
+                for systVar in upShapes :
+                    if mass != 172.5 : break;
                     # get systematic histos
                     systHUp=None
                     systHDn=None
-                    for sigwid in upShapes[proc] :
+                    for sigwid in upShapes[systVar] :
                         if ("%3.1f"%(widths[iwid])).replace('.','p') in sigwid :
-                            systHUp=  upShapes[proc][sigwid]
-                            systHDn=downShapes[proc][sigwid]
+                            systHUp=  upShapes[systVar][sigwid]
+                            systHDn=downShapes[systVar][sigwid]
                             break
                     if systHUp is None or systHDn is None: continue
 
                     # make up RooAbsPdf
-                    upName='%s_m%d_%sUp'%(dirname,int(10*mass),proc)
+                    upName='%s_m%d_%sUp'%(dirname,int(10*mass),systVar)
                     upData=ROOT.RooDataHist(upName,upName,ROOT.RooArgList(ws.var("x")),systHUp)
                     upPdf=ROOT.RooHistPdf(upName+"_pdf",upName+"_pdf",ROOT.RooArgSet(ws.var("x")),upData)
                     getattr(ws,'import')(upPdf,ROOT.RooCmdArg())
 
                     # make down RooAbsPdf
-                    dnName='%s_m%d_%sDown'%(dirname,int(10*mass),proc)
+                    dnName='%s_m%d_%sDown'%(dirname,int(10*mass),systVar)
                     dnData=ROOT.RooDataHist(dnName,dnName,ROOT.RooArgList(ws.var("x")),systHDn)
                     dnPdf=ROOT.RooHistPdf(dnName+"_pdf",dnName+"_pdf",ROOT.RooArgSet(ws.var("x")),dnData)
                     getattr(ws,'import')(dnPdf,ROOT.RooCmdArg())
 
-                    insertVector=numpy.zeros(2+len(upShapes))
-                    insertVector[0]=iwid
-                    insertVector[1]=imass
+                    insertVectorShape=ROOT.vector('int')(2+nShapes)
+                    insertVectorShape[0]=iwid
+                    insertVectorShape[1]=imass
 
                     # add pdfs to grid, setting all other systs to nominal
-                    insertVector[2+isyst]=1
-                    refGrid.addPdf(ws.pdf(upPdf.GetName()),2+len(upShapes),insertVector)
-                    insertVector[2+isyst]=-1
-                    refGrid.addPdf(ws.pdf(dnPdf.GetName()),2+len(upShapes),insertVector)
+                    insertVectorShape[2+isyst]=1
+                    refGrid.addPdf(ws.pdf(upPdf.GetName()),insertVectorShape)
+                    insertVectorShape[2+isyst]=-1
+                    refGrid.addPdf(ws.pdf(dnPdf.GetName()),insertVectorShape)
                     isyst+=1
 
             tfIn.Close()
@@ -966,7 +1049,7 @@ def main():
             canvas.SetGrayscale(False)
 
         # all widths for one mass
-        canvas.clear()
+        canvas.Clear()
         for i in range(0,len(widAxes)) :
             if opt.noValidation : break
             canvas.cd()
@@ -990,10 +1073,10 @@ def main():
             CMS_lumi.lumiTextSize = 0.55
             CMS_lumi.CMS_lumi(canvas,4,0)
             canvas.Update()
-            canvas.SaveAs("%s/widthInputValidation_%s%s%s_%s_%s.pdf"%(opt.output,lbCat,ch,cat,dist,("3.1f"%masses[i][0]).replace('.','p')))
+            canvas.SaveAs("%s/widthInputValidation_%s%s%s_%s_%s.pdf"%(opt.output,lbCat,ch,cat,dist,("%3.1f"%masses[i][0]).replace('.','p')))
             canvas.SetGrayscale(True)
             canvas.Update()
-            canvas.SaveAs("%s/gScale__widthInputValidation_%s%s%s_%s_%s.pdf"%(opt.output,lbCat,ch,cat,dist,("3.1f"%masses[i][0]).replace('.','p')))
+            canvas.SaveAs("%s/gScale__widthInputValidation_%s%s%s_%s_%s.pdf"%(opt.output,lbCat,ch,cat,dist,("%3.1f"%masses[i][0]).replace('.','p')))
             canvas.SetGrayscale(False)
 
         #################################
@@ -1001,8 +1084,16 @@ def main():
         #################################
         ws.factory('alpha[%i,%i]'%(0,len(widths)-1))
         ws.factory('beta[%i,%i]'%(0,len(masses)-1))
+        ws.var('alpha').setVal(1)
+        ws.var('beta' ).setVal(1)
+        wsArgList=ROOT.RooArgList( ws.var('alpha'), ws.var('beta') )
+        for systVar in upShapes :
+            if len(upShapes[systVar])==0 : continue
+            ws.factory('%s[-1,1]'%(systVar))
+            ws.var('%s'%systVar).setVal(0)
+            wsArgList.add( ws.var('%s'%systVar) , True )
         pdf=ROOT.RooMomentMorphND('widmorphpdf','widmorphpdf',
-                                  ROOT.RooArgList( ws.var('alpha'), ws.var('beta') ),
+                                  wsArgList,
                                   ROOT.RooArgList( ws.var('x') ),
                                   refGrid,
                                   ROOT.RooMomentMorphND.Linear)
@@ -1015,6 +1106,7 @@ def main():
         fOut.cd()
         ws.Write()
         fOut.Close()
+        print "Closing outfile"
 
 
         ###############################
@@ -1042,6 +1134,7 @@ def main():
         sensAlphaScanImgs = []
         sensBetaScanImgs  = []
 
+        print "here1"
         os.mkdir('%s/gifplots_%s%s%s_%s_%s'%(opt.output,lbCat,ch,cat,sig,dist))
 
         # NOTE: we want to reopen the outfile so that we see what Combine sees.
@@ -1062,17 +1155,22 @@ def main():
         #import pdb
         #pdb.set_trace()
 
+        print "Begin morph validation!"
+
         #################################
         # create morphed PDF validation #
         #################################
         histos=[mlbVar.frame()]*len(widths)
         for i in range(0,len(widths)) :
+            print "Setting value of alpha!"
             alphaVar.setVal(widths[i])
 
             leg=ROOT.TLegend(0.65,0.17,0.90,0.37)
             leg.SetHeader("#Gamma_{t} = %s#times#Gamma_{SM}"%rawWidList[i])
+            print "Validating morphed pdfs!"
 
             for imass in range(0,len(masses)) :
+                print "Setting value of beta!"
                 betaVar.setVal(imass)
                 morphPDF.plotOn(histos[i],
                         ROOT.RooFit.Name("%3.1f"%masses[imass][0]),
@@ -1321,10 +1419,11 @@ def main():
     # PRODUCE WIDTH/MASS SCAN DATACARD #
     ####################################
     fIn=ROOT.TFile.Open(opt.input)
-    for lbCat,ch,cat,dist in [(lbCat,ch,cat,dist) for lbCat in lbCatList
-            for ch in lfsList
-            for cat in catList
-            for dist in distList] :
+    for lbCat,ch,cat,dist in [(lbCat,ch,cat,dist)
+            for lbCat in (['highpt'] if not opt.allMorphs else lbCatList)
+            for ch    in (['EM'] if not opt.allMorphs else lfsList)
+            for cat   in (['2b'] if not opt.allMorphs else catList)
+            for dist  in (['incmlb'] if not opt.allMorphs else distList)] :
         # get signal/backgrounds
         obs,exp=getMergedDists(fIn,('%s%s%s_%s_'%(lbCat,ch,cat,dist)),None,'',widList,nomWid,signalList)
         if not opt.truthDataset=="" :
@@ -1353,7 +1452,7 @@ def main():
             if isSig : continue
             datacard.write('shapes %10s * shapes.root %s%s%s_%s/$PROCESS %s%s%s_%s_$SYSTEMATIC/$PROCESS\n'%(proc,lbCat,ch,cat,dist,lbCat,ch,cat,dist))
 
-        datacard.write('shapes data_obs   * shapes.root %s%s%s_%s/$PROCESS\n'%(lbCat,ch,cat,dist,lbCat,ch,cat,dist))
+        datacard.write('shapes data_obs   * shapes.root %s%s%s_%s/$PROCESS\n'%(lbCat,ch,cat,dist))
 
         for sig in signalList:
             datacard.write('shapes %10s * shapes.root sigws_%s%s%s_$PROCESS_%s:widmorphpdf\n'%(sig,lbCat,ch,cat,dist))
@@ -1434,7 +1533,7 @@ def main():
         for systVar, procsToApply, normalize, useAltShape, projectRelToNom in sampleSysts:
             datacard.write('%26s shape'%systVar)
             for sigproc in signalList:
-                if ("%s1p0w"%(sigproc)) in procsToApply and ("%s1p0w"%(sigproc)) in upShapes[systVar]:
+                if ("%s1p0w"%(sigproc)) in procsToApply and ("%s1p0w"%(sigproc)) in procHasUnc["%s%s%s_%s"%(lbCat,ch,cat,dist)][systVar] :
                     datacard.write('%15s'%'1')
                 else:
                     datacard.write('%15s'%'-')
@@ -1443,7 +1542,7 @@ def main():
                 for modwid in modWidList :
                     if modwid in proc : isSig=True
                 if isSig : continue
-                if proc in procsToApply and proc in upShapes[systVar]:
+                if proc in procsToApply and proc in procHasUnc["%s%s%s_%s"%(lbCat,ch,cat,dist)][systVar] :
                     datacard.write('%15s'%'1')
                 else:
                     datacard.write('%15s'%'-')
@@ -1454,7 +1553,7 @@ def main():
         for systVar, normalize, useAltShape, projectRelToNom in genSysts:
             datacard.write('%26s shape'%systVar)
             for sigproc in signalList:
-                if ("%s1p0w"%(sigproc)) in upShapes[systVar]:
+                if ("%s1p0w"%(sigproc)) in procHasUnc["%s%s%s_%s"%(lbCat,ch,cat,dist)][systVar]:
                     datacard.write('%15s'%'1')
                 else:
                     datacard.write('%15s'%'-')
@@ -1463,7 +1562,7 @@ def main():
                 for modwid in modWidList :
                     if modwid in proc : isSig=True
                 if isSig : continue
-                if proc in exp and proc in upShapes[systVar]:
+                if proc in procHasUnc["%s%s%s_%s"%(lbCat,ch,cat,dist)][systVar] :
                     datacard.write('%15s'%'1')
                 else:
                     datacard.write('%15s'%'-')
