@@ -10,7 +10,7 @@
 #include "TopLJets2015/TopAnalysis/interface/MiniEvent.h"
 #include "TopLJets2015/TopAnalysis/interface/TOP-16-006.h"
 #include "TopLJets2015/TopAnalysis/interface/LeptonEfficiencyWrapper.h"
-#include "TopLJets2015/TopAnalysis/interface/TOPWidth.h"
+#include "TopLJets2015/TopAnalysis/interface/TOP-16-019.h"
 #include "TopLJets2015/TopAnalysis/interface/BtagUncertaintyComputer.h"
 
 #include "CondFormats/BTauObjects/interface/BTagCalibration.h"
@@ -28,7 +28,7 @@ using namespace std;
 
 
 //
-void RunTopWidth(TString filename,
+void RunTop16019(TString filename,
 		 TString outname,
 		 Int_t channelSelection, 
 		 Int_t chargeSelection, 
@@ -48,6 +48,8 @@ void RunTopWidth(TString filename,
 
   //LEPTON EFFICIENCIES
   LeptonEfficiencyWrapper lepEffH(filename.Contains("Data13TeV"),era);
+  bool hardCodedLES(era=="era2015");
+
 
   //prepare output
   TopWidthEvent_t twev;
@@ -434,7 +436,9 @@ void RunTopWidth(TString filename,
 	  twev.l_phi[il]=leptons[il].Phi();
 	  twev.l_m[il]=leptons[il].M();
 	  twev.l_id[il]=ev.l_id[ selLeptons[il] ];
-	  twev.l_les[il]= twev.l_id[il]==13 ? ev.l_scaleUnc[ selLeptons[il] ] : getLeptonEnergyScaleUncertainty(twev.l_id[il],twev.l_pt[il],twev.l_eta[il]);
+	  twev.l_les[il]=getLeptonEnergyScaleUncertainty(twev.l_id[il],twev.l_pt[il],twev.l_eta[il]);
+	  if(!hardCodedLES && twev.l_id[il]==13) twev.l_les[il]=TMath::Abs(1-ev.l_scaleUnc[ selLeptons[il] ]);
+
 	  for(Int_t ig=0; ig<ev.ng; ig++)
 	    {
 	      if(abs(ev.g_id[ig])!=ev.l_id[ selLeptons[il] ]) continue;
@@ -522,8 +526,8 @@ void RunTopWidth(TString filename,
       twev.weight[8]=wgt*topPtWgts[1];
       if(ev.ttbar_nw>0)
 	{
-	  twev.nw+=15;
-	  for(size_t iw=1; iw<=15; iw++) twev.weight[8+iw]=wgt*ev.ttbar_w[iw]/ev.ttbar_w[0];
+	  twev.nw+=ev.ttbar_nw;
+	  for(int iw=1; iw<=ev.ttbar_nw; iw++) twev.weight[8+iw]=wgt*ev.ttbar_w[iw]/ev.ttbar_w[0];
 	}
       twev.nt=0;
       twev.met_pt=ev.met_pt[0];

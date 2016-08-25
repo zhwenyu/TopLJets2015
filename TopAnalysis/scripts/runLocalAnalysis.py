@@ -12,7 +12,7 @@ Wrapper to be used when run in parallel
 def RunMethodPacked(args):
 
 
-    method,inF,outF,channel,charge,flav,runSysts,era,tag=args
+    method,inF,outF,channel,charge,flav,runSysts,era,tag,debug=args
     print 'Running ',method,' on ',inF
     print 'Output file',outF
     print 'Selection ch=',channel,' charge=',charge,' flavSplit=',flav,' systs=',runSysts
@@ -29,6 +29,7 @@ def RunMethodPacked(args):
                                                                                                                       channel,
                                                                                                                       flav)
         if runSysts : cmd += ' --runSysts'
+        if debug : cmd += ' --debug'
         print cmd
         os.system(cmd)
     except :
@@ -50,6 +51,7 @@ def main():
     parser.add_option('-o', '--out',         dest='output',      help='output directory (or file if single file to process)  [%default]',  default='analysis', type='string')
     parser.add_option(      '--only',        dest='only',        help='csv list of samples to process  [%default]',             default=None,       type='string')
     parser.add_option(      '--runSysts',    dest='runSysts',    help='run systematics  [%default]',                            default=False,      action='store_true')
+    parser.add_option(      '--debug',    dest='debug',          help='debug mode  [%default]',                            default=False,      action='store_true')
     parser.add_option(      '--flav',        dest='flav',        help='split according to heavy flavour content  [%default]',   default=0,          type=int)
     parser.add_option(      '--ch',          dest='channel',     help='channel  [%default]',                                    default=13,         type=int)
     parser.add_option(      '--charge',      dest='charge',      help='charge  [%default]',                                     default=0,          type=int)
@@ -81,7 +83,7 @@ def main():
         inF=opt.input
         if '/store/' in inF and not 'root:' in inF : inF='root://eoscms//eos/cms'+opt.input        
         outF=opt.output
-        task_list.append( (opt.method,inF,outF,opt.channel,opt.charge,opt.flav,opt.runSysts,opt.era,opt.tag) )
+        task_list.append( (opt.method,inF,outF,opt.channel,opt.charge,opt.flav,opt.runSysts,opt.era,opt.tag,opt.debug) )
     else:
 
         inputTags=getEOSlslist(directory=opt.input,prepend='')
@@ -110,7 +112,7 @@ def main():
             for ifile in xrange(0,len(input_list)):
                 inF=input_list[ifile]
                 outF=os.path.join(opt.output,'%s_%d.root' %(tag,ifile))
-                task_list.append( (opt.method,inF,outF,opt.channel,opt.charge,opt.flav,opt.runSysts,opt.era,tag) )
+                task_list.append( (opt.method,inF,outF,opt.channel,opt.charge,opt.flav,opt.runSysts,opt.era,tag,opt.debug) )
 
     #run the analysis jobs
     if opt.queue=='local':
@@ -123,9 +125,10 @@ def main():
             pool.map(RunMethodPacked, task_list)
     else:
         print 'launching %d tasks to submit to the %s queue'%(len(task_list),opt.queue)        
-        for method,inF,outF,channel,charge,flav,runSysts,era,tag in task_list:
+        for method,inF,outF,channel,charge,flav,runSysts,era,tag,debug in task_list:
             localRun='python %s/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py -i %s -o %s --charge %d --ch %d --era %s --tag %s --flav %d --method %s' % (cmsswBase,inF,outF,charge,channel,era,tag,flav,method)
             if runSysts : localRun += ' --runSysts'            
+            if debug : localRun += ' --debug'
             cmd='bsub -q %s %s/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh \"%s\"' % (opt.queue,cmsswBase,localRun)
             os.system(cmd)
 
