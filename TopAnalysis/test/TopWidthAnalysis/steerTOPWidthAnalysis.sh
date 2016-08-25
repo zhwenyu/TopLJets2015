@@ -16,8 +16,8 @@ if [ "$#" -ne 2 ]; then
     exit 1; 
 fi
 
-queue=8nh
-outdir=/afs/cern.ch/work/e/ecoleman/public/TopWidth/TopWidth_${ERA}_old/
+queue=2nd
+outdir=/afs/cern.ch/work/e/ecoleman/public/TopWidth/TopWidth_${ERA}/
 cardsdir=${outdir}/datacards
 wwwdir=~/www/TopWidth_${ERA}/
 CMSSW_7_4_7dir=~/CMSSW_7_4_7/src/
@@ -36,11 +36,12 @@ nPseudo=1000
 
 lfs=(EE EM MM)
 wid=(0p5w 1p0w 1p5w 2p0w 2p5w 3p0w 3p5w 4p0w 4p5w 5p0w)
-dists=(mdrmlb minmlb incmlb sncmlb mt2mlb)
+#dists=(mdrmlb minmlb incmlb sncmlb mt2mlb)
+dists=(incmlb sncmlb mt2mlb)
 cat=(1b 2b)
 lbCat=(highpt lowpt)
 
-nuisances=(jes jer pu btag les trig sel toppt Mtop ttPartonShower tWttinterf MEmuR MEmuF MEtot)
+nuisances=(jes jer pu btag les trig sel toppt Mtop ttPartonShower MEmuR MEmuF MEtot Herwig amcnloFxFx)
 
 RED='\e[31m'
 NC='\e[0m'
@@ -104,7 +105,7 @@ case $WHAT in
                 -o ${outdir}/datacards/ \
                 -i ${outdir}/analysis/plots/plotter.root \
                 --systInput ${outdir}/analysis/plots/syst_plotter.root \
-                --noshapes --novalidation
+                --noshapes 
     ;;
     MORPHALL ) # get shapes/morphs replacing data with a given width template 
         cd ${CMSSW_7_4_7dir}
@@ -325,6 +326,7 @@ case $WHAT in
     NUISANCES ) # run once for each nuisance, doing a full analysis to understand effects of systematics 
         for dist in ${dists[*]} ; do
             systList=""
+            i=0
         for syst in ${nuisances[*]} ; do
             if [[ "${syst}" != "${nuisances: 0 : 1}" ]]; then
                systList="${systList}," 
@@ -333,8 +335,8 @@ case $WHAT in
 
             echo "Frozen systematics are now: ${systList[@]}"
 
-            mkdir ${outdir}/nuisanceTurnOn_${dist}_${syst}
-            cd ${outdir}/nuisanceTurnOn_${dist}_${syst}
+            mkdir ${outdir}/nuisanceTurnOn_${dist}_${syst}_${i}
+            cd ${outdir}/nuisanceTurnOn_${dist}_${syst}_${i}
             
             # run likelihood scan
             cmd="echo 'Starting job ${dist} ${syst}'"
@@ -372,7 +374,7 @@ case $WHAT in
 
                 # All datacards
                 cmd="${cmd}; root -l -q -b"
-                cmd="${cmd} ${outdir}/nuisanceTurnOn_${dist}_${syst}"
+                cmd="${cmd} ${outdir}/nuisanceTurnOn_${dist}_${syst}_${i}"
                 cmd="${cmd}/higgsCombinex_pre-fit_exp_${twid}_${dist}.HybridNew.mH172.5.8192.quant0.500.root"
                 cmd="${cmd} ${rootcmds}"
             done
@@ -380,7 +382,9 @@ case $WHAT in
             # launch job
             bsub -q ${queue} \
                 ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh \
-                "${outdir}/nuisanceTurnOn_${dist}_${syst}/" "${cmd}" 
+                "${outdir}/nuisanceTurnOn_${dist}_${syst}_${i}/" "${cmd}" 
+
+            let "i += 1" 
 
         done
         done

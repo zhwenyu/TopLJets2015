@@ -26,7 +26,7 @@ parser.add_option("--doAll", dest="doAll", default=False, action="store_true")
 
 # get lists to loop over
 rawWidList=options.widList.split(',')
-rawWidList.remove('1p0w')
+#rawWidList.remove('1p0w')
 
 rawSepGraphY = []
 
@@ -58,6 +58,11 @@ if not options.doAll :
     # loop over widths, parse array info
     for wid in rawWidList :
         latexWid = wid.replace('p','.').replace('w','$\\times\\Gamma_{\\rm SM}$')
+        if "1.0" in latexWid :
+            statList["Separation"][latexWid]=0
+            rawSepGraphY += [0]
+            statList["CL$_s$^{\\rm exp.}$"][latexWid]=1
+            continue
 
         statsFileName="%s/stats__%s__%s.txt"%(options.indir,wid,options.dist)
         for line in open(statsFileName,"r"):
@@ -116,6 +121,7 @@ if not options.doAll :
     for iy in xrange(0,len(yarr)):
         y[iy] = float(yarr[iy])
 
+
     clsGr=ROOT.TGraph(x,y)
     clsGr.GetXaxis().SetTitle("Generator-level #Gamma_{t} [GeV]")
     clsGr.GetYaxis().SetTitle("CL_{s}^{exp.}")
@@ -144,7 +150,9 @@ if not options.doAll :
     xmax=3
     dx=(xmax-xmin)/0.8
 
-    clsGr.Draw("ALP")
+    clsGr.GetXaxis().SetRangeUser(0,4)
+    clsGr.GetYaxis().SetRangeUser(1e-05,1.1)
+    clsGr.Draw("ACP")
 
     fout=ROOT.TFile("%s/statsPlots.root"%(options.outdir),"UPDATE" if not options.recreate else "RECREATE")
     fout.cd()
@@ -153,6 +161,7 @@ if not options.doAll :
     fout.Close()
 
     # draw dist information if available
+    canvas.SetLogy(True)
     if options.dist in [key for key in distToTitle] :
         DistInfo,xpos,ypos=distToTitle[options.dist]
         DistLaTeX=ROOT.TLatex(xpos,ypos, DistInfo)
@@ -169,10 +178,18 @@ if not options.doAll :
     CMS_lumi.extraText = "Simulation Preliminary"
     CMS_lumi.extraOverCmsTextSize=0.50
     CMS_lumi.lumiTextSize = 0.55
+    l=ROOT.TLine()
+    l.SetLineColor(ROOT.kRed)
+    l.DrawLine(0,0.05,4.08,0.05)
+
+    l2=ROOT.TLine()
+    l2.SetLineColor(ROOT.kRed)
+    l2.DrawLine(0,0.01,4.08,0.01)
+    canvas.SetBottomMargin(2*canvas.GetBottomMargin())
+    canvas.SetLeftMargin(2*canvas.GetLeftMargin())
+    canvas.SetGrid(True)
     CMS_lumi.CMS_lumi(canvas,4,0)
 
-    canvas.SetGrid(True)
-    #canvas.SetLogy(True)
     canvas.SaveAs("%s/CLsPlot__%s.png"%(options.outdir,options.dist))
     canvas.SaveAs("%s/CLsPlot__%s.pdf"%(options.outdir,options.dist))
 
@@ -188,6 +205,11 @@ if options.doAll :
         # loop over widths, parse array info
         for wid in rawWidList :
             latexWid = wid.replace('p','.').replace('w','$\\times\\Gamma_{\\rm SM}$')
+            if "1.0" in latexWid :
+                statList["Separation"][latexWid]=0
+                rawSepGraphY += [0]
+                statList["CL$_s$^{\\rm exp.}$"][latexWid]=1
+                continue
 
             statsFileName="%s/stats__%s__%s.txt"%(options.indir,wid,dist)
             for line in open(statsFileName,"r"):
@@ -268,6 +290,7 @@ if options.doAll :
 
     kOrangeList=[0,1,2,4,3]
 
+    canvas.SetLogy(True)
     i=0
     clsLeg=ROOT.TLegend(.60,.85,.85,.60)
     for dist in options.dist.split(',') :
@@ -283,19 +306,24 @@ if options.doAll :
 
 
         if i==0:
-            tgr.GetXaxis().SetRangeUser(1,4)
-            tgr.GetYaxis().SetRangeUser(0,1)
-        tgr.Draw("|P" if i>0 else "AP")
+            tgr.GetXaxis().SetRangeUser(1.3,4)
+            tgr.GetYaxis().SetRangeUser(1e-7,1)
+        tgr.Draw("P" if i>0 else "AP")
         tf.Draw("SAME")
 
         i+=1
-    clsLeg.Draw()
 
     ROOT.gStyle.SetOptFit(0)
 
     l=ROOT.TLine()
     l.SetLineColor(ROOT.kRed)
-    l.DrawLine(1,0.05,4.08,0.05)
+    l.DrawLine(1.3,0.05,4.08,0.05)
+
+    l2=ROOT.TLine()
+    l2.SetLineColor(ROOT.kRed)
+    l2.DrawLine(1.3,0.10,4.08,0.10)
+    clsLeg.Draw()
+
 
     CMS_lumi.relPosX=0.18
     CMS_lumi.extraText="Simulation Preliminary"
@@ -323,6 +351,7 @@ if options.doAll :
 
 
     CMS_lumi.CMS_lumi(canvas,4,0)
+    canvas.SetLogy(True)
     canvas.SaveAs("%s/SeparationPlot.png"%(options.outdir))
     canvas.SaveAs("%s/SeparationPlot.pdf"%(options.outdir))
 
