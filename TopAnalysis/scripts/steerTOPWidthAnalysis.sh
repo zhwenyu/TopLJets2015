@@ -45,7 +45,8 @@ RED='\e[31m'
 NC='\e[0m'
 case $WHAT in
     SEL )
-	python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} -o ${outdir} --era ${ERA} -m TOP-16-019::RunTop16019 --ch 0;
+	queue=local
+	python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} -o ${outdir} --era ${ERA} -m TOP-16-019::RunTop16019 --ch 0 --only TTJ;
 	;;
     MERGESEL )
 	./scripts/mergeOutputs.py ${outdir} True;	
@@ -59,7 +60,8 @@ case $WHAT in
 	cp test/index.php ${wwwdir}/sel
 	;;
     ANA )
-	python scripts/runTopWidthAnalysis.py -i ${summaryeosdir} -o ${outdir}/analysis -q ${queue};
+	queue=local
+	python scripts/runTopWidthAnalysis.py -i ${summaryeosdir} -o ${outdir}/analysis -q ${queue} --only TTJ;
 	;;
     MERGE )
 	./scripts/mergeOutputs.py ${outdir}/analysis;

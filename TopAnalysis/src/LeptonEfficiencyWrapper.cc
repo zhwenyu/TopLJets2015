@@ -225,7 +225,7 @@ EffCorrection_t LeptonEfficiencyWrapper::getOfflineCorrection(int pdgId,float pt
       Int_t ptBinForEff=h->GetYaxis()->FindBin(ptForEff);
       
       corr.first=h->GetBinContent(etaBinForEff,ptBinForEff);
-      corr.second=h->GetBinContent(etaBinForEff,ptBinForEff);
+      corr.second=h->GetBinError(etaBinForEff,ptBinForEff);
     }
 
   return corr;
