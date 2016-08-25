@@ -31,7 +31,7 @@ Analysis loop
 """
 def runTopWidthAnalysis(fileName,
                         outFileName,
-                        widthList=[0.2,0.4,0.6,0.8,1.0,1.2,1.4,1.6,2.0,2.2,2.4,2.6,2.8,3.0,3.5,4.0],
+                        widthList=[0.2,0.4,0.6,0.8,1.0,1.2,1.4,1.6,1.8,2.0,2.2,2.4,2.6,2.8,3.0,3.5,4.0],
                         systs=['','puup','pudn','btagup','btagdn','ltagup','ltagdn','jerup','jerdn','jesup','jesdn','lesup','lesdn','trigup','trigdn','selup','seldn','topptup','topptdn']):
 
     print '....analysing',fileName,'with output @',outFileName
@@ -44,7 +44,7 @@ def runTopWidthAnalysis(fileName,
     else:
         #generator level systematics for ttbar
         if 'TTJets' in fileName:
-            for i in xrange(1,116):  systs += ['gen%d'%i]
+            for i in xrange(1,120):  systs += ['gen%d'%i]
 
     smWidth=1.324 # all powheg samples have been generated with the width @ 172.5 GeV
     smMass=172.5

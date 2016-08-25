@@ -32,7 +32,8 @@ case $ERA in
 	lumi=2267.84
 	lumiUnc=0.027
 	eosdir=/store/cmst3/user/psilva/LJets2015/${githash}
-	summaryeosdir=/store/cmst3/group/top/summer2016/TopWidth_${ERA}
+	summaryeosdir=/store/cmst3/group/top/summer2016/TopWidth_${ERA}_notrig 
+        #/store/cmst3/group/top/summer2016/TopWidth_${ERA}
 	;;
 esac
 
