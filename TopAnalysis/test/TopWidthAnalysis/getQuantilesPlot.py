@@ -64,6 +64,9 @@ eyu3A=ROOT.TVector(nPoints)
 
 eyexp=ROOT.TVector(nPoints)
 
+qobsX=ROOT.TVector(nPoints)
+qobsY=ROOT.TVector(nPoints)
+
 # initialize standard arrays
 for i in xrange(0,nPoints) :
     x[i]     = 0.25 + 0.5*i
@@ -73,23 +76,23 @@ for i in xrange(0,nPoints) :
 # loop over widths, lfs, parse array info
 i=0
 for wid,lfs in [(wid,lfs) for wid in rawWidList for lfs in rawLfsList]:
-    if wid == "1p0w" :
-        eyl3N[i] = 0
-        eyl2N[i] = 0
-        eyl1N[i] = 0
-        y[i]     = 0
-        eyu1N[i] = 0
-        eyu2N[i] = 0
-        eyu3N[i] = 0
-        eyl3N[i+1] = 0
-        eyl2N[i+1] = 0
-        eyl1N[i+1] = 0
-        y[i+1]     = 0
-        eyu1N[i+1] = 0
-        eyu2N[i+1] = 0
-        eyu3N[i+1] = 0
-        i+=2
-        continue
+    #if wid == "1p0w" :
+    #    eyl3N[i] = 0
+    #    eyl2N[i] = 0
+    #    eyl1N[i] = 0
+    #    y[i]     = 0
+    #    eyu1N[i] = 0
+    #    eyu2N[i] = 0
+    #    eyu3N[i] = 0
+    #    eyl3N[i+1] = 0
+    #    eyl2N[i+1] = 0
+    #    eyl1N[i+1] = 0
+    #    y[i+1]     = 0
+    #    eyu1N[i+1] = 0
+    #    eyu2N[i+1] = 0
+    #    eyu3N[i+1] = 0
+    #    i+=2
+    #    continue
 
     statsFileName="%s/stats__%s_%s_%s.txt"%(options.indir,wid,lfs,options.dist)
     for line in open(statsFileName,"r"):
@@ -111,6 +114,8 @@ for wid,lfs in [(wid,lfs) for wid in rawWidList for lfs in rawLfsList]:
             eyu1A[i+1] = ROOT.TMath.Abs(tline[4]-tline[3])
             eyu2A[i+1] = ROOT.TMath.Abs(tline[5]-tline[3])
             eyu3A[i+1] = ROOT.TMath.Abs(tline[6]-tline[3])
+        elif "qobs" in line :
+            qobsY = float(line.replace("qobs",""))
         else : continue
     i+=2
 

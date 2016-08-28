@@ -193,12 +193,14 @@ def main():
     parser.add_option(      '--lfs',       dest='lfsInput',  help='lepton final states to consider',          default='EE,EM,MM',      type='string')
     parser.add_option(      '--lbCat',     dest='lbCat',     help='pt categories to consider',                default='highpt,lowpt',  type='string')
     parser.add_option(      '--truth', dest='truthDataset',  help='make data out of MC truth',                default='',              type='string')
-    parser.add_option('-w', '--wids',  dest='widList',       help='signal widths',  default='0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0', type='string')
     parser.add_option('--noshapes', dest='skipMakingShapes', help='jump straight to morphing',                     default=False, action='store_true')
     parser.add_option('--nomorph',  dest='skipMorphing',     help='do not morph signal dists',                     default=False, action='store_true')
     parser.add_option('--allmorph', dest='allMorphs',        help='make morph validation plots for all cats',      default=False, action='store_true')
     parser.add_option('--makesens', dest='makeSens',         help='make local sensitivity validation (very slow)', default=False, action='store_true')
     parser.add_option('--novalidation', dest='noValidation', help='do not make any validation plots',              default=False, action='store_true')
+    parser.add_option('-w', '--wids',  dest='widList',       help='signal widths',
+            default='0.2,0.4,0.6,0.8,1.0,1.2,1.4,1.6,1.8,2.0,2.2,2.4,2.6,2.8,3.0,3.5,4.0',
+            type='string')
     (opt, args) = parser.parse_args()
 
     # parse the dists to consider

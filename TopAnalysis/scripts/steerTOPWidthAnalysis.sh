@@ -37,7 +37,7 @@ case $ERA in
 	;;
 esac
 
-outdir=~/work/TopWidth_${ERA}
+outdir=/afs/cern.ch/work/e/ecoleman/public/TopWidth/TopWidth_${ERA}
 wwwdir=~/www/TopWidth_${ERA}
 
 
@@ -59,8 +59,7 @@ case $WHAT in
 	cp test/index.php ${wwwdir}/sel
 	;;
     ANA )
-	queue=local
-	python scripts/runTopWidthAnalysis.py -i ${summaryeosdir} -o ${outdir}/analysis -q ${queue} --only TTJ;
+	python scripts/runTopWidthAnalysis.py -i ${summaryeosdir} -o ${outdir}/analysis -q ${queue};
 	;;
     MERGE )
 	./scripts/mergeOutputs.py ${outdir}/analysis;
@@ -71,8 +70,8 @@ case $WHAT in
 	;;
     PLOT )
 	#python scripts/plotter.py -i ${outdir}/analysis  -j data/${ERA}/samples.json      -l ${lumi} --mcUnc ${lumiUnc} --only count --saveTeX -o count_plotter.root --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck; 
-        #python scripts/plotter.py -i ${outdir}/analysis  -j data/${ERA}/samples.json      -l ${lumi} --mcUnc ${lumiUnc} --onlyData --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck;
-	#python scripts/plotter.py -i ${outdir}/analysis  -j data/${ERA}/syst_samples.json -l ${lumi} --mcUnc ${lumiUnc} --silent -o syst_plotter.root;        
+       #python scripts/plotter.py -i ${outdir}/analysis  -j data/${ERA}/samples.json      -l ${lumi} --mcUnc ${lumiUnc} --onlyData --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck;
+	#python scripts/plotter.py -i ${outdir}/analysis  -j data/${ERA}/syst_samples.json -l ${lumi} --mcUnc ${lumiUnc} --silent -o syst_plotter2.root;        
 	#combined plots
 	python test/TopWidthAnalysis/combinePlotsForAllCategories.py ptlb
 	python test/TopWidthAnalysis/combinePlotsForAllCategories.py ptlb EE1b,MM1b,EM1b

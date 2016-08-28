@@ -14,7 +14,7 @@ RooStats::HypoTestResult *readLepFile(TDirectory *toyDir,  double rValue) {
     TIter next(toyDir->GetListOfKeys()); 
     TKey *k;
     while ((k = (TKey *) next()) != 0) {
-        if (TString(k->GetName()).Index(prefix) != 0) continue;
+        //if (TString(k->GetName()).Index(prefix) != 0) continue;
         RooStats::HypoTestResult *toy = (RooStats::HypoTestResult *)(toyDir->Get(k->GetName()));
         if (toy == 0) continue;
         if (ret == 0) {
@@ -36,8 +36,6 @@ void hypoTestResultTreeTopWid(TString fOutName,
                               const char *dist="mlb", 
                               bool unblind = false) 
 {
-    if(wid == "1p0w") return;
-    
     if (gROOT->GetListOfFiles()->GetSize() == 0) {
         std::cerr << "ERROR: you have to open at least one root file" << std::endl;
     }

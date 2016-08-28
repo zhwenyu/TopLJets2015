@@ -26,9 +26,7 @@ parser.add_option("--doAll", dest="doAll", default=False, action="store_true")
 
 # get lists to loop over
 rawWidList=options.widList.split(',')
-#rawWidList.remove('1p0w')
 
-rawSepGraphY = []
 
 distToTitle={
         "mlb": ("Inclusive M_{lb}",0.73,0.83),
@@ -58,18 +56,10 @@ if not options.doAll :
     # loop over widths, parse array info
     for wid in rawWidList :
         latexWid = wid.replace('p','.').replace('w','$\\times\\Gamma_{\\rm SM}$')
-        if "1.0" in latexWid :
-            statList["Separation"][latexWid]=0
-            rawSepGraphY += [0]
-            statList["CL$_s$^{\\rm exp.}$"][latexWid]=1
-            continue
-
         statsFileName="%s/stats__%s__%s.txt"%(options.indir,wid,options.dist)
         for line in open(statsFileName,"r"):
             if "separation" in line :
                statList["Separation"][latexWid]=line.split('#')[0]
-            if "sep" in line and not "separation" in line:
-                rawSepGraphY += [float(line.split('#')[0])]
             elif "null exceeded density" in line :
                statList["$P(q_{\\rm null}>q_{\\rm alt}^{\\rm median})$"][latexWid]=line.split('#')[0]
             elif "alt exceeded density" in line :
@@ -127,37 +117,17 @@ if not options.doAll :
     clsGr.GetYaxis().SetTitle("CL_{s}^{exp.}")
     clsGr.SetTitle("")
     clsGr.SetName("CLsExp_%s"%options.dist)
-
-    sepGraphY=ROOT.TVector(len(yarr))
-    for iy in xrange(0,len(yarr)) :
-        sepGraphY[iy] = rawSepGraphY[iy]
-
-    sepGr=ROOT.TGraph(x,sepGraphY)
-    sepGr.GetXaxis().SetTitle("Generator-level #Gamma_{t} [GeV]")
-    sepGr.GetYaxis().SetTitle("Separation")
-    sepGr.SetTitle("")
-    sepGr.SetName("Separation_%s"%options.dist)
-
-
-    #tpad1=ROOT.TPad("tpad1","",0,0,1,1)
-    #tpad2=ROOT.TPad("tpad2","",0,0,1,1)
-    #tpad2.SetFillStyle(4000)
-
-    ymin=0
-    ymax=2000
-    dy=(ymax-ymin)/0.8
-    xmin=-3
-    xmax=3
-    dx=(xmax-xmin)/0.8
-
     clsGr.GetXaxis().SetRangeUser(0,4)
     clsGr.GetYaxis().SetRangeUser(1e-05,1.1)
-    clsGr.Draw("ACP")
+    clsGr.Draw("AP")
+
+    tsp=ROOT.TSpline3("Spline%s"%options.dist,clsGr)
+    tsp.Draw("SAME")
 
     fout=ROOT.TFile("%s/statsPlots.root"%(options.outdir),"UPDATE" if not options.recreate else "RECREATE")
     fout.cd()
-    sepGr.Write()
     clsGr.Write()
+    tsp.Write()
     fout.Close()
 
     # draw dist information if available
@@ -205,18 +175,11 @@ if options.doAll :
         # loop over widths, parse array info
         for wid in rawWidList :
             latexWid = wid.replace('p','.').replace('w','$\\times\\Gamma_{\\rm SM}$')
-            if "1.0" in latexWid :
-                statList["Separation"][latexWid]=0
-                rawSepGraphY += [0]
-                statList["CL$_s$^{\\rm exp.}$"][latexWid]=1
-                continue
 
             statsFileName="%s/stats__%s__%s.txt"%(options.indir,wid,dist)
             for line in open(statsFileName,"r"):
                 if "separation" in line :
                    statList["Separation"][latexWid]=line.split('#')[0]
-                if "sep" in line and not "separation" in line:
-                    rawSepGraphY += [float(line.split('#')[0])]
                 elif "null exceeded density" in line :
                    statList["$P(q_{\\rm null}>q_{\\rm alt}^{\\rm median})$"][latexWid]=line.split('#')[0]
                 elif "alt exceeded density" in line :
@@ -272,18 +235,6 @@ if options.doAll :
         clsGr.GetYaxis().SetTitle("CL_{s}^{exp.}")
         clsGr.SetTitle("")
         clsGr.SetName("CLsExp_%s"%dist)
-
-        sepGraphY=ROOT.TVector(len(yarr))
-        for iy in xrange(0,len(yarr)) :
-            sepGraphY[iy] = rawSepGraphY[iy]
-
-        sepGr=ROOT.TGraph(x,sepGraphY)
-        sepGr.GetXaxis().SetTitle("Generator-level #Gamma_{t} [GeV]")
-        sepGr.GetYaxis().SetTitle("Separation")
-        sepGr.SetTitle("")
-        sepGr.SetName("Separation_%s"%dist)
-
-        graphs["Separation_%s"%dist]=sepGr
         graphs["CLsExp_%s"%dist]=clsGr
 
     setTDRStyle()
@@ -321,7 +272,7 @@ if options.doAll :
 
     l2=ROOT.TLine()
     l2.SetLineColor(ROOT.kRed)
-    l2.DrawLine(1.3,0.10,4.08,0.10)
+    l2.DrawLine(1.3,0.01,4.08,0.01)
     clsLeg.Draw()
 
 
@@ -332,26 +283,4 @@ if options.doAll :
     CMS_lumi.CMS_lumi(canvas,4,0)
     canvas.SaveAs("%s/CLsPlot.png"%(options.outdir))
     canvas.SaveAs("%s/CLsPlot.pdf"%(options.outdir))
-
-
-    canvas.Clear()
-
-    i=0
-    sepLeg=ROOT.TLegend(.65,.15,.85,.45)
-    for dist in options.dist.split(',') :
-        tgr=graphs["Separation_%s"%dist]
-        tgr.SetLineColor(ROOT.kRed+i)
-        tgr.SetMarkerStyle(ROOT.kNone)
-
-        clsLeg.AddEntry(tgr,distToTitle[dist][0],"L")
-
-        tgr.Draw("SAME AL" if i>0 else "AL")
-
-        i+=1
-
-
-    CMS_lumi.CMS_lumi(canvas,4,0)
-    canvas.SetLogy(True)
-    canvas.SaveAs("%s/SeparationPlot.png"%(options.outdir))
-    canvas.SaveAs("%s/SeparationPlot.pdf"%(options.outdir))
 
