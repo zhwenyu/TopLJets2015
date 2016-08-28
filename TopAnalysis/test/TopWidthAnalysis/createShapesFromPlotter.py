@@ -593,8 +593,8 @@ def main():
                     #fill in 2D histos y-axis is the replica number
                     genVarShapesDn2D={}
                     nPdfReplicas=100
-                    startIdx=15
-                    for igen in xrange(startIdx,nPdfReplicas+startIdx):
+                    startIdx=11
+                    for igen in xrange(startIdx,nPdfReplicas+startIdx+1):
                         dirForSyst=('gen%d%s%s%s_%s_'%(igen,lbCat,lfs,cat,dist))
                         _,iGenVarShapesDn = getMergedDists((systfIn if useAltShape else fIn),
                                                            dirForSyst,
