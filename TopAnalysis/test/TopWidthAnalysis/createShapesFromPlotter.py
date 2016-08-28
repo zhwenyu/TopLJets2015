@@ -301,6 +301,7 @@ def main():
         ('MEmuR', False,False,False),
         ('MEmuF', False,False,False),
         ('MEtot', False,False,False),
+        ('PDF',   False,False,False)
     ]
 
     # prepare output directory
@@ -584,27 +585,77 @@ def main():
 
             #
             for systVar, normalize, useAltShape, projectRelToNom in genSysts:
-                dirForSyst=('%sup%s%s%s_%s_'%(systVar,lbCat,lfs,cat,dist))
-                if "MEmuF" in systVar : dirForSyst=('gen3%s%s%s_%s_'%(lbCat,lfs,cat,dist))
-                if "MEmuR" in systVar : dirForSyst=('gen5%s%s%s_%s_'%(lbCat,lfs,cat,dist))
-                if "MEtot" in systVar : dirForSyst=('gen6%s%s%s_%s_'%(lbCat,lfs,cat,dist))
+                
+                genVarShapesUp,genVarShapesDn=None,None
 
-                _,genVarShapesUp = getMergedDists((systfIn if useAltShape else fIn),
-                        dirForSyst,
-                        (rawSignalList if opt.addSigs else None),
-                        ('top' if opt.addSigs else ''),
-                        widList,nomWid,signalList)
+                if 'PDF'==systVar:
+                    
+                    #fill in 2D histos y-axis is the replica number
+                    genVarShapesDn2D={}
+                    nPdfReplicas=100
+                    startIdx=15
+                    for igen in xrange(startIdx,nPdfReplicas+startIdx):
+                        dirForSyst=('gen%d%s%s%s_%s_'%(igen,lbCat,lfs,cat,dist))
+                        _,iGenVarShapesDn = getMergedDists((systfIn if useAltShape else fIn),
+                                                           dirForSyst,
+                                                           (rawSignalList if opt.addSigs else None),
+                                                           ('top' if opt.addSigs else ''),
+                                                           widList,nomWid,signalList)
+                        for proc in iGenVarShapesDn:
+                            nbins=iGenVarShapesDn[proc].GetXaxis().GetNbins()
+                            if not proc in genVarShapesDn2D:
+                                name=iGenVarShapesDn[proc].GetName()+'2D'
+                                title=iGenVarShapesDn[proc].GetTitle()
+                                xmin=iGenVarShapesDn[proc].GetXaxis().GetXmin()
+                                xmax=iGenVarShapesDn[proc].GetXaxis().GetXmax()
+                                genVarShapesDn2D[proc]=ROOT.TH2F(name,title,nbins,xmin,xmax,nPdfReplicas,0,nPdfReplicas)
+                                genVarShapesDn2D[proc].SetDirectory(0)
+                            for xbin in xrange(1,nbins+1):
+                                genVarShapesDn2D[proc].SetBinContent(xbin,igen-startIdx+1,iGenVarShapesDn[proc].GetBinContent(xbin))
+                
+                    #fill the down shapes with the bin contents being the mean-RMS of the replicas
+                    genVarShapesDn={}
+                    for proc in genVarShapesDn2D:
+                        
+                        #down shape
+                        name=genVarShapesDn2D[proc].GetName()[:-2]
+                        genVarShapesDn[proc]=genVarShapesDn2D[proc].ProjectionY(name,1,1)
+                        genVarShapesDn[proc].SetDirectory(0)
+                        genVarShapesDn[proc].Reset('ICE')
 
-                dirForSyst=('%sup%s%s%s_%s_'%(systVar,lbCat,lfs,cat,dist))
-                if "MEmuF" in systVar : dirForSyst=('gen4%s%s%s_%s_'%(lbCat,lfs,cat,dist))
-                if "MEmuR" in systVar : dirForSyst=('gen8%s%s%s_%s_'%(lbCat,lfs,cat,dist))
-                if "MEtot" in systVar : dirForSyst=('gen10%s%s%s_%s_'%(lbCat,lfs,cat,dist))
+                        #project to compute the mean and RMS
+                        for xbin in xrange(1,genVarShapesDn2D[proc].GetXaxis().GetNbins()+1):
+                            tmp=genVarShapesDn2D[proc].ProjectionY("tmp",xbin,xbin)
+                            mean,rms=tmp.GetMean(),tmp.GetRMS()
+                            tmp.Delete()
+                            genVarShapesDn[proc].SetBinContent(xbin,mean-rms)
 
-                _,genVarShapesDn = getMergedDists((systfIn if useAltShape else fIn),
-                        dirForSyst,
-                        (rawSignalList if opt.addSigs else None),
-                        ('top' if opt.addSigs else ''),
-                        widList,nomWid,signalList)
+                        #all done, can remove this histo from memory
+                        genVarShapesDn2D[proc].Delete()
+        
+                else:
+
+                    dirForSyst=('%sup%s%s%s_%s_'%(systVar,lbCat,lfs,cat,dist))
+                    if "MEmuF" in systVar : dirForSyst=('gen3%s%s%s_%s_'%(lbCat,lfs,cat,dist))
+                    if "MEmuR" in systVar : dirForSyst=('gen5%s%s%s_%s_'%(lbCat,lfs,cat,dist))
+                    if "MEtot" in systVar : dirForSyst=('gen6%s%s%s_%s_'%(lbCat,lfs,cat,dist))
+
+                    _,genVarShapesUp = getMergedDists((systfIn if useAltShape else fIn),
+                                                      dirForSyst,
+                                                      (rawSignalList if opt.addSigs else None),
+                                                      ('top' if opt.addSigs else ''),
+                                                      widList,nomWid,signalList)
+
+                    dirForSyst=('%sup%s%s%s_%s_'%(systVar,lbCat,lfs,cat,dist))
+                    if "MEmuF" in systVar : dirForSyst=('gen4%s%s%s_%s_'%(lbCat,lfs,cat,dist))
+                    if "MEmuR" in systVar : dirForSyst=('gen8%s%s%s_%s_'%(lbCat,lfs,cat,dist))
+                    if "MEtot" in systVar : dirForSyst=('gen10%s%s%s_%s_'%(lbCat,lfs,cat,dist))
+
+                    _,genVarShapesDn = getMergedDists((systfIn if useAltShape else fIn),
+                                                      dirForSyst,
+                                                      (rawSignalList if opt.addSigs else None),
+                                                      ('top' if opt.addSigs else ''),
+                                                      widList,nomWid,signalList)
 
                 #prepare shapes and check if variation is significant
                 downShapes, upShapes = {}, {}
