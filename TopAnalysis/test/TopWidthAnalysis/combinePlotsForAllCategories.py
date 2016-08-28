@@ -3,7 +3,7 @@ import sys
 
 """
 """
-def doPlot(plotName,chList,url='/afs/cern.ch/work/e/ecoleman/public/TopWidth/TopWidth_era2016/analysis/plots/plotter.root') : #~/work/TopWidth_era2016/analysis/plots/plotter.root'):
+def doPlot(plotName,chList,url):
 
     ROOT.gStyle.SetOptTitle(0)
     ROOT.gStyle.SetOptStat(0)
@@ -59,8 +59,9 @@ def main():
     plots=sys.argv[1].split(',')
     chList='EE1b,EE2b,MM1b,MM2b,EM1b,EM2b'.split(',')
     if len(sys.argv)>2: chList=sys.argv[2].split(',')
-    print plots, chList
-    for p in plots : doPlot(p,chList)
+    plotter='/afs/cern.ch/work/e/ecoleman/public/TopWidth/TopWidth_era2016/analysis/plots/plotter.root'
+    if len(sys.argv)>3: plotter=sys.argv[3]
+    for p in plots : doPlot(p,chList,plotter)
     
 """
 for execution from another script

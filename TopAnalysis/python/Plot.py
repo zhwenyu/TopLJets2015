@@ -373,8 +373,10 @@ class Plot(object):
 converts a histogram to a graph with Poisson error bars
 """
 def convertToPoissonErrorGr(h):
-
-    htype=h.ClassName()
+    try:
+        htype=h.ClassName()
+    except:
+        return None
     if htype.find('TH1')<0 : return None
 
     #check https://twiki.cern.ch/twiki/bin/view/CMS/PoissonErrorBars

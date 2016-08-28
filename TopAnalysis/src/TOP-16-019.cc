@@ -145,6 +145,7 @@ void RunTop16019(TString filename,
     { 
       TString tag(lfsVec[ilfs]);
       allPlots["nvtx_"+tag]  = new TH1F("nvtx_"+tag,";Vertex multiplicity;Events",30,0,30);
+      allPlots["rho_"+tag]  = new TH1F("rho_"+tag,";#rho;Events",30,0,30);
       allPlots["mll_"+tag]  = new TH1F("mll_"+tag,";Dilepton invariant mass [GeV];Events",20,0,200);
       if(lumiMap.size()) 
 	{
@@ -404,6 +405,7 @@ void RunTop16019(TString filename,
 
       //nominal selection control histograms
       allPlots["nvtx_"+chTag]->Fill(ev.nvtx,wgt);
+      allPlots["rho_"+chTag]->Fill(ev.rho,wgt);
       float mll((leptons[0]+leptons[1]).M());
       allPlots["mll_"+chTag]->Fill(mll,wgt);
       std::map<Int_t,Float_t>::iterator rIt=lumiMap.find(ev.run);
