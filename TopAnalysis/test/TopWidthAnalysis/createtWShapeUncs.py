@@ -1,7 +1,7 @@
 import sys
 import ROOT
 
-                     
+
 def main():
 
     #open files
@@ -9,7 +9,7 @@ def main():
     syst_plotter   = ROOT.TFile.Open(sys.argv[2])
     target_plotter = ROOT.TFile.Open(sys.argv[3])
     tW_syst_plotter = ROOT.TFile.Open('tW_syst_plotter.root','RECREATE')
-    
+
     #base configuration expected from the json files
     tWnom='tW'
     tWsysts=["tW m=169.5","tW m=175.5",'tW scale up','tW scale down','tW DS']
@@ -29,7 +29,7 @@ def main():
             systH=syst_plotter.Get('%s/%s_%s'%(pname,pname,syst)).Clone()
             systH.SetDirectory(outDir)
             systH.Divide(nomH)
-            systH.Multiply(targetH)  
+            systH.Multiply(targetH)
             systH.Write()
         print pname
         tW_syst_plotter.cd()
@@ -42,7 +42,7 @@ def main():
 
 
 
-            
+
 """
 for execution from another script
 """

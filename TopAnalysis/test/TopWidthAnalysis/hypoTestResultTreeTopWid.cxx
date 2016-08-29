@@ -34,7 +34,8 @@ void hypoTestResultTreeTopWid(TString fOutName,
                               const char *lfs="",
                               TString wid="1p0w", 
                               const char *dist="mlb", 
-                              bool unblind = false) 
+                              bool unblind = false,
+                              TString prepost="") 
 {
     if (gROOT->GetListOfFiles()->GetSize() == 0) {
         std::cerr << "ERROR: you have to open at least one root file" << std::endl;
@@ -164,7 +165,7 @@ void hypoTestResultTreeTopWid(TString fOutName,
     // get CLs from file (highly specific to our analysis)
     // 
     Double_t clsObs,clsbObs,clbObs,
-             clsObsErr,clsbObsErr,clbObsErr;
+             clsObsErr,clsbObsErr,clbObsErr,qobs;
     if(unblind) {
         std::cout << " - getting CLs... " << std::endl;
         TDirectory *toyDir = ((TFile*) gROOT->GetListOfFiles()->At(0))->GetDirectory("toys");
@@ -182,6 +183,7 @@ void hypoTestResultTreeTopWid(TString fOutName,
         clsbObsErr = res->CLsplusbError();
         clbObs     = res->CLb();
         clbObsErr  = res->CLbError();
+        qobs       = res->GetTestStatisticData();
         std::cout << " - got CLs... " << std::endl;
     }
 
@@ -218,10 +220,10 @@ void hypoTestResultTreeTopWid(TString fOutName,
     //
     // store the information in a nice text file
     //
-    std::ofstream ofs(TString(TString("stats__")+wid+
-                                TString("_")+lfs+
-                                TString("_")+dist+
-                                TString(".txt")).Data(), 
+    std::ofstream ofs(TString(prepost+TString("stats__")+wid+
+                                      TString("_")+lfs+
+                                      TString("_")+dist+
+                                      TString(".txt")).Data(), 
                       std::ofstream::out);
     ofs << TMath::ErfInverse(separation)          << "$\\sigma$" << " # separation \n"
         << TMath::ErfInverse(nullExceededDensity) << "$\\sigma$" << " # null exceeded density \n"
