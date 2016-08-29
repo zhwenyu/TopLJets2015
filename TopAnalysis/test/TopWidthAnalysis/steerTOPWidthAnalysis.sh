@@ -17,7 +17,7 @@ if [ "$#" -ne 2 ]; then
 fi
 
 queue=2nd
-outdir=/afs/cern.ch/work/e/ecoleman/public/TopWidth/TopWidth_${ERA}_old/
+outdir=/afs/cern.ch/work/e/ecoleman/public/TopWidth/TopWidth_${ERA}/
 cardsdir=${outdir}/datacards
 wwwdir=~/www/TopWidth_${ERA}/
 CMSSW_7_4_7dir=~/CMSSW_7_4_7/src/
@@ -27,8 +27,8 @@ unblind=true
 nPseudo=1000
 
 lfs=(EE EM MM)
-#wid=(0p2w 0p4w 0p6w 0p8w 1p0w 1p2w 1p4w 1p6w 1p8w 2p0w 2p2w 2p4w 2p6w 2p8w 3p0w 3p5w 4p0w)
-wid=(0p5w 1p0w 1p5w 2p0w 2p5w 3p0w 3p5w 4p0w)
+wid=(0p2w 0p4w 0p6w 0p8w 1p0w 1p2w 1p4w 1p6w 1p8w 2p0w 2p2w 2p4w 2p6w 2p8w 3p0w 3p5w 4p0w)
+#wid=(0p5w 1p0w 1p5w 2p0w 2p5w 3p0w 3p5w 4p0w)
 #dists=(mdrmlb minmlb incmlb sncmlb mt2mlb)
 dists=(incmlb sncmlb mt2mlb)
 cat=(1b 2b)
@@ -85,6 +85,24 @@ case $WHAT in
                 -o ${outdir}/datacards/ \
                 -i ${outdir}/analysis/plots/plotter.root \
                 --systInput ${outdir}/analysis/plots/syst_plotter.root \
+                --nomorph
+    ;;
+    X4VALIDATION ) # to get the shapes file / datacards for the full analysis
+        cd ${CMSSW_7_4_7dir}
+        eval `scramv1 runtime -sh`
+        cd ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/
+
+        mkdir ${outdir}/widthx4validation
+
+        export PYTHONPATH=$PYTHONPATH:/usr/lib64/python2.6/site-packages/
+        python test/TopWidthAnalysis/createShapesFromPlotter.py \
+                -s tbart,tW \
+                --dists ${distStr} \
+                -o ${outdir}/widthx4validation/datacards/ \
+                -i ${outdir}/analysis/plots/plotter.root \
+                --systInput ${outdir}/analysis/plots/syst_plotter.root \
+                --truth 1p0w \
+                --trx4 widthx4 \
                 --nomorph
     ;;
     MORPH ) # to get the morphs for the full analysis
@@ -247,12 +265,32 @@ case $WHAT in
         for dist in ${dists[*]} ; do
         for twid in ${wid[*]} ; do
 
-            # All datacards
+            # pre-fit 
             echo "Making CLs for ${twid} ${dist}"
             cmd="combine ${outdir}/${twid}_${dist}.root -M HybridNew --seed 8192 --saveHybridResult" 
             cmd="${cmd} -m 172.5  --testStat=TEV --singlePoint 1 -T ${nPseudo} -i 2 --fork 6"
             cmd="${cmd} --clsAcc 0 --fullBToys  --generateExt=1 --generateNuis=0"
             cmd="${cmd} --expectedFromGrid 0.5 -n x_pre-fit_exp__${twid}_${dist}"
+            #cmd="${cmd} &> ${outdir}/x_pre-fit_exp__${twid}_${dist}.log"
+
+            bsub -q ${queue} ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh "${outdir}/" "${cmd}" 
+            
+            # post-fit expected 
+            echo "Making CLs for ${twid} ${dist}"
+            cmd="combine ${outdir}/${twid}_${dist}.root -M HybridNew --seed 8192 --saveHybridResult" 
+            cmd="${cmd} -m 172.5  --testStat=TEV --singlePoint 1 -T ${nPseudo} -i 2 --fork 6"
+            cmd="${cmd} --clsAcc 0 --fullBToys  --frequentist"
+            cmd="${cmd} --expectedFromGrid 0.5 -n x_post-fit_exp__${twid}_${dist}"
+            #cmd="${cmd} &> ${outdir}/x_pre-fit_exp__${twid}_${dist}.log"
+
+            bsub -q ${queue} ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh "${outdir}/" "${cmd}" 
+
+            # post-fit observed 
+            echo "Making CLs for ${twid} ${dist}"
+            cmd="combine ${outdir}/${twid}_${dist}.root -M HybridNew --seed 8192 --saveHybridResult" 
+            cmd="${cmd} -m 172.5  --testStat=TEV --singlePoint 1 -T ${nPseudo} -i 2 --fork 6"
+            cmd="${cmd} --clsAcc 0 --fullBToys  --frequentist"
+            cmd="${cmd} -n x_post-fit_obs__${twid}_${dist}"
             #cmd="${cmd} &> ${outdir}/x_pre-fit_exp__${twid}_${dist}.log"
 
             bsub -q ${queue} ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh "${outdir}/" "${cmd}" 
@@ -286,20 +324,23 @@ case $WHAT in
             python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getQuantilesPlot.py \
                 -i ${outdir}/ -o ${outdir}/ \
                 --wid ${widStr} \
-                --dist ${dist}
+                --dist ${dist}  \
+                --unblind
             
             # Get Separation plots / LaTeX tables as well
             python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getSeparationTables.py\
                 -i ${outdir}/ -o ${outdir}/ \
                 --wid ${widStr} \
-                --dist ${dist}
+                --dist ${dist} \
+                --unblind
         done
         
         # Get Separation plots for all dists 
         python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getSeparationTables.py \
             -i ${outdir}/ -o ${outdir}/ \
             --dist ${distStr} \
-            --doAll
+            --doAll \
+            --unblind
     ;;
     NUISANCES ) # run once for each nuisance, doing a full analysis to understand effects of systematics 
         for dist in ${dists[*]} ; do
@@ -399,14 +440,16 @@ case $WHAT in
                 -i ${dirName}/ \
                 -o ${dirName}/ \
                 --dist ${dist} \
-                --wid ${widStr}
+                --wid ${widStr} \
+                --unblind
 
             echo " "
             echo "$i ||| $dist $syst : "
 
             python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getCLsFromFit.py \
                 -i $dirName \
-                --dist ${dist}
+                --dist ${dist} \
+                --unblind
             
             let "i += 1" 
 

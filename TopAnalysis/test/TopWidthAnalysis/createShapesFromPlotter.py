@@ -154,24 +154,29 @@ def saveToShapesFile(outFile,shapeColl,directory=''):
 """
 make an MC truth dataset (sigs+bkgs)
 """
-def makeMCTruthHist(hypothesis,sigList,dists):
+def makeMCTruthHist(hypothesis,sigList,dists,infile=None,dirhandle=""):
     outputHist=None
     firstLoop=True
     print "Producing MC Truth data for hypothesis %s"%hypothesis
 
+    tdists=dists.copy()
+
+    if dirhandle != "" or infile is None :
+        _,tdists=getMergedDists(infile,dirhandle,None,"",[hypothesis],"1.0w",sigList)
+
     for sig in sigList :
-        sigHist=dists["%s%s"%(sig,hypothesis)].Clone()
+        sigHist=tdists["%s%s"%(sig,hypothesis)].Clone()
         if firstLoop :
             outputHist=sigHist.Clone()
             firstLoop=False
         else :
             outputHist.Add(sigHist)
-    for dist in dists :
+    for dist in tdists :
         isSig=False
         for sig in sigList :
             if sig in dist : isSig=True
         if isSig : continue
-        bkgHist=dists[dist].Clone()
+        bkgHist=tdists[dist].Clone()
         outputHist.Add(sigHist)
     return outputHist
 
@@ -193,6 +198,7 @@ def main():
     parser.add_option(      '--lfs',       dest='lfsInput',  help='lepton final states to consider',          default='EE,EM,MM',      type='string')
     parser.add_option(      '--lbCat',     dest='lbCat',     help='pt categories to consider',                default='highpt,lowpt',  type='string')
     parser.add_option(      '--truth', dest='truthDataset',  help='make data out of MC truth',                default='',              type='string')
+    parser.add_option(      '--trx4', dest='truthExtDataset',help='make data out of 4xMC truth',              default='',              type='string')
     parser.add_option('--noshapes', dest='skipMakingShapes', help='jump straight to morphing',                     default=False, action='store_true')
     parser.add_option('--nomorph',  dest='skipMorphing',     help='do not morph signal dists',                     default=False, action='store_true')
     parser.add_option('--allmorph', dest='allMorphs',        help='make morph validation plots for all cats',      default=False, action='store_true')
@@ -246,47 +252,49 @@ def main():
           ('tbartVnorm_th',    1.30,     'lnN',    ['tbartV']           ,[]),
     ]
 
-    Mtop       =['tbartm=169.5','tbartm=175.5']#,'tWm=169.5','tWm=175.5']
+    Mtop       =['tbartm=169.5','tbartm=175.5','tWm=169.5','tWm=175.5']
     ttParton_tt=['tbartscaledown','tbartscaleup']
-    #ttParton_tW=['tWscaledown','tWscaleup']
-    #ME={    "muF": ['%sgen%i'%(sig,ind) for sig in ['tbart','tW'] for ind in [3,4]],
-    #        "muR": ['%sgen%i'%(sig,ind) for sig in ['tbart','tW'] for ind in [5,8]],
-    #        "tot": ['%sgen%i'%(sig,ind) for sig in ['tbart','tW'] for ind in [6,10]]
+    ttParton_tW=['tWscaledown','tWscaleup']
+    #ME={    "muF": ['%sgen%i'%(sig,ind) for sig in ['tbart'] for ind in [3,4]],
+    #        "muR": ['%sgen%i'%(sig,ind) for sig in ['tbart'] for ind in [5,8]],
+    #        "tot": ['%sgen%i'%(sig,ind) for sig in ['tbart'] for ind in [6,10]]
     #        }
     tWinterf=['tWDS']
     amcNLO  =['tbartamcnloFxFx']
     Herwig  =['tbartHerwig']
 
-    systSignalList=Mtop+ttParton_tt+amcNLO+Herwig#+tWinterf+ttParton_tW
+    systSignalList=Mtop+ttParton_tt+amcNLO+Herwig+tWinterf+ttParton_tW
 
     MtopMap={}
     ttPartonMap={}
+    twPartonMap={}
     tWinterfMap={}
     amcNLOMap={}
     HerwigMap={}
 
     for wid in modWidList :
         MtopMap[    'tbart%s'%wid]=['tbartm=169.5%s'  %(wid),'tbartm=175.5%s'%(wid)]
-        #MtopMap[    'tW%s'   %wid]=['tWm=169.5%s'     %(wid),'tWm=175.5%s'   %(wid)]
+        MtopMap[    'tW%s'   %wid]=['tWm=169.5%s'     %(wid),'tWm=175.5%s'   %(wid)]
 
         ttPartonMap['tbart%s'%wid]=['tbartscaledown%s'%(wid),'tbartscaleup%s'%(wid)]
-        #ttPartonMap['tW%s'   %wid]=['tWscaledown%s'   %(wid),'tWscaleup%s'   %(wid)]
+        twPartonMap['tW%s'   %wid]=['tWscaledown%s'   %(wid),'tWscaleup%s'   %(wid)]
 
         amcNLOMap['tbart%s'%wid]=['tbartamcnloFxFx%s'%(wid)]
 
         HerwigMap['tbart%s'%wid]=['tbartHerwig%s'%(wid)]
 
-        #tWinterfMap['tW%s'   %wid]=['tWDS%s'   %(wid)]
+        tWinterfMap['tW%s'   %wid]=['tWDS%s'   %(wid)]
 
 
     sampleSysts=[
           #ttbar modelling
           ('Mtop'          , MtopMap    , True , True, False),
           ('ttPartonShower', ttPartonMap, False, True, False),
+          ('tWQCDScale'    , twPartonMap, False, True, False),
           ('Herwig'        , HerwigMap  , False, True, True),
           ('amcnloFxFx'    , amcNLOMap  , False, True, True),
           #tWinterference
-          #('tWttinterf'    , tWinterfMap, False, True, True),
+          ('tWttinterf'    , tWinterfMap, False, True, True),
     ]
 
 
@@ -349,7 +357,9 @@ def main():
             obs,exp=getMergedDists(fIn,('%s%s%s_%s_'%(lbCat,lfs,cat,dist)),None,'',widList,nomWid,signalList)
 
         if not opt.truthDataset=="" :
-            obs=makeMCTruthHist(opt.truthDataset,signalList,exp)
+            obs=makeMCTruthHist(opt.truthDataset,signalList,exp,
+                    (systfIn if opt.truthExtDataset != "" else None),
+                    ('%s%s%s%s_%s_'%(opt.truthExtDataset,lbCat,lfs,cat,dist)))
         #exp=filterShapeList(exp,signalList,rawSignalList)
 
         nomShapes=exp.copy()
@@ -565,12 +575,18 @@ def main():
                 datacard.write('%26s shape'%systVar)
                 for sig in signalList:
                     if ("%s%s"%(sig,wid)) in procsToApply and ("%s%s"%(sig,wid)) in upShapes:
-                        datacard.write('%15s'%'1')
+                        if "Mtop" in systVar:
+                            datacard.write('%15s'%'0.167')
+                        else:
+                            datacard.write('%15s'%'1')
                     else:
                         datacard.write('%15s'%'-')
                 for sig in signalList:
                     if ("%s%s"%(sig,wid)) in procsToApply and ("%s%s"%(sig,wid)) in upShapes:
-                        datacard.write('%15s'%'1')
+                        if "Mtop" in systVar:
+                            datacard.write('%15s'%'0.167')
+                        else:
+                            datacard.write('%15s'%'1')
                     else:
                         datacard.write('%15s'%'-')
                 for proc in exp:
@@ -579,7 +595,10 @@ def main():
                         if sig in proc : isSig=True
                     if isSig : continue
                     if proc in procsToApply and proc in upShapes:
-                        datacard.write('%15s'%'1')
+                        if "Mtop" in systVar:
+                            datacard.write('%15s'%'0.167')
+                        else:
+                            datacard.write('%15s'%'1')
                     else:
                         datacard.write('%15s'%'-')
                 datacard.write('\n')
@@ -587,11 +606,11 @@ def main():
 
             #
             for systVar, normalize, useAltShape, projectRelToNom in genSysts:
-                
+
                 genVarShapesUp,genVarShapesDn=None,None
 
                 if 'PDF'==systVar:
-                    
+
                     #fill in 2D histos y-axis is the replica number
                     genVarShapesDn2D={}
                     nPdfReplicas=100
@@ -610,17 +629,16 @@ def main():
                                 title=iGenVarShapesDn[proc].GetTitle()
                                 xmin=iGenVarShapesDn[proc].GetXaxis().GetXmin()
                                 xmax=iGenVarShapesDn[proc].GetXaxis().GetXmax()
-                                genVarShapesDn2D[proc]=ROOT.TH2F(name,title,nbins,xmin,xmax,nPdfReplicas,0,nPdfReplicas)
+                                genVarShapesDn2D[proc]=ROOT.TH2D(name,title,nbins,xmin,xmax,nPdfReplicas,0,nPdfReplicas)
                                 genVarShapesDn2D[proc].SetDirectory(0)
                             for xbin in xrange(1,nbins+1):
                                 genVarShapesDn2D[proc].SetBinContent(xbin,igen-startIdx+1,iGenVarShapesDn[proc].GetBinContent(xbin))
-                
+
                     #fill the down shapes with the bin contents being the mean-RMS of the replicas
                     genVarShapesDn={}
                     for proc in genVarShapesDn2D:
-                        
                         #down shape
-                        name=genVarShapesDn2D[proc].GetName()[:-2]
+                        name=genVarShapesDn2D[proc].GetName()[:-2]+"PDF"
                         genVarShapesDn[proc]=genVarShapesDn2D[proc].ProjectionY(name,1,1)
                         genVarShapesDn[proc].SetDirectory(0)
                         genVarShapesDn[proc].Reset('ICE')
@@ -634,7 +652,7 @@ def main():
 
                         #all done, can remove this histo from memory
                         genVarShapesDn2D[proc].Delete()
-        
+
                 else:
 
                     dirForSyst=('%sup%s%s%s_%s_'%(systVar,lbCat,lfs,cat,dist))
@@ -669,7 +687,7 @@ def main():
                         continue
                     #get directly from another file
                     downH  = genVarShapesDn[iproc]
-                    if iproc in genVarShapesUp:
+                    if genVarShapesUp is not None and iproc in genVarShapesUp :
                         upH = genVarShapesUp[iproc]
                     else:
                         #if only one variation is available, mirror it

@@ -19,6 +19,7 @@ parser.add_option("-o",    type="string", dest="outdir" , default="./",     help
 parser.add_option("--dist",type="string", dest="dist"   , default="mlb",    help="the observable distribution to look at")
 parser.add_option("--wid", type="string", dest="widList", default="0p5w,1p0w,1p5w,2p0w,2p5w,3p0w,3p5w,4p0w,4p5w,5p0w",
         help="a list of widths to look for in stats filenames")
+parser.add_option("--unblind",    action="store_true", dest="unblind",    default=False, help="Show the data information")
 parser.add_option("--recreateOut", dest="recreate", default=False, action="store_true")
 parser.add_option("--doAll", dest="doAll", default=False, action="store_true")
 

@@ -11,13 +11,13 @@ parser = OptionParser(
     usage="%prog [options] [label=datacard.txt | datacard.txt]",
     epilog=""
     )
-parser.add_option("-i",     type="string", dest="indir"  ,   default="/afs/cern.ch/work/e/ecoleman/public/TopWidth/TopWidth_era2016/datacards/shapes.root", help="file to look for dists in")
+parser.add_option("-i",     type="string", dest="indir"  ,   default="/afs/cern.ch/work/e/ecoleman/public/TopWidth/TopWidth_era2016/analysis/plots/plotter.root", help="file to look for dists in")
 parser.add_option("--wid",  type="string", dest="widList",   default="1",   help="a list of widths to look for in distnames")
 parser.add_option("--lfs",  type="string", dest="lfsList",   default="EM",   help="a list of lepton final states to look for in distnames")
 parser.add_option("--lbCh", type="string", dest="lbCatList", default="highpt,lowpt",   help="a list of states to look for in distnames")
 parser.add_option("--cats", type="string", dest="catList",   default="1b,2b",   help="a list of lepton final states to look for in stats filenames")
-parser.add_option("--uncs", type="string", dest="uncList",   default="jes,jer,trig,pu,btag",   help="a list of uncertainties to look for")
-parser.add_option("--proc", type="string", dest="procList",  default="tbart",   help="a list of processes to plot")
+parser.add_option("--uncs", type="string", dest="uncList",   default="Mtop,tWttinterf,ttPartonShower",   help="a list of uncertainties to look for")
+parser.add_option("--proc", type="string", dest="procList",  default="tW",   help="a list of processes to plot")
 parser.add_option("-o",     type="string", dest="outdir" ,   default="./",   help="the base filename for the plots")
 parser.add_option("--obs",
         type="string",

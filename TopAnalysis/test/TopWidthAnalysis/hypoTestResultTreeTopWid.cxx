@@ -235,7 +235,9 @@ void hypoTestResultTreeTopWid(TString fOutName,
     if(unblind) {
         ofs << clsObs  << " \\pm " << clsObsErr  << " # cls observed \n"
             << clbObs  << " \\pm " << clbObsErr  << " # clb observed \n"
-            << clsbObs << " \\pm " << clsbObsErr << " # clsb observed \n";
+            << clsbObs << " \\pm " << clsbObsErr << " # clsb observed \n"
+            << "qobs;" << qobs << "\n";
+
     }
 
     ofs << "nulquant;"; 
