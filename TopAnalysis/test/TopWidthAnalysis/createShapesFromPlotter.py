@@ -9,7 +9,7 @@ import numpy
 
 
 ROOT.gSystem.Load("libHiggsAnalysisCombinedLimit")
-ROOT.gROOT.SetBatch()
+#ROOT.gROOT.SetBatch()
 
 def replaceBadCharacters(inputStr):
     newStr = inputStr
@@ -194,11 +194,14 @@ def main():
     parser.add_option('-s', '--signal',    dest='signal',    help='signal (csv)',                             default='tbart,tW',      type='string')
     parser.add_option('-c', '--cat',       dest='cat',       help='categories (csv)',                         default='1b,2b',         type='string')
     parser.add_option('-o', '--output',    dest='output',    help='output directory',                         default='datacards',     type='string')
+    parser.add_option('-n', '--outname',   dest='outname',   help='output file name',                         default='shapes',     type='string')
     parser.add_option(      '--addSigs',   dest='addSigs',   help='signal processes to add',                  default=False,     action='store_true')
     parser.add_option(      '--lfs',       dest='lfsInput',  help='lepton final states to consider',          default='EE,EM,MM',      type='string')
     parser.add_option(      '--lbCat',     dest='lbCat',     help='pt categories to consider',                default='highpt,lowpt',  type='string')
     parser.add_option(      '--truth', dest='truthDataset',  help='make data out of MC truth',                default='',              type='string')
     parser.add_option(      '--trx4', dest='truthExtDataset',help='make data out of 4xMC truth',              default='',              type='string')
+    parser.add_option(      '--min', dest='minIndex',help='start at this card',              default=-5,              type=int)
+    parser.add_option(      '--max', dest='maxIndex',help='end at this card',                default=10000,           type=int)
     parser.add_option('--noshapes', dest='skipMakingShapes', help='jump straight to morphing',                     default=False, action='store_true')
     parser.add_option('--nomorph',  dest='skipMorphing',     help='do not morph signal dists',                     default=False, action='store_true')
     parser.add_option('--allmorph', dest='allMorphs',        help='make morph validation plots for all cats',      default=False, action='store_true')
@@ -332,8 +335,8 @@ def main():
 
     # prepare output ROOT file
     if not opt.skipMakingShapes :
-        outFile='%s/shapes.root'%(opt.output)
-        fOut=ROOT.TFile.Open(outFile,'RECREATE')
+        outFile='%s/%s.root'%(opt.output,opt.outname)
+        fOut=ROOT.TFile.Open(outFile,'UPDATE')
         fOut.Close()
 
     # keep track of progress
@@ -347,6 +350,10 @@ def main():
             for d in distList] :
         if opt.skipMakingShapes : break
 
+        if cardIndex >= opt.maxIndex : break
+        if cardIndex+len(rawWidList) < opt.minIndex-1:
+            cardIndex+=len(rawWidList)
+            continue
 
         obs=ROOT.TH1F('','',100,0,100)
         exp={}
@@ -374,6 +381,11 @@ def main():
         for wid in modWidList:
 
             cardIndex+=1
+            if cardIndex < opt.minIndex :
+                print 'Skipping %s datacards for %s%s%s_%s \t\t [%i/%i]'%(dist,lbCat,lfs,cat,wid,cardIndex,numCards)
+                continue
+            if cardIndex > opt.maxIndex :
+                break
             print 'Initiating %s datacard for %s%s%s_%s \t\t [%i/%i]'%(dist,lbCat,lfs,cat,wid,cardIndex,numCards)
 
 
@@ -639,14 +651,20 @@ def main():
                     for proc in genVarShapesDn2D:
                         #down shape
                         name=genVarShapesDn2D[proc].GetName()[:-2]+"PDF"
-                        genVarShapesDn[proc]=genVarShapesDn2D[proc].ProjectionY(name,1,1)
+                        genVarShapesDn[proc]=genVarShapesDn2D[proc].ProjectionX(name,1,1)
                         genVarShapesDn[proc].SetDirectory(0)
                         genVarShapesDn[proc].Reset('ICE')
 
                         #project to compute the mean and RMS
                         for xbin in xrange(1,genVarShapesDn2D[proc].GetXaxis().GetNbins()+1):
                             tmp=genVarShapesDn2D[proc].ProjectionY("tmp",xbin,xbin)
-                            mean,rms=tmp.GetMean(),tmp.GetRMS()
+
+                            tmean=numpy.zeros(tmp.GetXaxis().GetNbins())
+                            for txbin in xrange(1,tmp.GetXaxis().GetNbins()+1) :
+                                tmean[txbin-1]=tmp.GetBinContent(txbin)
+
+                            mean,rms=numpy.mean(tmean),numpy.std(tmean)
+
                             tmp.Delete()
                             genVarShapesDn[proc].SetBinContent(xbin,mean-rms)
 
@@ -766,7 +784,6 @@ def main():
 
     import CMS_lumi
     import tdrStyle
-    import numpy
     tdrStyle.setTDRStyle()
 
     ROOT.RooMsgService.instance().setGlobalKillBelow(ROOT.RooFit.WARNING)

@@ -11,18 +11,18 @@ parser = OptionParser(
     usage="%prog [options] [label=datacard.txt | datacard.txt]",
     epilog=""
     )
-parser.add_option("-i",     type="string", dest="indir"  ,   default="/afs/cern.ch/work/e/ecoleman/public/TopWidth/TopWidth_era2016/analysis/plots/plotter.root", help="file to look for dists in")
+parser.add_option("-i",     type="string", dest="indir"  ,   default="/afs/cern.ch/work/e/ecoleman/public/TopWidth/TopWidth_era2016/datacards/shapes.root", help="file to look for dists in")
 parser.add_option("--wid",  type="string", dest="widList",   default="1",   help="a list of widths to look for in distnames")
 parser.add_option("--lfs",  type="string", dest="lfsList",   default="EM",   help="a list of lepton final states to look for in distnames")
 parser.add_option("--lbCh", type="string", dest="lbCatList", default="highpt,lowpt",   help="a list of states to look for in distnames")
 parser.add_option("--cats", type="string", dest="catList",   default="1b,2b",   help="a list of lepton final states to look for in stats filenames")
-parser.add_option("--uncs", type="string", dest="uncList",   default="Mtop,tWttinterf,ttPartonShower",   help="a list of uncertainties to look for")
-parser.add_option("--proc", type="string", dest="procList",  default="tW",   help="a list of processes to plot")
+parser.add_option("--uncs", type="string", dest="uncList",   default="PDF",   help="a list of uncertainties to look for")
+parser.add_option("--proc", type="string", dest="procList",  default="tbart",   help="a list of processes to plot")
 parser.add_option("-o",     type="string", dest="outdir" ,   default="./",   help="the base filename for the plots")
 parser.add_option("--obs",
         type="string",
         dest="obsList",
-        default="incmlb,sncmlb,mt2mlb",
+        default="incmlb,mt2mlb",
         help="a list of observable distributions to consider")
 
 (options, args) = parser.parse_args()
@@ -43,12 +43,14 @@ def main():
             "pu"            : "Pileup",
             "btag"          : "b-tagging efficiencies",
             "ttPartonShower": "t#bar{t} parton shower scale",
+            "tWQCDScale"    : "tW QCD Scale",
             "tWttinterf"    : "tW/t#bar{t} interference",
             "Mtop"          : "Top mass",
             "MEmuF"         : "ME: Factorization scale",
             "MEmuR"         : "ME: Renormalization scale",
             "MEtot"         : "ME: Combined variation",
-            "Herwig"        : "Hardonizer choice"
+            "Herwig"        : "Hardonizer choice",
+            "PDF"           : "NNLOPDF3.0 variation"
     }
 
     widList   = options.widList.split(',')
@@ -96,15 +98,15 @@ def main():
         leg.SetTextSize(0.035)
         leg.AddEntry(nomH,'Nominal','l')
 
-        colors=[ROOT.kRed+1,ROOT.kOrange+9,ROOT.kOrange+8,
-                ROOT.kBlue,ROOT.kBlue-9,ROOT.kGreen+2,
-                ROOT.kGreen-4,
+        colors=[ROOT.kRed+1,ROOT.kBlue,ROOT.kOrange+8,ROOT.kGreen-4,
+                ROOT.kBlue-9,ROOT.kGreen+2,
                 ROOT.kMagenta+2,ROOT.kMagenta,ROOT.kMagenta-9]
         allGr=[]
         nSysts=len(uncList)
         for isyst in xrange(0,nSysts):
             key=uncList[isyst]
             color=colors[isyst]
+            print '%s%s%s_%s_%sUp/%s%sw'%(lbCat,lfs,cat,obs,key,proc,("%2.1f"%float(wid)).replace('.','p'))
             hup=fIn.Get('%s%s%s_%s_%sUp/%s%sw'%(lbCat,lfs,cat,obs,key,proc,("%2.1f"%float(wid)).replace('.','p')))
             hdn=fIn.Get('%s%s%s_%s_%sDown/%s%sw'%(lbCat,lfs,cat,obs,key,proc,("%2.1f"%float(wid)).replace('.','p')))
             allGr.append( ROOT.TGraphAsymmErrors() )
@@ -143,8 +145,8 @@ def main():
         CMS_lumi.CMS_lumi(can,4,0)
         can.Modified()
         can.Update()
-        can.SaveAs('%s/UncertaintiesExp_%s%s%s_%s_%s%sw.pdf'%(options.outdir,lbCat,lfs,cat,obs,proc,("%2.1f"%float(wid)).replace('.','p')))
-        can.SaveAs('%s/UncertaintiesExp_%s%s%s_%s_%s%sw.png'%(options.outdir,lbCat,lfs,cat,obs,proc,("%2.1f"%float(wid)).replace('.','p')))
+        can.SaveAs('%s/UncertaintiesPDF_%s%s%s_%s_%s%sw.pdf'%(options.outdir,lbCat,lfs,cat,obs,proc,("%2.1f"%float(wid)).replace('.','p')))
+        can.SaveAs('%s/UncertaintiesPDF_%s%s%s_%s_%s%sw.png'%(options.outdir,lbCat,lfs,cat,obs,proc,("%2.1f"%float(wid)).replace('.','p')))
 
     fIn.Close()
 
