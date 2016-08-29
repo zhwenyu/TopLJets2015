@@ -14,6 +14,20 @@ eval `scram r -sh`
 #run with the arguments passed
 cd $1
 echo ${PWD}
-$2
 
-echo $2 
+IFS=';'
+cmd=($2)
+
+
+for tcmd in ${cmd[*]} ; do
+    echo ""
+    echo ""
+    echo ""
+    echo ""
+    echo "--------------------------------------------------"
+    echo "${tcmd}"
+    echo "--------------------------------------------------"
+    echo ""
+    echo ""
+    sh -c "${tcmd}"
+done

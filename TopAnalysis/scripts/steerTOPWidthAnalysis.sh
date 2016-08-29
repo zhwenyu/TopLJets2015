@@ -37,7 +37,7 @@ case $ERA in
 	;;
 esac
 
-outdir=~/work/TopWidth_${ERA}
+outdir=/afs/cern.ch/work/e/ecoleman/public/TopWidth/TopWidth_${ERA}
 wwwdir=~/www/TopWidth_${ERA}
 
 
