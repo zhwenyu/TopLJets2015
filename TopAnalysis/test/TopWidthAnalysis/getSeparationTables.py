@@ -17,6 +17,7 @@ parser = OptionParser(
 parser.add_option("-i",    type="string", dest="indir"  , default="./",     help="directory to look for stats files in")
 parser.add_option("-o",    type="string", dest="outdir" , default="./",     help="the base filename for the quantiles plot")
 parser.add_option("--dist",type="string", dest="dist"   , default="mlb",    help="the observable distribution to look at")
+parser.add_option("--prep",type="string", dest="prepost", default="post",   help="are we pre or post fit?")
 parser.add_option("--wid", type="string", dest="widList", default="0p5w,1p0w,1p5w,2p0w,2p5w,3p0w,3p5w,4p0w,4p5w,5p0w",
         help="a list of widths to look for in stats filenames")
 parser.add_option("--unblind",    action="store_true", dest="unblind",    default=False, help="Show the data information")
@@ -47,6 +48,14 @@ statList={
         "CL$_s$^{\\rm obs.}$": {},
         }
 
+obsList={
+        "Separation": {},
+        "$P(q_{\\rm null}>q_{\\rm alt}^{\\rm median})$": {},
+        "$P(q_{\\rm alt}<q_{\\rm null}^{\\rm median})$": {},
+        "CL$_s$^{\\rm exp.}$": {},
+        "CL$_s$^{\\rm obs.}$": {},
+        }
+
 canvas=ROOT.TCanvas("","",800,600)
 canvas.cd()
 
@@ -57,7 +66,7 @@ if not options.doAll :
     # loop over widths, parse array info
     for wid in rawWidList :
         latexWid = wid.replace('p','.').replace('w','$\\times\\Gamma_{\\rm SM}$')
-        statsFileName="%s/poststats__%s__%s.txt"%(options.indir,wid,options.dist)
+        statsFileName="%s/%sstats__%s__%s.txt"%(options.indir,options.prepost,wid,options.dist)
         for line in open(statsFileName,"r"):
             if "separation" in line :
                statList["Separation"][latexWid]=line.split('#')[0]
@@ -69,6 +78,21 @@ if not options.doAll :
                statList["CL$_s$^{\\rm exp.}$"][latexWid]=line.split('#')[0]
             elif "cls observed" in line :
                statList["CL$_s$^{\\rm obs.}$"][latexWid]=line.split('#')[0]
+            else : continue
+
+        if options.unblind : continue
+        statsFileName="%s/obsstats__%s__%s.txt"%(options.indir,wid,options.dist)
+        for line in open(statsFileName,"r"):
+            if "separation" in line :
+               obsList["Separation"][latexWid]=line.split('#')[0]
+            elif "null exceeded density" in line :
+               obsList["$P(q_{\\rm null}>q_{\\rm alt}^{\\rm median})$"][latexWid]=line.split('#')[0]
+            elif "alt exceeded density" in line :
+               obsList["$P(q_{\\rm alt}<q_{\\rm null}^{\\rm median})$"][latexWid]=line.split('#')[0]
+            elif "cls expected" in line :
+               obsList["CL$_s$^{\\rm exp.}$"][latexWid]=line.split('#')[0]
+            elif "cls observed" in line :
+               obsList["CL$_s$^{\\rm obs.}$"][latexWid]=line.split('#')[0]
             else : continue
 
     tabletex=open("%s/separationTable__%s.tex"%(options.outdir,options.dist), 'w')
@@ -106,11 +130,18 @@ if not options.doAll :
     x=ROOT.TVector(len(rawWidList))
     y=ROOT.TVector(len(rawWidList))
 
+    obsYArr=[float(statList["CL$_s$^{\\rm obs.}$"][wid].split('\\pm')[0]) for wid in sorted([key for key in obsList["CL$_s$^{\\rm exp.}$"]])]
+    obsErrYArr=[float(statList["CL$_s$^{\\rm obs.}$"][wid].split('\\pm')[1]) for wid in sorted([key for key in obsList["CL$_s$^{\\rm exp.}$"]])]
+    obsY=ROOT.TVector(len(rawWidList))
+    obsErrY=ROOT.TVector(len(rawWidList))
+
     for ix in xrange(0,len(xarr)):
         x[ix] = float(xarr[ix])
+        y[ix] = float(yarr[ix])
 
-    for iy in xrange(0,len(yarr)):
-        y[iy] = float(yarr[iy])
+        obsY[ix]=obsYArr[ix]
+        obsErrY[ix]=obsErrYArr[ix]
+
 
 
     clsGr=ROOT.TGraph(x,y)
@@ -122,13 +153,27 @@ if not options.doAll :
     clsGr.GetYaxis().SetRangeUser(1e-05,1.1)
     clsGr.Draw("AP")
 
-    tsp=ROOT.TSpline3("Spline%s"%options.dist,clsGr)
+    tsp=ROOT.TSpline3("Spline%s%s"%options.dist,options.prepost,clsGr)
+    if options.unblind :
+        tsp.SetLineStyle(ROOT.kDashed)
+        tsp.SetLineColor(ROOT.kBlack)
+        tsp.SetMarkerStyle(1)
+        tsp.SetMarkerColor(ROOT.kBlack)
     tsp.Draw("SAME")
+
 
     fout=ROOT.TFile("%s/statsPlots.root"%(options.outdir),"UPDATE" if not options.recreate else "RECREATE")
     fout.cd()
     clsGr.Write()
     tsp.Write()
+    if options.unblind :
+        obsGr=ROOT.TGraphErrors(x,obsY,obsErrX,obsErrY)
+        obsGr.SetFillColor(ROOT.kGreen)
+        obsGr.Draw("P")
+        obsGr.Write()
+        osp=ROOT.TSpline3("SplineObs%s"%options.dist,obsGr)
+        osp.Draw("SAME")
+        osp.Write()
     fout.Close()
 
     # draw dist information if available
@@ -163,6 +208,13 @@ if not options.doAll :
 
     canvas.SaveAs("%s/CLsPlot__%s.png"%(options.outdir,options.dist))
     canvas.SaveAs("%s/CLsPlot__%s.pdf"%(options.outdir,options.dist))
+
+
+
+
+###################################################################
+# MAKE A PLOT FOR ALL STRATEGIES
+###################################################################
 
 if options.doAll :
 

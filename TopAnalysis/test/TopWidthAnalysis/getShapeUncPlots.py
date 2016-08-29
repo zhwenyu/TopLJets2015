@@ -16,8 +16,8 @@ parser.add_option("--wid",  type="string", dest="widList",   default="1",   help
 parser.add_option("--lfs",  type="string", dest="lfsList",   default="EM",   help="a list of lepton final states to look for in distnames")
 parser.add_option("--lbCh", type="string", dest="lbCatList", default="highpt,lowpt",   help="a list of states to look for in distnames")
 parser.add_option("--cats", type="string", dest="catList",   default="1b,2b",   help="a list of lepton final states to look for in stats filenames")
-parser.add_option("--uncs", type="string", dest="uncList",   default="PDF",   help="a list of uncertainties to look for")
-parser.add_option("--proc", type="string", dest="procList",  default="tbart",   help="a list of processes to plot")
+parser.add_option("--uncs", type="string", dest="uncList",   default="les,ltag,trig,btag,pu",   help="a list of uncertainties to look for")
+parser.add_option("--proc", type="string", dest="procList",  default="tbart,tW",   help="a list of processes to plot")
 parser.add_option("-o",     type="string", dest="outdir" ,   default="./",   help="the base filename for the plots")
 parser.add_option("--obs",
         type="string",
@@ -49,7 +49,8 @@ def main():
             "MEmuF"         : "ME: Factorization scale",
             "MEmuR"         : "ME: Renormalization scale",
             "MEtot"         : "ME: Combined variation",
-            "Herwig"        : "Hardonizer choice",
+            "Herwig"        : "Hadronizer choice",
+            "amcnloFxFx"    : "amc@NLO",
             "PDF"           : "NNLOPDF3.0 variation"
     }
 
@@ -145,8 +146,8 @@ def main():
         CMS_lumi.CMS_lumi(can,4,0)
         can.Modified()
         can.Update()
-        can.SaveAs('%s/UncertaintiesPDF_%s%s%s_%s_%s%sw.pdf'%(options.outdir,lbCat,lfs,cat,obs,proc,("%2.1f"%float(wid)).replace('.','p')))
-        can.SaveAs('%s/UncertaintiesPDF_%s%s%s_%s_%s%sw.png'%(options.outdir,lbCat,lfs,cat,obs,proc,("%2.1f"%float(wid)).replace('.','p')))
+        can.SaveAs('%s/UncertaintiesEXP_%s%s%s_%s_%s%sw.pdf'%(options.outdir,lbCat,lfs,cat,obs,proc,("%2.1f"%float(wid)).replace('.','p')))
+        can.SaveAs('%s/UncertaintiesEXP_%s%s%s_%s_%s%sw.png'%(options.outdir,lbCat,lfs,cat,obs,proc,("%2.1f"%float(wid)).replace('.','p')))
 
     fIn.Close()
 

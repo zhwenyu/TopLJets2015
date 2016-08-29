@@ -16,7 +16,7 @@ if [ "$#" -ne 2 ]; then
     exit 1; 
 fi
 
-queue=2nd
+queue=2nw
 outdir=/afs/cern.ch/work/e/ecoleman/public/TopWidth/TopWidth_${ERA}/
 cardsdir=${outdir}/datacards
 wwwdir=~/www/TopWidth_${ERA}/
@@ -34,7 +34,7 @@ dists=(incmlb)
 cat=(1b 2b)
 lbCat=(highpt lowpt)
 
-nuisances=(jes jer pu btag les ltag trig sel toppt MEmuR MEmuF MEtot PDF Herwig amcnloFxFx Mtop ttPartonShower tWttinterf tWQCDScale)
+nuisances=(jes jer pu btag les ltag trig toppt MEmuR MEmuF MEtot PDF Herwig amcnloFxFx Mtop ttPartonShower tWttinterf tWQCDScale) #sel
 
 RED='\e[31m'
 NC='\e[0m'
@@ -82,9 +82,9 @@ case $WHAT in
     
         rm ${cardsdir}/*.root
 
-        for index in `seq 0 34 408` ; do
+        for index in `seq 0 17 204` ; do
             min=$index
-            max=$(($index+33))
+            max=$(($index+16))
 
             nohup python test/TopWidthAnalysis/createShapesFromPlotter.py \
                     -s tbart,tW \
@@ -364,7 +364,7 @@ case $WHAT in
         cd ${outdir}
         for dist in ${dists[*]} ; do
 
-            # All datacards
+            # Quantiles plot with post-fit information 
             python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getQuantilesPlot.py \
                 -i ${outdir}/ -o ${outdir}/ \
                 --wid ${widStr} \
@@ -372,7 +372,14 @@ case $WHAT in
                 --prep post \
                 --unblind
             
-            # Get Separation plots / LaTeX tables as well
+            # Get CLs plots for pre-fit expectations
+            python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getSeparationTables.py\
+                -i ${outdir}/ -o ${outdir}/ \
+                --wid ${widStr} \
+                --prep pre \
+                --dist ${dist} \
+            
+            # Get CLs plots for post-fit expectations 
             python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getSeparationTables.py\
                 -i ${outdir}/ -o ${outdir}/ \
                 --wid ${widStr} \

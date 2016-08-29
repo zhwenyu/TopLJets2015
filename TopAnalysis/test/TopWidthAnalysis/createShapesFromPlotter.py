@@ -253,6 +253,7 @@ def main():
           ('tnorm_th',         1.044,    'lnN',    ['tch']              ,[]),
           ('VVnorm_th',        1.20,     'lnN',    ['Multiboson']       ,[]),
           ('tbartVnorm_th',    1.30,     'lnN',    ['tbartV']           ,[]),
+          ('sel',              1.02,     'lnN',    tWRateSystList+ttRateSystList+['DY','W','tch','Multiboson','tbartV'], []),
     ]
 
     Mtop       =['tbartm=169.5','tbartm=175.5','tWm=169.5','tWm=175.5']
@@ -306,7 +307,7 @@ def main():
         ('les',   False,False,False),
         ('ltag',  False,False,False),
         ('trig',  False,False,False),
-        ('sel',   False,False,False),
+        #('sel',   False,False,False),
         ('toppt',  True,False,False),
         ('jer',   False,False,False),
         ('btag',  False,False,False),
@@ -351,7 +352,7 @@ def main():
         if opt.skipMakingShapes : break
 
         if cardIndex >= opt.maxIndex : break
-        if cardIndex+len(rawWidList) < opt.minIndex-1:
+        if cardIndex+len(rawWidList) < opt.minIndex:
             cardIndex+=len(rawWidList)
             continue
 
@@ -663,7 +664,8 @@ def main():
                             for txbin in xrange(1,tmp.GetXaxis().GetNbins()+1) :
                                 tmean[txbin-1]=tmp.GetBinContent(txbin)
 
-                            mean,rms=numpy.mean(tmean),numpy.std(tmean)
+                            mean=numpy.mean(tmean)
+                            rms=numpy.std(tmean)
 
                             tmp.Delete()
                             genVarShapesDn[proc].SetBinContent(xbin,mean-rms)
