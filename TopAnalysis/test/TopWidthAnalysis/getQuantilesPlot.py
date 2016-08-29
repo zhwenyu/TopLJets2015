@@ -18,6 +18,7 @@ parser.add_option("-i",    type="string", dest="indir"  , default="./",     help
 parser.add_option("-o",    type="string", dest="outdir" , default="./",     help="the base filename for the quantiles plot")
 parser.add_option("--lfs", type="string", dest="lfsList", default="",       help="a list of lepton final states to look for in stats filenames")
 parser.add_option("--dist",type="string", dest="dist"   , default="incmlb", help="the observable distribution to look at")
+parser.add_option("--prep",type="string", dest="prepost", default="",       help="are we pre-fit or post-fit?")
 parser.add_option("--wid", type="string", dest="widList", default="0p5w,1p0w,1p5w,2p0w,2p5w,3p0w,3p5w,4p0w,4p5w,5p0w", help="a list of widths to look for in stats filenames")
 parser.add_option("--axisOverwrite", type="string", dest="aoverList", default="", help="Axis labels to use if desired")
 parser.add_option("--labelWidth", action="store_true", dest="labelWidth", default=False, help="Include the width in the plot information")
@@ -100,7 +101,7 @@ for wid,lfs in [(wid,lfs) for wid in rawWidList for lfs in rawLfsList]:
     #    i+=2
     #    continue
 
-    statsFileName="%s/stats__%s_%s_%s.txt"%(options.indir,wid,lfs,options.dist)
+    statsFileName="%s/%sstats__%s_%s_%s.txt"%(options.indir,options.prepost,wid,lfs,options.dist)
     for line in open(statsFileName,"r"):
         if "nulquant" in line :
             tline = map(float,line.split(";")[1:8]);
@@ -221,7 +222,7 @@ leg.AddEntry(quantGraph2sigA,"Alt,  2#sigma","f")
 leg.AddEntry(quantGraph3sigA,"Alt,  3#sigma","f")
 leg.AddEntry(quantGraphExp  ,"Median"       ,"l")
 if options.unblind:
-    leg.AddEntry(obsGraph, "Data"       ,"p")
+    leg.AddEntry(obsGraph, "Data", "p")
 
 leg.Draw()
 

@@ -22,7 +22,7 @@ parser.add_option("-o",     type="string", dest="outdir" ,   default="./",   hel
 parser.add_option("--obs",
         type="string",
         dest="obsList",
-        default="incmlb,mt2mlb",
+        default="incmlb",
         help="a list of observable distributions to consider")
 
 (options, args) = parser.parse_args()

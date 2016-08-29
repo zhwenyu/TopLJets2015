@@ -57,7 +57,7 @@ if not options.doAll :
     # loop over widths, parse array info
     for wid in rawWidList :
         latexWid = wid.replace('p','.').replace('w','$\\times\\Gamma_{\\rm SM}$')
-        statsFileName="%s/stats__%s__%s.txt"%(options.indir,wid,options.dist)
+        statsFileName="%s/poststats__%s__%s.txt"%(options.indir,wid,options.dist)
         for line in open(statsFileName,"r"):
             if "separation" in line :
                statList["Separation"][latexWid]=line.split('#')[0]
