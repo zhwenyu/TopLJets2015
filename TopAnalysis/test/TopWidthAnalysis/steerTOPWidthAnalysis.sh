@@ -36,7 +36,7 @@ dists=(incmlb)
 cat=(1b 2b)
 lbCat=(highpt lowpt)
 
-nuisances=(jes jer pu btag les ltag trig toppt MEmuR MEmuF MEtot PDF Herwig amcnloFxFx Mtop ttPartonShower tWttinterf tWQCDScale) #sel
+nuisances=(jes jesrate jer pu btag les ltag trigEE trigEM trigMM selEE selEM selMM toppt MEqcdscale PDF Herwig amcnloFxFx Mtop ttPartonShower tWttinterf tWQCDScale DYnorm_thEE DYnorm_thEM DYnorm_thMM) 
 
 RED='\e[31m'
 NC='\e[0m'
@@ -106,15 +106,64 @@ case $WHAT in
         mkdir ${outdir}/widthx4validation
 
         export PYTHONPATH=$PYTHONPATH:/usr/lib64/python2.6/site-packages/
-        python test/TopWidthAnalysis/createShapesFromPlotter.py \
-                -s tbart,tW \
-                --dists ${distStr} \
-                -o ${outdir}/widthx4validation/datacards/ \
-                -i ${outdir}/analysis/plots/plotter.root \
-                --systInput ${outdir}/analysis/plots/syst_plotter.root \
-                --truth 1p0w \
-                --trx4 widthx4 \
-                --nomorph
+        for index in `seq 0 17 204` ; do
+            min=$index
+            max=$(($index+16))
+
+            nohup python test/TopWidthAnalysis/createShapesFromPlotter.py \
+                    -s tbart,tW \
+                    --dists ${distStr} \
+                    -o ${outdir}/widthx4validation/datacards/ \
+                    -i ${outdir}/analysis/plots/plotter.root \
+                    --systInput ${outdir}/analysis/plots/syst_plotter.root \
+                    --truth 1p0w \
+                    --trx4 widthx4 \
+                    --min $min --max $max \
+                    --nomorph > shapeswx4${index}.txt &
+        done
+    ;;
+    X4VALIDATION_SCANS )
+        cp ${outdir}/datacards/*.dat ${outdir}/widthx4validation/datacards/
+        
+        # workspaces 
+        cd ${CMSSW_7_4_7dir}
+        eval `scramv1 runtime -sh`
+        cd ${outdir}/widthx4validation/
+        for dist in ${dists[*]} ; do
+        for twid in ${wid[*]} ; do
+            
+            echo "Creating workspace for ${twid}${dist}" 
+            text2workspace.py ${outdir}/widthx4validation/datacards/datacard__${twid}_${dist}.dat -P \
+                HiggsAnalysis.CombinedLimit.TopHypoTest:twoHypothesisTest \
+                -m 172.5 --PO verbose --PO altSignal=${twid} --PO muFloating \
+                -o ${outdir}/widthx4validation/${twid}_${dist}.root 
+
+        done
+        done
+        
+        
+        # scans
+        cd ${CMSSW_7_4_7dir}
+        eval `scramv1 runtime -sh`
+        cd ${outdir}/widthx4validation/
+        for dist in ${dists[*]} ; do
+        for twid in ${wid[*]} ; do
+
+            cmd="combine ${outdir}/widthx4validation/${twid}_${dist}.root -M MultiDimFit" 
+            cmd="${cmd} -m 172.5 -P x --floatOtherPOI=1 --algo=grid --points=200"
+            cmd="${cmd} --expectSignal=1 --setPhysicsModelParameters x=0,r=1"
+            cmd="${cmd} -n x0_scan_Asimov_${twid}_${dist}"
+            if [[ ${unblind} == false ]] ; then 
+                echo "Analysis is blinded"
+                cmd="${cmd} -t -1"
+            fi
+            
+            bsub -q ${queue} \
+                ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh \
+                "${outdir}/widthx4validation" "${cmd}" 
+        done
+        done
+
     ;;
     MORPH ) # to get the morphs for the full analysis
         cd ${CMSSW_7_4_7dir}

@@ -458,8 +458,8 @@ def main():
                 pass
 
             for syst,val,pdf,whiteList,blackList in rateSysts:
-                if syst in ['sel','DYnorm_th'] : syst="%s%s"%(sel,lfs)
-                
+                if syst in ['sel','DYnorm_th'] : syst="%s%s"%(syst,lfs)
+
 
                 datacard.write('%32s %8s'%(syst,pdf))
                 entryTxt=''
@@ -675,7 +675,7 @@ def main():
 
                 else:
 
-                    genVarShapesUp,genVarShapesDn=None,None
+                    genVarShapesUp,genVarShapesDn={},{}
                     #construct an envelope from the 6 QCD scale variations, then mirror it
                     if 'MEqcdscale' in systVar:
                         for igen in [3,5,6,4,8,10]:
@@ -686,9 +686,9 @@ def main():
                                                       ('top' if opt.addSigs else ''),
                                                         widList,nomWid,signalList)
                             for proc in igenVarShapesDn:
-                                if not proc in genVarShapesDn:
+                                if proc not in genVarShapesDn:
                                     name=igenVarShapesDn[proc].GetName()+'env'
-                                    genVarShapesDn[proc]=igenVarShapesDn.Clone(name)
+                                    genVarShapesDn[proc]=igenVarShapesDn[proc].Clone(name)
                                     genVarShapesDn[proc].SetDirectory(0)
                                 else:
                                     for xbin in xrange(1,igenVarShapesDn[proc].GetNbinsX()+1):
@@ -768,8 +768,8 @@ def main():
                     for proc in downShapes:
                         nevtsup,nevtsdn=upShapes[proc].Integral(),downShapes[proc].Integral()
                         if nevtsdn==0 : continue
-                        rateVarInProc=1.0+0.5*TMath::Abs(1.0-nevtsup/nevtsdn)
-                        extraRateSysts[proc]=rateVarInProc
+                        rateVarInProc=1.0+0.5*ROOT.TMath.Abs(1.0-nevtsup/nevtsdn)
+                        extraRateSyst[proc]=rateVarInProc
                 saveToShapesFile(outFile,downShapes,lbCat+lfs+cat+"_"+dist+"_"+systVar+'Down')
                 saveToShapesFile(outFile,upShapes,lbCat+lfs+cat+"_"+dist+"_"+systVar+'Up')
 
@@ -795,18 +795,18 @@ def main():
                     else:
                         datacard.write('%15s'%'-')
                 datacard.write('\n')
-                
+
                 #add extra rate systs
-                if size(extraRateSyst)>0:
-                    datacard.write('%26s lnN'%(systVar+rate))
+                if len(extraRateSyst)>0:
+                    datacard.write('%26s lnN'%(systVar+'rate'))
                     for sig in signalList:
                         if ("%s%s"%(sig,modNomWid)) in exp and ("%s%s"%(sig,modNomWid)) in extraRateSyst:
-                            datacard.write('%15s'%('%3.3f'%extraRateSyst[sig]))
+                            datacard.write('%15s'%('%3.3f'%extraRateSyst[sig+modNomWid]))
                         else:
                             datacard.write('%15s'%'-')
                     for sig in signalList:
                         if ("%s%s"%(sig,wid)) in exp and ("%s%s"%(sig,wid)) in extraRateSyst:
-                            datacard.write('%15s'%('%3.3f'%extraRateSyst[sig]))
+                            datacard.write('%15s'%('%3.3f'%extraRateSyst[sig+wid]))
                         else:
                             datacard.write('%15s'%'-')
                     for proc in exp:
@@ -819,7 +819,7 @@ def main():
                         else:
                             datacard.write('%15s'%'-')
                     datacard.write('\n')
-                
+
 
             #all done
             datacard.close()
