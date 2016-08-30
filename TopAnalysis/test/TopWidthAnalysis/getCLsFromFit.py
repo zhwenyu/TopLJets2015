@@ -18,6 +18,7 @@ parser.add_option("-i",     type="string", dest="indir"  , default="./",     hel
 parser.add_option("--iname",type="string", dest="iname"  , default="statsPlots.root", help="filename containing fit info")
 parser.add_option("--dist", type="string", dest="dist"   , default="incmlb",    help="the observable distribution to look at")
 parser.add_option("--nomWid", type="string", dest="inwid"   , default="1.324",    help="the observable distribution to look at")
+parser.add_option("--unblind", dest="unblind", default=False, action='store_true',  help="the observable distribution to look at")
 
 (options, args) = parser.parse_args()
 
@@ -60,10 +61,19 @@ def getSplineIntersection(yvalue, spline, scanRes=0.01, startValue=float(options
 # now run and print
 limList=options.limList.split(',')
 fIn = ROOT.TFile("%s/%s"%(options.indir,options.iname),"READ"
-tSpline=fIn.Get("Spline%s"%options.dist)
+tSpline=fIn.Get("Splinepost%s"%options.dist)
+obsSpline=None
+
+if options.unblind:
+    obsSpline=fIn.Get("SplineObs%s"%options.dist)
 
 for lim in limList :
     lowLim,upLim=getSplineIntersection(float(lim),tSpline)
-    print '\t\tFor a confidence level of ',lim,':  (',lowLim,' : ',upLim,')'
+    print '\t\t(EXPECTED) For a confidence level of ',lim,':  (',lowLim,' : ',upLim,')'
+
+    if options.unblind :
+        lowLim,upLim=getSplineIntersection(float(lim),obsSpline)
+        print '\t\t(OBSERVED) For a confidence level of ',lim,':  (',lowLim,' : ',upLim,')'
+
 
 
