@@ -303,7 +303,7 @@ def main():
 
 
     genSysts=[
-        ('jes',   False,False,False),
+        ('jes',   True,False,False),
         ('les',   False,False,False),
         ('ltag',  False,False,False),
         ('trig',  False,False,False),
@@ -312,9 +312,7 @@ def main():
         ('jer',   False,False,False),
         ('btag',  False,False,False),
         ('pu',     True,False,False),
-        ('MEmuR',  True,False,False),
-        ('MEmuF',  True,False,False),
-        ('MEtot',  True,False,False),
+        ('MEqcdscale',  True,False,False),
         ('PDF',   False,False,False)
     ]
 
@@ -460,7 +458,8 @@ def main():
                 pass
 
             for syst,val,pdf,whiteList,blackList in rateSysts:
-                if syst=="sel" : syst="sel%s"%lfs
+                if syst in ['sel','DYnorm_th'] : syst="%s%s"%(sel,lfs)
+                
 
                 datacard.write('%32s %8s'%(syst,pdf))
                 entryTxt=''
@@ -676,27 +675,40 @@ def main():
 
                 else:
 
-                    dirForSyst=('%sup%s%s%s_%s_'%(systVar,lbCat,lfs,cat,dist))
-                    if "MEmuF" in systVar : dirForSyst=('gen3%s%s%s_%s_'%(lbCat,lfs,cat,dist))
-                    if "MEmuR" in systVar : dirForSyst=('gen5%s%s%s_%s_'%(lbCat,lfs,cat,dist))
-                    if "MEtot" in systVar : dirForSyst=('gen6%s%s%s_%s_'%(lbCat,lfs,cat,dist))
-
-                    _,genVarShapesUp = getMergedDists((systfIn if useAltShape else fIn),
-                                                      dirForSyst,
-                                                      (rawSignalList if opt.addSigs else None),
+                    genVarShapesUp,genVarShapesDn=None,None
+                    #construct an envelope from the 6 QCD scale variations, then mirror it
+                    if 'MEqcdscale' in systVar:
+                        for igen in [3,5,6,4,8,10]:
+                            dirForSyst=('gen%d%s%s%s_%s_'%(igen,lbCat,lfs,cat,dist))
+                            _,igenVarShapesDn = getMergedDists((systfIn if useAltShape else fIn),
+                                                        dirForSyst,
+                                                        (rawSignalList if opt.addSigs else None),
                                                       ('top' if opt.addSigs else ''),
-                                                      widList,nomWid,signalList)
+                                                        widList,nomWid,signalList)
+                            for proc in igenVarShapesDn:
+                                if not proc in genVarShapesDn:
+                                    name=igenVarShapesDn[proc].GetName()+'env'
+                                    genVarShapesDn[proc]=igenVarShapesDn.Clone(name)
+                                    genVarShapesDn[proc].SetDirectory(0)
+                                else:
+                                    for xbin in xrange(1,igenVarShapesDn[proc].GetNbinsX()+1):
+                                        y1,y2=genVarShapesDn[proc].GetBinContent(xbin),igenVarShapesDn[proc].GetBinContent(xbin)
+                                        genVarShapesDn[proc].SetBinContent(xbin,ROOT.TMath.Max(y1,y2))
+                    #proceed as usual
+                    else:
+                        dirForSyst=('%sup%s%s%s_%s_'%(systVar,lbCat,lfs,cat,dist))
+                        _,genVarShapesUp = getMergedDists((systfIn if useAltShape else fIn),
+                                                        dirForSyst,
+                                                        (rawSignalList if opt.addSigs else None),
+                                                        ('top' if opt.addSigs else ''),
+                                                        widList,nomWid,signalList)
 
-                    dirForSyst=('%sup%s%s%s_%s_'%(systVar,lbCat,lfs,cat,dist))
-                    if "MEmuF" in systVar : dirForSyst=('gen4%s%s%s_%s_'%(lbCat,lfs,cat,dist))
-                    if "MEmuR" in systVar : dirForSyst=('gen8%s%s%s_%s_'%(lbCat,lfs,cat,dist))
-                    if "MEtot" in systVar : dirForSyst=('gen10%s%s%s_%s_'%(lbCat,lfs,cat,dist))
-
-                    _,genVarShapesDn = getMergedDists((systfIn if useAltShape else fIn),
-                                                      dirForSyst,
-                                                      (rawSignalList if opt.addSigs else None),
-                                                      ('top' if opt.addSigs else ''),
-                                                      widList,nomWid,signalList)
+                        dirForSyst=('%sup%s%s%s_%s_'%(systVar,lbCat,lfs,cat,dist))
+                        _,genVarShapesDn = getMergedDists((systfIn if useAltShape else fIn),
+                                                         dirForSyst,
+                                                        (rawSignalList if opt.addSigs else None),
+                                                        ('top' if opt.addSigs else ''),
+                                                        widList,nomWid,signalList)
 
                 #prepare shapes and check if variation is significant
                 downShapes, upShapes = {}, {}
@@ -751,6 +763,13 @@ def main():
                 #export to shapes file
                 if systVar == "trig" :
                     systVar=systVar+lfs
+                extraRateSyst={}
+                if systVar in ['jes']:
+                    for proc in downShapes:
+                        nevtsup,nevtsdn=upShapes[proc].Integral(),downShapes[proc].Integral()
+                        if nevtsdn==0 : continue
+                        rateVarInProc=1.0+0.5*TMath::Abs(1.0-nevtsup/nevtsdn)
+                        extraRateSysts[proc]=rateVarInProc
                 saveToShapesFile(outFile,downShapes,lbCat+lfs+cat+"_"+dist+"_"+systVar+'Down')
                 saveToShapesFile(outFile,upShapes,lbCat+lfs+cat+"_"+dist+"_"+systVar+'Up')
 
@@ -776,6 +795,31 @@ def main():
                     else:
                         datacard.write('%15s'%'-')
                 datacard.write('\n')
+                
+                #add extra rate systs
+                if size(extraRateSyst)>0:
+                    datacard.write('%26s lnN'%(systVar+rate))
+                    for sig in signalList:
+                        if ("%s%s"%(sig,modNomWid)) in exp and ("%s%s"%(sig,modNomWid)) in extraRateSyst:
+                            datacard.write('%15s'%('%3.3f'%extraRateSyst[sig]))
+                        else:
+                            datacard.write('%15s'%'-')
+                    for sig in signalList:
+                        if ("%s%s"%(sig,wid)) in exp and ("%s%s"%(sig,wid)) in extraRateSyst:
+                            datacard.write('%15s'%('%3.3f'%extraRateSyst[sig]))
+                        else:
+                            datacard.write('%15s'%'-')
+                    for proc in exp:
+                        isSig=False
+                        for sig in modWidList :
+                            if sig in proc : isSig=True
+                        if isSig : continue
+                        if proc in extraRateSyst:
+                            datacard.write('%15s'%('%3.3f'%extraRateSyst[proc]))
+                        else:
+                            datacard.write('%15s'%'-')
+                    datacard.write('\n')
+                
 
             #all done
             datacard.close()
