@@ -117,8 +117,8 @@ void hypoTestResultTreeTopWid(TString fOutName,
     /*
      * Outputting LaTeX table with useful statistics
      */
-    TH1D *hnullstat = new TH1D("hnullstat","Null Hypothesis",5000,-1000,1000);
-    TH1D *haltstat  = new TH1D("haltstat" ,"Alternate Hypothesis",5000,-1000,1000);
+    TH1D *hnullstat = new TH1D("hnullstat","Null Hypothesis",1000,-1000,1000);
+    TH1D *haltstat  = new TH1D("haltstat" ,"Alternate Hypothesis",1000,-1000,1000);
     
     tree->Draw("-2*q>>hnullstat","type>0","goff");
     tree->Draw("-2*q>>haltstat" ,"type<0","goff");
@@ -265,8 +265,8 @@ void hypoTestResultTreeTopWid(TString fOutName,
     Double_t plotMinMax = TMath::Max(TMath::Abs(gnull->GetParameter("Mean")-3*gnull->GetParameter(2)),
                                      TMath::Abs( galt->GetParameter("Mean")-3* galt->GetParameter(2)));
 
-    TH1D *hnull = new TH1D("hnull","Null Hypothesis",TMath::FloorNint(2*plotMinMax*100/40),-plotMinMax,plotMinMax);
-    TH1D *halt  = new TH1D("halt" ,"Alternate Hypothesis",TMath::FloorNint(2*plotMinMax*100/40),-plotMinMax,plotMinMax);
+    TH1D *hnull = new TH1D("hnull","Null Hypothesis",TMath::FloorNint(2*plotMinMax*100/40)/5,-plotMinMax,plotMinMax);
+    TH1D *halt  = new TH1D("halt" ,"Alternate Hypothesis",TMath::FloorNint(2*plotMinMax*100/40)/5,-plotMinMax,plotMinMax);
 
     tree->Draw("-2*q>>hnull","type>0","goff");
     tree->Draw("-2*q>>halt" ,"type<0","goff");
@@ -292,8 +292,8 @@ void hypoTestResultTreeTopWid(TString fOutName,
 
     CMS_lumi(c,4,0); 
     c->SetLeftMargin(c->GetLeftMargin()*1.5);
-    c->SaveAs(plotName+".pdf");
-    c->SaveAs(plotName+".png");
+    c->SaveAs(prepost+plotName+".pdf");
+    c->SaveAs(prepost+plotName+".png");
 
     /* 
      * Cleanup

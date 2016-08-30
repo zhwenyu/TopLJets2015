@@ -66,6 +66,7 @@ if not options.doAll :
     # loop over widths, parse array info
     for wid in rawWidList :
         latexWid = wid.replace('p','.').replace('w','$\\times\\Gamma_{\\rm SM}$')
+
         statsFileName="%s/%sstats__%s__%s.txt"%(options.indir,options.prepost,wid,options.dist)
         for line in open(statsFileName,"r"):
             if "separation" in line :
@@ -80,7 +81,11 @@ if not options.doAll :
                statList["CL$_s$^{\\rm obs.}$"][latexWid]=line.split('#')[0]
             else : continue
 
-        if options.unblind : continue
+        if "1.0" in latexWid : # and options.prepost != "pre" :
+            statList["Separation"][latexWid]='0'
+            statList["CL$_s$^{\\rm exp.}$"][latexWid]='1'
+
+        if not options.unblind : continue
         statsFileName="%s/obsstats__%s__%s.txt"%(options.indir,wid,options.dist)
         for line in open(statsFileName,"r"):
             if "separation" in line :
@@ -94,6 +99,10 @@ if not options.doAll :
             elif "cls observed" in line :
                obsList["CL$_s$^{\\rm obs.}$"][latexWid]=line.split('#')[0]
             else : continue
+
+        if "1.0" in latexWid : #and options.prepost != "pre" :
+            obsList["Separation"][latexWid]='0'
+            obsList["CL$_s$^{\\rm obs.}$"][latexWid]='1 \pm 0'
 
     tabletex=open("%s/separationTable__%s.tex"%(options.outdir,options.dist), 'w')
 
@@ -130,17 +139,24 @@ if not options.doAll :
     x=ROOT.TVector(len(rawWidList))
     y=ROOT.TVector(len(rawWidList))
 
-    obsYArr=[float(statList["CL$_s$^{\\rm obs.}$"][wid].split('\\pm')[0]) for wid in sorted([key for key in obsList["CL$_s$^{\\rm exp.}$"]])]
-    obsErrYArr=[float(statList["CL$_s$^{\\rm obs.}$"][wid].split('\\pm')[1]) for wid in sorted([key for key in obsList["CL$_s$^{\\rm exp.}$"]])]
+    obsYArr=[float(obsList["CL$_s$^{\\rm obs.}$"][wid].split('\\pm')[0]) for wid in sorted([key for key in obsList["CL$_s$^{\\rm obs.}$"]])]
+    obsErrYArr=[float(obsList["CL$_s$^{\\rm obs.}$"][wid].split('\\pm')[1]) for wid in sorted([key for key in obsList["CL$_s$^{\\rm obs.}$"]])]
     obsY=ROOT.TVector(len(rawWidList))
     obsErrY=ROOT.TVector(len(rawWidList))
+    obsErrX=ROOT.TVector(len(rawWidList))
+
+    print ""
+    print obsYArr
+    print ""
+    print obsErrYArr
 
     for ix in xrange(0,len(xarr)):
         x[ix] = float(xarr[ix])
         y[ix] = float(yarr[ix])
-
+        if not options.unblind: continue
         obsY[ix]=obsYArr[ix]
         obsErrY[ix]=obsErrYArr[ix]
+        obsErrX[ix]=0
 
 
 
@@ -153,19 +169,20 @@ if not options.doAll :
     clsGr.GetYaxis().SetRangeUser(1e-05,1.1)
     clsGr.Draw("AP")
 
-    tsp=ROOT.TSpline3("Spline%s%s"%options.dist,options.prepost,clsGr)
+    tsp=ROOT.TSpline3("Spline%s%s"%(options.dist,options.prepost),clsGr)
+    tsp.SetName("Spline%s%s"%(options.dist,options.prepost))
     if options.unblind :
         tsp.SetLineStyle(ROOT.kDashed)
         tsp.SetLineColor(ROOT.kBlack)
-        tsp.SetMarkerStyle(1)
-        tsp.SetMarkerColor(ROOT.kBlack)
+        clsGr.SetMarkerStyle(1)
+        clsGr.SetMarkerColor(ROOT.kNone)
     tsp.Draw("SAME")
 
 
     fout=ROOT.TFile("%s/statsPlots.root"%(options.outdir),"UPDATE" if not options.recreate else "RECREATE")
     fout.cd()
-    clsGr.Write()
-    tsp.Write()
+    clsGr.Write("CLsGraph%s%s"%(options.dist,options.prepost))
+    tsp.Write("Spline%s%s"%(options.dist,options.prepost))
     if options.unblind :
         obsGr=ROOT.TGraphErrors(x,obsY,obsErrX,obsErrY)
         obsGr.SetFillColor(ROOT.kGreen)
@@ -173,7 +190,7 @@ if not options.doAll :
         obsGr.Write()
         osp=ROOT.TSpline3("SplineObs%s"%options.dist,obsGr)
         osp.Draw("SAME")
-        osp.Write()
+        osp.Write("SplineObs%s"%options.dist)
     fout.Close()
 
     # draw dist information if available
@@ -190,8 +207,8 @@ if not options.doAll :
         TMassInfo.SetTextSize(0.03)
         TMassInfo.Draw()
 
-    CMS_lumi.relPosX = 0.180
-    CMS_lumi.extraText = "Simulation Preliminary"
+    CMS_lumi.relPosX = 0.190
+    CMS_lumi.extraText = "Preliminary" if options.unblind else "Simulation Preliminary"
     CMS_lumi.extraOverCmsTextSize=0.50
     CMS_lumi.lumiTextSize = 0.55
     l=ROOT.TLine()
@@ -206,8 +223,8 @@ if not options.doAll :
     canvas.SetGrid(True)
     CMS_lumi.CMS_lumi(canvas,4,0)
 
-    canvas.SaveAs("%s/CLsPlot__%s.png"%(options.outdir,options.dist))
-    canvas.SaveAs("%s/CLsPlot__%s.pdf"%(options.outdir,options.dist))
+    canvas.SaveAs("%s/%sCLsPlot__%s.png"%(options.outdir,options.prepost,options.dist))
+    canvas.SaveAs("%s/%sCLsPlot__%s.pdf"%(options.outdir,options.prepost,options.dist))
 
 
 

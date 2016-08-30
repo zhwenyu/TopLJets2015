@@ -16,6 +16,8 @@ if [ "$#" -ne 2 ]; then
     exit 1; 
 fi
 
+export LSB_JOB_REPORT_MAIL=N
+
 queue=2nw
 outdir=/afs/cern.ch/work/e/ecoleman/public/TopWidth/TopWidth_${ERA}/
 cardsdir=${outdir}/datacards
@@ -319,14 +321,14 @@ case $WHAT in
             rootcmds="${rootcmds}\\\",172.5,1,\\\"x\\\",1000,\\\"\\\",\\\"${twid}\\\",\\\"${dist}\\\",${unblind},\\\"pre\\\"\)"
 
             cmd=""
-            cmd="${cmd}; root -l -q -b"
+            cmd="${cmd}root -l -q -b"
             cmd="${cmd} ${outdir}"
             cmd="${cmd}/higgsCombinex_pre-fit_exp__${twid}_${dist}.HybridNew.mH172.5.8192.quant0.500.root"
             cmd="${cmd} ${rootcmds}"
 
-            bsub -q ${queue} \
-            ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh \
-                "${outdir}/" "${cmd}" 
+            #bsub -q ${queue} \
+            sh ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh \
+                "${outdir}/" "${cmd}"
 
             ## post-fit expected 
             rootcmds="${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis"
@@ -334,14 +336,14 @@ case $WHAT in
             rootcmds="${rootcmds}\\\",172.5,1,\\\"x\\\",1000,\\\"\\\",\\\"${twid}\\\",\\\"${dist}\\\",${unblind},\\\"post\\\"\)"
 
             cmd=""
-            cmd="${cmd}; root -l -q -b"
+            cmd="${cmd}root -l -q -b"
             cmd="${cmd} ${outdir}"
             cmd="${cmd}/higgsCombinex_post-fit_exp__${twid}_${dist}.HybridNew.mH172.5.8192.quant0.500.root"
             cmd="${cmd} ${rootcmds}"
 
-            bsub -q ${queue} \
-            ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh \
-                "${outdir}/" "${cmd}" 
+            #bsub -q ${queue} \
+            sh ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh \
+                "${outdir}/" "${cmd}"
 
             ## post-fit observed 
             rootcmds="${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis"
@@ -349,18 +351,22 @@ case $WHAT in
             rootcmds="${rootcmds}\\\",172.5,1,\\\"x\\\",1000,\\\"\\\",\\\"${twid}\\\",\\\"${dist}\\\",${unblind},\\\"obs\\\"\)"
 
             cmd=""
-            cmd="${cmd}; root -l -q -b"
+            cmd="${cmd}root -l -q -b"
             cmd="${cmd} ${outdir}"
-            cmd="${cmd}/higgsCombinex_post-fit_obs__${twid}_${dist}.HybridNew.mH172.5.8192.quant0.500.root"
+            cmd="${cmd}/higgsCombinex_post-fit_obs__${twid}_${dist}.HybridNew.mH172.5.8192.root"
             cmd="${cmd} ${rootcmds}"
 
-            bsub -q ${queue} \
-            ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh \
-                "${outdir}/" "${cmd}" 
+            #bsub -q ${queue} \
+            sh ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh \
+                "${outdir}/" "${cmd}"
         done
         done
     ;;
     QUANTILES ) # plot quantiles distributions of all toys, get CLsPlot
+            
+        cd ${CMSSW_7_4_7dir}
+        eval `scramv1 runtime -sh` 
+
         cd ${outdir}
         for dist in ${dists[*]} ; do
 
@@ -369,7 +375,23 @@ case $WHAT in
                 -i ${outdir}/ -o ${outdir}/ \
                 --wid ${widStr} \
                 --dist ${dist}  \
+                --prep pre \
+                --unblind
+
+            # Quantiles plot with post-fit information 
+            python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getQuantilesPlot.py \
+                -i ${outdir}/ -o ${outdir}/ \
+                --wid ${widStr} \
+                --dist ${dist}  \
                 --prep post \
+                --unblind
+
+            # Quantiles plot with post-fit information 
+            python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getQuantilesPlot.py \
+                -i ${outdir}/ -o ${outdir}/ \
+                --wid ${widStr} \
+                --dist ${dist}  \
+                --prep obs \
                 --unblind
             
             # Get CLs plots for pre-fit expectations
@@ -378,12 +400,34 @@ case $WHAT in
                 --wid ${widStr} \
                 --prep pre \
                 --dist ${dist} \
+                --unblind
             
             # Get CLs plots for post-fit expectations 
             python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getSeparationTables.py\
                 -i ${outdir}/ -o ${outdir}/ \
                 --wid ${widStr} \
                 --dist ${dist} \
+                --prep post \
+                --unblind
+            
+            # Get CLs plots for post-fit expectations 
+            python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getSeparationTables.py\
+                -i ${outdir}/ -o ${outdir}/ \
+                --wid ${widStr} \
+                --dist ${dist} \
+                --prep obs \
+                --unblind
+
+            python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getCLsFromFit.py \
+                -i ${outdir}/ \
+                --dist ${dist} \
+                --prep pre \
+                --unblind
+
+            python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getCLsFromFit.py \
+                -i ${outdir}/ \
+                --dist ${dist} \
+                --prep post \
                 --unblind
         done
         
@@ -412,10 +456,8 @@ case $WHAT in
             # start writing job 
             for twid in ${wid[*]}; do
 
-                cmd="echo Starting job ${dist} ${syst}"
-
                 # run likelihood scan
-                cmd="${cmd}; combine ${outdir}/${twid}_${dist}.root -M MultiDimFit" 
+                cmd="combine ${outdir}/${twid}_${dist}.root -M MultiDimFit" 
                 cmd="${cmd} -m 172.5 -P x --floatOtherPOI=1 --algo=grid --points=200"
                 cmd="${cmd} --expectSignal=1 --setPhysicsModelParameters x=0,r=1"
                 cmd="${cmd} -n x0_scan_Asimov_${twid}_${dist}"
@@ -424,9 +466,14 @@ case $WHAT in
                   echo "Analysis is blinded"
                   cmd="${cmd} -t -1"   
                 fi
+                
+                # launch job
+                bsub -q ${queue} \
+                ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh \
+                    "${outdir}/nuisanceTurnOn_${dist}_${syst}_${i}/" "${cmd}" 
 
                 # run CLs pre-fit
-                cmd="${cmd}; combine ${outdir}/${twid}_${dist}.root -M HybridNew --seed 8192 --saveHybridResult" 
+                cmd="combine ${outdir}/${twid}_${dist}.root -M HybridNew --seed 8192 --saveHybridResult" 
                 cmd="${cmd} -m 172.5  --testStat=TEV --singlePoint 1 -T ${nPseudo} -i 2 --fork 6"
                 cmd="${cmd} --clsAcc 0 --fullBToys  --generateExt=1 --generateNuis=0"
                 cmd="${cmd} --expectedFromGrid 0.5 -n x_pre-fit_exp_${twid}_${dist}"
@@ -435,9 +482,14 @@ case $WHAT in
                   echo "Analysis is blinded"
                   cmd="${cmd} -t -1"   
                 fi
+                
+                # launch job
+                bsub -q ${queue} \
+                ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh \
+                    "${outdir}/nuisanceTurnOn_${dist}_${syst}_${i}/" "${cmd}" 
 
                 # run CLs post-fit exp
-                cmd="${cmd}; combine ${outdir}/${twid}_${dist}.root -M HybridNew --seed 8192 --saveHybridResult" 
+                cmd="combine ${outdir}/${twid}_${dist}.root -M HybridNew --seed 8192 --saveHybridResult" 
                 cmd="${cmd} -m 172.5  --testStat=TEV --singlePoint 1 -T ${nPseudo} -i 2 --fork 6"
                 cmd="${cmd} --clsAcc 0 --fullBToys  --frequentist"
                 cmd="${cmd} --expectedFromGrid 0.5 -n x_post-fit_exp_${twid}_${dist}"
@@ -446,9 +498,14 @@ case $WHAT in
                   echo "Analysis is blinded"
                   cmd="${cmd} -t -1"   
                 fi
+                
+                # launch job
+                bsub -q ${queue} \
+                ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh \
+                    "${outdir}/nuisanceTurnOn_${dist}_${syst}_${i}/" "${cmd}" 
 
                 # run CLs post-fit obs
-                cmd="${cmd}; combine ${outdir}/${twid}_${dist}.root -M HybridNew --seed 8192 --saveHybridResult" 
+                cmd="combine ${outdir}/${twid}_${dist}.root -M HybridNew --seed 8192 --saveHybridResult" 
                 cmd="${cmd} -m 172.5  --testStat=TEV --singlePoint 1 -T ${nPseudo} -i 2 --fork 6"
                 cmd="${cmd} --clsAcc 0 --fullBToys  --frequentist"
                 cmd="${cmd} -n x_post-fit_obs_${twid}_${dist}"
@@ -484,46 +541,46 @@ case $WHAT in
                 rootcmds="${rootcmds}\\\",172.5,1,\\\"x\\\",1000,\\\"\\\",\\\"${twid}\\\",\\\"${dist}\\\",${unblind},\\\"pre\\\"\)"
 
                 cmd=""
-                cmd="${cmd}; root -l -q -b"
+                cmd="${cmd}root -l -q -b"
                 cmd="${cmd} ${outdir}/nuisanceTurnOn_${dist}_${syst}_${i}"
                 cmd="${cmd}/higgsCombinex_pre-fit_exp_${twid}_${dist}.HybridNew.mH172.5.8192.quant0.500.root"
                 cmd="${cmd} ${rootcmds}"
 
-                bsub -q ${queue} \
-                ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh \
+                #bsub -q ${queue} \
+                sh ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh \
                     "${outdir}/nuisanceTurnOn_${dist}_${syst}_${i}/" "${cmd}" 
             
 
                 ## post-fit expected 
                 rootcmds="${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis"
                 rootcmds="${rootcmds}/hypoTestResultTreeTopWid.cxx\(\\\"x_post-fit_exp_${twid}_${dist}.qvals.root"
-                rootcmds="${rootcmds}\\\",172.5,1,\\\"x\\\",1000,\\\"\\\",\\\"${twid}\\\",\\\"${dist}\\\",${unblind},\\\"pre\\\"\)"
+                rootcmds="${rootcmds}\\\",172.5,1,\\\"x\\\",1000,\\\"\\\",\\\"${twid}\\\",\\\"${dist}\\\",${unblind},\\\"post\\\"\)"
 
                 cmd=""
-                cmd="${cmd}; root -l -q -b"
+                cmd="${cmd}root -l -q -b"
                 cmd="${cmd} ${outdir}/nuisanceTurnOn_${dist}_${syst}_${i}"
                 cmd="${cmd}/higgsCombinex_post-fit_exp_${twid}_${dist}.HybridNew.mH172.5.8192.quant0.500.root"
                 cmd="${cmd} ${rootcmds}"
 
-                bsub -q ${queue} \
-                ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh \
-                    "${outdir}/nuisanceTurnOn_${dist}_${syst}_${i}/" "${cmd}" 
+                #bsub -q ${queue} \
+                sh ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh \
+                    "${outdir}/nuisanceTurnOn_${dist}_${syst}_${i}/" "${cmd}"
             
 
                 ## post-fit observed 
                 rootcmds="${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis"
                 rootcmds="${rootcmds}/hypoTestResultTreeTopWid.cxx\(\\\"x_post-fit_obs_${twid}_${dist}.qvals.root"
-                rootcmds="${rootcmds}\\\",172.5,1,\\\"x\\\",1000,\\\"\\\",\\\"${twid}\\\",\\\"${dist}\\\",${unblind},\\\"pre\\\"\)"
+                rootcmds="${rootcmds}\\\",172.5,1,\\\"x\\\",1000,\\\"\\\",\\\"${twid}\\\",\\\"${dist}\\\",${unblind},\\\"obs\\\"\)"
 
                 cmd=""
-                cmd="${cmd}; root -l -q -b"
+                cmd="${cmd}root -l -q -b"
                 cmd="${cmd} ${outdir}/nuisanceTurnOn_${dist}_${syst}_${i}"
-                cmd="${cmd}/higgsCombinex_post-fit_obs_${twid}_${dist}.HybridNew.mH172.5.8192.quant0.500.root"
+                cmd="${cmd}/higgsCombinex_post-fit_obs_${twid}_${dist}.HybridNew.mH172.5.8192.root"
                 cmd="${cmd} ${rootcmds}"
 
-                bsub -q ${queue} \
-                ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh \
-                    "${outdir}/nuisanceTurnOn_${dist}_${syst}_${i}/" "${cmd}" 
+                #bsub -q ${queue} \
+                sh ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh \
+                    "${outdir}/nuisanceTurnOn_${dist}_${syst}_${i}/" "${cmd}"
             
             done
 
@@ -536,7 +593,6 @@ case $WHAT in
         eval `scramv1 runtime -sh`
 
         for dist in ${dists[*]} ; do
-            systList=""
             i=0
         for syst in ${nuisances[*]} ; do
             dirName=${outdir}/nuisanceTurnOn_${dist}_${syst}_${i}
@@ -547,6 +603,17 @@ case $WHAT in
                 --dist ${dist} \
                 --wid ${widStr} \
                 --unblind
+
+            let "i += 1" 
+
+        done
+        done
+
+        for dist in ${dists[*]} ; do
+            i=0
+        for syst in ${nuisances[*]} ; do
+            dirName=${outdir}/nuisanceTurnOn_${dist}_${syst}_${i}
+
 
             echo " "
             echo "$i ||| $dist $syst : "
@@ -560,7 +627,6 @@ case $WHAT in
 
         done
         done
-        
     ;;
     WWW )
         mkdir -p ${wwwdir}/ana_${ERA}

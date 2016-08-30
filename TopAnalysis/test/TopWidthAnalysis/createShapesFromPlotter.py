@@ -312,9 +312,9 @@ def main():
         ('jer',   False,False,False),
         ('btag',  False,False,False),
         ('pu',     True,False,False),
-        ('MEmuR', False,False,False),
-        ('MEmuF', False,False,False),
-        ('MEtot', False,False,False),
+        ('MEmuR',  True,False,False),
+        ('MEmuF',  True,False,False),
+        ('MEtot',  True,False,False),
         ('PDF',   False,False,False)
     ]
 
@@ -460,6 +460,7 @@ def main():
                 pass
 
             for syst,val,pdf,whiteList,blackList in rateSysts:
+                if syst=="sel" : syst="sel%s"%lfs
 
                 datacard.write('%32s %8s'%(syst,pdf))
                 entryTxt=''
@@ -748,6 +749,8 @@ def main():
                 if len(upShapes)==0 : continue
 
                 #export to shapes file
+                if systVar == "trig" :
+                    systVar=systVar+lfs
                 saveToShapesFile(outFile,downShapes,lbCat+lfs+cat+"_"+dist+"_"+systVar+'Down')
                 saveToShapesFile(outFile,upShapes,lbCat+lfs+cat+"_"+dist+"_"+systVar+'Up')
 

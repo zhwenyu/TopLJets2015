@@ -77,29 +77,30 @@ for i in xrange(0,nPoints) :
     eyexp[i] = 0.25
 
 for i in xrange(0,nPoints/2):
-    qobsX[i] = 0.5 + 0.5*i
+    qobsX[i] = 0.5 + i
     qobsErr[i]=0
 
 # loop over widths, lfs, parse array info
 i=0
 for wid,lfs in [(wid,lfs) for wid in rawWidList for lfs in rawLfsList]:
-    #if wid == "1p0w" :
-    #    eyl3N[i] = 0
-    #    eyl2N[i] = 0
-    #    eyl1N[i] = 0
-    #    y[i]     = 0
-    #    eyu1N[i] = 0
-    #    eyu2N[i] = 0
-    #    eyu3N[i] = 0
-    #    eyl3N[i+1] = 0
-    #    eyl2N[i+1] = 0
-    #    eyl1N[i+1] = 0
-    #    y[i+1]     = 0
-    #    eyu1N[i+1] = 0
-    #    eyu2N[i+1] = 0
-    #    eyu3N[i+1] = 0
-    #    i+=2
-    #    continue
+    if wid == "1p0w" :
+        eyl3N[i] = 0
+        eyl2N[i] = 0
+        eyl1N[i] = 0
+        y[i]     = 0
+        eyu1N[i] = 0
+        eyu2N[i] = 0
+        eyu3N[i] = 0
+        eyl3N[i+1] = 0
+        eyl2N[i+1] = 0
+        eyl1N[i+1] = 0
+        y[i+1]     = 0
+        eyu1N[i+1] = 0
+        eyu2N[i+1] = 0
+        eyu3N[i+1] = 0
+        qobsY[i/2] = 0
+        i+=2
+        continue
 
     statsFileName="%s/%sstats__%s_%s_%s.txt"%(options.indir,options.prepost,wid,lfs,options.dist)
     for line in open(statsFileName,"r"):
@@ -121,8 +122,12 @@ for wid,lfs in [(wid,lfs) for wid in rawWidList for lfs in rawLfsList]:
             eyu1A[i+1] = ROOT.TMath.Abs(tline[4]-tline[3])
             eyu2A[i+1] = ROOT.TMath.Abs(tline[5]-tline[3])
             eyu3A[i+1] = ROOT.TMath.Abs(tline[6]-tline[3])
-        elif "qobs" in line :
-            qobsY = float(line.replace("qobs;",""))
+        else : continue
+
+    statsFileName="%s/obsstats__%s_%s_%s.txt"%(options.indir,wid,lfs,options.dist)
+    for line in open(statsFileName,"r"):
+        if "qobs" in line :
+            qobsY[i/2] = float(line.replace("qobs;",""))
         else : continue
     i+=2
 
@@ -138,7 +143,7 @@ quantGraph3sigN = ROOT.TGraphAsymmErrors(x,y,ex,ex,eyl3N,eyu3N);
 quantGraph3sigA = ROOT.TGraphAsymmErrors(x,y,ex,ex,eyl3A,eyu3A);
 quantGraphExp   = ROOT.TGraphAsymmErrors(x,y,ex,ex,eyexp,eyexp);
 
-obsGraph        = ROOT.TGraphAsymmErrors(qobsX,qobsY,qobsErr,qobsErr,qobsErr,qobsErr);
+obsGraph        = ROOT.TGraph(qobsX,qobsY);
 #quantGraphData
 
 # create canvas
@@ -162,7 +167,7 @@ quantGraphExp.SetFillColor(ROOT.kBlack)
 
 obsGraph.SetFillColor(ROOT.kBlack)
 obsGraph.SetMarkerStyle(20)
-obsGraph.SetMarkerSize(2)
+obsGraph.SetMarkerSize(1)
 
 # draw as a multigraph
 totalGraph=ROOT.TMultiGraph()
@@ -233,5 +238,5 @@ CMS_lumi.CMS_lumi(c,4,0)
 # save plots
 c.Modified()
 c.Update()
-c.SaveAs(options.outdir+"quantiles_%s.pdf"%options.dist)
-c.SaveAs(options.outdir+"quantiles_%s.png"%options.dist)
+c.SaveAs(options.outdir+options.prepost+"quantiles_%s.pdf"%options.dist)
+c.SaveAs(options.outdir+options.prepost+"quantiles_%s.png"%options.dist)
