@@ -196,7 +196,7 @@ void Run5TeVAnalysis(TString inFileName,
     std::vector<float>* eleDz_p = 0;
     std::vector<float>* eleMissHits_p = 0;
     std::vector<float>* elepassConversionVeto_p = 0;
-    std::vector<float>* elePFChIso_p=0, *elePFPhoIso_p=0, *elePFNeuIso_p=0, *elePFPUIso_p=0;
+    std::vector<float>* elePFChIso_p=0, *elePFPhoIso_p=0, *elePFNeuIso_p=0, *elePFPUIso_p=0, *eleEffAreaTimesRho_p=0;
     std::vector<int>*   eleIDVeto_p=0;
     std::vector<int>*   eleIDLoose_p=0;
     std::vector<int>*   eleIDMedium_p=0;
@@ -218,6 +218,7 @@ void Run5TeVAnalysis(TString inFileName,
     lepTree_p->SetBranchStatus("elePFPhoIso", 1);
     lepTree_p->SetBranchStatus("elePFNeuIso", 1);
     lepTree_p->SetBranchStatus("elePFPUIso", 1);
+    lepTree_p->SetBranchStatus("eleEffAreaTimesRho", 1);
     lepTree_p->SetBranchStatus("eleID*", 1);
     lepTree_p->SetBranchStatus("eleCharge", 1);
     lepTree_p->SetBranchAddress("elePt", &elePt_p);
@@ -236,6 +237,7 @@ void Run5TeVAnalysis(TString inFileName,
     lepTree_p->SetBranchAddress("elePFPhoIso", &elePFPhoIso_p);
     lepTree_p->SetBranchAddress("elePFNeuIso", &elePFNeuIso_p);
     lepTree_p->SetBranchAddress("elePFPUIso", &elePFPUIso_p);
+    lepTree_p->SetBranchAddress("eleEffAreaTimesRho", &eleEffAreaTimesRho_p);
     lepTree_p->SetBranchAddress("eleIDVeto", &eleIDVeto_p);
     lepTree_p->SetBranchAddress("eleIDLoose", &eleIDLoose_p);
     lepTree_p->SetBranchAddress("eleIDMedium", &eleIDMedium_p);
@@ -430,25 +432,25 @@ void Run5TeVAnalysis(TString inFileName,
 			      && fabs(eleMissHits_p->at(elIter)) <= 3 
 			      && fabs(elepassConversionVeto_p->at(elIter)))
 			     );
-	    double deposit, db_isolation;
-	    deposit =  fabs(elePFPhoIso_p->at(elIter)+elePFNeuIso_p->at(elIter)-0.5*elePFPUIso_p->at(elIter));
-	    db_isolation = (elePFChIso_p->at(elIter) + TMath::Max (0.0, deposit )) / elePt_p->at(elIter);
+	    double deposit, corrEA_isolation;
+	    deposit =  fabs(elePFPhoIso_p->at(elIter)+elePFNeuIso_p->at(elIter)-eleEffAreaTimesRho_p->at(elIter));
+	    corrEA_isolation = (elePFChIso_p->at(elIter) + TMath::Max (0.0, deposit )) / elePt_p->at(elIter);
 
 	    //save electron if good
 	    TLorentzVector p4(0,0,0,0);
 	    p4.SetPtEtaPhiM(elePt_p->at(elIter),eleEta_p->at(elIter),elePhi_p->at(elIter), 0.0510);
 	        
-	    if (passMediumId && db_isolation > 0.2)
+	    if (passMediumId && corrEA_isolation > 0.2)
 	      {
 		mediumElectronsNonIso.push_back( p4 );
 		elCharge.push_back(eleCharge_p->at(elIter));
 	      }
-	    else if(passMediumId && db_isolation < 0.12)     
+	    else if(passMediumId && ( (corrEA_isolation < 0.0766 && fabs(eleEta_p->at(elIter)) <= 1.4479) || (corrEA_isolation < 0.0678 && fabs(eleEta_p->at(elIter)) > 1.4479) ))
 	      {
 		mediumElectrons.push_back( p4 );
 		elCharge.push_back(eleCharge_p->at(elIter));
 	      }
-	    else if (passVetoId && db_isolation<0.12) 
+	    else if (passVetoId && ( (corrEA_isolation < 0.126 && fabs(eleEta_p->at(elIter)) <= 1.4479) || (corrEA_isolation < 0.144 && fabs(eleEta_p->at(elIter)) > 1.4479) )) 
 	      {
 		vetoElectrons.push_back( p4 );
 		elCharge.push_back(eleCharge_p->at(elIter));
