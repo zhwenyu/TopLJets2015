@@ -19,9 +19,14 @@ def main():
     for p in plots:
         pname   = p.GetName()
         nomH    = plotter.Get('%s/%s_%s'%(pname,pname,tWnom))
-        nomH.SetDirectory(0)
         targetH = target_plotter.Get('%s/%s_%s'%(pname,pname,tWnom))
-        targetH.SetDirectory(0)
+
+        try:
+            nomH.SetDirectory(0)
+            targetH.SetDirectory(0)
+        except:
+            print 'Match not found for',pname
+            continue
 
         outDir = tW_syst_plotter.mkdir(pname)
         outDir.cd()
@@ -30,6 +35,18 @@ def main():
             systH.SetDirectory(outDir)
             systH.Divide(nomH)
             systH.Multiply(targetH)
+            for xbin in xrange(1,targetH.GetNbinsX()):
+                ynom,yvar=targetH.GetBinContent(xbin),systH.GetBinContent(xbin)
+                if ynom==0 and yvar==0 : continue
+                if ynom!=0 :
+                    relVar=yvar/ynom
+                    if ROOT.TMath.Abs(1-relVar)>=1: 
+                        relVar=0.001 if relVar<1 else 2.0
+                        print '[Warning]',yvar,'->',relVar*ynom,'|',ynom,'@ bin=',xbin,'for',pname
+                    systH.SetBinContent(xbin,relVar*ynom)
+                elif yvar!=0:
+                    print '[Warning]',yvar,'->',0,'@ bin=',xbin,'for',pname
+                    systH.SetBinContent(xbin,0)
             systH.Write()
         print pname
         tW_syst_plotter.cd()

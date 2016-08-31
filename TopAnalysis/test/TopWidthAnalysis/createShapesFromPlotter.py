@@ -680,20 +680,28 @@ def main():
                     if 'MEqcdscale' in systVar:
                         for igen in [3,5,6,4,8,10]:
                             dirForSyst=('gen%d%s%s%s_%s_'%(igen,lbCat,lfs,cat,dist))
-                            _,igenVarShapesDn = getMergedDists((systfIn if useAltShape else fIn),
-                                                        dirForSyst,
-                                                        (rawSignalList if opt.addSigs else None),
-                                                      ('top' if opt.addSigs else ''),
-                                                        widList,nomWid,signalList)
-                            for proc in igenVarShapesDn:
+                            _,igenVarShapes = getMergedDists((systfIn if useAltShape else fIn),
+                                                             dirForSyst,
+                                                             (rawSignalList if opt.addSigs else None),
+                                                             ('top' if opt.addSigs else ''),
+                                                             widList,nomWid,signalList)
+                            for proc in igenVarShapes:
                                 if proc not in genVarShapesDn:
-                                    name=igenVarShapesDn[proc].GetName()+'env'
-                                    genVarShapesDn[proc]=igenVarShapesDn[proc].Clone(name)
+                                    name=igenVarShapes[proc].GetName()+'envdn'
+                                    genVarShapesDn[proc]=exp[proc].Clone(name)
                                     genVarShapesDn[proc].SetDirectory(0)
-                                else:
-                                    for xbin in xrange(1,igenVarShapesDn[proc].GetNbinsX()+1):
-                                        y1,y2=genVarShapesDn[proc].GetBinContent(xbin),igenVarShapesDn[proc].GetBinContent(xbin)
-                                        genVarShapesDn[proc].SetBinContent(xbin,ROOT.TMath.Max(y1,y2))
+                                    name=igenVarShapes[proc].GetName()+'envup'
+                                    genVarShapesUp[proc]=exp[proc].Clone(name)
+                                    genVarShapesUp[proc].SetDirectory(0)
+                                for xbin in xrange(1,igenVarShapes[proc].GetNbinsX()+1):
+                                    yvar = igenVarShapes[proc].GetBinContent(xbin)
+                                    ydn  = genVarShapesDn[proc].GetBinContent(xbin)
+                                    yup  = genVarShapesUp[proc].GetBinContent(xbin)
+                                    if yvar>yup:
+                                        genVarShapesUp[proc].SetBinContent(xbin,yvar)
+                                    elif yvar<ydn:
+                                        genVarShapesDn[proc].SetBinContent(xbin,yvar)
+
                     #proceed as usual
                     else:
                         dirForSyst=('%sup%s%s%s_%s_'%(systVar,lbCat,lfs,cat,dist))
