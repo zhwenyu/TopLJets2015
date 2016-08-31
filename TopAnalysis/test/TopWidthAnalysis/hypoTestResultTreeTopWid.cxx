@@ -14,7 +14,7 @@ RooStats::HypoTestResult *readLepFile(TDirectory *toyDir,  double rValue) {
     TIter next(toyDir->GetListOfKeys()); 
     TKey *k;
     while ((k = (TKey *) next()) != 0) {
-        if (TString(k->GetName()).Index(prefix) != 0) continue;
+        //if (TString(k->GetName()).Index(prefix) != 0) continue;
         RooStats::HypoTestResult *toy = (RooStats::HypoTestResult *)(toyDir->Get(k->GetName()));
         if (toy == 0) continue;
         if (ret == 0) {
@@ -34,10 +34,9 @@ void hypoTestResultTreeTopWid(TString fOutName,
                               const char *lfs="",
                               TString wid="1p0w", 
                               const char *dist="mlb", 
-                              bool unblind = false) 
+                              bool unblind = false,
+                              TString prepost="") 
 {
-    if(wid == "1p0w") return;
-    
     if (gROOT->GetListOfFiles()->GetSize() == 0) {
         std::cerr << "ERROR: you have to open at least one root file" << std::endl;
     }
@@ -118,8 +117,8 @@ void hypoTestResultTreeTopWid(TString fOutName,
     /*
      * Outputting LaTeX table with useful statistics
      */
-    TH1D *hnullstat = new TH1D("hnullstat","Null Hypothesis",5000,-1000,1000);
-    TH1D *haltstat  = new TH1D("haltstat" ,"Alternate Hypothesis",5000,-1000,1000);
+    TH1D *hnullstat = new TH1D("hnullstat","Null Hypothesis",1000,-1000,1000);
+    TH1D *haltstat  = new TH1D("haltstat" ,"Alternate Hypothesis",1000,-1000,1000);
     
     tree->Draw("-2*q>>hnullstat","type>0","goff");
     tree->Draw("-2*q>>haltstat" ,"type<0","goff");
@@ -166,7 +165,7 @@ void hypoTestResultTreeTopWid(TString fOutName,
     // get CLs from file (highly specific to our analysis)
     // 
     Double_t clsObs,clsbObs,clbObs,
-             clsObsErr,clsbObsErr,clbObsErr;
+             clsObsErr,clsbObsErr,clbObsErr,qobs;
     if(unblind) {
         std::cout << " - getting CLs... " << std::endl;
         TDirectory *toyDir = ((TFile*) gROOT->GetListOfFiles()->At(0))->GetDirectory("toys");
@@ -184,6 +183,7 @@ void hypoTestResultTreeTopWid(TString fOutName,
         clsbObsErr = res->CLsplusbError();
         clbObs     = res->CLb();
         clbObsErr  = res->CLbError();
+        qobs       = res->GetTestStatisticData();
         std::cout << " - got CLs... " << std::endl;
     }
 
@@ -220,10 +220,10 @@ void hypoTestResultTreeTopWid(TString fOutName,
     //
     // store the information in a nice text file
     //
-    std::ofstream ofs(TString(TString("stats__")+wid+
-                                TString("_")+lfs+
-                                TString("_")+dist+
-                                TString(".txt")).Data(), 
+    std::ofstream ofs(TString(prepost+TString("stats__")+wid+
+                                      TString("_")+lfs+
+                                      TString("_")+dist+
+                                      TString(".txt")).Data(), 
                       std::ofstream::out);
     ofs << TMath::ErfInverse(separation)          << "$\\sigma$" << " # separation \n"
         << TMath::ErfInverse(nullExceededDensity) << "$\\sigma$" << " # null exceeded density \n"
@@ -237,7 +237,9 @@ void hypoTestResultTreeTopWid(TString fOutName,
     if(unblind) {
         ofs << clsObs  << " \\pm " << clsObsErr  << " # cls observed \n"
             << clbObs  << " \\pm " << clbObsErr  << " # clb observed \n"
-            << clsbObs << " \\pm " << clsbObsErr << " # clsb observed \n";
+            << clsbObs << " \\pm " << clsbObsErr << " # clsb observed \n"
+            << "qobs;" << qobs << "\n";
+
     }
 
     ofs << "nulquant;"; 
@@ -263,8 +265,8 @@ void hypoTestResultTreeTopWid(TString fOutName,
     Double_t plotMinMax = TMath::Max(TMath::Abs(gnull->GetParameter("Mean")-3*gnull->GetParameter(2)),
                                      TMath::Abs( galt->GetParameter("Mean")-3* galt->GetParameter(2)));
 
-    TH1D *hnull = new TH1D("hnull","Null Hypothesis",TMath::FloorNint(2*plotMinMax*100/40),-plotMinMax,plotMinMax);
-    TH1D *halt  = new TH1D("halt" ,"Alternate Hypothesis",TMath::FloorNint(2*plotMinMax*100/40),-plotMinMax,plotMinMax);
+    TH1D *hnull = new TH1D("hnull","Null Hypothesis",TMath::FloorNint(2*plotMinMax*100/40)/5,-plotMinMax,plotMinMax);
+    TH1D *halt  = new TH1D("halt" ,"Alternate Hypothesis",TMath::FloorNint(2*plotMinMax*100/40)/5,-plotMinMax,plotMinMax);
 
     tree->Draw("-2*q>>hnull","type>0","goff");
     tree->Draw("-2*q>>halt" ,"type<0","goff");
@@ -290,8 +292,8 @@ void hypoTestResultTreeTopWid(TString fOutName,
 
     CMS_lumi(c,4,0); 
     c->SetLeftMargin(c->GetLeftMargin()*1.5);
-    c->SaveAs(plotName+".pdf");
-    c->SaveAs(plotName+".png");
+    c->SaveAs(prepost+plotName+".pdf");
+    c->SaveAs(prepost+plotName+".png");
 
     /* 
      * Cleanup

@@ -17,8 +17,10 @@ parser = OptionParser(
 parser.add_option("-i",    type="string", dest="indir"  , default="./",     help="directory to look for stats files in")
 parser.add_option("-o",    type="string", dest="outdir" , default="./",     help="the base filename for the quantiles plot")
 parser.add_option("--dist",type="string", dest="dist"   , default="mlb",    help="the observable distribution to look at")
+parser.add_option("--prep",type="string", dest="prepost", default="post",   help="are we pre or post fit?")
 parser.add_option("--wid", type="string", dest="widList", default="0p5w,1p0w,1p5w,2p0w,2p5w,3p0w,3p5w,4p0w,4p5w,5p0w",
         help="a list of widths to look for in stats filenames")
+parser.add_option("--unblind",    action="store_true", dest="unblind",    default=False, help="Show the data information")
 parser.add_option("--recreateOut", dest="recreate", default=False, action="store_true")
 parser.add_option("--doAll", dest="doAll", default=False, action="store_true")
 
@@ -26,9 +28,7 @@ parser.add_option("--doAll", dest="doAll", default=False, action="store_true")
 
 # get lists to loop over
 rawWidList=options.widList.split(',')
-#rawWidList.remove('1p0w')
 
-rawSepGraphY = []
 
 distToTitle={
         "mlb": ("Inclusive M_{lb}",0.73,0.83),
@@ -48,6 +48,14 @@ statList={
         "CL$_s$^{\\rm obs.}$": {},
         }
 
+obsList={
+        "Separation": {},
+        "$P(q_{\\rm null}>q_{\\rm alt}^{\\rm median})$": {},
+        "$P(q_{\\rm alt}<q_{\\rm null}^{\\rm median})$": {},
+        "CL$_s$^{\\rm exp.}$": {},
+        "CL$_s$^{\\rm obs.}$": {},
+        }
+
 canvas=ROOT.TCanvas("","",800,600)
 canvas.cd()
 
@@ -58,18 +66,11 @@ if not options.doAll :
     # loop over widths, parse array info
     for wid in rawWidList :
         latexWid = wid.replace('p','.').replace('w','$\\times\\Gamma_{\\rm SM}$')
-        if "1.0" in latexWid :
-            statList["Separation"][latexWid]=0
-            rawSepGraphY += [0]
-            statList["CL$_s$^{\\rm exp.}$"][latexWid]=1
-            continue
 
-        statsFileName="%s/stats__%s__%s.txt"%(options.indir,wid,options.dist)
+        statsFileName="%s/%sstats__%s__%s.txt"%(options.indir,options.prepost,wid,options.dist)
         for line in open(statsFileName,"r"):
             if "separation" in line :
                statList["Separation"][latexWid]=line.split('#')[0]
-            if "sep" in line and not "separation" in line:
-                rawSepGraphY += [float(line.split('#')[0])]
             elif "null exceeded density" in line :
                statList["$P(q_{\\rm null}>q_{\\rm alt}^{\\rm median})$"][latexWid]=line.split('#')[0]
             elif "alt exceeded density" in line :
@@ -79,6 +80,29 @@ if not options.doAll :
             elif "cls observed" in line :
                statList["CL$_s$^{\\rm obs.}$"][latexWid]=line.split('#')[0]
             else : continue
+
+        if "1.0" in latexWid : # and options.prepost != "pre" :
+            statList["Separation"][latexWid]='0'
+            statList["CL$_s$^{\\rm exp.}$"][latexWid]='1'
+
+        if not options.unblind : continue
+        statsFileName="%s/obsstats__%s__%s.txt"%(options.indir,wid,options.dist)
+        for line in open(statsFileName,"r"):
+            if "separation" in line :
+               obsList["Separation"][latexWid]=line.split('#')[0]
+            elif "null exceeded density" in line :
+               obsList["$P(q_{\\rm null}>q_{\\rm alt}^{\\rm median})$"][latexWid]=line.split('#')[0]
+            elif "alt exceeded density" in line :
+               obsList["$P(q_{\\rm alt}<q_{\\rm null}^{\\rm median})$"][latexWid]=line.split('#')[0]
+            elif "cls expected" in line :
+               obsList["CL$_s$^{\\rm exp.}$"][latexWid]=line.split('#')[0]
+            elif "cls observed" in line :
+               obsList["CL$_s$^{\\rm obs.}$"][latexWid]=line.split('#')[0]
+            else : continue
+
+        if "1.0" in latexWid : #and options.prepost != "pre" :
+            obsList["Separation"][latexWid]='0'
+            obsList["CL$_s$^{\\rm obs.}$"][latexWid]='1 \pm 0'
 
     tabletex=open("%s/separationTable__%s.tex"%(options.outdir,options.dist), 'w')
 
@@ -115,11 +139,25 @@ if not options.doAll :
     x=ROOT.TVector(len(rawWidList))
     y=ROOT.TVector(len(rawWidList))
 
+    obsYArr=[float(obsList["CL$_s$^{\\rm obs.}$"][wid].split('\\pm')[0]) for wid in sorted([key for key in obsList["CL$_s$^{\\rm obs.}$"]])]
+    obsErrYArr=[float(obsList["CL$_s$^{\\rm obs.}$"][wid].split('\\pm')[1]) for wid in sorted([key for key in obsList["CL$_s$^{\\rm obs.}$"]])]
+    obsY=ROOT.TVector(len(rawWidList))
+    obsErrY=ROOT.TVector(len(rawWidList))
+    obsErrX=ROOT.TVector(len(rawWidList))
+
+    print ""
+    print obsYArr
+    print ""
+    print obsErrYArr
+
     for ix in xrange(0,len(xarr)):
         x[ix] = float(xarr[ix])
+        y[ix] = float(yarr[ix])
+        if not options.unblind: continue
+        obsY[ix]=obsYArr[ix]
+        obsErrY[ix]=obsErrYArr[ix]
+        obsErrX[ix]=0
 
-    for iy in xrange(0,len(yarr)):
-        y[iy] = float(yarr[iy])
 
 
     clsGr=ROOT.TGraph(x,y)
@@ -127,37 +165,32 @@ if not options.doAll :
     clsGr.GetYaxis().SetTitle("CL_{s}^{exp.}")
     clsGr.SetTitle("")
     clsGr.SetName("CLsExp_%s"%options.dist)
-
-    sepGraphY=ROOT.TVector(len(yarr))
-    for iy in xrange(0,len(yarr)) :
-        sepGraphY[iy] = rawSepGraphY[iy]
-
-    sepGr=ROOT.TGraph(x,sepGraphY)
-    sepGr.GetXaxis().SetTitle("Generator-level #Gamma_{t} [GeV]")
-    sepGr.GetYaxis().SetTitle("Separation")
-    sepGr.SetTitle("")
-    sepGr.SetName("Separation_%s"%options.dist)
-
-
-    #tpad1=ROOT.TPad("tpad1","",0,0,1,1)
-    #tpad2=ROOT.TPad("tpad2","",0,0,1,1)
-    #tpad2.SetFillStyle(4000)
-
-    ymin=0
-    ymax=2000
-    dy=(ymax-ymin)/0.8
-    xmin=-3
-    xmax=3
-    dx=(xmax-xmin)/0.8
-
     clsGr.GetXaxis().SetRangeUser(0,4)
     clsGr.GetYaxis().SetRangeUser(1e-05,1.1)
-    clsGr.Draw("ACP")
+    clsGr.Draw("AP")
+
+    tsp=ROOT.TSpline3("Spline%s%s"%(options.dist,options.prepost),clsGr)
+    tsp.SetName("Spline%s%s"%(options.dist,options.prepost))
+    if options.unblind :
+        tsp.SetLineStyle(ROOT.kDashed)
+        tsp.SetLineColor(ROOT.kBlack)
+        clsGr.SetMarkerStyle(1)
+        clsGr.SetMarkerColor(ROOT.kNone)
+    tsp.Draw("SAME")
+
 
     fout=ROOT.TFile("%s/statsPlots.root"%(options.outdir),"UPDATE" if not options.recreate else "RECREATE")
     fout.cd()
-    sepGr.Write()
-    clsGr.Write()
+    clsGr.Write("CLsGraph%s%s"%(options.dist,options.prepost))
+    tsp.Write("Spline%s%s"%(options.dist,options.prepost))
+    if options.unblind :
+        obsGr=ROOT.TGraphErrors(x,obsY,obsErrX,obsErrY)
+        obsGr.SetFillColor(ROOT.kGreen)
+        obsGr.Draw("P")
+        obsGr.Write()
+        osp=ROOT.TSpline3("SplineObs%s"%options.dist,obsGr)
+        osp.Draw("SAME")
+        osp.Write("SplineObs%s"%options.dist)
     fout.Close()
 
     # draw dist information if available
@@ -174,8 +207,8 @@ if not options.doAll :
         TMassInfo.SetTextSize(0.03)
         TMassInfo.Draw()
 
-    CMS_lumi.relPosX = 0.180
-    CMS_lumi.extraText = "Simulation Preliminary"
+    CMS_lumi.relPosX = 0.190
+    CMS_lumi.extraText = "Preliminary" if options.unblind else "Simulation Preliminary"
     CMS_lumi.extraOverCmsTextSize=0.50
     CMS_lumi.lumiTextSize = 0.55
     l=ROOT.TLine()
@@ -190,8 +223,15 @@ if not options.doAll :
     canvas.SetGrid(True)
     CMS_lumi.CMS_lumi(canvas,4,0)
 
-    canvas.SaveAs("%s/CLsPlot__%s.png"%(options.outdir,options.dist))
-    canvas.SaveAs("%s/CLsPlot__%s.pdf"%(options.outdir,options.dist))
+    canvas.SaveAs("%s/%sCLsPlot__%s.png"%(options.outdir,options.prepost,options.dist))
+    canvas.SaveAs("%s/%sCLsPlot__%s.pdf"%(options.outdir,options.prepost,options.dist))
+
+
+
+
+###################################################################
+# MAKE A PLOT FOR ALL STRATEGIES
+###################################################################
 
 if options.doAll :
 
@@ -205,18 +245,11 @@ if options.doAll :
         # loop over widths, parse array info
         for wid in rawWidList :
             latexWid = wid.replace('p','.').replace('w','$\\times\\Gamma_{\\rm SM}$')
-            if "1.0" in latexWid :
-                statList["Separation"][latexWid]=0
-                rawSepGraphY += [0]
-                statList["CL$_s$^{\\rm exp.}$"][latexWid]=1
-                continue
 
             statsFileName="%s/stats__%s__%s.txt"%(options.indir,wid,dist)
             for line in open(statsFileName,"r"):
                 if "separation" in line :
                    statList["Separation"][latexWid]=line.split('#')[0]
-                if "sep" in line and not "separation" in line:
-                    rawSepGraphY += [float(line.split('#')[0])]
                 elif "null exceeded density" in line :
                    statList["$P(q_{\\rm null}>q_{\\rm alt}^{\\rm median})$"][latexWid]=line.split('#')[0]
                 elif "alt exceeded density" in line :
@@ -272,18 +305,6 @@ if options.doAll :
         clsGr.GetYaxis().SetTitle("CL_{s}^{exp.}")
         clsGr.SetTitle("")
         clsGr.SetName("CLsExp_%s"%dist)
-
-        sepGraphY=ROOT.TVector(len(yarr))
-        for iy in xrange(0,len(yarr)) :
-            sepGraphY[iy] = rawSepGraphY[iy]
-
-        sepGr=ROOT.TGraph(x,sepGraphY)
-        sepGr.GetXaxis().SetTitle("Generator-level #Gamma_{t} [GeV]")
-        sepGr.GetYaxis().SetTitle("Separation")
-        sepGr.SetTitle("")
-        sepGr.SetName("Separation_%s"%dist)
-
-        graphs["Separation_%s"%dist]=sepGr
         graphs["CLsExp_%s"%dist]=clsGr
 
     setTDRStyle()
@@ -321,7 +342,7 @@ if options.doAll :
 
     l2=ROOT.TLine()
     l2.SetLineColor(ROOT.kRed)
-    l2.DrawLine(1.3,0.10,4.08,0.10)
+    l2.DrawLine(1.3,0.01,4.08,0.01)
     clsLeg.Draw()
 
 
@@ -332,26 +353,4 @@ if options.doAll :
     CMS_lumi.CMS_lumi(canvas,4,0)
     canvas.SaveAs("%s/CLsPlot.png"%(options.outdir))
     canvas.SaveAs("%s/CLsPlot.pdf"%(options.outdir))
-
-
-    canvas.Clear()
-
-    i=0
-    sepLeg=ROOT.TLegend(.65,.15,.85,.45)
-    for dist in options.dist.split(',') :
-        tgr=graphs["Separation_%s"%dist]
-        tgr.SetLineColor(ROOT.kRed+i)
-        tgr.SetMarkerStyle(ROOT.kNone)
-
-        clsLeg.AddEntry(tgr,distToTitle[dist][0],"L")
-
-        tgr.Draw("SAME AL" if i>0 else "AL")
-
-        i+=1
-
-
-    CMS_lumi.CMS_lumi(canvas,4,0)
-    canvas.SetLogy(True)
-    canvas.SaveAs("%s/SeparationPlot.png"%(options.outdir))
-    canvas.SaveAs("%s/SeparationPlot.pdf"%(options.outdir))
 
