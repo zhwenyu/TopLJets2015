@@ -375,24 +375,6 @@ void Run5TeVAnalysis(TString inFileName,
 	    else if(passLooseKin && passLooseId && passLooseIso) looseMuons.push_back( p4 );
 	  }
   
-	//select the muon
-	if(channelSelection==1300)
-	  {
-	    if(tightMuons.size()!=0 || looseMuons.size()!=0) continue;
-	    if(tightMuonsNonIso.size()==0) continue;
-	    tightMuons=tightMuonsNonIso;
-	  }
-	if(channelSelection==13)
-	  {
-	    if(tightMuons.size()!=1) continue; //=1 tight muon
-	    if(looseMuons.size()) continue;    //no extra muons
-	    if(chargeSelection!=0)
-	      {
-		if(muonCharge[0]!=chargeSelection) continue;
-	      }
-	  }
-
-
 
 	//select good electronss
 	//cf. details in https://twiki.cern.ch/twiki/bin/view/CMS/CutBasedElectronIdentificationRun2
@@ -466,16 +448,18 @@ void Run5TeVAnalysis(TString inFileName,
 		mediumElectrons.push_back( p4 );
 		elCharge.push_back(eleCharge_p->at(elIter));
 	      }
-	    else if (passVetoId) 
+	    else if (passVetoId && db_isolation<0.12) 
 	      {
 		vetoElectrons.push_back( p4 );
 		elCharge.push_back(eleCharge_p->at(elIter));
 	      }
 	  }
 	
+	//perform the channel selection
+	if(!trig) continue;
 	if(channelSelection==1300)
 	  {
-	    if(tightMuons.size()!=0 || looseMuons.size()!=0) continue;
+	    if(tightMuons.size()!=0 || looseMuons.size()!=0 || mediumElectrons.size()!=0 || vetoElectrons.size()!=0) continue;
 	    if(tightMuonsNonIso.size()==0) continue;
 	    tightMuons=tightMuonsNonIso;
 	  }
@@ -483,6 +467,7 @@ void Run5TeVAnalysis(TString inFileName,
 	  {
 	    if(tightMuons.size()!=1) continue; //=1 tight muon
 	    if(looseMuons.size()) continue;    //no extra muons
+	    if(mediumElectrons.size()+vetoElectrons.size()!=0) continue; //no extra electrons
 	    if(chargeSelection!=0)
 	      {
 		if(muonCharge[0]!=chargeSelection) continue;
@@ -492,7 +477,7 @@ void Run5TeVAnalysis(TString inFileName,
 	//select the electron
 	if(channelSelection==1100)
 	  {
-	    if(mediumElectrons.size()!=0 || vetoElectrons.size()!=0) continue;
+	    if(mediumElectrons.size()!=0 || vetoElectrons.size()!=0 || tightMuons.size()!=0 || looseMuons.size()!=0) continue;
 	    if(mediumElectronsNonIso.size()==0) continue;
 	    mediumElectrons=mediumElectronsNonIso;
 	  }
@@ -500,27 +485,12 @@ void Run5TeVAnalysis(TString inFileName,
 	  {
 	    if(mediumElectrons.size()!=1) continue; //=1 medium electron
 	    if(vetoElectrons.size()>0) continue;    //no extra electrons
+	    if(tightMuons.size()+looseMuons.size()!=0) continue; //no extra muons
 	    if(chargeSelection!=0)
 	      {
 		if(elCharge[0]!=chargeSelection) continue;
 	      }
 	  }
-
-	/*
-	//check for extra electrons in the event (veto id is used)
-	//see https://twiki.cern.ch/twiki/bin/view/CMS/CutBasedElectronIdentificationRun2#Spring15_selection_25ns (electron id)
-	Int_t nLooseEle(0);
-	const Int_t nEle = (Int_t)elePt_p->size();
-	for(Int_t eleIter = 0; eleIter < nEle; eleIter++)
-	  {
-	    
-	    if(TMath::Abs(elePt_p->at(eleIter)) < 20)  continue;
-	    if(TMath::Abs(eleEta_p->at(eleIter)) > 2.5) continue;
-	    if(eleIDVeto_p->at(eleIter)==0) continue;
-	    nLooseEle++;
-	  }
-	if(nLooseEle>0) continue;
-	*/ // the par within /**/ becomes redundant
 
 	//raw MET (noHF)
 	TLorentzVector rawMET(0,0,0,0);	
