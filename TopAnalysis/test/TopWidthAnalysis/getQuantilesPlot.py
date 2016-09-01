@@ -40,12 +40,12 @@ if options.aoverList != "" and len(axisLabels)*2 != nPoints :
     quit()
 
 distToTitle={
-        "mlb": ("Minimum M_{lb}",0.185,0.23),
-        "minmlb": ("Minimum M_{lb}",0.185,0.23),
-        "mdrmlb": ("#DeltaR-Filtered M_{lb}",0.185,0.23),
-        "incmlb": ("Inclusive M_{lb}",0.185,0.23),
-        "sncmlb": ("Semi-Inclusive M_{lb}",0.185,0.23),
-        "mt2mlb": ("M_{T2}^{lb} Strategy",0.185,0.23)
+        "mlb": ("Minimum M_{lb}",0.235,0.23),
+        "minmlb": ("Minimum M_{lb}",0.235,0.23),
+        "mdrmlb": ("#DeltaR-Filtered M_{lb}",0.235,0.23),
+        "incmlb": ("Inclusive M_{lb}",0.235,0.23),
+        "sncmlb": ("Semi-Inclusive M_{lb}",0.235,0.23),
+        "mt2mlb": ("M_{T2}^{lb} Strategy",0.235,0.23)
        }
 
 x    =ROOT.TVector(nPoints)
@@ -187,18 +187,19 @@ if options.unblind :
 # draw dist information if available
 if options.dist in [key for key in distToTitle] :
     DistInfo,xpos,ypos=distToTitle[options.dist]
+    if not options.unblind : xpos -= 0.05
     DistLaTeX=ROOT.TLatex(xpos,ypos, DistInfo)
     DistLaTeX.SetNDC(ROOT.kTRUE)
     DistLaTeX.SetTextSize(0.04)
-    DistLaTeX.Draw()
+#    DistLaTeX.Draw()
 
     widthInfo=""
     if options.labelWidth :
         widthInfo=", #Gamma_{t}=%s#times#Gamma_{SM}"%(rawWidList[0].replace('p','.').replace('w',''))
-    TMassInfo=ROOT.TLatex(.185,.185,"m_{t} = 172.5 GeV%s"%(widthInfo))
+    TMassInfo=ROOT.TLatex(.235-(0 if options.unblind else 0.05),.185,"m_{t} = 172.5 GeV%s"%(widthInfo))
     TMassInfo.SetNDC(ROOT.kTRUE)
     TMassInfo.SetTextSize(0.03)
-    TMassInfo.Draw()
+#    TMassInfo.Draw()
 
 
 # set the bin and axis labels
@@ -218,22 +219,31 @@ yax.SetTitle("-2 #times ln(L_{alt}/L_{null})")
 yax.SetTitleOffset(1.1);
 
 # add legend
-leg=ROOT.TLegend(0.17,0.59,0.32,0.88)
+leg=ROOT.TLegend((0.37 if options.unblind else 0.17),0.73,(0.67 if options.unblind else 0.47),0.88)
+leg.SetNColumns(2)
 leg.AddEntry(quantGraph1sigN,"Null, 1#sigma","f")
-leg.AddEntry(quantGraph2sigN,"Null, 2#sigma","f")
-leg.AddEntry(quantGraph3sigN,"Null, 3#sigma","f")
 leg.AddEntry(quantGraph1sigA,"Alt,  1#sigma","f")
+leg.AddEntry(quantGraph2sigN,"Null, 2#sigma","f")
 leg.AddEntry(quantGraph2sigA,"Alt,  2#sigma","f")
+leg.AddEntry(quantGraph3sigN,"Null, 3#sigma","f")
 leg.AddEntry(quantGraph3sigA,"Alt,  3#sigma","f")
 leg.AddEntry(quantGraphExp  ,"Median"       ,"l")
 if options.unblind:
     leg.AddEntry(obsGraph, "Data", "p")
 
+leg.SetBorderSize(0)
+leg.SetFillStyle(0)
+leg.SetTextFont(42)
 leg.Draw()
 
-CMS_lumi.relPosX = 0.180
+CMS_lumi.relPosX = 0.180 if options.unblind else 0.170
+CMS_lumi.extraText = "Preliminary" if options.unblind else "Simulation Preliminary"
 CMS_lumi.lumiTextSize = 0.55
+CMS_lumi.extraOverCmsTextSize=0.90 if options.unblind else 0.60
 CMS_lumi.CMS_lumi(c,4,0)
+leg.SetBorderSize(0) # TODO redundant?
+leg.SetFillStyle(0)
+leg.SetTextFont(42)
 
 # save plots
 c.Modified()

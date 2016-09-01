@@ -417,6 +417,7 @@ case $WHAT in
         eval `scramv1 runtime -sh` 
 
         cd ${outdir}
+        rm statsPlots.root
         for dist in ${dists[*]} ; do
 
             # Quantiles plot with post-fit information 
@@ -424,8 +425,7 @@ case $WHAT in
                 -i ${outdir}/ -o ${outdir}/ \
                 --wid ${widStr} \
                 --dist ${dist}  \
-                --prep pre \
-                --unblind
+                --prep pre
 
             # Quantiles plot with post-fit information 
             python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getQuantilesPlot.py \
@@ -448,8 +448,7 @@ case $WHAT in
                 -i ${outdir}/ -o ${outdir}/ \
                 --wid ${widStr} \
                 --prep pre \
-                --dist ${dist} \
-                --unblind
+                --dist ${dist}
             
             # Get CLs plots for post-fit expectations 
             python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getSeparationTables.py\
@@ -467,11 +466,10 @@ case $WHAT in
                 --prep obs \
                 --unblind
 
-            python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getCLsFromFit.py \
-                -i ${outdir}/ \
-                --dist ${dist} \
-                --prep pre \
-                --unblind
+            #python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getCLsFromFit.py \
+            #    -i ${outdir}/ \
+            #    --dist ${dist} \
+            #    --prep pre
 
             python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getCLsFromFit.py \
                 -i ${outdir}/ \

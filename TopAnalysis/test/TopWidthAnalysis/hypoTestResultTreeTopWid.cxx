@@ -263,7 +263,7 @@ void hypoTestResultTreeTopWid(TString fOutName,
     std::cout << "Creating plots" << std::endl;
 
     Double_t plotMinMax = TMath::Max(TMath::Abs(gnull->GetParameter("Mean")-3*gnull->GetParameter(2)),
-                                     TMath::Abs( galt->GetParameter("Mean")-3* galt->GetParameter(2)));
+                                     TMath::Abs( galt->GetParameter("Mean")-3* galt->GetParameter(2)))*1.2;
 
     TH1D *hnull = new TH1D("hnull","Null Hypothesis",TMath::FloorNint(2*plotMinMax*100/40)/5,-plotMinMax,plotMinMax);
     TH1D *halt  = new TH1D("halt" ,"Alternate Hypothesis",TMath::FloorNint(2*plotMinMax*100/40)/5,-plotMinMax,plotMinMax);
@@ -277,12 +277,14 @@ void hypoTestResultTreeTopWid(TString fOutName,
     hnull->GetXaxis()->SetTitleSize(0.04);
     hnull->GetXaxis()->SetTitleOffset(1.2);
     hnull->GetYaxis()->SetTitle("Pseudoexperiments");
+    hnull->GetYaxis()->SetTitle("Pseudoexperiments");
+    hnull->SetMaximum(hnull->GetMaximum()*1.4);
     halt->SetLineColor(kOrange);
     halt->SetStats(false);
     hnull->Draw();
     halt->Draw("SAME");
 
-    TLegend *leg = new TLegend(0.7,0.8,0.88,0.88);
+    TLegend *leg = new TLegend(0.65,0.75,0.88,0.88);
     leg->AddEntry(hnull,TString("#Gamma_{SM} Hypothesis"),"L");
     leg->AddEntry(halt,TString(wid).ReplaceAll("p",".").ReplaceAll("w","")+TString("#times#Gamma_{SM} Hypothesis"),"L");
     leg->Draw();
