@@ -24,6 +24,7 @@ export LSB_JOB_REPORT_MAIL=N
 queue=2nw
 githash=8db9ad6
 lumi=12870
+lumiSpecs="--lumiSpecs EE:11391"
 lumiUnc=0.062
 whoami=`whoami`
 myletter=${whoami:0:1}
@@ -33,6 +34,7 @@ case $ERA in
     era2015)
 	githash=8c1e7c9;
 	lumi=2267.84
+	lumiSpecs=""
 	lumiUnc=0.027
 	eosdir=/store/cmst3/user/psilva/LJets2015/${githash}
 	summaryeosdir=/store/cmst3/group/top/summer2016/TopWidth_${ERA}_notrig 
@@ -54,7 +56,7 @@ case $WHAT in
 	./scripts/mergeOutputs.py ${outdir} True;	
 	;;
     PLOTSEL )
-	python scripts/plotter.py -i ${outdir} --puNormSF puwgtctr  -j data/${ERA}/samples.json -l ${lumi} --saveLog --mcUnc ${lumiUnc};	
+	python scripts/plotter.py -i ${outdir} --puNormSF puwgtctr  -j data/${ERA}/samples.json -l ${lumi} ${lumiSpecs} --saveLog --mcUnc ${lumiUnc};	
 	;;
     WWWSEL )
 	mkdir -p ${wwwdir}/sel
@@ -68,19 +70,19 @@ case $WHAT in
 	./scripts/mergeOutputs.py ${outdir}/analysis;
 	;;
     BKG )
-	python scripts/plotter.py -i ${outdir}/analysis  -j data/${ERA}/samples.json  -l ${lumi} --onlyData --only mll -o dy_plotter.root;        
+	python scripts/plotter.py -i ${outdir}/analysis  -j data/${ERA}/samples.json  -l ${lumi} ${lumiSpecs} --onlyData --only mll -o dy_plotter.root;        
 	python scripts/runDYRinRout.py --in ${outdir}/analysis/plots/dy_plotter.root --categs 1b,2b --out ${outdir}/analysis/plots/;
 	;;
     PLOT )
-	python scripts/plotter.py -i ${outdir}/analysis  -j data/${ERA}/samples.json      -l ${lumi} --mcUnc ${lumiUnc} --only count --saveTeX -o count_plotter.root --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck; 
-	python scripts/plotter.py -i ${outdir}/analysis  -j data/${ERA}/samples.json      -l ${lumi} --mcUnc ${lumiUnc} --only njets,ptlb -o njets_plotter.root --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck; 
-        python scripts/plotter.py -i ${outdir}/analysis  -j data/${ERA}/samples.json      -l ${lumi} --mcUnc ${lumiUnc} --onlyData --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck &
-	python scripts/plotter.py -i ${outdir}/analysis  -j data/${ERA}/syst_samples.json -l ${lumi} --mcUnc ${lumiUnc} --silent -o syst_plotter.root;
+	python scripts/plotter.py -i ${outdir}/analysis  -j data/${ERA}/samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --only count --saveTeX -o count_plotter.root --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck; 
+	python scripts/plotter.py -i ${outdir}/analysis  -j data/${ERA}/samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --only njets,ptlb -o njets_plotter.root --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck; 
+        python scripts/plotter.py -i ${outdir}/analysis  -j data/${ERA}/samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --onlyData --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck &
+	python scripts/plotter.py -i ${outdir}/analysis  -j data/${ERA}/syst_samples.json -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --silent -o syst_plotter.root;
 	case $ERA in
 	    era2016)
 		mv ${outdir}/analysis/plots/syst_plotter.root ${outdir}/analysis/plots/syst_plotter_orig.root
 		python test/TopWidthAnalysis/createtWShapeUncs.py ~/work/TopWidth_era2015/analysis/plots/plotter.root ~/work/TopWidth_era2015/analysis/plots/syst_plotter.root  ${outdir}/analysis/plots/plotter.root;
-		hadd ${outdir}/analysis/plots/syst_plotter.root tW_syst_plotter.root ${outdir}/analysis/plots/orig_syst_plotter.root 
+		hadd ${outdir}/analysis/plots/syst_plotter.root tW_syst_plotter.root ${outdir}/analysis/plots/syst_plotter_orig.root 
 		mv tW_syst_plotter.root ${outdir}/analysis/plots/tW_syst_plotter.root;	       
 	esac
 	#combined plots
