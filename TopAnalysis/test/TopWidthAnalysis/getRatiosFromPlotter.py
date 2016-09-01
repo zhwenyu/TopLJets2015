@@ -174,12 +174,14 @@ def main():
 
         obsHists={}
         obsFits={}
+        xFits={}
 
         i=1
         for obs in obsList :
             obsHists[obs]={}
             obsHists[obs]["1x"]=None
             obsHists[obs]["4x"]=None
+            obsHists[obs]["Nom"]=None
             for (iptC,ich,ibc) in [(iptC,ich,ibc)
                     for iptC in range(len(ptChList))
                     for ich  in range(len(chList))
@@ -190,7 +192,12 @@ def main():
                 bc  = bcatList[ibc]
 
                 wgtHist=wgtFin.Get("%s%s%s_%s_%sw/%s%s%s_%s_%sw_%s"%(ptC,ch,bc,obs,wid,ptC,ch,bc,obs,wid,sig)).Clone()
+                xHist=wgtFin.Get("%s%s%s_%s_1.0w/%s%s%s_%s_1.0w_%s"%(ptC,ch,bc,obs,ptC,ch,bc,obs,sig)).Clone()
                 divHist=divFin.Get("%s%s%s_%s_%sw/%s%s%s_%s_%sw_%s widthx4"%(ptC,ch,bc,obs,divWid,ptC,ch,bc,obs,divWid,sig)).Clone()
+
+                wgtHist.SetDirectory(0)
+                xHist.SetDirectory(0)
+                divHist.SetDirectory(0)
 
                 if obsHists[obs]["1x"] is None :
                     obsHists[obs]["1x"]=wgtHist
@@ -202,26 +209,43 @@ def main():
                 else :
                     obsHists[obs]["4x"].Add(divHist)
 
+                if obsHists[obs]["Nom"] is None :
+                    obsHists[obs]["Nom"]=xHist
+                else :
+                    obsHists[obs]["Nom"].Add(xHist)
+
             miniCanvas.cd(i)
             ROOT.gPad.SetGrid(1,1)
             ROOT.gPad.SetBottomMargin(ROOT.gPad.GetBottomMargin()*1.5)
             ROOT.gStyle.SetOptFit(0)
-            totObsHist=obsHists[obs]["4x"]
-            totObsHist.Divide(obsHists[obs]["1x"])
-            totObsHist.GetYaxis().SetTitle("Events / Reweighted Events")
+            totObsHist=obsHists[obs]["1x"]
+            totObsHist.SetDirectory(0)
+            totObsHist.Divide(obsHists[obs]["4x"])
+            totObsHist.GetYaxis().SetTitle("1#timesSM Events / 4#times Events")
             totObsHist.GetYaxis().SetTitleSize(0.065)
             totObsHist.GetYaxis().SetRangeUser(0.7,1.3)
             totObsHist.GetXaxis().SetTitleSize(0.065)
             totObsHist.SetTitle("")
             totObsHist.SetMarkerColor(ROOT.kBlack)
-
             totObsHist.Draw()
+
+            xObsHist=obsHists[obs]["Nom"]
+            xObsHist.SetDirectory(0)
+            xObsHist.Divide(obsHists[obs]["4x"])
+            xObsHist.SetMarkerStyle(25)
+            xObsHist.SetMarkerColor(ROOT.kRed)
+            xObsHist.Draw("SAME")
 
             print '\n',obs
             obsFits[obs]=ROOT.TF1(obs,"pol1",0,300)
-            obsFits[obs].SetLineColor(ROOT.kRed)
+            obsFits[obs].SetLineColor(ROOT.kBlack)
             totObsHist.Fit(obsFits[obs])
             obsFits[obs].Draw("SAME")
+
+            xFits[obs]=ROOT.TF1("1x"+obs,"pol1",0,300)
+            xFits[obs].SetLineColor(ROOT.kRed)
+            xObsHist.Fit(xFits[obs])
+            xFits[obs].Draw("SAME")
 
             info.SetTextSize(0.06)
             info.DrawLatexNDC(0.20,0.95,"%s"%(obs))
@@ -229,6 +253,7 @@ def main():
 
 
         miniCanvas.SaveAs("%s/DistGrid_%s_%s.pdf"%(outDir,sig,wid.replace('#','').replace('{','').replace('}','')))
+        miniCanvas.SaveAs("%s/DistGrid_%s_%s.png"%(outDir,sig,wid.replace('#','').replace('{','').replace('}','')))
 
     print '-'*50
     print 'Plots and summary ROOT file can be found in %s' % outDir

@@ -154,15 +154,19 @@ def saveToShapesFile(outFile,shapeColl,directory=''):
 """
 make an MC truth dataset (sigs+bkgs)
 """
-def makeMCTruthHist(hypothesis,sigList,dists,infile=None,dirhandle=""):
+def makeMCTruthHist(hypothesis,sigList,dists,infile=None,dirhandle="",filtername=""):
     outputHist=None
     firstLoop=True
     print "Producing MC Truth data for hypothesis %s"%hypothesis
 
     tdists=dists.copy()
 
-    if dirhandle != "" or infile is None :
-        _,tdists=getMergedDists(infile,dirhandle,None,"",[hypothesis],"1.0w",sigList)
+    #replace with whatever we find in the provided dir
+    if dirhandle != "" and infile is not None and filtername != "":
+        _,pdists=getMergedDists(infile,dirhandle,None,"",[hypothesis.replace('p','.')],"1.0w",sigList)
+        for key in pdists :
+            if filtername not in key : continue
+            tdists[key.replace(filtername,'')+hypothesis] = pdists[key].Clone()
 
     for sig in sigList :
         sigHist=tdists["%s%s"%(sig,hypothesis)].Clone()
@@ -174,10 +178,12 @@ def makeMCTruthHist(hypothesis,sigList,dists,infile=None,dirhandle=""):
     for dist in tdists :
         isSig=False
         for sig in sigList :
-            if sig in dist : isSig=True
+            if sig in dist and 'V' not in dist: isSig=True
         if isSig : continue
         bkgHist=tdists[dist].Clone()
-        outputHist.Add(sigHist)
+        outputHist.Add(bkgHist)
+        outputHist.SetName("data_obs")
+
     return outputHist
 
 """
@@ -364,8 +370,9 @@ def main():
 
         if not opt.truthDataset=="" :
             obs=makeMCTruthHist(opt.truthDataset,signalList,exp,
-                    (systfIn if opt.truthExtDataset != "" else None),
-                    ('%s%s%s%s_%s_'%(opt.truthExtDataset,lbCat,lfs,cat,dist)))
+                    (systfIn if opt.truthExtDataset != '' else None),
+                    ('%s%s%s_%s_'%(lbCat,lfs,cat,dist)),
+                    opt.truthExtDataset)
         #exp=filterShapeList(exp,signalList,rawSignalList)
 
         nomShapes=exp.copy()
@@ -420,7 +427,7 @@ def main():
             for proc in exp:
                 isSig=False
                 for sig in modWidList :
-                    if sig in proc : isSig=True
+                    if sig in proc and 'V' not in proc: isSig=True
                 if isSig : continue
                 datacard.write('%15s'%proc)
             datacard.write('\n')
@@ -430,7 +437,7 @@ def main():
             for proc in exp:
                 isSig=False
                 for sig in modWidList :
-                    if sig in proc : isSig=True
+                    if sig in proc and 'V' not in proc: isSig=True
                 if isSig : continue
                 i=i+1
                 datacard.write('%15s'%str(i))
@@ -443,7 +450,7 @@ def main():
             for proc in exp:
                 isSig=False
                 for sig in modWidList :
-                    if sig in proc : isSig=True
+                    if sig in proc and 'V' not in proc: isSig=True
                 if isSig : continue
                 datacard.write('%15s'%('%3.2f'%exp[proc].Integral()))
             datacard.write('\n')
@@ -483,7 +490,7 @@ def main():
                 for proc in exp:
                     isSig=False
                     for sig in modWidList :
-                        if sig in proc : isSig=True
+                        if sig in proc and 'V' not in proc: isSig=True
                     if isSig : continue
                     if (len(whiteList)==0 and not proc in blackList) or proc in whiteList:
                         datacard.write(entryTxt)
@@ -605,7 +612,7 @@ def main():
                 for proc in exp:
                     isSig=False
                     for sig in modWidList :
-                        if sig in proc : isSig=True
+                        if sig in proc and 'V' not in proc: isSig=True
                     if isSig : continue
                     if proc in procsToApply and proc in upShapes:
                         if "Mtop" in systVar:
@@ -796,7 +803,7 @@ def main():
                 for proc in exp:
                     isSig=False
                     for sig in modWidList :
-                        if sig in proc : isSig=True
+                        if sig in proc and 'V' not in proc: isSig=True
                     if isSig : continue
                     if proc in upShapes:
                         datacard.write('%15s'%'1')
@@ -820,7 +827,7 @@ def main():
                     for proc in exp:
                         isSig=False
                         for sig in modWidList :
-                            if sig in proc : isSig=True
+                            if sig in proc and 'V' not in proc: isSig=True
                         if isSig : continue
                         if proc in extraRateSyst:
                             datacard.write('%15s'%('%3.3f'%extraRateSyst[proc]))
@@ -1060,7 +1067,7 @@ def main():
                 if not accept : continue
 
                 #save
-                if sig in iproc :
+                if sig in iproc and 'V' not in iproc:
                     downShapes[systVar][iproc]=downH
                     upShapes[systVar][iproc]=upH
 
@@ -1593,7 +1600,7 @@ def main():
         for proc in exp:
             isSig=False
             for sig in modWidList :
-                if sig in proc : isSig=True
+                if sig in proc and 'V' not in proc: isSig=True
             if isSig : continue
             datacard.write('shapes %10s * shapes.root %s%s%s_%s/$PROCESS %s%s%s_%s_$SYSTEMATIC/$PROCESS\n'%(proc,lbCat,ch,cat,dist,lbCat,ch,cat,dist))
 
@@ -1618,7 +1625,7 @@ def main():
         for proc in exp:
             isSig=False
             for sig in modWidList :
-                if sig in proc : isSig=True
+                if sig in proc and 'V' not in proc: isSig=True
             if isSig : continue
             datacard.write('%15s'%proc)
         datacard.write('\n')
@@ -1628,7 +1635,7 @@ def main():
         for proc in exp:
             isSig=False
             for sig in modWidList :
-                if sig in proc : isSig=True
+                if sig in proc and 'V' not in proc: isSig=True
             if isSig : continue
             i=i+1
             datacard.write('%15s'%str(i))
@@ -1639,7 +1646,7 @@ def main():
         for proc in exp:
             isSig=False
             for sig in modWidList :
-                if sig in proc : isSig=True
+                if sig in proc and 'V' not in proc: isSig=True
             if isSig : continue
             datacard.write('%15s'%('%3.2f'%exp[proc].Integral()))
         datacard.write('\n')
@@ -1665,7 +1672,7 @@ def main():
             for proc in exp:
                 isSig=False
                 for sig in modWidList :
-                    if sig in proc : isSig=True
+                    if sig in proc and 'V' not in proc: isSig=True
                 if isSig : continue
                 if (len(whiteList)==0 and not proc in blackList) or proc in whiteList:
                     datacard.write(entryTxt)
