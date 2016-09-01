@@ -24,7 +24,8 @@ def main():
     parser.add_option(      '--onlyData',    dest='onlyData' ,   help='only plots containing data',     default=False,             action='store_true')
     parser.add_option(      '--saveTeX',     dest='saveTeX' ,    help='save as tex file as well',       default=False,             action='store_true')
     parser.add_option(      '--rebin',       dest='rebin',       help='rebin factor',                   default=1,                 type=int)
-    parser.add_option('-l', '--lumi',        dest='lumi' ,       help='lumi to print out',              default=41.6,              type=float)
+    parser.add_option('-l', '--lumi',        dest='lumi' ,       help='lumi to print out',              default=12900,              type=float)
+    parser.add_option(      '--lumiSpecs',   dest='lumiSpecs',   help='lumi specifications for some channels [tag:lumi,tag2:lumi2,...]', default=None,       type=str)
     parser.add_option(      '--only',        dest='only',        help='plot only these (csv)',          default='',                type='string')
     parser.add_option(      '--puNormSF',    dest='puNormSF',    help='Use this histogram to correct pu weight normalization', default=None, type='string')
     parser.add_option(      '--procSF',      dest='procSF',      help='Use this to scale a given process component e.g. "W":.wjetscalefactors.pck,"DY":dyscalefactors.pck', default=None, type='string')
@@ -44,6 +45,12 @@ def main():
     except:
         pass
 
+    #lumi specifications per tag
+    lumiSpecs={}
+    if opt.lumiSpecs:
+        for spec in opt.lumiSpecs.split(','):
+            tag,lumi=spec.split(':')
+            lumiSpecs[tag]=float(lumi)
 
     #proc SF
     procSF={}
@@ -109,8 +116,17 @@ def main():
                                     for pcat in procSF[procToScale]:                                    
                                         if pcat not in key: continue
                                         sfVal=procSF[procToScale][pcat][0]
-                                     #print 'Applying scale factor for ',sp[1],key,sfVal
-                            obj.Scale(xsec*opt.lumi*puNormSF*sfVal)                    
+                                     #print '[Warning] Applying scale factor for ',sp[1],key,sfVal
+                           
+                            #scale by lumi
+                            lumi=opt.lumi
+                            for tag in lumiSpecs:
+                                if not tag in key: continue
+                                lumi=lumiSpecs[tag]
+                                #print '[Warning] applying',lumi,'for',tag
+                                break
+                                        
+                            obj.Scale(xsec*lumi*puNormSF*sfVal)                    
                         if opt.rebin>1:  obj.Rebin(opt.rebin)
                         if not key in plots : plots[key]=Plot(key)
                         plots[key].add(h=obj,title=sp[1],color=sp[2],isData=sample[1],spImpose=isSignal)

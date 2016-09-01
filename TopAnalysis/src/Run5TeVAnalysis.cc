@@ -40,7 +40,12 @@ void Run5TeVAnalysis(TString inFileName,
 
   float totalEvtNorm(1.0);
   if(isMC && normH) totalEvtNorm=normH->GetBinContent(1);
-  if(!isMC) runSysts=false;
+  if(!isMC)
+    {
+      if( (channelSelection==11 || channelSelection==1100) && inFileName.Contains("FilteredSingleMuHighPt")) return;
+      if( (channelSelection==13 || channelSelection==1300) && inFileName.Contains("HighPtLowerPhotons"))     return;
+      runSysts=false;
+    }
   std::cout << "Will process " << inFileName << " and save the results in " << outFileName << endl
 	    << "Sample will be treated as MC=" << isMC <<  std::endl
 	    << "Systematics will be run=" << runSysts << std::endl
@@ -187,16 +192,63 @@ void Run5TeVAnalysis(TString inFileName,
     std::vector<float>* elePt_p = 0;
     std::vector<float>* elePhi_p = 0;
     std::vector<float>* eleEta_p = 0;
+    std::vector<float>* eleSigmaIEtaIEta_p = 0;
+    std::vector<float>* eledEtaAtVtx_p = 0;
+    std::vector<float>* eledPhiAtVtx_p = 0;
+    std::vector<float>* eleHoverE_p = 0;
+    std::vector<float>* eleEoverP_p = 0;
+    std::vector<float>* eleD0_p = 0;
+    std::vector<float>* eleDz_p = 0;
+    std::vector<float>* eleMissHits_p = 0;
+    std::vector<float>* elepassConversionVeto_p = 0;
+    std::vector<float>* elePFChIso_p=0, *elePFPhoIso_p=0, *elePFNeuIso_p=0, *elePFPUIso_p=0, *eleEffAreaTimesRho_p=0;
     std::vector<int>*   eleIDVeto_p=0;
+    std::vector<int>*   eleIDLoose_p=0;
+    std::vector<int>*   eleIDMedium_p=0;
+    std::vector<int>*   eleIDTight_p=0;
+    std::vector<int>*   eleCharge_p=0;
     lepTree_p->SetBranchStatus("elePt", 1);
     lepTree_p->SetBranchStatus("elePhi", 1);
     lepTree_p->SetBranchStatus("eleEta", 1);
-    lepTree_p->SetBranchStatus("eleIDVeto", 1);
+    lepTree_p->SetBranchStatus("eleSigmaIEtaIEta", 1);
+    lepTree_p->SetBranchStatus("eledEtaAtVtx", 1);
+    lepTree_p->SetBranchStatus("eledPhiAtVtx", 1);
+    lepTree_p->SetBranchStatus("eleHoverE", 1);
+    lepTree_p->SetBranchStatus("eleEoverPInv", 1);
+    lepTree_p->SetBranchStatus("eleD0", 1);
+    lepTree_p->SetBranchStatus("eleDz", 1);
+    lepTree_p->SetBranchStatus("eleMissHits", 1);
+    lepTree_p->SetBranchStatus("elepassConversionVeto", 1);
+    lepTree_p->SetBranchStatus("elePFChIso", 1);
+    lepTree_p->SetBranchStatus("elePFPhoIso", 1);
+    lepTree_p->SetBranchStatus("elePFNeuIso", 1);
+    lepTree_p->SetBranchStatus("elePFPUIso", 1);
+    lepTree_p->SetBranchStatus("eleEffAreaTimesRho", 1);
+    lepTree_p->SetBranchStatus("eleID*", 1);
+    lepTree_p->SetBranchStatus("eleCharge", 1);
     lepTree_p->SetBranchAddress("elePt", &elePt_p);
     lepTree_p->SetBranchAddress("elePhi", &elePhi_p);
     lepTree_p->SetBranchAddress("eleEta", &eleEta_p);
+    lepTree_p->SetBranchAddress("eleSigmaIEtaIEta", &eleSigmaIEtaIEta_p);
+    lepTree_p->SetBranchAddress("eledEtaAtVtx", &eledEtaAtVtx_p);
+    lepTree_p->SetBranchAddress("eledPhiAtVtx", &eledPhiAtVtx_p);
+    lepTree_p->SetBranchAddress("eleHoverE", &eleHoverE_p);
+    lepTree_p->SetBranchAddress("eleEoverPInv", &eleEoverP_p);
+    lepTree_p->SetBranchAddress("eleD0", &eleD0_p);
+    lepTree_p->SetBranchAddress("eleDz", &eleDz_p);
+    lepTree_p->SetBranchAddress("eleMissHits", &eleMissHits_p);
+    lepTree_p->SetBranchAddress("elepassConversionVeto", &elepassConversionVeto_p);
+    lepTree_p->SetBranchAddress("elePFChIso", &elePFChIso_p);
+    lepTree_p->SetBranchAddress("elePFPhoIso", &elePFPhoIso_p);
+    lepTree_p->SetBranchAddress("elePFNeuIso", &elePFNeuIso_p);
+    lepTree_p->SetBranchAddress("elePFPUIso", &elePFPUIso_p);
+    lepTree_p->SetBranchAddress("eleEffAreaTimesRho", &eleEffAreaTimesRho_p);
     lepTree_p->SetBranchAddress("eleIDVeto", &eleIDVeto_p);
-    
+    lepTree_p->SetBranchAddress("eleIDLoose", &eleIDLoose_p);
+    lepTree_p->SetBranchAddress("eleIDMedium", &eleIDMedium_p);
+    lepTree_p->SetBranchAddress("eleIDTight", &eleIDTight_p);
+    lepTree_p->SetBranchAddress("eleCharge", &eleCharge_p);
+
     //jet variables
     const int maxJets = 5000;
     Int_t   nref;
@@ -251,7 +303,16 @@ void Run5TeVAnalysis(TString inFileName,
     //trigger
     int trig = 0;
     std::string triggerName;
-    triggerName = isMC ? "HLT_HIL2Mu15ForPPRef_v1" : "HLT_HIL2Mu15_v1"; 
+    if(channelSelection==13 || channelSelection==1300)
+      {
+	triggerName = isMC ? "HLT_HIL2Mu15ForPPRef_v1" : "HLT_HIL2Mu15_v1"; 
+      }
+    
+    if(channelSelection==11 || channelSelection==1100) 
+      {
+	triggerName = isMC ? "HLT_HISinglePhoton40_Eta3p1ForPPRef_v1" : "HLT_HISinglePhoton40_Eta3p1_v1";
+      }
+    
     hltTree_p->SetBranchStatus(triggerName.data(),1);
     hltTree_p->SetBranchAddress(triggerName.data(),&trig);
     
@@ -321,10 +382,94 @@ void Run5TeVAnalysis(TString inFileName,
 	    else if(passLooseKin && passLooseId && passLooseIso) looseMuons.push_back( p4 );
 	  }
   
-	//select the muon
+
+	//select good electronss
+	//cf. details in https://twiki.cern.ch/twiki/bin/view/CMS/CutBasedElectronIdentificationRun2
+	std::vector<TLorentzVector> mediumElectrons,vetoElectrons,mediumElectronsNonIso;
+	std::vector<int> elCharge;
+	const Int_t nEl = (Int_t)elePt_p->size();
+	for(Int_t elIter = 0; elIter < nEl; elIter++)
+	  {
+	    bool passPt(elePt_p->at(elIter) > 40.0);  
+	    bool passEta(fabs(eleEta_p->at(elIter)) < 2.5 && (fabs(eleEta_p->at(elIter)) < 1.4442 || fabs(eleEta_p->at(elIter)) > 1.5660));
+	    if(!passPt || !passEta) continue;
+	    bool passMediumId ((fabs(eleEta_p->at(elIter)) <= 1.4479
+				&& fabs(eleSigmaIEtaIEta_p->at(elIter)) < 0.0101
+				&& fabs(eledEtaAtVtx_p->at(elIter)) < 0.0103
+				&& fabs(eledPhiAtVtx_p->at(elIter)) < 0.0336
+				&& fabs(eleHoverE_p->at(elIter)) < 0.0876
+				&& fabs(eleEoverP_p->at(elIter)) < 0.0174
+				&& fabs(eleD0_p->at(elIter)) < 0.0118
+				&& fabs(eleDz_p->at(elIter)) < 0.373
+				&& fabs(eleMissHits_p->at(elIter)) <= 2 
+				&& fabs(elepassConversionVeto_p->at(elIter)))
+			       ||
+			       (fabs(eleEta_p->at(elIter)) > 1.4479
+				&& fabs(eleSigmaIEtaIEta_p->at(elIter)) < 0.0283
+				&& fabs(eledEtaAtVtx_p->at(elIter)) < 0.00733
+				&& fabs(eledPhiAtVtx_p->at(elIter)) < 0.114
+				&& fabs(eleHoverE_p->at(elIter)) < 0.0678
+				&& fabs(eleEoverP_p->at(elIter)) < 0.0898
+				&& fabs(eleD0_p->at(elIter)) < 0.0739
+				&& fabs(eleDz_p->at(elIter)) < 0.602
+				&& fabs(eleMissHits_p->at(elIter)) <= 1 
+				&& fabs(elepassConversionVeto_p->at(elIter)))
+			       );
+	    bool passVetoId ((fabs(eleEta_p->at(elIter)) <= 1.4479
+			      && fabs(eleSigmaIEtaIEta_p->at(elIter)) < 0.0114
+			      && fabs(eledEtaAtVtx_p->at(elIter)) < 0.0152
+			      && fabs(eledPhiAtVtx_p->at(elIter)) < 0.216
+			      && fabs(eleHoverE_p->at(elIter)) < 0.181
+			      && fabs(eleEoverP_p->at(elIter)) < 0.207
+			      && fabs(eleD0_p->at(elIter)) < 0.0564
+			      && fabs(eleDz_p->at(elIter)) < 0.472
+			      && fabs(eleMissHits_p->at(elIter)) <= 2 
+			      && fabs(elepassConversionVeto_p->at(elIter)))
+			     ||
+			     (fabs(eleEta_p->at(elIter)) > 1.4479
+			      && fabs(eleSigmaIEtaIEta_p->at(elIter)) < 0.0352
+			      && fabs(eledEtaAtVtx_p->at(elIter)) < 0.0113
+			      && fabs(eledPhiAtVtx_p->at(elIter)) < 0.237
+			      && fabs(eleHoverE_p->at(elIter)) < 0.116
+			      && fabs(eleEoverP_p->at(elIter)) < 0.174
+			      && fabs(eleD0_p->at(elIter)) < 0.222
+			      && fabs(eleDz_p->at(elIter)) < 0.921
+			      && fabs(eleMissHits_p->at(elIter)) <= 3 
+			      && fabs(elepassConversionVeto_p->at(elIter)))
+			     );
+	    double deposit, corrEA_isolation;
+	    deposit =  fabs(elePFPhoIso_p->at(elIter)+elePFNeuIso_p->at(elIter)-eleEffAreaTimesRho_p->at(elIter));
+	    corrEA_isolation = (elePFChIso_p->at(elIter) + TMath::Max (0.0, deposit )) / elePt_p->at(elIter);
+	    
+	    bool passMediumIso( (corrEA_isolation < 0.0766 && fabs(eleEta_p->at(elIter)) <= 1.4479) || (corrEA_isolation < 0.0678 && fabs(eleEta_p->at(elIter)) > 1.4479) );
+	    bool passVetoIso( (corrEA_isolation < 0.126 && fabs(eleEta_p->at(elIter)) <= 1.4479) || (corrEA_isolation < 0.144 && fabs(eleEta_p->at(elIter)) > 1.4479) );
+
+	    //save electron if good
+	    TLorentzVector p4(0,0,0,0);
+	    p4.SetPtEtaPhiM(elePt_p->at(elIter),eleEta_p->at(elIter),elePhi_p->at(elIter), 0.0510);
+	        
+	    if (passMediumId && corrEA_isolation > 0.2)
+	      {
+		mediumElectronsNonIso.push_back( p4 );
+		elCharge.push_back(eleCharge_p->at(elIter));
+	      }
+	    else if(passMediumId && passMediumIso)
+	      {
+		mediumElectrons.push_back( p4 );
+		elCharge.push_back(eleCharge_p->at(elIter));
+	      }
+	    else if (passVetoId && passVetoIso)
+	      {
+		vetoElectrons.push_back( p4 );
+		elCharge.push_back(eleCharge_p->at(elIter));
+	      }
+	  }
+	
+	//perform the channel selection
+	if(trig==0) continue;
 	if(channelSelection==1300)
 	  {
-	    if(tightMuons.size()!=0 || looseMuons.size()!=0) continue;
+	    if(tightMuons.size()!=0 || looseMuons.size()!=0 || mediumElectrons.size()!=0 || vetoElectrons.size()!=0) continue;
 	    if(tightMuonsNonIso.size()==0) continue;
 	    tightMuons=tightMuonsNonIso;
 	  }
@@ -332,25 +477,30 @@ void Run5TeVAnalysis(TString inFileName,
 	  {
 	    if(tightMuons.size()!=1) continue; //=1 tight muon
 	    if(looseMuons.size()) continue;    //no extra muons
+	    if(mediumElectrons.size()+vetoElectrons.size()!=0) continue; //no extra electrons
 	    if(chargeSelection!=0)
 	      {
 		if(muonCharge[0]!=chargeSelection) continue;
 	      }
 	  }
-
-	//check for extra electrons in the event (veto id is used)
-	//see https://twiki.cern.ch/twiki/bin/view/CMS/CutBasedElectronIdentificationRun2#Spring15_selection_25ns (electron id)
-	Int_t nLooseEle(0);
-	const Int_t nEle = (Int_t)elePt_p->size();
-	for(Int_t eleIter = 0; eleIter < nEle; eleIter++)
+	
+	//select the electron
+	if(channelSelection==1100)
 	  {
-	    
-	    if(TMath::Abs(elePt_p->at(eleIter)) < 20)  continue;
-	    if(TMath::Abs(eleEta_p->at(eleIter)) > 2.5) continue;
-	    if(eleIDVeto_p->at(eleIter)==0) continue;
-	    nLooseEle++;
+	    if(mediumElectrons.size()!=0 || vetoElectrons.size()!=0 || tightMuons.size()!=0 || looseMuons.size()!=0) continue;
+	    if(mediumElectronsNonIso.size()==0) continue;
+	    mediumElectrons=mediumElectronsNonIso;
 	  }
-	if(nLooseEle>0) continue;
+	if(channelSelection==11)
+	  {
+	    if(mediumElectrons.size()!=1) continue; //=1 medium electron
+	    if(vetoElectrons.size()>0) continue;    //no extra electrons
+	    if(tightMuons.size()+looseMuons.size()!=0) continue; //no extra muons
+	    if(chargeSelection!=0)
+	      {
+		if(elCharge[0]!=chargeSelection) continue;
+	      }
+	  }
 
 	//raw MET (noHF)
 	TLorentzVector rawMET(0,0,0,0);	
@@ -364,9 +514,13 @@ void Run5TeVAnalysis(TString inFileName,
 				     0);
 	  }
 	
+	// combined leptons
+	std::vector<TLorentzVector> goodLeptons;
+	goodLeptons = (tightMuons.size() > 0 && (channelSelection==1300 || channelSelection==13) ) ?  tightMuons : mediumElectrons;  
+
 	//transverse mass
-	float mt(computeMT(tightMuons[0],rawMET));
-	
+	float mt(computeMT(goodLeptons[0],rawMET));
+
 	//jet counting
 	typedef std::vector<TLorentzVector> JetColl_t;
 	std::vector<JetColl_t> bJets(9),lightJets(9);
@@ -375,7 +529,7 @@ void Run5TeVAnalysis(TString inFileName,
 	    //cross clean with trigger muon
 	    TLorentzVector jp4(0,0,0,0);
 	    jp4.SetPtEtaPhiM(jtpt[jetIter],jteta[jetIter],jtphi[jetIter],jtm[jetIter]);
-	    if(jp4.DeltaR(tightMuons[0])<0.4) continue;
+	    if(jp4.DeltaR(goodLeptons[0])<0.4) continue;
 	    
 	    //in tracker region
 	    if(TMath::Abs(jp4.Eta())>2.4) continue;
@@ -503,8 +657,8 @@ void Run5TeVAnalysis(TString inFileName,
 	      }
 	  }
 	
-	histos["lpt"]->Fill(tightMuons[0].Pt(),evWeight);
-	histos["leta"]->Fill(fabs(tightMuons[0].Eta()),evWeight);
+	histos["lpt"]->Fill(goodLeptons[0].Pt(),evWeight);
+	histos["leta"]->Fill(fabs(goodLeptons[0].Eta()),evWeight);
 	histos["mt"]->Fill(mt,evWeight);
 	histos["metpt"]->Fill(rawMET.Pt(),evWeight);
 
@@ -528,13 +682,13 @@ void Run5TeVAnalysis(TString inFileName,
 	    for(Int_t ij=0; ij<nbtags; ij++) htsum += bJets[jetIdx][ij].Pt();
 	    for(Int_t ij=0; ij<nljets; ij++) htsum += lightJets[jetIdx][ij].Pt();
 
-	    Float_t mlb( (tightMuons[0]+lightJets[jetIdx][0]).M() );
+	    Float_t mlb( (goodLeptons[0]+lightJets[jetIdx][0]).M() );
 	    if(nbtags>0)
 	      {
-		mlb=(tightMuons[0]+bJets[jetIdx][0]).M();
+		mlb=(goodLeptons[0]+bJets[jetIdx][0]).M();
 		if(nbtags>1)
 		  {
-		    mlb=TMath::Min( mlb, Float_t((tightMuons[0]+bJets[jetIdx][1]).M()) );
+		    mlb=TMath::Min( mlb, Float_t((goodLeptons[0]+bJets[jetIdx][1]).M()) );
 		  }
 	      }
 
@@ -546,8 +700,8 @@ void Run5TeVAnalysis(TString inFileName,
 	    //fill histos
 	    if(ivar==0)
 	      {
-		histos["lpt_"+pf]->Fill(tightMuons[0].Pt(),iweight);
-		histos["leta_"+pf]->Fill(fabs(tightMuons[0].Eta()),iweight);
+		histos["lpt_"+pf]->Fill(goodLeptons[0].Pt(),iweight);
+		histos["leta_"+pf]->Fill(fabs(goodLeptons[0].Eta()),iweight);
 		histos["ht_"+pf]->Fill(htsum,iweight);
 		histos["mjj_"+pf]->Fill(mjj,iweight);
 		histos["mlb_"+pf]->Fill(mlb,iweight);
