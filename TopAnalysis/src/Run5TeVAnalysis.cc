@@ -40,7 +40,12 @@ void Run5TeVAnalysis(TString inFileName,
 
   float totalEvtNorm(1.0);
   if(isMC && normH) totalEvtNorm=normH->GetBinContent(1);
-  if(!isMC) runSysts=false;
+  if(!isMC)
+    {
+      if( (channelSelection==11 || channelSelection==1100) && inFileName.Contains("FilteredSingleMuHighPt")) return;
+      if( (channelSelection==13 || channelSelection==1300) && inFileName.Contains("HighPtLowerPhotons"))     return;
+      runSysts=false;
+    }
   std::cout << "Will process " << inFileName << " and save the results in " << outFileName << endl
 	    << "Sample will be treated as MC=" << isMC <<  std::endl
 	    << "Systematics will be run=" << runSysts << std::endl
@@ -435,6 +440,9 @@ void Run5TeVAnalysis(TString inFileName,
 	    double deposit, corrEA_isolation;
 	    deposit =  fabs(elePFPhoIso_p->at(elIter)+elePFNeuIso_p->at(elIter)-eleEffAreaTimesRho_p->at(elIter));
 	    corrEA_isolation = (elePFChIso_p->at(elIter) + TMath::Max (0.0, deposit )) / elePt_p->at(elIter);
+	    
+	    bool passMediumIso( (corrEA_isolation < 0.0766 && fabs(eleEta_p->at(elIter)) <= 1.4479) || (corrEA_isolation < 0.0678 && fabs(eleEta_p->at(elIter)) > 1.4479) );
+	    bool passVetoIso( (corrEA_isolation < 0.126 && fabs(eleEta_p->at(elIter)) <= 1.4479) || (corrEA_isolation < 0.144 && fabs(eleEta_p->at(elIter)) > 1.4479) );
 
 	    //save electron if good
 	    TLorentzVector p4(0,0,0,0);
@@ -445,12 +453,12 @@ void Run5TeVAnalysis(TString inFileName,
 		mediumElectronsNonIso.push_back( p4 );
 		elCharge.push_back(eleCharge_p->at(elIter));
 	      }
-	    else if(passMediumId && ( (corrEA_isolation < 0.0766 && fabs(eleEta_p->at(elIter)) <= 1.4479) || (corrEA_isolation < 0.0678 && fabs(eleEta_p->at(elIter)) > 1.4479) ))
+	    else if(passMediumId && passMediumIso)
 	      {
 		mediumElectrons.push_back( p4 );
 		elCharge.push_back(eleCharge_p->at(elIter));
 	      }
-	    else if (passVetoId && ( (corrEA_isolation < 0.126 && fabs(eleEta_p->at(elIter)) <= 1.4479) || (corrEA_isolation < 0.144 && fabs(eleEta_p->at(elIter)) > 1.4479) )) 
+	    else if (passVetoId && passVetoIso)
 	      {
 		vetoElectrons.push_back( p4 );
 		elCharge.push_back(eleCharge_p->at(elIter));
@@ -458,7 +466,7 @@ void Run5TeVAnalysis(TString inFileName,
 	  }
 	
 	//perform the channel selection
-	if(!trig) continue;
+	if(trig==0) continue;
 	if(channelSelection==1300)
 	  {
 	    if(tightMuons.size()!=0 || looseMuons.size()!=0 || mediumElectrons.size()!=0 || vetoElectrons.size()!=0) continue;
