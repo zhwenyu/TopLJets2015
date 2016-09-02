@@ -75,11 +75,29 @@ void Run5TeVAnalysis(TString inFileName,
   
   //book histograms
   std::map<TString,TH1 *> histos;
+  histos["trig"] = new TH1F("trig",";Trigger;Events",2,0,2);
   histos["lpt"]  = new TH1F("lpt",";Transverse momentum [GeV];Events",20.,0.,200.);
   histos["leta"] = new TH1F("leta",";Pseudo-rapidity;Events",20.,0.,2.1);
   histos["mt"]   = new TH1F("mt",";Transverse Mass [GeV];Events" ,20,0.,200.);
   histos["metpt"]= new TH1F("metpt",";Missing transverse energy [GeV];Events" ,20,0.,200.);
 
+  //electron selection control plots
+  for(int ireg=0; ireg<2; ireg++)
+    {
+      TString pf(ireg==0 ? "_ee" : "_eb");
+      histos["sigmaietaieta"+pf]=new TH1F("sigmaietaieta"+pf,";#sigma(i#eta,i#eta);Electrons",25,0,0.04);
+      histos["detain"+pf]=new TH1F("detain"+pf,";#Delta#eta(in);Electrons",25,-0.015,0.15);
+      histos["dphiin"+pf]=new TH1F("dephiin"+pf,";#Delta#phi(in);Electrons",25,-0.05,0.05);
+      histos["hovere"+pf]=new TH1F("hovere"+pf,";H/E;Electrons",25,0,0.05);
+      histos["eoverpinv"+pf]=new TH1F("eoverpinv"+pf,";1/E+1/p [GeV^{-1}];Electrons",25,-0.05,0.05);
+      histos["d0"+pf]=new TH1F("d0"+pf,";d_{0} [cm];Electrons",25,-0.05,0.05);
+      histos["dz"+pf]=new TH1F("dz"+pf,";d_{z} [cm];Electrons",25,-0.5,0.5);
+      histos["misshits"+pf]=new TH1F("misshits"+pf,";Missing hits;Electrons",4,0,4);
+      histos["convveto"+pf]=new TH1F("convveto"+pf,";Conversion veto flag;Electrons",2,0,2);
+      histos["reliso"+pf]=new TH1F("reliso"+pf,";Relative isolation;Electrons",25,0,0.1);
+    }
+
+  //per b-tag multiplicity control plots
   for(int ij=0; ij<=2; ij++)
     {
       TString pf(Form("%db",ij));
@@ -344,6 +362,11 @@ void Run5TeVAnalysis(TString inFileName,
 	    evWeight *= totalEvtNorm;
 	  }
 
+	//require trigger for the event
+	histos["trig"]->Fill(trig,evWeight);
+	if(trig==0) continue;
+
+
 	//select good muons
 	//cf. details in https://twiki.cern.ch/twiki/bin/view/CMS/SWGuideMuonIdRun2
 	std::vector<TLorentzVector> tightMuons,looseMuons,tightMuonsNonIso;
@@ -437,13 +460,34 @@ void Run5TeVAnalysis(TString inFileName,
 			      && fabs(eleMissHits_p->at(elIter)) <= 3 
 			      && fabs(elepassConversionVeto_p->at(elIter)))
 			     );
+	    
 	    double deposit, corrEA_isolation;
 	    deposit =  fabs(elePFPhoIso_p->at(elIter)+elePFNeuIso_p->at(elIter)-eleEffAreaTimesRho_p->at(elIter));
 	    corrEA_isolation = (elePFChIso_p->at(elIter) + TMath::Max (0.0, deposit )) / elePt_p->at(elIter);
 	    
+
 	    bool passMediumIso( (corrEA_isolation < 0.0766 && fabs(eleEta_p->at(elIter)) <= 1.4479) || (corrEA_isolation < 0.0678 && fabs(eleEta_p->at(elIter)) > 1.4479) );
 	    bool passVetoIso( (corrEA_isolation < 0.126 && fabs(eleEta_p->at(elIter)) <= 1.4479) || (corrEA_isolation < 0.144 && fabs(eleEta_p->at(elIter)) > 1.4479) );
 
+	    TString pf(fabs(eleEta_p->at(elIter)) > 1.4479 ? "_ee" : "_eb");
+	    if(passMediumIso)
+	      {
+		histos["sigmaietaieta"+pf]->Fill(eleSigmaIEtaIEta_p->at(elIter),evWeight);
+		histos["detain"+pf]->Fill(eledEtaAtVtx_p->at(elIter),evWeight);
+		histos["dphiin"+pf]->Fill(eledPhiAtVtx_p->at(elIter),evWeight);
+		histos["hovere"+pf]->Fill(eleHoverE_p->at(elIter),evWeight);
+		histos["eoverpinv"+pf]->Fill(eleEoverP_p->at(elIter),evWeight);
+		histos["d0"+pf]->Fill(eleD0_p->at(elIter),evWeight);
+		histos["dz"+pf]->Fill(eleDz_p->at(elIter),evWeight);
+		histos["misshits"+pf]->Fill(eleMissHits_p->at(elIter),evWeight);
+		histos["convveto"+pf]->Fill(elepassConversionVeto_p->at(elIter),evWeight);
+	      }
+	    if(passMediumId)
+	      {
+		histos["reliso"+pf]->Fill( corrEA_isolation,evWeight);
+	      }
+	    
+	
 	    //save electron if good
 	    TLorentzVector p4(0,0,0,0);
 	    p4.SetPtEtaPhiM(elePt_p->at(elIter),eleEta_p->at(elIter),elePhi_p->at(elIter), 0.0510);
@@ -465,8 +509,10 @@ void Run5TeVAnalysis(TString inFileName,
 	      }
 	  }
 	
-	//perform the channel selection
-	if(trig==0) continue;
+
+
+	//CHANNEL SELECTION
+	//muons
 	if(channelSelection==1300)
 	  {
 	    if(tightMuons.size()!=0 || looseMuons.size()!=0 || mediumElectrons.size()!=0 || vetoElectrons.size()!=0) continue;
@@ -483,8 +529,7 @@ void Run5TeVAnalysis(TString inFileName,
 		if(muonCharge[0]!=chargeSelection) continue;
 	      }
 	  }
-	
-	//select the electron
+	//electrons
 	if(channelSelection==1100)
 	  {
 	    if(mediumElectrons.size()!=0 || vetoElectrons.size()!=0 || tightMuons.size()!=0 || looseMuons.size()!=0) continue;
@@ -501,6 +546,11 @@ void Run5TeVAnalysis(TString inFileName,
 		if(elCharge[0]!=chargeSelection) continue;
 	      }
 	  }
+	
+	// combined leptons
+	std::vector<TLorentzVector> goodLeptons;
+	goodLeptons = (tightMuons.size() > 0 && (channelSelection==1300 || channelSelection==13) ) ?  tightMuons : mediumElectrons;  
+
 
 	//raw MET (noHF)
 	TLorentzVector rawMET(0,0,0,0);	
@@ -513,13 +563,15 @@ void Run5TeVAnalysis(TString inFileName,
 				     0,
 				     0);
 	  }
-	
-	// combined leptons
-	std::vector<TLorentzVector> goodLeptons;
-	goodLeptons = (tightMuons.size() > 0 && (channelSelection==1300 || channelSelection==13) ) ?  tightMuons : mediumElectrons;  
 
 	//transverse mass
 	float mt(computeMT(goodLeptons[0],rawMET));
+
+	histos["lpt"]->Fill(goodLeptons[0].Pt(),evWeight);
+	histos["leta"]->Fill(fabs(goodLeptons[0].Eta()),evWeight);
+	histos["mt"]->Fill(mt,evWeight);
+	histos["metpt"]->Fill(rawMET.Pt(),evWeight);
+
 
 	//jet counting
 	typedef std::vector<TLorentzVector> JetColl_t;
@@ -657,10 +709,6 @@ void Run5TeVAnalysis(TString inFileName,
 	      }
 	  }
 	
-	histos["lpt"]->Fill(goodLeptons[0].Pt(),evWeight);
-	histos["leta"]->Fill(fabs(goodLeptons[0].Eta()),evWeight);
-	histos["mt"]->Fill(mt,evWeight);
-	histos["metpt"]->Fill(rawMET.Pt(),evWeight);
 
 	//
 	for(Int_t ivar=0; ivar<=nSysts; ivar++)
