@@ -56,6 +56,14 @@ obsList={
         "CL$_s$^{\\rm obs.}$": {},
         }
 
+preList={
+        "Separation": {},
+        "$P(q_{\\rm null}>q_{\\rm alt}^{\\rm median})$": {},
+        "$P(q_{\\rm alt}<q_{\\rm null}^{\\rm median})$": {},
+        "CL$_s$^{\\rm exp.}$": {},
+        "CL$_s$^{\\rm obs.}$": {},
+        }
+
 canvas=ROOT.TCanvas("","",800,600)
 canvas.cd()
 
@@ -104,6 +112,25 @@ if not options.doAll :
             obsList["Separation"][latexWid]='0'
             obsList["CL$_s$^{\\rm obs.}$"][latexWid]='1 \pm 0'
 
+        if options.prepost != "post" : continue
+        statsFileName="%s/prestats__%s__%s.txt"%(options.indir,wid,options.dist)
+        for line in open(statsFileName,"r"):
+            if "separation" in line :
+               preList["Separation"][latexWid]=line.split('#')[0]
+            elif "null exceeded density" in line :
+               preList["$P(q_{\\rm null}>q_{\\rm alt}^{\\rm median})$"][latexWid]=line.split('#')[0]
+            elif "alt exceeded density" in line :
+               preList["$P(q_{\\rm alt}<q_{\\rm null}^{\\rm median})$"][latexWid]=line.split('#')[0]
+            elif "cls expected" in line :
+               preList["CL$_s$^{\\rm exp.}$"][latexWid]=line.split('#')[0]
+            elif "cls posterved" in line :
+               preList["CL$_s$^{\\rm obs.}$"][latexWid]=line.split('#')[0]
+            else : continue
+
+        if "1.0" in latexWid : #and options.prepost != "pre" :
+            preList["Separation"][latexWid]='0'
+            preList["CL$_s$^{\\rm exp.}$"][latexWid]='1'
+
     tabletex=open("%s/separationTable__%s.tex"%(options.outdir,options.dist), 'w')
 
     tabletex.write("\\begin{table}\n")
@@ -145,6 +172,9 @@ if not options.doAll :
     obsErrY=ROOT.TVector(len(rawWidList))
     obsErrX=ROOT.TVector(len(rawWidList))
 
+    preYArr=[float(preList["CL$_s$^{\\rm exp.}$"][wid]) for wid in sorted([key for key in preList["CL$_s$^{\\rm exp.}$"]])]
+    preY=ROOT.TVector(len(rawWidList))
+
     print ""
     print obsYArr
     print ""
@@ -157,40 +187,53 @@ if not options.doAll :
         obsY[ix]=obsYArr[ix]
         obsErrY[ix]=obsErrYArr[ix]
         obsErrX[ix]=0
+        if options.prepost != "post" : continue
+        preY[ix]=preYArr[ix]
 
 
 
     clsGr=ROOT.TGraph(x,y)
     clsGr.GetXaxis().SetTitle("Generator-level #Gamma_{t} [GeV]")
-    clsGr.GetYaxis().SetTitle("CL_{s}^{exp.}")
+    clsGr.GetYaxis().SetTitle("CL_{s}")
     clsGr.SetTitle("")
     clsGr.SetName("CLsExp_%s"%options.dist)
-    clsGr.GetXaxis().SetRangeUser(0,4)
-    clsGr.GetYaxis().SetRangeUser(1e-05,1.1)
+    clsGr.GetXaxis().SetRangeUser(0.5+(-0.05 if options.unblind else -0.2),3.5)
+    clsGr.GetYaxis().SetRangeUser(1e-03,1.1)
+    clsGr.GetYaxis().SetTitleOffset(-0.002)
+    clsGr.SetMarkerStyle(1)
+    clsGr.SetMarkerColor(ROOT.kNone)
     clsGr.Draw("AP")
 
     tsp=ROOT.TSpline3("Spline%s%s"%(options.dist,options.prepost),clsGr)
     tsp.SetName("Spline%s%s"%(options.dist,options.prepost))
+    tsp.SetLineColor(ROOT.kBlack)
     if options.unblind :
         tsp.SetLineStyle(ROOT.kDashed)
-        tsp.SetLineColor(ROOT.kBlack)
-        clsGr.SetMarkerStyle(1)
-        clsGr.SetMarkerColor(ROOT.kNone)
     tsp.Draw("SAME")
 
+    leg=ROOT.TLegend(0.63,0.82-(0.10 if options.unblind else 0),0.88,0.88)
 
     fout=ROOT.TFile("%s/statsPlots.root"%(options.outdir),"UPDATE" if not options.recreate else "RECREATE")
     fout.cd()
     clsGr.Write("CLsGraph%s%s"%(options.dist,options.prepost))
     tsp.Write("Spline%s%s"%(options.dist,options.prepost))
+    if options.prepost == "post" :
+        preGr=ROOT.TGraph(x,preY)
+        psp=ROOT.TSpline3("SplinePre%s"%options.dist,preGr)
+        psp.SetLineColor(ROOT.kRed)
+        psp.Draw("SAME")
+        psp.Write("SplinePre%s"%options.dist)
+        leg.AddEntry(psp,"Pre-fit model (#mu=1)","L")
+    leg.AddEntry(tsp,"%s-fit model (#mu profiled)"%(options.prepost.title()),"L")
+
     if options.unblind :
         obsGr=ROOT.TGraphErrors(x,obsY,obsErrX,obsErrY)
-        obsGr.SetFillColor(ROOT.kGreen)
         obsGr.Draw("P")
         obsGr.Write()
         osp=ROOT.TSpline3("SplineObs%s"%options.dist,obsGr)
         osp.Draw("SAME")
         osp.Write("SplineObs%s"%options.dist)
+        leg.AddEntry(osp,"Observed")
     fout.Close()
 
     # draw dist information if available
@@ -200,28 +243,35 @@ if not options.doAll :
         DistLaTeX=ROOT.TLatex(xpos,ypos, DistInfo)
         DistLaTeX.SetNDC(ROOT.kTRUE)
         DistLaTeX.SetTextSize(0.04)
-        DistLaTeX.Draw()
+        #DistLaTeX.Draw()
 
         TMassInfo=ROOT.TLatex(.745,.77,"m_{t} = 172.5 GeV")
         TMassInfo.SetNDC(ROOT.kTRUE)
         TMassInfo.SetTextSize(0.03)
-        TMassInfo.Draw()
+        #TMassInfo.Draw()
 
-    CMS_lumi.relPosX = 0.190
+    CMS_lumi.relPosX = 0.210 if options.unblind else 0.190
     CMS_lumi.extraText = "Preliminary" if options.unblind else "Simulation Preliminary"
-    CMS_lumi.extraOverCmsTextSize=0.50
+    CMS_lumi.extraOverCmsTextSize=0.70 if options.unblind else 0.45
     CMS_lumi.lumiTextSize = 0.55
+    canvas.SetBottomMargin(2*canvas.GetBottomMargin())
+    canvas.SetLeftMargin(1.2*canvas.GetLeftMargin())
+
+    leg.SetBorderSize(0)
+    leg.SetFillStyle(0)
+    leg.SetTextFont(42)
+    leg.Draw()
     l=ROOT.TLine()
     l.SetLineColor(ROOT.kRed)
-    l.DrawLine(0,0.05,4.08,0.05)
+    l.DrawLine(0.5+(-0.05 if options.unblind else -0.2),0.05,3.54,0.05)
 
     l2=ROOT.TLine()
     l2.SetLineColor(ROOT.kRed)
-    l2.DrawLine(0,0.01,4.08,0.01)
-    canvas.SetBottomMargin(2*canvas.GetBottomMargin())
-    canvas.SetLeftMargin(2*canvas.GetLeftMargin())
-    canvas.SetGrid(True)
+    l2.DrawLine(0.5+(-0.05 if options.unblind else -0.2),0.01,3.54,0.01)
     CMS_lumi.CMS_lumi(canvas,4,0)
+    leg.SetBorderSize(0)
+    leg.SetFillStyle(0)
+    leg.SetTextFont(42)
 
     canvas.SaveAs("%s/%sCLsPlot__%s.png"%(options.outdir,options.prepost,options.dist))
     canvas.SaveAs("%s/%sCLsPlot__%s.pdf"%(options.outdir,options.prepost,options.dist))
@@ -327,7 +377,7 @@ if options.doAll :
 
 
         if i==0:
-            tgr.GetXaxis().SetRangeUser(1.3,4)
+            tgr.GetXaxis().SetRangeUser(0.5,4)
             tgr.GetYaxis().SetRangeUser(1e-7,1)
         tgr.Draw("P" if i>0 else "AP")
         tf.Draw("SAME")
@@ -338,11 +388,11 @@ if options.doAll :
 
     l=ROOT.TLine()
     l.SetLineColor(ROOT.kRed)
-    l.DrawLine(1.3,0.05,4.08,0.05)
+    l.DrawLine(0.5,0.05,4.0,0.05)
 
     l2=ROOT.TLine()
     l2.SetLineColor(ROOT.kRed)
-    l2.DrawLine(1.3,0.01,4.08,0.01)
+    l2.DrawLine(0.5,0.01,4.0,0.01)
     clsLeg.Draw()
 
 
