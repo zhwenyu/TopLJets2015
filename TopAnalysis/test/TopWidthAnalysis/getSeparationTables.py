@@ -23,6 +23,9 @@ parser.add_option("--wid", type="string", dest="widList", default="0p5w,1p0w,1p5
 parser.add_option("--unblind",    action="store_true", dest="unblind",    default=False, help="Show the data information")
 parser.add_option("--recreateOut", dest="recreate", default=False, action="store_true")
 parser.add_option("--doAll", dest="doAll", default=False, action="store_true")
+parser.add_option("--addPre",dest="addpre", default=False, action="store_true")
+parser.add_option("--splineMin",dest="splineMin", default=0.4, type=float)
+parser.add_option("--splineMax",dest="splineMax", default=10, type=float)
 
 (options, args) = parser.parse_args()
 
@@ -112,7 +115,7 @@ if not options.doAll :
             obsList["Separation"][latexWid]='0'
             obsList["CL$_s$^{\\rm obs.}$"][latexWid]='1 \pm 0'
 
-        if options.prepost != "post" : continue
+        if options.prepost != "post" and not options.addpre: continue
         statsFileName="%s/prestats__%s__%s.txt"%(options.indir,wid,options.dist)
         for line in open(statsFileName,"r"):
             if "separation" in line :
@@ -187,7 +190,7 @@ if not options.doAll :
         obsY[ix]=obsYArr[ix]
         obsErrY[ix]=obsErrYArr[ix]
         obsErrX[ix]=0
-        if options.prepost != "post" : continue
+        if options.prepost != "post" and not options.addpre: continue
         preY[ix]=preYArr[ix]
 
 
@@ -198,42 +201,84 @@ if not options.doAll :
     clsGr.SetTitle("")
     clsGr.SetName("CLsExp_%s"%options.dist)
     clsGr.GetXaxis().SetRangeUser(0.5+(-0.05 if options.unblind else -0.2),3.5)
-    clsGr.GetYaxis().SetRangeUser(1e-03,1.1)
+    clsGr.GetYaxis().SetRangeUser(7e-03,1.1)
     clsGr.GetYaxis().SetTitleOffset(-0.002)
     clsGr.SetMarkerStyle(1)
     clsGr.SetMarkerColor(ROOT.kNone)
     clsGr.Draw("AP")
 
-    tsp=ROOT.TSpline3("Spline%s%s"%(options.dist,options.prepost),clsGr)
+    tsp=ROOT.TMVA.TSpline2("Spline%s%s"%(options.dist,options.prepost),clsGr)
     tsp.SetName("Spline%s%s"%(options.dist,options.prepost))
     tsp.SetLineColor(ROOT.kBlack)
-    if options.unblind :
-        tsp.SetLineStyle(ROOT.kDashed)
-    tsp.Draw("SAME")
+
+    # make graph out of spline
+    tspGrX=ROOT.TVector(2000)
+    tspGrY=ROOT.TVector(2000)
+    for step in xrange(0,2000) :
+        tempX=step*(options.splineMax-options.splineMin)/2000 + options.splineMin
+        tspGrX[step]=tempX
+        tspGrY[step]=tsp.Eval(tempX)
+
+    tspSplGr=ROOT.TGraph(tspGrX,tspGrY)
+    tspSplGr.SetLineColor(ROOT.kTeal)
+    #if options.unblind :
+    #    tsp.SetLineStyle(ROOT.kDashed)
+    #    tspSplGr.SetLineStyle(ROOT.kDashed)
+
+    tspSplGr.Draw("C")
 
     leg=ROOT.TLegend(0.63,0.82-(0.10 if options.unblind else 0),0.88,0.88)
 
+    # open outfile and write, drawing extra plots if needed
     fout=ROOT.TFile("%s/statsPlots.root"%(options.outdir),"UPDATE" if not options.recreate else "RECREATE")
     fout.cd()
     clsGr.Write("CLsGraph%s%s"%(options.dist,options.prepost))
     tsp.Write("Spline%s%s"%(options.dist,options.prepost))
-    if options.prepost == "post" :
+
+    # draw the pre-fit graph if desired
+    if options.prepost == "post" and options.addpre:
         preGr=ROOT.TGraph(x,preY)
-        psp=ROOT.TSpline3("SplinePre%s"%options.dist,preGr)
-        psp.SetLineColor(ROOT.kRed)
-        psp.Draw("SAME")
+        psp=ROOT.TMVA.TSpline2("SplinePre%s"%options.dist,preGr)
+        psp.SetLineColor(ROOT.kBlue)
         psp.Write("SplinePre%s"%options.dist)
         leg.AddEntry(psp,"Pre-fit model (#mu=1)","L")
+
+        # make graph out of spline
+        pspGrX=ROOT.TVector(2000)
+        pspGrY=ROOT.TVector(2000)
+        for step in xrange(0,2000) :
+            tempX=step*(options.splineMax-options.splineMin)/2000 + options.splineMin
+            pspGrX[step]=tempX
+            pspGrY[step]=psp.Eval(tempX)
+
+        pspSplGr=ROOT.TGraph(pspGrX,pspGrY)
+        pspSplGr.SetLineColor(ROOT.kBlue)
+        pspSplGr.Draw("C")
+
     leg.AddEntry(tsp,"%s-fit model (#mu profiled)"%(options.prepost.title()),"L")
 
+    # draw the post-fit observed information
     if options.unblind :
         obsGr=ROOT.TGraphErrors(x,obsY,obsErrX,obsErrY)
         obsGr.Draw("P")
         obsGr.Write()
-        osp=ROOT.TSpline3("SplineObs%s"%options.dist,obsGr)
-        osp.Draw("SAME")
+        osp=ROOT.TMVA.TSpline2("SplineObs%s"%options.dist,obsGr)
         osp.Write("SplineObs%s"%options.dist)
         leg.AddEntry(osp,"Observed")
+
+        # make graph out of spline
+        obsGrX=ROOT.TVector(2000)
+        obsGrY=ROOT.TVector(2000)
+        for step in xrange(0,2000) :
+            tempX=step*(options.splineMax-options.splineMin)/2000 + options.splineMin
+            obsGrX[step]=tempX
+            obsGrY[step]=osp.Eval(tempX)
+
+        obsSplGr=ROOT.TGraph(obsGrX,obsGrY)
+        obsSplGr.SetLineColor(ROOT.kBlack)
+        obsSplGr.Draw("C")
+
+
     fout.Close()
 
     # draw dist information if available
