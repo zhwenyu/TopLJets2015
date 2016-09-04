@@ -21,11 +21,12 @@ parser.add_option("--nomWid", type="string", dest="inwid"   , default="1.324",  
 parser.add_option("--prep", type="string", dest="prepost"   , default="post",    help="the observable distribution to look at")
 parser.add_option("--lims", type="string", dest="limList"   , default="0.05,0.01",    help="the observable distribution to look at")
 parser.add_option("--unblind", dest="unblind", default=False, action='store_true',  help="the observable distribution to look at")
+parser.add_option("--splineVersion", dest="splineV", type="string", default='2',  help="the tspline type to use")
 
 (options, args) = parser.parse_args()
 
 
-def getSplineIntersection(yvalue, spline, scanRes=0.01, startValue=float(options.inwid),minValue=0,maxValue=6) :
+def getSplineIntersection(yvalue, spline, scanRes=0.01, startValue=float(options.inwid),minValue=0,maxValue=6,tolerance=0.0005) :
 
     scanX=startValue
     lastPoint=float('inf')
@@ -34,16 +35,21 @@ def getSplineIntersection(yvalue, spline, scanRes=0.01, startValue=float(options
 
     currentScanRes=scanRes
     scanDirection=1
+    startAbove=spline.Eval(startValue) >= yvalue
 
     # Get the upper limit
     while (scanX < maxValue) :
         splineVal=spline.Eval(scanX)
 
-        if abs(splineVal-yvalue) >= abs(lastPoint-yvalue) and abs(lastPoint-yvalue) < scanRes/2:
-            currentScanRes=currentScanRes/2
-            scanDirection=-1*scanDirection
-            if abs(splineVal-lastPoint) < scanRes and abs(splineVal-yvalue) <= 0.001 :
-                upperLimit = scanX - scanDirection*currentScanRes/2
+        # check if we've crossed the intersection yvalue
+        switchCondition=(startAbove != (splineVal >= yvalue))
+
+        if switchCondition:
+            currentScanRes=currentScanRes/2  # make the scan finer in x
+            startAbove    =(not startAbove)     # if we were above yvalue, switch to below and vice versa
+            scanDirection =-1*scanDirection  # switch the x scan direction
+            if abs(splineVal-yvalue) <= tolerance :
+                upperLimit = scanX
                 break
 
         lastPoint =splineVal
@@ -53,16 +59,21 @@ def getSplineIntersection(yvalue, spline, scanRes=0.01, startValue=float(options
     lastPoint=float('inf')
     currentScanRes=scanRes
     scanDirection=-1
+    startAbove=spline.Eval(startValue) >= yvalue
 
     # Get the lower limit
     while (scanX > minValue) :
         splineVal=spline.Eval(scanX)
 
-        if abs(splineVal-yvalue) >= abs(lastPoint-yvalue) and abs(lastPoint-yvalue) < scanRes/2:
-            currentScanRes=currentScanRes/2
-            scanDirection=-1*scanDirection
-            if abs(splineVal-lastPoint) < scanRes and abs(splineVal-yvalue) <= 0.001 :
-                lowerLimit = scanX - scanDirection*currentScanRes/2
+        # check if we've crossed the intersection yvalue
+        switchCondition=(startAbove != (splineVal >= yvalue))
+
+        if switchCondition:
+            currentScanRes=currentScanRes/2  # make the scan finer in x
+            startAbove    =(not startAbove)     # if we were above yvalue, switch to below and vice versa
+            scanDirection =-1*scanDirection  # switch the x scan direction
+            if abs(splineVal-yvalue) <= tolerance :
+                lowerLimit = scanX
                 break
 
         lastPoint = splineVal
@@ -74,21 +85,30 @@ def getSplineIntersection(yvalue, spline, scanRes=0.01, startValue=float(options
 # now run and print
 limList=options.limList.split(',')
 fIn = ROOT.TFile("%s/%s"%(options.indir,options.iname),"READ")
-tSpline=ROOT.TSpline3(fIn.Get("Spline%s%s"%(options.dist,options.prepost)))
+
+tSpline=None
 obsSpline=None
 
-if options.unblind:
-    obsSpline=ROOT.TSpline3(fIn.Get("SplineObs%s"%options.dist))
+if options.splineV == "3" :
+    tSpline=ROOT.TSpline3(fIn.Get("Spline%s%s"%(options.dist,options.prepost)))
+    if options.unblind:
+        obsSpline=ROOT.TSpline3(fIn.Get("SplineObs%s"%options.dist))
+elif options.splineV == "2" :
+    tSpline=ROOT.TMVA.TSpline2("Spline%s"%options.prepost, fIn.Get("CLsGraph%s%s"%(options.dist,options.prepost)))
+    if options.unblind:
+        obsSpline=ROOT.TMVA.TSpline2("SplineObs%s"%options.prepost, fIn.Get("CLsGraphincmlb"))
+
+
 
 print "Limits for ",options.dist,' ',options.prepost
 
 for lim in limList :
     lowLim,upLim=getSplineIntersection(float(lim),tSpline)
-    print '\t\t(EXPECTED) For a confidence level of ',lim,':  (',lowLim,' : ',upLim,')'
+    print '\t\t(EXPECTED) For a CLs of ',lim,':  (',lowLim,' : ',upLim,')'
 
     if options.unblind :
         lowLim,upLim=getSplineIntersection(float(lim),obsSpline)
-        print '\t\t(OBSERVED) For a confidence level of ',lim,':  (',lowLim,' : ',upLim,')'
+        print '\t\t(OBSERVED) For a CLs of ',lim,':  (',lowLim,' : ',upLim,')'
 
 
 

@@ -18,7 +18,7 @@ fi
 
 export LSB_JOB_REPORT_MAIL=N
 
-queue=2nw
+queue=2nd
 outdir=/afs/cern.ch/work/e/ecoleman/public/TopWidth/TopWidth_${ERA}/
 cardsdir=${outdir}/datacards
 wwwdir=~/www/TopWidth_${ERA}/
@@ -126,7 +126,7 @@ case $WHAT in
     X4VALIDATION_SCANS )
         cp ${outdir}/datacards/*.dat ${outdir}/widthx4validation/datacards/
 
-        hadd ${outdir}/widthx4validation/datacards/shapes.root ${outdir}/widthx4validation/datacards/shapes*.root 
+        #hadd ${outdir}/widthx4validation/datacards/shapes.root ${outdir}/widthx4validation/datacards/shapes*.root 
 
         # workspaces 
         cd ${CMSSW_7_4_7dir}
@@ -151,37 +151,40 @@ case $WHAT in
         cd ${outdir}/widthx4validation/
         for dist in ${dists[*]} ; do
         for twid in ${wid[*]} ; do
-            
-            # x = 0
-            cmd="combine ${outdir}/widthx4validation/${twid}_${dist}.root -M MaxLikelihoodFit" 
-            cmd="${cmd} -m 172.5 --redefineSignalPOIs x --minimizerTolerance 0.001"
-            cmd="${cmd} -n x0_fit_exp --setPhysicsModelParameters x=0.0,r=1.2"
-            cmd="${cmd} --saveWorkspace --expectSignal=1"
-            
-            bsub -q ${queue} \
-                ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh \
-                "${outdir}/widthx4validation" "${cmd}" 
+            if [[ "${twid}" == "3p0w" ]] ; then
 
-            # x = 1
-            cmd="combine ${outdir}/widthx4validation/${twid}_${dist}.root -M MaxLikelihoodFit" 
-            cmd="${cmd} -m 172.5 --redefineSignalPOIs x --minimizerTolerance 0.001"
-            cmd="${cmd} -n x1_fit_exp --setPhysicsModelParameters x=1.0,r=1.2"
-            cmd="${cmd} --saveWorkspace --expectSignal=1"
-            
-            bsub -q ${queue} \
+                # x = 0
+                cmd="combine ${outdir}/widthx4validation/${twid}_${dist}.root -M MultiDimFit" 
+                cmd="${cmd} -m 172.5 --redefineSignalPOIs x --floatOtherPOI=1 --minimizerTolerance 0.0001 --algo=grid --points=50"
+                cmd="${cmd} -n x0_fit_exp --setPhysicsModelParameters x=0.0,r=1.0"
+                cmd="${cmd} --saveWorkspace --expectSignal=1 -t -1 --robustFit=1"
+                
+                bsub -q ${queue} \
                 ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh \
-                "${outdir}/widthx4validation" "${cmd}" 
+                    "${outdir}/widthx4validation" "${cmd}" 
 
-            # x profiled
-            cmd="combine ${outdir}/widthx4validation/${twid}_${dist}.root -M MaxLikelihoodFit" 
-            cmd="${cmd} -m 172.5 --redefineSignalPOIs x --minimizerTolerance 0.001"
-            cmd="${cmd} -n x_fit_obs --setPhysicsModelParameters x=0.0,r=1.2"
-            cmd="${cmd} --saveWorkspace"
-            
-            bsub -q ${queue} \
-                ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh \
-                "${outdir}/widthx4validation" "${cmd}" 
-            
+                # x = 1
+                cmd="combine ${outdir}/widthx4validation/${twid}_${dist}.root -M MultiDimFit" 
+                cmd="${cmd} -m 172.5 --redefineSignalPOIs x --floatOtherPOI=1 --minimizerTolerance 0.0001 --algo=grid --points=50"
+                cmd="${cmd} -n x1_fit_exp --setPhysicsModelParameters x=1.0,r=1.0"
+                cmd="${cmd} --saveWorkspace --expectSignal=1 -t -1 --robustFit=1"
+                
+                bsub -q ${queue} \
+                    ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh \
+                    "${outdir}/widthx4validation" "${cmd}" 
+
+                # x from data 
+                cmd="combine ${outdir}/widthx4validation/${twid}_${dist}.root -M MultiDimFit" 
+                cmd="${cmd} -m 172.5 -P x --minimizerTolerance 0.0001 --algo=grid --points=50"
+                cmd="${cmd} -n x_fit_obs --robustFit=1 --setPhysicsModelParameters x=1.0,r=1.0"
+                cmd="${cmd} --saveWorkspace"
+                
+                bsub -q ${queue} \
+                    ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh \
+                    "${outdir}/widthx4validation" "${cmd}" 
+
+            fi
+
             # pre-fit 
             echo "Making CLs for ${twid} ${dist}"
             cmd="combine ${outdir}/widthx4validation/${twid}_${dist}.root -M HybridNew --seed 8192 --saveHybridResult" 
@@ -218,6 +221,48 @@ case $WHAT in
         cd ${outdir}/widthx4validation
         rm statsPlots.root
         for dist in ${dists[*]} ; do
+            for twid in ${wid[*]} ; do
+                ## pre-fit expected 
+                rootcmds="${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis"
+                rootcmds="${rootcmds}/hypoTestResultTreeTopWid.cxx\(\\\"x_pre-fit_exp__${twid}_${dist}.qvals.root"
+                rootcmds="${rootcmds}\\\",172.5,1,\\\"x\\\",1000,\\\"\\\",\\\"${twid}\\\",\\\"${dist}\\\",${unblind},\\\"pre\\\"\)"
+
+                cmd="root -l -q -b"
+                cmd="${cmd} ${outdir}/widthx4validation"
+                cmd="${cmd}/higgsCombinex_pre-fit_exp__${twid}_${dist}.HybridNew.mH172.5.8192.quant0.500.root"
+                cmd="${cmd} ${rootcmds}"
+
+                sh ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh \
+                    "${outdir}/widthx4validation" "${cmd}"
+
+                ## post-fit expected 
+                rootcmds="${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis"
+                rootcmds="${rootcmds}/hypoTestResultTreeTopWid.cxx\(\\\"x_post-fit_exp__${twid}_${dist}.qvals.root"
+                rootcmds="${rootcmds}\\\",172.5,1,\\\"x\\\",1000,\\\"\\\",\\\"${twid}\\\",\\\"${dist}\\\",${unblind},\\\"post\\\"\)"
+
+                cmd="root -l -q -b"
+                cmd="${cmd} ${outdir}/widthx4validation"
+                cmd="${cmd}/higgsCombinex_post-fit_exp__${twid}_${dist}.HybridNew.mH172.5.8192.quant0.500.root"
+                cmd="${cmd} ${rootcmds}"
+
+                sh ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh \
+                    "${outdir}/widthx4validation" "${cmd}"
+
+                ## post-fit observed 
+                rootcmds="${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis"
+                rootcmds="${rootcmds}/hypoTestResultTreeTopWid.cxx\(\\\"x_post-fit_obs__${twid}_${dist}.qvals.root"
+                rootcmds="${rootcmds}\\\",172.5,1,\\\"x\\\",1000,\\\"\\\",\\\"${twid}\\\",\\\"${dist}\\\",${unblind},\\\"obs\\\"\)"
+
+                cmd="root -l -q -b"
+                cmd="${cmd} ${outdir}/widthx4validation"
+                cmd="${cmd}/higgsCombinex_post-fit_obs__${twid}_${dist}.HybridNew.mH172.5.8192.root"
+                cmd="${cmd} ${rootcmds}"
+
+                sh ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh \
+                    "${outdir}/widthx4validation" "${cmd}"
+            done
+
+
 
             # Quantiles plot with post-fit information 
             python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getQuantilesPlot.py \
@@ -255,6 +300,8 @@ case $WHAT in
                 --wid ${widStr} \
                 --dist ${dist} \
                 --prep post \
+                --addPre \
+                --splineMin 0.6 --splineMax 4.0 \
                 --unblind
             
             # Get CLs plots for post-fit expectations 
@@ -556,22 +603,23 @@ case $WHAT in
                 --unblind
             
             # Get CLs plots for pre-fit expectations
-            python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getSeparationTables.py\
+            python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getSeparationTables.py \
                 -i ${outdir}/ -o ${outdir}/ \
                 --wid ${widStr} \
                 --prep pre \
                 --dist ${dist}
             
             # Get CLs plots for post-fit expectations 
-            python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getSeparationTables.py\
+            python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getSeparationTables.py \
                 -i ${outdir}/ -o ${outdir}/ \
                 --wid ${widStr} \
                 --dist ${dist} \
                 --prep post \
+                --addPre \
                 --unblind
             
             # Get CLs plots for post-fit expectations 
-            python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getSeparationTables.py\
+            python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getSeparationTables.py \
                 -i ${outdir}/ -o ${outdir}/ \
                 --wid ${widStr} \
                 --dist ${dist} \
