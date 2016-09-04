@@ -261,7 +261,7 @@ if not options.doAll :
     if options.unblind :
         obsGr=ROOT.TGraphErrors(x,obsY,obsErrX,obsErrY)
         obsGr.Draw("P")
-        obsGr.Write()
+        obsGr.Write("CLsGraph%s"%(options.dist))
         osp=ROOT.TMVA.TSpline2("SplineObs%s"%options.dist,obsGr)
         osp.Write("SplineObs%s"%options.dist)
         leg.AddEntry(osp,"Observed")
