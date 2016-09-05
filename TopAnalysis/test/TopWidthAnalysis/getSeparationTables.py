@@ -202,14 +202,14 @@ if not options.doAll :
     clsGr.SetName("CLsExp_%s"%options.dist)
     clsGr.GetXaxis().SetRangeUser(0.5+(-0.05 if options.unblind else -0.2),3.5)
     clsGr.GetYaxis().SetRangeUser(7e-03,1.1)
-    clsGr.GetYaxis().SetTitleOffset(-0.002)
+    clsGr.GetYaxis().SetTitleOffset(0.5)
     clsGr.SetMarkerStyle(1)
     clsGr.SetMarkerColor(ROOT.kNone)
     clsGr.Draw("AP")
 
     tsp=ROOT.TMVA.TSpline2("Spline%s%s"%(options.dist,options.prepost),clsGr)
     tsp.SetName("Spline%s%s"%(options.dist,options.prepost))
-    tsp.SetLineColor(ROOT.kBlack)
+    tsp.SetLineColor(ROOT.kTeal)
 
     # make graph out of spline
     tspGrX=ROOT.TVector(2000)
