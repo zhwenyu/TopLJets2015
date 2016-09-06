@@ -154,7 +154,7 @@ def saveToShapesFile(outFile,shapeColl,directory=''):
 """
 make an MC truth dataset (sigs+bkgs)
 """
-def makeMCTruthHist(hypothesis,sigList,dists,infile=None,dirhandle="",filtername=""):
+def makeMCTruthHist(hypothesis,sigList,dists,infile=None,dirhandle="",filtername="",exthypo=""):
     outputHist=None
     firstLoop=True
     print "Producing MC Truth data for hypothesis %s"%hypothesis
@@ -162,11 +162,12 @@ def makeMCTruthHist(hypothesis,sigList,dists,infile=None,dirhandle="",filtername
     tdists=dists.copy()
 
     #replace with whatever we find in the provided dir
-    if dirhandle != "" and infile is not None and filtername != "":
-        _,pdists=getMergedDists(infile,dirhandle,None,"",[hypothesis.replace('p','.')],"1.0w",sigList)
+    if dirhandle != "" and (infile is not None) and filtername != "" and exthypo!="":
+        _,pdists=getMergedDists(infile,dirhandle,None,"",[exthypo.replace('p','.')],"1.0w",sigList)
         for key in pdists :
             if filtername not in key : continue
             tdists[key.replace(filtername,'')+hypothesis] = pdists[key].Clone()
+            tdists[key.replace(filtername,'')+hypothesis].SetDirectory(0)
 
     for sig in sigList :
         sigHist=tdists["%s%s"%(sig,hypothesis)].Clone()
@@ -183,6 +184,8 @@ def makeMCTruthHist(hypothesis,sigList,dists,infile=None,dirhandle="",filtername
         bkgHist=tdists[dist].Clone()
         outputHist.Add(bkgHist)
         outputHist.SetName("data_obs")
+
+    outputHist.SetDirectory(0)
 
     return outputHist
 
@@ -206,6 +209,8 @@ def main():
     parser.add_option(      '--lbCat',     dest='lbCat',     help='pt categories to consider',                default='highpt,lowpt',  type='string')
     parser.add_option(      '--truth', dest='truthDataset',  help='make data out of MC truth',                default='',              type='string')
     parser.add_option(      '--trx4', dest='truthExtDataset',help='make data out of 4xMC truth',              default='',              type='string')
+    parser.add_option(      '--trx4Width', dest='truthExtWidth',help='4xMC truth has this width',             default='',              type='string')
+    parser.add_option(      '--trx4Input', dest='truthExtfIn'  ,help='4xMC truth has this infile',            default='',              type='string')
     parser.add_option(      '--min', dest='minIndex',help='start at this card',              default=-5,              type=int)
     parser.add_option(      '--max', dest='maxIndex',help='end at this card',                default=10000,           type=int)
     parser.add_option('--noshapes', dest='skipMakingShapes', help='jump straight to morphing',                     default=False, action='store_true')
@@ -370,9 +375,9 @@ def main():
 
         if not opt.truthDataset=="" :
             obs=makeMCTruthHist(opt.truthDataset,signalList,exp,
-                    (systfIn if opt.truthExtDataset != '' else None),
+                    (ROOT.TFile(opt.truthExtfIn) if opt.truthExtfIn != "" else None),
                     ('%s%s%s_%s_'%(lbCat,lfs,cat,dist)),
-                    opt.truthExtDataset)
+                    opt.truthExtDataset,opt.truthExtWidth)
         #exp=filterShapeList(exp,signalList,rawSignalList)
 
         nomShapes=exp.copy()

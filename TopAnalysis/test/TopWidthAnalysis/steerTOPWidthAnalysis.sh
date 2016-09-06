@@ -104,10 +104,10 @@ case $WHAT in
 
 
         export PYTHONPATH=$PYTHONPATH:/usr/lib64/python2.6/site-packages/
-        for twid in ${wid[*]} ; do 
+        for twid in 4p0w ; do 
             cd ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/
-            mkdir ${outdir}/width${twid}validation
-            rm ${outdir}/width${twid}validation/datacards/*
+            mkdir ${outdir}/widthx4validation_new
+            rm ${outdir}/widthx4validation_new/datacards/*
         for index in `seq 0 17 204` ; do
             min=$index
             max=$(($index+16))
@@ -115,27 +115,30 @@ case $WHAT in
             nohup python test/TopWidthAnalysis/createShapesFromPlotter.py \
                     -s tbart,tW \
                     --dists ${distStr} \
-                    -o ${outdir}/width${twid}validation/datacards/ \
+                    -o ${outdir}/widthx4validation_new/datacards/ \
                     -i ${outdir}/analysis/plots/plotter.root \
                     --systInput ${outdir}/analysis/plots/syst_plotter.root \
-                    --truth ${twid} \
+                    --truth 4p0w \
+                    --trx4 widthx4 \
+                    --trx4Width 1p0w \
+                    --trx4Input ${outdir}/prevAnalysis4/analysis/plots/syst_plotter.root \
                     -n shapes${twid}$index \
                     --min $min --max $max \
                     --nomorph > shapes${twid}${index}.txt &
         done
             # so local jobs don't destroy lxplus (cheap but it works)
-            sleep 900 
+            #sleep 900 
         done
     ;;
     X4VALIDATION_SCANS )
         cd ${CMSSW_7_4_7dir}
         eval `scramv1 runtime -sh`
 
-        for swid in ${wid[*]}; do
+        for swid in 4p0w; do
         
-        base=${outdir}/width${swid}validation/
+        base=${outdir}/widthx4validation_new/
         # hadd shapes 
-        hadd ${base}/datacards/shapes.root ${base}/datacards/shapes*.root 
+        #hadd ${base}/datacards/shapes.root ${base}/datacards/shapes*.root 
 
         # produce datacards
         # for a given width, merge all
@@ -247,60 +250,68 @@ case $WHAT in
         cd ${CMSSW_7_4_7dir}
         eval `scramv1 runtime -sh` 
 
-        for swid in ${wid[*]} ; do 
+        for swid in 4p0w ; do 
 
-        base=${outdir}/width${swid}validation/
+        base=${outdir}/widthx4validation_new/
 
         cd ${base}
         rm statsPlots.root
         for dist in ${dists[*]} ; do
-            for twid in ${wid[*]} ; do
-                ## pre-fit expected 
-                rootcmds="${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis"
-                rootcmds="${rootcmds}/hypoTestResultTreeTopWid.cxx\(\\\"x_pre-fit_exp__${twid}_${dist}.qvals.root"
-                rootcmds="${rootcmds}\\\",172.5,1,\\\"x\\\",1000,\\\"\\\",\\\"${twid}\\\",\\\"${dist}\\\",${unblind},\\\"pre\\\"\)"
+            #for twid in ${wid[*]} ; do
+            #    ## pre-fit expected 
+            #    rootcmds="${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis"
+            #    rootcmds="${rootcmds}/hypoTestResultTreeTopWid.cxx\(\\\"x_pre-fit_exp__${twid}_${dist}.qvals.root"
+            #    rootcmds="${rootcmds}\\\",172.5,1,\\\"x\\\",1000,\\\"\\\",\\\"${twid}\\\",\\\"${dist}\\\",${unblind},\\\"pre\\\"\)"
 
-                cmd="root -l -q -b"
-                cmd="${cmd} ${base}"
-                cmd="${cmd}/higgsCombinex_pre-fit_exp__${twid}_${dist}.HybridNew.mH172.5.8192.quant0.500.root"
-                cmd="${cmd} ${rootcmds}"
+            #    cmd="root -l -q -b"
+            #    cmd="${cmd} ${base}"
+            #    cmd="${cmd}/higgsCombinex_pre-fit_exp__${twid}_${dist}.HybridNew.mH172.5.8192.quant0.500.root"
+            #    cmd="${cmd} ${rootcmds}"
 
-                sh ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh \
-                    "${base}" "${cmd}"
+            #    sh ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh \
+            #        "${base}" "${cmd}"
 
-                ## post-fit expected 
-                rootcmds="${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis"
-                rootcmds="${rootcmds}/hypoTestResultTreeTopWid.cxx\(\\\"x_post-fit_exp__${twid}_${dist}.qvals.root"
-                rootcmds="${rootcmds}\\\",172.5,1,\\\"x\\\",1000,\\\"\\\",\\\"${twid}\\\",\\\"${dist}\\\",${unblind},\\\"post\\\"\)"
+            #    ## post-fit expected 
+            #    rootcmds="${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis"
+            #    rootcmds="${rootcmds}/hypoTestResultTreeTopWid.cxx\(\\\"x_post-fit_exp__${twid}_${dist}.qvals.root"
+            #    rootcmds="${rootcmds}\\\",172.5,1,\\\"x\\\",1000,\\\"\\\",\\\"${twid}\\\",\\\"${dist}\\\",${unblind},\\\"post\\\"\)"
 
-                cmd="root -l -q -b"
-                cmd="${cmd} ${base}"
-                cmd="${cmd}/higgsCombinex_post-fit_exp__${twid}_${dist}.HybridNew.mH172.5.8192.quant0.500.root"
-                cmd="${cmd} ${rootcmds}"
+            #    cmd="root -l -q -b"
+            #    cmd="${cmd} ${base}"
+            #    cmd="${cmd}/higgsCombinex_post-fit_exp__${twid}_${dist}.HybridNew.mH172.5.8192.quant0.500.root"
+            #    cmd="${cmd} ${rootcmds}"
 
-                sh ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh \
-                    "${base}" "${cmd}"
+            #    sh ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh \
+            #        "${base}" "${cmd}"
 
-                ## post-fit observed 
-                rootcmds="${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis"
-                rootcmds="${rootcmds}/hypoTestResultTreeTopWid.cxx\(\\\"x_post-fit_obs__${twid}_${dist}.qvals.root"
-                rootcmds="${rootcmds}\\\",172.5,1,\\\"x\\\",1000,\\\"\\\",\\\"${twid}\\\",\\\"${dist}\\\",${unblind},\\\"obs\\\"\)"
+            #    ## post-fit observed 
+            #    rootcmds="${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis"
+            #    rootcmds="${rootcmds}/hypoTestResultTreeTopWid.cxx\(\\\"x_post-fit_obs__${twid}_${dist}.qvals.root"
+            #    rootcmds="${rootcmds}\\\",172.5,1,\\\"x\\\",1000,\\\"\\\",\\\"${twid}\\\",\\\"${dist}\\\",${unblind},\\\"obs\\\"\)"
 
-                cmd="root -l -q -b"
-                cmd="${cmd} ${base}"
-                cmd="${cmd}/higgsCombinex_post-fit_obs__${twid}_${dist}.HybridNew.mH172.5.8192.root"
-                cmd="${cmd} ${rootcmds}"
+            #    cmd="root -l -q -b"
+            #    cmd="${cmd} ${base}"
+            #    cmd="${cmd}/higgsCombinex_post-fit_obs__${twid}_${dist}.HybridNew.mH172.5.8192.root"
+            #    cmd="${cmd} ${rootcmds}"
 
-                sh ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh \
-                    "${base}" "${cmd}"
-            done
-
-            # Get CLs plots for pre-fit expectations
-            python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getSeparationTables.py\
+            #    sh ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh \
+            #        "${base}" "${cmd}"
+            #done
+            
+            # Quantiles plot with post-fit information 
+            python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getQuantilesPlot.py \
                 -i ${base}/ -o ${base}/ \
                 --wid ${widStr} \
-                --prep pre \
-                --dist ${dist}
+                --dist ${dist}  \
+                --prep post \
+                --unblind
+
+            # Get CLs plots for pre-fit expectations
+            #python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getSeparationTables.py\
+            #    -i ${base}/ -o ${base}/ \
+            #    --wid ${widStr} \
+            #    --prep pre \
+            #    --dist ${dist}
             
             # Get CLs plots for post-fit expectations 
             python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getSeparationTables.py\
@@ -309,17 +320,32 @@ case $WHAT in
                 --dist ${dist} \
                 --prep post \
                 --addPre \
-                --splineMin 0.4 --splineMax 4.0 \
+                --splineMin 0.4 --splineMax 7.0 \
                 --unblind
             
             # Get CLs plots for post-fit expectations 
-            python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getSeparationTables.py\
-                -i ${base}/ -o ${base}/ \
-                --wid ${widStr} \
-                --dist ${dist} \
-                --prep obs \
-                --unblind
+            #python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getSeparationTables.py\
+            #    -i ${base}/ -o ${base}/ \
+            #    --wid ${widStr} \
+            #    --dist ${dist} \
+            #    --prep obs \
+            #    --unblind
+        done
+        done
+    ;;
+    X4VALIDATION_FITS )
+        cd ${CMSSW_7_4_7dir}
+        eval `scramv1 runtime -sh` 
 
+        for swid in ${wid[*]} ; do 
+
+        base=${outdir}/width${swid}validation/
+
+        cd ${base}
+        rm statsPlots.root
+        for dist in ${dists[*]} ; do
+
+            echo "Limits for ${dist} ||| ${swid}"
             python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getCLsFromFit.py \
                 -i ${base}/ \
                 --dist ${dist} \
