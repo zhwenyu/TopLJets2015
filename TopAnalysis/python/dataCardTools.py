@@ -190,3 +190,11 @@ def saveToShapesFile(outFile,shapeColl,directory='',rebin=0):
 
     #all done here
     fOut.Close()
+
+"""
+"""
+def replaceBadCharacters(inputStr):
+    newStr = inputStr
+    for token in ['+','-','*',' ','#','{','(',')','}','@']:
+        newStr=newStr.replace(token,'')
+    return newStr

@@ -97,7 +97,7 @@ def doPlot(plotName,ch):
                  color,
                  isData)
     plot.finalize()
-    plot.show(outDir="plots/",lumi=2.3)
+    plot.show(outDir="plots/",lumi=2300)
     #plot.show(outDir="plots/",lumi=2.3,noStack=True,saveTeX=True)
     #raw_input()
                      

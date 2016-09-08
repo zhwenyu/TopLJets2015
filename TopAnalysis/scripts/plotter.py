@@ -108,6 +108,8 @@ def main():
                         if not keep: continue
                         obj=fIn.Get(key)
                         if not obj.InheritsFrom('TH1') : continue
+                        if not obj.InheritsFrom('TH2') : fixExtremities(obj)
+
                         if not isData and not '(data)' in sp[1]: 
                             sfVal=1.0
                             for procToScale in procSF:

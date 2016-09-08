@@ -89,7 +89,7 @@ void Run5TeVAnalysis(TString inFileName,
       histos["detain"+pf]=new TH1F("detain"+pf,";#Delta#eta(in);Electrons",25,-0.015,0.15);
       histos["dphiin"+pf]=new TH1F("dephiin"+pf,";#Delta#phi(in);Electrons",25,-0.05,0.05);
       histos["hovere"+pf]=new TH1F("hovere"+pf,";H/E;Electrons",25,0,0.05);
-      histos["eoverpinv"+pf]=new TH1F("eoverpinv"+pf,";1/E+1/p [GeV^{-1}];Electrons",25,-0.05,0.05);
+      histos["eoverpinv"+pf]=new TH1F("eoverpinv"+pf,";1/E-1/p [GeV^{-1}];Electrons",25,0,0.1);
       histos["d0"+pf]=new TH1F("d0"+pf,";d_{0} [cm];Electrons",25,-0.05,0.05);
       histos["dz"+pf]=new TH1F("dz"+pf,";d_{z} [cm];Electrons",25,-0.5,0.5);
       histos["misshits"+pf]=new TH1F("misshits"+pf,";Missing hits;Electrons",4,0,4);
@@ -413,8 +413,10 @@ void Run5TeVAnalysis(TString inFileName,
 	const Int_t nEl = (Int_t)elePt_p->size();
 	for(Int_t elIter = 0; elIter < nEl; elIter++)
 	  {
-	    bool passPt(elePt_p->at(elIter) > 40.0);  
-	    bool passEta(fabs(eleEta_p->at(elIter)) < 2.5 && (fabs(eleEta_p->at(elIter)) < 1.4442 || fabs(eleEta_p->at(elIter)) > 1.5660));
+	    bool passMediumPt(elePt_p->at(elIter) > 40.0);  
+	    bool passMediumEta(fabs(eleEta_p->at(elIter)) < 2.1 && (fabs(eleEta_p->at(elIter)) < 1.4442 || fabs(eleEta_p->at(elIter)) > 1.5660));
+	    bool passPt(elePt_p->at(elIter) > 20.0);  
+	    bool passEta(fabs(eleEta_p->at(elIter)) < 2.5);
 	    if(!passPt || !passEta) continue;
 	    bool passMediumId ((fabs(eleEta_p->at(elIter)) <= 1.4479
 				&& fabs(eleSigmaIEtaIEta_p->at(elIter)) < 0.0101
@@ -425,7 +427,7 @@ void Run5TeVAnalysis(TString inFileName,
 				&& fabs(eleD0_p->at(elIter)) < 0.0118
 				&& fabs(eleDz_p->at(elIter)) < 0.373
 				&& fabs(eleMissHits_p->at(elIter)) <= 2 
-				&& fabs(elepassConversionVeto_p->at(elIter)))
+				&& elepassConversionVeto_p->at(elIter)==1)
 			       ||
 			       (fabs(eleEta_p->at(elIter)) > 1.4479
 				&& fabs(eleSigmaIEtaIEta_p->at(elIter)) < 0.0283
@@ -436,7 +438,7 @@ void Run5TeVAnalysis(TString inFileName,
 				&& fabs(eleD0_p->at(elIter)) < 0.0739
 				&& fabs(eleDz_p->at(elIter)) < 0.602
 				&& fabs(eleMissHits_p->at(elIter)) <= 1 
-				&& fabs(elepassConversionVeto_p->at(elIter)))
+				&& elepassConversionVeto_p->at(elIter)==1)
 			       );
 	    bool passVetoId ((fabs(eleEta_p->at(elIter)) <= 1.4479
 			      && fabs(eleSigmaIEtaIEta_p->at(elIter)) < 0.0114
@@ -464,12 +466,15 @@ void Run5TeVAnalysis(TString inFileName,
 	    double deposit, corrEA_isolation;
 	    deposit =  fabs(elePFPhoIso_p->at(elIter)+elePFNeuIso_p->at(elIter)-eleEffAreaTimesRho_p->at(elIter));
 	    corrEA_isolation = (elePFChIso_p->at(elIter) + TMath::Max (0.0, deposit )) / elePt_p->at(elIter);
-	    
 
 	    bool passMediumIso( (corrEA_isolation < 0.0766 && fabs(eleEta_p->at(elIter)) <= 1.4479) || (corrEA_isolation < 0.0678 && fabs(eleEta_p->at(elIter)) > 1.4479) );
 	    bool passVetoIso( (corrEA_isolation < 0.126 && fabs(eleEta_p->at(elIter)) <= 1.4479) || (corrEA_isolation < 0.144 && fabs(eleEta_p->at(elIter)) > 1.4479) );
 
 	    TString pf(fabs(eleEta_p->at(elIter)) > 1.4479 ? "_ee" : "_eb");
+	    if(passMediumId)
+	      {
+		histos["reliso"+pf]->Fill( corrEA_isolation,evWeight);
+	      }
 	    if(passMediumIso)
 	      {
 		histos["sigmaietaieta"+pf]->Fill(eleSigmaIEtaIEta_p->at(elIter),evWeight);
@@ -482,22 +487,18 @@ void Run5TeVAnalysis(TString inFileName,
 		histos["misshits"+pf]->Fill(eleMissHits_p->at(elIter),evWeight);
 		histos["convveto"+pf]->Fill(elepassConversionVeto_p->at(elIter),evWeight);
 	      }
-	    if(passMediumId)
-	      {
-		histos["reliso"+pf]->Fill( corrEA_isolation,evWeight);
-	      }
 	    
 	
 	    //save electron if good
 	    TLorentzVector p4(0,0,0,0);
 	    p4.SetPtEtaPhiM(elePt_p->at(elIter),eleEta_p->at(elIter),elePhi_p->at(elIter), 0.0510);
 	        
-	    if (passMediumId && corrEA_isolation > 0.2)
+	    if (passMediumPt && passMediumEta && passMediumId && corrEA_isolation > 0.2)
 	      {
 		mediumElectronsNonIso.push_back( p4 );
 		elCharge.push_back(eleCharge_p->at(elIter));
 	      }
-	    else if(passMediumId && passMediumIso)
+	    else if(passMediumPt && passMediumEta && passMediumId && passMediumIso)
 	      {
 		mediumElectrons.push_back( p4 );
 		elCharge.push_back(eleCharge_p->at(elIter));

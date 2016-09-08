@@ -5,6 +5,28 @@ import os,sys
 from TopLJets2015.TopAnalysis.rounding import *
 
 """
+increments the first and the last bin to show the under- and over-flows
+"""
+def fixExtremities(h,addOverflow=True,addUnderflow=True):
+    if addUnderflow :
+        fbin  = h.GetBinContent(0) + h.GetBinContent(1)
+	fbine = ROOT.TMath.Sqrt(h.GetBinError(0)*h.GetBinError(0) + h.GetBinError(1)*h.GetBinError(1))
+	h.SetBinContent(1,fbin)
+	h.SetBinError(1,fbine)
+	h.SetBinContent(0,0)
+	h.SetBinError(0,0)
+    if addOverflow:
+        nbins = h.GetNbinsX();
+	fbin  = h.GetBinContent(nbins) + h.GetBinContent(nbins+1)
+	fbine = ROOT.TMath.Sqrt(h.GetBinError(nbins)*h.GetBinError(nbins)  + h.GetBinError(nbins+1)*h.GetBinError(nbins+1))
+	h.SetBinContent(nbins,fbin)
+	h.SetBinError(nbins,fbine)
+	h.SetBinContent(nbins+1,0)
+	h.SetBinError(nbins+1,0)
+
+
+
+"""
 A wrapper to store data and MC histograms for comparison
 """
 class Plot(object):
@@ -19,7 +41,10 @@ class Plot(object):
         self._garbageList = []
         self.plotformats = ['pdf','png']
         self.savelog = False
+        self.doChi2 = False
         self.ratiorange = (0.76,1.24)
+        self.frameMin=0.1
+        self.frameMax=1.45
         self.mcUnc=0
 
     def add(self, h, title, color, isData,spImpose):
@@ -129,10 +154,15 @@ class Plot(object):
         p1.cd()
 
         # legend
-        iniy=0.9 if self.wideCanvas or noStack else 0.85
-        dy=0.1 if noStack else 0.02
-        ndy=len(self.mc) if noStack else max(len(self.mc)-2,0)
-        leg = ROOT.TLegend(0.45, iniy-dy*ndy, 0.95, iniy+0.05)
+        iniy=0.9 if self.wideCanvas else 0.85
+        dy=0.1 
+        ndy= max(len(self.mc)-2,0)
+        inix,dx =0.45,0.5
+        if noStack:
+            inix,dx=0.6,0.35
+            iniy,dy,ndy=0.95,0.02,len(self.mc)
+
+        leg = ROOT.TLegend(inix, iniy-dy*ndy, inix+dx, iniy+0.05)
 
         leg.SetBorderSize(0)
         leg.SetFillStyle(0)        
@@ -149,7 +179,7 @@ class Plot(object):
             #compare
             if noStack:
                 refH=self.mc.values()[0]
-                if refH!=self.mc[h]:
+                if refH!=self.mc[h] and self.doChi2:
                     chi2=refH.Chi2Test( self.mc[h], 'WW CHI2')
                     pval=refH.Chi2Test( self.mc[h], 'WW')     
                     self.mc[h].SetTitle('#splitline{%s}{#chi^{2}=%3.1f (p-val: %3.3f)}'%(self.mc[h].GetTitle(),chi2,pval))
@@ -204,7 +234,7 @@ class Plot(object):
         else:
             maxY=self.dataH.GetMaximum()
 
-        frame.GetYaxis().SetRangeUser(0.1,maxY*1.45)
+        frame.GetYaxis().SetRangeUser(self.frameMin,self.frameMax*maxY)
 
         frame.SetDirectory(0)
         frame.Reset('ICE')
@@ -213,8 +243,12 @@ class Plot(object):
         frame.GetYaxis().SetLabelSize(0.04)
         frame.GetYaxis().SetNoExponent()
         frame.GetYaxis().SetTitleOffset(1.3)
-        frame.GetXaxis().SetTitleSize(0.0)
-        frame.GetXaxis().SetLabelSize(0.0)
+        if self.dataH:
+            frame.GetXaxis().SetTitleSize(0.0)
+            frame.GetXaxis().SetLabelSize(0.0)
+        else :
+            frame.GetXaxis().SetTitleSize(0.045)
+            frame.GetXaxis().SetLabelSize(0.04)
         if self.wideCanvas and totalMC is None : 
             frame.GetXaxis().SetLabelSize(0.03)
             frame.GetXaxis().SetTitleSize(0.035)

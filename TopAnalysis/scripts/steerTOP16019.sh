@@ -3,7 +3,7 @@
 WHAT=$1; 
 ERA=$2
 if [ "$#" -ne 2 ]; then 
-    echo "steerTOPWidthAnalysis.sh <SEL/MERGESEL/PLOTSEL/WWWSEL/ANA/MERGE/BKG/PLOT/WWW> <ERA>";
+    echo "steerTOPWidthAnalysis.sh <SEL/MERGESEL/PLOTSEL/WWWSEL/ANA/MERGE/BKG/PLOT/WWW/HYPOTEST> <ERA>";
     echo "        SEL          - launches selection jobs to the batch, output will contain summary trees and control plots"; 
     echo "        MERGESEL     - merge the output of the jobs";
     echo "        PLOTSEL      - runs the plotter tool on the selection";
@@ -13,6 +13,7 @@ if [ "$#" -ne 2 ]; then
     echo "        BKG          - estimate DY scale factor from data";
     echo "        PLOT         - runs the plotter tool on the analysis outputs";
     echo "        WWW          - moves the analysis plots to an afs-web-based area";
+    echo "        HYPOTEST     - create the datacards, steering scripts for hypothesis testing and submit to batch";
     echo " "
     echo "        ERA          - era2015/era2016";
     exit 1; 
@@ -102,28 +103,32 @@ case $WHAT in
         cp plots/*.{root,png,pdf} ${wwwdir}/comb 
         cp test/index.php ${wwwdir}/comb
 	;;
-    DATACARDS ) # to get the shapes file / datacards for the full analysis
-	echo "Forcing to use CMSSW_7_4_7"
-        cd ${COMBINERELEASE}
-        eval `scram r -sh`
-        cd -
-	cardsdir=${outdir}/datacards
-	mkdir -p ${cardsdir}
-        rm ${cardsdir}
-
-        for index in `seq 0 17 204` ; do
-            min=$index
-            max=$(($index+16))
-
-            nohup python test/TopWidthAnalysis/createShapesFromPlotter.py \
-                -s tbart,tW \
-                --dists incmlb \
-                -o ${outdir}/datacards/ \
-                -n shapes$index \
-                -i ${outdir}/analysis/plots/plotter.root \
-                --systInput ${outdir}/analysis/plots/syst_plotter.root \
-                --nomorph --min $min --max $max > ${cardsdir}/shapes${index}.txt & 
-        done
-    ;;
+    HYPOTEST ) # to get the shapes file / datacards for the full analysis
+	mainHypo=1.0
+	altHypo=(0.2 0.4 0.6 0.8 1.0 1.2 1.4 1.6 1.8 2.0 2.2 2.4 2.6 2.8 3.0 3.5 4.0)
+	data=(-1.0 3.0)
+        # data=1.0 --pseudoDataFromSim="t#bar{t}  widthx4"\
+	for h in ${altHypo[@]}; do
+	    for d in ${data[@]}; do
+		cmd="python test/TopWidthAnalysis/runHypoTestDatacards.py"
+		cmd="${cmd} --combine ${COMBINERELEASE}"
+		cmd="${cmd} --mainHypo=${mainHypo} --altHypo ${h} --pseudoData=${d}"
+		cmd="${cmd} -s tbart,tW --replaceDYshape"
+		cmd="${cmd} --dist incmlb"
+		cmd="${cmd} -o ${outdir}/datacards/"
+		cmd="${cmd} -i ${outdir}/analysis/plots/plotter.root"
+		cmd="${cmd} --systInput ${outdir}/analysis/plots/syst_plotter.root"
+		
+		echo "Submitting ($mainHypo,$h,$d)"		
+		if [ "$h" == "2.2" ]; then
+		    if [ "$d" == "-1.0" ]; then
+			echo "\t validation will be included"
+			cmd="${cmd} --doValidation"
+		    fi
+		fi
+		bsub -q ${queue} ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${cmd};
+            done
+	done
+	;;
     
 esac
