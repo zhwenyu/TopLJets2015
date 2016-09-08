@@ -14,7 +14,7 @@ from TopLJets2015.TopAnalysis.dataCardTools import *
 """
 customize getting the distributions for hypothesis testing
 """
-def getDistsForHypoTest(fIn,systfIn,cat,rawSignalList,opt,outDir):
+def getDistsForHypoTest(fIn,systfIn,cat,rawSignalList,opt,outDir=""):
 
     obs,exp=getDistsFrom(fIn.Get('%s_%s_1.0w'%(cat,opt.dist)))
 

@@ -122,7 +122,7 @@ case $WHAT in
 		echo "Submitting ($mainHypo,$h,$d)"		
 		if [ "$h" == "2.2" ]; then
 		    if [ "$d" == "-1.0" ]; then
-			echo "\t validation will be included"
+			echo "    validation will be included"
 			cmd="${cmd} --doValidation"
 		    fi
 		fi
