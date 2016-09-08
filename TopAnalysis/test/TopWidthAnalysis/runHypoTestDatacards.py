@@ -134,6 +134,11 @@ def doCombineScript(opt,args,outDir,dataCardList):
     script.write('combine workspace.root -M MultiDimFit -m 172.5 -P x --floatOtherPOI=1  --algo=grid --points=50 -n x_scan_obs --minimizerTolerance 0.001 --robustFit=1 --saveWorkspace;\n')
     script.write('combine workspace.root -M MaxLikelihoodFit -m 172.5 --redefineSignalPOIs x --minimizerTolerance 0.001   -n x_fit_obs --saveWorkspace --robustFit=1;\n')
     script.write('\n')
+    script.write('### CLs\n')
+    script.write('combine workspace.root -M HybridNew --seed 8192 --saveHybridResult -m 172.5  --testStat=TEV --singlePoint 1 -T %d -i 2 --fork 6 --clsAcc 0 --fullBToys  --generateExt=1 --generateNuis=0 --expectedFromGrid 0.5 -n cls_prefit_exp;\n'%opt.nToys)
+    script.write('combine workspace.root -M HybridNew --seed 8192 --saveHybridResult -m 172.5  --testStat=TEV --singlePoint 1 -T %d -i 2 --fork 6 --clsAcc 0 --fullBToys  --frequentist --expectedFromGrid 0.5 -n cls_postfit_exp;\n'%opt.nToys)
+    script.write('combine workspace.root -M HybridNew --seed 8192 --saveHybridResult -m 172.5  --testStat=TEV --singlePoint 1 -T %d -i 2 --fork 6 --clsAcc 0 --fullBToys  --frequentist -n cls_postfit_obs;\n'%opt.nToys)
+    script('\n')
     script.close()
 
     return scriptname
@@ -645,6 +650,7 @@ def main():
     parser.add_option('-i', '--input',              dest='input',              help='input plotter',                               default=None,        type='string')
     parser.add_option(      '--systInput',          dest='systInput',          help='input plotter for systs from alt samples',    default=None,        type='string')
     parser.add_option('-d', '--dist',               dest='dist',               help='distribution',                                default='minmlb',    type='string')
+    parser.add_option(      '--nToys',              dest='nToys',              help='toys to through for CLs',                     default=2000,        type=int)
     parser.add_option(      '--pseudoData',         dest='pseudoData',         help='pseudo data to use (-1=real data)',           default=1.0,         type=float)
     parser.add_option(      '--replaceDYshape',     dest='replaceDYshape',     help='use DY shape from syst file',                 default=False,       action='store_true')
     parser.add_option(      '--doValidation',       dest='doValidation',       help='create validation plots',                     default=False,       action='store_true')

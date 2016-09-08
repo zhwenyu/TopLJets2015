@@ -103,10 +103,10 @@ case $WHAT in
         cp plots/*.{root,png,pdf} ${wwwdir}/comb 
         cp test/index.php ${wwwdir}/comb
 	;;
-    HYPOTEST ) # to get the shapes file / datacards for the full analysis
+    HYPOTEST ) 
 	mainHypo=1.0
 	altHypo=(0.2 0.4 0.6 0.8 1.0 1.2 1.4 1.6 1.8 2.0 2.2 2.4 2.6 2.8 3.0 3.5 4.0)
-	data=(-1.0 3.0)
+	data=(-1.0 1.0 3.0)
         # data=1.0 --pseudoDataFromSim="t#bar{t}  widthx4"\
 	for h in ${altHypo[@]}; do
 	    for d in ${data[@]}; do
