@@ -427,36 +427,47 @@ def compareNuisances(inDir,opt):
         ires+=1
         inF=ROOT.TFile.Open('%s/%s.root'%(inDir,inF))
         fit_s=inF.Get('w').getSnapshot("MultiDimFit")
-        npars=fit_s.getSize()-2
 
+        varNames=[]
+        iter = fit_s.createIterator()
+        var = iter.Next()
+        while var :   
+            pname=var.GetName()
+            if not 'CMS_th1' in pname and not '_In' in pname :
+                if not pname in ['x','r']: 
+                    varNames.append( (pname,var.getVal(),var.getError()) )
+            var=iter.Next()
+        npars=len(varNames)
+        
         #init frames if not yet available
         if frame is None:
-            frame=ROOT.TH2F('frame',';N x #sigma_{pre-fit}',1,-3,3,npars,0,npars)
+            frame=ROOT.TH2F('frame',';;N x #sigma_{pre-fit}',npars,0,npars,1,-3,3)
             frame.SetDirectory(0)
 
+            gr1s=ROOT.TGraph()
+            gr1s.SetName('gr1s')
             gr1s.SetMarkerStyle(1)
             gr1s.SetMarkerColor(19)
-            gr1s.SetLineColor(19)
+            gr1s.SetLineColor(19) 
             gr1s.SetFillStyle(1001)
-            gr1s.SetFillColor(19)
-            gr1s.SetPoint(0,-1,0)
-            gr1s.SetPoint(1,-1,npars)
-            gr1s.SetPoint(2,1,npars)
-            gr1s.SetPoint(3,1,0)
-            gr1s.SetPoint(4,-1,0)
-            
-            gr2s.SetMarkerStyle(1)
-            gr2s.SetMarkerColor(18)
+            gr1s.SetFillColor(19) 
+            gr1s.SetPoint(0,0,-1)
+            gr1s.SetPoint(1,npars,-1)
+            gr1s.SetPoint(2,npars,1)
+            gr1s.SetPoint(3,0,1)
+            gr1s.SetPoint(4,-0,-1)
+            gr2s=gr1s.Clone('gr2s')
+            gr2s.SetMarkerColor(18) 
             gr2s.SetLineColor(18)
             gr2s.SetFillStyle(1001)
-            gr2s.SetFillColor(18)
-            gr2s.SetPoint(0,-2,0)
-            gr2s.SetPoint(1,-2,npars)
-            gr2s.SetPoint(2,2,npars)
-            gr2s.SetPoint(3,2,0)
-            gr2s.SetPoint(4,-2,0)
+            gr2s.SetFillColor(18) 
+            gr2s.SetPoint(0,0,-2)
+            gr2s.SetPoint(1,npars,-2)
+            gr2s.SetPoint(2,npars,2)
+            gr2s.SetPoint(3,0,2)
+            gr2s.SetPoint(4,0,-2)
 
-        #save post fit parameter values
+        #save post fit parameter values in a graph
         postFitNuisGr[title]=ROOT.TGraphErrors()
         postFitNuisGr[title].SetTitle(title)
         postFitNuisGr[title].SetMarkerStyle(19+ires)
@@ -464,37 +475,33 @@ def compareNuisances(inDir,opt):
         postFitNuisGr[title].SetLineColor(colors[ires-1])
         postFitNuisGr[title].SetLineWidth(2)
         postFitNuisGr[title].SetFillStyle(0)
-        iter = fit_s.createIterator()
-        var = iter.Next()
-        while var :   
-            pname=var.GetName()
-            if not 'CMS_th1' in pname :
-                if pname in ['x','r']: 
-                    fitResSummary.append( (title,var.getVal(),var.getError(),var.getError()) )
-                else:
-                    np=postFitNuisGr[title].GetN()
-                    postFitNuisGr[title].SetPoint(np,var.getVal(),np+0.2+ires*dx)
-                    postFitNuisGr[title].SetPointError(np,var.getError(),0)
-                    if ires==1:
-                        frame.GetYaxis().SetBinLabel(np+1,'#color[%d]{%s}'%((np%2)*10+1,pname))
-            var = iter.Next()
+        for i in xrange(0,len(varNames)):
+            pname,val,unc = varNames[i]
+            np=postFitNuisGr[title].GetN()
+            postFitNuisGr[title].SetPoint(np,np+0.2+ires*dx,val)
+            postFitNuisGr[title].SetPointError(np,0.,unc)
+            if ires==1:
+                frame.GetXaxis().SetBinLabel(np+1,'#color[%d]{%s}'%((np%2)*10+1,pname))
+
         inF.Close()
 
     #show nuisances
-    c=ROOT.TCanvas('c','c',500,1500)
+    c=ROOT.TCanvas('c','c',1500,500)
+    c.SetLeftMargin(0.1)
     c.SetTopMargin(0.1)
-    c.SetLeftMargin(0.3)
-    c.SetBottomMargin(0.1)
     c.SetRightMargin(0.05)
-    c.SetGridy(True)
+    c.SetBottomMargin(0.15)
+    c.SetGridx(True)
     frame.Draw()
-    frame.GetXaxis().SetRangeUser(-3,3)
+    #frame.GetXaxis().SetLabelOffset(+0.1)
+    frame.GetYaxis().SetRangeUser(-3,3)
     frame.GetYaxis().SetLabelSize(0.05)
-    frame.GetXaxis().SetLabelSize(0.05)
+    frame.GetYaxis().SetTitleOffset(0.8)
+    frame.GetXaxis().SetLabelSize(0.04)
     frame.GetXaxis().SetTitleSize(0.06)
     gr2s.Draw('f')
     gr1s.Draw('f')
-    leg=ROOT.TLegend(0.12,0.92,0.6,0.95)
+    leg=ROOT.TLegend(0.6,0.92,0.8,0.99)
     leg.SetNColumns(len(postFitNuisGr))
     leg.SetTextFont(42)
     leg.SetTextSize(0.035)
@@ -511,7 +518,7 @@ def compareNuisances(inDir,opt):
     txt.SetTextSize(0.025)
     txt.SetTextColor(ROOT.kGray+3)
     for delta,title in [(1.0,'-1#sigma'),(2,'+2#sigma'),(-1,'-1#sigma'),(-2,'-2#sigma')]:
-        txt.DrawLatex(delta-0.2,frame.GetYaxis().GetXmax()+0.5,title)      
+        txt.DrawLatex(frame.GetXaxis().GetXmax()+0.5,delta-0.2,title)      
 
     #header
     txt=ROOT.TLatex()
@@ -519,12 +526,13 @@ def compareNuisances(inDir,opt):
     txt.SetTextFont(42)
     txt.SetTextSize(0.05)
     txt.SetTextAlign(12)
-    txt.DrawLatex(0.15,0.98,'#bf{CMS} #it{Preliminary}')
-    txt.DrawLatex(0.72,0.98,'#scale[0.7]{12.9 fb^{-1} (13 TeV)}')
+    txt.DrawLatex(0.12,0.95,'#bf{CMS} #it{Preliminary}')
+    txt.DrawLatex(0.3,0.95,'#scale[0.7]{12.9 fb^{-1} (13 TeV)}')
 
     c.RedrawAxis()
     c.Modified()
     c.Update()
+    
     for ext in ['png','pdf']:
         c.SaveAs('%s/nuisances.%s'%(inDir,ext))
 
