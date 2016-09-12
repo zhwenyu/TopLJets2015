@@ -32,7 +32,17 @@ Analysis loop
 def runTopWidthAnalysis(fileName,
                         outFileName,
                         widthList=[0.2,0.4,0.6,0.8,1.0,1.2,1.4,1.6,1.8,2.0,2.2,2.4,2.6,2.8,3.0,3.5,4.0],
-                        systs=['','puup','pudn','btagup','btagdn','ltagup','ltagdn','jerup','jerdn','jesup','jesdn','lesup','lesdn','trigup','trigdn','selup','seldn','topptup','topptdn']):
+                        systs=['',
+                               'puup','pudn',
+                               'btagup','btagdn',
+                               'ltagup','ltagdn',
+                               'jerup','jerdn',
+                               'jesup','jesdn',
+                               'lesup','lesdn',
+                               'trigup','trigdn',
+                               'selup','seldn',
+                               'topptup','topptdn',
+                               'nloproddec']):
 
     print '....analysing',fileName,'with output @',outFileName
 
@@ -63,6 +73,12 @@ def runTopWidthAnalysis(fileName,
     bwigner.FixParameter(1,smMass)
     bwigner.SetParName(2,"#Gamma_{t}")
     bwigner.FixParameter(2,smWidth)
+
+    #read the MCFM NLO(prod+dec)/NLO(prod) weights
+    mcfmIn=ROOT.TFile.Open('${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/MCFM_todk2tota.root')
+    todk2totaGr={'wro':ROOT.TGraph( mcfmIn.Get('wrong_combinations/dist_NLO prod+decay_ratio') ),
+                 'cor':ROOT.TGraph( mcfmIn.Get('correct_combinations/dist_NLO prod+decay_ratio') ) }
+    mcfmIn.Close()
 
     #book histograms
     observablesH={}
@@ -109,8 +125,8 @@ def runTopWidthAnalysis(fileName,
                         #observablesH[var]=ROOT.TH1F(var,';Mass(lepton,jet) (Minimum #Delta R) [GeV];l+j pairs',30,0,300)
                         #var=s+i+j+b+'_minmlb_%3.1fw'%w
                         #observablesH[var]=ROOT.TH1F(var,';Mass(lepton,jet) (Minimum) [GeV];l+j pairs',30,0,300)
-                        var=s+i+j+b+'_mt2mlb_%3.1fw'%w
-                        observablesH[var]=ROOT.TH1F(var,';Mass(lepton,jet) (M_{T2} Method) [GeV];l+j pairs',30,0,300)
+                        #var=s+i+j+b+'_mt2mlb_%3.1fw'%w
+                        #observablesH[var]=ROOT.TH1F(var,';Mass(lepton,jet) (M_{T2} Method) [GeV];l+j pairs',30,0,300)
 
                         if w!=1.0 or len(s)>0 : continue
                         var=i+j+b+'_pairing'
@@ -266,7 +282,7 @@ def runTopWidthAnalysis(fileName,
             observablesH[var].Fill(tree.nj,baseEvWeight)
 
         # setup mlb calculations
-        mlbTypes  = ["inc","mt2"]#,"snc","min","mdr"]
+        mlbTypes  = ["inc"] #,"mt2","snc","min","mdr"]
         ptCatList = ["highpt", "lowpt"]
         bTagCats  = ["1b", "2b"]
         evCatList = ["EE", "EM", "MM"]
@@ -353,6 +369,13 @@ def runTopWidthAnalysis(fileName,
                         except:
                             pass
 
+                    #emulate reweighting to NLO prod+dec based on MCFM calculations
+                    if s=='nloproddec' and pairFullyMatchedAtGen :
+                        pairWeightAtNLO=1.0                        
+                        if assignmentType==0 : pairWeightAtNLO=todk2totaGr['cor'].Eval(ROOT.TMath.Min(300.,genmlb))
+                        else :                 pairWeightAtNLO=todk2totaGr['wro'].Eval(ROOT.TMath.Min(300.,genmlb))
+                        evWeight *= pairWeightAtNLO
+
                     #save MC truth distribution
                     if s=='' and pairFullyMatchedAtGen:
                         for w in widthList:
@@ -432,10 +455,10 @@ def runTopWidthAnalysis(fileName,
                         #    mlbMap[var] = [(mlb,mlbWt)]
 
                         # fill mt2 mlb
-                        if il == 1 and ib == nbtags-1 and (mt2ptCat=='highpt' or mt2ptCat=='lowpt'):
-                            var=s+mt2ptCat+evcat+btagcat+'_mt2mlb_%3.1fw'%w
-                            if mt2 < mlbMap[var][0] :
-                                mlbMap[var] = [(mt2,mlbWt)]
+                        #if il == 1 and ib == nbtags-1 and (mt2ptCat=='highpt' or mt2ptCat=='lowpt'):
+                        #    var=s+mt2ptCat+evcat+btagcat+'_mt2mlb_%3.1fw'%w
+                        #    if mt2 < mlbMap[var][0] :
+                        #        mlbMap[var] = [(mt2,mlbWt)]
 
                         #only for standard width and syst variations
                         if w!=1.0 or len(s)>0 : continue

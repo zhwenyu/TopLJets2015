@@ -14,37 +14,47 @@ from TopLJets2015.TopAnalysis.dataCardTools import *
 """
 customize getting the distributions for hypothesis testing
 """
-def getDistsForHypoTest(fIn,systfIn,cat,rawSignalList,opt,outDir=""):
+def getDistsFromDirIn(url,indir,applyFilter=''):
+    fIn=ROOT.TFile.Open(url)
+    obs,exp=getDistsFrom(fIn.Get(indir),applyFilter)
+    fIn.Close()
+    return obs,exp
 
-    obs,exp=getDistsFrom(fIn.Get('%s_%s_1.0w'%(cat,opt.dist)))
+def getDistsForHypoTest(cat,rawSignalList,opt,outDir=""):
+
+    obs,exp=getDistsFromDirIn(opt.input,'%s_%s_1.0w'%(cat,opt.dist))
 
     #signal hypothesis
-    _,expMainHypo=getDistsFrom(fIn.Get('%s_%s_%3.1fw'%(cat,opt.dist,opt.mainHypo)))
+    expMainHypo=exp.copy()
+    if opt.mainHypo!=1.0:  _,expMainHypo=getDistsFromDirIn(opt.input,'%s_%s_%3.1fw'%(cat,opt.dist,opt.mainHypo))
     expAltHypo=None
     if len(opt.altHypoFromSim)>0 :
-        _,expAltHypo=getDistsFrom(systfIn.Get('%s_%s_%3.1fw'%(cat,opt.dist,opt.altHypo)),opt.expAltHypoFromSim)
+        _,expAltHypo=getDistsFromDirIn(opt.systInput,'%s_%s_%3.1fw'%(cat,opt.dist,opt.altHypo),opt.expAltHypoFromSim)
     else:
-        _,expAltHypo=getDistsFrom(fIn.Get('%s_%s_%3.1fw'%(cat,opt.dist,opt.altHypo)))
+        _,expAltHypo=getDistsFromDirIn(opt.input,'%s_%s_%3.1fw'%(cat,opt.dist,opt.altHypo))
 
     #replace DY shape from alternative sample
     try:
         if opt.replaceDYshape:
-            _,altDY=getDistsFrom(systfIn.Get('%s_%s_%3.1fw'%(cat,opt.dist,opt.mainHypo)),'DY')
+            _,altDY=getDistsFromDirIn(opt.systInput,'%s_%s_%3.1fw'%(cat,opt.dist,opt.mainHypo),'DY')
             nbins=exp['DY'].GetNbinsX()
             sf=exp['DY'].Integral(0,nbins+1)/altDY['DY'].Integral(0,nbins+1)
             altDY['DY'].Scale(sf)
 
             #save a plot with the closure test
             if outDir!="" and opt.doValidation:
-                plot=Plot('DY_%s_%s'%(cat,opt.dist))
-                plot.savelog=False
-                plot.doChi2=True
-                plot.wideCanvas=False
-                plot.plotformats=['pdf','png']
-                plot.add(exp['DY'],  "MG5_aMC@NLO FxFx (NLO)", 1, False, False)
-                plot.add(altDY['DY'],"Madgraph MLM (LO)",      2, False, False)
-                plot.finalize()
-                plot.show(outDir=outDir,lumi=12900,noStack=True)
+                try:
+                    plot=Plot('DY_%s_%s'%(cat,opt.dist))
+                    plot.savelog=False
+                    plot.doChi2=True
+                    plot.wideCanvas=False
+                    plot.plotformats=['pdf','png']
+                    plot.add(exp['DY'],  "MG5_aMC@NLO FxFx (NLO)", 1, False, False)
+                    plot.add(altDY['DY'],"Madgraph MLM (LO)",      2, False, False)
+                    plot.finalize()
+                    plot.show(outDir=outDir,lumi=12900,noStack=True)
+                except:
+                    pass
 
             #all done here
             exp['DY'].Delete()
@@ -56,11 +66,12 @@ def getDistsForHypoTest(fIn,systfIn,cat,rawSignalList,opt,outDir=""):
     for proc in rawSignalList:
         try:
             newProc=('%s%3.1fw'%(proc,opt.mainHypo)).replace('.','p')
-            expMainHypo[proc].SetName(newProc)
-            exp[newProc]=expMainHypo[proc]
+            exp[newProc]=expMainHypo[proc].Clone(newProc)
+            exp[newProc].SetDirectory(0)
             newProc=('%s%3.1fw'%(proc,opt.altHypo)).replace('.','p')
-            expAltHypo[proc].SetName(newProc)
-            exp[newProc]=expAltHypo[proc]
+            if opt.mainHypo==opt.altHypo: newProc+='a'
+            exp[newProc]=expAltHypo[proc].Clone(newProc)
+            exp[newProc].SetDirectory(0)
         except:
             pass
 
@@ -71,32 +82,8 @@ def getDistsForHypoTest(fIn,systfIn,cat,rawSignalList,opt,outDir=""):
             del exp[proc]
         except:
             pass
+
     return obs,exp
-
-"""
-save distributions to file
-"""
-def saveToShapesFile(outFile,shapeColl,directory=''):
-    fOut=ROOT.TFile.Open(outFile,'UPDATE')
-    if len(directory)==0:
-        fOut.cd()
-    else:
-        if not fOut.Get(directory):
-            fOut.mkdir(directory)
-        outDir=fOut.Get(directory)
-        outDir.cd()
-    for key in shapeColl:
-        #remove bin labels
-        shapeColl[key].GetXaxis().Clear()
-
-        #convert to TH1D (projections are TH1D)
-        if not shapeColl[key].InheritsFrom('TH1D') :
-            h=ROOT.TH1D()
-            shapeColl[key].Copy(h)
-            shapeColl[key]=h
-
-        shapeColl[key].Write(key,ROOT.TObject.kOverwrite)
-    fOut.Close()
 
 
 """
@@ -105,6 +92,7 @@ prepare the steering script for combine
 def doCombineScript(opt,args,outDir,dataCardList):
 
     altHypoTag=('%3.1fw'%opt.altHypo).replace('.','p')
+    if opt.altHypo==opt.mainHypo : altHypoTag+='a'
 
     scriptname='%s/steerHypoTest.sh'%outDir
     script=open(scriptname,'w')
@@ -124,7 +112,8 @@ def doCombineScript(opt,args,outDir,dataCardList):
     script.write('### combine datacard and start workspace\n')
     script.write('combineCards.py %s > datacard.dat\n'%dataCardList)
     script.write('text2workspace.py datacard.dat -P HiggsAnalysis.CombinedLimit.TopHypoTest:twoHypothesisTest -m 172.5 --PO verbose --PO altSignal=%s --PO muFloating -o workspace.root\n'%altHypoTag)
-    script.write('python ${COMBINE}/HiggsAnalysis/CombinedLimit/test/systematicsAnalyzer.py datacard.dat --all -m 172.5 -f html > systs.html\n')
+    if opt.doValidation:
+        script.write('python ${COMBINE}/HiggsAnalysis/CombinedLimit/test/systematicsAnalyzer.py datacard.dat --all -m 172.5 -f html > systs.html\n')
     script.write('\n')
     script.write('### likelihood scans and fits\n')
     script.write('for x in 0 1; do\n')
@@ -138,7 +127,7 @@ def doCombineScript(opt,args,outDir,dataCardList):
     script.write('combine workspace.root -M HybridNew --seed 8192 --saveHybridResult -m 172.5  --testStat=TEV --singlePoint 1 -T %d -i 2 --fork 6 --clsAcc 0 --fullBToys  --generateExt=1 --generateNuis=0 --expectedFromGrid 0.5 -n cls_prefit_exp;\n'%opt.nToys)
     script.write('combine workspace.root -M HybridNew --seed 8192 --saveHybridResult -m 172.5  --testStat=TEV --singlePoint 1 -T %d -i 2 --fork 6 --clsAcc 0 --fullBToys  --frequentist --expectedFromGrid 0.5 -n cls_postfit_exp;\n'%opt.nToys)
     script.write('combine workspace.root -M HybridNew --seed 8192 --saveHybridResult -m 172.5  --testStat=TEV --singlePoint 1 -T %d -i 2 --fork 6 --clsAcc 0 --fullBToys  --frequentist -n cls_postfit_obs;\n'%opt.nToys)
-    script('\n')
+    script.write('\n')
     script.close()
 
     return scriptname
@@ -154,13 +143,16 @@ def doDataCards(opt,args):
     mainSignalList,altSignalList=[],[]
     if 'tbart' in rawSignalList:
         ttScenarioList = [('tbart%3.1fw'%h).replace('.','p') for h in [opt.mainHypo,opt.altHypo]]
+        if opt.mainHypo==opt.altHypo: ttScenarioList[1]+='a'
         mainSignalList += [ttScenarioList[0]]
         altSignalList  += [ttScenarioList[1]]
     tWScenarioList=['tW']
     if 'tW' in rawSignalList:
         tWScenarioList = [('tW%3.1fw'%h).replace('.','p') for h in [opt.mainHypo,opt.altHypo]]
+        if opt.mainHypo==opt.altHypo: tWScenarioList[1]+='a'
         mainSignalList += [tWScenarioList[0]]
         altSignalList  += [tWScenarioList[1]]
+
 
     #define RATE systematics : syst,val,pdf,whiteList,blackList  (val can be a list of values [-var,+var])
     rateSysts=[
@@ -171,7 +163,7 @@ def doDataCards(opt,args):
           ('tnorm_th',         1.044,    'lnN',    ['tch'],             []),
           ('VVnorm_th',        1.20,     'lnN',    ['Multiboson'],      []),
           ('tbartVnorm_th',    1.30,     'lnN',    ['tbartV'],          []),
-          #('sel_*CH*',         1.02,     'lnN',    tWScenarioList+ttScenarioList+['W','tch','Multiboson','tbartV'], ['DY']),
+          ('sel_*CH*',         1.02,     'lnN',    tWScenarioList+ttScenarioList+['W','tch','Multiboson','tbartV'], ['DY']),
     ]
     
     #define the SHAPE systematics from weighting, varying object scales, efficiencies, etc.
@@ -180,7 +172,7 @@ def doDataCards(opt,args):
         ('jes',            ['jes'],                                    [],             ['DY'], 2, 1.0),
         ('jer',            ['jer'],                                    [],             ['DY'], 2, 1.0),
         ('trig_*CH*',      ['trig'],                                   [],             ['DY'], 2, 1.0),
-        ('sel_*CH*',       ['sel'],                                    [],             ['DY'], 2, 1.0),
+        #('sel_*CH*',       ['sel'],                                    [],             ['DY'], 2, 1.0),
         ('les_*CH*',       ['les'],                                    [],             ['DY'], 2, 1.0),
         ('ltag',           ['ltag'],                                   [],             ['DY'], 2, 1.0),
         ('btag',           ['btag'],                                   [],             ['DY'], 2, 1.0),
@@ -211,12 +203,6 @@ def doDataCards(opt,args):
     os.system('mkdir -p %s'%outDir)
     os.system('rm -rf %s/*'%outDir)
 
-    # get data and nominal expectations and prepare output file
-    fIn=ROOT.TFile.Open(opt.input)
-    systfIn=None
-    if opt.systInput:
-        systfIn=ROOT.TFile.Open(opt.systInput)
-
     # prepare output ROOT file
     outFile='%s/shapes.root'%outDir
     fOut=ROOT.TFile.Open(outFile,'RECREATE')
@@ -229,8 +215,9 @@ def doDataCards(opt,args):
         if 'EM' in cat : lfs='EM'
         if 'MM' in cat : lfs='MM'
 
+
         #data and nominal shapes
-        obs,exp=getDistsForHypoTest(fIn,systfIn,cat,rawSignalList,opt,outDir)
+        obs,exp=getDistsForHypoTest(cat,rawSignalList,opt,outDir)
               
         #recreate data if requested        
         if opt.pseudoData!=-1:
@@ -238,10 +225,10 @@ def doDataCards(opt,args):
             print '\t pseudo-data is being generated',
             if len(opt.pseudoDataFromSim) and systfIn:
                 print 'injecting signal from',opt.pseudoDataFromSim
-                _,pseudoSignal=getDistsFrom(systfIn.Get('%s_%s_1.0w'%(cat,opt.dist)),opt.pseudoDataFromSim)
+                _,pseudoSignal=getDistsFromDirIn(opt.systInput,'%s_%s_1.0w'%(cat,opt.dist),opt.pseudoDataFromSim)
             else:
                 print 'injecting signal from weighted',opt.pseudoData            
-                _,pseudoSignal=getDistsFrom(fIn.Get('%s_%s_%3.1fw'%(cat,opt.dist,opt.pseudoData)))
+                _,pseudoSignal=getDistsFromDirIn(opt.input,'%s_%s_%3.1fw'%(cat,opt.dist,opt.pseudoData))
             obs.Reset('ICE')
             for proc in exp:
                 if not proc in mainSignalList+altSignalList: 
@@ -314,7 +301,54 @@ def doDataCards(opt,args):
         #save to nominal to shapes file
         nomShapes=exp.copy()
         nomShapes['data_obs']=obs
-        saveToShapesFile(outFile,nomShapes,('%s_%s'%(cat,opt.dist)))
+        #for h in exp: nomShapes[h]=exp[h].Clone( h+"_final" )
+        #nomShapes['data_obs']=obs.Clone('data_obs_final')
+        saveToShapesFile(outFile,nomShapes,('%s_%s'%(cat,opt.dist)),opt.rebin)
+
+        #MC stats systematics for bins with large stat uncertainty
+        if opt.addBinByBin>0:
+            for proc in exp:
+                finalNomShape=exp[proc].Clone('tmp')
+                if opt.rebin : finalNomShape.Rebin(opt.rebin)
+
+                for xbin in xrange(1,finalNomShape.GetXaxis().GetNbins()+1):
+                    val,unc=finalNomShape.GetBinContent(xbin),finalNomShape.GetBinError(xbin)
+                    if val==0 : continue
+                    if ROOT.TMath.Abs(unc/val)<opt.addBinByBin: continue
+
+                    binShapes={}
+                    systVar='%sbin%d%s'%(proc,xbin,cat)
+
+                    binShapes[proc]=finalNomShape.Clone('%sUp'%systVar)
+                    binShapes[proc].SetBinContent(xbin,val+unc)
+                    saveToShapesFile(outFile,binShapes,binShapes[proc].GetName())
+
+                    binShapes[proc]=finalNomShape.Clone('%sDown'%systVar)
+                    binShapes[proc].SetBinContent(xbin,ROOT.TMath.Max(val-unc,1e-3))
+                    saveToShapesFile(outFile,binShapes,binShapes[proc].GetName())
+                    
+                    #write to datacard
+                    datacard.write('%32s shape'%systVar)        
+                    for sig in mainSignalList:
+                        if proc==sig:
+                            datacard.write('%15s'%'1') 
+                        else:
+                            datacard.write('%15s'%'-')
+                    for sig in altSignalList:
+                        if proc==sig:
+                            datacard.write('%15s'%'1') 
+                        else:
+                            datacard.write('%15s'%'-')
+                    for iproc in exp: 
+                        if iproc in mainSignalList+altSignalList : continue
+                        if iproc==proc:
+                            datacard.write('%15s'%'1')
+                        else:
+                            datacard.write('%15s'%'-')
+                    datacard.write('\n')
+
+                finalNomShape.Delete()
+
 
         #rate systematics
         print '\t rate systematics',len(rateSysts)
@@ -346,22 +380,22 @@ def doDataCards(opt,args):
 
 
         #weighting systematics
+        print '\t weighting systematics',len(weightingSysts)
         for syst,weightList,whiteList,blackList,shapeTreatment,nsigma in weightingSysts:
-
             if '*CH*' in syst : syst=syst.replace('*CH*',lfs)
 
             #get shapes and adapt them
             iexpUp,iexpDn=None,None            
             if len(weightList)==1:
-                _,iexpUp=getDistsForHypoTest(fIn,systfIn,weightList[0]+"up"+cat,rawSignalList,opt)
-                _,iexpDn=getDistsForHypoTest(fIn,systfIn,weightList[0]+"dn"+cat,rawSignalList,opt)
+                _,iexpUp=getDistsForHypoTest(weightList[0]+"up"+cat,rawSignalList,opt)
+                _,iexpDn=getDistsForHypoTest(weightList[0]+"dn"+cat,rawSignalList,opt)
             else:
 
                 #put all the shapes in a 2D histogram
                 iexp2D={}                
                 for iw in xrange(0,len(weightList)):
                     w=weightList[iw]
-                    _,kexp=getDistsForHypoTest(fIn,systfIn,w+cat,rawSignalList,opt)
+                    _,kexp=getDistsForHypoTest(w+cat,rawSignalList,opt)
                     for proc in kexp:
                         nbins=kexp[proc].GetNbinsX()
                         if not proc in iexp2D:
@@ -383,9 +417,12 @@ def doDataCards(opt,args):
                     if not proc in iexpUp:
                         tmp=iexp2D[proc].ProjectionX("tmp",1,1)
                         tmp.Reset('ICE')
-                        iexpUp[proc]=tmp.Clone(iexp2D[proc].GetName().replace('2D','up'))
+                        nbinsx=tmp.GetXaxis().GetNbins()
+                        xmin=tmp.GetXaxis().GetXmin()
+                        xmax=tmp.GetXaxis().GetXmax()
+                        iexpUp[proc]=ROOT.TH1F(iexp2D[proc].GetName().replace('2D','up'),proc,nbinsx,xmin,xmax)
                         iexpUp[proc].SetDirectory(0)
-                        iexpDn[proc]=tmp.Clone(iexp2D[proc].GetName().replace('2D','dn'))
+                        iexpDn[proc]=ROOT.TH1F(iexp2D[proc].GetName().replace('2D','dn'),proc,nbinsx,xmin,xmax)
                         iexpDn[proc].SetDirectory(0)
                         tmp.Delete()
 
@@ -424,7 +461,6 @@ def doDataCards(opt,args):
             if shapeTreatment>0:
                 for proc in iexpUp:
                     nbins=iexpUp[proc].GetNbinsX()
-
                     #normalize shapes to nominal expectations
                     n=exp[proc].Integral(0,nbins+2)
                     nUp=iexpUp[proc].Integral(0,nbins+2)
@@ -441,8 +477,8 @@ def doDataCards(opt,args):
                     
 
             #write the shapes to the ROOT file                    
-            saveToShapesFile(outFile,iexpUp,('%s_%s_%sUp'%(cat,opt.dist,syst)))
-            saveToShapesFile(outFile,iexpDn,('%s_%s_%sDown'%(cat,opt.dist,syst)))
+            saveToShapesFile(outFile,iexpUp,('%s_%s_%sUp'%(cat,opt.dist,syst)),opt.rebin)
+            saveToShapesFile(outFile,iexpDn,('%s_%s_%sDown'%(cat,opt.dist,syst)),opt.rebin)
 
             #fill in the datacard
             datacard.write('%32s %8s'%(syst,'shape'))
@@ -466,7 +502,8 @@ def doDataCards(opt,args):
             datacard.write('\n')
 
             #write the rate systematics as well
-            if shapeTreatment!=2 : continue
+            if shapeTreatment!=2: continue
+            if len(iRateVars)==0: continue
             datacard.write('%32s %8s'%(syst+'Rate',pdf))
             for sig in mainSignalList:
                 if sig in iRateVars and ((len(whiteList)==0 and not sig in blackList) or sig in whiteList):
@@ -506,10 +543,10 @@ def doDataCards(opt,args):
                 jexpDn,jexpUp=None,None
                 for hypo in hyposToGet:
                     if len(samples)==2:
-                        _,jexpDn=getDistsFrom(systfIn.Get('%s_%s_%3.1fw'%(cat,opt.dist,hypo)),samples[0])
-                        _,jexpUp=getDistsFrom(systfIn.Get('%s_%s_%3.1fw'%(cat,opt.dist,hypo)),samples[1])
+                        _,jexpDn=getDistsFromDirIn(opt.systInput,'%s_%s_%3.1fw'%(cat,opt.dist,hypo),samples[0])
+                        _,jexpUp=getDistsFromDirIn(opt.systInput,'%s_%s_%3.1fw'%(cat,opt.dist,hypo),samples[1])
                     else:
-                        _,jexpUp=getDistsFrom(systfIn.Get('%s_%s_%3.1fw'%(cat,opt.dist,hypo)),samples[0])
+                        _,jexpUp=getDistsFromDirIn(opt.systInput,'%s_%s_%3.1fw'%(cat,opt.dist,hypo),samples[0])
                         
                     newProc=proc
                     if isSignal:
@@ -555,8 +592,8 @@ def doDataCards(opt,args):
                     if iRateVars[proc]<1.001 : del iRateVars[proc]
 
             #write the shapes to the ROOT file                    
-            saveToShapesFile(outFile,iexpUp,('%s_%s_%sUp'%(cat,opt.dist,syst)))
-            saveToShapesFile(outFile,iexpDn,('%s_%s_%sDown'%(cat,opt.dist,syst)))
+            saveToShapesFile(outFile,iexpUp,('%s_%s_%sUp'%(cat,opt.dist,syst)),opt.rebin)
+            saveToShapesFile(outFile,iexpDn,('%s_%s_%sDown'%(cat,opt.dist,syst)),opt.rebin)
 
             #fill in the datacard
             datacard.write('%32s %8s'%(syst,'shape'))
@@ -580,7 +617,8 @@ def doDataCards(opt,args):
             datacard.write('\n')
 
             #write the rate systematics as well
-            if shapeTreatment!=2 : continue
+            if shapeTreatment!=2: continue
+            if len(iRateVars)==0 : continue
             datacard.write('%32s %8s'%(syst+'Rate',pdf))
             for sig in mainSignalList:
                 if sig in iRateVars :
@@ -600,8 +638,6 @@ def doDataCards(opt,args):
                     datacard.write('%15s'%'-')
             datacard.write('\n')
 
-
-
         print '\t ended datacard generation'
         datacard.close()
     
@@ -609,9 +645,9 @@ def doDataCards(opt,args):
             print '\t running validation'    
             for proc in rawSignalList:
                 newProc=('%s%3.1fw'%(proc,opt.mainHypo)).replace('.','p')
+                altProc=('%s%3.1fw'%(proc,opt.altHypo)).replace('.','p') if proc=='tbart' else ''
                 for uncList in [ 'jes,jer,les_*CH*', 
-                                 'trig_*CH*,sel_*CH*',
-                                 'btag,ltag,pu',
+                                 'btag,ltag,pu,trig_*CH*',
                                  'ttPSScale,ttMEqcdscale,ttPDF,tttoppt',
                                  'ttGenerator,ttPartonShower',
                                  'mtop',
@@ -627,6 +663,7 @@ def doDataCards(opt,args):
                                    '--obs', '%s'%opt.dist,
                                    '--proc','%s'%newProc,
                                    '-o','%s'%outDir,
+                                   '--alt','%s'%altProc,
                                    '--uncs','%s'%uncList],
                                   stdout=PIPE,
                                   stderr=STDOUT)
@@ -651,6 +688,8 @@ def main():
     parser.add_option(      '--systInput',          dest='systInput',          help='input plotter for systs from alt samples',    default=None,        type='string')
     parser.add_option('-d', '--dist',               dest='dist',               help='distribution',                                default='minmlb',    type='string')
     parser.add_option(      '--nToys',              dest='nToys',              help='toys to through for CLs',                     default=2000,        type=int)
+    parser.add_option('--addBinByBin',              dest='addBinByBin', help='add bin-by-bin stat uncertainties @ threshold',      default=-1,            type=float)
+    parser.add_option(      '--rebin',              dest='rebin',       help='histogram rebin factor',                             default=0,             type=int)
     parser.add_option(      '--pseudoData',         dest='pseudoData',         help='pseudo data to use (-1=real data)',           default=1.0,         type=float)
     parser.add_option(      '--replaceDYshape',     dest='replaceDYshape',     help='use DY shape from syst file',                 default=False,       action='store_true')
     parser.add_option(      '--doValidation',       dest='doValidation',       help='create validation plots',                     default=False,       action='store_true')

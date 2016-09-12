@@ -131,7 +131,7 @@ def getDistsFrom(directory,keyFilter=''):
     dirName=directory.GetName()
     for key in directory.GetListOfKeys():
         if len(keyFilter)>0 and key.GetName()!='%s_%s'%(dirName,keyFilter) : continue
-        obj=directory.Get(key.GetName())
+        obj=directory.Get(key.GetName())        
         if not obj.InheritsFrom('TH1') : continue
         if obj.GetName()==dirName : 
             obs=obj.Clone('data_obs')
@@ -142,8 +142,7 @@ def getDistsFrom(directory,keyFilter=''):
                 newName=newName.replace(token,'')
             newName=newName.replace('=','eq')
             newName=newName.replace('.','p')
-
-            exp[newName]=obj.Clone(newName)
+            exp[newName]=obj.Clone(newName+'_'+dirName)
             exp[newName].SetDirectory(0)
             if exp[newName].InheritsFrom('TH2'):
                 for xbin in xrange(1,exp[newName].GetNbinsX()+1):
@@ -160,6 +159,7 @@ def getDistsFrom(directory,keyFilter=''):
                     newBinContent=ROOT.TMath.Max(ROOT.TMath.Abs(binContent),1e-3)
                     exp[newName].SetBinContent(xbin,newBinContent)
                     exp[newName].SetBinError(xbin,newBinContent)
+
     return obs,exp
 
 """
@@ -177,16 +177,18 @@ def saveToShapesFile(outFile,shapeColl,directory='',rebin=0):
         shapeColl[key].GetXaxis().Clear()
 
         #convert to TH1D (projections are TH1D)
-        if not shapeColl[key].InheritsFrom('TH1D') :
-            h=ROOT.TH1D()
-            shapeColl[key].Copy(h)
-            shapeColl[key]=h
-
+        #if not shapeColl[key].InheritsFrom('TH1D') :            
+        #    h=ROOT.TH1D()
+        #    shapeColl[key].Copy(h)
+        #    shapeColl[key]=h
+        
         #rebin final shape, if required
-        if rebin!=0: shapeColl[key].Rebin(rebin)
+        h2write=shapeColl[key].Clone()
+        if rebin!=0: h2write.Rebin(rebin)
 
         #save to file
-        shapeColl[key].Write(key,ROOT.TObject.kOverwrite)
+        h2write.SetDirectory(outDir)
+        h2write.Write(key,ROOT.TObject.kOverwrite)
 
     #all done here
     fOut.Close()

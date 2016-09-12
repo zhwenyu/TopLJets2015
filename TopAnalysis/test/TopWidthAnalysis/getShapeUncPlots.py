@@ -12,6 +12,7 @@ def main():
         )
     parser.add_option("-i",     type="string", dest="input"  ,   default="shapes.root",   help="file to look for dists in")
     parser.add_option("--cats", type="string", dest="cats",      default="highptEM2b",    help="a list of categories")
+    parser.add_option("--altProc",  type="string",  dest="altProc",       default="alternative hypothesis",    help="overlay this alternative hypothesis")
     parser.add_option("--uncs", type="string", dest="uncList",   default="les_EM,jes,jer",   help="a list of uncertainties to look for")
     parser.add_option("--proc", type="string", dest="proc",      default="tbart,tW",      help="a list of processes to plot")
     parser.add_option("-o",     type="string", dest="outdir" ,   default="./plots",       help="the base filename for the plots")
@@ -70,6 +71,17 @@ def main():
         plot.ratiorange=(0.76,1.24)
         plot.plotformats=['pdf','png']
         nomH=fIn.Get('%s_%s/%s'%(cat,opt.obs,opt.proc))
+        altH=None
+        if len(opt.altProc)!=0:
+            try:
+                altH=fIn.Get('%s_%s/%s'%(cat,opt.obs,opt.altProc))
+                altH.Divide(nomH)
+                altH.GetXaxis().SetTitle(obsTitleMap[opt.obs])
+                altH.GetYaxis().SetTitle("Ratio to reference")
+                plot.add(altH,"Alt.",1, False,True)
+            except:
+                altH=None
+
         isyst=-1
         for syst in opt.uncList.split(','):
             isyst+=1

@@ -4,6 +4,7 @@
 #include "TString.h"
 #include "TH2F.h"
 #include "TLorentzVector.h"
+#include "TGraphAsymmErrors.h"
 
 #include <vector>
 #include <map>
@@ -21,6 +22,7 @@ class LeptonEfficiencyWrapper
   void init(TString era);
   int era_;
   std::map<TString,TH2 *> lepEffH_;
+  std::map<TString,TGraphAsymmErrors *> lepEffGr_;
 };
 
 #endif

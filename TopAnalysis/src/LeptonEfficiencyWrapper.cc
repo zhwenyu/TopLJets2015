@@ -50,6 +50,12 @@ void LeptonEfficiencyWrapper::init(TString era)
       lepEffH_["m_singleleptrig"]->SetDirectory(0);
       fIn->Close();
 
+      lepEffUrl=era+"/muonTrackingEffs.root";
+      gSystem->ExpandPathName(lepEffUrl);
+      fIn=TFile::Open(lepEffUrl);
+      lepEffGr_["m_tk"]=(TGraphAsymmErrors *)fIn->Get("ratio_eta");
+      fIn->Close();
+
       lepEffUrl=era+"/MuonID_Z_RunBCD_prompt80X_7p65.root";
       gSystem->ExpandPathName(lepEffUrl);
       fIn=TFile::Open(lepEffUrl);      
@@ -158,8 +164,8 @@ EffCorrection_t LeptonEfficiencyWrapper::getTriggerCorrection(std::vector<int> p
 		{
                   if(trailPt<40)      { corr.first=0.901; corr.second=0.042; }
                   else if(trailPt<70) { corr.first=0.838; corr.second=0.052; }
-                  else                { corr.first=1.000; corr.second=0.045; }
-                }
+                  else                { corr.first=0.950; corr.second=0.05; }
+		}
 	    }
 	  else if(cat==11*11) 
 	    {
@@ -177,8 +183,11 @@ EffCorrection_t LeptonEfficiencyWrapper::getTriggerCorrection(std::vector<int> p
                   if(trailPt<40)      { corr.first=0.918; corr.second=0.046; }
                   else if(trailPt<70) { corr.first=0.984; corr.second=0.037; }
                   else                { corr.first=0.941; corr.second=0.122; }
-                }
+		}
 	    }
+
+	  //add a 2% uncertainty
+	  corr.second=sqrt(0.02*0.02+corr.second);
 	}
       else 
 	{
@@ -211,7 +220,8 @@ EffCorrection_t LeptonEfficiencyWrapper::getOfflineCorrection(int pdgId,float pt
   EffCorrection_t corr(1.0,0.0);
 
   //update correction from histo, if found
-  TString hname(abs(pdgId)==11 ? "e" : "m");
+  TString idstr(abs(pdgId)==11 ? "e" : "m");
+  TString hname(pdgId);
   hname+="_sel";
   if( lepEffH_.find(hname)!=lepEffH_.end() )
     {
@@ -226,6 +236,25 @@ EffCorrection_t LeptonEfficiencyWrapper::getOfflineCorrection(int pdgId,float pt
       
       corr.first=h->GetBinContent(etaBinForEff,ptBinForEff);
       corr.second=h->GetBinError(etaBinForEff,ptBinForEff);
+      
+      //tracking efficiency (if available)
+      hname=idstr+"_tk";
+      if(lepEffGr_.find(hname)!=lepEffGr_.end())
+	{
+	  Double_t x(0.),xdiff(9999.),y(0.);
+	  float tkEffSF(1.0),tkEffSFUnc(0);
+	  for(Int_t ip=0; ip<lepEffGr_["m_tk"]->GetN(); ip++)
+	    {
+	      lepEffGr_["m_tk"]->GetPoint(ip,x,y);
+	      float ixdiff(TMath::Abs(eta-x));
+	      if(ixdiff>xdiff) continue;
+	      xdiff=ixdiff;
+	      tkEffSF=y;
+	      tkEffSFUnc=lepEffGr_["m_tk"]->GetErrorY(ip);
+	    }
+	  corr.second = sqrt(pow(tkEffSFUnc*corr.first,2)+pow(tkEffSF*corr.second,2));
+	  corr.first  = corr.first*tkEffSF;
+	}
     }
 
   return corr;
