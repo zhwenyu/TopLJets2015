@@ -237,7 +237,6 @@ def buildCLsAndPlot(dirList,opt):
         
         maxWidth=4
         if key[0]==False : maxWidth=4*key[2]
-        print key
         frame=ROOT.TH1F('frame',';#Gamma [GeV];CL_{S}',1,0,maxWidth)
         frame.Draw()
         frame.GetYaxis().SetRangeUser(1e-3,1)
@@ -376,8 +375,7 @@ def drawQuantiles(y,eyu,eyl,qobs,tag,title,opt):
         allGrs[-1].SetLineColor(1)
         allGrs[-1].SetTitle(title)
         allGrs[-1].SetName('data')
-        allGrs[-1].SetLineWidth(2)
-        print len(qobs)
+        allGrs[-1].SetLineWidth(2)        
         for i in xrange(0,len(qobs)):
             altHypo,cen=qobs[i]
             bin=frame.GetXaxis().FindBin(altHypo)
@@ -468,17 +466,17 @@ def compareNuisances(inDir,opt):
         postFitNuisGr[title].SetFillStyle(0)
         iter = fit_s.createIterator()
         var = iter.Next()
-        while var :            
+        while var :   
             pname=var.GetName()
-            if 'CMS_th1' in pname : continue
-            if pname in ['x','r']: 
-                fitResSummary.append( (title,var.getVal(),var.getError(),var.getError()) )
-            else:
-                np=postFitNuisGr[title].GetN()
-                postFitNuisGr[title].SetPoint(np,var.getVal(),np+0.2+ires*dx)
-                postFitNuisGr[title].SetPointError(np,var.getError(),0)
-                if ires==1:
-                    frame.GetYaxis().SetBinLabel(np+1,'#color[%d]{%s}'%((np%2)*10+1,pname))
+            if not 'CMS_th1' in pname :
+                if pname in ['x','r']: 
+                    fitResSummary.append( (title,var.getVal(),var.getError(),var.getError()) )
+                else:
+                    np=postFitNuisGr[title].GetN()
+                    postFitNuisGr[title].SetPoint(np,var.getVal(),np+0.2+ires*dx)
+                    postFitNuisGr[title].SetPointError(np,var.getError(),0)
+                    if ires==1:
+                        frame.GetYaxis().SetBinLabel(np+1,'#color[%d]{%s}'%((np%2)*10+1,pname))
             var = iter.Next()
         inF.Close()
 
@@ -584,7 +582,7 @@ steer the script
 """
 def main():
 
-    ROOT.gROOT.SetBatch(False) #True)
+    ROOT.gROOT.SetBatch(True)
     ROOT.gStyle.SetOptTitle(0)
     ROOT.gStyle.SetOptStat(0)
     ROOT.gStyle.SetPalette(54)
@@ -614,6 +612,8 @@ def main():
         mainHypo,altHypo=float(widths[0]),float(widths[1])
         pseudodataHypo=None
         if not isData : pseudodataHypo=float(widths[2])
+
+        print 'Analysing',d,(isData,pseudodataHypo,mainHypo,altHypo)
 
         #store fit summary
         if opt.doFitSummary:

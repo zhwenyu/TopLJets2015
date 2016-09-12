@@ -14,6 +14,8 @@ if [ "$#" -ne 2 ]; then
     echo "        PLOT         - runs the plotter tool on the analysis outputs";
     echo "        WWW          - moves the analysis plots to an afs-web-based area";
     echo "        HYPOTEST     - create the datacards, steering scripts for hypothesis testing and submit to batch";
+    echo "        PLOTHYPOTEST - create summaries of the hypothesis tests";
+    echo "        WWWHYPOTEST  - move summaries to afs-web-based area"
     echo " "
     echo "        ERA          - era2015/era2016";
     exit 1; 
@@ -136,7 +138,7 @@ case $WHAT in
 	cd ${COMBINERELEASE}/
 	eval `scramv1 r -sh`
 	cd -
-	python ${summaryScript} -i ${outdir}/datacards/ --doCLs --recreateCLsSummary --doNuisances --doFitSummary;
+	python ${summaryScript} -i ${outdir}/datacards/ --doCLs --recreateCLsSummary --doNuisances --doFitSummary
 	;;
     WWWHYPOTEST )
         mkdir -p ${wwwdir}/hypo
