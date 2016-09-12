@@ -107,31 +107,57 @@ case $WHAT in
 	;;
     HYPOTEST ) 
 	mainHypo=1.0
+	CATS=(
+	    "lowptEE1b,lowptEE2b,highptEE1b,highptEE2b,lowptEM1b,lowptEM2b,highptEM1b,highptEM2b,lowptMM1b,lowptMM2b,highptMM1b,highptMM2b"
+	    "lowptEE1b,lowptEE2b,highptEE1b,highptEE2b,lowptMM1b,lowptMM2b,highptMM1b,highptMM2b"
+	    "lowptEM1b,lowptEM2b,highptEM1b,highptEM2b"
+	)
+	TAGS=("inc" "ll" "em")
 	altHypo=(0.2 0.4 0.6 0.8 1.0 1.2 1.4 1.6 1.8 2.0 2.2 2.4 2.6 2.8 3.0 3.5 4.0)
-	data=(-1.0 1.0 4.0)	
-        # data=1.0 --pseudoDataFromSim="t#bar{t}  widthx4"\
+	data=(-1.0 1.0 4.0)
 	for h in ${altHypo[@]}; do
 	    for d in ${data[@]}; do
-		cmd="python test/TopWidthAnalysis/runHypoTestDatacards.py"
-		cmd="${cmd} --combine ${COMBINERELEASE}"
-		cmd="${cmd} --mainHypo=${mainHypo} --altHypo ${h} --pseudoData=${d}"
-		cmd="${cmd} -s tbart,tW --replaceDYshape"
-		cmd="${cmd} --dist incmlb"
-		cmd="${cmd} -o ${outdir}/datacards/"
-		cmd="${cmd} -i ${outdir}/analysis/plots/plotter.root"
-		cmd="${cmd} --systInput ${outdir}/analysis/plots/syst_plotter.root"
-		cmd="${cmd} --rebin 2"
-                #cmd="${cmd} --addBinByBin 0.3" 
-		echo "Submitting ($mainHypo,$h,$d)"		
-		if [ "$h" == "2.2" ]; then
-		    if [ "$d" == "-1.0" ]; then
-			echo "    validation will be included"
-			cmd="${cmd} --doValidation"
+		for i in ${!TAGS[*]}; do
+
+		    icat=${CATS[${i}]}
+		    itag=${TAGS[${i}]}
+		    
+		    cmd="python test/TopWidthAnalysis/runHypoTestDatacards.py"
+		    cmd="${cmd} --combine ${COMBINERELEASE}"
+		    cmd="${cmd} --mainHypo=${mainHypo} --altHypo ${h} --pseudoData=${d}"
+		    cmd="${cmd} -s tbart,tW --replaceDYshape"
+		    cmd="${cmd} --dist incmlb"
+		    cmd="${cmd} -o ${outdir}/datacards_${itag}/"
+		    cmd="${cmd} -i ${outdir}/analysis/plots/plotter.root"
+		    cmd="${cmd} --systInput ${outdir}/analysis/plots/syst_plotter.root"
+		    cmd="${cmd} -c ${icat}"
+		    cmd="${cmd} --rebin 2"            
+		    if [ "$h" == "2.2" ]; then
+			if [ "$d" == "-1.0" ]; then
+			    echo "    validation will be included"
+			    cmd="${cmd} --doValidation"
+			fi
 		    fi
-		fi
-		bsub -q ${queue} ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${cmd};				
+
+		    echo "Submitting ($mainHypo,$h,$d,$itag,$icat)"		
+		    bsub -q ${queue} ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${cmd};				
+
+		    if [ "$itag" == "inc" ]; then
+			if [ "$d" == "1.0" ]; then
+			    echo "    injecting pseudo-data from nloproddec"
+			    cmd="${cmd} --pseudoDataFromWgt nloproddec"
+			    bsub -q ${queue} ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${cmd};
+			fi
+		    fi
+		done
             done
 	done
+
+
+	#still to be tested
+        #cmd="${cmd} --addBinByBin 0.3" 
+        # data=1.0 --pseudoDataFromSim="t#bar{t}  widthx4"\
+
 	;;
     PLOTHYPOTEST )
 	summaryScript=${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/summarizeHypoTestResults.py;

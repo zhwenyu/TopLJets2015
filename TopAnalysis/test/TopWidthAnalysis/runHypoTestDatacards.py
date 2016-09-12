@@ -195,11 +195,13 @@ def doDataCards(opt,args):
 
 
     # prepare output directory
-    outDir='%s/hypotest_%3.1fvs%3.1f%s_%s'%(opt.output,
-                                            opt.mainHypo,
-                                            opt.altHypo, 
-                                            'sim' if len(opt.altHypoFromSim)!=0 else '',
-                                            'data' if opt.pseudoData==-1 else '%3.1f%s_pseudodata'%(opt.pseudoData, 'sim' if len(opt.pseudoDataFromSim)!=0 else ''))
+    outDir='%s/hypotest_%3.1fvs%3.1f%s'%(opt.output, opt.mainHypo,opt.altHypo,'sim' if len(opt.altHypoFromSim)!=0 else '')
+    if opt.pseudoData==-1 : outDir += '_data'
+    else:
+        outDir += '_%3.1f'%opt.pseudoData
+        if len(opt.pseudoDataFromSim)!=0   : outDir+='sim_'
+        elif len(opt.pseudoDataFromWgt)!=0 : outDir+='wgt_'
+        outDir += 'pseudodata'
     os.system('mkdir -p %s'%outDir)
     os.system('rm -rf %s/*'%outDir)
 
@@ -226,19 +228,32 @@ def doDataCards(opt,args):
             if len(opt.pseudoDataFromSim) and systfIn:
                 print 'injecting signal from',opt.pseudoDataFromSim
                 _,pseudoSignal=getDistsFromDirIn(opt.systInput,'%s_%s_1.0w'%(cat,opt.dist),opt.pseudoDataFromSim)
+            elif len(opt.pseudoDataFromWgt):
+                print 'injecting signal from',opt.pseudoDataFromWgt
+                _,pseudoSignal=getDistsFromDirIn(opt.input,'%s%s_%s_1.0w'%(opt.pseudoDataFromWgt,cat,opt.dist),'t#bar{t}')
+                print pseudoSignal,'%s%s_%s_1.0w'%(opt.pseudoDataFromWgt,cat,opt.dist)
             else:
                 print 'injecting signal from weighted',opt.pseudoData            
                 _,pseudoSignal=getDistsFromDirIn(opt.input,'%s_%s_%3.1fw'%(cat,opt.dist,opt.pseudoData))
             obs.Reset('ICE')
-            for proc in exp:
-                if not proc in mainSignalList+altSignalList: 
-                    obs.Add( exp[proc] )
+
+            #build pseudo-expectations
+            pseudoSignalAccept=[]
             for proc in pseudoSignal:
                 accept=False
                 for sig in rawSignalList: 
                     if sig==proc: accept=True
                 if not accept : continue
+                
+                newProc=('%s1.0w'%proc).replace('.','p')
+                pseudoSignalAccept.append(newProc)               
+                sf=exp[newProc].Integral()/pseudoSignal[proc].Integral()
+                pseudoSignal[proc].Scale(sf)
                 obs.Add( pseudoSignal[proc] )
+            for proc in exp:
+                if not proc in pseudoSignalAccept:
+                    obs.Add( exp[proc] )
+            print pseudoSignalAccept
             for xbin in xrange(0,obs.GetNbinsX()+2): obs.SetBinContent(xbin,int(obs.GetBinContent(xbin)))
         
         #start the datacard header
@@ -694,6 +709,7 @@ def main():
     parser.add_option(      '--replaceDYshape',     dest='replaceDYshape',     help='use DY shape from syst file',                 default=False,       action='store_true')
     parser.add_option(      '--doValidation',       dest='doValidation',       help='create validation plots',                     default=False,       action='store_true')
     parser.add_option(      '--pseudoDataFromSim',  dest='pseudoDataFromSim',  help='pseudo data from dedicated sample',           default='',          type='string')
+    parser.add_option(      '--pseudoDataFromWgt',  dest='pseudoDataFromWgt',  help='pseudo data from weighting',                  default='',          type='string')
     parser.add_option(      '--mainHypo',           dest='mainHypo',  help='main hypothesis',                                      default=1.0,         type=float)
     parser.add_option(      '--altHypo',            dest='altHypo',   help='alternative hypothesis',                               default=4.0,         type=float)  
     parser.add_option(      '--altHypoFromSim',     dest='altHypoFromSim',   help='alternative hypothesis from dedicated sample',  default='',          type='string')
