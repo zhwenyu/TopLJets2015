@@ -138,8 +138,7 @@ case $WHAT in
 	cd ${COMBINERELEASE}/
 	eval `scramv1 r -sh`
 	cd -
-	#python ${summaryScript} -i ${outdir}/datacards/ --doCLs --recreateCLsSummary --doNuisances --doFitSummary
-	python ${summaryScript} -i ${outdir}/datacards/ --doNuisances
+	python ${summaryScript} -i ${outdir}/datacards/ --doCLs --recreateCLsSummary --doNuisances --doFitSummary	
 	;;
     WWWHYPOTEST )
         mkdir -p ${wwwdir}/hypo
