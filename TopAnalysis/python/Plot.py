@@ -156,7 +156,7 @@ class Plot(object):
         # legend
         iniy=0.9 if self.wideCanvas else 0.85
         dy=0.1 
-        ndy= max(len(self.mc)-2,0)
+        ndy= 0.3*max(len(self.mc)-2,1)
         inix,dx =0.45,0.5
         if noStack:
             inix,dx=0.6,0.35
@@ -166,8 +166,8 @@ class Plot(object):
 
         leg.SetBorderSize(0)
         leg.SetFillStyle(0)        
-        leg.SetTextFont(43)
-        leg.SetTextSize(12)
+        leg.SetTextFont(42)
+        leg.SetTextSize(0.045)
         nlegCols = 0
 
         if self.dataH is not None:
@@ -265,15 +265,15 @@ class Plot(object):
         leg.Draw()
         txt=ROOT.TLatex()
         txt.SetNDC(True)
-        txt.SetTextFont(43)
-        txt.SetTextSize(16)
+        txt.SetTextFont(42)
+        txt.SetTextSize(0.05)
         txt.SetTextAlign(12)
         iniy=0.9 if self.wideCanvas else 0.95
         inix=0.12 if noStack else 0.18
         if lumi<100:
-            txt.DrawLatex(inix,iniy,'#bf{CMS} #it{Preliminary} %3.1f pb^{-1} (13 TeV)' % (lumi) )
+            txt.DrawLatex(inix,iniy,'#bf{CMS} #it{Preliminary} #scale[0.8]{%3.1f pb^{-1} (13 TeV)}' % (lumi) )
         else:
-            txt.DrawLatex(inix,iniy,'#bf{CMS} #it{Preliminary} %3.1f fb^{-1} (13 TeV)' % (lumi/1000.) )
+            txt.DrawLatex(inix,iniy,'#bf{CMS} #it{Preliminary} #scale[0.8]{%3.1f fb^{-1} (13 TeV)}' % (lumi/1000.) )
 
         #holds the ratio
         c.cd()

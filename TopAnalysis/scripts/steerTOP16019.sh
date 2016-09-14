@@ -171,16 +171,16 @@ case $WHAT in
 	#    itag=${TAGS[${i}]}
 	    #python ${summaryScript} -i ${outdir}/datacards_${itag}/ --doCLs --recreateCLsSummary --doNuisances --doFitSummary	
 	#done
-	python ${summaryScript} -i ${outdir}/datacards/ --doCLs
+	python ${summaryScript} -i ${outdir}/datacards/ --doCLs 
 	;;
     WWWHYPOTEST )
-	TAGS=("ll" "em") #"inc"                                                                                                                                                                                   
-        for i in ${!TAGS[*]}; do
+	TAGS=("_ll" "_em" "") #"_inc"                                                                                                                                                                                   
+        for i in ${!TAGS[@]}; do
 	    itag=${TAGS[${i}]}
-            mkdir -p ${wwwdir}/hypo_${itag}
-            cp ${outdir}/datacards_${itag}/*.{png,pdf} ${wwwdir}/hypo_${itag};
-            cp ${outdir}/datacards_${itag}/hypotest_1.0vs2.2_data/*.{png,pdf} ${wwwdir}/hypo_${itag};
-            cp test/index.php ${wwwdir}/hypo_${itag}
+            mkdir -p ${wwwdir}/hypo${itag}
+            cp ${outdir}/datacards${itag}/*.{png,pdf} ${wwwdir}/hypo${itag};
+            cp ${outdir}/datacards${itag}/hypotest_1.0vs2.2_data/*.{png,pdf} ${wwwdir}/hypo${itag};
+            cp test/index.php ${wwwdir}/hypo${itag}
 	done
 	;;
 

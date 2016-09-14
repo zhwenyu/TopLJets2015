@@ -177,6 +177,7 @@ def buildCLsAndPlot(dirList,opt):
     statList={'prefit':{}, 'postfit':{}, 'obs':{} }
     for prepost in statList:
         statList[prepost]["Separation"]={}
+        statList[prepost]["qobs"]={}
         statList[prepost]["$P(q_{\\rm null}>q_{\\rm alt}^{\\rm median})$"]={}
         statList[prepost]["$P(q_{\\rm alt}<q_{\\rm null}^{\\rm median})$"]={}
         statList[prepost]["CL$_s$^{\\rm exp.}$"]={}
@@ -203,6 +204,8 @@ def buildCLsAndPlot(dirList,opt):
             for line in open(statsFileName,"r"):
                 if "separation" in line :
                     statList[prepost]["Separation"][key].append( (altHypo,line.split('#')[0]) )
+                if "qobs" in line :
+                    statList[prepost]["qobs"][key].append( float(line.split(';')[1]) )
                 elif "null exceeded density" in line :
                     statList[prepost]["$P(q_{\\rm null}>q_{\\rm alt}^{\\rm median})$"][key].append( (altHypo,line.split('#')[0]) )
                 elif "alt exceeded density" in line :
@@ -218,7 +221,7 @@ def buildCLsAndPlot(dirList,opt):
                     else:
                         statList[prepost]["CL$_s$^{\\rm obs.}$"][key].append( (altHypo,line.split('#')[0]) )
         
-        buildHypoTestDist(d,statList['obs']['CL$_s$^{\\rm obs.}$'][key],opt)
+        buildHypoTestDist(d,key,altHypo,statList['obs']['qobs'][key][-1],opt)
 
     #fill the CLs graphs
     clsGraphs={}
@@ -302,6 +305,7 @@ def buildCLsAndPlot(dirList,opt):
 
         l=ROOT.TLine()
         l.SetLineColor(ROOT.kRed)
+        l.SetLineStyle(2)
         l.DrawLine(0.0,0.05,maxWidth,0.05)
         l.DrawLine(0.0,0.01,maxWidth,0.01)
 
@@ -338,58 +342,73 @@ def buildCLsAndPlot(dirList,opt):
 
 """
 """
-def buildHypoTestDist(d,obsCls,opt):
+def buildHypoTestDist(d,key,altHypo,qobs,opt):
 
-    obsClsVal=float(obsCls.split('\\pm')[0])
     histos={}
-    fs={'prefit':3003,'postfit':3001}
+    fs={'prefit':1001,'postfit':3004}
     fc={
-        'prefit':{'null':ROOT.kGray,'alt':ROOT.kMagenta+3},
-        'prefit':{'null':ROOT.kBlue,'alt':ROOT.kOrange+3}
+        'prefit':{False:ROOT.kBlue-9,True:ROOT.kOrange+1},
+        'postfit':{False:ROOT.kBlue-7,True:ROOT.kOrange+7}
         }
     for prepost in ['prefit','postfit']:
-       histos[prepost]['null']=ROOT.TH1F(prepost+'null',';-2 ln [ L(alt)/L(null) ]; Toys;',200,-200,200)
-       histos[prepost]['null'].SetDirectory(0)
-       histos[prepost]['null'].SetFillStyle(fs[prepost])
-       histos[prepost]['null'].SetFillColor(fc[prepost]['null'])
-       histos[prepost]['null'].SetFillColor(fc[prepost]['null'])
+        histos[prepost]={}
+        histos[prepost][True]=ROOT.TH1F(prepost+'null',';-2 ln [ L(alt)/L(SM) ]; Toys;',200,-150,150)
+        histos[prepost][True].SetDirectory(0)
+        histos[prepost][True].SetFillStyle(fs[prepost])
+        histos[prepost][True].SetFillColor(fc[prepost][True])
+        histos[prepost][True].SetLineColor(fc[prepost][True])
+        
+        histos[prepost][False]=histos[prepost][True].Clone(prepost+'alt')
+        histos[prepost][False].SetDirectory(0)
+        histos[prepost][False].SetFillStyle(fs[prepost])
+        histos[prepost][False].SetFillColor(fc[prepost][False])
+        histos[prepost][False].SetLineColor(fc[prepost][False])
 
-       histos[prepost]['alt']=histos[prepost]['null'].Clone(prepost+'alt')
-       histos[prepost]['alt'].SetDirectory(0)
-       histos[prepost]['alt'].SetFillStyle(fs[prepost])
-       histos[prepost]['alt'].SetFillColor(fc[prepost]['alt'])
-       histos[prepost]['alt'].SetFillColor(fc[prepost]['alt'])
-
-       #fill histos
-       fIn=ROOT.TFile.Open(opt.path.join(d,'x_%s.qvals.root')) 
-       q=fIn.Get('q')
-       for i in xrange(0,q.GetEntries()):
-           q.GetEntry(i)
-           hypType='null' if q.type>0 else 'alt'
-           histos[prepost][hyptype].Fill(-2*q.q)
-       fIn.Close()
-
+        #fill histos
+        fIn=ROOT.TFile.Open('%s/%s/x_%s.qvals.root'%(opt.indir,d,prepost))
+        q=fIn.Get('q')
+        for i in xrange(0,q.GetEntries()):
+            q.GetEntry(i)
+            hyptype=True if q.type>0 else False
+            histos[prepost][hyptype].Fill(-2*q.q)
+        fIn.Close()
+            
     #build the plots
     c=ROOT.TCanvas('c','c',500,500)
     c.SetLeftMargin(0.12)
-    c.SetRightMargin(0.15)
-    c.SetTopMargin(0.01)  
-    histos['prefit']['null'].Draw('hist')
-    histos['prefit']['alt'].Draw('histsame')
-    histos['postfit']['null'].Draw('histsame')
-    histos['postfit']['alt'].Draw('histsame')
+    c.SetRightMargin(0.05)
+    c.SetTopMargin(0.05)  
 
-    leg=ROOT.TLegend(0.58,0.85,0.95,0.7)
+    leg=ROOT.TLegend(0.15,0.88,0.65,0.75)
     leg.SetTextFont(42)
-    leg.SetTextSize(0.028)
+    leg.SetTextSize(0.023)
     leg.SetBorderSize(0)
     leg.SetFillStyle(0)
     leg.SetFillColor(0)
+
+
+    histos['prefit'][True].Draw('hist')
+    histos['prefit'][True].GetXaxis().SetTitleSize(0.04)
+    histos['prefit'][True].GetYaxis().SetTitleSize(0.04)
+    histos['prefit'][True].GetYaxis().SetRangeUser(0,histos['prefit'][True].GetMaximum()*1.4)
+    histos['prefit'][True].GetYaxis().SetTitleOffset(1.1)
+    leg.AddEntry( histos['prefit'][True],'Pre-fit model (SM)','f')
+
+    histos['prefit'][False].Draw('histsame')
+    leg.AddEntry( histos['prefit'][False],'Pre-fit model (alt.)','f')
+
+    histos['postfit'][True].Draw('histsame')
+    leg.AddEntry( histos['postfit'][True],'Post-fit model (SM)','f')
+
+    histos['postfit'][False].Draw('histsame')
+    leg.AddEntry( histos['postfit'][False],'Post-fit model (alt.)','f')
+
+    leg.SetNColumns(2)
     leg.Draw()
-    
-    l=ROOT.TArrow(obsclsVal,100,obsclsVal,0,'>')
-    l.SetLineWidth()
-    l.SetLineColor(ROOT.kBlue+3)
+
+    l=ROOT.TArrow(qobs,100,qobs,0,0.05,'>')
+    l.SetLineWidth(2)
+    l.SetLineColor(1)
     l.Draw()
     
     txt=ROOT.TLatex()
@@ -397,11 +416,22 @@ def buildHypoTestDist(d,obsCls,opt):
     txt.SetTextFont(42)
     txt.SetTextSize(0.05)
     txt.SetTextAlign(12)
-    txt.DrawLatex(0.6,0.9,'#bf{CMS} #it{Preliminary}')
-    txt.DrawLatex(0.72,0.98,'#scale[0.7]{12.9 fb^{-1} (13 TeV)}')
+    txt.DrawLatex(0.15,0.9,'#bf{CMS} #it{Preliminary}')
+    txt.DrawLatex(0.7,0.98,'#scale[0.7]{12.9 fb^{-1} (13 TeV)}')
+    txt.DrawLatex(0.7,0.9,'#scale[0.7]{Null: %3.1f #Gamma/#Gamma_{SM}}'%(key[1]))
+    txt.DrawLatex(0.7,0.85,'#scale[0.7]{Alt: %3.1f #Gamma/#Gamma_{SM}}'%(altHypo))
+    dataTitle='Observed'
+    if key[0]==False: dataTitle='Observed (#Gamma/#Gamma_{SM}=%3.1f)'%key[2]
+    txt.DrawLatex(0.65,0.79,'#rightarrow #scale[0.5]{%s}'%dataTitle)
     
     c.Modified()
     c.Update()
+    
+    tag='data' if key[0] else 'pseudodata'
+    if key[2] is not None : tag += '_%3.1f'%key[2]
+    tag+= '_mainHypo_%3.1f'%key[1]
+    for ext in ['png','pdf']:
+        c.SaveAs('%s/hypotest_%3.1fvs%3.1f_%s.%s'%(opt.outdir,key[1],altHypo,tag,ext))
 
 """
 """
@@ -416,7 +446,7 @@ def drawQuantiles(y,eyu,eyl,qobs,tag,title,opt):
 
     #frame
     binWidth = [0.1,0.3,0.5,0.7,0.9,1.1,1.3,1.5,1.7,1.9,2.1,2.3,2.5,2.7,2.9,3.1,3.4,3.6,3.7,3.9,4.1,4.3]
-    frame=ROOT.TH2F('frame',';#Gamma/#Gamma_{SM};-2 ln [L(alt)/L(null)]',len(binWidth)-1,array('d',binWidth),1,-160,160.)
+    frame=ROOT.TH2F('frame',';#Gamma/#Gamma_{SM};-2 ln [ L(alt)/L(SM) ]',len(binWidth)-1,array('d',binWidth),1,-160,160.)
     frame.Draw()
     frame.GetXaxis().SetTitleSize(0.05)
     frame.GetYaxis().SetTitleSize(0.05)
@@ -431,18 +461,18 @@ def drawQuantiles(y,eyu,eyl,qobs,tag,title,opt):
     leg.SetNColumns(2)
 
     allGrs=[]
-    colors=[ROOT.kBlue-9, ROOT.kOrange,
-            ROOT.kBlue-7, ROOT.kOrange+1,
-            ROOT.kBlue,   ROOT.kOrange+7]
+    colors=[ROOT.kOrange,   ROOT.kBlue-9,
+            ROOT.kOrange+1, ROOT.kBlue-7, 
+            ROOT.kOrange+7, ROOT.kBlue   ]
     for ci in [3,2,1]:
-        for hyp in ['null','alt']:
+        for hyp,hyptitle in [('null','SM'),('alt','alt.')]:
             ngr=len(allGrs)
             allGrs.append( ROOT.TGraphAsymmErrors() )
             allGrs[-1].SetFillColor(colors[ngr])
             allGrs[-1].SetFillStyle(1001)
             allGrs[-1].SetLineColor(colors[ngr])
             allGrs[-1].SetName('gr%d'%ngr)
-            allGrs[-1].SetTitle('%s, %d#sigma'%(hyp,ci))
+            allGrs[-1].SetTitle('%s, %d#sigma'%(hyptitle,ci))
             for i in xrange(0,len(eyl[hyp][ci])):
                 altHypo,cen=y[hyp][i]
                 u,l=eyu[hyp][ci][i][1],eyl[hyp][ci][i][1]
@@ -479,7 +509,7 @@ def drawQuantiles(y,eyu,eyl,qobs,tag,title,opt):
             allGrs[-1].SetPoint(np,xcen,cen)
             allGrs[-1].SetPointError(np,0.5*xwid,0.5*xwid,0,0)
         allGrs[-1].Draw('p')
-        leg2=ROOT.TLegend(0.5,0.85,0.6,0.8)
+        leg2=ROOT.TLegend(0.5,0.85,0.60,0.8)
         leg2.SetFillStyle(0)
         leg2.SetTextFont(42)
         leg2.SetTextSize(0.04)
@@ -686,7 +716,7 @@ steer the script
 """
 def main():
 
-    ROOT.gROOT.SetBatch(False) #True)
+    ROOT.gROOT.SetBatch(True)
     ROOT.gStyle.SetOptTitle(0)
     ROOT.gStyle.SetOptStat(0)
     ROOT.gStyle.SetPalette(54)
@@ -752,7 +782,7 @@ def main():
 
     if opt.doFitSummary: doFitSummary(fitGraphs,opt)
     if opt.doCLs: 
-        #buildQuantilesAndPlot(dirs,opt)
+        buildQuantilesAndPlot(dirs,opt)
         buildCLsAndPlot(dirs,opt)
     
 
