@@ -169,7 +169,6 @@ def buildQuantilesAndPlot(dirList,opt):
         drawQuantiles(y[key]['postfit'],eyu[key]['postfit'],eyl[key]['postfit'],qobs[key],tag+'_obs',title,opt)
 
 
-
 """
 """
 def buildCLsAndPlot(dirList,opt):
@@ -218,7 +217,8 @@ def buildCLsAndPlot(dirList,opt):
                         statList[prepost]["CL$_s$^{\\rm obs.}$"][key].append( (altHypo,'1 \\pm 0') )
                     else:
                         statList[prepost]["CL$_s$^{\\rm obs.}$"][key].append( (altHypo,line.split('#')[0]) )
-    
+        
+        buildHypoTestDist(d,statList['obs']['CL$_s$^{\\rm obs.}$'][key],opt)
 
     #fill the CLs graphs
     clsGraphs={}
@@ -336,6 +336,72 @@ def buildCLsAndPlot(dirList,opt):
             fOut.write('-'*50+'\n')
 
 
+"""
+"""
+def buildHypoTestDist(d,obsCls,opt):
+
+    obsClsVal=float(obsCls.split('\\pm')[0])
+    histos={}
+    fs={'prefit':3003,'postfit':3001}
+    fc={
+        'prefit':{'null':ROOT.kGray,'alt':ROOT.kMagenta+3},
+        'prefit':{'null':ROOT.kBlue,'alt':ROOT.kOrange+3}
+        }
+    for prepost in ['prefit','postfit']:
+       histos[prepost]['null']=ROOT.TH1F(prepost+'null',';-2 ln [ L(alt)/L(null) ]; Toys;',200,-200,200)
+       histos[prepost]['null'].SetDirectory(0)
+       histos[prepost]['null'].SetFillStyle(fs[prepost])
+       histos[prepost]['null'].SetFillColor(fc[prepost]['null'])
+       histos[prepost]['null'].SetFillColor(fc[prepost]['null'])
+
+       histos[prepost]['alt']=histos[prepost]['null'].Clone(prepost+'alt')
+       histos[prepost]['alt'].SetDirectory(0)
+       histos[prepost]['alt'].SetFillStyle(fs[prepost])
+       histos[prepost]['alt'].SetFillColor(fc[prepost]['alt'])
+       histos[prepost]['alt'].SetFillColor(fc[prepost]['alt'])
+
+       #fill histos
+       fIn=ROOT.TFile.Open(opt.path.join(d,'x_%s.qvals.root')) 
+       q=fIn.Get('q')
+       for i in xrange(0,q.GetEntries()):
+           q.GetEntry(i)
+           hypType='null' if q.type>0 else 'alt'
+           histos[prepost][hyptype].Fill(-2*q.q)
+       fIn.Close()
+
+    #build the plots
+    c=ROOT.TCanvas('c','c',500,500)
+    c.SetLeftMargin(0.12)
+    c.SetRightMargin(0.15)
+    c.SetTopMargin(0.01)  
+    histos['prefit']['null'].Draw('hist')
+    histos['prefit']['alt'].Draw('histsame')
+    histos['postfit']['null'].Draw('histsame')
+    histos['postfit']['alt'].Draw('histsame')
+
+    leg=ROOT.TLegend(0.58,0.85,0.95,0.7)
+    leg.SetTextFont(42)
+    leg.SetTextSize(0.028)
+    leg.SetBorderSize(0)
+    leg.SetFillStyle(0)
+    leg.SetFillColor(0)
+    leg.Draw()
+    
+    l=ROOT.TArrow(obsclsVal,100,obsclsVal,0,'>')
+    l.SetLineWidth()
+    l.SetLineColor(ROOT.kBlue+3)
+    l.Draw()
+    
+    txt=ROOT.TLatex()
+    txt.SetNDC(True)
+    txt.SetTextFont(42)
+    txt.SetTextSize(0.05)
+    txt.SetTextAlign(12)
+    txt.DrawLatex(0.6,0.9,'#bf{CMS} #it{Preliminary}')
+    txt.DrawLatex(0.72,0.98,'#scale[0.7]{12.9 fb^{-1} (13 TeV)}')
+    
+    c.Modified()
+    c.Update()
 
 """
 """
@@ -620,7 +686,7 @@ steer the script
 """
 def main():
 
-    ROOT.gROOT.SetBatch(True)
+    ROOT.gROOT.SetBatch(False) #True)
     ROOT.gStyle.SetOptTitle(0)
     ROOT.gStyle.SetOptStat(0)
     ROOT.gStyle.SetPalette(54)
