@@ -7,28 +7,45 @@ from tdrStyle import setTDRStyle
 import CMS_lumi
 from array import array
 from subprocess import Popen, PIPE, STDOUT
-
+import pprint
 
 """
 converts a graph to a spline
 """
-def convertToSpline(gr,color,width,splineMin=0.4,splineMax=10):
+def convertToSpline(gr,color,width,splineMin=0.3,splineMax=4,npoints=500):
 
-    tsp=ROOT.TMVA.TSpline2("%s_spline"%gr.GetName(),gr)
+    gr.Sort()
+    tsp=ROOT.TMVA.TSpline2("%s_spline"%gr.GetName(),gr.Clone())
 
     # make graph out of spline
-    tspGrX=ROOT.TVector(100)
-    tspGrY=ROOT.TVector(100)
-    for step in xrange(0,100) :
-        tempX=step*(splineMax-splineMin)/100 + splineMin
+    tspGrX=ROOT.TVector(npoints)
+    tspGrY=ROOT.TVector(npoints)
+    max_x,max_y=splineMin,tsp.Eval(splineMin)
+    for step in xrange(0,npoints) :
+        tempX=step*(splineMax-splineMin)/npoints + splineMin
         tspGrX[step]=tempX
         tspGrY[step]=tsp.Eval(tempX)
+        if tspGrY[step]<max_y: continue
+        max_x,max_y = tempX,tspGrY[step]
+
+    #determine the lower and upper limits at 95% and 99% CL
+    cls={
+        0.95:{'ul':(max_x,max_y),'ll':(max_x,max_y)},
+        0.99:{'ul':(max_x,max_y),'ll':(max_x,max_y)}
+        }
+    for step in xrange(0,npoints) :
+        bound='ll' if tspGrX[step]<max_x else 'ul'
+        for cl in cls:
+            if ROOT.TMath.Abs(tspGrY[step]-(1-cl))>ROOT.TMath.Abs(cls[cl][bound][1]-(1-cl)) : continue
+            cls[cl][bound]=(tspGrX[step],tspGrY[step])
+
 
     tspSplGr=ROOT.TGraph(tspGrX,tspGrY)
     tspSplGr.SetLineColor(color)
     tspSplGr.SetLineWidth(width)
     tspSplGr.SetName("%s_splinegr"%gr.GetName())
-    return tspSplGr
+
+    return tspSplGr,cls
 
 """
 opens fit results file
@@ -183,6 +200,7 @@ def buildCLsAndPlot(dirList,opt):
         #parse results in file
         for prepost in ['prefit','postfit','obs']:
             statsFileName="%s/%s/%sstats__%s_%s_%s.txt"%(opt.indir,d,prepost,('%3.1fw'%(altHypo)).replace('.','p'),'inclusive','mlb')           
+            if prepost=='obs' : print statsFileName,altHypo
             for line in open(statsFileName,"r"):
                 if "separation" in line :
                     statList[prepost]["Separation"][key].append( (altHypo,line.split('#')[0]) )
@@ -197,9 +215,10 @@ def buildCLsAndPlot(dirList,opt):
                         statList[prepost]["CL$_s$^{\\rm exp.}$"][key].append( (altHypo,line.split('#')[0]) )
                 elif "cls observed" in line :
                     if mainHypo==altHypo:
-                        statList[prepost]["CL$_s$^{\\rm exp.}$"][key].append( (altHypo,'1 \\pm 0') )
+                        statList[prepost]["CL$_s$^{\\rm obs.}$"][key].append( (altHypo,'1 \\pm 0') )
                     else:
                         statList[prepost]["CL$_s$^{\\rm obs.}$"][key].append( (altHypo,line.split('#')[0]) )
+    
 
     #fill the CLs graphs
     clsGraphs={}
@@ -213,9 +232,12 @@ def buildCLsAndPlot(dirList,opt):
                     clsGraphs[key][iprepost]=ROOT.TGraphErrors()
                     clsGraphs[key][iprepost].SetName(iprepost)
                     clsGraphs[key][iprepost].SetTitle(val)
-            
+
+            allhypoWidth=[]
             for res in statList[prepost][val][key]:
                 hypoWidth=1.324*res[0]
+                if hypoWidth in allhypoWidth : continue
+                allhypoWidth.append(hypoWidth)
                 cls,clsunc=float(res[1].split('\\pm')[0]),0
                 try:
                     clsunc=float(res[1].split('\\pm')[1])
@@ -234,46 +256,40 @@ def buildCLsAndPlot(dirList,opt):
     c.SetLogy()
     for key in clsGraphs:
         c.Clear()
-        
+
         maxWidth=4
         if key[0]==False : maxWidth=4*key[2]
         frame=ROOT.TH1F('frame',';#Gamma [GeV];CL_{S}',1,0,maxWidth)
         frame.Draw()
         frame.GetYaxis().SetRangeUser(1e-3,1)
-        frame.GetYaxis().SetTitleSize(0.04)
-        frame.GetXaxis().SetTitleSize(0.04)
+        frame.GetYaxis().SetTitleSize(0.045)
+        frame.GetXaxis().SetTitleSize(0.045)
         frame.GetYaxis().SetLabelSize(0.035)
         frame.GetXaxis().SetLabelSize(0.035)
 
-        prefitGr=clsGraphs[key]['prefit']
-        prefitGr.Sort()
-        prefitGr.SetLineColor(ROOT.kTeal-1)
-        prefitGr.SetLineWidth(2)    
-        #prefitGr=convertToSpline(clsGraphs[key]['prefit'],ROOT.kTeal-1,2)
-        prefitGr.Draw('l')
-        
-        postfitGr=clsGraphs[key]['postfit']
-        postfitGr.Sort()
-        postfitGr.SetLineColor(1)
-        postfitGr.SetLineWidth(1)
-        #postfitGr=convertToSpline(clsGraphs[key]['postfit'],1,1)
-        postfitGr.Draw('l')
+        prefitGrSpl,prefitcls=convertToSpline(clsGraphs[key]['prefit'],ROOT.kTeal-1,2)
+        prefitGrSpl.Draw('c')
 
-        clsGraphs[key]['obs'].Sort()
+        postfitGrSpl,postfitcls=convertToSpline(clsGraphs[key]['postfit'],ROOT.kRed+1,2)
+        postfitGrSpl.Draw('c')
+ 
+        obsGrSpl,obscls=convertToSpline(clsGraphs[key]['obs'],1,1,0.3,maxWidth)
+        obsGrSpl.Draw('c')  
+        clsGraphs[key]['obs'].SetLineWidth(1)
         clsGraphs[key]['obs'].SetMarkerStyle(20)
-        clsGraphs[key]['obs'].Draw('p')  
+        clsGraphs[key]['obs'].Draw('p')
 
-        leg=ROOT.TLegend(0.58,0.88,0.95,0.7)
+        leg=ROOT.TLegend(0.58,0.85,0.95,0.7)
         leg.SetTextFont(42)
-        leg.SetTextSize(0.03)
+        leg.SetTextSize(0.028)
         leg.SetBorderSize(0)
         leg.SetFillStyle(0)
         leg.SetFillColor(0)
         dataTitle='Observed'
         if key[0]==False: dataTitle='Observed (#Gamma/#Gamma_{SM}=%3.1f)'%key[2]
-        leg.AddEntry(clsGraphs[key]['obs'], dataTitle, 'p')
-        leg.AddEntry(postfitGr, 'Post-fit model (#mu profile)', 'l')
-        leg.AddEntry(prefitGr,  'Pre-fit model (#mu=1)',        'l')
+        leg.AddEntry(clsGraphs[key]['obs'], dataTitle, 'pl')
+        leg.AddEntry(postfitGrSpl, 'Post-fit model (#mu profile)', 'l')
+        leg.AddEntry(prefitGrSpl,  'Pre-fit model (#mu=1)',        'l')
         leg.Draw()
         
         txt=ROOT.TLatex()
@@ -302,10 +318,22 @@ def buildCLsAndPlot(dirList,opt):
 
         #output to file
         fOut=ROOT.TFile.Open('%s/cls_%s.root'%(opt.outdir,tag),'RECREATE')
-        clsGraphs[key]['obs'].Write()
-        postfitGr.Write()
-        prefitGr.Write()
+        for prepost in clsGraphs[key]:
+            clsGraphs[key][prepost].Write()
+        postfitGrSpl.Write()
+        prefitGrSpl.Write()
+        obsGrSpl.Write()
         fOut.Close()
+
+        #output limits to file
+        with open('%s/cls_%s_limits.txt'%(opt.outdir,tag),'w') as fOut:
+            for cl in prefitcls:
+                fOut.write('-'*50+'\n')
+                fOut.write('Limits at %d%% CL\n'%(cl*100))
+                fOut.write('\t pre-fit  (\\mu=1)    : [%3.2f,%3.2f]\n'%(prefitcls[cl]['ll'][0],  prefitcls[cl]['ul'][0]))
+                fOut.write('\t post-fit (\\mu prof.): [%3.2f,%3.2f]\n'%(postfitcls[cl]['ll'][0], postfitcls[cl]['ul'][0]))
+                fOut.write('\t obs      (\\mu prof.): [%3.2f,%3.2f]\n'%(obscls[cl]['ll'][0],     obscls[cl]['ul'][0]))
+            fOut.write('-'*50+'\n')
 
 
 
@@ -545,6 +573,7 @@ def doFitSummary(fitGraphs,opt):
     c.SetLeftMargin(0.12)
     c.SetRightMargin(0.15)
     c.SetTopMargin(0.01)
+
     for mainHypo in fitGraphs:
         for v,vtit in [('x','Hypothesis fraction')]:
 
@@ -552,6 +581,7 @@ def doFitSummary(fitGraphs,opt):
             dataGr.SetLineWidth(2)
 
             for pseudoDataHypo in fitGraphs[mainHypo]['sim']:
+                print pseudoDataHypo
                 c.Clear()
                 #c.SetLogz()
                 ll2d=buildGraph(fitGraphs[mainHypo]['sim'][pseudoDataHypo],
@@ -567,7 +597,8 @@ def doFitSummary(fitGraphs,opt):
                 ll2d.GetXaxis().SetTitleSize(0.04)
                 ll2d.GetYaxis().SetTitleSize(0.04)
                 ll2d.GetZaxis().SetTitleSize(0.04)
-                dataGr.Draw('p')
+
+                if dataGr.GetN()>0: dataGr.Draw('p')
 
                 leg=ROOT.TLegend(0.45,0.98,0.83,0.78)
                 leg.SetFillStyle(1001)
@@ -575,16 +606,15 @@ def doFitSummary(fitGraphs,opt):
                 leg.SetTextFont(42)
                 leg.SetTextSize(0.03)
                 leg.SetHeader('#splitline{#bf{CMS} #it{preliminary}}{#scale[0.8]{12.9 fb^{-1} (13 TeV)}}')
-                leg.AddEntry(dataGr,'obs.','p')
+                if dataGr.GetN()>0 : leg.AddEntry(dataGr,'obs.','p')
                 leg.AddEntry(ll2d,'exp. #Gamma/#Gamma_{SM}=%3.1f'%pseudoDataHypo,'f')
                 leg.Draw()
 
                 c.Modified()
                 c.Update()
-                for ext in ['png','pdf']:
+                for ext in ['png','pdf','C']:
                     c.SaveAs('%s/%s_fitresults_%3.1f_%3.1f.%s'%(opt.outdir,v,pseudoDataHypo,mainHypo,ext))
-
-
+                    
 """
 steer the script
 """
@@ -656,7 +686,7 @@ def main():
 
     if opt.doFitSummary: doFitSummary(fitGraphs,opt)
     if opt.doCLs: 
-        buildQuantilesAndPlot(dirs,opt)
+        #buildQuantilesAndPlot(dirs,opt)
         buildCLsAndPlot(dirs,opt)
     
 

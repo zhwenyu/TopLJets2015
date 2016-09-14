@@ -115,6 +115,8 @@ case $WHAT in
 	TAGS=("inc" "ll" "em")
 	altHypo=(0.2 0.4 0.6 0.8 1.0 1.2 1.4 1.6 1.8 2.0 2.2 2.4 2.6 2.8 3.0 3.5 4.0)
 	data=(-1.0 1.0 4.0)
+	TAGS=("inc")
+	data=(1.0)
 	for h in ${altHypo[@]}; do
 	    for d in ${data[@]}; do
 		for i in ${!TAGS[*]}; do
@@ -139,8 +141,8 @@ case $WHAT in
 			fi
 		    fi
 
-		    echo "Submitting ($mainHypo,$h,$d,$itag,$icat)"		
-		    bsub -q ${queue} ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${cmd};				
+		    #echo "Submitting ($mainHypo,$h,$d,$itag,$icat)"		
+		    #bsub -q ${queue} ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${cmd};				
 
 		    if [ "$itag" == "inc" ]; then
 			if [ "$d" == "1.0" ]; then
@@ -164,13 +166,22 @@ case $WHAT in
 	cd ${COMBINERELEASE}/
 	eval `scramv1 r -sh`
 	cd -
-	python ${summaryScript} -i ${outdir}/datacards/ --doCLs --recreateCLsSummary --doNuisances --doFitSummary	
+	TAGS=("inc") #"ll" "em") #"inc"
+	#for i in ${!TAGS[*]}; do
+	#    itag=${TAGS[${i}]}
+	    #python ${summaryScript} -i ${outdir}/datacards_${itag}/ --doCLs --recreateCLsSummary --doNuisances --doFitSummary	
+	#done
+	python ${summaryScript} -i ${outdir}/datacards/ --doCLs
 	;;
     WWWHYPOTEST )
-        mkdir -p ${wwwdir}/hypo
-        cp ${outdir}/datacards/*.{png,pdf} ${wwwdir}/hypo;
-        cp ${outdir}/datacards/hypotest_1.0vs2.2_data/*.{png,pdf} ${wwwdir}/hypo;
-        cp test/index.php ${wwwdir}/hypo
+	TAGS=("ll" "em") #"inc"                                                                                                                                                                                   
+        for i in ${!TAGS[*]}; do
+	    itag=${TAGS[${i}]}
+            mkdir -p ${wwwdir}/hypo_${itag}
+            cp ${outdir}/datacards_${itag}/*.{png,pdf} ${wwwdir}/hypo_${itag};
+            cp ${outdir}/datacards_${itag}/hypotest_1.0vs2.2_data/*.{png,pdf} ${wwwdir}/hypo_${itag};
+            cp test/index.php ${wwwdir}/hypo_${itag}
+	done
 	;;
 
 esac

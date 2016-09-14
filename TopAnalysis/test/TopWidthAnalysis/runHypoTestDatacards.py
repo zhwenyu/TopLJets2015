@@ -250,8 +250,12 @@ def doDataCards(opt,args):
                 sf=exp[newProc].Integral()/pseudoSignal[proc].Integral()
                 pseudoSignal[proc].Scale(sf)
                 obs.Add( pseudoSignal[proc] )
+
+            if len(opt.pseudoDataFromWgt) : pseudoSignalAccept+=altSignalList
+
             for proc in exp:
                 if not proc in pseudoSignalAccept:
+                    print proc
                     obs.Add( exp[proc] )
             print pseudoSignalAccept
             for xbin in xrange(0,obs.GetNbinsX()+2): obs.SetBinContent(xbin,int(obs.GetBinContent(xbin)))
