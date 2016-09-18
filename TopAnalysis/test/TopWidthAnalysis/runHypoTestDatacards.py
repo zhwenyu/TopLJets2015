@@ -225,9 +225,12 @@ def doDataCards(opt,args):
         if opt.pseudoData!=-1:
             pseudoSignal=None
             print '\t pseudo-data is being generated',
-            if len(opt.pseudoDataFromSim) and systfIn:
+            if len(opt.pseudoDataFromSim) and opt.systInput:
                 print 'injecting signal from',opt.pseudoDataFromSim
-                _,pseudoSignal=getDistsFromDirIn(opt.systInput,'%s_%s_1.0w'%(cat,opt.dist),opt.pseudoDataFromSim)
+                pseudoDataFromSim=opt.pseudoDataFromSim.replace('_',' ')
+                _,pseudoSignalRaw=getDistsFromDirIn(opt.systInput,'%s_%s_1.0w'%(cat,opt.dist),pseudoDataFromSim)
+                pseudoSignal={}
+                pseudoSignal['tbart']=pseudoSignalRaw.popitem()[1]
             elif len(opt.pseudoDataFromWgt):
                 print 'injecting signal from',opt.pseudoDataFromWgt
                 _,pseudoSignal=getDistsFromDirIn(opt.input,'%s%s_%s_1.0w'%(opt.pseudoDataFromWgt,cat,opt.dist),'t#bar{t}')

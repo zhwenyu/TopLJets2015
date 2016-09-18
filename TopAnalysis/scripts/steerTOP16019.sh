@@ -67,7 +67,7 @@ case $WHAT in
 	cp test/index.php ${wwwdir}/sel
 	;;
     ANA )
-	python scripts/runTopWidthAnalysis.py -i ${summaryeosdir} -o ${outdir}/analysis -q ${queue};
+	python scripts/runTopWidthAnalysis.py -i ${summaryeosdir} -o ${outdir}/analysis -q ${queue};	
 	;;
     MERGE )
 	./scripts/mergeOutputs.py ${outdir}/analysis;
@@ -114,9 +114,7 @@ case $WHAT in
 	)
 	TAGS=("inc" "ll" "em")
 	altHypo=(0.2 0.4 0.6 0.8 1.0 1.2 1.4 1.6 1.8 2.0 2.2 2.4 2.6 2.8 3.0 3.5 4.0)
-	data=(-1.0 1.0 4.0)
-	TAGS=("inc")
-	data=(1.0)
+	data=(-1.0 1.0 4.0)	
 	for h in ${altHypo[@]}; do
 	    for d in ${data[@]}; do
 		for i in ${!TAGS[*]}; do
@@ -128,8 +126,7 @@ case $WHAT in
 		    cmd="${cmd} --combine ${COMBINERELEASE}"
 		    cmd="${cmd} --mainHypo=${mainHypo} --altHypo ${h} --pseudoData=${d}"
 		    cmd="${cmd} -s tbart,tW --replaceDYshape"
-		    cmd="${cmd} --dist incmlb"
-		    cmd="${cmd} -o ${outdir}/datacards_${itag}/"
+		    cmd="${cmd} --dist incmlb"		    
 		    cmd="${cmd} -i ${outdir}/analysis/plots/plotter.root"
 		    cmd="${cmd} --systInput ${outdir}/analysis/plots/syst_plotter.root"
 		    cmd="${cmd} -c ${icat}"
@@ -141,24 +138,25 @@ case $WHAT in
 			fi
 		    fi
 
-		    #echo "Submitting ($mainHypo,$h,$d,$itag,$icat)"		
-		    #bsub -q ${queue} ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${cmd};				
-
+		    echo "Submitting ($mainHypo,$h,$d,$itag,$icat)"		
+		    stdcmd="${cmd} -o ${outdir}/datacards_${itag}/"
+		    bsub -q ${queue} ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${stdcmd};
 		    if [ "$itag" == "inc" ]; then
 			if [ "$d" == "1.0" ]; then
 			    echo "    injecting pseudo-data from nloproddec"
-			    cmd="${cmd} --pseudoDataFromWgt nloproddec"
-			    bsub -q ${queue} ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${cmd};
+			    nlocmd="${cmd} --pseudoDataFromWgt nloproddec -o ${outdir}/datacards_${itag}_nloproddec"
+			    bsub -q ${queue} ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${nlocmd};   
+			    echo "    injecting pseudo-data from widthx4"
+			    width4cmd="${cmd} --pseudoDataFromSim=t#bar{t}_widthx4 -o ${outdir}/datacards_${itag}_widthx4"
+			    bsub -q ${queue} sh ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${width4cmd};
 			fi
 		    fi
 		done
             done
 	done
 
-
-	#still to be tested
+	#still to be debugged
         #cmd="${cmd} --addBinByBin 0.3" 
-        # data=1.0 --pseudoDataFromSim="t#bar{t}  widthx4"\
 
 	;;
     PLOTHYPOTEST )
@@ -166,15 +164,15 @@ case $WHAT in
 	cd ${COMBINERELEASE}/
 	eval `scramv1 r -sh`
 	cd -
-	TAGS=("inc") #"ll" "em") #"inc"
-	#for i in ${!TAGS[*]}; do
-	#    itag=${TAGS[${i}]}
-	    #python ${summaryScript} -i ${outdir}/datacards_${itag}/ --doCLs --recreateCLsSummary --doNuisances --doFitSummary	
-	#done
-	python ${summaryScript} -i ${outdir}/datacards/ --doCLs 
+	TAGS=("inc" "ll" "em")
+	for i in ${!TAGS[*]}; do
+	    itag=${TAGS[${i}]}
+	    python ${summaryScript} -i ${outdir}/datacards_${itag}/ --doCLs --recreateCLsSummary --doNuisances --doFitSummary	
+	done
+	#python ${summaryScript} -i ${outdir}/datacards/ --doCLs 
 	;;
     WWWHYPOTEST )
-	TAGS=("_ll" "_em" "") #"_inc"                                                                                                                                                                                   
+	TAGS=("_ll" "_em" "_inc")
         for i in ${!TAGS[@]}; do
 	    itag=${TAGS[${i}]}
             mkdir -p ${wwwdir}/hypo${itag}

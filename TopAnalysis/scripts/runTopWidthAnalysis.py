@@ -171,12 +171,16 @@ def runTopWidthAnalysis(fileName,
         #determine weighting factors for the width
         tops={}
         tmassList=[]
+        bpartonList=[]
         for it in xrange(0,tree.nt):
-            if it>1 : break
             tid=tree.t_id[it]
-            tops[ tid ] = ROOT.TLorentzVector()
-            tops[ tid ].SetPtEtaPhiM(tree.t_pt[it],tree.t_eta[it],tree.t_phi[it],tree.t_m[it])
-            tmassList.append( tops[tid].M() )
+            if abs(tid)==5:
+                bpartonList.append( ROOT.TLorentzVector() )
+                bpartonList[-1].SetPtEtaPhiM(tree.t_pt[it],tree.t_eta[it],tree.t_phi[it],tree.t_m[it])
+            if it<2 and abs(tid)==6:
+                tops[ tid ] = ROOT.TLorentzVector()
+                tops[ tid ].SetPtEtaPhiM(tree.t_pt[it],tree.t_eta[it],tree.t_phi[it],tree.t_m[it])
+                tmassList.append( tops[tid].M() )
         widthWeight={}
         for w in widthList:
             widthWeight[w]=weightTopWidth(tmassList,bwigner,w*smWidth,smWidth)
@@ -349,7 +353,7 @@ def runTopWidthAnalysis(fileName,
 
                     #MC truth for this pair
                     pairFullyMatchedAtGen = (tree.gl_id[il]!=0 and abs(tree.gj_flav[ij])==5)
-                    assignmentType,tmass,genmlb=1,0.0,0.0
+                    assignmentType,tmass,genmlb,genmlb_parton=1,0.0,0.0,-1.0
                     if pairFullyMatchedAtGen and tree.nt>0:
 
                         #MC truth  kinematkcs
@@ -358,6 +362,11 @@ def runTopWidthAnalysis(fileName,
                         gjp4=ROOT.TLorentzVector()
                         gjp4.SetPtEtaPhiM(tree.gj_pt[ij],tree.gj_eta[ij],tree.gj_phi[ij],tree.gj_m[ij])
                         genmlb=(glp4+gjp4).M()
+                        
+                        for ibp in xrange(0,len(bpartonList)):
+                            dR=gjp4.DeltaR(bpartonList[ibp])
+                            if dR>0.5 : continue
+                            genmlb_parton=(glp4+bpartonList[ibp]).M()
 
                         #correctness of the assignment can be checked by op. charge
                         if tree.gl_id[il]*tree.gj_flav[ij]<0 : assignmentType=0
@@ -370,10 +379,10 @@ def runTopWidthAnalysis(fileName,
                             pass
 
                     #emulate reweighting to NLO prod+dec based on MCFM calculations
-                    if s=='nloproddec' and pairFullyMatchedAtGen :
+                    if s=='nloproddec' and pairFullyMatchedAtGen and genmlb_parton>0 :
                         pairWeightAtNLO=1.0                        
-                        if assignmentType==0 : pairWeightAtNLO=todk2totaGr['cor'].Eval(ROOT.TMath.Min(300.,genmlb))
-                        else :                 pairWeightAtNLO=todk2totaGr['wro'].Eval(ROOT.TMath.Min(300.,genmlb))
+                        if assignmentType==0 : pairWeightAtNLO=todk2totaGr['cor'].Eval(ROOT.TMath.Min(300.,genmlb_parton))
+                        else :                 pairWeightAtNLO=todk2totaGr['wro'].Eval(ROOT.TMath.Min(300.,genmlb_parton))
                         evWeight *= pairWeightAtNLO
 
                     #save MC truth distribution

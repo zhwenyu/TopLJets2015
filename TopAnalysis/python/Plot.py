@@ -113,7 +113,7 @@ class Plot(object):
             except:
                 pass
 
-    def show(self, outDir,lumi,noStack=False,saveTeX=False):
+    def show(self, outDir,lumi,noStack=False,saveTeX=False,extraText=None):
 
         if len(self.mc)<2 and self.dataH is None:
             print '%s has 0 or 1 MC!' % self.name
@@ -162,7 +162,7 @@ class Plot(object):
             inix,dx=0.6,0.35
             iniy,dy,ndy=0.95,0.02,len(self.mc)
 
-        leg = ROOT.TLegend(inix, iniy-dy*ndy, inix+dx, iniy+0.05)
+        leg = ROOT.TLegend(inix, iniy-dy*ndy, inix+dx, iniy+0.06)
 
         leg.SetBorderSize(0)
         leg.SetFillStyle(0)        
@@ -274,6 +274,14 @@ class Plot(object):
             txt.DrawLatex(inix,iniy,'#bf{CMS} #it{Preliminary} #scale[0.8]{%3.1f pb^{-1} (13 TeV)}' % (lumi) )
         else:
             txt.DrawLatex(inix,iniy,'#bf{CMS} #it{Preliminary} #scale[0.8]{%3.1f fb^{-1} (13 TeV)}' % (lumi/1000.) )
+        try:
+            extraCtr=1
+            for extra in extraText.split('\\'):
+                txt.DrawLatex(inix,iniy-0.05*extraCtr,'#scale[0.8]{#it{%s}}'%extra)
+                extraCtr+=1
+        except:
+            pass
+
 
         #holds the ratio
         c.cd()

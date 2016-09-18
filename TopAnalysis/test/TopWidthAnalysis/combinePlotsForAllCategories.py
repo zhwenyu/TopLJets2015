@@ -3,7 +3,7 @@ import sys
 
 """
 """
-def doPlot(plotName,chList,url):
+def doPlot(plotName,chList,extraText,url):
 
     ROOT.gStyle.SetOptTitle(0)
     ROOT.gStyle.SetOptStat(0)
@@ -49,7 +49,8 @@ def doPlot(plotName,chList,url):
                  False)
     plot.finalize()
     plot.mcUnc=0.062
-    plot.show(outDir="plots/",lumi=12900)
+
+    plot.show(outDir="plots/",lumi=12900,extraText=extraText)
 
                      
 def main():
@@ -57,11 +58,24 @@ def main():
     os.system('mkdir -p plots')
 
     plots=sys.argv[1].split(',')
-    chList='EE1b,EE2b,MM1b,MM2b,EM1b,EM2b'.split(',')
-    if len(sys.argv)>2: chList=sys.argv[2].split(',')
+    chList='EE1b,EE2b,MM1b,MM2b,EM1b,EM2b'
+    if len(sys.argv)>2: chList=sys.argv[2]
+
+
     plotter='/afs/cern.ch/work/e/ecoleman/public/TopWidth/TopWidth_era2016/analysis/plots/plotter.root'
     if len(sys.argv)>3: plotter=sys.argv[3]
-    for p in plots : doPlot(p,chList,plotter)
+    for p in plots : 
+
+        extraText=''
+        if 'EM' in chList and not 'EE' in chList and not 'MM' in chList : extraText='e#mu\\'
+        if 'EE' in chList and not 'EM' in chList and not 'MM' in chList : extraText='ee\\'
+        if 'MM' in chList and not 'EE' in chList and not 'EM' in chList : extraText='#mu#mu\\'
+        if 'lowpt' in chList:  extraText += 'p_{T}(lepton,jet)<100 GeV\\'
+        if 'highpt' in chList: extraText += 'p_{T}(lepton,jet)#geq 100 GeV\\'
+        if '1b' in chList and not '2b' in chList : extraText += '=1b-tag'
+        if '2b' in chList and not '1b' in chList : extraText += '#geq2 b-tags'
+        if '1b' in chList and     '2b' in chList : extraText += '#geq1 b-tags'
+        doPlot(p,chList.split(','),extraText,plotter)
     
 """
 for execution from another script
