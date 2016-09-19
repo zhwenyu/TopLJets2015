@@ -115,6 +115,8 @@ case $WHAT in
 	TAGS=("inc" "ll" "em")
 	altHypo=(0.2 0.4 0.6 0.8 1.0 1.2 1.4 1.6 1.8 2.0 2.2 2.4 2.6 2.8 3.0 3.5 4.0)
 	data=(-1.0 1.0 4.0)	
+	#still to be debugged
+        #cmd="${cmd} --addBinByBin 0.3" 
 	for h in ${altHypo[@]}; do
 	    for d in ${data[@]}; do
 		for i in ${!TAGS[*]}; do
@@ -154,25 +156,20 @@ case $WHAT in
 		done
             done
 	done
-
-	#still to be debugged
-        #cmd="${cmd} --addBinByBin 0.3" 
-
 	;;
     PLOTHYPOTEST )
 	summaryScript=${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/summarizeHypoTestResults.py;
 	cd ${COMBINERELEASE}/
 	eval `scramv1 r -sh`
 	cd -
-	TAGS=("inc" "ll" "em")
+	TAGS=("inc" "ll" "em" "inc_nloproddec" "inc_widthx4")
 	for i in ${!TAGS[*]}; do
 	    itag=${TAGS[${i}]}
 	    python ${summaryScript} -i ${outdir}/datacards_${itag}/ --doCLs --recreateCLsSummary --doNuisances --doFitSummary	
-	done
-	#python ${summaryScript} -i ${outdir}/datacards/ --doCLs 
+	done	
 	;;
     WWWHYPOTEST )
-	TAGS=("_ll" "_em" "_inc")
+	TAGS=("_ll" "_em" "_inc" "_inc_nloproddec" "_inc_widthx4")
         for i in ${!TAGS[@]}; do
 	    itag=${TAGS[${i}]}
             mkdir -p ${wwwdir}/hypo${itag}
