@@ -75,6 +75,8 @@ void Run5TeVAnalysis(TString inFileName,
   
   //book histograms
   std::map<TString,TH1 *> histos;
+  histos["wgtcounter"] = new TH1F("wgtcounter",";Weight;Events;",200,0,200);
+  histos["fidcounter"] = new TH1F("fidcounter",";Weight;Events;",200,0,200);
   histos["trig"] = new TH1F("trig",";Trigger;Events",2,0,2);
   histos["lpt"]  = new TH1F("lpt",";Transverse momentum [GeV];Events",20.,0.,200.);
   histos["leta"] = new TH1F("leta",";Pseudo-rapidity;Events",20.,0.,2.1);
@@ -101,27 +103,27 @@ void Run5TeVAnalysis(TString inFileName,
   for(int ij=0; ij<=2; ij++)
     {
       TString pf(Form("%db",ij));
-      histos["lpt_"+pf]    = new TH1F("lpt_"+pf,";Transverse momentum [GeV];Events",10.,0.,200.);
-      histos["leta_"+pf]   = new TH1F("leta_"+pf,";Pseudo-rapidity;Events",10.,0.,2.1);
-      histos["jpt_"+pf]    = new TH1F("jpt_"+pf,";Transverse momentum [GeV];Events",10.,0.,200.);
-      histos["jeta_"+pf]   = new TH1F("jeta_"+pf,";Pseudo-rapidity;Events",10.,0.,2.5);
+      histos["lpt_"+pf]    = new TH1F("lpt_"+pf,";Transverse momentum [GeV];Events",5.,20.,120.);
+      histos["leta_"+pf]   = new TH1F("leta_"+pf,";Pseudo-rapidity;Events",5.,0.,2.2);
+      histos["jpt_"+pf]    = new TH1F("jpt_"+pf,";Transverse momentum [GeV];Events",5.,0.,250.);
+      histos["jeta_"+pf]   = new TH1F("jeta_"+pf,";Pseudo-rapidity;Events",5.,0.,2.5);
       histos["ht_"+pf]     = new TH1F("ht_"+pf,";H_{T} [GeV];Events",10.,0.,800.);
-      histos["metpt_"+pf]  = new TH1F("metpt_"+pf,";Missing transverse energy [GeV];Events" ,10,0.,200.);
-      histos["metphi_"+pf] = new TH1F("metphi_" + pf,";MET #phi [rad];Events" ,10,-3.2,3.2);
-      histos["mt_"+pf]     = new TH1F("mt_"+pf,";Transverse Mass [GeV];Events" ,10,0.,200.);
-      histos["mjj_"+pf]    = new TH1F("mjj_"+pf,";Mass(j,j') [GeV];Events" ,16,0.,200.);
-      histos["mlb_"+pf]    = new TH1F("mlb_"+pf,";Mass(l,b) [GeV];Events" ,15,0.,250.);
+      histos["metpt_"+pf]  = new TH1F("metpt_"+pf,";Missing transverse energy [GeV];Events" ,5,0.,200.);
+      histos["metphi_"+pf] = new TH1F("metphi_" + pf,";MET #phi [rad];Events" ,5,-3.2,3.2);
+      histos["mt_"+pf]     = new TH1F("mt_"+pf,";Transverse Mass [GeV];Events" ,10,0.,300.);
+      histos["mjj_"+pf]    = new TH1F("mjj_"+pf,";Mass(j,j') [GeV];Events" ,20,0.,400.);
+      histos["mlb_"+pf]    = new TH1F("mlb_"+pf,";Mass(l,b) [GeV];Events" ,20,0.,300.);
       histos["njets_"+pf]  = new TH1F("njets_"+pf,";Jet multiplicity;Events" ,6,2.,8.);
 
       if(isMC && runSysts)
 	{
 	  nSysts=sizeof(expSysts)/sizeof(TString);
-	  histos["mjjshapes_"+pf+"_exp"]=new TH2F("mjjshapes_"+pf+"_exp",";Mass(j,j');Systematic uncertainty;Events",16,0,200,nSysts,0,nSysts);
+	  histos["mjjshapes_"+pf+"_exp"]=new TH2F("mjjshapes_"+pf+"_exp",";Mass(j,j');Systematic uncertainty;Events",20,0,400,nSysts,0,nSysts);
 	  for(int i=0; i<nSysts; i++)
 	    histos["mjjshapes_"+pf+"_exp"]->GetYaxis()->SetBinLabel(i+1,expSysts[i]);
 	  
-	  histos["mjjshapes_"+pf+"_gen"]=new TH2F("mjjshapes_"+pf+"_gen",";Mass(j,j') [GeV];Systematic uncertainty;Events",16,0,200,500,0,500);
-	  for(int i=0; i<500;i++)
+	  histos["mjjshapes_"+pf+"_gen"]=new TH2F("mjjshapes_"+pf+"_gen",";Mass(j,j') [GeV];Systematic uncertainty;Events",20,0,400,200,0,200);
+	  for(int i=0; i<200;i++)
 	    histos["mjjshapes_"+pf+"_gen"]->GetYaxis()->SetBinLabel(i+1,Form("genUnc%d",i));
 	}
     }
@@ -160,6 +162,7 @@ void Run5TeVAnalysis(TString inFileName,
     pfCand_p->SetBranchAddress("pfEta",    &pfEta_p);
     pfCand_p->SetBranchAddress("pfPhi",    &pfPhi_p);
     pfCand_p->SetBranchAddress("pfEnergy", &pfEnergy_p);
+
 
     //muon variables
     std::vector<float>* muPt_p = 0;
@@ -267,17 +270,33 @@ void Run5TeVAnalysis(TString inFileName,
     lepTree_p->SetBranchAddress("eleIDTight", &eleIDTight_p);
     lepTree_p->SetBranchAddress("eleCharge", &eleCharge_p);
 
+    //gen-level variables
+    std::vector<int> *mcPID=0;
+    std::vector<float> *mcPt=0,*mcEta=0,*mcPhi=0;
+    lepTree_p->SetBranchStatus("mcPID", 1);
+    lepTree_p->SetBranchStatus("mcPt", 1);
+    lepTree_p->SetBranchStatus("mcEta", 1);
+    lepTree_p->SetBranchStatus("mcPhi", 1);
+    lepTree_p->SetBranchAddress("mcPID", &mcPID);
+    lepTree_p->SetBranchAddress("mcPt", &mcPt);
+    lepTree_p->SetBranchAddress("mcEta", &mcEta);
+    lepTree_p->SetBranchAddress("mcPhi", &mcPhi);
+
     //jet variables
     const int maxJets = 5000;
-    Int_t   nref;
-    Float_t jtpt[maxJets]; 
-    Float_t jteta[maxJets];
-    Float_t jtphi[maxJets];
+    Int_t   nref,ngen;
+    Float_t jtpt[maxJets],genpt[maxJets];
+    Float_t jteta[maxJets],geneta[maxJets];
+    Float_t jtphi[maxJets],genphi[maxJets];
     Float_t jtm[maxJets]; 
     Float_t discr_csvV2[maxJets];
     Float_t refpt[maxJets];
     Int_t refparton_flavor[maxJets];
     jetTree_p->SetBranchStatus("*", 0);
+    jetTree_p->SetBranchStatus("ngen", 1);
+    jetTree_p->SetBranchStatus("genpt", 1);
+    jetTree_p->SetBranchStatus("genphi", 1);
+    jetTree_p->SetBranchStatus("geneta", 1);
     jetTree_p->SetBranchStatus("nref", 1);
     jetTree_p->SetBranchStatus("jtpt", 1);
     jetTree_p->SetBranchStatus("jtphi", 1);
@@ -294,7 +313,11 @@ void Run5TeVAnalysis(TString inFileName,
     jetTree_p->SetBranchAddress("discr_csvV2", discr_csvV2);
     jetTree_p->SetBranchAddress("refpt", refpt);
     jetTree_p->SetBranchAddress("refparton_flavorForB", refparton_flavor);
-  
+    jetTree_p->SetBranchAddress("ngen", &ngen);
+    jetTree_p->SetBranchAddress("genpt", genpt);
+    jetTree_p->SetBranchAddress("genphi", genphi);
+    jetTree_p->SetBranchAddress("geneta", geneta);
+
     //event variables
     UInt_t run_, lumi_;
     ULong64_t evt_;
@@ -360,6 +383,37 @@ void Run5TeVAnalysis(TString inFileName,
 	  {
 	    if(ttbar_w_p->size()) evWeight = ttbar_w_p->at(0);
 	    evWeight *= totalEvtNorm;
+
+	    //fiducial region analysis
+	    std::vector<TLorentzVector> selGenLeptons;
+	    for(size_t imc=0; imc<mcPID->size(); imc++)
+	      {
+		int abspid=abs(mcPID->at(imc));
+		if(abspid!=13) continue;
+		TLorentzVector p4;
+		p4.SetPtEtaPhiM(mcPt->at(imc),mcEta->at(imc),mcPhi->at(imc),0.);
+		if(p4.Pt()<25 || fabs(p4.Eta())>2.1) continue;
+		selGenLeptons.push_back(p4);
+	      }
+	    
+	    //select gen jets cross-cleaning with leading muon
+	    int nGenJets(0);
+	    for(int imcj=0; imcj<ngen; imcj++)
+	      {
+		TLorentzVector p4;
+		p4.SetPtEtaPhiM(genpt[imcj],geneta[imcj],genphi[imcj],0.);
+		if(selGenLeptons.size() && p4.DeltaR(selGenLeptons[0])<0.4) continue;
+		if(p4.Pt()<25 || fabs(p4.Eta())>2.4) continue;
+		nGenJets++;
+	      }
+
+	    //check if it passes the gen level acceptance
+	    bool passFid(nGenJets>=2 && selGenLeptons.size()>0);
+	    for(size_t iw=0; iw<ttbar_w_p->size(); iw++)
+	      {
+		histos["wgtcounter"]->Fill(iw,ttbar_w_p->at(iw));
+		if(passFid) histos["fidcounter"]->Fill(iw,ttbar_w_p->at(iw));
+	      }
 	  }
 
 	//require trigger for the event
@@ -516,15 +570,14 @@ void Run5TeVAnalysis(TString inFileName,
 	//muons
 	if(channelSelection==1300)
 	  {
-	    if(tightMuons.size()!=0 || looseMuons.size()!=0 || mediumElectrons.size()!=0 || vetoElectrons.size()!=0) continue;
 	    if(tightMuonsNonIso.size()==0) continue;
+	    if(tightMuons.size()+looseMuons.size()+mediumElectrons.size()+vetoElectrons.size()!=0) continue;
 	    tightMuons=tightMuonsNonIso;
 	  }
 	if(channelSelection==13)
 	  {
-	    if(tightMuons.size()!=1) continue; //=1 tight muon
-	    if(looseMuons.size()) continue;    //no extra muons
-	    if(mediumElectrons.size()+vetoElectrons.size()!=0) continue; //no extra electrons
+	    if(tightMuons.size()!=1) continue; //=1 tight muon	
+	    if(looseMuons.size()+mediumElectrons.size()+vetoElectrons.size()!=0) continue; //no extra leptons
 	    if(chargeSelection!=0)
 	      {
 		if(muonCharge[0]!=chargeSelection) continue;
@@ -533,15 +586,14 @@ void Run5TeVAnalysis(TString inFileName,
 	//electrons
 	if(channelSelection==1100)
 	  {
-	    if(mediumElectrons.size()!=0 || vetoElectrons.size()!=0 || tightMuons.size()!=0 || looseMuons.size()!=0) continue;
 	    if(mediumElectronsNonIso.size()==0) continue;
+	    if(mediumElectrons.size()+vetoElectrons.size()+tightMuons.size()+looseMuons.size()!=0) continue;
 	    mediumElectrons=mediumElectronsNonIso;
 	  }
 	if(channelSelection==11)
 	  {
 	    if(mediumElectrons.size()!=1) continue; //=1 medium electron
-	    if(vetoElectrons.size()>0) continue;    //no extra electrons
-	    if(tightMuons.size()+looseMuons.size()!=0) continue; //no extra muons
+	    if(vetoElectrons.size()+tightMuons.size()+looseMuons.size()!=0) continue; //no extra leptons
 	    if(chargeSelection!=0)
 	      {
 		if(elCharge[0]!=chargeSelection) continue;
@@ -550,8 +602,8 @@ void Run5TeVAnalysis(TString inFileName,
 	
 	// combined leptons
 	std::vector<TLorentzVector> goodLeptons;
-	goodLeptons = (tightMuons.size() > 0 && (channelSelection==1300 || channelSelection==13) ) ?  tightMuons : mediumElectrons;  
-
+	goodLeptons = (channelSelection==1300 || channelSelection==13) ?  tightMuons : mediumElectrons;  
+	if(goodLeptons.size()==0) continue;
 
 	//raw MET (noHF)
 	TLorentzVector rawMET(0,0,0,0);	

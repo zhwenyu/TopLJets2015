@@ -16,7 +16,7 @@ struct Acceptance_t
 };
 
 enum TTbarSample {AMCATNLOFXFX,AMCATNLOFXFX_HERWIG,M169v5,M172v5,M175v5,PSUP,PSDOWN};
-Acceptance_t acceptanceEst(TTbarSample sample,Int_t njets,TString baseDir="/store/cmst3/user/psilva/LJets2015/64217e8");
+Acceptance_t acceptanceEst(TTbarSample sample,Int_t njets,TString baseDir="/store/cmst3/user/psilva/LJets2016/8db9ad6");
 
 Acceptance_t acceptanceEst(TTbarSample sample,Int_t njets,TString baseDir)
 {
@@ -35,7 +35,7 @@ Acceptance_t acceptanceEst(TTbarSample sample,Int_t njets,TString baseDir)
   if(sample==M169v5)
     for(Int_t i=0; i<5; i++) files.push_back(Form("root://eoscms//eos/cms/%s/MC13TeV_TTJets_m169v5/MergedMiniEvents_%d.root",baseDir.Data(),i));
   if(sample==M172v5)
-    for(Int_t i=0; i<5; i++) files.push_back(Form("root://eoscms//eos/cms/%s/MC13TeV_TTJets/MergedMiniEvents_%d.root",baseDir.Data(),i));
+    for(Int_t i=0; i<5; i++) files.push_back(Form("root://eoscms//eos/cms/%s/MC13TeV_TTJets_powheg/MergedMiniEvents_%d.root",baseDir.Data(),i));
   if(sample==PSUP)
     for(Int_t i=0; i<5; i++) files.push_back(Form("root://eoscms//eos/cms/%s/MC13TeV_TTJets_scaleup/MergedMiniEvents_%d.root",baseDir.Data(),i));
   if(sample==PSDOWN)

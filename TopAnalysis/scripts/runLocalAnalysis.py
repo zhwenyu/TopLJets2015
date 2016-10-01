@@ -30,7 +30,6 @@ def RunMethodPacked(args):
                                                                                                                       flav)
         if runSysts : cmd += ' --runSysts'
         if debug : cmd += ' --debug'
-        print cmd
         os.system(cmd)
     except :
         print 50*'<'

@@ -3,6 +3,7 @@
 #include "TopLJets2015/TopAnalysis/interface/CommonTools.h"
 #include "TopLJets2015/TopAnalysis/interface/TOP-16-006.h"
 #include "TopLJets2015/TopAnalysis/interface/TOP-16-019.h"
+#include "TopLJets2015/TopAnalysis/interface/TOP-UE.h"
 #include "TopLJets2015/TopAnalysis/interface/TopCharmedMesonAnalysis.h"
 #include "TopLJets2015/TopAnalysis/interface/Run5TeVAnalysis.h"
 
@@ -79,6 +80,7 @@ int main(int argc, char* argv[])
   else if(method=="TOP-16-019::RunTop16019")                             RunTop16019(in,out,channel,charge,FlavourSplitting(flav),normH,runSysts,era);
   else if(method=="TopCharmedMesonAnalysis::RunTopCharmedMesonAnalysis") RunTopCharmedMesonAnalysis(in,out,channel,charge,FlavourSplitting(flav),normH,runSysts,era,debug);
   else if(method=="Run5TeVAnalysis::Run5TeVAnalysis")                    Run5TeVAnalysis(in,out,channel,charge,FlavourSplitting(flav),normH,runSysts,era);
+  else if(method=="TOP-UE::RunTopUE")                                    RunTopUE(in,out,channel,charge,FlavourSplitting(flav),normH,runSysts,era);
   else
     {
       cout << "Check method=" << method <<endl;

@@ -37,27 +37,30 @@ case $WHAT in
 	;;
     SEL )
 	echo -e "[ ${RED} Sending out jobs to batch ${NC} ]"
-	#python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_mu                                --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis       --ch 13 --runSysts --only MC;
-	#python scripts/runLocalAnalysis.py -i ${mu_data}   -q ${queue} -o ${outdir}/analysis_mu/FilteredSingleMuHighPt_v3.root --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis       --ch 13;
-	#python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_munoniso                          --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis       --ch 1300 --only MC;
-	#python scripts/runLocalAnalysis.py -i ${mu_data}   -q ${queue} -o ${outdir}/analysis_munoniso/FilteredSingleMuHighPt_v3.root --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis --ch 1300;
-	python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_e       --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis --ch 11 --runSysts --only MC;
-	python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_enoniso --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis --ch 1100 --only MC;
+	#muon channel
+	python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_mu                                --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis       --ch 13 --runSysts --only MC;
+	python scripts/runLocalAnalysis.py -i ${mu_data}   -q ${queue} -o ${outdir}/analysis_mu/FilteredSingleMuHighPt_v3.root --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis       --ch 13;
+	python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_munoniso                          --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis       --ch 1300 --only MC;
+	python scripts/runLocalAnalysis.py -i ${mu_data}   -q ${queue} -o ${outdir}/analysis_munoniso/FilteredSingleMuHighPt_v3.root --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis --ch 1300;
+
+	#electron channel
+        #python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_e       --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis --ch 11 --runSysts --only MC;
+	#python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_enoniso --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis --ch 1100 --only MC;
 	#python scripts/runLocalAnalysis.py -i /store/cmst3/group/hintt/mverweij/PP5TeV/data/HighPtPhoton30AndZ/crab_FilteredHighPtPhoton30AndZ_v3/160425_163357/merge/HiForest_0.root  -q ${queue} -o ${outdir}/analysis_e/FilteredHighPtPhoton30AndZ.root       --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis --ch 11;
 	#python scripts/runLocalAnalysis.py -i /store/cmst3/group/hintt/mverweij/PP5TeV/data/HighPtPhoton30AndZ/crab_FilteredHighPtPhoton30AndZ_v3/160425_163357/merge/HiForest_0.root  -q ${queue} -o ${outdir}/analysis_enoniso/FilteredHighPtPhoton30AndZ.root       --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis --ch 1100;
 	;;
     MERGE )
 	echo -e "[ ${RED} Merging job output ${NC} ]"
-	a=(mu munoniso e enoniso)
-	a=(e enoniso)
+	a=(mu munoniso)
+	#a=(e enoniso)
 	for i in ${a[@]}; do
 	    ./scripts/mergeOutputs.py ${outdir}/analysis_${i};
 	done
 	;;
     BKG )
 	echo -e "[ ${RED} Running QCD estimation from non-isolated side-band ${NC} ]"
-	a=(mu munoniso e enoniso)
-        a=(e enoniso)
+	a=(mu munoniso)
+	#a=(e enoniso)
 	for i in ${a[@]}; do
 	    python scripts/plotter.py -i ${outdir}/analysis_${i}  -j data/era5TeV/samples.json      -l ${lumi} --silent;
 	done
@@ -71,12 +74,12 @@ case $WHAT in
 	;;
     PLOT )
 	echo -e "[ ${RED} Running plotter ${NC} ]"
-	a=(mu munoniso e enoniso)
-	a=(e enoniso)
+	a=(mu munoniso)
+	#a=(e enoniso)
 	for i in ${a[@]}; do
-	    #python scripts/plotter.py -i ${outdir}/analysis_${i}  -j data/era5TeV/Wsamples.json     -l ${lumi} --saveLog --noStack;	
-	    #mkdir ~/${outdir}/analysis_${i}/wplots;
-	    #mv ~/${outdir}/analysis_${i}/plots/* ~/${outdir}/analysis_${i}/wplots/;
+	    python scripts/plotter.py -i ${outdir}/analysis_${i}  -j data/era5TeV/Wsamples.json     -l ${lumi} --saveLog --noStack;	
+	    mkdir ~/${outdir}/analysis_${i}/wplots;
+	    mv ~/${outdir}/analysis_${i}/plots/* ~/${outdir}/analysis_${i}/wplots/;
 	    python scripts/plotter.py -i ${outdir}/analysis_${i}  -j data/era5TeV/samples.json      -l ${lumi} --saveLog;	
 	    python scripts/plotter.py -i ${outdir}/analysis_${i}  -j data/era5TeV/syst_samples.json -l ${lumi} -o syst_plotter.root --silent;	
 	done
@@ -84,8 +87,8 @@ case $WHAT in
 
     WWW )
 	echo -e "[ ${RED} Moving plots to ${outdir} ${NC} ]"
-	a=(mu munoniso e enoniso)
-	a=(e enoniso)
+	a=(mu munoniso)
+	#a=(e enoniso)
 	for i in ${a[@]}; do
 	    mkdir -p ${wwwdir}/analysis_${i}
 	    cp ${outdir}/analysis_${i}/plots/*.{png,pdf} ${wwwdir}/analysis_${i}
@@ -94,7 +97,8 @@ case $WHAT in
 	;;
     PREPAREFIT )
 	echo -e "[ ${RED} Creating datacards ${NC} ]"
-	for ch in e mu; do
+	#for ch in e mu; do
+	for ch in mu; do
 	    python scripts/createDataCard.py \
 		-i ${outdir}/analysis_${ch}/plots/plotter.root \
 		--systInput ${outdir}/analysis_${ch}/plots/syst_plotter.root \
@@ -119,7 +123,8 @@ case $WHAT in
 	done
 	;;
     FIT )
-	for ch in e mu; do
+	#for ch in e mu; do
+	for ch in mu; do
 	    echo -e "[ ${RED} $CMSSW_BASE will be used - make sure combine is compatible and is installed ${NC} ]"
 	    cd ${outdir}/analysis_${ch}/datacard_${NBINS};
 	    combineCards.py ${ch}0b=datacard_0b.dat ${ch}1b=datacard_1b.dat ${ch}2b=datacard_2b.dat > datacard.dat;
@@ -165,7 +170,8 @@ case $WHAT in
 	;;
     SHOWFIT )
 	echo -e "[ ${RED} Fit plots will be made available in ${wwwdir}/fits ${NC}]";
-	for ch in e mu; do
+	#for ch in e mu; do
+	for ch in mu; do
 	    cardsDir=${outdir}/analysis_${ch}/datacard_${NBINS};
 	    python scripts/fitSummaryPlots.py ${ch}=${cardsDir}/datacard.dat --POIs r,btag --label "27.9 pb^{-1} (5.02 TeV)" -o ${cardsDir};
 	    mkdir ${wwwdir}/fits_${ch}_${NBINS};
