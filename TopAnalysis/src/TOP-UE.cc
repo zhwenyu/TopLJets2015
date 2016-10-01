@@ -468,7 +468,7 @@ void RunTopUE(TString filename,
 	  tue.nj[ivar]=otherJets.size()+bJets.size();
 	  
 	  //reconstruct ttbar flight direction
-	  if(bJets.size()>1)
+	  if(bJets.size()>1 && leptons.size()>1)
 	    {
 	      met += jetDiff;
 	      TLorentzVector rec_tt(leptons[0]+leptons[1]+bJets[0].second+bJets[1].second+met);
@@ -481,11 +481,14 @@ void RunTopUE(TString filename,
       //dilepton present, m(ll)>12, at least one with pt>30 and both within |eta|<2.5
       float mll(0);
       if(chTag=="") tue.passSel=0;
-      else          mll=(leptons[0]+leptons[1]).M();
-      if(mll<12) tue.passSel=0;
-      if(leptons[0].Pt()<30 && leptons[1].Pt()<30) tue.passSel=0;
-      if(fabs(leptons[0].Eta())>2.5 || fabs(leptons[1].Eta())>2.5) tue.passSel=0;
-      
+      else
+	{
+          mll=(leptons[0]+leptons[1]).M();
+	  if(mll<12) tue.passSel=0;
+	  if(leptons[0].Pt()<30 && leptons[1].Pt()<30) tue.passSel=0;
+	  if(fabs(leptons[0].Eta())>2.5 || fabs(leptons[1].Eta())>2.5) tue.passSel=0;
+	}
+
       //at this point we know if the event passes either the GEN level 
       //or one of the RECO level selections
       //if it fails both we don't care about it
