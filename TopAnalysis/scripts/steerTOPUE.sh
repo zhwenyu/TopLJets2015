@@ -30,8 +30,7 @@ RED='\e[31m'
 NC='\e[0m'
 case $WHAT in
     SEL )
-	queue=local
-	python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} -o ${outdir} --era era2016 -m TOP-UE::RunTopUE --ch 0 --only TTJ --runSysts;
+	python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} -o ${outdir} --era era2016 -m TOP-UE::RunTopUE --ch 0 --runSysts;
 	;;
     MERGESEL )
 	./scripts/mergeOutputs.py ${outdir} True;	

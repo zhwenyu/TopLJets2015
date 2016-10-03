@@ -38,29 +38,27 @@ case $WHAT in
     SEL )
 	echo -e "[ ${RED} Sending out jobs to batch ${NC} ]"
 	#muon channel
-	python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_mu                                --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis       --ch 13 --runSysts --only MC;
-	python scripts/runLocalAnalysis.py -i ${mu_data}   -q ${queue} -o ${outdir}/analysis_mu/FilteredSingleMuHighPt_v3.root --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis       --ch 13;
-	python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_munoniso                          --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis       --ch 1300 --only MC;
-	python scripts/runLocalAnalysis.py -i ${mu_data}   -q ${queue} -o ${outdir}/analysis_munoniso/FilteredSingleMuHighPt_v3.root --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis --ch 1300;
+	#python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_mu                                --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis       --ch 13 --runSysts --only MC;
+	#python scripts/runLocalAnalysis.py -i ${mu_data}   -q ${queue} -o ${outdir}/analysis_mu/FilteredSingleMuHighPt_v3.root --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis       --ch 13;
+	#python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_munoniso                          --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis       --ch 1300 --only MC;
+	#python scripts/runLocalAnalysis.py -i ${mu_data}   -q ${queue} -o ${outdir}/analysis_munoniso/FilteredSingleMuHighPt_v3.root --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis --ch 1300;
 
 	#electron channel
         #python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_e       --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis --ch 11 --runSysts --only MC;
 	#python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_enoniso --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis --ch 1100 --only MC;
-	#python scripts/runLocalAnalysis.py -i /store/cmst3/group/hintt/mverweij/PP5TeV/data/HighPtPhoton30AndZ/crab_FilteredHighPtPhoton30AndZ_v3/160425_163357/merge/HiForest_0.root  -q ${queue} -o ${outdir}/analysis_e/FilteredHighPtPhoton30AndZ.root       --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis --ch 11;
-	#python scripts/runLocalAnalysis.py -i /store/cmst3/group/hintt/mverweij/PP5TeV/data/HighPtPhoton30AndZ/crab_FilteredHighPtPhoton30AndZ_v3/160425_163357/merge/HiForest_0.root  -q ${queue} -o ${outdir}/analysis_enoniso/FilteredHighPtPhoton30AndZ.root       --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis --ch 1100;
+	python scripts/runLocalAnalysis.py -i ${sourcedir}    -q ${queue} -o ${outdir}/analysis_e/       --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis --ch 11 --only FilteredHighPtPhoton30AndZ;
+	python scripts/runLocalAnalysis.py -i ${sourcedir}    -q ${queue} -o ${outdir}/analysis_enoniso/ --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis --ch 1100 --only FilteredHighPtPhoton30AndZ;
 	;;
     MERGE )
 	echo -e "[ ${RED} Merging job output ${NC} ]"
-	a=(mu munoniso)
-	#a=(e enoniso)
+	a=(mu munoniso e enoniso)
 	for i in ${a[@]}; do
 	    ./scripts/mergeOutputs.py ${outdir}/analysis_${i};
 	done
 	;;
     BKG )
 	echo -e "[ ${RED} Running QCD estimation from non-isolated side-band ${NC} ]"
-	a=(mu munoniso)
-	#a=(e enoniso)
+	a=(mu munoniso e enoniso)
 	for i in ${a[@]}; do
 	    python scripts/plotter.py -i ${outdir}/analysis_${i}  -j data/era5TeV/samples.json      -l ${lumi} --silent;
 	done
@@ -74,8 +72,7 @@ case $WHAT in
 	;;
     PLOT )
 	echo -e "[ ${RED} Running plotter ${NC} ]"
-	a=(mu munoniso)
-	#a=(e enoniso)
+	a=(mu munoniso e enoniso)
 	for i in ${a[@]}; do
 	    python scripts/plotter.py -i ${outdir}/analysis_${i}  -j data/era5TeV/Wsamples.json     -l ${lumi} --saveLog --noStack;	
 	    mkdir ~/${outdir}/analysis_${i}/wplots;
@@ -87,8 +84,7 @@ case $WHAT in
 
     WWW )
 	echo -e "[ ${RED} Moving plots to ${outdir} ${NC} ]"
-	a=(mu munoniso)
-	#a=(e enoniso)
+	a=(mu munoniso e enoniso)
 	for i in ${a[@]}; do
 	    mkdir -p ${wwwdir}/analysis_${i}
 	    cp ${outdir}/analysis_${i}/plots/*.{png,pdf} ${wwwdir}/analysis_${i}

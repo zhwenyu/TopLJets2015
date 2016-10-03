@@ -31,6 +31,7 @@ def RunMethodPacked(args):
         if runSysts : cmd += ' --runSysts'
         if debug : cmd += ' --debug'
         os.system(cmd)
+
     except :
         print 50*'<'
         print "  Problem  (%s) with %s continuing without"%(sys.exc_info()[1],inF)

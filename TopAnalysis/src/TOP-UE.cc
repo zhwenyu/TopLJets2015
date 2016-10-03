@@ -56,9 +56,7 @@ void RunTopUE(TString filename,
 
   //prepare output
   TopUE_t tue;
-  TString baseName=gSystem->BaseName(outname); 
-  TString dirName=gSystem->DirName(outname);
-  TFile *fOut=TFile::Open(dirName+"/"+baseName,"RECREATE");
+  TFile *fOut=TFile::Open(outname,"RECREATE");
   fOut->cd();
   TTree *outT=new TTree("tue","tue");
   createTopUETree(outT,tue);
