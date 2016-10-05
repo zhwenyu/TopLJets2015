@@ -386,14 +386,18 @@ void Run5TeVAnalysis(TString inFileName,
 
 	    //fiducial region analysis
 	    std::vector<TLorentzVector> selGenLeptons;
-	    for(size_t imc=0; imc<mcPID->size(); imc++)
+	    if(channelSelection==13 || channelSelection==11)
 	      {
-		int abspid=abs(mcPID->at(imc));
-		if(abspid!=13) continue;
-		TLorentzVector p4;
-		p4.SetPtEtaPhiM(mcPt->at(imc),mcEta->at(imc),mcPhi->at(imc),0.);
-		if(p4.Pt()<25 || fabs(p4.Eta())>2.1) continue;
-		selGenLeptons.push_back(p4);
+		for(size_t imc=0; imc<mcPID->size(); imc++)
+		  {
+		    int abspid=abs(mcPID->at(imc));		
+		    if(channelSelection==13 && abspid!=13) continue;
+		    if(channelSelection==11 && abspid!=11) continue;
+		    TLorentzVector p4;
+		    p4.SetPtEtaPhiM(mcPt->at(imc),mcEta->at(imc),mcPhi->at(imc),0.);
+		    if(p4.Pt()<25 || fabs(p4.Eta())>2.1) continue;
+		    selGenLeptons.push_back(p4);
+		  }
 	      }
 	    
 	    //select gen jets cross-cleaning with leading muon

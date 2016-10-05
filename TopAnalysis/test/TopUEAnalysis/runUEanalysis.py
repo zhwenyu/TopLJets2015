@@ -388,7 +388,7 @@ def showMatrices(opt,varIdx=0,wgtIdx=0):
         nRecBins=sliceVarsQ[s].GetXaxis().GetNbins()
         nGenBins=nRecBins if 'nj' in s else nRecBins/2
         for o in obsVarsQ:
-            if o==s : continue
+            if 'nch' in o and 'nch' in s: continue
             obsNRecBins=obsVarsQ[o].GetXaxis().GetNbins()
             obsNGenBins=obsVarsQ[o].GetXaxis().GetNbins()/2
 
@@ -469,7 +469,7 @@ def showMatrices(opt,varIdx=0,wgtIdx=0):
             
             #display the matrix
             c.Clear()
-            c.SetLogz()
+            #c.SetLogz()
             bigMatrix[key].Draw('colz')
             bigMatrix[key].GetZaxis().SetLabelSize(0.03)
             bigMatrix[key].GetYaxis().SetLabelSize(0.03)
@@ -483,9 +483,10 @@ def showMatrices(opt,varIdx=0,wgtIdx=0):
             tex.DrawLatex(0.01,0.96,'#bf{#splitline{Reco.}{level}}')
             tex.DrawLatex(0.95,0.1,'#bf{#splitline{Gen.}{level}}')
             stit='p_{T}(t#bar{t})'
-            if 'phi' in s : stit='#phi(t#bar{t})'
             if 'nj' in s : stit='N(jets)'
             if 'nch' in s : stit='N(ch)'                
+            if 'mll' in s : stit='M(l,l)'                
+            if 'dphill' in s : stit='#Delta#phi(l,l)'
             otit='N(ch)'
             if 'ptsum' in o : otit='#Sigmap_{T}(ch)'
             if 'avgpt' in o : otit='#bar{p}_{T}(ch)'
@@ -512,6 +513,8 @@ def showMatrices(opt,varIdx=0,wgtIdx=0):
             c.Modified()
             c.Update()
             raw_input()
+            #for ext in ['png','pdf']:
+            #    c.SaveAs('%s/%s_%s_migration.%s'%(opt.out,s,o,ext))
 
     #save to ROOT file
     fOut=ROOT.TFile.Open('%s/UEanalysis.root'%opt.out,'UPDATE')

@@ -45,8 +45,9 @@ case $WHAT in
 	cp test/index.php ${wwwdir}/sel
 	;;
     ANA )
-	#python test/TopUEAnalysis/runUEanalysis.py -i${outdir}/MC13TeV_TTJets_dilpowheg_0.root --step 1;
-	python test/TopUEAnalysis/runUEanalysis.py -i${outdir}/MC13TeV_TTJets_dilpowheg_*.root --step 2;
+	#python test/TopUEAnalysis/runUEanalysis.py -i ${outdir}/MC13TeV_TTJets_dilpowheg_0.root --step 1;
+	#python test/TopUEAnalysis/runUEanalysis.py -i ${outdir}/MC13TeV_TTJets_dilpowheg_*.root --step 2;
+	python test/TopUEAnalysis/runUEanalysis.py --step 3;
 	;;
 
 esac
