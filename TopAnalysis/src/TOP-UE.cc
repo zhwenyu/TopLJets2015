@@ -202,6 +202,11 @@ void RunTopUE(TString filename,
 	  tue.gen_phi_ttbar=ttGen.Phi();
 	  tue.gen_pt_pseudottbar=pseudottGen.Pt();
 	  tue.gen_phi_pseudottbar=pseudottGen.Phi();
+	  if(pseudoLeptons.size()>1)
+	    {
+	      tue.gen_dphill = TMath::Abs(pseudoLeptons[0].DeltaPhi(pseudoLeptons[1]));
+	      tue.gen_mll    = (pseudoLeptons[0]+pseudoLeptons[1]).M();
+	    }
 	  
 
 	  //further check if it two jets/two leptons are present and set the flag at generator level
@@ -485,6 +490,9 @@ void RunTopUE(TString filename,
 	  if(mll<12) tue.passSel=0;
 	  if(leptons[0].Pt()<30 && leptons[1].Pt()<30) tue.passSel=0;
 	  if(fabs(leptons[0].Eta())>2.5 || fabs(leptons[1].Eta())>2.5) tue.passSel=0;
+
+	  tue.dphill=TMath::Abs(leptons[0].DeltaPhi(leptons[1]));
+	  tue.mll=mll;
 	}
 
       //at this point we know if the event passes either the GEN level 
@@ -622,6 +630,12 @@ void createTopUETree(TTree *t,TopUE_t &tue)
   t->Branch("gen_pt",   tue.gen_pt ,   "gen_pt[gen_n]/F");
   t->Branch("gen_eta",  tue.gen_eta ,  "gen_eta[gen_n]/F");
   t->Branch("gen_phi",  tue.gen_phi ,  "gen_phi[gen_n]/F");
+
+  //dilepton
+  t->Branch("mll",        &tue.mll ,         "mll/F");
+  t->Branch("dphill",     &tue.dphill ,      "dphill/F");
+  t->Branch("gen_mll",    &tue.gen_mll ,     "gen_mll/F");
+  t->Branch("gen_dphill", &tue.gen_dphill ,  "gen_dphill/F");
 }
 
 //
