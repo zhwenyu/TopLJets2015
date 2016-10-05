@@ -153,7 +153,7 @@ void RunTopUE(TString filename,
     {
       t->GetEntry(iev);
       resetTopUE(tue);
-      if(iev%10000==0) printf ("\r [%3.0f/100] done",100.*(float)(iev)/(float)(nentries));
+      if(iev%10000==0) printf("\r [%3.0f/100] done",100.*(float)(iev)/(float)(nentries));
 
       //MC TRUTH
       float norm(1.0);

@@ -30,7 +30,8 @@ RED='\e[31m'
 NC='\e[0m'
 case $WHAT in
     SEL )
-	python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} -o ${outdir} --era era2016 -m TOP-UE::RunTopUE --ch 0 --runSysts;
+	queue=local;
+	python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} -o ${outdir} --era era2016 -m TOP-UE::RunTopUE --ch 0 --runSysts --only dilpowheg;
 	;;
     MERGESEL )
 	./scripts/mergeOutputs.py ${outdir} True;	
@@ -43,4 +44,9 @@ case $WHAT in
 	cp ${outdir}/plots/*.{png,pdf} ${wwwdir}/sel
 	cp test/index.php ${wwwdir}/sel
 	;;
+    ANA )
+	#python test/TopUEAnalysis/runUEanalysis.py -i${outdir}/MC13TeV_TTJets_dilpowheg_0.root --step 1;
+	python test/TopUEAnalysis/runUEanalysis.py -i${outdir}/MC13TeV_TTJets_dilpowheg_*.root --step 2;
+	;;
+
 esac
