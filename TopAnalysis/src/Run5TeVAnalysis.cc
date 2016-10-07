@@ -385,7 +385,7 @@ void Run5TeVAnalysis(TString inFileName,
 	    evWeight *= totalEvtNorm;
 
 	    //fiducial region analysis
-	    std::vector<TLorentzVector> selGenLeptons;
+	    std::vector<TLorentzVector> selGenLeptons,otherLeptons;
 	    if(channelSelection==13 || channelSelection==11)
 	      {
 		for(size_t imc=0; imc<mcPID->size(); imc++)
@@ -395,11 +395,15 @@ void Run5TeVAnalysis(TString inFileName,
 		    if(channelSelection==11 && abspid!=11) continue;
 		    TLorentzVector p4;
 		    p4.SetPtEtaPhiM(mcPt->at(imc),mcEta->at(imc),mcPhi->at(imc),0.);
-		    if(p4.Pt()<25 || fabs(p4.Eta())>2.1) continue;
-		    selGenLeptons.push_back(p4);
+		    if(p4.Pt()>15 && fabs(p4.Eta())<2.5) otherLeptons.push_back(p4);
+		    if(fabs(p4.Eta())<2.1)
+		      {
+			if(abspid==13 && p4.Pt()>25) selGenLeptons.push_back(p4);
+			if(abspid==11 && p4.Pt()>35) selGenLeptons.push_back(p4);
+		      }
 		  }
 	      }
-	    
+
 	    //select gen jets cross-cleaning with leading muon
 	    int nGenJets(0);
 	    for(int imcj=0; imcj<ngen; imcj++)
@@ -412,7 +416,7 @@ void Run5TeVAnalysis(TString inFileName,
 	      }
 
 	    //check if it passes the gen level acceptance
-	    bool passFid(nGenJets>=2 && selGenLeptons.size()>0);
+	    bool passFid(nGenJets>=2 && selGenLeptons.size()==1);
 	    for(size_t iw=0; iw<ttbar_w_p->size(); iw++)
 	      {
 		histos["wgtcounter"]->Fill(iw,ttbar_w_p->at(iw));
@@ -473,7 +477,7 @@ void Run5TeVAnalysis(TString inFileName,
 	  {
 	    bool passMediumPt(elePt_p->at(elIter) > 40.0);  
 	    bool passMediumEta(fabs(eleEta_p->at(elIter)) < 2.1 && (fabs(eleEta_p->at(elIter)) < 1.4442 || fabs(eleEta_p->at(elIter)) > 1.5660));
-	    bool passPt(elePt_p->at(elIter) > 20.0);  
+	    bool passPt(elePt_p->at(elIter) > 15.0);  
 	    bool passEta(fabs(eleEta_p->at(elIter)) < 2.5);
 	    if(!passPt || !passEta) continue;
 	    bool passMediumId ((fabs(eleEta_p->at(elIter)) <= 1.4479
