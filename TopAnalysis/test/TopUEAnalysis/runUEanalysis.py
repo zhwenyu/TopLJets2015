@@ -8,30 +8,106 @@ import ROOT
 import numpy as np
 import array as array
 
-"""
-0 - tow(ards), 1 trans(verse), 2 away
-"""
-def getRegionFor(dphi) :
-    if ROOT.TMath.Abs(dphi) < ROOT.TMath.Pi()/3.     : return 0
-    elif ROOT.TMath.Abs(dphi) < 2*ROOT.TMath.Pi()/3. : return 1
-    return 2
+from UETools import *
+
+SLICEQUANTILES={ 'pt_ttbar' : [ 100*x/20 for x in xrange(0,21) ],
+                 'nch'      : [ 100*x/20 for x in xrange(0,21) ],
+                 'mll'      : [ 100*x/20 for x in xrange(0,21) ],
+                 'dphill'   : [ 100*x/20 for x in xrange(0,21) ]
+                 }
+OBSQUANTILES={'gen':[100*x/10 for x in xrange(0,11)],
+              'rec':[100*x/20 for x in xrange(0,21)]}
 
 """
-converts index to name
+defines the variables to slice the UE measurement and saves their reco quantiles
 """
-def getRegionName(idx):
-    if idx==0 : return 'tow'
-    elif idx==1: return 'trans'
-    return 'away'
+def defineBaseProjectionBins(opt):
 
-"""
-return the most appropriate bin for a given value, taking into account the range available
-"""
-def getBinForVariable(h,val):
-    xmin,xmax=h.GetXaxis().GetXmin(),h.GetXaxis().GetXmax()
-    if val>xmax : return h.GetNbinsX()
-    if val<xmin : return 0
-    return h.GetXaxis().FindBin(val)
+    #build the chain
+    t=ROOT.TChain('tue')
+    for f in opt.input.split(','): t.AddFile(f)
+    
+    #define variables and quantiles to apply
+    varVals={}
+    for var in ['pt_ttbar','nch','mll','dphill']:       
+        varVals[var]=[[],[]]
+    for obs in ['nch','ptsum','avgpt']:        
+        for reg in xrange(0,3):           
+            for step in ['gen', 'rec']:
+                varVals[(obs,reg,step)]=[]
+
+    #loop the available events
+    totalEntries=t.GetEntries()
+    for i in xrange(0,totalEntries):
+        t.GetEntry(i)
+        if i%100==0 :
+            sys.stdout.write('\r [ %d/100 ] done' %(int(float(100.*i)/float(totalEntries))) )
+            sys.stdout.flush()
+        if i>1000: break
+        ue=UEEventCounter(t)
+
+        #reco level
+        passSel=(t.passSel&0x1)
+        if t.passSel:
+            for idx_rec in xrange(0,3):
+                varVals[('nch',idx_rec,'rec')]   .append( ue.rec_nch[idx_rec] )
+                varVals[('ptsum',idx_rec,'rec')] .append( ue.rec_ptsum[idx_rec] )
+                varVals[('avgpt',idx_rec,'rec')] .append( ue.rec_avgpt[idx_rec] )
+
+        #gen level
+        gen_passSel=t.gen_passSel
+        if gen_passSel:
+            for idx_gen in xrange(0,3):
+                varVals[('nch',idx_gen,'gen')]   .append( ue.gen_nch[idx_gen] )
+                varVals[('ptsum',idx_gen,'gen')] .append( ue.gen_ptsum[idx_gen] )
+                varVals[('avgpt',idx_gen,'gen')] .append( ue.gen_avgpt[idx_gen] )
+
+        #slices 
+        if gen_passSel and passSel:
+            varVals['pt_ttbar'][0].append(t.gen_pt_ttbar)
+            varVals['pt_ttbar'][1].append(t.rec_pt_ttbar[0])
+            varVals['nch'][0].append(sum(ue.gen_nch))
+            varVals['nch'][1].append(sum(ue.rec_nch))
+            varVals['mll'][0].append(t.gen_mll)
+            varVals['mll'][1].append(t.mll)
+            varVals['dphill'][0].append(t.gen_dphill)
+            varVals['dphill'][1].append(t.dphill)
+        
+    #determine quantiles and save in histogram
+    histos=[]
+    for key in varVals:
+        if isinstance(key,str) :
+            s='slice_%s'%key
+            genvarQ = np.percentile( np.array(varVals[key][0]), SLICEQUANTILES[key] )
+            recvarQ = np.percentile( np.array(varVals[key][1]), SLICEQUANTILES[key] )
+            histos.append( ROOT.TH2F(s,';Gen. level;Rec. level;',
+                                     len(genvarQ)-1,array.array('d',genvarQ),
+                                     len(recvarQ)-1,array.array('d',recvarQ),
+                                     ) )
+            for i in xrange(0,len(varVals[key][0])):
+                histos[-1].Fill(varVals[key][0][i],varVals[key][1][i])
+        else :
+            s='obs_%s_%s_%s'%(key[0],getRegionName(key[1]),key[2])
+            varQ=np.percentile( np.array(varVals[key]), OBSQUANTILES[key[2]] )
+            histos.append( ROOT.TH1F(s,';Observable;',
+                                     len(varQ)-1,array.array('d',varQ) ) )
+            for v in varVals[key] : histos[-1].Fill(v,histos[-1].GetXaxis().FindBin(v))
+            
+    #save to ROOT file
+    fOut=ROOT.TFile.Open('%s/UEanalysis.root'%opt.out,'RECREATE')
+    outDir=fOut.mkdir('quantiles')
+    outDir.cd()
+    for h in histos:
+        h.SetDirectory(outDir)
+        h.Write()
+    fOut.Close()
+
+def runOptimization(opt):
+    sliceVarsQ,_=readSlicesAndObservables(opt.input)
+    for s in sliceVarsQ:
+        print s
+        optimizeMigrationMatrix(sliceVarsQ[s])
+        raw_input()
 
 """
 opens analysis files and reads out the histograms defining the base binning
@@ -51,92 +127,6 @@ def readSlicesAndObservables(url):
     fIn.Close()
     return  sliceVarsQ,obsVarsQ
 
-"""
-defines the variables to slice the UE measurement and saves their reco quantiles
-"""
-def defineBaseProjectionBins(opt):
-
-    #buidl the chain
-    t=ROOT.TChain('tue')
-    for f in opt.input.split(','): t.AddFile(f)
-    
-    #define variables and quantiles to apply
-    sliceVars={ 'pt_ttbar':[], 'nch':[], 'mll':[], 'dphill':[], 'nj':[]}
-    sliceVarsQDef={
-        'pt_ttbar' : [100.*x/6.  for x in xrange(0,7)],
-        'nch'      : [100.*x/12. for x in xrange(0,13)],
-        'mll'      : [100.*x/12. for x in xrange(0,13) ],
-        'dphill'   : [100.*x/12. for x in xrange(0,13) ],
-        }
-    obsVars={'nch':[], 'ptsum':[], 'avgpt':[]}
-
-    #loop the available events
-    totalEntries=t.GetEntries()
-    for i in xrange(0,totalEntries):
-        t.GetEntry(i)
-        if i%100==0 :
-            sys.stdout.write('\r [ %d/100 ] done' %(int(float(100.*i)/float(totalEntries))) )
-            sys.stdout.flush()
-            
-        if (t.passSel&0x1)==0 : continue
-        
-        #count particles
-        nch,ptsum=0,0
-        for n in xrange(0,t.n):
-            if (t.isInBFlags[n] & 0x1) : continue
-            nch   +=1
-            ptsum += t.pt[n]
-        avgpt=ptsum/nch if nch>0 else 0.
-
-        sliceVars['pt_ttbar'].append(t.rec_pt_ttbar[0])
-        sliceVars['nch'].append(nch)
-        sliceVars['mll'].append(t.mll)
-        sliceVars['nj'].append(t.nj[0]-2)
-        sliceVars['dphill'].append(t.dphill)
-        obsVars['nch'].append(nch)
-        obsVars['ptsum'].append(ptsum)
-        obsVars['avgpt'].append(avgpt)
-
-    #determine quantiles
-    sliceVarsQ={'nj':[0,1,2,3,4]}
-    for s in sliceVars:
-        if s=='nj' : continue
-        sliceVarsQ[s]=[]      
-        for q in sliceVarsQDef[s]:
-            sliceVarsQ[s].append( np.percentile(sliceVars[s], q) )
-    obsVarsQ={}
-    for s in obsVars:
-        obsVarsQ[s]=[]
-        for q in [100.*x/10. for x in xrange(0,11)]:
-            obsVarsQ[s].append( np.percentile(obsVars[s], q) )
-            
-    #save to ROOT file
-    fOut=ROOT.TFile.Open('%s/UEanalysis.root'%opt.out,'RECREATE')
-    outDir=fOut.mkdir('quantiles')
-    outDir.cd()
-    for s in sliceVarsQ:
-        h=ROOT.TH1F('slice_%s'%s,';%s;Events/bin'%s,
-                    len(sliceVarsQ[s])-1, 
-                    array.array('d',sliceVarsQ[s])
-                    )
-        h.SetDirectory(outDir)
-        h.Sumw2()
-        for val in sliceVars[s] : 
-            bin=h.GetXaxis().FindBin(val)
-            h.Fill( val, 1./h.GetXaxis().GetBinWidth(bin) )
-        h.Write()
-    for s in obsVarsQ:
-        h=ROOT.TH1F('obs_%s'%s,';%s;Events/bin'%s,
-                    len(obsVarsQ[s])-1, 
-                    array.array('d',obsVarsQ[s])
-                    )
-        h.SetDirectory(outDir)
-        h.Sumw2()
-        for val in obsVars[s] : 
-            bin=h.GetXaxis().FindBin(val)
-            h.Fill( val, 1./h.GetXaxis().GetBinWidth(bin) )
-        h.Write()
-    fOut.Close()
 
 """
 loops over a set of files with common name to fill the migration matrices
@@ -545,9 +535,11 @@ def main():
 
     if opt.step==1 or opt.step<0:
         defineBaseProjectionBins(opt)
-    if opt.step==2 or opt.step<0:
-        fillMigrationMatrices(opt)
+    if opt.step==2 or opt.step<0 :
+        runOptimization(opt)
     if opt.step==3 or opt.step<0:
+        fillMigrationMatrices(opt)
+    if opt.step==4 or opt.step<0:
         showMatrices(opt)
 
 """

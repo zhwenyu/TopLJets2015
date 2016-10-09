@@ -8,6 +8,7 @@
 #include "TGraphAsymmErrors.h"
 #include "TSystem.h"
 
+#include "TopLJets2015/TopAnalysis/interface/LeptonEfficiencyWrapper.h"
 #include "TopLJets2015/TopAnalysis/interface/BtagUncertaintyComputer.h"
 #include "TopLJets2015/TopAnalysis/interface/Run5TeVAnalysis.h"
 #include "TopLJets2015/TopAnalysis/interface/TOP-16-006.h"
@@ -70,8 +71,10 @@ void Run5TeVAnalysis(TString inFileName,
   inFileNames_p->push_back(inFileName);
   const Int_t nFiles = (Int_t)inFileNames_p->size();
 
+  LeptonEfficiencyWrapper lepEffH(!isMC,era.ReplaceAll("era5TeV","era2015"));
+
   Int_t nSysts(0);
-  TString expSysts[]={"btagup","btagdn","othertagup","othertagdn","jesup","jesdn","jerup","jerdn","leffup","leffdn"};
+  TString expSysts[]={"btagup","btagdn","othertagup","othertagdn","jesup","jesdn","jerup","jerdn","eeffup","eeffdn","meffup","meffdn"};
   
   //book histograms
   std::map<TString,TH1 *> histos;
@@ -592,6 +595,7 @@ void Run5TeVAnalysis(TString inFileName,
 	      }
 	  }
 	//electrons
+	EffCorrection_t eselSF(1.0,0.0);
 	if(channelSelection==1100)
 	  {
 	    if(mediumElectronsNonIso.size()==0) continue;
@@ -606,6 +610,11 @@ void Run5TeVAnalysis(TString inFileName,
 	      {
 		if(elCharge[0]!=chargeSelection) continue;
 	      }
+
+	    //update event weight
+	    eselSF=lepEffH.getOfflineCorrection(11,mediumElectrons[0].Pt(),mediumElectrons[0].Eta());
+	    eselSF.second=sqrt(pow(0.03,2)+pow(eselSF.second,2));
+	    evWeight=eselSF.first;
 	  }
 	
 	// combined leptons
@@ -803,8 +812,10 @@ void Run5TeVAnalysis(TString inFileName,
 
 	    //update event weight if needed
 	    Float_t iweight(evWeight);
-	    if(ivar==9)  iweight*=1.03;
-	    if(ivar==10) iweight*=1.03;
+	    if(channelSelection==13 && ivar==9)  iweight*=1.03;
+	    if(channelSelection==13 && ivar==10) iweight*=0.97;
+	    if(channelSelection==11 && ivar==11) iweight*=(1.0+eselSF.second);
+	    if(channelSelection==11 && ivar==12) iweight*=(1.0-eselSF.second);
 	  
 	    //fill histos
 	    if(ivar==0)

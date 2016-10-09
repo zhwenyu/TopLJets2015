@@ -221,7 +221,7 @@ EffCorrection_t LeptonEfficiencyWrapper::getOfflineCorrection(int pdgId,float pt
 
   //update correction from histo, if found
   TString idstr(abs(pdgId)==11 ? "e" : "m");
-  TString hname(pdgId);
+  TString hname(idstr);
   hname+="_sel";
   if( lepEffH_.find(hname)!=lepEffH_.end() )
     {
