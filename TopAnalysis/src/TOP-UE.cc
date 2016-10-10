@@ -206,6 +206,7 @@ void RunTopUE(TString filename,
 	    {
 	      tue.gen_dphill = TMath::Abs(pseudoLeptons[0].DeltaPhi(pseudoLeptons[1]));
 	      tue.gen_mll    = (pseudoLeptons[0]+pseudoLeptons[1]).M();
+	      tue.gen_phill = (pseudoLeptons[0]+pseudoLeptons[1]).Phi();
 	    }
 	  
 
@@ -492,6 +493,7 @@ void RunTopUE(TString filename,
 	  if(fabs(leptons[0].Eta())>2.5 || fabs(leptons[1].Eta())>2.5) tue.passSel=0;
 
 	  tue.dphill=TMath::Abs(leptons[0].DeltaPhi(leptons[1]));
+	  tue.phill=(leptons[0]+leptons[1]).Phi();
 	  tue.mll=mll;
 	}
 
@@ -634,8 +636,10 @@ void createTopUETree(TTree *t,TopUE_t &tue)
   //dilepton
   t->Branch("mll",        &tue.mll ,         "mll/F");
   t->Branch("dphill",     &tue.dphill ,      "dphill/F");
+  t->Branch("phill",      &tue.phill ,       "phill/F");
   t->Branch("gen_mll",    &tue.gen_mll ,     "gen_mll/F");
   t->Branch("gen_dphill", &tue.gen_dphill ,  "gen_dphill/F");
+  t->Branch("gen_phill",  &tue.gen_phill ,   "gen_phill/F");
 }
 
 //

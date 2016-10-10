@@ -22,7 +22,7 @@ struct TopUE_t
   Float_t rec_pt_ttbar[9],    rec_phi_ttbar[9];
   Float_t pt[5000],     eta[5000],     phi[5000];
   Float_t gen_pt[5000], gen_eta[5000], gen_phi[5000]; 
-  Float_t mll,gen_mll,dphill,gen_dphill;
+  Float_t mll,gen_mll,dphill,gen_dphill,phill,gen_phill;
 };
 
 void createTopUETree(TTree *t,TopUE_t &tue);
