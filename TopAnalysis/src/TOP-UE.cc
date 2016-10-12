@@ -202,10 +202,10 @@ void RunTopUE(TString filename,
 	    }
 	  	  
 	  //save ttbar and pseudo-ttbar kinematics
-	  tue.gen_pt_ttbar=ttGen.Pt();
-	  tue.gen_phi_ttbar=ttGen.Phi();
-	  tue.gen_pt_pseudottbar=pseudottGen.Pt();
-	  tue.gen_phi_pseudottbar=pseudottGen.Phi();
+	  tue.parton_ptttbar=ttGen.Pt();
+	  tue.parton_phittbar=ttGen.Phi();
+	  tue.gen_ptttbar=pseudottGen.Pt();
+	  tue.gen_phittbar=pseudottGen.Phi();
 	  if(pseudoLeptons.size()>1)
 	    {
 	      tue.gen_mll    = (pseudoLeptons[0]+pseudoLeptons[1]).M();
@@ -484,8 +484,8 @@ void RunTopUE(TString filename,
 	    {
 	      met += jetDiff;
 	      TLorentzVector rec_tt(leptons[0]+leptons[1]+bJets[0].second+bJets[1].second+met);
-	      tue.rec_pt_ttbar[ivar]=rec_tt.Pt();
-	      tue.rec_phi_ttbar[ivar]=rec_tt.Phi();	  
+	      tue.ptttbar[ivar]=rec_tt.Pt();
+	      tue.phittbar[ivar]=rec_tt.Phi();	  
 	    }
 	}
 
@@ -639,8 +639,8 @@ void createTopUETree(TTree *t,TopUE_t &tue)
   t->Branch("passSel",     &tue.passSel,     "passSel/I");
   t->Branch("gen_nj",      &tue.gen_nj,      "gen_nj/I");
   t->Branch("gen_nb",      &tue.gen_nb,      "gen_nb/I");
-  t->Branch("nj",           tue.nj,          "nj[8]/I");
-  t->Branch("nb",           tue.nb,          "nb[8]/I");
+  t->Branch("nj",           tue.nj,          "nj[9]/I");
+  t->Branch("nb",           tue.nb,          "nb[9]/I");
   t->Branch("nvtx",        &tue.nvtx,        "nvtx/I");
 
   //event weights
@@ -648,23 +648,25 @@ void createTopUETree(TTree *t,TopUE_t &tue)
   t->Branch("weight",  tue.weight, "weight[nw]/F");
 
   //ptttbar
-  t->Branch("gen_pt_ttbar",         &tue.gen_pt_ttbar,        "gen_pt_ttbar/F");
-  t->Branch("gen_phi_ttbar",        &tue.gen_phi_ttbar,       "gen_phi_ttbar/F");
-  t->Branch("gen_pt_pseudottbar",   &tue.gen_pt_pseudottbar,  "gen_pt_pseudottbar/F");
-  t->Branch("gen_phi_pseudottbar",  &tue.gen_phi_pseudottbar, "gen_phi_pseudottbar/F");
-  t->Branch("rec_pt_ttbar",          tue.rec_pt_ttbar,        "rec_pt_ttbar[8]/F");
-  t->Branch("rec_phi_ttbar",         tue.rec_phi_ttbar,       "rec_phi_ttbar[8]/F");
+  t->Branch("parton_ptttbar",      &tue.parton_ptttbar,   "parton_ptttbar/F");
+  t->Branch("parton_phittbar",     &tue.parton_phittbar,  "parton_phittbar/F");
+  t->Branch("gen_ptttbar",         &tue.gen_ptttbar,      "gen_pttbar/F");
+  t->Branch("gen_phittbar",        &tue.gen_phittbar,     "gen_phittbar/F");
+  t->Branch("ptttbar",              tue.ptttbar,          "ptttbar[9]/F");
+  t->Branch("phittbar",             tue.phittbar,         "phittbar[9]/F");
 
   //leptonic quantities
   t->Branch("ptpos",      tue.ptpos ,       "ptpos[5]/F");
   t->Branch("phipos",     tue.phipos ,      "phipos[5]/F");
   t->Branch("ptll",       tue.ptll ,        "ptll[5]/F");
+  t->Branch("phill",      tue.phill ,       "phill[5]/F");
   t->Branch("mll",        tue.mll ,         "mll[5]/F");
   t->Branch("sumpt",      tue.sumpt ,       "sumpt[5]/F");
   t->Branch("dphill",     tue.dphill ,      "dphill[5]/F");
   t->Branch("gen_ptpos",  &tue.gen_ptpos ,  "gen_ptpos/F");
   t->Branch("gen_phipos", &tue.gen_phipos , "gen_phipos/F");
   t->Branch("gen_ptll",   &tue.gen_ptll ,   "gen_ptll/F");
+  t->Branch("gen_phill",  &tue.gen_phill ,  "gen_phill/F");
   t->Branch("gen_mll",    &tue.gen_mll ,    "gen_mll/F");
   t->Branch("gen_sumpt",  &tue.gen_sumpt ,  "gen_sumpt/F");
   t->Branch("gen_dphill", &tue.gen_dphill , "gen_dphill/F");
@@ -698,10 +700,10 @@ void resetTopUE(TopUE_t &tue)
   tue.nw=0;      
   
   //reset all MC truth
-  tue.gen_pt_ttbar=0;       
-  tue.gen_phi_ttbar=0;
-  tue.gen_pt_pseudottbar=0; 
-  tue.gen_phi_pseudottbar=0;
+  tue.parton_ptttbar=0;       
+  tue.parton_phittbar=0;
+  tue.gen_ptttbar=0; 
+  tue.gen_phittbar=0;
   tue.gen_ptpos=0;
   tue.gen_phipos=0;
   tue.gen_ptll=0;

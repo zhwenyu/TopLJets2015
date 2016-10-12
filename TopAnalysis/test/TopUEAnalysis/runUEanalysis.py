@@ -7,7 +7,9 @@ import optparse
 import ROOT
 import numpy as np
 import array as array
+import pickle
 
+from UEEventCounter import *
 from UETools import *
 
 #GLOBAL VARIABLES TO DEFINE THE ANALYSIS
@@ -17,8 +19,8 @@ PTTTBAR_THR=150
 VARTITLES={
     'ptttbar'  :'p_{T}(t#bar{t})',
     'phittbar' :'#phi(t#bar{t})',
-    'ptpos'    :'p_{T}(l^+)',
-    'phipos'   :'#phi(l^+)',
+    'ptpos'    :'p_{T}(l^{+})',
+    'phipos'   :'#phi(l^{+})',
     'ptll'     :'p_{T}(l,l)',
     'phill'    :'#phi(ll)',
     'sumpt'    :'#Sigma p_{T}(l)',
@@ -61,52 +63,50 @@ def determineSliceResolutions(opt):
     for f in opt.input.split(','): t.AddFile(f)
 
     #loop the available events and fill resolution arrays for events passing the selection cuts
-    varVals={
-        'pt_ttbar' :[[],[]],
-        'phi_ttbar':[[],[]],
-        'mll'      :[[],[]],
-        'dphill'   :[[],[]],
-        'phill'    :[[],[]],
-        'nj'       :[[],[]],
-        'nch'      :[[],[]]
-        }
+    varVals={}
+    for var in SLICEQUANTILES : varVals[var]=[[],[]]
+    ue=UEEventCounter()
     totalEntries=t.GetEntries()
     for i in xrange(0,totalEntries):
         t.GetEntry(i)
         if i%100==0 :
             sys.stdout.write('\r [ %d/100 ] done' %(int(float(100.*i)/float(totalEntries))) )
             sys.stdout.flush()
+
         if i>5000 : continue
-        #reco level
+
+        #require a pure event selected at reco and gen levels
         passSel=(t.passSel&0x1)
         gen_passSel=t.gen_passSel
         if not passSel or not gen_passSel: continue
 
-        if t.gen_pt_ttbar>PTTTBAR_THR:
-            varVals['pt_ttbar'][0].append( t.gen_pt_ttbar )
-            varVals['pt_ttbar'][1].append( t.rec_pt_ttbar[0]-t.gen_pt_ttbar )
-            varVals['phi_ttbar'][0].append(t.gen_phi_ttbar*180./ROOT.TMath.Pi())
-            varVals['phi_ttbar'][1].append(ROOT.TVector2.Phi_mpi_pi(t.rec_phi_ttbar[0]-t.gen_phi_ttbar)*180./ROOT.TMath.Pi())
+        #fill resolution arrays
+        for obs,isAngle in [ ('ptttbar',  False),
+                             ('phittbar', True),
+                             ('ptpos',    False),
+                             ('phipos',   True),
+                             ('ptll',     False),
+                             ('phill',    True),
+                             ('sumpt',    False),
+                             ('mll',      False),
+                             ('dphill',   True),
+                             ('nj',       False)
+                             ]:
+            var=getattr(t,'gen_%s'%obs)
+            dVar=getattr(t,obs)[0]-var
+            if isAngle : 
+                var  = var*180./ROOT.TMath.Pi()
+                dVar = ROOT.TVector2.Phi_mpi_pi(dVar)*180./ROOT.TMath.Pi()
+            varVals[obs][0].append( var )
+            varVals[obs][1].append( dVar )
 
-        varVals['mll'][0].append(t.gen_mll)
-        varVals['mll'][1].append(t.mll-t.gen_mll)
+        #special case for charged particle counting
+        ue.count(t)
+        varVals['chmult'][0].append(ue.gen_chmult)
+        varVals['chmult'][1].append(ue.rec_chmult-ue.gen_chmult)
 
-        varVals['dphill'][0].append(t.gen_dphill*180./ROOT.TMath.Pi())
-        varVals['dphill'][1].append(ROOT.TVector2.Phi_mpi_pi(t.dphill-t.gen_dphill)*180./ROOT.TMath.Pi())
 
-        varVals['phill'][0].append(t.gen_phill*180./ROOT.TMath.Pi())
-        varVals['phill'][1].append(ROOT.TVector2.Phi_mpi_pi(t.phill-t.gen_phill)*180./ROOT.TMath.Pi())
-
-        varVals['nj'][0].append(t.gen_nj)
-        varVals['nj'][1].append((t.nj[0]-2)-t.gen_nj)
-
-        ue=UEEventCounter(t)
-        varVals['nch'][0].append(sum(ue.gen_nch))
-        varVals['nch'][1].append(sum(ue.rec_nch)-sum(ue.gen_nch))
-
-    #prepare output
-    fOut=ROOT.TFile.Open('%s/UEanalysis.root'%opt.out,'RECREATE')
-    outDir=fOut.mkdir('sliceVars')
+    varResolutions={}
 
     #prepare canvas
     ROOT.gStyle.SetOptStat(0)
@@ -121,10 +121,13 @@ def determineSliceResolutions(opt):
     for var in varVals:
 
         #use quantiles and extremes to define the 2D resolution histogram
-        genvarQ  = np.percentile( np.array(varVals[var][0]), [100*x/10 for x in xrange(0,11)] )
+        genvarQ  = np.percentile( np.array(varVals[var][0]), [100*x/10 for x in xrange(0,11)] )        
         if var=='nj': genvarQ = [0,1,2,5]
+
         dvarQ = np.percentile( np.array(varVals[var][1]), [2.5,97.5])
-        h2d=ROOT.TH2F(var,';Gen. level;Resolution;%', len(genvarQ)-1,array.array('d',genvarQ),50,dvarQ[0],dvarQ[1])
+        h2d=ROOT.TH2F(var,
+                      ';%s (gen. level);Resolution;'%VARTITLES[var]+'%', 
+                      len(genvarQ)-1,array.array('d',genvarQ),50,dvarQ[0],dvarQ[1])
         for i in xrange(0,len(varVals[var][0])):
             h2d.Fill(varVals[var][0][i],varVals[var][1][i])
         
@@ -163,29 +166,25 @@ def determineSliceResolutions(opt):
         c.Update()
         for ext in ['png','pdf']: c.SaveAs('%s/%s_resol.%s'%(opt.out,var,ext))
 
-        #save to ROOT file
-        outDir.cd()
-        h2d.SetDirectory(outDir)
-        h2d.Write()
-        resGr.Write()
+        varResolutions[var]=(h2d,resGr)
+
 
     #compute correlations at generator level
     ROOT.gStyle.SetPaintTextFormat("4.0f")
-    h2d=ROOT.TH2F('slicecorr',';Variable; Variable; Correlation (%)',len(varVals)-2,0,len(varVals)-2,len(varVals)-2,0,len(varVals)-2)
+    hcorr=ROOT.TH2F('slicecorr',';Variable; Variable; Correlation (%)',len(varVals),0,len(varVals),len(varVals),0,len(varVals))
     xbin=0
     for var1 in varVals:
-        if '_ttbar' in var1 : continue
         xbin+=1
-        h2d.GetXaxis().SetBinLabel(xbin,VARTITLES[var1])
+        hcorr.GetXaxis().SetBinLabel(xbin,VARTITLES[var1])
         ybin=0
         for var2 in varVals:
-            if '_ttbar' in var2 : continue
             rho=np.corrcoef(varVals[var1][0],varVals[var2][0])[0][1]
             ybin+=1
-            h2d.GetYaxis().SetBinLabel(ybin,VARTITLES[var2])
-            h2d.SetBinContent(xbin,ybin,rho*100)
+            hcorr.GetYaxis().SetBinLabel(ybin,VARTITLES[var2])
+            hcorr.SetBinContent(xbin,ybin,rho*100)
     c.Clear()
-    h2d.Draw('colztext')
+    hcorr.Draw('colztext')
+    hcorr.GetYaxis().SetTitleOffset(1.25)
     tex=ROOT.TLatex()        
     tex.SetTextFont(42)
     tex.SetTextSize(0.035)
@@ -196,11 +195,10 @@ def determineSliceResolutions(opt):
     c.Update()
     for ext in ['png','pdf']: c.SaveAs('%s/slicecorr.%s'%(opt.out,ext))
 
-    #all done
-    outDir.cd()
-    h2d.SetDirectory(outDir)
-    h2d.Write()
-    fOut.Close()
+    #all done, save to pickle file
+    with open(os.path.join(opt.out,'sliceresolutions.pck'), 'w') as cachefile:
+        pickle.dump(varResolutions, cachefile, pickle.HIGHEST_PROTOCOL)
+        pickle.dump(hcorr,          cachefile, pickle.HIGHEST_PROTOCOL)
 
 
 """
@@ -208,20 +206,19 @@ defines the variables to slice the UE measurement and saves their reco quantiles
 """
 def defineAnalysisBinning(opt):
 
+    #read the resolutions
+    varResolutions=None
+    with open(os.path.join(opt.out,'sliceresolutions.pck'),'r') as cachefile:
+        varResolutions = pickle.load(cachefile)
 
-    fIn=ROOT.TFile.Open('%s/UEanalysis.root'%opt.out,'UPDATE')
 
     #
     # SLICE VARIABLES
     # readout resolution curves and determine the bins for the observables
     #
     print 'Defining axes for the slice variables'
-    slicingAxes=[]
-    for k in fIn.Get('sliceVars').GetListOfKeys():
-        kname=k.GetName()
-        if not '_resol' in kname: continue
-
-        var=kname.split('_resol')[0]
+    slicingAxes={}
+    for var in varResolutions:
 
         #special case for jet multiplicity
         if var=='nj':
@@ -232,7 +229,7 @@ def defineAnalysisBinning(opt):
             #get resolution map and quantiles       
             inigenBin=[]           
             genResol=[]
-            resolGr=fIn.Get('sliceVars/%s'%kname)
+            resolGr=varResolutions[var][1]
             x,y=ROOT.Double(0),ROOT.Double(0)        
             for n in xrange(0,resolGr.GetN()):
                 resolGr.GetPoint(n,x,y)
@@ -277,10 +274,10 @@ def defineAnalysisBinning(opt):
             recBin.append( genBin[-1] )
         
         #save binning in histos
-        slicingAxes.append( (ROOT.TAxis(len(genBin)-1,array.array('d',genBin)),
-                               ROOT.TAxis(len(recBin)-1,array.array('d',recBin)) ) )
-        slicingAxes[-1][0].SetName('%s_genSlices'%var)
-        slicingAxes[-1][1].SetName('%s_recSlices'%var)
+        slicingAxes[(var,False)] = ROOT.TAxis(len(genBin)-1,array.array('d',genBin))
+        slicingAxes[(var,False)].SetName('%s_genSlices'%var)
+        slicingAxes[(var,True)]  = ROOT.TAxis(len(recBin)-1,array.array('d',recBin))
+        slicingAxes[(var,True)].SetName('%s_recSlices'%var)
 
 
     #
@@ -288,9 +285,12 @@ def defineAnalysisBinning(opt):
     # use quantiles to determine the binning for the observables : nch, sumpt and avgpt
     #
     print 'Defining axes for the observables'
-    obsVals={'nch'  :[[],[],[],[]], 
-             'ptsum':[[],[],[],[]], 
-             'avgpt':[[],[],[],[]]}
+    axes=['phittbar','phipos','phill']
+    obsVals={}
+    for obs in OBSQUANTILES: 
+        obsVals[obs]={'inc':[[]]}
+        for a in axes: obsVals[obs][a]=[[],[],[]]
+    ue=UEEventCounter(axes)
     t=ROOT.TChain('tue')
     for f in opt.input.split(','): t.AddFile(f)
     totalEntries=t.GetEntries()
@@ -299,111 +299,84 @@ def defineAnalysisBinning(opt):
         if i%100==0 :
             sys.stdout.write('\r [ %d/100 ] done' %(int(float(100.*i)/float(totalEntries))) )
             sys.stdout.flush()
-        if i>5000: break
+        if i>500: break
 
-        #gen level particle counting
+        #require a pure event selected at reco and gen levels
+        passSel=(t.passSel&0x1)
         gen_passSel=t.gen_passSel
-        if not gen_passSel: continue
+        if not passSel or not gen_passSel: continue
+        ue.count(t)
 
-        ue=UEEventCounter(t)
+        obsVals['chmult']['inc'][0].append(ue.gen_chmult)
+        obsVals['chflux']['inc'][0].append(ue.gen_chflux)
+        obsVals['chavgpt']['inc'][0].append(ue.gen_chavgpt) 
+        for a in axes:
+            for k in xrange(0,3):
+                obsVals['chmult'][a][k].append( ue.gen_chmult_wrtTo[a][k] )
+                obsVals['chflux'][a][k].append( ue.gen_chflux_wrtTo[a][k] )
+                obsVals['chavgpt'][a][k].append( ue.gen_chavgpt_wrtTo[a][k] )
         
-        for k in xrange(0,3):
-            obsVals['nch'][k].append( ue.gen_nch[k] )
-            obsVals['ptsum'][k].append( ue.gen_ptsum[k] )
-            obsVals['avgpt'][k].append( ue.gen_avgpt[k] )
-        
-        incNch=sum(ue.gen_nch)
-        incPtSum=sum(ue.gen_ptsum)
-        incAvgPt=incPtSum/incNch if incNch>0 else 0.
-        obsVals['nch'][3].append(incNch) 
-        obsVals['ptsum'][3].append(incPtSum)
-        obsVals['avgpt'][3].append(incAvgPt) 
-
-
     #determine quantiles and save as binnings
     obsAxes={}
     for obs in obsVals:
-        obsAxes[obs]=[[],[]]
-        for i in xrange(0,len(obsVals[obs])):
-            regName=getRegionName(idx=i)
-            genVarQ = np.percentile( np.array( obsVals[obs][i] ), OBSQUANTILES[obs] )
-            genVarQ[0]=0.
-            if i<3 : 
-                obsAxes[obs][0].append( ROOT.TAxis(len(genVarQ)-1,array.array('d',genVarQ)) )
-                obsAxes[obs][0][-1].SetName('%s%s_Obs'%(obs,regName))
-            else :
-                obsAxes[obs][1].append( ROOT.TAxis(len(genVarQ)-1,array.array('d',genVarQ)) )
-                obsAxes[obs][1][-1].SetName('%s%s_Obs'%(obs,regName))
+        for a in obsVals[obs]:
+            for i in xrange(0,len(obsVals[obs][a])):
+                genVarQ = np.percentile( np.array( obsVals[obs][a][i] ), OBSQUANTILES[obs] )
+                genVarQ[0]=0.                
+                obsAxes[ (obs,a,i) ] = ROOT.TAxis(len(genVarQ)-1,array.array('d',genVarQ))
+                obsAxes[ (obs,a,i) ].SetName('%s%s_%d'%(obs,a,i))
 
-
-
-    #save binnings to ROOT file
-    print 'Saving binnings'
-    outDir=fIn.Get('bins')
-    try:
-        outDir.cd()
-    except:
-        outDir=fIn.mkdir('bins')
-        outDir.cd()
-    for axgen,axrec in slicingAxes:
-        axgen.Write(axgen.GetName(),ROOT.TObject.kOverwrite)
-        axrec.Write(axrec.GetName(),ROOT.TObject.kOverwrite)
-    for obs in obsAxes:
-        for i in xrange(0,len(obsAxes[obs])):
-            for axobs in obsAxes[obs][i]:
-                axobs.Write(axobs.GetName(),ROOT.TObject.kOverwrite)
-
-    outDir=fIn.Get('analysisTemplates')
-    try:
-        outDir.cd()
-    except:
-        outDir=fIn.mkdir('analysisTemplates')
-        outDir.cd()
-
-    #define the migration matrices, gen level/rec level histos
+    #
+    # DEFINE MIGRATION MATRICES, GEN/REC LEVEL HISTOS
+    #
     print 'Saving gen/rec level histos and migration matrix templates'
-    #inclusive
-    for obs in obsAxes:
-        for i in xrange(0,len(obsAxes[obs])):
+    histos={}    
+    for obs in obsVals:
+        for a in obsVals[obs]:
 
-            name=obs
-            if i==0: name += '_diff'
             nbins=0
-            for axobs in obsAxes[obs][i]: nbins += axobs.GetNbins()
-            for level in ['gen','rec']:           
-                h=ROOT.TH1F('%s_%s'%(name,level),'%s_%s'%(name,level),nbins,0,nbins)
-                h.SetDirectory(outDir)
-                h.Write(h.GetName(),ROOT.TObject.kOverwrite)
-            h=ROOT.TH2F('%s_m'%name,'%s_m'%name,nbins,0,nbins,nbins,0,nbins)
-            h.SetDirectory(outDir)
-            h.Write(h.GetName(),ROOT.TObject.kOverwrite)
+            for i in xrange(0,len(obsVals[obs][a])): nbins+= obsAxes[ (obs,a,i) ].GetNbins()
+
+            for level in [False,True]:
+                levelStr='rec' if level else 'gen' 
+                name='%s_%s%s'%(levelStr,a,obs)            
+                histos[ (obs,a,level) ] = ROOT.TH1F(name,name,nbins,0,nbins)
+                histos[ (obs,a,level) ].SetDirectory(0)
+
+            name='m_%s%s'%(a,obs)
+            histos[ (obs,a) ] = ROOT.TH2F(name,name,nbins,0,nbins,nbins,0,nbins)
+            histos[ (obs,a) ].SetDirectory(0)
 
     #sliced
-    for axgen,axrec in slicingAxes:
+    for var,isRec in slicingAxes:
+        if isRec: continue
 
-        sliceName=axgen.GetName().split('_genSlices')[0]
+        axX,         axY         = slicingAxes[(var,False)], slicingAxes[(var,True)]
+        nslicebinsX, nslicebinsY = axX.GetNbins(),           axY.GetNbins()
 
-        for obs in obsAxes:
-            for i in xrange(0,len(obsAxes[obs])):
+        for obs in obsVals:
+            for a in obsVals[obs]:
 
-                name=sliceName+'_'+obs
-                if i==0 : name += '_diff'
                 nbinsObs=0
-                for axobs in obsAxes[obs][i]: nbinsObs += axobs.GetNbins()
-                nbinsX=axgen.GetNbins()*nbinsObs
-                nbinsY=axrec.GetNbins()*nbinsObs
+                for i in xrange(0,len(obsVals[obs][a])): nbinsObs += obsAxes[ (obs,a,i) ].GetNbins()
 
-                for level,nbins in [('gen',nbinsX),('rec',nbinsY)]:           
-                    h=ROOT.TH1F('%s_%s'%(name,level),'%s_%s'%(name,level),nbins,0,nbins)
-                    h.SetDirectory(outDir)
-                    h.Write(h.GetName(),ROOT.TObject.kOverwrite)
-                h=ROOT.TH2F('%s_m'%name,'%s_m'%name,nbinsX,0,nbinsX,nbinsY,0,nbinsY)
-                h.SetDirectory(outDir)
-                h.Write(h.GetName(),ROOT.TObject.kOverwrite)
+                nbinsX,nbinsY=nslicebinsX*nbinsObs, nslicebinsY*nbinsObs
+                for level,nbins in [(False,nbinsX),(True,nbinsY)]:
+                    levelStr='rec' if level else 'gen'
+                    name='%s_%s%s_%s'%(levelStr,a,obs,var)
+                    histos[ (obs,a,level,var) ] = ROOT.TH1F(name,name,nbins,0,nbins)
+                    histos[ (obs,a,level,var) ].SetDirectory(0)
+
+                name='m_%s%s_%s'%(a,obs,var)
+                histos[ (obs,a,var) ] = ROOT.TH2F(name,name,nbinsX,0,nbinsX,nbinsY,0,nbinsY)
+                histos[ (obs,a,var) ].SetDirectory(0)
+
+    #all done, save to pickle file
+    with open(os.path.join(opt.out,'analysiscfg.pck'), 'w') as cachefile:
+        pickle.dump(obsAxes, cachefile, pickle.HIGHEST_PROTOCOL)
+        pickle.dump(histos,  cachefile, pickle.HIGHEST_PROTOCOL)
 
 
-    #all done
-    fIn.Close()
 
 
 """
@@ -477,52 +450,53 @@ def main():
         determineSliceResolutions(opt)
     if opt.step==1:
         defineAnalysisBinning(opt)
-    if opt.step==2:
 
-        #prepare output
-        outDir=opt.out+'/analysis_%d_%d'%(opt.wgtIdx,opt.varIdx)
-        os.system.mkdir(outDir)
-
-        #create the tasklist
-        file_list=[]
-        if os.path.isdir(opt.input):
-            for file_path in os.listdir(opt.input):
-               if file_path.endswith('.root'):
-                    file_list.append(os.path.join(opt.input,file_path))
-        elif opt.input.startswith('/store/'):
-                    file_list = getEOSlslist(opt.input)
-        elif '.root' in opt.input:
-                    file_list.append(opt.input)
-
-        tasklist=[]
-        for filename in file_list:
-                baseFileName=os.path.basename(filename)
-                tag,ext=os.path.splitext(baseFileName)
-            if len(onlyList)>0:
-                    processThis=False
-                for filtTag in onlyList:
-                    if filtTag in tag:
-                       processThis=True
-            if not processThis : continue
-            tasklist.append((filename,'%s/%s'%(outdir,baseFileName),opt.wgtIdx,opt.varIdx))
-
-        if opt.queue=='local':
-         if opt.jobs>1:
-            print ' Submitting jobs in %d threads' % opt.jobs
-            import multiprocessing as MP
-            pool = MP.Pool(opt.jobs)
-            pool.map(runUEAnalysisPacked,tasklist)
-         else:
-            for fileName,outfile,wgtIdx,varIdx in taskList:
-                runUEAnalysis(fileName,outfile,wgtIdx,varIdx)
-        else:
-        cmsswBase=os.environ['CMSSW_BASE']
-        for fileName,outfile,wgtIdx,varIdx in tasklist:
-            localRun='python %s/src/TopLJets2015/TopAnalysis/test/TopUEAnalysis/runUEanalysis.py -i %s -o %s -q local -s 2 -w %d -v %d'%(cmsswBase,fileName,outfile,wgtIdx,varIdx)
-            cmd='bsub -q %s %s/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh \"%s\"' % (opt.queue,cmsswBase,localRun)
-            print cmd
-            os.system(cmd)
-
+#    if opt.step==2:
+#
+#        #prepare output
+#        outDir=opt.out+'/analysis_%d_%d'%(opt.wgtIdx,opt.varIdx)
+#        os.system.mkdir(outDir)
+#
+#        #create the tasklist
+#        file_list=[]
+#        if os.path.isdir(opt.input):
+#            for file_path in os.listdir(opt.input):
+#               if file_path.endswith('.root'):
+#                    file_list.append(os.path.join(opt.input,file_path))
+#        elif opt.input.startswith('/store/'):
+#                    file_list = getEOSlslist(opt.input)
+#        elif '.root' in opt.input:
+#                    file_list.append(opt.input)
+#
+#        tasklist=[]
+#        for filename in file_list:
+#                baseFileName=os.path.basename(filename)
+#                tag,ext=os.path.splitext(baseFileName)
+#            if len(onlyList)>0:
+#                    processThis=False
+#                for filtTag in onlyList:
+#                    if filtTag in tag:
+#                       processThis=True
+#            if not processThis : continue
+#            tasklist.append((filename,'%s/%s'%(outdir,baseFileName),opt.wgtIdx,opt.varIdx))
+#
+#        if opt.queue=='local':
+#         if opt.jobs>1:
+#            print ' Submitting jobs in %d threads' % opt.jobs
+#            import multiprocessing as MP
+#            pool = MP.Pool(opt.jobs)
+#            pool.map(runUEAnalysisPacked,tasklist)
+#         else:
+#            for fileName,outfile,wgtIdx,varIdx in taskList:
+#                runUEAnalysis(fileName,outfile,wgtIdx,varIdx)
+#        else:
+#        cmsswBase=os.environ['CMSSW_BASE']
+#        for fileName,outfile,wgtIdx,varIdx in tasklist:
+#            localRun='python %s/src/TopLJets2015/TopAnalysis/test/TopUEAnalysis/runUEanalysis.py -i %s -o %s -q local -s 2 -w %d -v %d'%(cmsswBase,fileName,outfile,wgtIdx,varIdx)
+#            cmd='bsub -q %s %s/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh \"%s\"' % (opt.queue,cmsswBase,localRun)
+#            print cmd
+#            os.system(cmd)
+#
 
 """
 for execution from another script

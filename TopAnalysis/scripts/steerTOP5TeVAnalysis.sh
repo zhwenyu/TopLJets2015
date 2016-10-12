@@ -38,15 +38,15 @@ case $WHAT in
 	echo -e "[ ${RED} Sending out jobs to batch ${NC} ]"
 	#muon channel
 	#python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_mu                                --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis       --ch 13 --runSysts --only MC;
-	python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_mu --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis       --ch 13 --only FilteredSingleMuHighPt;
+	#python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_mu --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis       --ch 13 --only FilteredSingleMuHighPt;
 	#python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_munoniso                          --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis       --ch 1300 --only MC;
-	python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_munoniso --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis --ch 1300 --only FilteredSingleMuHighPt;
+	#python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_munoniso --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis --ch 1300 --only FilteredSingleMuHighPt;
 
 	#electron channel
         #python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_e       --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis --ch 11 --runSysts --only MC;
 	#python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_enoniso --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis --ch 1100 --only MC;
-	#python scripts/runLocalAnalysis.py -i ${sourcedir}    -q ${queue} -o ${outdir}/analysis_e/       --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis --ch 11 --only FilteredHighPtPhoton30AndZ;
-	#python scripts/runLocalAnalysis.py -i ${sourcedir}    -q ${queue} -o ${outdir}/analysis_enoniso/ --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis --ch 1100 --only FilteredHighPtPhoton30AndZ;
+	python scripts/runLocalAnalysis.py -i ${sourcedir}    -q ${queue} -o ${outdir}/analysis_e/       --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis --ch 11 --only FilteredHighPtPhoton30AndZ;
+	python scripts/runLocalAnalysis.py -i ${sourcedir}    -q ${queue} -o ${outdir}/analysis_enoniso/ --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis --ch 1100 --only FilteredHighPtPhoton30AndZ;
 	;;
     MERGE )
 	echo -e "[ ${RED} Merging job output ${NC} ]"

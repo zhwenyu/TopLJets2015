@@ -3,74 +3,6 @@
 import ROOT
 import numpy as np
 import array as array
-
-"""
-0 - tow(ards), 1 trans(verse), 2 away
-"""
-def getRegionFor(dphi) :
-    if ROOT.TMath.Abs(dphi) < ROOT.TMath.Pi()/3.     : return 0
-    elif ROOT.TMath.Abs(dphi) < 2*ROOT.TMath.Pi()/3. : return 1
-    return 2
-
-"""
-converts index to name
-"""
-def getRegionName(idx):
-    if idx==0   : return 'tow'
-    elif idx==1 : return 'tra'
-    elif idx==2 : return 'awa'
-    return 'inc'
-
-
-"""
-parses the event and counts particles in each region at gen/rec levels
-"""
-class UEEventCounter:
-    def __init__(self,t):
-
-        self.rec_nch   = [0]*3
-        self.rec_ptsum = [0]*3
-        self.rec_avgpt = [0]*3
-        
-        self.nch   = [[0]*3,[0]*3,[0]*3]
-        self.ptsum = [[0]*3,[0]*3,[0]*3]
-        self.avgpt = [[0]*3,[0]*3,[0]*3]
-
-        self.gen_nch   = [0]*3
-        self.gen_ptsum = [0]*3
-        self.gen_avgpt = [0]*3
-                
-        #reco level
-        passSel=(t.passSel&0x1)
-        if passSel:                    
-            for n in xrange(0,t.n):
-                isInB=(t.isInBFlags[n] & 0x1)
-                if isInB : continue
-                dphi_rec=ROOT.TMath.Abs( ROOT.TVector2.Phi_mpi_pi( t.phi[n]-t.rec_phi_ttbar[0] ) )
-                idx_rec=getRegionFor(dphi_rec)
-                dphi_gen=ROOT.TMath.Abs( ROOT.TVector2.Phi_mpi_pi( t.phi[n]-t.gen_phi_ttbar ) )
-                idx_gen=getRegionFor(dphi_gen)
-                self.rec_nch[idx_rec]        +=1
-                self.nch[idx_gen][idx_rec]   +=1
-                self.rec_ptsum[idx_rec]      += t.pt[n]
-                self.ptsum[idx_gen][idx_rec] += t.pt[n]
-            for idx_rec in xrange(0,3):
-                self.rec_avgpt[idx_rec] = self.rec_ptsum[idx_rec]/self.rec_nch[idx_rec] if self.rec_nch[idx_rec]>0 else 0
-                for idx_gen in xrange(0,3):
-                    self.avgpt[idx_gen][idx_rec] = self.ptsum[idx_gen][idx_rec]/self.nch[idx_gen][idx_rec] if self.nch[idx_gen][idx_rec]>0 else 0
-
-        #gen level
-        passSel=(t.gen_passSel&0x1)
-        if passSel:
-            for n in xrange(0,t.gen_n):
-                dphi_gen=ROOT.TMath.Abs( ROOT.TVector2.Phi_mpi_pi( t.gen_phi[n]-t.gen_phi_ttbar ) )
-                idx_gen=getRegionFor(dphi_gen)
-                self.gen_nch[idx_gen]   +=1
-                self.gen_ptsum[idx_gen] += t.gen_pt[n]
-            for idx_gen in xrange(0,3):
-                self.gen_avgpt[idx_gen] = self.gen_ptsum[idx_gen]/self.gen_nch[idx_gen] if self.gen_nch[idx_gen]>0 else 0.
-
-
 """
 parses the event and counts particles in each region at gen/rec levels
 """
@@ -81,15 +13,15 @@ class UEAnalysisHandler:
         self.obsBins={}
         self.sliceBins={}
         fIn=ROOT.TFile.Open(analysisCfg)
-        for k in fIn.Get('bins').GetListOfKeys():
-            kname=k.GetName()
-            if 'Obs' in kname:
-                self.obsBins[kname.replace('_Obs','')]=fIn.Get('bins/%s'%kname)
-            if 'Slices' in kname:
-                isRec= True '_rec' in kname else False
-                self.sliceBins[ (kname.split('_')[0],isRec) ] = fIn.Get('bins/%s'%kname)
-        print self.obsBins
-        self.sliceBins
+       # for k in fIn.Get('bins').GetListOfKeys():
+       #     kname=k.GetName()
+       #     if 'Obs' in kname:
+       #         self.obsBins[kname.replace('_Obs','')]=fIn.Get('bins/%s'%kname)
+       #     if 'Slices' in kname:
+       #         isRec= True '_rec' in kname else False
+       #         self.sliceBins[ (kname.split('_')[0],isRec) ] = fIn.Get('bins/%s'%kname)
+       # print self.obsBins
+       # self.sliceBins
 
 
 """
