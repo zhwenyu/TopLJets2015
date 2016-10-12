@@ -156,7 +156,7 @@ class Plot(object):
         # legend
         iniy=0.9 if self.wideCanvas else 0.85
         dy=0.1 
-        ndy= 0.3*max(len(self.mc)-2,1)
+        ndy= 0.2*max(len(self.mc)-2,1)
         inix,dx =0.45,0.5
         if noStack:
             inix,dx=0.6,0.35

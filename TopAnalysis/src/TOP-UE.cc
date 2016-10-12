@@ -131,7 +131,7 @@ void RunTopUE(TString filename,
   JetCorrectorParameters *jecParam = new JetCorrectorParameters(jecUncUrl.Data(),"Total");
   JetCorrectionUncertainty *jecUnc = new JetCorrectionUncertainty( *jecParam );
 
-  //BOOK HISTOGRAMS
+  //BOOK CONTROL HISTOGRAMS
   std::map<TString, TH1 *> allPlots;
   addGenScanCounters(allPlots,f);
 
@@ -141,10 +141,13 @@ void RunTopUE(TString filename,
   for(size_t ilfs=0; ilfs<lfsVec.size(); ilfs++)   
     { 
       TString tag(lfsVec[ilfs]);
-      allPlots["nvtx_"+tag]  = new TH1F("nvtx_"+tag,";Vertex multiplicity;Events",30,0,30);
-      allPlots["mll_"+tag]  = new TH1F("mll_"+tag,";Dilepton invariant mass [GeV];Events",20,0,200);
-      allPlots["njets_"+tag]  = new TH1F("njets_"+tag,";Jet multiplicity;Events",5,0,5);
-      allPlots["nbtags_"+tag]  = new TH1F("nbtags_"+tag,";b-tag multiplicity;Events",5,0,5);
+      allPlots["nvtx_"+tag]   = new TH1F("nvtx_"+tag,";Vertex multiplicity;Events",40,0,40);
+      allPlots["mll_"+tag]    = new TH1F("mll_"+tag,";Dilepton invariant mass [GeV];Events",50,0,400);
+      allPlots["ptpos_"+tag]   = new TH1F("ptpos_"+tag,";Lepton transverse momentum [GeV];Events",50,20,200);
+      allPlots["ptll_"+tag]    = new TH1F("ptll_"+tag,";Dilepton transverse momentum [GeV];Events",50,0,200);
+      allPlots["sumpt_"+tag]   = new TH1F("sumpt_"+tag,";Transverse momentum sum [GeV];Events",50,40,300);
+      allPlots["njets_"+tag]  = new TH1F("njets_"+tag,";Jet multiplicity;Events",4,2,6);
+      allPlots["nbtags_"+tag] = new TH1F("nbtags_"+tag,";b-tag multiplicity;Events",5,0,5);
     }
   for (auto& it : allPlots)   { it.second->Sumw2(); it.second->SetDirectory(0); }
 
@@ -167,7 +170,7 @@ void RunTopUE(TString filename,
 	  bool passGenSel(true);
 	  TLorentzVector ttGen(0,0,0,0), pseudottGen(0,0,0,0);
 	  std::vector<TLorentzVector> pseudobJets,pseudoLeptons;
-	  Int_t ntops(0);
+	  Int_t ntops(0),posLepton(0);
           float ptsf(1.0);
           for(Int_t igen=0; igen<ev.ngtop; igen++)
             {
@@ -187,6 +190,7 @@ void RunTopUE(TString filename,
 	      if(abs(ev.gtop_id[igen])==11000 || abs(ev.gtop_id[igen])==13000)  
 		{
 		  pseudoLeptons.push_back(tp4);
+		  if(ev.gtop_id[igen]<0) posLepton=(pseudoLeptons.size()-1);
 		  if(tp4.Pt()<20 || fabs(tp4.Eta())>2.5) passGenSel=false; 
 		}
               if(abs(ev.gtop_id[igen])==6)
@@ -204,9 +208,13 @@ void RunTopUE(TString filename,
 	  tue.gen_phi_pseudottbar=pseudottGen.Phi();
 	  if(pseudoLeptons.size()>1)
 	    {
-	      tue.gen_dphill = TMath::Abs(pseudoLeptons[0].DeltaPhi(pseudoLeptons[1]));
 	      tue.gen_mll    = (pseudoLeptons[0]+pseudoLeptons[1]).M();
-	      tue.gen_phill = (pseudoLeptons[0]+pseudoLeptons[1]).Phi();
+	      tue.gen_ptpos  = pseudoLeptons[posLepton].Pt();
+	      tue.gen_phipos = pseudoLeptons[posLepton].Phi();
+	      tue.gen_ptll   = (pseudoLeptons[0]+pseudoLeptons[1]).Pt();
+	      tue.gen_phill  = (pseudoLeptons[0]+pseudoLeptons[1]).Phi();
+	      tue.gen_sumpt  = pseudoLeptons[0].Pt()+pseudoLeptons[1].Pt();
+	      tue.gen_dphill = TMath::Abs(pseudoLeptons[0].DeltaPhi(pseudoLeptons[1]));
 	    }
 	  
 
@@ -483,20 +491,44 @@ void RunTopUE(TString filename,
 
       //finalise dilepton requirements and reset pass selection flags
       //dilepton present, m(ll)>12, at least one with pt>30 and both within |eta|<2.5
-      float mll(0);
       if(chTag=="") tue.passSel=0;
       else
 	{
-          mll=(leptons[0]+leptons[1]).M();
+	  //finalize lepton selection
+	  float mll=(leptons[0]+leptons[1]).M();
 	  if(mll<12) tue.passSel=0;
-	  if(leptons[0].Pt()<30 && leptons[1].Pt()<30) tue.passSel=0;
+	  if(leptons[0].Pt()<30 && leptons[1].Pt()<30)  tue.passSel=0;
 	  if(fabs(leptons[0].Eta())>2.5 || fabs(leptons[1].Eta())>2.5) tue.passSel=0;
+	  
+	  //compute variations of the kinematics
+	  size_t maxLepVariations(runSysts ? 5 : 1);	  
+	  for(size_t ivar=0; ivar<maxLepVariations; ivar++)
+	    {
+	      std::vector<TLorentzVector> varLeptons;
+	      int posLepton(0);
+	      for(size_t il=0; il<2; il++)
+		{
+		  //determine positive lepton
+		  if(ev.l_charge[ selLeptons[il] ]>0) posLepton=il;
 
-	  tue.dphill=TMath::Abs(leptons[0].DeltaPhi(leptons[1]));
-	  tue.phill=(leptons[0]+leptons[1]).Phi();
-	  tue.mll=mll;
+		  //vary energy if needed
+		  float les(0.0);
+		  if(abs(selLeptonsId[il])==11 && (ivar==1 || ivar==2)) les=getLeptonEnergyScaleUncertainty(11,leptons[il].Pt(),leptons[il].Eta());
+		  if(abs(selLeptonsId[il])==13 && (ivar==3 || ivar==4)) les=TMath::Abs(1-ev.l_scaleUnc[ selLeptons[il] ]);
+		  float sign((ivar==1||ivar==3)?+1.0:-1.0);
+		  varLeptons.push_back( leptons[il]*(1.0+sign*les) );
+		}
+	      
+	      tue.mll[ivar]    = (varLeptons[0]+varLeptons[1]).M();
+	      tue.ptpos[ivar]  = varLeptons[posLepton].Pt();
+	      tue.phipos[ivar] = varLeptons[posLepton].Phi();
+	      tue.ptll[ivar]   = (varLeptons[0]+varLeptons[1]).Pt();
+	      tue.phill[ivar]  = (varLeptons[0]+varLeptons[1]).Phi();
+	      tue.sumpt[ivar]  = varLeptons[0].Pt()+varLeptons[1].Pt();
+	      tue.dphill[ivar] = TMath::Abs(varLeptons[0].DeltaPhi(varLeptons[1]));
+	    }
 	}
-
+      
       //at this point we know if the event passes either the GEN level 
       //or one of the RECO level selections
       //if it fails both we don't care about it
@@ -539,7 +571,10 @@ void RunTopUE(TString filename,
       if(chTag!="")
 	{
 	  allPlots["nvtx_"+chTag]->Fill(ev.nvtx,wgt);
-	  allPlots["mll_"+chTag]->Fill(mll,wgt);
+	  allPlots["mll_"+chTag]->Fill(tue.mll[0],wgt);
+	  allPlots["ptpos_"+chTag]->Fill(tue.ptpos[0],wgt);
+	  allPlots["ptll_"+chTag]->Fill(tue.ptll[0],wgt);
+	  allPlots["sumpt_"+chTag]->Fill(tue.sumpt[0],wgt);
 	  allPlots["nbtags_"+chTag]->Fill(tue.nb[0],wgt);
 	  if(tue.nb[0]>1) allPlots["njets_"+chTag]->Fill(tue.nj[0],wgt);
 	}
@@ -620,11 +655,25 @@ void createTopUETree(TTree *t,TopUE_t &tue)
   t->Branch("rec_pt_ttbar",          tue.rec_pt_ttbar,        "rec_pt_ttbar[8]/F");
   t->Branch("rec_phi_ttbar",         tue.rec_phi_ttbar,       "rec_phi_ttbar[8]/F");
 
+  //leptonic quantities
+  t->Branch("ptpos",      tue.ptpos ,       "ptpos[5]/F");
+  t->Branch("phipos",     tue.phipos ,      "phipos[5]/F");
+  t->Branch("ptll",       tue.ptll ,        "ptll[5]/F");
+  t->Branch("mll",        tue.mll ,         "mll[5]/F");
+  t->Branch("sumpt",      tue.sumpt ,       "sumpt[5]/F");
+  t->Branch("dphill",     tue.dphill ,      "dphill[5]/F");
+  t->Branch("gen_ptpos",  &tue.gen_ptpos ,  "gen_ptpos/F");
+  t->Branch("gen_phipos", &tue.gen_phipos , "gen_phipos/F");
+  t->Branch("gen_ptll",   &tue.gen_ptll ,   "gen_ptll/F");
+  t->Branch("gen_mll",    &tue.gen_mll ,    "gen_mll/F");
+  t->Branch("gen_sumpt",  &tue.gen_sumpt ,  "gen_sumpt/F");
+  t->Branch("gen_dphill", &tue.gen_dphill , "gen_dphill/F");
+
   //charged particles
-  t->Branch("n",   &tue.n,     "n/I");
-  t->Branch("pt",   tue.pt ,   "pt[n]/F");
-  t->Branch("eta",  tue.eta ,  "eta[n]/F");
-  t->Branch("phi",  tue.phi ,  "phi[n]/F");
+  t->Branch("n",          &tue.n,            "n/I");
+  t->Branch("pt",          tue.pt ,          "pt[n]/F");
+  t->Branch("eta",         tue.eta ,         "eta[n]/F");
+  t->Branch("phi",         tue.phi ,         "phi[n]/F");
   t->Branch("isInBFlags",  tue.isInBFlags ,  "isInBFlags[n]/I");
 
   //gen charged particles
@@ -632,26 +681,37 @@ void createTopUETree(TTree *t,TopUE_t &tue)
   t->Branch("gen_pt",   tue.gen_pt ,   "gen_pt[gen_n]/F");
   t->Branch("gen_eta",  tue.gen_eta ,  "gen_eta[gen_n]/F");
   t->Branch("gen_phi",  tue.gen_phi ,  "gen_phi[gen_n]/F");
-
-  //dilepton
-  t->Branch("mll",        &tue.mll ,         "mll/F");
-  t->Branch("dphill",     &tue.dphill ,      "dphill/F");
-  t->Branch("phill",      &tue.phill ,       "phill/F");
-  t->Branch("gen_mll",    &tue.gen_mll ,     "gen_mll/F");
-  t->Branch("gen_dphill", &tue.gen_dphill ,  "gen_dphill/F");
-  t->Branch("gen_phill",  &tue.gen_phill ,   "gen_phill/F");
 }
 
 //
 void resetTopUE(TopUE_t &tue)
 {
-  tue.run=-1;               tue.lumi=0;                
-  tue.event=0;              tue.cat=0;   
-  tue.gen_passSel=0;        tue.passSel=0; 
-  tue.nw=0;                 tue.nvtx=0;
-  tue.gen_pt_ttbar=0;       tue.gen_phi_ttbar=0;
-  tue.gen_pt_pseudottbar=0; tue.gen_phi_pseudottbar=0;
-  tue.gen_nj=0;             tue.gen_nb=0;
-  tue.n=0; tue.gen_n=0;
-  for(int i=0; i<8; i++) { tue.nj[i]=0; tue.nb[i]=0; tue.rec_pt_ttbar[i]=0; tue.rec_phi_ttbar[i]=0; }
+  //dummy event header
+  tue.run=-1;  tue.lumi=0;  tue.event=0;              
+  
+  //reset selection flags
+  tue.cat=0;   
+  tue.gen_passSel=0;       
+  tue.passSel=0; 
+
+  //reset weights
+  tue.nw=0;      
+  
+  //reset all MC truth
+  tue.gen_pt_ttbar=0;       
+  tue.gen_phi_ttbar=0;
+  tue.gen_pt_pseudottbar=0; 
+  tue.gen_phi_pseudottbar=0;
+  tue.gen_ptpos=0;
+  tue.gen_phipos=0;
+  tue.gen_ptll=0;
+  tue.gen_mll=0;
+  tue.gen_sumpt=0;
+  tue.gen_dphill=0;
+  tue.gen_nj=0;             
+  tue.gen_nb=0;
+  
+  //reset particle counters
+  tue.n=0; 
+  tue.gen_n=0; 
 }

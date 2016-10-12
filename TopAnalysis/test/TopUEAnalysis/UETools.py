@@ -18,7 +18,8 @@ converts index to name
 def getRegionName(idx):
     if idx==0   : return 'tow'
     elif idx==1 : return 'tra'
-    return 'awa'
+    elif idx==2 : return 'awa'
+    return 'inc'
 
 
 """
@@ -71,6 +72,27 @@ class UEEventCounter:
 
 
 """
+parses the event and counts particles in each region at gen/rec levels
+"""
+class UEAnalysisHandler:
+    def __init__(self,analysisCfg):
+
+        #readout bins
+        self.obsBins={}
+        self.sliceBins={}
+        fIn=ROOT.TFile.Open(analysisCfg)
+        for k in fIn.Get('bins').GetListOfKeys():
+            kname=k.GetName()
+            if 'Obs' in kname:
+                self.obsBins[kname.replace('_Obs','')]=fIn.Get('bins/%s'%kname)
+            if 'Slices' in kname:
+                isRec= True '_rec' in kname else False
+                self.sliceBins[ (kname.split('_')[0],isRec) ] = fIn.Get('bins/%s'%kname)
+        print self.obsBins
+        self.sliceBins
+
+
+"""
 return the most appropriate bin for a given value, taking into account the range available
 """
 def getBinForVariable(h,val,axis):
@@ -79,131 +101,171 @@ def getBinForVariable(h,val,axis):
     if val<xmin : return 0
     return axis.FindBin(val)
 
+
+
 """
-get purity and stability for a given bin configuration
 """
-def getPurityStability(h,x1,x2,y1,y2):
-    NgenrecUnc=ROOT.Double(0)
-    Ngenrec = h.IntegralAndError(x1, x2,            y1, y2,NgenrecUnc)    
-    Nrec    = h.Integral        (0,  h.GetNbinsX(), y1, y2)
-    Ngen    = h.Integral        (x1, x2,            0,  h.GetNbinsY())    
+def showMatrices(opt,varIdx=0,wgtIdx=0):
+
+    #prepare canvas
+    ROOT.gStyle.SetOptStat(0)
+    ROOT.gStyle.SetOptTitle(0)
+    ROOT.gStyle.SetPalette(55)
+    c=ROOT.TCanvas('c','c',1000,1000)
+    c.SetTopMargin(0.01)
+    c.SetRightMargin(0.1)
+    c.SetBottomMargin(0.15)
+
     
-    pur=(Ngenrec/Ngen,NgenrecUnc/Ngen) if Ngen!=0 else (0,0)
-    stab=(Ngenrec/Nrec,NgenrecUnc/Nrec) if Nrec!=0 else (0,0)
-    return pur,stab
+    #open ROOT file with the definitions
+    url='%s/UEanalysis.root'%opt.out
+    sliceVarsQ,obsVarsQ=readSlicesAndObservables(url=url)
+    fIn=ROOT.TFile.Open(url)
+    mmDir='migmatrices_%d_%d'%(varIdx,wgtIdx)
 
+    #build the fully combined migration matrices
+    bigMatrix={}
+    for s in sliceVarsQ:
+        nRecBins=sliceVarsQ[s].GetXaxis().GetNbins()
+        nGenBins=nRecBins if 'nj' in s else nRecBins/2
+        for o in obsVarsQ:
+            if 'nch' in o and 'nch' in s: continue
+            obsNRecBins=obsVarsQ[o].GetXaxis().GetNbins()
+            obsNGenBins=obsVarsQ[o].GetXaxis().GetNbins()/2
 
-"""
-project purity and stability
-"""
-def getPurityStabilityGraphs(h):
-    purGr=ROOT.TGraphErrors()
-    purGr.SetName(h.GetName()+'_pur')
-    purGr.SetMarkerStyle(20)
-    purGr.SetTitle('purity')
-    stabGr=purGr.Clone(h.GetName()+'_stab')
-    stabGr.SetMarkerStyle(24)
-    stabGr.SetTitle('stability')
-    for xbin in xrange(1,h.GetNbinsX()+1):
-        y1 = getBinForVariable(h, h.GetXaxis().GetBinLowEdge(xbin),  h.GetYaxis())
-        y2 = getBinForVariable(h, h.GetXaxis().GetBinUpEdge(xbin+1), h.GetYaxis())
+            key=(s,o)
+            nbinsX=1+3*nGenBins*obsNGenBins
+            nbinsY=1+3*nRecBins*obsNRecBins
+            bigMatrix[key]=ROOT.TH2F('%s_%s'%(s,o),'',nbinsX,0,nbinsX,nbinsY,0,nbinsY)
+            bigMatrix[key].SetDirectory(0)
 
-        xcen     = h.GetXaxis().GetBinCenter(xbin)
-        xwid     = h.GetXaxis().GetBinWidth(xbin)
-        pur,stab = getPurityStability(h,xbin,xbin+1,y1,y2)
+            #fill the matrix
+            genBinCtr=0
+            for xbin in xrange(1,nbinsX+1):
+                if xbin!=1 :
+                    genBinCtr+=1
+                    if genBinCtr>obsNGenBins: genBinCtr=1
 
-        np = purGr.GetN()
-        purGr.SetPoint(np,xcen,pur[0])
-        purGr.SetPointError(np,0.5*xwid,pur[1])
-        stabGr.SetPoint(np,xcen,stab[0])
-        stabGr.SetPointError(np,0.5*xwid,stab[1])
-    return purGr,stabGr
+                recBinCtr=0
+                for ybin in xrange(1,nbinsY+1):
+                    if ybin!=1:
+                        recBinCtr+=1
+                        if recBinCtr>obsNRecBins: recBinCtr=1                
 
+                    sliceGenBin=(xbin-2)/(3*obsNGenBins)+1
+                    obsGenRegionBin=((xbin-2)/obsNGenBins)%3
+                    obsGenRegion=getRegionName(obsGenRegionBin)
 
-"""
-optimize migration matrix based on eff/purity criteria
-"""
-def optimizeMigrationMatrix(h,minStab=0.5, minPur=0.5):
+                    sliceRecBin=(ybin-2)/(3*obsNRecBins)+1
+                    obsRecRegionBin=((ybin-2)/obsNRecBins)%3
+                    obsRecRegion=getRegionName(obsRecRegionBin)   
 
-    #save current binning
-    xlimits,ylimits=[],[]
-    for xbin in xrange(1,h.GetNbinsX()) : xlimits.append(h.GetXaxis().GetBinLowEdge(xbin))
-    xlimits.append(h.GetXaxis().GetXmax())
-    for ybin in xrange(1,h.GetNbinsY()) : ylimits.append(h.GetYaxis().GetBinLowEdge(ybin))
-    ylimits.append(h.GetYaxis().GetXmax())
+                    if xbin==1 and ybin==1:
+                        mmH=fIn.Get('%s/%s00_%s'%(mmDir,s,o))
+                        bigMatrix[key].SetBinContent(xbin,ybin,mmH.GetBinContent(1,1))
+                        bigMatrix[key].SetBinError(xbin,ybin,mmH.GetBinError(1,1))
+                    elif xbin==1:                                                
+                        mmH=fIn.Get('%s/%s0%d_%s%s'%(mmDir,s,sliceRecBin,o,obsRecRegion))
+                        bigMatrix[key].SetBinContent(xbin,ybin,mmH.GetBinContent(1,recBinCtr))
+                        bigMatrix[key].SetBinError(xbin,ybin,mmH.GetBinError(1,recBinCtr))
+                    elif ybin==1:
+                        mmH=fIn.Get('%s/%s%d0_%s%s'%(mmDir,s,sliceGenBin,o,obsGenRegion))
+                        bigMatrix[key].SetBinContent(xbin,ybin,mmH.GetBinContent(genBinCtr,1))
+                        bigMatrix[key].SetBinError(xbin,ybin,mmH.GetBinError(genBinCtr,1))
+                    else:
+                        mmH=fIn.Get('%s/%s%d%d_%s%s%s'%(mmDir,s,sliceGenBin,sliceRecBin,o,obsGenRegion,obsRecRegion))
+                        bigMatrix[key].SetBinContent(xbin,ybin,mmH.GetBinContent(genBinCtr,recBinCtr))
+                        bigMatrix[key].SetBinError(xbin,ybin,mmH.GetBinError(genBinCtr,recBinCtr))
+                        
+                        
+            #label x-axis
+            sliceBin,obsBin=0,0
+            for xbin in xrange(1,nbinsX+1):
+                label=''
+                if xbin==1: label='fail'
+                else:
+                    if (xbin+1-obsNGenBins/2)%(3*obsNGenBins)==0:
+                        label='#color[38]{[%3.1f,%3.1f[}'%(sliceVarsQ[s].GetXaxis().GetBinLowEdge(2*sliceBin+1),sliceVarsQ[s].GetXaxis().GetBinUpEdge(2*sliceBin+2))
+                        sliceBin+=1
+                    elif (xbin+4)%(obsNGenBins)==0:
+                        obsBin+=1
+                        label='#it{%s}'%getRegionName((obsBin-1)%3)
+                if len(label)==0: continue    
+                bigMatrix[key].GetXaxis().SetBinLabel(xbin,label)
 
-    #start by optimizing gen binning based on purity criteria
-    x1,x2=1,1
-    new_xlimits=[h.GetXaxis().GetXmin()]
-    while x2<=h.GetNbinsX():
-        pur=0
-        while pur<minPur and x2<=h.GetNbinsX():
-            y1=getBinForVariable(h,h.GetXaxis().GetBinLowEdge(x1),h.GetYaxis())
-            y2=getBinForVariable(h,h.GetXaxis().GetBinUpEdge(x2), h.GetYaxis())
-            ipur,_=getPurityStability(h,x1,x2,y1,y2)
-            pur=ipur[0]
-            if pur<minPur   : x2+=1
-        x2val=h.GetXaxis().GetBinUpEdge(x2)
-        if x2val!=new_xlimits[-1] : new_xlimits.append(x2val)
-        x1,x2=x2+1,x2+1
-    xmax=h.GetXaxis().GetXmax()
-    if new_xlimits[-1]!=xmax: new_xlimits[-1]=xmax
+            #label y-axis
+            sliceBin,obsBin=0,0
+            for ybin in xrange(1,nbinsY+1):
+                label=''
+                if ybin==1: label='fail'
+                else:
+                    if (ybin+1-obsNRecBins/2)%(3*obsNRecBins)==0:
+                        label='#color[38]{[%3.1f,%3.1f[}'%(sliceVarsQ[s].GetXaxis().GetBinLowEdge(sliceBin+1),sliceVarsQ[s].GetXaxis().GetBinUpEdge(sliceBin+1))
+                        sliceBin+=1
+                    elif (ybin+4)%(obsNRecBins)==0:
+                        obsBin+=1
+                        label='#it{%s}'%getRegionName((obsBin-1)%3)
+                if len(label)==0: continue    
+                bigMatrix[key].GetYaxis().SetBinLabel(ybin,label)
+            
+            #display the matrix
+            c.Clear()
+            #c.SetLogz()
+            bigMatrix[key].Draw('colz')
+            bigMatrix[key].GetZaxis().SetLabelSize(0.03)
+            bigMatrix[key].GetYaxis().SetLabelSize(0.03)
+            bigMatrix[key].GetXaxis().SetLabelSize(0.03)
+            bigMatrix[key].GetXaxis().SetTickLength(0)
+            bigMatrix[key].GetYaxis().SetTickLength(0)
+            tex=ROOT.TLatex()
+            tex.SetTextFont(42)
+            tex.SetTextSize(0.025)
+            tex.SetNDC()
+            tex.DrawLatex(0.01,0.96,'#bf{#splitline{Reco.}{level}}')
+            tex.DrawLatex(0.95,0.1,'#bf{#splitline{Gen.}{level}}')
+            stit='p_{T}(t#bar{t})'
+            if 'nj' in s : stit='N(jets)'
+            if 'nch' in s : stit='N(ch)'                
+            if 'mll' in s : stit='M(l,l)'                
+            if 'dphill' in s : stit='#Delta#phi(l,l)'
+            otit='N(ch)'
+            if 'ptsum' in o : otit='#Sigmap_{T}(ch)'
+            if 'avgpt' in o : otit='#bar{p}_{T}(ch)'
+            tex.DrawLatex(0.10,0.03,'#scale[1.2]{#bf{CMS}} #it{simulation preliminary} %s vs %s'%(stit,otit))
 
-    #define intermediate histo
-    h_xopt=ROOT.TH2F('h_xopt','',len(new_xlimits)-1,array.array('d',new_xlimits),len(ylimits)-1,array.array('d',ylimits))
-    for xbin in xrange(1,h.GetNbinsX()+1):
-        for ybin in xrange(1,h.GetNbinsY()+1):
-            h_xopt.Fill( h.GetXaxis().GetBinCenter(xbin), h.GetYaxis().GetBinCenter(ybin), h.GetBinContent(xbin,ybin) )
-    
-    #optimize the rec binning based on the stability criteria
-    y1,y2=1,1
-    new_ylimits=[h_xopt.GetYaxis().GetXmin()]
-    while y2<=h_xopt.GetNbinsY():
-        stab=0
-        while stab<minStab and y2<=h_xopt.GetNbinsY():
-            x1=getBinForVariable(h_xopt, h_xopt.GetYaxis().GetBinLowEdge(y1), h_xopt.GetXaxis())
-            x2=getBinForVariable(h_xopt, h_xopt.GetYaxis().GetBinUpEdge(y2),  h_xopt.GetXaxis())
-            _,istab=getPurityStability(h_xopt,x1,x2,y1,y2)
-            stab=istab[0]
-            if stab<minStab   : y2+=1            
-        y2val=h_xopt.GetYaxis().GetBinUpEdge(y2)
-        if y2val!=new_ylimits[-1] : new_ylimits.append(y2val)
-        y1,y2=y2+1,y2+1
-    ymax=h.GetYaxis().GetXmax()
-    if new_ylimits[-1]!=ymax: new_ylimits[-1]=ymax
+            line=ROOT.TLine()           
+            line.SetLineWidth(1)
+            for xbin in xrange(1,nbinsX+1):
+                if xbin==1 or (xbin-1)%(obsNGenBins)==0:
+                    ls=1 if (xbin-1)%(3*obsNGenBins)==0 else 9
+                    lc=1 if (xbin-1)%(3*obsNGenBins)==0 else ROOT.kGray
+                    line.SetLineStyle(ls)
+                    line.SetLineColor(lc)  
+                    line.DrawLine(bigMatrix[key].GetXaxis().GetBinUpEdge(xbin),bigMatrix[key].GetYaxis().GetXmin(),bigMatrix[key].GetXaxis().GetBinUpEdge(xbin),bigMatrix[key].GetYaxis().GetXmax())
+            for ybin in xrange(1,nbinsY+1):
+                if ybin==1 or (ybin-1)%(obsNRecBins)==0:
+                    ls=1 if (ybin-1)%(3*obsNRecBins)==0 else 9
+                    lc=1 if (ybin-1)%(3*obsNRecBins)==0 else ROOT.kGray
+                    line.SetLineStyle(ls)
+                    line.SetLineColor(lc)                      
+                    line.DrawLine(bigMatrix[key].GetXaxis().GetXmin(),bigMatrix[key].GetYaxis().GetBinUpEdge(ybin),bigMatrix[key].GetXaxis().GetXmax(),bigMatrix[key].GetYaxis().GetBinUpEdge(ybin))
 
-    #define final histo
-    h_yopt=ROOT.TH2F('h_yopt','',len(new_xlimits)-1,array.array('d',new_xlimits),len(new_ylimits)-1,array.array('d',new_ylimits))
-    for xbin in xrange(1,h.GetNbinsX()+1):
-        for ybin in xrange(1,h.GetNbinsY()+1):
-            h_yopt.Fill( h.GetXaxis().GetBinCenter(xbin), h.GetYaxis().GetBinCenter(ybin), h.GetBinContent(xbin,ybin) )
+                    
+            c.Modified()
+            c.Update()
+            raw_input()
+            #for ext in ['png','pdf']:
+            #    c.SaveAs('%s/%s_%s_migration.%s'%(opt.out,s,o,ext))
 
-    c=ROOT.TCanvas('c','c',1200,800)
-    c.Divide(3,2)
-    c.cd(1)
-    h.Draw('colz')
-    c.cd(2)
-    h_xopt.Draw('colz')
-    c.cd(3)
-    h_yopt.Draw('colz')
-    c.cd(4)
-    drawOpt='ap'
-    hngr=getPurityStabilityGraphs(h)
-    for gr in hngr:
-        gr.DrawClone(drawOpt)
-        drawOpt='p'
-    print hngr
-    c.cd(5)
-    drawOpt='ap'
-    hxgr=getPurityStabilityGraphs(h_xopt)
-    for gr in hxgr:
-        gr.Draw(drawOpt)
-        drawOpt='p'
-    c.cd(6)
-    drawOpt='ap'
-    hygr=getPurityStabilityGraphs(h_yopt)
-    for gr in hygr:
-        gr.Draw(drawOpt)
-        drawOpt='p'
-    
-    raw_input()
+    #save to ROOT file
+    fOut=ROOT.TFile.Open('%s/UEanalysis.root'%opt.out,'UPDATE')
+    outDir=fOut.Get('final_'+mmDir)
+    try:
+        outDir.cd()
+    except:
+        outDir=fOut.mkdir('final_'+mmDir)
+        outDir.cd()
+    for k in bigMatrix:
+        bigMatrix[k].SetDirectory(outDir)
+        bigMatrix[k].Write(bigMatrix[k].GetName(),ROOT.TObject.kOverwrite)
+    fOut.Close()
