@@ -11,21 +11,27 @@ class UEEventCounter:
     start variables
     """
     def __init__(self,axes=[]):
-
-        self.rec_chmult  = 0
+ 
+        self.rec_chmult  = 0           #inclusive rec counts
         self.rec_chflux  = 0
         self.rec_chavgpt = 0
-        self.gen_chmult  = 0
+        self.gen_chmult  = 0           #inclusive gen counts
         self.gen_chflux  = 0
         self.gen_chavgpt = 0
 
-        self.rec_chmult_wrtTo={}
+        self.rec_chmult_incWrtTo={}    #reco counts per reco region
+        self.rec_chflux_incWrtTo={}
+        self.rec_chavgpt_incWrtTo={}
+        self.rec_chmult_wrtTo={}       #migration matrix true-reco regions
         self.rec_chflux_wrtTo={}
         self.rec_chavgpt_wrtTo={}
-        self.gen_chmult_wrtTo={}
+        self.gen_chmult_wrtTo={}       #gen counts per gen region
         self.gen_chflux_wrtTo={}
         self.gen_chavgpt_wrtTo={}
         for a in axes:
+            self.rec_chmult_incWrtTo[a]  = [0]*3
+            self.rec_chflux_incWrtTo[a]  = [0]*3
+            self.rec_chavgpt_incWrtTo[a] = [0]*3
             self.rec_chmult_wrtTo[a]  = [[0]*3,[0]*3,[0]*3]
             self.rec_chflux_wrtTo[a]  = [[0]*3,[0]*3,[0]*3]
             self.rec_chavgpt_wrtTo[a] = [[0]*3,[0]*3,[0]*3]
@@ -44,23 +50,16 @@ class UEEventCounter:
         self.gen_chflux  = 0
         self.gen_chavgpt = 0
         for a in self.rec_chmult_wrtTo:
-            self.rec_chmult_wrtTo[a]   = [[0]*3,[0]*3,[0]*3]
-            self.rec_chflux_wrtTo[a]   = [[0]*3,[0]*3,[0]*3]
-            self.rec_chavgpt_wrtTo[a]  = [[0]*3,[0]*3,[0]*3]
-            self.gen_chmult_wrtTo[a]   = [0]*3
-            self.gen_chflux_wrtTo[a]   = [0]*3
-            self.gen_chavgpt_wrtTo[a] = [0]*3
+            self.rec_chmult_incWrtTo[a]  = [0]*3
+            self.rec_chflux_incWrtTo[a]  = [0]*3
+            self.rec_chavgpt_incWrtTo[a] = [0]*3
+            self.rec_chmult_wrtTo[a]     = [[0]*3,[0]*3,[0]*3]
+            self.rec_chflux_wrtTo[a]     = [[0]*3,[0]*3,[0]*3]
+            self.rec_chavgpt_wrtTo[a]    = [[0]*3,[0]*3,[0]*3]
+            self.gen_chmult_wrtTo[a]     = [0]*3
+            self.gen_chflux_wrtTo[a]     = [0]*3
+            self.gen_chavgpt_wrtTo[a]    = [0]*3
 
-    def integrateOverGen(self,obs,a,idx_rec):
-        total=0
-        try:
-            mtrx=getattr(self,'rec_%s_wrtTo'%obs)[a]
-            for idx_gen in xrange(0,3):
-                total+=mtrx[idx_gen][idx_rec]
-        except:
-            pass
-        return total
- 
     """
     printout the event contents
     """
@@ -119,9 +118,12 @@ class UEEventCounter:
                     
                     phigen=getattr(t,'gen_'+a)
                     idxgen=self.getRegionFor( ROOT.TVector2.Phi_mpi_pi(t.phi[n]-phigen) )
-                    
+
+                    self.rec_chmult_incWrtTo[a][idxrec] +=1
+                    self.rec_chflux_incWrtTo[a][idxrec] += t.pt[n]                    
                     self.rec_chmult_wrtTo[a][idxgen][idxrec] +=1
                     self.rec_chflux_wrtTo[a][idxgen][idxrec] += t.pt[n]
+
 
             #average pt
             self.rec_chavgpt = self.rec_chflux/self.rec_chmult if self.rec_chmult>0 else 0.
@@ -131,6 +133,10 @@ class UEEventCounter:
                         ncounted=self.rec_chmult_wrtTo[a][k][l]
                         if ncounted==0 : continue
                         self.rec_chavgpt_wrtTo[a][k][l]=self.rec_chflux_wrtTo[a][k][l]/ncounted
+                for k in xrange(0,len(self.rec_chmult_incWrtTo[a])):
+                    ncounted=self.rec_chmult_incWrtTo[a][k]
+                    if ncounted==0 : continue
+                    self.rec_chavgpt_incWrtTo[a][k]=self.rec_chflux_incWrtTo[a][k]/ncounted
 
         #gen level
         passSel=(t.gen_passSel&0x1)

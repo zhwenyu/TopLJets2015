@@ -175,7 +175,7 @@ def show2DLikelihoodScan(resultsSet,parameters,output,label):
             contGrs = ROOT.gROOT.GetListOfSpecials().FindObject("contours")
             for name,title,idx in [ (f+'68cl','68%CL',0),
                                     (f+'95cl','95%CL',2)]:                
-                nllGrs[ftitle].append( contGrs.At(idx).At(0) )
+                nllGrs[ftitle].append( contGrs.At(idx).At(0).Clone() )
                 nllGrs[ftitle][-1].SetName(name)
                 nllGrs[ftitle][-1].SetTitle(title)
                 nllGrs[ftitle][-1].SetFillStyle(0)
@@ -191,7 +191,7 @@ def show2DLikelihoodScan(resultsSet,parameters,output,label):
                 frame=hcont.Clone('frame')
                 frame.Reset('ICE')
                 frame.SetDirectory(0)
-            hcont.Delete()
+            #hcont.Delete()
 
     #show 2D likelihood scan
     c.Clear()

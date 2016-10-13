@@ -74,7 +74,8 @@ void Run5TeVAnalysis(TString inFileName,
   LeptonEfficiencyWrapper lepEffH(!isMC,era.ReplaceAll("era5TeV","era2015"));
 
   Int_t nSysts(0);
-  TString expSysts[]={"btagup","btagdn","othertagup","othertagdn","jesup","jesdn","jerup","jerdn","eeffup","eeffdn","meffup","meffdn"};
+  TString lselTxt( channelSelection==13 ? "m" : (channelSelection==11 ? "e" : "") );
+  TString expSysts[]={"btagup","btagdn","othertagup","othertagdn","jesup","jesdn","jerup","jerdn",lselTxt+"effup",lselTxt+"effdn"};
   
   //book histograms
   std::map<TString,TH1 *> histos;
@@ -814,8 +815,8 @@ void Run5TeVAnalysis(TString inFileName,
 	    Float_t iweight(evWeight);
 	    if(channelSelection==13 && ivar==9)  iweight*=1.03;
 	    if(channelSelection==13 && ivar==10) iweight*=0.97;
-	    if(channelSelection==11 && ivar==11) iweight*=(1.0+eselSF.second);
-	    if(channelSelection==11 && ivar==12) iweight*=(1.0-eselSF.second);
+	    if(channelSelection==11 && ivar==9)  iweight*=(1.0+eselSF.second);
+	    if(channelSelection==11 && ivar==10) iweight*=(1.0-eselSF.second);
 	  
 	    //fill histos
 	    if(ivar==0)

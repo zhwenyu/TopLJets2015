@@ -326,9 +326,9 @@ def defineAnalysisBinning(opt):
                 obsVals[('chmult',False)][a][k].append( ue.gen_chmult_wrtTo[a][k] )
                 obsVals[('chflux',False)][a][k].append( ue.gen_chflux_wrtTo[a][k] )
                 obsVals[('chavgpt',False)][a][k].append( ue.gen_chavgpt_wrtTo[a][k] )
-                obsVals[('chmult',True)][a][k].append( ue.integrateOverGen('chmult',a,k) )
-                obsVals[('chflux',True)][a][k].append( ue.integrateOverGen('chflux',a,k) ) 
-                obsVals[('chavgpt',True)][a][k].append( ue.integrateOverGen('chavgpt',a,k) )
+                obsVals[('chmult',True)][a][k].append( ue.rec_chmult_incWrtTo[a][k] )
+                obsVals[('chflux',True)][a][k].append( ue.rec_chflux_incWrtTo[a][k] )
+                obsVals[('chavgpt',True)][a][k].append( ue.rec_chavgpt_incWrtTo[a][k] )
 
     #determine quantiles and save as binnings
     obsAxes={}
@@ -400,8 +400,9 @@ def defineAnalysisBinning(opt):
 
     #all done, save to pickle file
     with open(os.path.join(opt.out,'analysiscfg.pck'), 'w') as cachefile:
-        pickle.dump(obsAxes, cachefile, pickle.HIGHEST_PROTOCOL)
-        pickle.dump(histos,  cachefile, pickle.HIGHEST_PROTOCOL)
+        pickle.dump(obsAxes,     cachefile, pickle.HIGHEST_PROTOCOL)
+        pickle.dump(slicingAxes, cachefile, pickle.HIGHEST_PROTOCOL)
+        pickle.dump(histos,      cachefile, pickle.HIGHEST_PROTOCOL)
 
 
 """
@@ -425,7 +426,7 @@ def runUEAnalysis(inF,outF,wgtIdx,varIdx,cfgDir):
             sys.stdout.write('\r [ %d/100 ] done' %(int(float(100.*i)/float(totalEntries))) )
             sys.stdout.flush()
 
-        if i>5000: break
+        if i>20000: break
 
         #count particles
         ue.count(t,varIdx=varIdx)
@@ -436,21 +437,47 @@ def runUEAnalysis(inF,outF,wgtIdx,varIdx,cfgDir):
         passSel=((t.passSel>>varIdx) & 0x1)
         passSelPtTtbar     = True if (t.ptttbar[varIdx]>PTTTBAR_THR and passSel) else False
 
-        #fill histos
-        for obs in OBSQUANTILES:
-            ueHandler.fillInclusive(obs=obs,ue=ue,weight=t.weight[wgtIdx],gen_passSel=gen_passSel,passSel=passSel)
-            for a in EVENTAXES:
-                if a=='phittbar':
-                    ueHandler.fillDifferential(obs=obs,
-                                               a=a,
-                                               ue=ue,
-                                               weight=t.weight[wgtIdx],
-                                               gen_passSel=gen_passSelPtTtbar,
-                                               passSel=passSelPtTtbar)
+        #fill histos (if sliceVar is None, non-sliced histos are filled)
+        for sliceVar in SLICEQUANTILES.keys()+[None]:
+            
+            #check if sliceVar is non null and configure values to use
+            sliceVarVals=None
+            try:
+                if sliceVar!='chmult':
+                    sliceVarVals=(sliceVar, getattr(t,'gen_%s'%sliceVar), getattr(t,sliceVar)[varIdx] )
                 else:
-                    ueHandler.fillDifferential(obs=obs,a=a,ue=ue,weight=t.weight[wgtIdx],gen_passSel=gen_passSel,passSel=passSel)
+                    sliceVarVals=('chmult', ue.gen_chmult, ue.rec_chmult)
+            except:
+                pass
 
-        #FIXME DO DIFFERENTIAL/INCLUSIVE SLICED
+            #loop over UE observables
+            for obs in OBSQUANTILES:
+                ueHandler.fillInclusive(sliceVarVals=sliceVarVals,
+                                        obs=obs,
+                                        ue=ue,
+                                        weight=t.weight[wgtIdx],
+                                        gen_passSel=gen_passSel,
+                                        passSel=passSel)
+
+                #loop over axes defining away/towards/transverse regions
+                for a in EVENTAXES:
+                    if a=='phittbar':
+                        ueHandler.fillDifferential(sliceVarVals=sliceVarVals,
+                                                   obs=obs,
+                                                   a=a,
+                                                   ue=ue,
+                                                   weight=t.weight[wgtIdx],
+                                                   gen_passSel=gen_passSelPtTtbar,
+                                                   passSel=passSelPtTtbar)
+                    else:
+                        ueHandler.fillDifferential(sliceVarVals=sliceVarVals,
+                                                   obs=obs,
+                                                   a=a,
+                                                   ue=ue,
+                                                   weight=t.weight[wgtIdx],
+                                                   gen_passSel=gen_passSel,
+                                                   passSel=passSel)
+
 
 
     #save histos to ROOT file
