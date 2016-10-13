@@ -225,7 +225,7 @@ def main():
                     print '\t skipping',systVar,'for %s (no significant shapes of rate variations found)'%(anCat+cat)
                     continue
                 
-                if 'eeff' or 'meff' in systVar:
+                if 'eeff' in systVar or 'meff' in systVar:
                     print 'will decouple %s for category %s%s'%(systVar,cat,anCat)
                     systVar += cat+anCat
             
