@@ -1,37 +1,3 @@
-#!/usr/bin/env/python
-
-import ROOT
-import numpy as np
-import array as array
-"""
-parses the event and counts particles in each region at gen/rec levels
-"""
-class UEAnalysisHandler:
-    def __init__(self,analysisCfg):
-
-        #readout bins
-        self.obsBins={}
-        self.sliceBins={}
-        fIn=ROOT.TFile.Open(analysisCfg)
-       # for k in fIn.Get('bins').GetListOfKeys():
-       #     kname=k.GetName()
-       #     if 'Obs' in kname:
-       #         self.obsBins[kname.replace('_Obs','')]=fIn.Get('bins/%s'%kname)
-       #     if 'Slices' in kname:
-       #         isRec= True '_rec' in kname else False
-       #         self.sliceBins[ (kname.split('_')[0],isRec) ] = fIn.Get('bins/%s'%kname)
-       # print self.obsBins
-       # self.sliceBins
-
-
-"""
-return the most appropriate bin for a given value, taking into account the range available
-"""
-def getBinForVariable(h,val,axis):
-    xmin,xmax=axis.GetXmin(),axis.GetXmax()
-    if val>xmax : return axis.GetNbins()
-    if val<xmin : return 0
-    return axis.FindBin(val)
 
 
 

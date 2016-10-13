@@ -50,6 +50,16 @@ class UEEventCounter:
             self.gen_chmult_wrtTo[a]   = [0]*3
             self.gen_chflux_wrtTo[a]   = [0]*3
             self.gen_chavgpt_wrtTo[a] = [0]*3
+
+    def integrateOverGen(self,obs,a,idx_rec):
+        total=0
+        try:
+            mtrx=getattr(self,'rec_%s_wrtTo'%obs)[a]
+            for idx_gen in xrange(0,3):
+                total+=mtrx[idx_gen][idx_rec]
+        except:
+            pass
+        return total
  
     """
     printout the event contents

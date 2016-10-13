@@ -37,14 +37,14 @@ case $WHAT in
     SEL )
 	echo -e "[ ${RED} Sending out jobs to batch ${NC} ]"
 	#muon channel
-	#python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_mu                                --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis       --ch 13 --runSysts --only MC;
-	#python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_mu --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis       --ch 13 --only FilteredSingleMuHighPt;
-	#python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_munoniso                          --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis       --ch 1300 --only MC;
-	#python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_munoniso --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis --ch 1300 --only FilteredSingleMuHighPt;
+	python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_mu                                --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis       --ch 13 --runSysts --only MC;
+	python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_mu --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis       --ch 13 --only FilteredSingleMuHighPt;
+	python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_munoniso                          --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis       --ch 1300 --only MC;
+	python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_munoniso --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis --ch 1300 --only FilteredSingleMuHighPt;
 
 	#electron channel
-        #python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_e       --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis --ch 11 --runSysts --only MC;
-	#python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_enoniso --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis --ch 1100 --only MC;
+        python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_e       --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis --ch 11 --runSysts --only MC;
+	python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_enoniso --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis --ch 1100 --only MC;
 	python scripts/runLocalAnalysis.py -i ${sourcedir}    -q ${queue} -o ${outdir}/analysis_e/       --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis --ch 11 --only FilteredHighPtPhoton30AndZ;
 	python scripts/runLocalAnalysis.py -i ${sourcedir}    -q ${queue} -o ${outdir}/analysis_enoniso/ --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis --ch 1100 --only FilteredHighPtPhoton30AndZ;
 	;;
@@ -59,7 +59,7 @@ case $WHAT in
 	echo -e "[ ${RED} Running QCD estimation from non-isolated side-band ${NC} ]"
 	a=(mu munoniso e enoniso)
 	for i in ${a[@]}; do
-	    python scripts/plotter.py -i ${outdir}/analysis_${i}  -j data/era5TeV/samples.json      -l ${lumi} --silent;
+	    python scripts/plotter.py -i ${outdir}/analysis_${i}  -j data/era5TeV/samples.json  --com "5.02 TeV"  -l ${lumi} --silent;
 	done
 	for ch in e mu; do
 	    python scripts/runQCDEstimation.py \
@@ -73,11 +73,11 @@ case $WHAT in
 	echo -e "[ ${RED} Running plotter ${NC} ]"
 	a=(mu munoniso e enoniso)
 	for i in ${a[@]}; do
-	    python scripts/plotter.py -i ${outdir}/analysis_${i}  -j data/era5TeV/Wsamples.json     -l ${lumi} --saveLog --noStack;	
+	    python scripts/plotter.py -i ${outdir}/analysis_${i}  -j data/era5TeV/Wsamples.json     --com "5.02 TeV" -l ${lumi} --saveLog --noStack;	
 	    mkdir ~/${outdir}/analysis_${i}/wplots;
 	    mv ~/${outdir}/analysis_${i}/plots/* ~/${outdir}/analysis_${i}/wplots/;
-	    python scripts/plotter.py -i ${outdir}/analysis_${i}  -j data/era5TeV/samples.json      -l ${lumi} --saveLog;	
-	    python scripts/plotter.py -i ${outdir}/analysis_${i}  -j data/era5TeV/syst_samples.json -l ${lumi} -o syst_plotter.root --silent;	
+	    python scripts/plotter.py -i ${outdir}/analysis_${i}  -j data/era5TeV/samples.json      --com "5.02 TeV" -l ${lumi} --saveLog;	
+	    python scripts/plotter.py -i ${outdir}/analysis_${i}  -j data/era5TeV/syst_samples.json --com "5.02 TeV" -l ${lumi} -o syst_plotter.root --silent;	
 	done
 	;;
 

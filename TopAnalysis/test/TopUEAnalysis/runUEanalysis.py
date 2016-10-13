@@ -10,7 +10,8 @@ import array as array
 import pickle
 
 from UEEventCounter import *
-from UETools import *
+from UEAnalysisHandler import *
+from TopLJets2015.TopAnalysis.storeTools import getEOSlslist
 
 #GLOBAL VARIABLES TO DEFINE THE ANALYSIS
 
@@ -32,8 +33,10 @@ VARTITLES={
     'chavgpt'  :'#bar{p}_{T}(ch)'
     }
 
+EVENTAXES=['phittbar','phipos','phill']
+
 SLICEQUANTILES={  
-    'ptttbar'  : [ 100*x/20 for x in xrange(0,21) ],
+    'ptttbar'  : [ 100*x/4  for x in xrange(0,5) ],
     'phittbar' : [ 100*x/20 for x in xrange(0,21) ],
     'ptpos'    : [ 100*x/20 for x in xrange(0,21) ],
     'phipos'   : [ 100*x/20 for x in xrange(0,21) ],
@@ -73,8 +76,6 @@ def determineSliceResolutions(opt):
             sys.stdout.write('\r [ %d/100 ] done' %(int(float(100.*i)/float(totalEntries))) )
             sys.stdout.flush()
 
-        if i>5000 : continue
-
         #require a pure event selected at reco and gen levels
         passSel=(t.passSel&0x1)
         gen_passSel=t.gen_passSel
@@ -97,6 +98,7 @@ def determineSliceResolutions(opt):
             if isAngle : 
                 var  = var*180./ROOT.TMath.Pi()
                 dVar = ROOT.TVector2.Phi_mpi_pi(dVar)*180./ROOT.TMath.Pi()
+                var  = ROOT.TMath.Abs(var)
             varVals[obs][0].append( var )
             varVals[obs][1].append( dVar )
 
@@ -121,9 +123,14 @@ def determineSliceResolutions(opt):
     for var in varVals:
 
         #use quantiles and extremes to define the 2D resolution histogram
-        genvarQ  = np.percentile( np.array(varVals[var][0]), [100*x/10 for x in xrange(0,11)] )        
-        if var=='nj': genvarQ = [0,1,2,5]
-
+        genvarQ=[]
+        if var=='nj': 
+            genvarQ = [0,1,2,5]
+        elif var=='ptttbar': 
+            filtVarVals=np.array(varVals[var][0])
+            genvarQ = np.percentile( filtVarVals[filtVarVals>PTTTBAR_THR], SLICEQUANTILES[var])
+        else : 
+            genvarQ = np.percentile( np.array(varVals[var][0]), SLICEQUANTILES[var])
         dvarQ = np.percentile( np.array(varVals[var][1]), [2.5,97.5])
         h2d=ROOT.TH2F(var,
                       ';%s (gen. level);Resolution;'%VARTITLES[var]+'%', 
@@ -240,13 +247,14 @@ def defineAnalysisBinning(opt):
             #use max. resolution as limiting factor
             maxRes=np.amax(genResol)
             #special case for angular variables
-            if var=='phill' or var=='dphill' or var=='phi_ttbar':             
+            if var=='phill' or var=='dphill' or var=='phittbar' or var=='phipos':             
                 inigenBin=[i*18. for i in xrange(0,11)]
                 maxRes=18.
 
             #define gen bin merging quantiles if needed according to the resolution
             i=0
-            genBin=[ inigenBin[0] ]
+            genBin=[ ROOT.TMath.Min(0,inigenBin[0]) ]
+            if var=='ptttbar': genBin.append( inigenBin[0] )
             while True:
 
                 if i>len(inigenBin)-2 : break
@@ -259,7 +267,7 @@ def defineAnalysisBinning(opt):
                 if xii<=xj :
                     i+=1 
                     continue
-            
+
                 if dx>maxRes:
                     genBin.append(xii)
                 else:
@@ -285,12 +293,13 @@ def defineAnalysisBinning(opt):
     # use quantiles to determine the binning for the observables : nch, sumpt and avgpt
     #
     print 'Defining axes for the observables'
-    axes=['phittbar','phipos','phill']
     obsVals={}
     for obs in OBSQUANTILES: 
-        obsVals[obs]={'inc':[[]]}
-        for a in axes: obsVals[obs][a]=[[],[],[]]
-    ue=UEEventCounter(axes)
+        for level in [False,True]:
+            obsVals[(obs,level)]={'inc':[[]]}
+            for a in EVENTAXES: 
+                obsVals[(obs,level)][a]=[[],[],[]]
+    ue=UEEventCounter(EVENTAXES)
     t=ROOT.TChain('tue')
     for f in opt.input.split(','): t.AddFile(f)
     totalEntries=t.GetEntries()
@@ -299,76 +308,94 @@ def defineAnalysisBinning(opt):
         if i%100==0 :
             sys.stdout.write('\r [ %d/100 ] done' %(int(float(100.*i)/float(totalEntries))) )
             sys.stdout.flush()
-        if i>500: break
-
+        if i>1000: break
         #require a pure event selected at reco and gen levels
         passSel=(t.passSel&0x1)
         gen_passSel=t.gen_passSel
         if not passSel or not gen_passSel: continue
         ue.count(t)
 
-        obsVals['chmult']['inc'][0].append(ue.gen_chmult)
-        obsVals['chflux']['inc'][0].append(ue.gen_chflux)
-        obsVals['chavgpt']['inc'][0].append(ue.gen_chavgpt) 
-        for a in axes:
+        obsVals[('chmult',False)]['inc'][0].append(ue.gen_chmult)
+        obsVals[('chflux',False)]['inc'][0].append(ue.gen_chflux)
+        obsVals[('chavgpt',False)]['inc'][0].append(ue.gen_chavgpt) 
+        obsVals[('chmult',True)]['inc'][0].append(ue.rec_chmult)
+        obsVals[('chflux',True)]['inc'][0].append(ue.rec_chflux)
+        obsVals[('chavgpt',True)]['inc'][0].append(ue.rec_chavgpt)
+        for a in EVENTAXES:
             for k in xrange(0,3):
-                obsVals['chmult'][a][k].append( ue.gen_chmult_wrtTo[a][k] )
-                obsVals['chflux'][a][k].append( ue.gen_chflux_wrtTo[a][k] )
-                obsVals['chavgpt'][a][k].append( ue.gen_chavgpt_wrtTo[a][k] )
-        
+                obsVals[('chmult',False)][a][k].append( ue.gen_chmult_wrtTo[a][k] )
+                obsVals[('chflux',False)][a][k].append( ue.gen_chflux_wrtTo[a][k] )
+                obsVals[('chavgpt',False)][a][k].append( ue.gen_chavgpt_wrtTo[a][k] )
+                obsVals[('chmult',True)][a][k].append( ue.integrateOverGen('chmult',a,k) )
+                obsVals[('chflux',True)][a][k].append( ue.integrateOverGen('chflux',a,k) ) 
+                obsVals[('chavgpt',True)][a][k].append( ue.integrateOverGen('chavgpt',a,k) )
+
     #determine quantiles and save as binnings
     obsAxes={}
-    for obs in obsVals:
-        for a in obsVals[obs]:
-            for i in xrange(0,len(obsVals[obs][a])):
-                genVarQ = np.percentile( np.array( obsVals[obs][a][i] ), OBSQUANTILES[obs] )
-                genVarQ[0]=0.                
-                obsAxes[ (obs,a,i) ] = ROOT.TAxis(len(genVarQ)-1,array.array('d',genVarQ))
-                obsAxes[ (obs,a,i) ].SetName('%s%s_%d'%(obs,a,i))
+    for key in obsVals:
+        obs,level=key
+        for a in obsVals[key]:
+            for i in xrange(0,len(obsVals[key][a])):
+                varQ = np.percentile( np.array( obsVals[key][a][i] ), OBSQUANTILES[obs] )
+                varQ[0]=0.                
+                obsAxes[ (obs,a,i,level) ] = ROOT.TAxis(len(varQ)-1,array.array('d',varQ))
+                levelStr='rec' if level else 'gen'
+                obsAxes[ (obs,a,i,level) ].SetName('%s_%s%s_%d'%(levelStr,obs,a,i))
 
     #
     # DEFINE MIGRATION MATRICES, GEN/REC LEVEL HISTOS
     #
     print 'Saving gen/rec level histos and migration matrix templates'
     histos={}    
-    for obs in obsVals:
-        for a in obsVals[obs]:
+    for key in obsVals:
+        if key[1] : continue
+        obs=key[0]
+        for a in obsVals[key]:
 
-            nbins=0
-            for i in xrange(0,len(obsVals[obs][a])): nbins+= obsAxes[ (obs,a,i) ].GetNbins()
-
+            nbins={}
             for level in [False,True]:
                 levelStr='rec' if level else 'gen' 
                 name='%s_%s%s'%(levelStr,a,obs)            
-                histos[ (obs,a,level) ] = ROOT.TH1F(name,name,nbins,0,nbins)
+                nbins[level]=0
+                newKey=(obs,level)
+                for i in xrange(0,len(obsVals[newKey][a])): nbins[level] += obsAxes[ (obs,a,i,level) ].GetNbins()
+                histos[ (obs,a,level) ] = ROOT.TH1F(name,name,nbins[level],0,nbins[level])
                 histos[ (obs,a,level) ].SetDirectory(0)
 
             name='m_%s%s'%(a,obs)
-            histos[ (obs,a) ] = ROOT.TH2F(name,name,nbins,0,nbins,nbins,0,nbins)
+            histos[ (obs,a) ] = ROOT.TH2F(name,name,nbins[False],0,nbins[False],nbins[True],0,nbins[True])
             histos[ (obs,a) ].SetDirectory(0)
 
     #sliced
     for var,isRec in slicingAxes:
         if isRec: continue
 
-        axX,         axY         = slicingAxes[(var,False)], slicingAxes[(var,True)]
-        nslicebinsX, nslicebinsY = axX.GetNbins(),           axY.GetNbins()
+        nslicebins={
+            False:slicingAxes[(var,False)].GetNbins(),
+            True:slicingAxes[(var,True)].GetNbins()
+            }
 
-        for obs in obsVals:
-            for a in obsVals[obs]:
+        for key in obsVals:
+            if key[1]: continue
+            obs=key[0]
+            for a in obsVals[key]:
 
-                nbinsObs=0
-                for i in xrange(0,len(obsVals[obs][a])): nbinsObs += obsAxes[ (obs,a,i) ].GetNbins()
+                nbins={}
+                for level in [False,True]:
 
-                nbinsX,nbinsY=nslicebinsX*nbinsObs, nslicebinsY*nbinsObs
-                for level,nbins in [(False,nbinsX),(True,nbinsY)]:
+                    newKey=(obs,level)
+
+                    nbinsObs=0
+                    for i in xrange(0,len(obsVals[newKey][a])): nbinsObs += obsAxes[ (obs,a,i,level) ].GetNbins()
+                    nbins[level]=nslicebins[level]*nbinsObs
+
                     levelStr='rec' if level else 'gen'
                     name='%s_%s%s_%s'%(levelStr,a,obs,var)
-                    histos[ (obs,a,level,var) ] = ROOT.TH1F(name,name,nbins,0,nbins)
+                    histos[ (obs,a,level,var) ] = ROOT.TH1F(name,name,nbins[level],0,nbins[level])
                     histos[ (obs,a,level,var) ].SetDirectory(0)
 
                 name='m_%s%s_%s'%(a,obs,var)
-                histos[ (obs,a,var) ] = ROOT.TH2F(name,name,nbinsX,0,nbinsX,nbinsY,0,nbinsY)
+                histos[ (obs,a,var) ] = ROOT.TH2F(name,name,nbins[False],0,nbins[False],nbins[True],0,nbins[True])
                 histos[ (obs,a,var) ].SetDirectory(0)
 
     #all done, save to pickle file
@@ -377,17 +404,18 @@ def defineAnalysisBinning(opt):
         pickle.dump(histos,  cachefile, pickle.HIGHEST_PROTOCOL)
 
 
-
-
 """
 loops over a set of files with common name to fill the migration matrices
 """        
-def runAnalysis(analysisCfg,inF,outF,wgtIdx,varIdx):
+def runUEAnalysis(inF,outF,wgtIdx,varIdx,cfgDir):
 
-    #FIXME: implement read axis, histogram templates, filler function
-    ueHandler=UEAnalysisHandler(analysisCfg)
+    print '[runAnalysis] %s -> %s wgtIdx=%d,varIdx=%d'%(inF,outF,wgtIdx,varIdx)
+    
+    #configure from pickle file
+    ueHandler=UEAnalysisHandler(os.path.join(cfgDir,'analysiscfg.pck'))
 
-    #loop over the tree
+    #loop over the tree to fill histos
+    ue=UEEventCounter(EVENTAXES)
     t=ROOT.TChain('tue')
     t.AddFile(inF)
     totalEntries=t.GetEntries()
@@ -397,32 +425,49 @@ def runAnalysis(analysisCfg,inF,outF,wgtIdx,varIdx):
             sys.stdout.write('\r [ %d/100 ] done' %(int(float(100.*i)/float(totalEntries))) )
             sys.stdout.flush()
 
-        #selection flags
-        gen_passSel        = t.gen_passSel
-        gen_passSelPtTtbar = True if (t.gen_pt_ttbar>PTTTBAR_THR and gen_passSel) else False
-        passSel=((t.passSel>>varIdx) & 0x1)
+        if i>5000: break
 
         #count particles
-        ue=UEEventCounter(t)
+        ue.count(t,varIdx=varIdx)
 
-        #FIXME: fill histograms using the ueHandler
+        #selection flags
+        gen_passSel        = t.gen_passSel
+        gen_passSelPtTtbar = True if (t.gen_ptttbar>PTTTBAR_THR and gen_passSel) else False
+        passSel=((t.passSel>>varIdx) & 0x1)
+        passSelPtTtbar     = True if (t.ptttbar[varIdx]>PTTTBAR_THR and passSel) else False
+
+        #fill histos
+        for obs in OBSQUANTILES:
+            ueHandler.fillInclusive(obs=obs,ue=ue,weight=t.weight[wgtIdx],gen_passSel=gen_passSel,passSel=passSel)
+            for a in EVENTAXES:
+                if a=='phittbar':
+                    ueHandler.fillDifferential(obs=obs,
+                                               a=a,
+                                               ue=ue,
+                                               weight=t.weight[wgtIdx],
+                                               gen_passSel=gen_passSelPtTtbar,
+                                               passSel=passSelPtTtbar)
+                else:
+                    ueHandler.fillDifferential(obs=obs,a=a,ue=ue,weight=t.weight[wgtIdx],gen_passSel=gen_passSel,passSel=passSel)
+
+        #FIXME DO DIFFERENTIAL/INCLUSIVE SLICED
 
 
-    #save to ROOT file
+    #save histos to ROOT file
     fOut=ROOT.TFile.Open(outF,'RECREATE')
     for h in ueHandler.histos:
-        h.SetDirectory(fOut)
-        h.Write()
+        ueHandler.histos[h].SetDirectory(fOut)
+        ueHandler.histos[h].Write()
     fOut.Close()
 
 """
 Wrapper for when the analysis is run in parallel
 """
-def runAnalysisPacked(args):
+def runUEAnalysisPacked(args):
     try:
-        fileName,outDir,varIdx,wgtIdx=args
-        runUEAnalysis(fileName,outDir,varIdx,wgtIdx)
-    except : # ReferenceError:
+        fileName,outDir,varIdx,wgtIdx,cfgDir=args
+        runUEAnalysis(fileName,outDir,varIdx,wgtIdx,cfgDir)
+    except : 
         print 50*'<'
         print "  Problem with", name, "continuing without"
         print 50*'<'
@@ -436,14 +481,17 @@ def main():
     #configuration
     usage = 'usage: %prog [options]'
     parser = optparse.OptionParser(usage)
-    parser.add_option('-i', '--in',       dest='input',    help='input',                   default='MC13TeV_TTJets_dilpowheg_0.root',   type='string')
-    parser.add_option('-s', '--step',     dest='step',     help='step',                    default=1,   type=int)
-    parser.add_option('-w', '--wgt',      dest='wgtIdx',   help='weight index to use',     default=0,   type=int)
-    parser.add_option('-v', '--var',      dest='varIdx',   help='calib index to use',      default=0,   type=int)
-    parser.add_option('-j', '--jobs',     dest='jobs',     help='jobs to run in parallel', default=1,   type=int)
-    parser.add_option('-o', '--out',      dest='out',      help='output',                  default='./UEanalysis',   type='string')
+    parser.add_option('-i', '--in',    dest='input',  help='input',                       default='MC13TeV_TTJets_dilpowheg_0.root',   type='string')
+    parser.add_option('-s', '--step',  dest='step',   help='step',                        default=1,   type=int)
+    parser.add_option('-w', '--wgt',   dest='wgtIdx', help='weight index to use',         default=0,   type=int)
+    parser.add_option('-v', '--var',   dest='varIdx', help='calib index to use',          default=0,   type=int)
+    parser.add_option('-j', '--jobs',  dest='jobs',   help='jobs to run in parallel',     default=1,   type=int)
+    parser.add_option('-o', '--out',   dest='out',    help='output',                      default='./UEanalysis',   type='string')
+    parser.add_option(      '--only',  dest='only',   help='csv list of tags to process', default='',  type='string')
+    parser.add_option('-q', '--queue', dest='queue',  help='Batch queue to use [default: %default]', default='local')
     (opt, args) = parser.parse_args()
 
+    onlyList=opt.only.split('v')
     os.system('mkdir -p %s'%opt.out)
 
     if opt.step==0:
@@ -451,52 +499,55 @@ def main():
     if opt.step==1:
         defineAnalysisBinning(opt)
 
-#    if opt.step==2:
-#
-#        #prepare output
-#        outDir=opt.out+'/analysis_%d_%d'%(opt.wgtIdx,opt.varIdx)
-#        os.system.mkdir(outDir)
-#
-#        #create the tasklist
-#        file_list=[]
-#        if os.path.isdir(opt.input):
-#            for file_path in os.listdir(opt.input):
-#               if file_path.endswith('.root'):
-#                    file_list.append(os.path.join(opt.input,file_path))
-#        elif opt.input.startswith('/store/'):
-#                    file_list = getEOSlslist(opt.input)
-#        elif '.root' in opt.input:
-#                    file_list.append(opt.input)
-#
-#        tasklist=[]
-#        for filename in file_list:
-#                baseFileName=os.path.basename(filename)
-#                tag,ext=os.path.splitext(baseFileName)
-#            if len(onlyList)>0:
-#                    processThis=False
-#                for filtTag in onlyList:
-#                    if filtTag in tag:
-#                       processThis=True
-#            if not processThis : continue
-#            tasklist.append((filename,'%s/%s'%(outdir,baseFileName),opt.wgtIdx,opt.varIdx))
-#
-#        if opt.queue=='local':
-#         if opt.jobs>1:
-#            print ' Submitting jobs in %d threads' % opt.jobs
-#            import multiprocessing as MP
-#            pool = MP.Pool(opt.jobs)
-#            pool.map(runUEAnalysisPacked,tasklist)
-#         else:
-#            for fileName,outfile,wgtIdx,varIdx in taskList:
-#                runUEAnalysis(fileName,outfile,wgtIdx,varIdx)
-#        else:
-#        cmsswBase=os.environ['CMSSW_BASE']
-#        for fileName,outfile,wgtIdx,varIdx in tasklist:
-#            localRun='python %s/src/TopLJets2015/TopAnalysis/test/TopUEAnalysis/runUEanalysis.py -i %s -o %s -q local -s 2 -w %d -v %d'%(cmsswBase,fileName,outfile,wgtIdx,varIdx)
-#            cmd='bsub -q %s %s/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh \"%s\"' % (opt.queue,cmsswBase,localRun)
-#            print cmd
-#            os.system(cmd)
-#
+    if opt.step==2:
+
+        #prepare output
+        outDir=opt.out+'/analysis_%d_%d'%(opt.wgtIdx,opt.varIdx)
+        os.system('mkdir -p %s'%outDir)
+
+        #create the tasklist
+        file_list=[]
+        if os.path.isdir(opt.input):
+            for file_path in os.listdir(opt.input):
+                if file_path.endswith('.root'):
+                    file_list.append(os.path.join(opt.input,file_path))
+        elif opt.input.startswith('/store/'):
+            file_list = getEOSlslist(opt.input)
+        elif '.root' in opt.input:
+            file_list.append(opt.input)
+
+
+        tasklist=[]
+        for filename in file_list:
+            baseFileName=os.path.basename(filename)
+            tag,ext=os.path.splitext(baseFileName)
+            if len(onlyList)>0:
+                processThis=False
+                for filtTag in onlyList:
+                    if filtTag in tag:
+                        processThis=True
+                if not processThis : continue
+            tasklist.append((filename,'%s/%s'%(outDir,baseFileName),opt.wgtIdx,opt.varIdx,opt.out))
+
+        #run jobs locally
+        if opt.queue=='local':
+            if opt.jobs>1:
+                print ' Running %d jobs in %d threads' % (len(tasklist), opt.jobs)
+                import multiprocessing as MP
+                pool = MP.Pool(opt.jobs)
+                pool.map(runUEAnalysisPacked,tasklist)
+            else:
+                for fileName,outfile,wgtIdx,varIdx,cfgDir in tasklist:
+                    runUEAnalysis(fileName,outfile,wgtIdx,varIdx,cfgDir)
+        #submit jobs
+        else:
+            print ' Running %d jobs to %s'%(len(tasklist),opt.queue)
+            cmsswBase=os.environ['CMSSW_BASE']
+            for fileName,_,wgtIdx,varIdx,cfgDir in tasklist:
+                localRun='python %s/src/TopLJets2015/TopAnalysis/test/TopUEAnalysis/runUEanalysis.py -i %s -o %s -q local -s 2 -w %d -v %d'%(cmsswBase,fileName,cfgDir,wgtIdx,varIdx)
+                cmd='bsub -q %s %s/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh \"%s\"' % (opt.queue,cmsswBase,localRun)
+                os.system(cmd)
+
 
 """
 for execution from another script

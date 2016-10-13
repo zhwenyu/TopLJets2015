@@ -614,7 +614,7 @@ void Run5TeVAnalysis(TString inFileName,
 	    //update event weight
 	    eselSF=lepEffH.getOfflineCorrection(11,mediumElectrons[0].Pt(),mediumElectrons[0].Eta());
 	    eselSF.second=sqrt(pow(0.03,2)+pow(eselSF.second,2));
-	    evWeight=eselSF.first;
+	    evWeight*=eselSF.first;
 	  }
 	
 	// combined leptons
