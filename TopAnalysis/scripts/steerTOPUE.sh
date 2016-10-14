@@ -29,7 +29,7 @@ RED='\e[31m'
 NC='\e[0m'
 case $WHAT in
     SEL )
-	samplesToProcess=(dilpowheg)
+	samplesToProcess=(Double,MuonEG DY,Single,W,ZZ _TT)
 	for s in ${samplesToProcess[@]}; do
 	    
 	    echo -e "${RED} Submitting ${s} ${NC}"

@@ -562,13 +562,13 @@ void RunTopUE(TString filename,
 	    }
 	  
 	  //update nominal event weight
-	  wgt=triggerCorrWgt.first*triggerCorrWgt.first*lepSelCorrWgt.first*puWgts[0]*norm;
+	  wgt=triggerCorrWgt.first*lepSelCorrWgt.first*puWgts[0]*norm;
 	  if(ev.ttbar_nw>0) wgt*=ev.ttbar_w[0];
 	}
       
       
       //nominal selection control histograms
-      if(chTag!="")
+      if( (tue.passSel & 0x1) && chTag!="" )
 	{
 	  allPlots["nvtx_"+chTag]->Fill(ev.nvtx,wgt);
 	  allPlots["mll_"+chTag]->Fill(tue.mll[0],wgt);
@@ -613,7 +613,7 @@ void RunTopUE(TString filename,
 	}
    
       //all done, save it
-      outT->Fill();
+      //outT->Fill();
     }
   
   //save histos to file  

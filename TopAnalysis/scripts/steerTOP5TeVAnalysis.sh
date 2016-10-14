@@ -158,7 +158,7 @@ case $WHAT in
 	    cd ${outdir}/analysis_${ch}/datacard_${REBINFACTOR};
 
             #expected
-	    commonOpts="-t -1 --expectSignal=1 --setPhysicsModelParameterRanges btag=-2,2:r=0,2 -m 0";
+	    commonOpts="-t -1 --expectSignal=1 --setPhysicsModelParameterRanges btagRate=-2,2:r=0,2 -m 0 --saveWorkspace";
 	    combine workspace.root -M MaxLikelihoodFit ${commonOpts};
 	    mv mlfit.root mlfit_exp.root
 	    combine workspace.root -M MultiDimFit ${commonOpts} --algo=grid --points=100;
@@ -166,28 +166,28 @@ case $WHAT in
 	    combine workspace.root -M MultiDimFit ${commonOpts} --algo=grid --points=100 -S 0;
 	    mv higgsCombineTest.MultiDimFit.mH0.root exp_plr_scan_stat_r.root
 
-	    commonOpts="-t -1 --redefineSignalPOIs btag -P btag --expectSignal=1 --algo=grid --points=100 --setPhysicsModelParameterRanges btag=-2,2:r=0,2 -m 0";	
+	    commonOpts="-t -1 --redefineSignalPOIs btagRate -P btagRate --expectSignal=1 --algo=grid --points=100 --setPhysicsModelParameterRanges btagRate=-2,2:r=0,2 -m 0";	
 	    combine workspace.root -M MultiDimFit ${commonOpts};
 	    mv higgsCombineTest.MultiDimFit.mH0.root exp_plr_scan_btag.root
 	    combine workspace.root -M MultiDimFit ${commonOpts} -S 0;
 	    mv higgsCombineTest.MultiDimFit.mH0.root exp_plr_scan_stat_btag.root
 	
             combine workspace.root -M MultiDimFit --algo=grid --points=2500 -m 0 -t -1 \
-		--redefineSignalPOIs r,btag -P r -P btag --setPhysicsModelParameterRanges btag=-2,2:r=0,2 \
-		--expectSignal=1;
+		--redefineSignalPOIs r,btagRate -P r -P btagRate --setPhysicsModelParameterRanges btagRate=-2,2:r=0,2 \
+		--expectSignal=1 --saveWorkspace;
 	    mv higgsCombineTest.MultiDimFit.mH0.root exp_plr_scan_rvsbtag.root;
 
     	    #observed...
 	    if [ "${UNBLIND}" == "1" ]; then
 		echo -e "[ ${RED} will unblind the results now ${NC}]";
 		
-		commonOpts="--setPhysicsModelParameterRanges btag=-2,2:r=0,2 -m 0";
+		commonOpts="--setPhysicsModelParameterRanges btagRate=-2,2:r=0,2 -m 0 --saveWorkspace";
 		combine workspace.root -M MaxLikelihoodFit ${commonOpts};
 		mv mlfit.root mlfit_obs.root
 
-		combine workspace.root -M MultiDimFit --redefineSignalPOIs btag -P btag --algo=grid --points=100 ${commonOpts};
+		combine workspace.root -M MultiDimFit --redefineSignalPOIs btagRate -P btagRate --algo=grid --points=100 ${commonOpts};
 		mv higgsCombineTest.MultiDimFit.mH0.root obs_plr_scan_btag.root
-		combine workspace.root -M MultiDimFit --redefineSignalPOIs btag -P btag --algo=grid --points=100 ${commonOpts} -S 0;
+		combine workspace.root -M MultiDimFit --redefineSignalPOIs btagRate -P btagRate --algo=grid --points=100 ${commonOpts} -S 0;
 		mv higgsCombineTest.MultiDimFit.mH0.root obs_plr_scan_stat_btag.root
 		
 		combine workspace.root -M MultiDimFit -P r --algo=grid --points=100 ${commonOpts};
@@ -195,9 +195,9 @@ case $WHAT in
 		combine workspace.root -M MultiDimFit -P r --algo=grid --points=100 ${commonOpts} -S 0;
 		mv higgsCombineTest.MultiDimFit.mH0.root obs_plr_scan_stat_r.root
 		
-		combine workspace.root -M MultiDimFit --algo=grid --points=2500 --redefineSignalPOIs r,btag -P r -P btag  ${commonOpts};
+		combine workspace.root -M MultiDimFit --algo=grid --points=2500 --redefineSignalPOIs r,btagRate -P r -P btagRate  ${commonOpts};
 		mv higgsCombineTest.MultiDimFit.mH0.root obs_plr_scan_rvsbtag.root;
-		combine workspace.root -M MultiDimFit --algo=grid --points=2500 --redefineSignalPOIs r,btag -P r -P btag  ${commonOpts} -S 0;
+		combine workspace.root -M MultiDimFit --algo=grid --points=2500 --redefineSignalPOIs r,btagRate -P r -P btagRate  ${commonOpts} -S 0;
 		mv higgsCombineTest.MultiDimFit.mH0.root obs_plr_scan_stat_rvsbtag.root;
 	    fi
 	    
@@ -210,7 +210,7 @@ case $WHAT in
 
 	for ch in e mu l; do
 	    cardsDir=${outdir}/analysis_${ch}/datacard_${REBINFACTOR}/;
-	    python scripts/fitSummaryPlots.py ${ch}=${cardsDir}/datacard.dat --POIs r,btag --label "27.4 pb^{-1} (5.02 TeV)" -o ${cardsDir};
+	    python scripts/fitSummaryPlots.py ${ch}=${cardsDir}/datacard.dat --POIs r,btagRate --label "27.4 pb^{-1} (5.02 TeV)" -o ${cardsDir};
 	    mkdir -p ${wwwdir}/fits_${ch}_${REBINFACTOR};
 	    mv ${cardsDir}/*.{png,pdf,C} ${wwwdir}/fits_${ch}_${REBINFACTOR}/;
 	    cp test/index.php ${wwwdir}/fits_${ch}_${REBINFACTOR};

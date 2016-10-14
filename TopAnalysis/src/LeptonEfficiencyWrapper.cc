@@ -130,7 +130,7 @@ EffCorrection_t LeptonEfficiencyWrapper::getTriggerCorrection(std::vector<int> p
 	    { 
 	      if(leadPt<40)
 		{
-		  if(trailPt<40) { corr.first=0.908; corr.second=0.039; }
+		  if(trailPt<40)      { corr.first=0.908; corr.second=0.039; }
 		}
 	      else if(leadPt<70)
 		{
@@ -171,7 +171,7 @@ EffCorrection_t LeptonEfficiencyWrapper::getTriggerCorrection(std::vector<int> p
 	    {
 	      if(leadPt<40)
                 {
-                  if(trailPt<40) { corr.first=0.853; corr.second=0.056; }
+                  if(trailPt<40)      { corr.first=0.853; corr.second=0.056; }
 		}
 	      else if(leadPt<70)
 		{
