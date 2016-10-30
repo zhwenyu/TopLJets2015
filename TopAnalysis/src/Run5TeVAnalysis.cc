@@ -101,6 +101,8 @@ void Run5TeVAnalysis(TString inFileName,
       histos["misshits"+pf]=new TH1F("misshits"+pf,";Missing hits;Electrons",4,0,4);
       histos["convveto"+pf]=new TH1F("convveto"+pf,";Conversion veto flag;Electrons",2,0,2);
       histos["reliso"+pf]=new TH1F("reliso"+pf,";Relative isolation;Electrons",25,0,0.1);
+      histos["lpt"+pf]  = new TH1F("lpt"+pf,";Transverse momentum [GeV];Events",20.,0.,200.);
+      histos["leta"+pf] = new TH1F("leta"+pf,";Pseudo-rapidity;Events",20.,0.,2.1);
     }
 
   //per b-tag multiplicity control plots
@@ -109,6 +111,16 @@ void Run5TeVAnalysis(TString inFileName,
       TString pf(Form("%db",ij));
       histos["lpt_"+pf]    = new TH1F("lpt_"+pf,";Transverse momentum [GeV];Events",5.,20.,120.);
       histos["leta_"+pf]   = new TH1F("leta_"+pf,";Pseudo-rapidity;Events",5.,0.,2.2);
+      TString region1("_ee"); TString region2("_eb");
+      if( (channelSelection==11 || channelSelection==1100) )
+	{
+	  histos["lpt_"+pf+region1]    = new TH1F("lpt_"+pf+region1,";Transverse momentum [GeV];Events",5.,20.,120.); 
+	  histos["lpt_"+pf+region2]    = new TH1F("lpt_"+pf+region2,";Transverse momentum [GeV];Events",5.,20.,120.);
+	}
+      if( (channelSelection==11 || channelSelection==1100) )
+	{  histos["leta_"+pf+region1]   = new TH1F("leta_"+pf+region1,";Pseudo-rapidity;Events",5.,0.,2.2);
+	  histos["leta_"+pf+region2]   = new TH1F("leta_"+pf+region2,";Pseudo-rapidity;Events",5.,0.,2.2); 
+	}
       histos["jpt_"+pf]    = new TH1F("jpt_"+pf,";Transverse momentum [GeV];Events",5.,0.,250.);
       histos["jeta_"+pf]   = new TH1F("jeta_"+pf,";Pseudo-rapidity;Events",5.,0.,2.5);
       histos["ht_"+pf]     = new TH1F("ht_"+pf,";H_{T} [GeV];Events",10.,0.,800.);
@@ -474,7 +486,7 @@ void Run5TeVAnalysis(TString inFileName,
 
 	//select good electronss
 	//cf. details in https://twiki.cern.ch/twiki/bin/view/CMS/CutBasedElectronIdentificationRun2
-	std::vector<TLorentzVector> mediumElectrons,vetoElectrons,mediumElectronsNonIso;
+	std::vector<TLorentzVector> mediumElectrons,vetoElectrons,mediumElectronsNonIso,mediumElectronsFailId;
 	std::vector<int> elCharge;
 	const Int_t nEl = (Int_t)elePt_p->size();
 	for(Int_t elIter = 0; elIter < nEl; elIter++)
@@ -533,7 +545,7 @@ void Run5TeVAnalysis(TString inFileName,
 	    deposit =  fabs(elePFPhoIso_p->at(elIter)+elePFNeuIso_p->at(elIter)-eleEffAreaTimesRho_p->at(elIter));
 	    corrEA_isolation = (elePFChIso_p->at(elIter) + TMath::Max (0.0, deposit )) / elePt_p->at(elIter);
 
-	    bool passMediumIso( (corrEA_isolation < 0.0766 && fabs(eleEta_p->at(elIter)) <= 1.4479) || (corrEA_isolation < 0.0678 && fabs(eleEta_p->at(elIter)) > 1.4479) );
+	    bool passMediumIso( (corrEA_isolation < 0.04 && fabs(eleEta_p->at(elIter)) <= 1.4479) || (corrEA_isolation < 0.005 && fabs(eleEta_p->at(elIter)) > 1.4479) );
 	    bool passVetoIso( (corrEA_isolation < 0.126 && fabs(eleEta_p->at(elIter)) <= 1.4479) || (corrEA_isolation < 0.144 && fabs(eleEta_p->at(elIter)) > 1.4479) );
 
 	    TString pf(fabs(eleEta_p->at(elIter)) > 1.4479 ? "_ee" : "_eb");
@@ -574,6 +586,12 @@ void Run5TeVAnalysis(TString inFileName,
 		vetoElectrons.push_back( p4 );
 		elCharge.push_back(eleCharge_p->at(elIter));
 	      }
+	    else if (passMediumPt && passMediumEta && !passVetoId)
+              {
+                mediumElectronsFailId.push_back( p4 );
+		elCharge.push_back(eleCharge_p->at(elIter));
+	      }
+
 	  }
 	
 
@@ -599,9 +617,9 @@ void Run5TeVAnalysis(TString inFileName,
 	EffCorrection_t eselSF(1.0,0.0);
 	if(channelSelection==1100)
 	  {
-	    if(mediumElectronsNonIso.size()==0) continue;
+	    if(mediumElectronsFailId.size()==0) continue;
 	    if(mediumElectrons.size()+vetoElectrons.size()+tightMuons.size()+looseMuons.size()!=0) continue;
-	    mediumElectrons=mediumElectronsNonIso;
+	    mediumElectrons=mediumElectronsFailId;
 	  }
 	if(channelSelection==11)
 	  {
@@ -640,6 +658,12 @@ void Run5TeVAnalysis(TString inFileName,
 
 	histos["lpt"]->Fill(goodLeptons[0].Pt(),evWeight);
 	histos["leta"]->Fill(fabs(goodLeptons[0].Eta()),evWeight);
+	if( (channelSelection==11 || channelSelection==1100) )
+	  {
+	    TString pf(fabs(goodLeptons[0].Eta()) > 1.4479 ? "_ee" : "_eb");
+	    histos["lpt"+pf]->Fill(goodLeptons[0].Pt(),evWeight);
+	    histos["leta"+pf]->Fill(fabs(goodLeptons[0].Eta()),evWeight);
+	  }
 	histos["mt"]->Fill(mt,evWeight);
 	histos["metpt"]->Fill(rawMET.Pt(),evWeight);
 
@@ -823,6 +847,12 @@ void Run5TeVAnalysis(TString inFileName,
 	      {
 		histos["lpt_"+pf]->Fill(goodLeptons[0].Pt(),iweight);
 		histos["leta_"+pf]->Fill(fabs(goodLeptons[0].Eta()),iweight);
+		if( (channelSelection==11 || channelSelection==1100) )
+		  {
+		    TString region(fabs(goodLeptons[0].Eta()) > 1.4479 ? "_ee" : "_eb");
+		    histos["lpt_"+pf+region]->Fill(goodLeptons[0].Pt(),evWeight);
+		    histos["leta_"+pf+region]->Fill(fabs(goodLeptons[0].Eta()),evWeight);
+		  }
 		histos["ht_"+pf]->Fill(htsum,iweight);
 		histos["mjj_"+pf]->Fill(mjj,iweight);
 		histos["mlb_"+pf]->Fill(mlb,iweight);
