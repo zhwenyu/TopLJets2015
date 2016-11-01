@@ -25,7 +25,6 @@ git cms-addpkg TopQuarkAnalysis/TopEventProducers
 git fetch intrepid42
 git checkout intrepid42/bugfix-pseudotop-bjets-81X
 #analysis code
-cd-
 git clone git@github.com:pfs/TopLJets2015.git
 cd TopLJets2015/TopAnalysis
 git checkout 80x_dev
