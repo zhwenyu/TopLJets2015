@@ -28,6 +28,11 @@ wwwdir=~/www/TopUE_era2016/
 RED='\e[31m'
 NC='\e[0m'
 case $WHAT in
+
+    FULLSEL ) 
+	python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} -o ${outdir} --era era2016 -m TOP-UE::RunTopUE --ch 0;
+	;;
+
     SEL )
 	samplesToProcess=(Double,MuonEG DY,Single,W,ZZ _TT)
 	for s in ${samplesToProcess[@]}; do

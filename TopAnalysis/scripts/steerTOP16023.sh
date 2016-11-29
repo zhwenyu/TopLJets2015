@@ -4,7 +4,7 @@ WHAT=$1;
 REBINFACTOR=$2
 UNBLIND=$3
 if [ "$#" -lt 1 ]; then 
-    echo "steerTOP5TeVAnalysis.sh <SEL/MERGE/BKG/PLOT/WWW/PREPAREFIT/FIT/SHOWFIT> [REBINFACTOR [UNBLIND]]";
+    echo "steerTOP16023.sh <SEL/MERGE/BKG/PLOT/WWW/PREPAREFIT/FIT/SHOWFIT> [REBINFACTOR [UNBLIND]]";
     echo "        SEL          - selects data and MC";
     echo "        MERGE        - merge the output of the jobs";
     echo "        BKG          - runs the background estimation from sidebands";
@@ -39,16 +39,16 @@ case $WHAT in
     SEL )
 	echo -e "[ ${RED} Sending out jobs to batch ${NC} ]"
 	#muon channel
-	python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_mu        --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis   --ch 13 --runSysts --only MC;
-	python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_munoniso  --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis   --ch 1300 --only MC;
-	#python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_mu --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis       --ch 13 --only FilteredSingleMuHighPt;
-	#python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_munoniso --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis --ch 1300 --only FilteredSingleMuHighPt;
+#	python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_mu        --era era5TeV -m TOP-16-023::RunTop16023   --ch 13 --runSysts --only MC;
+#	python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_munoniso  --era era5TeV -m TOP-16-023::RunTop16023   --ch 1300 --only MC;
+	#python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_mu --era era5TeV -m TOP-16-023::RunTop16023       --ch 13 --only FilteredSingleMuHighPt;
+	#python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_munoniso --era era5TeV -m TOP-16-023::RunTop16023 --ch 1300 --only FilteredSingleMuHighPt;
 
 	#electron channel
-        python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_e       --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis --ch 11 --runSysts --only MC;
-	python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_enoniso --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis --ch 1100 --only MC;
-	#python scripts/runLocalAnalysis.py -i ${sourcedir}    -q ${queue} -o ${outdir}/analysis_e/       --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis --ch 11 --only FilteredHighPtPhoton30AndZ;
-	#python scripts/runLocalAnalysis.py -i ${sourcedir}    -q ${queue} -o ${outdir}/analysis_enoniso/ --era era5TeV -m Run5TeVAnalysis::Run5TeVAnalysis --ch 1100 --only FilteredHighPtPhoton30AndZ;
+        python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_e       --era era5TeV -m TOP-16-023::RunTop16023 --ch 11 --runSysts --only MC;
+	python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_enoniso --era era5TeV -m TOP-16-023::RunTop16023 --ch 1100 --only MC;
+	python scripts/runLocalAnalysis.py -i ${sourcedir}    -q ${queue} -o ${outdir}/analysis_e/       --era era5TeV -m TOP-16-023::RunTop16023 --ch 11 --only FilteredHighPtPhoton30AndZ;
+	python scripts/runLocalAnalysis.py -i ${sourcedir}    -q ${queue} -o ${outdir}/analysis_enoniso/ --era era5TeV -m TOP-16-023::RunTop16023 --ch 1100 --only FilteredHighPtPhoton30AndZ;
 	;;
     MERGE )
 	echo -e "[ ${RED} Merging job output ${NC} ]"

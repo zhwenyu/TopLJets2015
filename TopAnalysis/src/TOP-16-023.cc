@@ -10,7 +10,7 @@
 
 #include "TopLJets2015/TopAnalysis/interface/LeptonEfficiencyWrapper.h"
 #include "TopLJets2015/TopAnalysis/interface/BtagUncertaintyComputer.h"
-#include "TopLJets2015/TopAnalysis/interface/Run5TeVAnalysis.h"
+#include "TopLJets2015/TopAnalysis/interface/RunTop16023.h"
 #include "TopLJets2015/TopAnalysis/interface/TOP-16-006.h"
 
 #include <string>
@@ -19,14 +19,14 @@
 using namespace std;
 
 //
-void Run5TeVAnalysis(TString inFileName,
-		     TString outFileName,
-		     Int_t channelSelection,
-		     Int_t chargeSelection,
-                     FlavourSplitting flavourSplitting,
-                     TH1F *normH,
-                     Bool_t runSysts,
-		     TString era)
+void RunTop16023(TString inFileName,
+		 TString outFileName,
+		 Int_t channelSelection,
+		 Int_t chargeSelection,
+		 FlavourSplitting flavourSplitting,
+		 TH1F *normH,
+		 Bool_t runSysts,
+		 TString era)
 {
   if(inFileName=="") 
     {
@@ -111,15 +111,13 @@ void Run5TeVAnalysis(TString inFileName,
       TString pf(Form("%db",ij));
       histos["lpt_"+pf]    = new TH1F("lpt_"+pf,";Transverse momentum [GeV];Events",5.,20.,120.);
       histos["leta_"+pf]   = new TH1F("leta_"+pf,";Pseudo-rapidity;Events",5.,0.,2.2);
-      TString region1("_ee"); TString region2("_eb");
+      TString region1("ee_"); TString region2("eb+");
       if( (channelSelection==11 || channelSelection==1100) )
 	{
-	  histos["lpt_"+pf+region1]    = new TH1F("lpt_"+pf+region1,";Transverse momentum [GeV];Events",5.,20.,120.); 
-	  histos["lpt_"+pf+region2]    = new TH1F("lpt_"+pf+region2,";Transverse momentum [GeV];Events",5.,20.,120.);
-	}
-      if( (channelSelection==11 || channelSelection==1100) )
-	{  histos["leta_"+pf+region1]   = new TH1F("leta_"+pf+region1,";Pseudo-rapidity;Events",5.,0.,2.2);
-	  histos["leta_"+pf+region2]   = new TH1F("leta_"+pf+region2,";Pseudo-rapidity;Events",5.,0.,2.2); 
+	  histos["lpt_"+region1+pf]    = new TH1F("lpt_"+region1+pf,";Transverse momentum [GeV];Events",5.,20.,120.); 
+	  histos["lpt_"+region2+pf]    = new TH1F("lpt_"+region2+pf,";Transverse momentum [GeV];Events",5.,20.,120.);
+	  histos["leta_"+region1+pf]   = new TH1F("leta_"+region1+pf,";Pseudo-rapidity;Events",5.,0.,2.2);
+	  histos["leta_"+region2+pf]   = new TH1F("leta_"+region2+pf,";Pseudo-rapidity;Events",5.,0.,2.2); 
 	}
       histos["jpt_"+pf]    = new TH1F("jpt_"+pf,";Transverse momentum [GeV];Events",5.,0.,250.);
       histos["jeta_"+pf]   = new TH1F("jeta_"+pf,";Pseudo-rapidity;Events",5.,0.,2.5);
@@ -620,6 +618,9 @@ void Run5TeVAnalysis(TString inFileName,
 	    if(mediumElectronsFailId.size()==0) continue;
 	    if(mediumElectrons.size()+vetoElectrons.size()+tightMuons.size()+looseMuons.size()!=0) continue;
 	    mediumElectrons=mediumElectronsFailId;
+
+	    //from Georgios studies, endcap electron fakes would still benefit from a ~15% extra weight
+	    if(!isMC && fabs(mediumElectrons[0].Eta())>1.4479) evWeight *= 1.5;
 	  }
 	if(channelSelection==11)
 	  {
@@ -841,7 +842,7 @@ void Run5TeVAnalysis(TString inFileName,
 	    if(channelSelection==13 && ivar==10) iweight*=0.97;
 	    if(channelSelection==11 && ivar==9)  iweight*=(1.0+eselSF.second);
 	    if(channelSelection==11 && ivar==10) iweight*=(1.0-eselSF.second);
-	  
+
 	    //fill histos
 	    if(ivar==0)
 	      {
@@ -849,9 +850,9 @@ void Run5TeVAnalysis(TString inFileName,
 		histos["leta_"+pf]->Fill(fabs(goodLeptons[0].Eta()),iweight);
 		if( (channelSelection==11 || channelSelection==1100) )
 		  {
-		    TString region(fabs(goodLeptons[0].Eta()) > 1.4479 ? "_ee" : "_eb");
-		    histos["lpt_"+pf+region]->Fill(goodLeptons[0].Pt(),evWeight);
-		    histos["leta_"+pf+region]->Fill(fabs(goodLeptons[0].Eta()),evWeight);
+		    TString region(fabs(goodLeptons[0].Eta()) > 1.4479 ? "ee_" : "eb_");
+		    histos["lpt_"+region+pf]->Fill(goodLeptons[0].Pt(),evWeight);
+		    histos["leta_"+region+pf]->Fill(fabs(goodLeptons[0].Eta()),evWeight);
 		  }
 		histos["ht_"+pf]->Fill(htsum,iweight);
 		histos["mjj_"+pf]->Fill(mjj,iweight);
