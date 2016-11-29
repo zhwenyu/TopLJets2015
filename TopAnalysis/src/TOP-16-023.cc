@@ -134,7 +134,7 @@ void RunTop16023(TString inFileName,
       TString pf(Form("%db",ij));
       histos["lpt_"+pf]    = new TH1F("lpt_"+pf,";Transverse momentum [GeV];Events",5.,20.,120.);
       histos["leta_"+pf]   = new TH1F("leta_"+pf,";Pseudo-rapidity;Events",5.,0.,2.2);
-      TString region1("ee_"); TString region2("eb+");
+      TString region1("ee_"); TString region2("eb_");
       if( (channelSelection==11 || channelSelection==1100) )
 	{
 	  histos["lpt_"+region1+pf]    = new TH1F("lpt_"+region1+pf,";Transverse momentum [GeV];Events",5.,20.,120.); 
@@ -742,19 +742,22 @@ void RunTop16023(TString inFileName,
 		    myBTagSFUtil.modifyBTagsWithSF(passCSVMDn,0.7,expEff);	
 		  }		
 	      }
-
+	    
 	    if(jp4.Pt()>30)
 	      {
 		//nominal selection
 		if(passCSVM) bJets[0].push_back(jp4);
 		else         lightJets[0].push_back(jp4);
 
-		ljev.j_pt[ljev.nj]=jp4.Pt();
-		ljev.j_eta[ljev.nj]=jp4.Eta();
-		ljev.j_phi[ljev.nj]=jp4.Phi();
-		ljev.j_m[ljev.nj]=jp4.M();
-		ljev.j_btag[ljev.nj]=passCSVM;
-		ljev.nj++;
+		if(ljev.nj<20)
+		  {
+		    ljev.j_pt[ljev.nj]=jp4.Pt();
+		    ljev.j_eta[ljev.nj]=jp4.Eta();
+		    ljev.j_phi[ljev.nj]=jp4.Phi();
+		    ljev.j_m[ljev.nj]=jp4.M();
+		    ljev.j_btag[ljev.nj]=passCSVM;
+		    ljev.nj++;
+		  }
 
 		//tag variations affect differently depending on the flavour
 		if(jflav==5 || jflav==4)
