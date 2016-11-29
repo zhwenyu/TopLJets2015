@@ -10,7 +10,7 @@
 
 #include "TopLJets2015/TopAnalysis/interface/LeptonEfficiencyWrapper.h"
 #include "TopLJets2015/TopAnalysis/interface/BtagUncertaintyComputer.h"
-#include "TopLJets2015/TopAnalysis/interface/RunTop16023.h"
+#include "TopLJets2015/TopAnalysis/interface/TOP-16-023.h"
 #include "TopLJets2015/TopAnalysis/interface/TOP-16-006.h"
 
 #include <string>
