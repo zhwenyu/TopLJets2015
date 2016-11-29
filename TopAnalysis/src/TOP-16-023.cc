@@ -77,6 +77,29 @@ void RunTop16023(TString inFileName,
   TString lselTxt( channelSelection==13 ? "m" : (channelSelection==11 ? "e" : "") );
   TString expSysts[]={"btagup","btagdn","othertagup","othertagdn","jesup","jesdn","jerup","jerdn",lselTxt+"effup",lselTxt+"effdn"};
   
+  //prepare output
+  TFile* outFile_p = new TFile(outFileName, "RECREATE");
+
+  //book tree
+  outFile_p->cd();
+  
+  LJEvent_t ljev;
+  TTree *outT=new TTree("data","data");
+  outT->Branch("w",    &ljev.w,       "w/F");
+  outT->Branch("nj",   &ljev.nj,      "nj/I");
+  outT->Branch("nb",   &ljev.nb,      "nb/I");
+  outT->Branch("j_btag", ljev.j_btag, "j_btag[nj]/O");
+  outT->Branch("j_pt",   ljev.j_pt,   "j_pt[nj]/F");
+  outT->Branch("j_eta",  ljev.j_eta,  "j_eta[nj]/F");
+  outT->Branch("j_phi",  ljev.j_phi,  "j_phi[nj]/F");
+  outT->Branch("j_m",    ljev.j_m,    "j_m[nj]/F");
+  outT->Branch("l_id",  &ljev.l_id,   "l_id/I");
+  outT->Branch("l_pt",  &ljev.l_pt,   "l_pt/F");
+  outT->Branch("l_eta", &ljev.l_eta,  "l_eta/F");
+  outT->Branch("l_phi", &ljev.l_phi,  "l_phi/F");
+  outT->Branch("l_m",   &ljev.l_m,    "l_m/F");
+  outT->SetDirectory(outFile_p);
+
   //book histograms
   std::map<TString,TH1 *> histos;
   histos["wgtcounter"] = new TH1F("wgtcounter",";Weight;Events;",200,0,200);
@@ -384,6 +407,9 @@ void RunTop16023(TString inFileName,
 	    cout << flush;
 	  }
 
+	//reset summary tree
+	ljev.nj=0; ljev.nb=0; ljev.l_id=0; ljev.w=0;
+
 	//readout this event
 	lepTree_p->GetEntry(entry);
 	jetTree_p->GetEntry(entry);
@@ -668,7 +694,6 @@ void RunTop16023(TString inFileName,
 	histos["mt"]->Fill(mt,evWeight);
 	histos["metpt"]->Fill(rawMET.Pt(),evWeight);
 
-
 	//jet counting
 	typedef std::vector<TLorentzVector> JetColl_t;
 	std::vector<JetColl_t> bJets(9),lightJets(9);
@@ -723,6 +748,13 @@ void RunTop16023(TString inFileName,
 		//nominal selection
 		if(passCSVM) bJets[0].push_back(jp4);
 		else         lightJets[0].push_back(jp4);
+
+		ljev.j_pt[ljev.nj]=jp4.Pt();
+		ljev.j_eta[ljev.nj]=jp4.Eta();
+		ljev.j_phi[ljev.nj]=jp4.Phi();
+		ljev.j_m[ljev.nj]=jp4.M();
+		ljev.j_btag[ljev.nj]=passCSVM;
+		ljev.nj++;
 
 		//tag variations affect differently depending on the flavour
 		if(jflav==5 || jflav==4)
@@ -843,9 +875,19 @@ void RunTop16023(TString inFileName,
 	    if(channelSelection==11 && ivar==9)  iweight*=(1.0+eselSF.second);
 	    if(channelSelection==11 && ivar==10) iweight*=(1.0-eselSF.second);
 
-	    //fill histos
+	    //fill histos and tree
 	    if(ivar==0)
 	      {
+
+		ljev.w=iweight;
+		ljev.l_id=channelSelection;
+		ljev.l_pt=goodLeptons[0].Pt();
+		ljev.l_eta=goodLeptons[0].Eta();
+		ljev.l_phi=goodLeptons[0].Phi();
+		ljev.l_m=goodLeptons[0].M();
+		ljev.nb=nbtags;
+		outT->Fill();
+
 		histos["lpt_"+pf]->Fill(goodLeptons[0].Pt(),iweight);
 		histos["leta_"+pf]->Fill(fabs(goodLeptons[0].Eta()),iweight);
 		if( (channelSelection==11 || channelSelection==1100) )
@@ -902,8 +944,8 @@ void RunTop16023(TString inFileName,
   }
   
   //dump histograms
-  TFile* outFile_p = new TFile(outFileName, "RECREATE");
   outFile_p->cd();
+  outT->Write();
   for(std::map<TString, TH1 *>::iterator it=histos.begin();
       it!=histos.end();
       it++)
