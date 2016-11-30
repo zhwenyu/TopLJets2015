@@ -503,8 +503,6 @@ def runUEAnalysisPacked(args):
 
 def main():
 
-    eos_cmd = '/afs/cern.ch/project/eos/installation/0.3.15/bin/eos.select'
-
     #configuration
     usage = 'usage: %prog [options]'
     parser = optparse.OptionParser(usage)
@@ -523,6 +521,7 @@ def main():
 
     if opt.step==0:
         determineSliceResolutions(opt)
+
     if opt.step==1:
         defineAnalysisBinning(opt)
 

@@ -15,8 +15,31 @@
 
 #include <string>
 #include <vector>
-
+#include <algorithm>
 using namespace std;
+
+//
+bool sortDijetKeys(std::pair< std::pair<int,int>, float > a,
+		   std::pair< std::pair<int,int>, float > b)
+{
+  return a.second < b.second;
+}
+
+
+//
+std::pair<int,int> getDijetsSystemCandidate(std::vector<TLorentzVector> &lightJets)
+{
+  std::vector< std::pair< std::pair<int,int>, float > > rankedDijets;
+  for(size_t i=0; i<lightJets.size(); i++)
+    for(size_t j=i+1; j<lightJets.size(); j++)
+      {
+	std::pair<int,int> jetKey(i,j);
+	float dR=lightJets[i].DeltaR(lightJets[j]);
+	rankedDijets.push_back( std::pair< std::pair<int,int>, float >(jetKey,dR) );
+      }
+  sort(rankedDijets.begin(),rankedDijets.end(),sortDijetKeys);  
+  return rankedDijets[0].first;
+}
 
 //
 void RunTop16023(TString inFileName,
@@ -98,6 +121,23 @@ void RunTop16023(TString inFileName,
   outT->Branch("l_eta", &ljev.l_eta,  "l_eta/F");
   outT->Branch("l_phi", &ljev.l_phi,  "l_phi/F");
   outT->Branch("l_m",   &ljev.l_m,    "l_m/F");
+  if(isMC)
+    {
+      outT->Branch("ngp",   &ljev.ngp,    "ngp/I");
+      outT->Branch("gp_pt",   ljev.gp_pt,   "gp_pt[ngp]/F");
+      outT->Branch("gp_eta",  ljev.gp_eta,  "gp_eta[ngp]/F");
+      outT->Branch("gp_phi",  ljev.gp_phi,  "gp_phi[ngp]/F");
+      outT->Branch("gp_m",    ljev.gp_m,    "gp_m[ngp]/F");      
+      outT->Branch("ngj",   &ljev.ngj,    "ngj/I");
+      outT->Branch("gj_pt",   ljev.gj_pt,   "gj_pt[ngj]/F");
+      outT->Branch("gj_eta",  ljev.gj_eta,  "gj_eta[ngj]/F");
+      outT->Branch("gj_phi",  ljev.gj_phi,  "gj_phi[ngj]/F");
+      outT->Branch("gj_m",    ljev.gj_m,    "gj_m[ngj]/F");
+      outT->Branch("gl_pt",  &ljev.gl_pt,   "gl_pt/F");
+      outT->Branch("gl_eta", &ljev.gl_eta,  "gl_eta/F");
+      outT->Branch("gl_phi", &ljev.gl_phi,  "gl_phi/F");
+      outT->Branch("gl_m",   &ljev.gl_m,    "gl_m/F");
+    }
   outT->SetDirectory(outFile_p);
 
   //book histograms
@@ -149,6 +189,9 @@ void RunTop16023(TString inFileName,
       histos["metphi_"+pf] = new TH1F("metphi_" + pf,";MET #phi [rad];Events" ,5,-3.2,3.2);
       histos["mt_"+pf]     = new TH1F("mt_"+pf,";Transverse Mass [GeV];Events" ,10,0.,300.);
       histos["mjj_"+pf]    = new TH1F("mjj_"+pf,";Mass(j,j') [GeV];Events" ,20,0.,400.);
+      histos["drjj_"+pf]    = new TH1F("drjj_"+pf,";#DeltaR(j,j') [GeV];Events" ,20,0.,3.);
+      histos["ptjj_"+pf]    = new TH1F("ptjj_"+pf,";p_{T}(j,j') [GeV];Events" ,20,0.,200.);
+      histos["etajj_"+pf]    = new TH1F("etajj_"+pf,";#eta(j,j');Events" ,20,-3.,3.);
       histos["mlb_"+pf]    = new TH1F("mlb_"+pf,";Mass(l,b) [GeV];Events" ,20,0.,300.);
       histos["njets_"+pf]  = new TH1F("njets_"+pf,";Jet multiplicity;Events" ,6,2.,8.);
 
@@ -308,16 +351,22 @@ void RunTop16023(TString inFileName,
     lepTree_p->SetBranchAddress("eleCharge", &eleCharge_p);
 
     //gen-level variables
-    std::vector<int> *mcPID=0;
-    std::vector<float> *mcPt=0,*mcEta=0,*mcPhi=0;
+    std::vector<int> *mcPID=0,*mcMomPID=0,*mcStatus=0;
+    std::vector<float> *mcPt=0,*mcEta=0,*mcPhi=0,*mcMass=0;
     lepTree_p->SetBranchStatus("mcPID", 1);
     lepTree_p->SetBranchStatus("mcPt", 1);
     lepTree_p->SetBranchStatus("mcEta", 1);
     lepTree_p->SetBranchStatus("mcPhi", 1);
+    lepTree_p->SetBranchStatus("mcMomPID", 1);
+    lepTree_p->SetBranchStatus("mcStatus", 1);
+    lepTree_p->SetBranchStatus("mcMass", 1);
+    lepTree_p->SetBranchAddress("mcMomPID", &mcMomPID);
+    lepTree_p->SetBranchAddress("mcStatus", &mcStatus);
     lepTree_p->SetBranchAddress("mcPID", &mcPID);
     lepTree_p->SetBranchAddress("mcPt", &mcPt);
     lepTree_p->SetBranchAddress("mcEta", &mcEta);
     lepTree_p->SetBranchAddress("mcPhi", &mcPhi);
+    lepTree_p->SetBranchAddress("mcMass", &mcMass);
 
     //jet variables
     const int maxJets = 5000;
@@ -408,7 +457,7 @@ void RunTop16023(TString inFileName,
 	  }
 
 	//reset summary tree
-	ljev.nj=0; ljev.nb=0; ljev.l_id=0; ljev.w=0;
+	ljev.nj=0; ljev.ngj=0; ljev.ngp=0; ljev.nb=0; ljev.l_id=0; ljev.w=0;
 
 	//readout this event
 	lepTree_p->GetEntry(entry);
@@ -431,19 +480,45 @@ void RunTop16023(TString inFileName,
 		for(size_t imc=0; imc<mcPID->size(); imc++)
 		  {
 		    int abspid=abs(mcPID->at(imc));		
+		    int mompid=abs(mcMomPID->at(imc));
+		    int status=abs(mcStatus->at(imc));
+		    
+		    TLorentzVector p4;
+		    p4.SetPtEtaPhiM(mcPt->at(imc),mcEta->at(imc),mcPhi->at(imc),mcMass->at(imc));
+
+		    if(mompid==6 && abspid==24 && status==22 && ljev.ngp<20)
+		      {
+			ljev.gp_pt[ljev.ngp]=p4.Pt();
+			ljev.gp_eta[ljev.ngp]=p4.Eta();
+			ljev.gp_phi[ljev.ngp]=p4.Phi();
+			ljev.gp_m[ljev.ngp]=p4.M();
+			ljev.ngp++;		    
+		      }
+
+		    //final state leptons
+		    if(status!=1) continue;
 		    if(channelSelection==13 && abspid!=13) continue;
 		    if(channelSelection==11 && abspid!=11) continue;
-		    TLorentzVector p4;
-		    p4.SetPtEtaPhiM(mcPt->at(imc),mcEta->at(imc),mcPhi->at(imc),0.);
-		    if(p4.Pt()>15 && fabs(p4.Eta())<2.5) otherLeptons.push_back(p4);
 		    if(fabs(p4.Eta())<2.1)
 		      {
 			if(abspid==13 && p4.Pt()>25) selGenLeptons.push_back(p4);
 			if(abspid==11 && p4.Pt()>35) selGenLeptons.push_back(p4);
 		      }
+		    else if( (abspid==13 || abspid==11) && p4.Pt()>15 && fabs(p4.Eta())<2.5)
+		      {
+			otherLeptons.push_back(p4);
+		      }
 		  }
 	      }
-
+	    
+	    if(selGenLeptons.size()>0)
+	      {
+		ljev.gl_pt=selGenLeptons[0].Pt();
+		ljev.gl_eta=selGenLeptons[0].Eta();
+		ljev.gl_phi=selGenLeptons[0].Phi();
+		ljev.gl_m=selGenLeptons[0].M();
+	      }
+	    
 	    //select gen jets cross-cleaning with leading muon
 	    int nGenJets(0);
 	    for(int imcj=0; imcj<ngen; imcj++)
@@ -453,6 +528,16 @@ void RunTop16023(TString inFileName,
 		if(selGenLeptons.size() && p4.DeltaR(selGenLeptons[0])<0.4) continue;
 		if(p4.Pt()<25 || fabs(p4.Eta())>2.4) continue;
 		nGenJets++;
+		
+		if(ljev.ngj<20)
+		  {
+		    ljev.gj_pt[ljev.ngj]=p4.Pt();
+		    ljev.gj_eta[ljev.ngj]=p4.Eta();
+		    ljev.gj_phi[ljev.ngj]=p4.Phi();
+		    ljev.gj_m[ljev.ngj]=p4.M();
+		    ljev.ngj++;
+		  }
+
 	      }
 
 	    //check if it passes the gen level acceptance
@@ -856,12 +941,18 @@ void RunTop16023(TString inFileName,
 	    TString pf(Form("%db",TMath::Min(nbtags,2)));
 	    
 	    //jet-related quantities
-	    Float_t mjj( (lightJets[jetIdx][0]+lightJets[jetIdx][1]).M() );
+	    std::pair<int,int> jjLegsIdx=getDijetsSystemCandidate(lightJets[jetIdx]);
+	    int idx1(jjLegsIdx.first),idx2(jjLegsIdx.second);
+	    Float_t mjj( (lightJets[jetIdx][idx1]+lightJets[jetIdx][idx2]).M() );
+	    Float_t drjj( lightJets[jetIdx][idx1].DeltaR( lightJets[jetIdx][idx2]) );
+	    Float_t ptjj( (lightJets[jetIdx][idx1]+lightJets[jetIdx][idx2]).Pt() );
+	    Float_t etajj( (lightJets[jetIdx][idx1]+lightJets[jetIdx][idx2]).Eta() );
 	    Float_t htsum(0);
 	    for(Int_t ij=0; ij<nbtags; ij++) htsum += bJets[jetIdx][ij].Pt();
 	    for(Int_t ij=0; ij<nljets; ij++) htsum += lightJets[jetIdx][ij].Pt();
 
-	    Float_t mlb( (goodLeptons[0]+lightJets[jetIdx][0]).M() );
+	    Float_t mlb( TMath::Min( (goodLeptons[0]+lightJets[jetIdx][idx1]).M(),
+				     (goodLeptons[0]+lightJets[jetIdx][idx2]).M()) );
 	    if(nbtags>0)
 	      {
 		mlb=(goodLeptons[0]+bJets[jetIdx][0]).M();
@@ -901,6 +992,9 @@ void RunTop16023(TString inFileName,
 		  }
 		histos["ht_"+pf]->Fill(htsum,iweight);
 		histos["mjj_"+pf]->Fill(mjj,iweight);
+		histos["drjj_"+pf]->Fill(drjj,iweight);
+		histos["ptjj_"+pf]->Fill(ptjj,iweight);
+		histos["etajj_"+pf]->Fill(etajj,iweight);
 		histos["mlb_"+pf]->Fill(mlb,iweight);
 	       
 		if(runSysts)
@@ -930,8 +1024,10 @@ void RunTop16023(TString inFileName,
 		  }
 		else
 		  {
-		    histos["jpt_"+pf]->Fill(lightJets[jetIdx][0].Pt(),iweight);
-		    histos["jeta_"+pf]->Fill(fabs(lightJets[jetIdx][0].Eta()),iweight);
+		    histos["jpt_"+pf]->Fill(lightJets[jetIdx][idx1].Pt(),iweight);
+		    histos["jeta_"+pf]->Fill(fabs(lightJets[jetIdx][idx1].Eta()),iweight);
+		    histos["jpt_"+pf]->Fill(lightJets[jetIdx][idx2].Pt(),iweight);
+		    histos["jeta_"+pf]->Fill(fabs(lightJets[jetIdx][idx2].Eta()),iweight);
 		  }
 		histos["njets_"+pf]->Fill(njets,iweight);
 	      }
