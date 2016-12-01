@@ -16,6 +16,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+
 using namespace std;
 
 //
@@ -51,6 +52,10 @@ void RunTop16023(TString inFileName,
 		 Bool_t runSysts,
 		 TString era)
 {
+
+  Float_t JETPTTHRESHOLD=30;
+  Float_t DRJJTHRESHOLD=2.0;
+
   if(inFileName=="") 
     {
       std::cout << "No inputs specified. return" << std::endl;
@@ -189,9 +194,9 @@ void RunTop16023(TString inFileName,
       histos["metphi_"+pf] = new TH1F("metphi_" + pf,";MET #phi [rad];Events" ,5,-3.2,3.2);
       histos["mt_"+pf]     = new TH1F("mt_"+pf,";Transverse Mass [GeV];Events" ,10,0.,300.);
       histos["mjj_"+pf]    = new TH1F("mjj_"+pf,";Mass(j,j') [GeV];Events" ,20,0.,400.);
-      histos["drjj_"+pf]    = new TH1F("drjj_"+pf,";#DeltaR(j,j') [GeV];Events" ,20,0.,3.);
-      histos["ptjj_"+pf]    = new TH1F("ptjj_"+pf,";p_{T}(j,j') [GeV];Events" ,20,0.,200.);
-      histos["etajj_"+pf]    = new TH1F("etajj_"+pf,";#eta(j,j');Events" ,20,-3.,3.);
+      histos["drjj_"+pf]    = new TH1F("drjj_"+pf,";#DeltaR(j,j') [GeV];Events" ,20,0.,6.);
+      histos["ptjj_"+pf]    = new TH1F("ptjj_"+pf,";p_{T}(j,j') [GeV];Events" ,20,0.,300.);
+      histos["etajj_"+pf]    = new TH1F("etajj_"+pf,";#eta(j,j');Events" ,10,-3.,3.);
       histos["mlb_"+pf]    = new TH1F("mlb_"+pf,";Mass(l,b) [GeV];Events" ,20,0.,300.);
       histos["njets_"+pf]  = new TH1F("njets_"+pf,";Jet multiplicity;Events" ,6,2.,8.);
 
@@ -828,7 +833,7 @@ void RunTop16023(TString inFileName,
 		  }		
 	      }
 	    
-	    if(jp4.Pt()>30)
+	    if(jp4.Pt()>JETPTTHRESHOLD)
 	      {
 		//nominal selection
 		if(passCSVM) bJets[0].push_back(jp4);
@@ -909,7 +914,7 @@ void RunTop16023(TString inFileName,
 	      {
 		//JES varied selections
 		TLorentzVector jesVarP4(jp4); jesVarP4*=jesScaleUnc[ivar+1];
-		if(jesVarP4.Pt()>30)
+		if(jesVarP4.Pt()>JETPTTHRESHOLD)
 		  {
 		    if(passCSVM) bJets[5+ivar].push_back(jesVarP4);
 		    else         lightJets[5+ivar].push_back(jesVarP4);
@@ -917,7 +922,7 @@ void RunTop16023(TString inFileName,
 
 		//JER varied selections
 		TLorentzVector jerVarP4(jp4); jerVarP4*=jerSmear[ivar+1]/jerSmear[0];     
-		if(jerVarP4.Pt()>30)
+		if(jerVarP4.Pt()>JETPTTHRESHOLD)
 		  {
 		    if(passCSVM) bJets[7+ivar].push_back(jerVarP4);
 		    else         lightJets[7+ivar].push_back(jerVarP4);
@@ -982,56 +987,60 @@ void RunTop16023(TString inFileName,
 		ljev.nb=nbtags;
 		outT->Fill();
 
-		histos["lpt_"+pf]->Fill(goodLeptons[0].Pt(),iweight);
-		histos["leta_"+pf]->Fill(fabs(goodLeptons[0].Eta()),iweight);
-		if( (channelSelection==11 || channelSelection==1100) )
-		  {
-		    TString region(fabs(goodLeptons[0].Eta()) > 1.4479 ? "ee_" : "eb_");
-		    histos["lpt_"+region+pf]->Fill(goodLeptons[0].Pt(),evWeight);
-		    histos["leta_"+region+pf]->Fill(fabs(goodLeptons[0].Eta()),evWeight);
-		  }
-		histos["ht_"+pf]->Fill(htsum,iweight);
-		histos["mjj_"+pf]->Fill(mjj,iweight);
 		histos["drjj_"+pf]->Fill(drjj,iweight);
-		histos["ptjj_"+pf]->Fill(ptjj,iweight);
-		histos["etajj_"+pf]->Fill(etajj,iweight);
-		histos["mlb_"+pf]->Fill(mlb,iweight);
-	       
-		if(runSysts)
+
+		if(drjj<DRJJTHRESHOLD)
 		  {
-		    //theory uncertainties (by matrix-element weighting)
-		    for(size_t igs=0; igs<ttbar_w_p->size(); igs++)
+		    histos["lpt_"+pf]->Fill(goodLeptons[0].Pt(),iweight);
+		    histos["leta_"+pf]->Fill(fabs(goodLeptons[0].Eta()),iweight);
+		    if( (channelSelection==11 || channelSelection==1100) )
 		      {
-			float newWeight( iweight );
-			if(isTTJets && normH && normH->GetBinContent(igs+1))
-			  {
-			    newWeight *= (ttbar_w_p->at(igs)/ttbar_w_p->at(0)) * ( normH->GetBinContent(1)/normH->GetBinContent(igs+1));
-			  }
-			else
-			  {
-			    newWeight *= (ttbar_w_p->at(igs)/ttbar_w_p->at(0));
-			  }
-			((TH2 *)histos["mjjshapes_"+pf+"_gen"])->Fill(mjj,igs,newWeight);
+			TString region(fabs(goodLeptons[0].Eta()) > 1.4479 ? "ee_" : "eb_");
+			histos["lpt_"+region+pf]->Fill(goodLeptons[0].Pt(),evWeight);
+			histos["leta_"+region+pf]->Fill(fabs(goodLeptons[0].Eta()),evWeight);
 		      }
+		    histos["ht_"+pf]->Fill(htsum,iweight);
+		    histos["mlb_"+pf]->Fill(mlb,iweight);
+		    histos["mjj_"+pf]->Fill(mjj,iweight);
+		    histos["ptjj_"+pf]->Fill(ptjj,iweight);
+		    histos["etajj_"+pf]->Fill(etajj,iweight);
+		  	       
+		    if(runSysts)
+		      {
+			//theory uncertainties (by matrix-element weighting)
+			for(size_t igs=0; igs<ttbar_w_p->size(); igs++)
+			  {
+			    float newWeight( iweight );
+			    if(isTTJets && normH && normH->GetBinContent(igs+1))
+			      {
+				newWeight *= (ttbar_w_p->at(igs)/ttbar_w_p->at(0)) * ( normH->GetBinContent(1)/normH->GetBinContent(igs+1));
+			      }
+			    else
+			      {
+				newWeight *= (ttbar_w_p->at(igs)/ttbar_w_p->at(0));
+			      }
+			    ((TH2 *)histos["mjjshapes_"+pf+"_gen"])->Fill(mjj,igs,newWeight);
+			  }
+		      }
+		    histos["metpt_"+pf]->Fill(rawMET.Pt(),iweight);
+		    histos["metphi_"+pf]->Fill(rawMET.Phi(),iweight);
+		    histos["mt_"+pf]->Fill(mt,iweight);    
+		    if(nbtags)
+		      {
+			histos["jpt_"+pf]->Fill(bJets[jetIdx][0].Pt(),iweight);
+			histos["jeta_"+pf]->Fill(fabs(bJets[jetIdx][0].Eta()),iweight);
+		      }
+		    else
+		      {
+			histos["jpt_"+pf]->Fill(lightJets[jetIdx][idx1].Pt(),iweight);
+			histos["jeta_"+pf]->Fill(fabs(lightJets[jetIdx][idx1].Eta()),iweight);
+			histos["jpt_"+pf]->Fill(lightJets[jetIdx][idx2].Pt(),iweight);
+			histos["jeta_"+pf]->Fill(fabs(lightJets[jetIdx][idx2].Eta()),iweight);
+		      }
+		    histos["njets_"+pf]->Fill(njets,iweight);
 		  }
-		histos["metpt_"+pf]->Fill(rawMET.Pt(),iweight);
-		histos["metphi_"+pf]->Fill(rawMET.Phi(),iweight);
-		histos["mt_"+pf]->Fill(mt,iweight);    
-		if(nbtags)
-		  {
-		    histos["jpt_"+pf]->Fill(bJets[jetIdx][0].Pt(),iweight);
-		    histos["jeta_"+pf]->Fill(fabs(bJets[jetIdx][0].Eta()),iweight);
-		  }
-		else
-		  {
-		    histos["jpt_"+pf]->Fill(lightJets[jetIdx][idx1].Pt(),iweight);
-		    histos["jeta_"+pf]->Fill(fabs(lightJets[jetIdx][idx1].Eta()),iweight);
-		    histos["jpt_"+pf]->Fill(lightJets[jetIdx][idx2].Pt(),iweight);
-		    histos["jeta_"+pf]->Fill(fabs(lightJets[jetIdx][idx2].Eta()),iweight);
-		  }
-		histos["njets_"+pf]->Fill(njets,iweight);
 	      }
-	    else if (runSysts)
+	    else if (runSysts && drjj<DRJJTHRESHOLD)
 	      {
 		((TH2 *)histos["mjjshapes_"+pf+"_exp"])->Fill(mjj,ivar-1,iweight);
 	      }

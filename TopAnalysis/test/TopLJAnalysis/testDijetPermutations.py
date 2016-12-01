@@ -2,6 +2,7 @@
 
 import sys
 import ROOT
+import numpy as np
 
 """
 associate different metrics to the dijet systems in an event
@@ -17,11 +18,12 @@ def dijetsWithMetric(jets):
         for j in xrange(i+1,len(jets)):
             alpha = [ 60./(jets[i].Pt()+jets[j].Pt()), 60./(jets[i]+jets[j]).Pt() ]
             for p in [-2, -1, 0, 1 ,2 ]:
-                for metric in ['dr','deta']:
+                for metric in ['dr','deta','dphi']:
                     kti2p=ROOT.TMath.Power(jets[i].Pt(),2*p)
                     ktj2p=ROOT.TMath.Power(jets[j].Pt(),2*p)
                     deltaij=jets[i].DeltaR(jets[j]) if metric=='dr' else ROOT.TMath.Abs(jets[i].Eta()-jets[j].Eta())
-                    dij=ROOT.TMath.Min(kti2p,ktj2p)*deltaij
+                    if metric=='dphi' : deltaij=ROOT.TVector2.Phi_mpi_pi(jets[i].Phi()-jets[j].Phi())
+                    dij=ROOT.TMath.Min(kti2p,ktj2p)*ROOT.TMath.Power(deltaij,2)
                     diB=kti2p
                     alpha.append(dij/diB)
             dijets.append( (jets[i]+jets[j], alpha) )
@@ -33,48 +35,50 @@ summarize resolutions
 """
 def summarizeRankingPerformance(h,window,relativeresol):
 
-    nbinsx=h.GetNbinsX()
-    resolH=ROOT.TH1F('resol',';Ranking mode;Resolution',nbinsx,0,nbinsx)
-    if relativeresol : resolH.GetYaxis().SetTitle('Relative resolution')
-    resolH.SetMarkerStyle(20)
-    offPeakFracH=ROOT.TH1F('offpeakfrac',';Ranking mode;N(off-peak)/N(on-peak)',nbinsx,0,nbinsx)
-    offPeakFracH.SetMarkerStyle(20)
-    
+    resolH,offPeakFracH=[],[]
+    for i in xrange(0,len(h)):
+        title=h[i][0]
+        nbinsx=h[i][1].GetNbinsX()
+        resolH.append( ROOT.TH1F('resol%d'%i,'%s;Ranking mode;Resolution'%title,nbinsx,0,nbinsx) )
+        if relativeresol : resolH[i].GetYaxis().SetTitle('Relative resolution')
+        resolH[i].SetMarkerStyle(20+i)
+        offPeakFracH.append( ROOT.TH1F('offpeakfrac%d'%i,'%s;Ranking mode;N(off-peak)/N(on-peak)'%title,nbinsx,0,nbinsx) )
+        offPeakFracH[i].SetMarkerStyle(20+i)
+        
+        for xbin in xrange(0,nbinsx):
+            py=h[i][1].ProjectionY('py',xbin+1,xbin+1)
+            resolH[i].GetXaxis().SetBinLabel(xbin+1,h[i][1].GetXaxis().GetBinLabel(xbin+1))
+            offPeakFracH[i].GetXaxis().SetBinLabel(xbin+1,h[i][1].GetXaxis().GetBinLabel(xbin+1))
 
-    for xbin in xrange(0,nbinsx):
-        py=h.ProjectionY('py',xbin+1,xbin+1)
-        resolH.GetXaxis().SetBinLabel(xbin+1,h.GetXaxis().GetBinLabel(xbin+1))
-        offPeakFracH.GetXaxis().SetBinLabel(xbin+1,h.GetXaxis().GetBinLabel(xbin+1))
+            #determine maximum
+            ycenBin=py.GetMaximumBin()
+            ycen=py.GetXaxis().GetBinCenter(ycenBin)
 
-        #determine maximum
-        ycenBin=py.GetMaximumBin()
-        ycen=py.GetXaxis().GetBinCenter(ycenBin)
-
-        #count off-peak to on-peak fraction
-        offPeak,onPeak=0.,0.
-        offPeakUnc,onPeakUnc=0.,0.
-        for ybin in xrange(0,py.GetNbinsX()):
-            yval=py.GetXaxis().GetBinCenter(ybin+1)
-            cts,ctsUnc=py.GetBinContent(ybin+1),py.GetBinError(ybin+1)
-            if ROOT.TMath.Abs(yval-ycen)>window : 
-                offPeak += cts
-                offPeakUnc += ctsUnc**2
-            else : 
-                onPeak += cts
-                onPeakUnc += ctsUnc
-        frac=offPeak/onPeak
-        fracUnc=ROOT.TMath.Sqrt(onPeakUnc*(offPeak**2)+offPeakUnc*(onPeak**2))/onPeak
-        offPeakFracH.SetBinContent(xbin+1,frac)
-        offPeakFracH.SetBinError(xbin+1,fracUnc)
+            #count off-peak to on-peak fraction
+            offPeak,onPeak=0.,0.
+            offPeakUnc,onPeakUnc=0.,0.
+            for ybin in xrange(0,py.GetNbinsX()):
+                yval=py.GetXaxis().GetBinCenter(ybin+1)
+                cts,ctsUnc=py.GetBinContent(ybin+1),py.GetBinError(ybin+1)
+                if ROOT.TMath.Abs(yval-ycen)>window : 
+                    offPeak += cts
+                    offPeakUnc += ctsUnc**2
+                else : 
+                    onPeak += cts
+                    onPeakUnc += ctsUnc
+            frac=offPeak/onPeak
+            fracUnc=ROOT.TMath.Sqrt(onPeakUnc*(offPeak**2)+offPeakUnc*(onPeak**2))/onPeak
+            offPeakFracH[i].SetBinContent(xbin+1,frac)
+            offPeakFracH[i].SetBinError(xbin+1,fracUnc)
             
-        #resolution
-        resol=py.GetRMS()
-        if relativeresol : resol=resol/ycen
-        resolUnc=resol*py.GetRMSError()/py.GetRMS()
-        resolH.SetBinContent(xbin+1,resol)
-        resolH.SetBinError(xbin+1,resolUnc)
+            #resolution
+            resol=py.GetRMS()
+            if relativeresol : resol=resol/ycen
+            resolUnc=resol*py.GetRMSError()/py.GetRMS()
+            resolH[i].SetBinContent(xbin+1,resol)
+            resolH[i].SetBinError(xbin+1,resolUnc)
 
-        py.Delete()
+            py.Delete()
 
     #
     ROOT.gStyle.SetOptStat(0)
@@ -91,11 +95,15 @@ def summarizeRankingPerformance(h,window,relativeresol):
     p1.SetBottomMargin(0.12)
     p1.Draw()
     p1.cd()
-    resolH.Draw('e1')
-    resolH.GetXaxis().SetLabelSize(0.06)
-    resolH.GetXaxis().SetTitleSize(0.06)
-    resolH.GetYaxis().SetLabelSize(0.06)
-    resolH.GetYaxis().SetTitleSize(0.06)
+    for i in xrange(0,len(resolH)):
+        drawOpt='e1' if i==0 else 'e1same'
+        resolH[i].Draw(drawOpt)
+        resolH[i].GetXaxis().SetLabelSize(0.06)
+        resolH[i].GetXaxis().SetTitleSize(0.06)
+        resolH[i].GetYaxis().SetLabelSize(0.06)
+        resolH[i].GetYaxis().SetTitleSize(0.06)
+    resolH[0].GetYaxis().SetRangeUser(resolH[0].GetMinimum()*0.9,
+                                      resolH[-1].GetMaximum()*1.1)
     c.cd()
     p2 = ROOT.TPad('p2','p2',0.0,0.5,1.0,1.0)
     p2.SetBottomMargin(0.005)
@@ -104,46 +112,68 @@ def summarizeRankingPerformance(h,window,relativeresol):
     p2.SetTopMargin(0.05)
     p2.Draw()
     p2.cd()
-    offPeakFracH.Draw('e1')
-    offPeakFracH.GetXaxis().SetLabelSize(0.08)
-    offPeakFracH.GetXaxis().SetTitleSize(0.08)
-    offPeakFracH.GetYaxis().SetLabelSize(0.06)
-    offPeakFracH.GetYaxis().SetTitleSize(0.06)
+    leg=ROOT.TLegend(0.65,0.8,0.9,0.6)
+    leg.SetBorderSize(0)
+    leg.SetTextFont(42)
+    leg.SetTextSize(0.06)
+    for i in xrange(0,len(resolH)):
+        drawOpt='e1' if i==0 else 'e1same'
+        offPeakFracH[i].Draw(drawOpt)
+        offPeakFracH[i].GetXaxis().SetLabelSize(0.00)
+        offPeakFracH[i].GetXaxis().SetTitleSize(0.00)
+        offPeakFracH[i].GetYaxis().SetLabelSize(0.06)
+        offPeakFracH[i].GetYaxis().SetTitleSize(0.06)
+        leg.AddEntry(offPeakFracH[i],offPeakFracH[i].GetTitle(),'p')
+    offPeakFracH[0].GetYaxis().SetRangeUser(offPeakFracH[0].GetMinimum()*0.9,
+                                            offPeakFracH[-1].GetMaximum()*1.1)
     label = ROOT.TLatex()
     label.SetNDC()
     label.SetTextFont(42)
     label.SetTextSize(0.08)
-    label.DrawLatex(0.6,0.85,'#bf{CMS} #it{simulation preliminary}')
+    label.DrawLatex(0.65,0.85,'#bf{CMS} #it{simulation preliminary}')
+    leg.Draw()
     c.cd()
     c.Modified()
     c.Update()
     for ext in ['png','pdf']:
-        c.SaveAs('%s_resol.%s'%(h.GetName(),ext))
+        c.SaveAs('%s_resol.%s'%(h[-1][1].GetName(),ext))
 
 
 """
 """
 def main():
 
+    rankQuantiles=[100,80,70,60]
     histos={}
-    histos['ranked_mjj']      = ROOT.TH2F('ranked_mjj',      ';Ranking mode;Dijet invariant mass [GeV]', 12,0,12,50,0,200)
-    histos['ranked_mw']       = ROOT.TH2F('ranked_mw',       ';Ranking mode;Closest W mass [GeV]',       12,0,12,50,0,200)
-    histos['ranked_mjjresol'] = ROOT.TH2F('ranked_mjjresol', ';Ranking mode;M(jj)-M(W) [GeV]',           12,0,12,50,-50,50)
-    histos['ranked_drresol']  = ROOT.TH2F('ranked_drresol',  ';Ranking mode;#DeltaR(jj,W)',              12,0,12,50,0,1)
+    for r in rankQuantiles:
+        pf=""
+        if r!=100 : pf='q%d'%r
+        histos['ranked_mjj'+pf]      = ROOT.TH2F('ranked_mjj'+pf,      ';Ranking mode;Dijet invariant mass [GeV]', 17,0,17,50,0,200)
+        histos['ranked_mw'+pf]       = ROOT.TH2F('ranked_mw'+pf,       ';Ranking mode;Closest W mass [GeV]',       17,0,17,50,0,200)
+        histos['ranked_mjjresol'+pf] = ROOT.TH2F('ranked_mjjresol'+pf, ';Ranking mode;M(jj)-M(W) [GeV]',           17,0,17,50,-50,50)
+        histos['ranked_drresol'+pf]  = ROOT.TH2F('ranked_drresol'+pf,  ';Ranking mode;#DeltaR(jj,W)',              17,0,17,50,0,1)
+    
     for xbin,label in [(1,'#Sigmap_{T}'),   (2,'p_{T}(jj)'),
-                       (3,'#DeltaR,p=-2'), (4,'#Delta#eta,p=-2'),
-                       (5,'#DeltaR,p=-1'), (6,'#Delta#eta,p=1'),
-                       (7,'#DeltaR,p=0'),  (8,'#Delta#eta,p=0'),
-                       (9,'#DeltaR,p=+1'), (10,'#Delta#eta,p=+1'),
-                       (11,'#DeltaR,p=+2'),(12,'#Delta#eta,p=+2')]:
-        histos['ranked_mjj'].GetXaxis().SetBinLabel(xbin,label)
-        histos['ranked_mw'].GetXaxis().SetBinLabel(xbin,label)
-        histos['ranked_mjjresol'].GetXaxis().SetBinLabel(xbin,label)
-        histos['ranked_drresol'].GetXaxis().SetBinLabel(xbin,label)
+                       (3,'#DeltaR,p=-2'), (4,'#Delta#eta,p=-2'), (5,'#Delta#phi,p=-2'),
+                       (6,'#DeltaR,p=-1'), (7,'#Delta#eta,p=1'),  (8,'#Delta#phi,p=1'),
+                       (9,'#DeltaR,p=0'),  (10,'#Delta#eta,p=0'), (11,'#Delta#phi,p=0'),
+                       (12,'#DeltaR,p=+1'), (13,'#Delta#eta,p=+1'), (14,'#Delta#phi,p=+1'),
+                       (15,'#DeltaR,p=+2'),(16,'#Delta#eta,p=+2'), (17,'#Delta#phi,p=+2')]:
+        for r in rankQuantiles:
+            pf=""
+            if r!=100 : pf='q%d'%r
+            histos['ranked_mjj'+pf].GetXaxis().SetBinLabel(xbin,label)
+            histos['ranked_mw'+pf].GetXaxis().SetBinLabel(xbin,label)
+            histos['ranked_mjjresol'+pf].GetXaxis().SetBinLabel(xbin,label)
+            histos['ranked_drresol'+pf].GetXaxis().SetBinLabel(xbin,label)
     for h in histos:
         histos[h].Sumw2()
         histos[h].SetDirectory(0)
         
+    rankSummary={}
+    for mode in xrange(0,17):
+        rankSummary[mode]=([],[])
+
     #loop over the events
     data=ROOT.TChain('data')
     for url in sys.argv[1].split(','):
@@ -188,20 +218,48 @@ def main():
         weight=data.w
         if len(genJets)>=2 and len(Wbosons)==2:
             genDijets=dijetsWithMetric(genJets)
-            for mode in xrange(0,12):
+            for mode in xrange(0,17):
                 jj,rank=sorted(genDijets, key=lambda jjranks : jjranks[1][mode])[0]
+                mjj=jj.M()
 
                 dRjjw1,dRjjw2=jj.DeltaR(Wbosons[0]),jj.DeltaR(Wbosons[1])
                 widx=0 if dRjjw1<dRjjw2 else 1
+                mw=Wbosons[widx].M()
+                drjj2w=jj.DeltaR(Wbosons[widx])
+                histos['ranked_mjj'].Fill(mode,mjj,weight)
+                histos['ranked_mw'].Fill(mode,mw,weight)
+                histos['ranked_mjjresol'].Fill(mode,mjj-mw,weight)
+                histos['ranked_drresol'].Fill(mode,drjj2w,weight)
 
-                histos['ranked_mjj'].Fill(mode,jj.M(),weight)
-                histos['ranked_mw'].Fill(mode,Wbosons[widx].M(),weight)
-                histos['ranked_mjjresol'].Fill(mode,jj.M()-Wbosons[widx].M(),weight)
-                histos['ranked_drresol'].Fill(mode,jj.DeltaR(Wbosons[widx]),weight)
+                rankSummary[mode][0].append(rank[mode])
+                rankSummary[mode][1].append((mjj,mw,drjj2w))
+
+    #compute ranking 0.80,0.70 percentile and cut all above that value
+    print rankQuantiles,'working points are listed below:'
+    for mode in rankSummary:
+        cutVal=np.percentile(rankSummary[mode][0],rankQuantiles, axis=0)
+        print mode,histos['ranked_mjj'].GetXaxis().GetBinLabel(mode+1),cutVal
+        for i in xrange(0,len(rankSummary[mode][0])):
+            val=rankSummary[mode][0][i]
+            mjj,mw,drjj2w = rankSummary[mode][1][i]
+            for k in xrange(1,len(cutVal)):
+                if val>cutVal[k]: continue
+                pf='q%d'%rankQuantiles[k]
+                histos['ranked_mjj'+pf].Fill(mode,mjj,weight)
+                histos['ranked_mw'+pf].Fill(mode,mw,weight)
+                histos['ranked_mjjresol'+pf].Fill(mode,mjj-mw,weight)
+                histos['ranked_drresol'+pf].Fill(mode,drjj2w,weight)
 
     #build summary plots
-    summarizeRankingPerformance(histos['ranked_mjjresol'],15,True)
-    summarizeRankingPerformance(histos['ranked_drresol'],0.1,False)
+    for name,window,relResol in [('mjj',15,True),('mjjresol',5,True),('drresol',0.1,False)]:
+        summarizeRankingPerformance([
+                ('60wp',      histos['ranked_%sq60'%name]),                
+                ('70wp',      histos['ranked_%sq70'%name]),
+                ('80wp',      histos['ranked_%sq80'%name]),
+                ('inclusive', histos['ranked_%s'%name])
+                ],
+                                    window,
+                                    relResol)
 
     #save to file
     fOut=ROOT.TFile('workspace.root','RECREATE')
