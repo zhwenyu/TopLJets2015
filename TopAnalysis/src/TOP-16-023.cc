@@ -194,7 +194,9 @@ void RunTop16023(TString inFileName,
       histos["metphi_"+pf] = new TH1F("metphi_" + pf,";MET #phi [rad];Events" ,5,-3.2,3.2);
       histos["mt_"+pf]     = new TH1F("mt_"+pf,";Transverse Mass [GeV];Events" ,10,0.,300.);
       histos["mjj_"+pf]    = new TH1F("mjj_"+pf,";Mass(j,j') [GeV];Events" ,20,0.,400.);
-      histos["drjj_"+pf]    = new TH1F("drjj_"+pf,";#DeltaR(j,j') [GeV];Events" ,20,0.,6.);
+      histos["rankedmjj_"+pf]    = new TH1F("rankedmjj_"+pf,";Mass(j,j') [GeV];Events" ,20,0.,400.);
+      histos["rankedq70mjj_"+pf]    = new TH1F("rankedq70mjj_"+pf,";Mass(j,j') [GeV];Events" ,20,0.,400.);
+      histos["drjj_"+pf]    = new TH1F("drjj_"+pf,";min#DeltaR(j,j') [GeV];Events" ,12,0.,6.3);
       histos["ptjj_"+pf]    = new TH1F("ptjj_"+pf,";p_{T}(j,j') [GeV];Events" ,20,0.,300.);
       histos["etajj_"+pf]    = new TH1F("etajj_"+pf,";#eta(j,j');Events" ,10,-3.,3.);
       histos["mlb_"+pf]    = new TH1F("mlb_"+pf,";Mass(l,b) [GeV];Events" ,20,0.,300.);
@@ -204,12 +206,28 @@ void RunTop16023(TString inFileName,
 	{
 	  nSysts=sizeof(expSysts)/sizeof(TString);
 	  histos["mjjshapes_"+pf+"_exp"]=new TH2F("mjjshapes_"+pf+"_exp",";Mass(j,j');Systematic uncertainty;Events",20,0,400,nSysts,0,nSysts);
+	  histos["drjjshapes_"+pf+"_exp"]=new TH2F("drjjshapes_"+pf+"_exp",";min#DeltaR(j,j');Systematic uncertainty;Events",12,0,6.3,nSysts,0,nSysts);
+	  histos["rankedmjjshapes_"+pf+"_exp"]=new TH2F("rankedmjjshapes_"+pf+"_exp",";Mass(j,j');Systematic uncertainty;Events",20,0,400,nSysts,0,nSysts);
+	  histos["rankedq70mjjshapes_"+pf+"_exp"]=new TH2F("rankedq70mjjshapes_"+pf+"_exp",";Mass(j,j');Systematic uncertainty;Events",20,0,400,nSysts,0,nSysts);
 	  for(int i=0; i<nSysts; i++)
-	    histos["mjjshapes_"+pf+"_exp"]->GetYaxis()->SetBinLabel(i+1,expSysts[i]);
+	    {
+	      histos["drjjshapes_"+pf+"_exp"]->GetYaxis()->SetBinLabel(i+1,expSysts[i]);
+	      histos["mjjshapes_"+pf+"_exp"]->GetYaxis()->SetBinLabel(i+1,expSysts[i]);
+	      histos["rankedmjjshapes_"+pf+"_exp"]->GetYaxis()->SetBinLabel(i+1,expSysts[i]);
+	      histos["rankedq70mjjshapes_"+pf+"_exp"]->GetYaxis()->SetBinLabel(i+1,expSysts[i]);
+	    }
 	  
 	  histos["mjjshapes_"+pf+"_gen"]=new TH2F("mjjshapes_"+pf+"_gen",";Mass(j,j') [GeV];Systematic uncertainty;Events",20,0,400,200,0,200);
+	  histos["drjjshapes_"+pf+"_gen"]=new TH2F("drjjshapes_"+pf+"_gen",";min#DeltaR(j,j');Systematic uncertainty;Events",12,0,6.3,200,0,200);
+	  histos["rankedmjjshapes_"+pf+"_gen"]=new TH2F("rankedmjjshapes_"+pf+"_gen",";Mass(j,j') [GeV];Systematic uncertainty;Events",20,0,400,200,0,200);
+	  histos["rankedq70mjjshapes_"+pf+"_gen"]=new TH2F("rankedq70mjjshapes_"+pf+"_gen",";Mass(j,j') [GeV];Systematic uncertainty;Events",20,0,400,200,0,200);
 	  for(int i=0; i<200;i++)
-	    histos["mjjshapes_"+pf+"_gen"]->GetYaxis()->SetBinLabel(i+1,Form("genUnc%d",i));
+	    {
+	      histos["drjjshapes_"+pf+"_gen"]->GetYaxis()->SetBinLabel(i+1,Form("genUnc%d",i));
+	      histos["mjjshapes_"+pf+"_gen"]->GetYaxis()->SetBinLabel(i+1,Form("genUnc%d",i));
+	      histos["rankedmjjshapes_"+pf+"_gen"]->GetYaxis()->SetBinLabel(i+1,Form("genUnc%d",i));
+	      histos["rankedq70mjjshapes_"+pf+"_gen"]->GetYaxis()->SetBinLabel(i+1,Form("genUnc%d",i));
+	    }
 	}
     }
 
@@ -946,9 +964,10 @@ void RunTop16023(TString inFileName,
 	    TString pf(Form("%db",TMath::Min(nbtags,2)));
 	    
 	    //jet-related quantities
+	    Float_t mjj( (lightJets[jetIdx][0]+lightJets[jetIdx][1]).M() );
 	    std::pair<int,int> jjLegsIdx=getDijetsSystemCandidate(lightJets[jetIdx]);
 	    int idx1(jjLegsIdx.first),idx2(jjLegsIdx.second);
-	    Float_t mjj( (lightJets[jetIdx][idx1]+lightJets[jetIdx][idx2]).M() );
+	    Float_t rankedmjj( (lightJets[jetIdx][idx1]+lightJets[jetIdx][idx2]).M() );
 	    Float_t drjj( lightJets[jetIdx][idx1].DeltaR( lightJets[jetIdx][idx2]) );
 	    Float_t ptjj( (lightJets[jetIdx][idx1]+lightJets[jetIdx][idx2]).Pt() );
 	    Float_t etajj( (lightJets[jetIdx][idx1]+lightJets[jetIdx][idx2]).Eta() );
@@ -986,63 +1005,72 @@ void RunTop16023(TString inFileName,
 		ljev.l_m=goodLeptons[0].M();
 		ljev.nb=nbtags;
 		outT->Fill();
-
+		
+		histos["mjj_"+pf]->Fill(mjj,iweight);
+		histos["rankedmjj_"+pf]->Fill(rankedmjj,iweight);
 		histos["drjj_"+pf]->Fill(drjj,iweight);
-
+		histos["lpt_"+pf]->Fill(goodLeptons[0].Pt(),iweight);
+		histos["leta_"+pf]->Fill(fabs(goodLeptons[0].Eta()),iweight);
+		if( (channelSelection==11 || channelSelection==1100) )
+		  {
+		    TString region(fabs(goodLeptons[0].Eta()) > 1.4479 ? "ee_" : "eb_");
+		    histos["lpt_"+region+pf]->Fill(goodLeptons[0].Pt(),evWeight);
+		    histos["leta_"+region+pf]->Fill(fabs(goodLeptons[0].Eta()),evWeight);
+		  }
+		histos["ht_"+pf]->Fill(htsum,iweight);
+		histos["mlb_"+pf]->Fill(mlb,iweight);
+		histos["metpt_"+pf]->Fill(rawMET.Pt(),iweight);
+		histos["metphi_"+pf]->Fill(rawMET.Phi(),iweight);
+		histos["mt_"+pf]->Fill(mt,iweight);    
+		if(nbtags)
+		  {
+		    histos["jpt_"+pf]->Fill(bJets[jetIdx][0].Pt(),iweight);
+		    histos["jeta_"+pf]->Fill(fabs(bJets[jetIdx][0].Eta()),iweight);
+		  }
+		else
+		  {
+		    histos["jpt_"+pf]->Fill(lightJets[jetIdx][idx1].Pt(),iweight);
+		    histos["jeta_"+pf]->Fill(fabs(lightJets[jetIdx][idx1].Eta()),iweight);
+		    histos["jpt_"+pf]->Fill(lightJets[jetIdx][idx2].Pt(),iweight);
+		    histos["jeta_"+pf]->Fill(fabs(lightJets[jetIdx][idx2].Eta()),iweight);
+		  }
+		histos["njets_"+pf]->Fill(njets,iweight);
 		if(drjj<DRJJTHRESHOLD)
 		  {
-		    histos["lpt_"+pf]->Fill(goodLeptons[0].Pt(),iweight);
-		    histos["leta_"+pf]->Fill(fabs(goodLeptons[0].Eta()),iweight);
-		    if( (channelSelection==11 || channelSelection==1100) )
-		      {
-			TString region(fabs(goodLeptons[0].Eta()) > 1.4479 ? "ee_" : "eb_");
-			histos["lpt_"+region+pf]->Fill(goodLeptons[0].Pt(),evWeight);
-			histos["leta_"+region+pf]->Fill(fabs(goodLeptons[0].Eta()),evWeight);
-		      }
-		    histos["ht_"+pf]->Fill(htsum,iweight);
-		    histos["mlb_"+pf]->Fill(mlb,iweight);
-		    histos["mjj_"+pf]->Fill(mjj,iweight);
+		    histos["rankedq70mjj_"+pf]->Fill(rankedmjj,iweight);
 		    histos["ptjj_"+pf]->Fill(ptjj,iweight);
 		    histos["etajj_"+pf]->Fill(etajj,iweight);
-		  	       
-		    if(runSysts)
+		  }
+				  	       
+		if(runSysts)
+		  {
+		    //theory uncertainties (by matrix-element weighting)
+		    for(size_t igs=0; igs<ttbar_w_p->size(); igs++)
 		      {
-			//theory uncertainties (by matrix-element weighting)
-			for(size_t igs=0; igs<ttbar_w_p->size(); igs++)
+			float newWeight( iweight );
+			if(isTTJets && normH && normH->GetBinContent(igs+1))
 			  {
-			    float newWeight( iweight );
-			    if(isTTJets && normH && normH->GetBinContent(igs+1))
-			      {
-				newWeight *= (ttbar_w_p->at(igs)/ttbar_w_p->at(0)) * ( normH->GetBinContent(1)/normH->GetBinContent(igs+1));
-			      }
-			    else
-			      {
-				newWeight *= (ttbar_w_p->at(igs)/ttbar_w_p->at(0));
-			      }
-			    ((TH2 *)histos["mjjshapes_"+pf+"_gen"])->Fill(mjj,igs,newWeight);
+			    newWeight *= (ttbar_w_p->at(igs)/ttbar_w_p->at(0)) * ( normH->GetBinContent(1)/normH->GetBinContent(igs+1));
 			  }
+			else
+			  {
+			    newWeight *= (ttbar_w_p->at(igs)/ttbar_w_p->at(0));
+			  }
+
+			((TH2 *)histos["mjjshapes_"+pf+"_gen"])->Fill(mjj,igs,newWeight);
+			((TH2 *)histos["drjjshapes_"+pf+"_gen"])->Fill(drjj,igs,newWeight);			
+			((TH2 *)histos["rankedmjjshapes_"+pf+"_gen"])->Fill(rankedmjj,igs,newWeight);
+			if(drjj<DRJJTHRESHOLD) ((TH2 *)histos["rankedq70mjjshapes_"+pf+"_gen"])->Fill(rankedmjj,igs,newWeight);
 		      }
-		    histos["metpt_"+pf]->Fill(rawMET.Pt(),iweight);
-		    histos["metphi_"+pf]->Fill(rawMET.Phi(),iweight);
-		    histos["mt_"+pf]->Fill(mt,iweight);    
-		    if(nbtags)
-		      {
-			histos["jpt_"+pf]->Fill(bJets[jetIdx][0].Pt(),iweight);
-			histos["jeta_"+pf]->Fill(fabs(bJets[jetIdx][0].Eta()),iweight);
-		      }
-		    else
-		      {
-			histos["jpt_"+pf]->Fill(lightJets[jetIdx][idx1].Pt(),iweight);
-			histos["jeta_"+pf]->Fill(fabs(lightJets[jetIdx][idx1].Eta()),iweight);
-			histos["jpt_"+pf]->Fill(lightJets[jetIdx][idx2].Pt(),iweight);
-			histos["jeta_"+pf]->Fill(fabs(lightJets[jetIdx][idx2].Eta()),iweight);
-		      }
-		    histos["njets_"+pf]->Fill(njets,iweight);
 		  }
 	      }
-	    else if (runSysts && drjj<DRJJTHRESHOLD)
+	    else if (runSysts)
 	      {
 		((TH2 *)histos["mjjshapes_"+pf+"_exp"])->Fill(mjj,ivar-1,iweight);
+		((TH2 *)histos["drjjshapes_"+pf+"_exp"])->Fill(drjj,ivar-1,iweight);			
+		((TH2 *)histos["rankedmjjshapes_"+pf+"_exp"])->Fill(rankedmjj,ivar-1,iweight);
+		if(drjj<DRJJTHRESHOLD) 
+		  ((TH2 *)histos["rankedq70mjjshapes_"+pf+"_exp"])->Fill(rankedmjj,ivar-1,iweight);
 	      }
 	  }
       }
