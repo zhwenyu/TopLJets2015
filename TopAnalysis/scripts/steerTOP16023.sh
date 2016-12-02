@@ -174,13 +174,13 @@ case $WHAT in
 	    mv mlfit.root mlfit_exp.root
 	    combine workspace.root -M MultiDimFit ${commonOpts} --algo=grid --points=100;
 	    mv higgsCombineTest.MultiDimFit.mH0.root exp_plr_scan_r.root
-	    combine workspace.root -M MultiDimFit ${commonOpts} --algo=grid --points=100 -S 0;
+	    combine exp_plr_scan_r.root --snapshotName MultiDimFit -M MultiDimFit ${commonOpts} --algo=grid --points=100 -S 0;
 	    mv higgsCombineTest.MultiDimFit.mH0.root exp_plr_scan_stat_r.root
 
 	    commonOpts="-t -1 --redefineSignalPOIs btagRate -P btagRate --expectSignal=1 --algo=grid --points=100 --setPhysicsModelParameterRanges btagRate=-2,2:r=0,2 -m 0";	
 	    combine workspace.root -M MultiDimFit ${commonOpts};
 	    mv higgsCombineTest.MultiDimFit.mH0.root exp_plr_scan_btag.root
-	    combine workspace.root -M MultiDimFit ${commonOpts} -S 0;
+	    combine exp_plr_scan_btag.root --snapshotName MultiDimFit -M MultiDimFit ${commonOpts} -S 0;
 	    mv higgsCombineTest.MultiDimFit.mH0.root exp_plr_scan_stat_btag.root
 	
             combine workspace.root -M MultiDimFit --algo=grid --points=2500 -m 0 -t -1 \
@@ -198,18 +198,16 @@ case $WHAT in
 
 		combine workspace.root -M MultiDimFit --redefineSignalPOIs btagRate -P btagRate --algo=grid --points=100 ${commonOpts};
 		mv higgsCombineTest.MultiDimFit.mH0.root obs_plr_scan_btag.root
-		combine workspace.root -M MultiDimFit --redefineSignalPOIs btagRate -P btagRate --algo=grid --points=100 ${commonOpts} -S 0;
+		combine obs_plr_scan_btag.root --snapshotName MultiDimFit -M MultiDimFit --redefineSignalPOIs btagRate -P btagRate --algo=grid --points=100 ${commonOpts} -S 0;
 		mv higgsCombineTest.MultiDimFit.mH0.root obs_plr_scan_stat_btag.root
 		
 		combine workspace.root -M MultiDimFit -P r --algo=grid --points=100 ${commonOpts};
 		mv higgsCombineTest.MultiDimFit.mH0.root obs_plr_scan_r.root
-		combine workspace.root -M MultiDimFit -P r --algo=grid --points=100 ${commonOpts} -S 0;
+		combine obs_plr_scan_r.root --snapshotName MultiDimFit -M MultiDimFit -P r --algo=grid --points=100 ${commonOpts} -S 0;
 		mv higgsCombineTest.MultiDimFit.mH0.root obs_plr_scan_stat_r.root
 		
 		combine workspace.root -M MultiDimFit --algo=grid --points=2500 --redefineSignalPOIs r,btagRate -P r -P btagRate  ${commonOpts};
 		mv higgsCombineTest.MultiDimFit.mH0.root obs_plr_scan_rvsbtag.root;
-		combine workspace.root -M MultiDimFit --algo=grid --points=2500 --redefineSignalPOIs r,btagRate -P r -P btagRate  ${commonOpts} -S 0;
-		mv higgsCombineTest.MultiDimFit.mH0.root obs_plr_scan_stat_rvsbtag.root;
 		
 		commonOpts="--setPhysicsModelParameterRanges r=0,2 -m 0";
 		combineTool.py -M Impacts -d workspace.root --doInitialFit ${commonOpts} --minimizerTolerance 0.001
@@ -240,9 +238,10 @@ case $WHAT in
 	for dist in ${DISTS[@]}; do 
 	    REBIN=(4 20)
 	    if [ "$dist" == "drjj" ]; then
-		REBIN=(2 16)
+		REBIN=(2 12)
 	    fi
-	    STEPS=(PREPAREFIT FIT SHOWFIT)
+	    #STEPS=(PREPAREFIT FIT SHOWFIT)
+	    STEPS=(FIT SHOWFIT)
 	    for rebin in ${REBIN[@]}; do 
 		for step in ${STEPS[@]}; do
 		    sh ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/steerTOP16023.sh ${step} ${dist} ${rebin} 1
