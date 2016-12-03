@@ -172,6 +172,8 @@ case $WHAT in
 	    commonOpts="-t -1 --expectSignal=1 --setPhysicsModelParameterRanges btagRate=-2,2:r=0,2 -m 0 --saveWorkspace";
 	    combine workspace.root -M MaxLikelihoodFit ${commonOpts};
 	    mv mlfit.root mlfit_exp.root
+	    combine workspace.root -M MaxLikelihoodFit ${commonOpts} -S 0;
+	    mv mlfit.root mlfit_exp_stat.root
 	    combine workspace.root -M MultiDimFit ${commonOpts} --algo=grid --points=100;
 	    mv higgsCombineTest.MultiDimFit.mH0.root exp_plr_scan_r.root
 	    combine exp_plr_scan_r.root --snapshotName MultiDimFit -M MultiDimFit ${commonOpts} --algo=grid --points=100 -S 0;
@@ -195,6 +197,8 @@ case $WHAT in
 		commonOpts="--setPhysicsModelParameterRanges btagRate=-2,2:r=0,2 -m 0 --saveWorkspace";
 		combine workspace.root -M MaxLikelihoodFit ${commonOpts};
 		mv mlfit.root mlfit_obs.root
+		combine workspace.root -M MaxLikelihoodFit ${commonOpts} -S 0;
+		mv mlfit.root mlfit_obs_stat.root
 
 		combine workspace.root -M MultiDimFit --redefineSignalPOIs btagRate -P btagRate --algo=grid --points=100 ${commonOpts};
 		mv higgsCombineTest.MultiDimFit.mH0.root obs_plr_scan_btag.root
@@ -209,11 +213,11 @@ case $WHAT in
 		combine workspace.root -M MultiDimFit --algo=grid --points=2500 --redefineSignalPOIs r,btagRate -P r -P btagRate  ${commonOpts};
 		mv higgsCombineTest.MultiDimFit.mH0.root obs_plr_scan_rvsbtag.root;
 		
-		commonOpts="--setPhysicsModelParameterRanges r=0,2 -m 0";
-		combineTool.py -M Impacts -d workspace.root --doInitialFit ${commonOpts} --minimizerTolerance 0.001
-		combineTool.py -M Impacts -d workspace.root --doFits       ${commonOpts} --minimizerTolerance 0.001
-		combineTool.py -M Impacts -d workspace.root ${commonOpts} -o impacts.json
-		plotImpacts.py -i impacts.json -o impacts
+		#commonOpts="--setPhysicsModelParameterRanges r=0,2 -m 0";
+		#combineTool.py -M Impacts -d workspace.root --doInitialFit ${commonOpts} --minimizerTolerance 0.001
+		#combineTool.py -M Impacts -d workspace.root --doFits       ${commonOpts} --minimizerTolerance 0.001
+		#combineTool.py -M Impacts -d workspace.root ${commonOpts} -o impacts.json
+		#plotImpacts.py -i impacts.json -o impacts
 	    fi
 	    
 	    cd -
@@ -240,8 +244,7 @@ case $WHAT in
 	    if [ "$dist" == "drjj" ]; then
 		REBIN=(2 12)
 	    fi
-	    #STEPS=(PREPAREFIT FIT SHOWFIT)
-	    STEPS=(FIT SHOWFIT)
+	    STEPS=(PREPAREFIT FIT SHOWFIT)	    
 	    for rebin in ${REBIN[@]}; do 
 		for step in ${STEPS[@]}; do
 		    sh ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/steerTOP16023.sh ${step} ${dist} ${rebin} 1
