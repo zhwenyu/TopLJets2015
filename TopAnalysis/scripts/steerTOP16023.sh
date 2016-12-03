@@ -244,8 +244,7 @@ case $WHAT in
 	    if [ "$dist" == "drjj" ]; then
 		REBIN=(2 12)
 	    fi
-	    #STEPS=(PREPAREFIT FIT SHOWFIT)
-	    STEPS=(FIT SHOWFIT)
+	    STEPS=(PREPAREFIT FIT SHOWFIT)	    
 	    for rebin in ${REBIN[@]}; do 
 		for step in ${STEPS[@]}; do
 		    sh ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/steerTOP16023.sh ${step} ${dist} ${rebin} 1
