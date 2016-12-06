@@ -56,7 +56,10 @@ int main(int argc, char* argv[])
   if(normF)
     {
       normH=(TH1F *)normF->Get(normTag);
-      if(normH) normH->SetDirectory(0);
+      if(normH) {
+        normH->SetDirectory(0);
+        normH->SetTitle(normTag);
+      }
       normF->Close();
     }
   if(normH==0)

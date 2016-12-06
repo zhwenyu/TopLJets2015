@@ -645,6 +645,7 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
 	  break;
 	}	 
       ev_.j_csv[ev_.nj]=j->bDiscriminator("pfCombinedInclusiveSecondaryVertexV2BJetTags");
+      ev_.j_btag[ev_.nj]=(ev_.j_csv[ev_.nj]>0.800);
       ev_.j_cvsl[ev_.nj]=j->bDiscriminator("pfCombinedCvsLJetTags");
       ev_.j_cvsb[ev_.nj]=j->bDiscriminator("pfCombinedCvsBJetTags");
       ev_.j_vtxpx[ev_.nj]=j->userFloat("vtxPx");

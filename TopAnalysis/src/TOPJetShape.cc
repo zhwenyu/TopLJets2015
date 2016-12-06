@@ -9,6 +9,8 @@
 
 #include "TopLJets2015/TopAnalysis/interface/MiniEvent.h"
 #include "TopLJets2015/TopAnalysis/interface/CommonTools.h"
+#include "TopLJets2015/TopAnalysis/interface/SelectionTools.h"
+#include "TopLJets2015/TopAnalysis/interface/CorrectionTools.h"
 #include "TopLJets2015/TopAnalysis/interface/TOPJetShape.h"
 #include "TopLJets2015/TopAnalysis/interface/LeptonEfficiencyWrapper.h"
 #include "TopLJets2015/TopAnalysis/interface/BtagUncertaintyComputer.h"
@@ -48,9 +50,15 @@ void RunTopJetShape(TString filename,
 				Bool_t debug)
 {
 
-  bool isTTbar( filename.Contains("_TTJets") );
+  /////////////////////
+  // INITIALIZATION //
+  ///////////////////
+  
+  
+  bool isTTbar( filename.Contains("_TTJets") or TString(normH->GetTitle()).Contains("_TTJets"));
 
-  //prepare output
+
+  //PREPARE OUTPUT
   TopJetShapeEvent_t tjsev;
   TString baseName=gSystem->BaseName(outname); 
   TString dirName=gSystem->DirName(outname);
@@ -59,6 +67,7 @@ void RunTopJetShape(TString filename,
   TTree *outT=new TTree("tjsev","tjsev");
   createTopJetShapeEventTree(outT,tjsev);
   outT->SetDirectory(fOut);
+
 
   //READ TREE FROM FILE
   MiniEvent_t ev;
@@ -69,65 +78,65 @@ void RunTopJetShape(TString filename,
   TTree *t = (TTree*)f->Get("analysis/data");
   attachToMiniEventTree(t,ev, true);
   Int_t nentries(t->GetEntriesFast());
-  //nentries = 10000; //restrict number of entries for testing
+  nentries = 10000; //restrict number of entries for testing
   t->GetEntry(0);
-  //bool requireEtriggerOnly(false);
-  //if(ev.isData && filename.Contains("SingleElectron")) requireEtriggerOnly=true;
 
   cout << "...producing " << outname << " from " << nentries << " events" << endl;
+
 
   //PILEUP WEIGHTING
   std::vector<TGraph *>puWgtGr;
   if(!ev.isData) puWgtGr=getPileupWeights(era,puTrue);
-    
+  
+  
   //LEPTON EFFICIENCIES
   LeptonEfficiencyWrapper lepEffH(filename.Contains("Data13TeV"),era);
   bool hardCodedLES(era=="era2015");
 
-  //B-TAG CALIBRATION
-  std::vector<BTagCalibrationReader *> sfbReaders, sflReaders;
-  std::map<TString, TGraphAsymmErrors *> expBtagEff, expBtagEffPy8;
-  BTagSFUtil myBTagSFUtil;
-  if(!ev.isData)
-    {
-      TString btagUncUrl(era+"/btagSFactors.csv");
-      gSystem->ExpandPathName(btagUncUrl);
-      BTagCalibration btvcalib("csvv2", btagUncUrl.Data());
-      sfbReaders.push_back( new BTagCalibrationReader(&btvcalib, BTagEntry::OP_MEDIUM, "mujets", "central") );
-      sflReaders.push_back( new BTagCalibrationReader(&btvcalib, BTagEntry::OP_MEDIUM, "incl", "central") );
-      sfbReaders.push_back( new BTagCalibrationReader(&btvcalib, BTagEntry::OP_MEDIUM, "mujets", "up") );
-      sflReaders.push_back( new BTagCalibrationReader(&btvcalib, BTagEntry::OP_MEDIUM, "incl", "up") );
-      sfbReaders.push_back( new BTagCalibrationReader(&btvcalib, BTagEntry::OP_MEDIUM, "mujets", "down") );
-      sflReaders.push_back( new BTagCalibrationReader(&btvcalib, BTagEntry::OP_MEDIUM, "incl", "down") );
 
-      TString btagEffExpUrl(era+"/expTageff.root");
-      gSystem->ExpandPathName(btagEffExpUrl);
-      TFile *beffIn=TFile::Open(btagEffExpUrl);
-      expBtagEffPy8["b"]=(TGraphAsymmErrors *)beffIn->Get("b");
-      expBtagEffPy8["c"]=(TGraphAsymmErrors *)beffIn->Get("c");
-      expBtagEffPy8["udsg"]=(TGraphAsymmErrors *)beffIn->Get("udsg");
-      beffIn->Close();
-      
-      TString btagExpPostFix("");
-      if(isTTbar)
-        {
-          if(filename.Contains("_herwig")) btagExpPostFix="_herwig";
-          if(filename.Contains("_scaleup")) btagExpPostFix="_scaleup";
-          if(filename.Contains("_scaledown")) btagExpPostFix="_scaledown";
-        }
-      btagEffExpUrl.ReplaceAll(".root",btagExpPostFix+".root");
-      beffIn=TFile::Open(btagEffExpUrl);
-      expBtagEff["b"]=(TGraphAsymmErrors *)beffIn->Get("b");
-      expBtagEff["c"]=(TGraphAsymmErrors *)beffIn->Get("c");
-      expBtagEff["udsg"]=(TGraphAsymmErrors *)beffIn->Get("udsg");
-      beffIn->Close();
-    }
+  //B-TAG CALIBRATION
+  BTagCalibrationReader* sfbReader;
+  BTagCalibrationReader* sflReader;
+  std::map<TString, TGraphAsymmErrors*> expBtagEff, expBtagEffPy8;
+  BTagSFUtil* myBTagSFUtil = new BTagSFUtil();
   
-  //jet energy uncertainties
+  TString btagUncUrl(era+"/btagSFactors.csv");
+  gSystem->ExpandPathName(btagUncUrl);
+  BTagCalibration btvcalib("csvv2", btagUncUrl.Data());
+  sfbReader = new BTagCalibrationReader(&btvcalib, BTagEntry::OP_MEDIUM, "mujets", "central");
+  sflReader = new BTagCalibrationReader(&btvcalib, BTagEntry::OP_MEDIUM, "incl",   "central");
+  //dummy calls
+  sfbReader->eval( BTagEntry::FLAV_B,    0., 30.);
+  sflReader->eval( BTagEntry::FLAV_UDSG, 0., 30.);
+
+  TString btagEffExpUrl(era+"/expTageff.root");
+  gSystem->ExpandPathName(btagEffExpUrl);
+  TFile *beffIn=TFile::Open(btagEffExpUrl);
+  expBtagEffPy8["b"]    = (TGraphAsymmErrors*) beffIn->Get("b");
+  expBtagEffPy8["c"]    = (TGraphAsymmErrors*) beffIn->Get("c");
+  expBtagEffPy8["udsg"] = (TGraphAsymmErrors*) beffIn->Get("udsg");
+  beffIn->Close();
+  
+  TString btagExpPostFix("");
+  if(isTTbar) {
+    if(filename.Contains("_herwig"))    btagExpPostFix="_herwig";
+    if(filename.Contains("_scaleup"))   btagExpPostFix="_scaleup";
+    if(filename.Contains("_scaledown")) btagExpPostFix="_scaledown";
+  }
+  btagEffExpUrl.ReplaceAll(".root",btagExpPostFix+".root");
+  beffIn=TFile::Open(btagEffExpUrl);
+  expBtagEff["b"]    = (TGraphAsymmErrors*) beffIn->Get("b");
+  expBtagEff["c"]    = (TGraphAsymmErrors*) beffIn->Get("c");
+  expBtagEff["udsg"] = (TGraphAsymmErrors*) beffIn->Get("udsg");
+  beffIn->Close();
+  
+  
+  //JET ENERGY UNCERTAINTIES
   TString jecUncUrl(era+"/jecUncertaintySources_AK4PFchs.txt");
   gSystem->ExpandPathName(jecUncUrl);
   JetCorrectorParameters *jecParam = new JetCorrectorParameters(jecUncUrl.Data(),"Total");
   JetCorrectionUncertainty *jecUnc = new JetCorrectionUncertainty( *jecParam );
+
 
   //BOOK HISTOGRAMS
   std::map<TString, TH1 *> allPlots;
@@ -153,367 +162,57 @@ void RunTopJetShape(TString filename,
   for (auto& it : allPlots)   { it.second->Sumw2(); it.second->SetDirectory(0); }
   for (auto& it : all2dPlots) { it.second->Sumw2(); it.second->SetDirectory(0); }
 
-  //LOOP OVER EVENTS
+
+  ///////////////////////
+  // LOOP OVER EVENTS //
+  /////////////////////
   for (Int_t iev=0;iev<nentries;iev++)
     {
       t->GetEntry(iev);
       resetTopJetShapeEvent(tjsev);
       if(iev%100==0) printf ("\r [%3.0f/100] done",100.*(float)(iev)/(float)(nentries));
       
-      //GENERATOR LEVEL SELECTION
+      //////////////////
+      // CORRECTIONS //
+      ////////////////
       
-      int sel_ngleptons = 0;
-      int vet_ngleptons = 0;
-      int sel_ngbjets   = 0;
-      int sel_ngwcand   = 0;
-      std::vector<Jet> genJets;
-      
-      //loop over gen jets and leptons from pseudotop producer
-      //leptons
-      for (int i = 0; i < ev.ng; i++) {
-        if (abs(ev.g_id[i])>10) {
-          //store to tree
-          tjsev.gl_id [tjsev.ngl] = ev.g_id [i];
-          tjsev.gl_pt [tjsev.ngl] = ev.g_pt [i];
-          tjsev.gl_eta[tjsev.ngl] = ev.g_eta[i];
-          tjsev.gl_phi[tjsev.ngl] = ev.g_phi[i];
-          tjsev.gl_m  [tjsev.ngl] = ev.g_m  [i];
-          tjsev.gl_id [tjsev.ngl] = ev.g_id [i];
-          //count
-          tjsev.ngl++;
-          if      (ev.g_pt[i]>30 && abs(ev.g_eta[i])<2.1) sel_ngleptons++;
-          else if (ev.g_pt[i]>15 && abs(ev.g_eta[i])<2.5) vet_ngleptons++;
-        }
-      }
-      //jets
-      for (int i = 0; i < ev.ng; i++) {
-        if (ev.g_pt[i]>30 && abs(ev.g_eta[i])<2.4 && abs(ev.g_id[i])<10) {
-          TLorentzVector jp4; jp4.SetPtEtaPhiM(ev.g_pt[i],ev.g_eta[i],ev.g_phi[i],ev.g_m[i]);
-          //check overlap with leptons
-          bool lepJetOverlap = false;
-          for (int l = 0; l < tjsev.ngl; l++) {
-            if (tjsev.gl_pt[l] < 30) continue;
-            TLorentzVector lp4; lp4.SetPtEtaPhiM(tjsev.gl_pt[l],tjsev.gl_eta[l],tjsev.gl_phi[l],tjsev.gl_m[l]);
-            if (jp4.DeltaR(lp4) < 0.4) lepJetOverlap = true;
-          }
-          if (lepJetOverlap) continue;
-          genJets.push_back(Jet(jp4, abs(ev.g_id[i]), i));
-          //count
-          tjsev.ngj++;
-          if (abs(ev.g_id[i])==5) sel_ngbjets++;
-        }
+      ev = addBTagDecisions(ev);
+      if(!ev.isData) {
+        ev = smearJetEnergies(ev);
+        ev = updateBTagDecisions(ev, sfbReader, sflReader, expBtagEff, expBtagEffPy8, myBTagSFUtil);      
       }
       
-      //flag non-b jets as part of W boson candidates: flavor 0->1
-      //TODO: matched events at 8 TeV: mu=84.23, sigma=12.39 GeV. Correction needed?
-      for (int i = 0; i < tjsev.ngj; i++) {
-        for (int j = i+1; j < tjsev.ngj; j++) {
-          if (genJets[i].p4().DeltaR(genJets[j].p4()) < 0.8) {
-            genJets[i].setOverlap(1);
-            genJets[j].setOverlap(1);
-          }
-          if (genJets[i].flavor()==5 or genJets[j].flavor()==5) continue;
-          TLorentzVector wCand = genJets[i].p4() + genJets[j].p4();
-          if (abs(wCand.M()-80.4) < 15.) {
-            genJets[i].setFlavor(1);
-            genJets[j].setFlavor(1);
-            sel_ngwcand++;
-          }
-        }
-      }
+      ///////////////////////////
+      // RECO LEVEL SELECTION //
+      /////////////////////////
       
-      //event selected on generator level?
-      if (sel_ngbjets==2 && sel_ngwcand>0 && 
-          sel_ngleptons==1 && vet_ngleptons==0) tjsev.gen_sel = 1;
+      //get good leptons
+      std::vector<Particle> leptons = getGoodLeptons(ev, 30., 2.1, true, 15., 2.5);
       
-
-      //RECO LEVEL SELECTION
+      //decide the lepton channel
+      TString chTag = getChannel(ev, filename, leptons);
+            
+      //get jets
+      std::vector<Jet> jets = getGoodJets(ev, 30., 2.4, leptons);
       
+      //count b and W candidates
       int sel_nbjets = 0;
       int sel_nwcand = 0;
-      std::vector<Jet> jets;
-      
-      //account for pu weights and effect on normalization
-      float puWeight(1.0);
-      if(!ev.isData) 
-        {
-          puWeight=puWgtGr[0]->Eval(ev.putrue);  
-          allPlots["puwgtctr"]->Fill(0.,1.0);
-          allPlots["puwgtctr"]->Fill(1.,puWeight);
-        }
 
-      //select 1 good lepton
-      std::vector<int> tightLeptons,looseLeptons;
-      for(int il=0; il<ev.nl; il++)
-        {
-          bool passTightKin(ev.l_pt[il]>30 && fabs(ev.l_eta[il])<2.1);
-          bool passLooseKin(ev.l_pt[il]>15 && fabs(ev.l_eta[il])<2.5);
-          bool passTightId(ev.l_id[il]==13 ? (ev.l_pid[il]>>1)&0x1  : (ev.l_pid[il]>>2)&0x1);
-          float relIso(ev.l_relIso[il]);
-          bool passTightIso( ev.l_id[il]==13 ? relIso<0.15 : (ev.l_pid[il]>>1)&0x1);
-          bool passLooseIso( ev.l_id[il]==13 ? relIso<0.25 : (ev.l_pid[il]   )&0x1);
-          if(passTightKin && passTightId && passTightIso) tightLeptons.push_back(il);
-          else if(passLooseKin && passLooseIso)           looseLeptons.push_back(il);
-        }
-      
-      //check if triggers have fired
-      //bool hasMuTrigger((ev.muTrigger & 0x3)!=0);
-      //bool hasEleTrigger((ev.elTrigger & 0x1)!=0);
-
-      //decide the channel
-      std::vector<int> selLeptons, selLeptonsId;
-      selLeptons.insert(selLeptons.end(), tightLeptons.begin(), tightLeptons.end());
-      selLeptons.insert(selLeptons.end(), looseLeptons.begin(), looseLeptons.end());
-      /*
-      if(tightLeptons.size()==1 && looseLeptons.size()==0)
-        {
-          selLeptons.push_back( tightLeptons[0] );
-        }
-      if(tightLeptons.size()==0 && looseLeptons.size()==1)
-        {
-          selLeptons.push_back( looseLeptons[0] );
-        }
-      if(tightLeptons.size()>=2)
-        {
-          selLeptons.push_back(tightLeptons[0]);
-          selLeptons.push_back(tightLeptons[1]);
-        }
-      if(tightLeptons.size()==1 && looseLeptons.size()>=1)
-        {
-          selLeptons.push_back(tightLeptons[0]);
-          selLeptons.push_back(looseLeptons[0]);          
-        }
-      */
-
-      //save lepton kinematics
-      std::vector<TLorentzVector> leptons;
-      for(size_t il=0; il<selLeptons.size(); il++)
-        {
-          int lepIdx=selLeptons[il];
-          selLeptonsId.push_back(ev.l_id[lepIdx]);
-          TLorentzVector lp4;
-          lp4.SetPtEtaPhiM(ev.l_pt[lepIdx],ev.l_eta[lepIdx],ev.l_phi[lepIdx],ev.l_mass[lepIdx]);
-          leptons.push_back(lp4);
-        }
-
-      //select jets
-      for (int k=0; k<ev.nj;k++)
-        {
-          //check kinematics
-          TLorentzVector jp4;
-          jp4.SetPtEtaPhiM(ev.j_pt[k],ev.j_eta[k],ev.j_phi[k],ev.j_mass[k]);
-
-          //cross clean with leptons
-          bool overlapsWithLepton(false);
-          for(size_t il=0; il<leptons.size(); il++)
-            {
-              if(jp4.DeltaR(leptons[il])>0.4) continue;
-              overlapsWithLepton=true;
-            }
-          if(overlapsWithLepton) continue;
-
-          //smear jet energy resolution for MC
-          float genJet_pt(0);
-          if(ev.j_g[k]>-1) genJet_pt=ev.g_pt[ ev.j_g[k] ];
-          if(!ev.isData && genJet_pt>0) 
-            {
-              float jerSmear=getJetResolutionScales(jp4.Pt(),jp4.Eta(),genJet_pt)[0];
-              jp4 *= jerSmear;
-            }
-          
-          //jet kinematic selection
-          if(jp4.Pt() < 30 || abs(jp4.Eta()) > 2.4) continue;
-          
-          //b-tag
-          float csv = ev.j_csv[k];          
-          bool isBTagged(csv>0.800);
-          if(!ev.isData)
-            {
-              float jptForBtag(jp4.Pt()>1000. ? 999. : jp4.Pt()), jetaForBtag(fabs(jp4.Eta()));
-              float expEff(1.0), jetBtagSF(1.0);
-              if(abs(ev.j_hadflav[k])==4) 
-                {         
-                  expEff    = expBtagEff["c"]->Eval(jptForBtag); 
-                  jetBtagSF = sfbReaders[0]->eval( BTagEntry::FLAV_C, jetaForBtag, jptForBtag);
-                  jetBtagSF *= expEff>0 ? expBtagEffPy8["c"]->Eval(jptForBtag)/expBtagEff["c"]->Eval(jptForBtag) : 0.;
-                }
-              else if(abs(ev.j_hadflav[k])==5) 
-                { 
-                  expEff    = expBtagEff["b"]->Eval(jptForBtag); 
-                  jetBtagSF = sfbReaders[0]->eval( BTagEntry::FLAV_B, jetaForBtag, jptForBtag);
-                  jetBtagSF *= expEff>0 ? expBtagEffPy8["b"]->Eval(jptForBtag)/expBtagEff["b"]->Eval(jptForBtag) : 0.;
-                }
-              else
-                {
-                  expEff    = expBtagEff["udsg"]->Eval(jptForBtag);
-                  jetBtagSF = sflReaders[0]->eval( BTagEntry::FLAV_UDSG, jetaForBtag, jptForBtag);
-                  jetBtagSF *= expEff> 0 ? expBtagEffPy8["udsg"]->Eval(jptForBtag)/expBtagEff["udsg"]->Eval(jptForBtag) : 0.;
-                }
-              
-              //updated b-tagging decision with the data/MC scale factor
-              myBTagSFUtil.modifyBTagsWithSF(isBTagged,    jetBtagSF,     expEff);
-            }
-
-          //flavor based on b tagging
-          int flavor = 0;
-          if (isBTagged) {
-            flavor = 5;
-            sel_nbjets++;
-          }
-          
-          //store to jet analysis objects
-          jets.push_back(Jet(jp4, flavor, k));
-        }
-      
-      tjsev.nj=jets.size();
-      
-      //flag non-b jets as part of W boson candidates: flavor 0->1
-      for (int i = 0; i < tjsev.nj; i++) {
-        for (int j = i+1; j < tjsev.nj; j++) {
-          if (jets[i].p4().DeltaR(jets[j].p4()) < 0.8) {
-            jets[i].setOverlap(1);
-            jets[j].setOverlap(1);
-          }
-          if (jets[i].flavor()==5 or jets[j].flavor()==5) continue;
-          TLorentzVector wCand = jets[i].p4() + jets[j].p4();
-          if (abs(wCand.M()-80.4) < 15.) {
-            jets[i].setFlavor(1);
-            jets[j].setFlavor(1);
-            sel_nwcand++;
-          }
-        }
+      for (auto& jet : jets) {
+        if (jet.flavor() == 5) ++sel_nbjets;
+        if (jet.flavor() == 1) ++sel_nwcand;
       }
       
       //event selected on reco level?
-      if (sel_nbjets==2 && sel_nwcand>0 && 
-          tightLeptons.size()==1 && looseLeptons.size()==0) tjsev.reco_sel = 1;
+      bool singleLepton(chTag=="E" || chTag=="M");
+      if (sel_nbjets==2 && sel_nwcand>0 && singleLepton) tjsev.reco_sel = 1;
       
-      //proceed only if event is selected on gen or reco level
-      if (tjsev.gen_sel + tjsev.reco_sel == -2) continue;
+      tjsev.nj=jets.size();
       
-      
-      //GEN LEVEL ANALYSIS
-      
-      //fill jet constituents
-      for (int i = 0; i < tjsev.ngj; i++) {
-        int idx = genJets[i].getJetIndex();
-        for (int p = 0; p < ev.ngpf; p++) {
-          if (ev.gpf_g[p] == idx) {
-            TLorentzVector pp4;
-            pp4.SetPtEtaPhiM(ev.gpf_pt[p],ev.gpf_eta[p],ev.gpf_phi[p],ev.gpf_m[p]);
-            genJets[i].addParticle(Particle(pp4, ev.gpf_c[p], 1.));
-          }
-        }
-      }
-      
-      //store jets to tree, including generalized angularities (jet shapes)
-      for (int i = 0; i < tjsev.ngj; i++) {
-        tjsev.gj_pt  [i] = genJets[i].p4().Pt();
-        tjsev.gj_eta [i] = genJets[i].p4().Eta();
-        tjsev.gj_phi [i] = genJets[i].p4().Phi();
-        tjsev.gj_m   [i] = genJets[i].p4().M();
-        tjsev.gj_flavor[i] = genJets[i].flavor();
-        tjsev.gj_overlap[i] = genJets[i].overlap();
-        //for (int i1 = 0; i1 < 3; ++i1) for (int i2 = 0; i2 < 3; ++i2) for (int i3 = 0; i3 < 3; ++i3) for (int i4 = 0; i4 < 3; ++i4)
-        //tjsev.gj_ga[i][i1][i2][i3][i4] = calcGA(genJets[i], i1, i2, i3, i4);
-        
-        tjsev.gj_mult_charged[i] = getMult(genJets[i]);
-        tjsev.gj_mult_all[i]     = getMult(genJets[i], true);
-        tjsev.gj_mult_puppi[i]   = getMult(genJets[i], true, true);
-        
-        tjsev.gj_ptd_charged[i] = getPtD(genJets[i]);
-        tjsev.gj_ptd_all[i]     = getPtD(genJets[i], true);
-        tjsev.gj_ptd_puppi[i]   = getPtD(genJets[i], true, true);
-        
-        tjsev.gj_width_charged[i] = getWidth(genJets[i]);
-        tjsev.gj_width_all[i]     = getWidth(genJets[i], true);
-        tjsev.gj_width_puppi[i]   = getWidth(genJets[i], true, true);
-        
-        tjsev.gj_ecc_charged[i] = getEcc(genJets[i]);
-        tjsev.gj_ecc_all[i]     = getEcc(genJets[i], true);
-        tjsev.gj_ecc_puppi[i]   = getEcc(genJets[i], true, true);
-        
-        tjsev.gj_tau21_charged[i] = getTau(2, 1, genJets[i]);
-        tjsev.gj_tau21_all[i]     = getTau(2, 1, genJets[i], true);
-        tjsev.gj_tau21_puppi[i]   = getTau(2, 1, genJets[i], true, true);
-        
-        tjsev.gj_tau32_charged[i] = getTau(3, 2, genJets[i]);
-        tjsev.gj_tau32_all[i]     = getTau(3, 2, genJets[i], true);
-        tjsev.gj_tau32_puppi[i]   = getTau(3, 2, genJets[i], true, true);
-        
-        tjsev.gj_tau43_charged[i] = getTau(4, 3, genJets[i]);
-        tjsev.gj_tau43_all[i]     = getTau(4, 3, genJets[i], true);
-        tjsev.gj_tau43_puppi[i]   = getTau(4, 3, genJets[i], true, true);
-        
-        std::vector<double> zgResult_charged = getZg(genJets[i]);
-        std::vector<double> zgResult_all     = getZg(genJets[i], true);
-        std::vector<double> zgResult_puppi   = getZg(genJets[i], true, true);
-        
-        tjsev.gj_zg_charged[i]    = zgResult_charged[0];
-        tjsev.gj_zg_all[i]        = zgResult_all[0];
-        tjsev.gj_zg_puppi[i]      = zgResult_puppi[0];
-        
-        tjsev.gj_zgxdr_charged[i] = zgResult_charged[1];
-        tjsev.gj_zgxdr_all[i]     = zgResult_all[1];
-        tjsev.gj_zgxdr_puppi[i]   = zgResult_puppi[1];
-        
-        tjsev.gj_zgdr_charged[i]  = zgResult_charged[2];
-        tjsev.gj_zgdr_all[i]      = zgResult_all[2];
-        tjsev.gj_zgdr_puppi[i]    = zgResult_puppi[2];
-        
-        tjsev.gj_ga_width_charged[i]  = calcGA(1., 1., genJets[i]);
-        tjsev.gj_ga_width_all[i]      = calcGA(1., 1., genJets[i], true);
-        tjsev.gj_ga_width_puppi[i]    = calcGA(1., 1., genJets[i], true, true);
-        
-        tjsev.gj_ga_lha_charged[i]    = calcGA(0.5, 1., genJets[i]);
-        tjsev.gj_ga_lha_all[i]        = calcGA(0.5, 1., genJets[i], true);
-        tjsev.gj_ga_lha_puppi[i]      = calcGA(0.5, 1., genJets[i], true, true);
-        
-        tjsev.gj_ga_thrust_charged[i] = calcGA(2., 1., genJets[i]);
-        tjsev.gj_ga_thrust_all[i]     = calcGA(2., 1., genJets[i], true);
-        tjsev.gj_ga_thrust_puppi[i]   = calcGA(2., 1., genJets[i], true, true);
-        
-        tjsev.gj_c1_02_charged[i] = getC(1, 0.2, genJets[i]);
-        tjsev.gj_c1_02_all[i]     = getC(1, 0.2, genJets[i], true);
-        tjsev.gj_c1_02_puppi[i]   = getC(1, 0.2, genJets[i], true, true);
-        tjsev.gj_c1_05_charged[i] = getC(1, 0.5, genJets[i]);
-        tjsev.gj_c1_05_all[i]     = getC(1, 0.5, genJets[i], true);
-        tjsev.gj_c1_05_puppi[i]   = getC(1, 0.5, genJets[i], true, true);
-        tjsev.gj_c1_10_charged[i] = getC(1, 1.0, genJets[i]);
-        tjsev.gj_c1_10_all[i]     = getC(1, 1.0, genJets[i], true);
-        tjsev.gj_c1_10_puppi[i]   = getC(1, 1.0, genJets[i], true, true);
-        tjsev.gj_c1_20_charged[i] = getC(1, 2.0, genJets[i]);
-        tjsev.gj_c1_20_all[i]     = getC(1, 2.0, genJets[i], true);
-        tjsev.gj_c1_20_puppi[i]   = getC(1, 2.0, genJets[i], true, true);
-        tjsev.gj_c2_02_charged[i] = getC(2, 0.2, genJets[i]);
-        tjsev.gj_c2_02_all[i]     = getC(2, 0.2, genJets[i], true);
-        tjsev.gj_c2_02_puppi[i]   = getC(2, 0.2, genJets[i], true, true);
-        tjsev.gj_c2_05_charged[i] = getC(2, 0.5, genJets[i]);
-        tjsev.gj_c2_05_all[i]     = getC(2, 0.5, genJets[i], true);
-        tjsev.gj_c2_05_puppi[i]   = getC(2, 0.5, genJets[i], true, true);
-        tjsev.gj_c2_10_charged[i] = getC(2, 1.0, genJets[i]);
-        tjsev.gj_c2_10_all[i]     = getC(2, 1.0, genJets[i], true);
-        tjsev.gj_c2_10_puppi[i]   = getC(2, 1.0, genJets[i], true, true);
-        tjsev.gj_c2_20_charged[i] = getC(2, 2.0, genJets[i]);
-        tjsev.gj_c2_20_all[i]     = getC(2, 2.0, genJets[i], true);
-        tjsev.gj_c2_20_puppi[i]   = getC(2, 2.0, genJets[i], true, true);
-        tjsev.gj_c3_02_charged[i] = getC(3, 0.2, genJets[i]);
-        tjsev.gj_c3_02_all[i]     = getC(3, 0.2, genJets[i], true);
-        tjsev.gj_c3_02_puppi[i]   = getC(3, 0.2, genJets[i], true, true);
-        tjsev.gj_c3_05_charged[i] = getC(3, 0.5, genJets[i]);
-        tjsev.gj_c3_05_all[i]     = getC(3, 0.5, genJets[i], true);
-        tjsev.gj_c3_05_puppi[i]   = getC(3, 0.5, genJets[i], true, true);
-        tjsev.gj_c3_10_charged[i] = getC(3, 1.0, genJets[i]);
-        tjsev.gj_c3_10_all[i]     = getC(3, 1.0, genJets[i], true);
-        tjsev.gj_c3_10_puppi[i]   = getC(3, 1.0, genJets[i], true, true);
-        tjsev.gj_c3_20_charged[i] = getC(3, 2.0, genJets[i]);
-        tjsev.gj_c3_20_all[i]     = getC(3, 2.0, genJets[i], true);
-        tjsev.gj_c3_20_puppi[i]   = getC(3, 2.0, genJets[i], true, true);
-
-      }
-
-      
-      //RECO LEVEL ANALYSIS
+      //////////////////////////
+      // RECO LEVEL ANALYSIS //
+      ////////////////////////
       
       //event weight
       float wgt(1.0);
@@ -548,17 +247,15 @@ void RunTopJetShape(TString filename,
               allPlots["puwgtctr"]->Fill(iwgt+1,puWgts[iwgt]);
             }
 
-          TString chTag("EorM"); //TODO: uargs
           if(chTag!="")
             {
               //trigger/id+iso efficiency corrections
-              triggerCorrWgt=lepEffH.getTriggerCorrection(selLeptonsId,leptons);
-              for(size_t il=0; il<leptons.size(); il++)
-                {
-                  EffCorrection_t selSF=lepEffH.getOfflineCorrection(selLeptonsId[il],leptons[il].Pt(),leptons[il].Eta());
-                  lepSelCorrWgt.second = sqrt( pow(lepSelCorrWgt.first*selSF.second,2)+pow(lepSelCorrWgt.second*selSF.first,2));
-                  lepSelCorrWgt.first *= selSF.first;
-                }
+              triggerCorrWgt=lepEffH.getTriggerCorrection(leptons);
+              for(auto& lepton : leptons) {
+                EffCorrection_t selSF=lepEffH.getOfflineCorrection(lepton);
+                lepSelCorrWgt.second = sqrt( pow(lepSelCorrWgt.first*selSF.second,2)+pow(lepSelCorrWgt.second*selSF.first,2));
+                lepSelCorrWgt.first *= selSF.first;
+              }
             }
 	    
 	        //update nominal event weight
@@ -571,150 +268,328 @@ void RunTopJetShape(TString filename,
         if (ilfs > 0 and tjsev.reco_sel == -1) continue;
         TString tag(stageVec[ilfs]);
         allPlots["nvtx_"+tag]->Fill(ev.nvtx,wgt);
-        allPlots["njets_"+tag]->Fill(tjsev.nj, wgt);
+        allPlots["njets_"+tag]->Fill(jets.size(), wgt);
       }
 
       //fill leptons
       tjsev.nl=leptons.size();
-      for(int il=0; il<(int)leptons.size(); il++)
-        {
-          tjsev.l_pt[il]=leptons[il].Pt();
-          tjsev.l_eta[il]=leptons[il].Eta();
-          tjsev.l_phi[il]=leptons[il].Phi();
-          tjsev.l_m[il]=leptons[il].M();
-          tjsev.l_id[il]=ev.l_id[ selLeptons[il] ];
-        }
-      
-      //fill jet constituents
-      for (int i = 0; i < tjsev.nj; i++) {
-        int idx = jets[i].getJetIndex();
-        for (int p = 0; p < ev.npf; p++) {
-          if (ev.pf_j[p] == idx) {
-            TLorentzVector pp4;
-            pp4.SetPtEtaPhiM(ev.pf_pt[p],ev.pf_eta[p],ev.pf_phi[p],ev.pf_m[p]);
-            jets[i].addParticle(Particle(pp4, ev.pf_c[p], ev.pf_puppiWgt[p]));
-          }
-        }
+      int il = 0;
+      for(auto& lepton : leptons) {
+        tjsev.l_pt[il]  = lepton.pt();
+        tjsev.l_eta[il] = lepton.eta();
+        tjsev.l_phi[il] = lepton.phi();
+        tjsev.l_m[il]   = lepton.m();
+        tjsev.l_id[il]  = lepton.id();
+        il++;
       }
       
       //fill jets (with jet shapes)
-      for(int ij=0; ij<(int)jets.size(); ij++)
-        {
-          tjsev.j_pt[ij]   = jets[ij].p4().Pt();
-          tjsev.j_eta[ij]  = jets[ij].p4().Eta();
-          tjsev.j_phi[ij]  = jets[ij].p4().Phi();
-          tjsev.j_m[ij]    = jets[ij].p4().M(); 
-          tjsev.j_flavor[ij] = jets[ij].flavor();
-          tjsev.j_overlap[ij] = jets[ij].overlap();
-          //for (int i1 = 0; i1 < 3; ++i1) for (int i2 = 0; i2 < 3; ++i2) for (int i3 = 0; i3 < 3; ++i3) for (int i4 = 0; i4 < 3; ++i4)
-          //tjsev.j_ga[ij][i1][i2][i3][i4] = calcGA(jets[ij], i1, i2, i3, i4);
-          
-          tjsev.j_mult_charged[ij] = getMult(jets[ij]);
-          tjsev.j_mult_all[ij]     = getMult(jets[ij], true);
-          tjsev.j_mult_puppi[ij]   = getMult(jets[ij], true, true);
-          
-          tjsev.j_ptd_charged[ij] = getPtD(jets[ij]);
-          tjsev.j_ptd_all[ij]     = getPtD(jets[ij], true);
-          tjsev.j_ptd_puppi[ij]   = getPtD(jets[ij], true, true);
-          
-          tjsev.j_width_charged[ij] = getWidth(jets[ij]);
-          tjsev.j_width_all[ij]     = getWidth(jets[ij], true);
-          tjsev.j_width_puppi[ij]   = getWidth(jets[ij], true, true);
-          
-          tjsev.j_ecc_charged[ij] = getEcc(jets[ij]);
-          tjsev.j_ecc_all[ij]     = getEcc(jets[ij], true);
-          tjsev.j_ecc_puppi[ij]   = getEcc(jets[ij], true, true);
-          
-          tjsev.j_tau21_charged[ij] = getTau(2, 1, jets[ij]);
-          tjsev.j_tau21_all[ij]     = getTau(2, 1, jets[ij], true);
-          tjsev.j_tau21_puppi[ij]   = getTau(2, 1, jets[ij], true, true);
-          
-          tjsev.j_tau32_charged[ij] = getTau(3, 2, jets[ij]);
-          tjsev.j_tau32_all[ij]     = getTau(3, 2, jets[ij], true);
-          tjsev.j_tau32_puppi[ij]   = getTau(3, 2, jets[ij], true, true);
-          
-          tjsev.j_tau43_charged[ij] = getTau(4, 3, jets[ij]);
-          tjsev.j_tau43_all[ij]     = getTau(4, 3, jets[ij], true);
-          tjsev.j_tau43_puppi[ij]   = getTau(4, 3, jets[ij], true, true);
-          
-          std::vector<double> zgResult_charged = getZg(jets[ij]);
-          std::vector<double> zgResult_all     = getZg(jets[ij], true);
-          std::vector<double> zgResult_puppi   = getZg(jets[ij], true, true);
-          
-          tjsev.j_zg_charged[ij]    = zgResult_charged[0];
-          tjsev.j_zg_all[ij]        = zgResult_all[0];
-          tjsev.j_zg_puppi[ij]      = zgResult_puppi[0];
-          
-          tjsev.j_zgxdr_charged[ij] = zgResult_charged[1];
-          tjsev.j_zgxdr_all[ij]     = zgResult_all[1];
-          tjsev.j_zgxdr_puppi[ij]   = zgResult_puppi[1];
-          
-          tjsev.j_zgdr_charged[ij]  = zgResult_charged[2];
-          tjsev.j_zgdr_all[ij]      = zgResult_all[2];
-          tjsev.j_zgdr_puppi[ij]    = zgResult_puppi[2];
-          
-          tjsev.j_ga_width_charged[ij]  = calcGA(1., 1., jets[ij]);
-          tjsev.j_ga_width_all[ij]      = calcGA(1., 1., jets[ij], true);
-          tjsev.j_ga_width_puppi[ij]    = calcGA(1., 1., jets[ij], true, true);
-          
-          tjsev.j_ga_lha_charged[ij]    = calcGA(0.5, 1., jets[ij]);
-          tjsev.j_ga_lha_all[ij]        = calcGA(0.5, 1., jets[ij], true);
-          tjsev.j_ga_lha_puppi[ij]      = calcGA(0.5, 1., jets[ij], true, true);
-          
-          tjsev.j_ga_thrust_charged[ij] = calcGA(2., 1., jets[ij]);
-          tjsev.j_ga_thrust_all[ij]     = calcGA(2., 1., jets[ij], true);
-          tjsev.j_ga_thrust_puppi[ij]   = calcGA(2., 1., jets[ij], true, true);
-          
-          tjsev.j_c1_02_charged[ij] = getC(1, 0.2, jets[ij]);
-          tjsev.j_c1_02_all[ij]     = getC(1, 0.2, jets[ij], true);
-          tjsev.j_c1_02_puppi[ij]   = getC(1, 0.2, jets[ij], true, true);
-          tjsev.j_c1_05_charged[ij] = getC(1, 0.5, jets[ij]);
-          tjsev.j_c1_05_all[ij]     = getC(1, 0.5, jets[ij], true);
-          tjsev.j_c1_05_puppi[ij]   = getC(1, 0.5, jets[ij], true, true);
-          tjsev.j_c1_10_charged[ij] = getC(1, 1.0, jets[ij]);
-          tjsev.j_c1_10_all[ij]     = getC(1, 1.0, jets[ij], true);
-          tjsev.j_c1_10_puppi[ij]   = getC(1, 1.0, jets[ij], true, true);
-          tjsev.j_c1_20_charged[ij] = getC(1, 2.0, jets[ij]);
-          tjsev.j_c1_20_all[ij]     = getC(1, 2.0, jets[ij], true);
-          tjsev.j_c1_20_puppi[ij]   = getC(1, 2.0, jets[ij], true, true);
-          tjsev.j_c2_02_charged[ij] = getC(2, 0.2, jets[ij]);
-          tjsev.j_c2_02_all[ij]     = getC(2, 0.2, jets[ij], true);
-          tjsev.j_c2_02_puppi[ij]   = getC(2, 0.2, jets[ij], true, true);
-          tjsev.j_c2_05_charged[ij] = getC(2, 0.5, jets[ij]);
-          tjsev.j_c2_05_all[ij]     = getC(2, 0.5, jets[ij], true);
-          tjsev.j_c2_05_puppi[ij]   = getC(2, 0.5, jets[ij], true, true);
-          tjsev.j_c2_10_charged[ij] = getC(2, 1.0, jets[ij]);
-          tjsev.j_c2_10_all[ij]     = getC(2, 1.0, jets[ij], true);
-          tjsev.j_c2_10_puppi[ij]   = getC(2, 1.0, jets[ij], true, true);
-          tjsev.j_c2_20_charged[ij] = getC(2, 2.0, jets[ij]);
-          tjsev.j_c2_20_all[ij]     = getC(2, 2.0, jets[ij], true);
-          tjsev.j_c2_20_puppi[ij]   = getC(2, 2.0, jets[ij], true, true);
-          tjsev.j_c3_02_charged[ij] = getC(3, 0.2, jets[ij]);
-          tjsev.j_c3_02_all[ij]     = getC(3, 0.2, jets[ij], true);
-          tjsev.j_c3_02_puppi[ij]   = getC(3, 0.2, jets[ij], true, true);
-          tjsev.j_c3_05_charged[ij] = getC(3, 0.5, jets[ij]);
-          tjsev.j_c3_05_all[ij]     = getC(3, 0.5, jets[ij], true);
-          tjsev.j_c3_05_puppi[ij]   = getC(3, 0.5, jets[ij], true, true);
-          tjsev.j_c3_10_charged[ij] = getC(3, 1.0, jets[ij]);
-          tjsev.j_c3_10_all[ij]     = getC(3, 1.0, jets[ij], true);
-          tjsev.j_c3_10_puppi[ij]   = getC(3, 1.0, jets[ij], true, true);
-          tjsev.j_c3_20_charged[ij] = getC(3, 2.0, jets[ij]);
-          tjsev.j_c3_20_all[ij]     = getC(3, 2.0, jets[ij], true);
-          tjsev.j_c3_20_puppi[ij]   = getC(3, 2.0, jets[ij], true, true);
-
-          //matching to gen jet
-          for(int ig=0; ig<(int)genJets.size(); ig++) {
-	          if(jets[ij].p4().DeltaR(genJets[ig].p4())>0.4) continue;
-	          tjsev.j_gj[ij] = ig;
-	          tjsev.gj_j[ig] = ij;
-	          break;
-	        }
-        }
+      for(int ij=0; ij<(int)jets.size(); ij++) {
+        tjsev.j_pt[ij]      = jets[ij].p4().Pt();
+        tjsev.j_eta[ij]     = jets[ij].p4().Eta();
+        tjsev.j_phi[ij]     = jets[ij].p4().Phi();
+        tjsev.j_m[ij]       = jets[ij].p4().M(); 
+        tjsev.j_flavor[ij]  = jets[ij].flavor();
+        tjsev.j_overlap[ij] = jets[ij].overlap();
+        
+        tjsev.j_mult_charged[ij] = getMult(jets[ij]);
+        tjsev.j_mult_all[ij]     = getMult(jets[ij], true);
+        tjsev.j_mult_puppi[ij]   = getMult(jets[ij], true, true);
+        
+        tjsev.j_ptd_charged[ij] = getPtD(jets[ij]);
+        tjsev.j_ptd_all[ij]     = getPtD(jets[ij], true);
+        tjsev.j_ptd_puppi[ij]   = getPtD(jets[ij], true, true);
+        
+        tjsev.j_width_charged[ij] = getWidth(jets[ij]);
+        tjsev.j_width_all[ij]     = getWidth(jets[ij], true);
+        tjsev.j_width_puppi[ij]   = getWidth(jets[ij], true, true);
+        
+        tjsev.j_ecc_charged[ij] = getEcc(jets[ij]);
+        tjsev.j_ecc_all[ij]     = getEcc(jets[ij], true);
+        tjsev.j_ecc_puppi[ij]   = getEcc(jets[ij], true, true);
+        
+        tjsev.j_tau21_charged[ij] = getTau(2, 1, jets[ij]);
+        tjsev.j_tau21_all[ij]     = getTau(2, 1, jets[ij], true);
+        tjsev.j_tau21_puppi[ij]   = getTau(2, 1, jets[ij], true, true);
+        
+        tjsev.j_tau32_charged[ij] = getTau(3, 2, jets[ij]);
+        tjsev.j_tau32_all[ij]     = getTau(3, 2, jets[ij], true);
+        tjsev.j_tau32_puppi[ij]   = getTau(3, 2, jets[ij], true, true);
+        
+        tjsev.j_tau43_charged[ij] = getTau(4, 3, jets[ij]);
+        tjsev.j_tau43_all[ij]     = getTau(4, 3, jets[ij], true);
+        tjsev.j_tau43_puppi[ij]   = getTau(4, 3, jets[ij], true, true);
+        
+        std::vector<double> zgResult_charged = getZg(jets[ij]);
+        std::vector<double> zgResult_all     = getZg(jets[ij], true);
+        std::vector<double> zgResult_puppi   = getZg(jets[ij], true, true);
+        
+        tjsev.j_zg_charged[ij]    = zgResult_charged[0];
+        tjsev.j_zg_all[ij]        = zgResult_all[0];
+        tjsev.j_zg_puppi[ij]      = zgResult_puppi[0];
+        
+        tjsev.j_zgxdr_charged[ij] = zgResult_charged[1];
+        tjsev.j_zgxdr_all[ij]     = zgResult_all[1];
+        tjsev.j_zgxdr_puppi[ij]   = zgResult_puppi[1];
+        
+        tjsev.j_zgdr_charged[ij]  = zgResult_charged[2];
+        tjsev.j_zgdr_all[ij]      = zgResult_all[2];
+        tjsev.j_zgdr_puppi[ij]    = zgResult_puppi[2];
+        
+        tjsev.j_ga_width_charged[ij]  = calcGA(1., 1., jets[ij]);
+        tjsev.j_ga_width_all[ij]      = calcGA(1., 1., jets[ij], true);
+        tjsev.j_ga_width_puppi[ij]    = calcGA(1., 1., jets[ij], true, true);
+        
+        tjsev.j_ga_lha_charged[ij]    = calcGA(0.5, 1., jets[ij]);
+        tjsev.j_ga_lha_all[ij]        = calcGA(0.5, 1., jets[ij], true);
+        tjsev.j_ga_lha_puppi[ij]      = calcGA(0.5, 1., jets[ij], true, true);
+        
+        tjsev.j_ga_thrust_charged[ij] = calcGA(2., 1., jets[ij]);
+        tjsev.j_ga_thrust_all[ij]     = calcGA(2., 1., jets[ij], true);
+        tjsev.j_ga_thrust_puppi[ij]   = calcGA(2., 1., jets[ij], true, true);
+        
+        tjsev.j_c1_02_charged[ij] = getC(1, 0.2, jets[ij]);
+        tjsev.j_c1_02_all[ij]     = getC(1, 0.2, jets[ij], true);
+        tjsev.j_c1_02_puppi[ij]   = getC(1, 0.2, jets[ij], true, true);
+        tjsev.j_c1_05_charged[ij] = getC(1, 0.5, jets[ij]);
+        tjsev.j_c1_05_all[ij]     = getC(1, 0.5, jets[ij], true);
+        tjsev.j_c1_05_puppi[ij]   = getC(1, 0.5, jets[ij], true, true);
+        tjsev.j_c1_10_charged[ij] = getC(1, 1.0, jets[ij]);
+        tjsev.j_c1_10_all[ij]     = getC(1, 1.0, jets[ij], true);
+        tjsev.j_c1_10_puppi[ij]   = getC(1, 1.0, jets[ij], true, true);
+        tjsev.j_c1_20_charged[ij] = getC(1, 2.0, jets[ij]);
+        tjsev.j_c1_20_all[ij]     = getC(1, 2.0, jets[ij], true);
+        tjsev.j_c1_20_puppi[ij]   = getC(1, 2.0, jets[ij], true, true);
+        tjsev.j_c2_02_charged[ij] = getC(2, 0.2, jets[ij]);
+        tjsev.j_c2_02_all[ij]     = getC(2, 0.2, jets[ij], true);
+        tjsev.j_c2_02_puppi[ij]   = getC(2, 0.2, jets[ij], true, true);
+        tjsev.j_c2_05_charged[ij] = getC(2, 0.5, jets[ij]);
+        tjsev.j_c2_05_all[ij]     = getC(2, 0.5, jets[ij], true);
+        tjsev.j_c2_05_puppi[ij]   = getC(2, 0.5, jets[ij], true, true);
+        tjsev.j_c2_10_charged[ij] = getC(2, 1.0, jets[ij]);
+        tjsev.j_c2_10_all[ij]     = getC(2, 1.0, jets[ij], true);
+        tjsev.j_c2_10_puppi[ij]   = getC(2, 1.0, jets[ij], true, true);
+        tjsev.j_c2_20_charged[ij] = getC(2, 2.0, jets[ij]);
+        tjsev.j_c2_20_all[ij]     = getC(2, 2.0, jets[ij], true);
+        tjsev.j_c2_20_puppi[ij]   = getC(2, 2.0, jets[ij], true, true);
+        tjsev.j_c3_02_charged[ij] = getC(3, 0.2, jets[ij]);
+        tjsev.j_c3_02_all[ij]     = getC(3, 0.2, jets[ij], true);
+        tjsev.j_c3_02_puppi[ij]   = getC(3, 0.2, jets[ij], true, true);
+        tjsev.j_c3_05_charged[ij] = getC(3, 0.5, jets[ij]);
+        tjsev.j_c3_05_all[ij]     = getC(3, 0.5, jets[ij], true);
+        tjsev.j_c3_05_puppi[ij]   = getC(3, 0.5, jets[ij], true, true);
+        tjsev.j_c3_10_charged[ij] = getC(3, 1.0, jets[ij]);
+        tjsev.j_c3_10_all[ij]     = getC(3, 1.0, jets[ij], true);
+        tjsev.j_c3_10_puppi[ij]   = getC(3, 1.0, jets[ij], true, true);
+        tjsev.j_c3_20_charged[ij] = getC(3, 2.0, jets[ij]);
+        tjsev.j_c3_20_all[ij]     = getC(3, 2.0, jets[ij], true);
+        tjsev.j_c3_20_puppi[ij]   = getC(3, 2.0, jets[ij], true, true);
+      }
 
       tjsev.nw=1;
       tjsev.weight[0]=wgt;
       tjsev.met_pt=ev.met_pt[0];
       tjsev.met_phi=ev.met_phi[0];
+      
+      /////////////////////////////////////////////
+      // GENERATOR LEVEL SELECTION AND ANALYSIS //
+      ///////////////////////////////////////////
+      
+      std::vector<Jet> genJets;
+      if (isTTbar) {
+        int sel_ngleptons = 0;
+        int vet_ngleptons = 0;
+        int sel_ngbjets   = 0;
+        int sel_ngwcand   = 0;
+        
+        //loop over gen jets and leptons from pseudotop producer
+        //leptons
+        for (int i = 0; i < ev.ng; i++) {
+          if (abs(ev.g_id[i])>10) {
+            //store to tree
+            tjsev.gl_id [tjsev.ngl] = ev.g_id [i];
+            tjsev.gl_pt [tjsev.ngl] = ev.g_pt [i];
+            tjsev.gl_eta[tjsev.ngl] = ev.g_eta[i];
+            tjsev.gl_phi[tjsev.ngl] = ev.g_phi[i];
+            tjsev.gl_m  [tjsev.ngl] = ev.g_m  [i];
+            tjsev.gl_id [tjsev.ngl] = ev.g_id [i];
+            //count
+            tjsev.ngl++;
+            if      (ev.g_pt[i]>30 && abs(ev.g_eta[i])<2.1) sel_ngleptons++;
+            else if (ev.g_pt[i]>15 && abs(ev.g_eta[i])<2.5) vet_ngleptons++;
+          }
+        }
+        //jets
+        for (int i = 0; i < ev.ng; i++) {
+          if (ev.g_pt[i]>30 && abs(ev.g_eta[i])<2.4 && abs(ev.g_id[i])<10) {
+            TLorentzVector jp4; jp4.SetPtEtaPhiM(ev.g_pt[i],ev.g_eta[i],ev.g_phi[i],ev.g_m[i]);
+            //check overlap with leptons
+            bool lepJetOverlap = false;
+            for (int l = 0; l < tjsev.ngl; l++) {
+              if (tjsev.gl_pt[l] < 30) continue;
+              TLorentzVector lp4; lp4.SetPtEtaPhiM(tjsev.gl_pt[l],tjsev.gl_eta[l],tjsev.gl_phi[l],tjsev.gl_m[l]);
+              if (jp4.DeltaR(lp4) < 0.4) lepJetOverlap = true;
+            }
+            if (lepJetOverlap) continue;
+            genJets.push_back(Jet(jp4, abs(ev.g_id[i]), i));
+            //count
+            tjsev.ngj++;
+            if (abs(ev.g_id[i])==5) sel_ngbjets++;
+          }
+        }
+        
+        //flag non-b jets as part of W boson candidates: flavor 0->1
+        //TODO: matched events at 8 TeV: mu=84.23, sigma=12.39 GeV. Correction needed?
+        for (int i = 0; i < tjsev.ngj; i++) {
+          for (int j = i+1; j < tjsev.ngj; j++) {
+            if (genJets[i].p4().DeltaR(genJets[j].p4()) < 0.8) {
+              genJets[i].setOverlap(1);
+              genJets[j].setOverlap(1);
+            }
+            if (genJets[i].flavor()==5 or genJets[j].flavor()==5) continue;
+            TLorentzVector wCand = genJets[i].p4() + genJets[j].p4();
+            if (abs(wCand.M()-80.4) < 15.) {
+              genJets[i].setFlavor(1);
+              genJets[j].setFlavor(1);
+              sel_ngwcand++;
+            }
+          }
+        }
+        
+        //event selected on generator level?
+        if (sel_ngbjets==2 && sel_ngwcand>0 && 
+            sel_ngleptons==1 && vet_ngleptons==0) tjsev.gen_sel = 1;
+
+        if (tjsev.gen_sel == 1) {
+          //fill jet constituents
+          for (int i = 0; i < tjsev.ngj; i++) {
+            int idx = genJets[i].getJetIndex();
+            for (int p = 0; p < ev.ngpf; p++) {
+              if (ev.gpf_g[p] == idx) {
+                TLorentzVector pp4;
+                pp4.SetPtEtaPhiM(ev.gpf_pt[p],ev.gpf_eta[p],ev.gpf_phi[p],ev.gpf_m[p]);
+                genJets[i].addParticle(Particle(pp4, ev.gpf_c[p], ev.gpf_id[p], 1.));
+              }
+            }
+          }
+          
+          //store jets to tree, including generalized angularities (jet shapes)
+          for (int i = 0; i < tjsev.ngj; i++) {
+            tjsev.gj_pt     [i] = genJets[i].p4().Pt();
+            tjsev.gj_eta    [i] = genJets[i].p4().Eta();
+            tjsev.gj_phi    [i] = genJets[i].p4().Phi();
+            tjsev.gj_m      [i] = genJets[i].p4().M();
+            tjsev.gj_flavor [i] = genJets[i].flavor();
+            tjsev.gj_overlap[i] = genJets[i].overlap();
+            
+            //matching to reco jet
+            for(unsigned int ij = 0; ij< jets.size(); ij++) {
+              int ig = i;
+              if(jets[ij].p4().DeltaR(genJets[ig].p4())>0.4) continue;
+              tjsev.j_gj[ij] = ig;
+              tjsev.gj_j[ig] = ij;
+              break;
+            }
+            
+            tjsev.gj_mult_charged[i] = getMult(genJets[i]);
+            tjsev.gj_mult_all[i]     = getMult(genJets[i], true);
+            tjsev.gj_mult_puppi[i]   = getMult(genJets[i], true, true);
+            
+            tjsev.gj_ptd_charged[i] = getPtD(genJets[i]);
+            tjsev.gj_ptd_all[i]     = getPtD(genJets[i], true);
+            tjsev.gj_ptd_puppi[i]   = getPtD(genJets[i], true, true);
+            
+            tjsev.gj_width_charged[i] = getWidth(genJets[i]);
+            tjsev.gj_width_all[i]     = getWidth(genJets[i], true);
+            tjsev.gj_width_puppi[i]   = getWidth(genJets[i], true, true);
+            
+            tjsev.gj_ecc_charged[i] = getEcc(genJets[i]);
+            tjsev.gj_ecc_all[i]     = getEcc(genJets[i], true);
+            tjsev.gj_ecc_puppi[i]   = getEcc(genJets[i], true, true);
+            
+            tjsev.gj_tau21_charged[i] = getTau(2, 1, genJets[i]);
+            tjsev.gj_tau21_all[i]     = getTau(2, 1, genJets[i], true);
+            tjsev.gj_tau21_puppi[i]   = getTau(2, 1, genJets[i], true, true);
+            
+            tjsev.gj_tau32_charged[i] = getTau(3, 2, genJets[i]);
+            tjsev.gj_tau32_all[i]     = getTau(3, 2, genJets[i], true);
+            tjsev.gj_tau32_puppi[i]   = getTau(3, 2, genJets[i], true, true);
+            
+            tjsev.gj_tau43_charged[i] = getTau(4, 3, genJets[i]);
+            tjsev.gj_tau43_all[i]     = getTau(4, 3, genJets[i], true);
+            tjsev.gj_tau43_puppi[i]   = getTau(4, 3, genJets[i], true, true);
+            
+            std::vector<double> zgResult_charged = getZg(genJets[i]);
+            std::vector<double> zgResult_all     = getZg(genJets[i], true);
+            std::vector<double> zgResult_puppi   = getZg(genJets[i], true, true);
+            
+            tjsev.gj_zg_charged[i]    = zgResult_charged[0];
+            tjsev.gj_zg_all[i]        = zgResult_all[0];
+            tjsev.gj_zg_puppi[i]      = zgResult_puppi[0];
+            
+            tjsev.gj_zgxdr_charged[i] = zgResult_charged[1];
+            tjsev.gj_zgxdr_all[i]     = zgResult_all[1];
+            tjsev.gj_zgxdr_puppi[i]   = zgResult_puppi[1];
+            
+            tjsev.gj_zgdr_charged[i]  = zgResult_charged[2];
+            tjsev.gj_zgdr_all[i]      = zgResult_all[2];
+            tjsev.gj_zgdr_puppi[i]    = zgResult_puppi[2];
+            
+            tjsev.gj_ga_width_charged[i]  = calcGA(1., 1., genJets[i]);
+            tjsev.gj_ga_width_all[i]      = calcGA(1., 1., genJets[i], true);
+            tjsev.gj_ga_width_puppi[i]    = calcGA(1., 1., genJets[i], true, true);
+            
+            tjsev.gj_ga_lha_charged[i]    = calcGA(0.5, 1., genJets[i]);
+            tjsev.gj_ga_lha_all[i]        = calcGA(0.5, 1., genJets[i], true);
+            tjsev.gj_ga_lha_puppi[i]      = calcGA(0.5, 1., genJets[i], true, true);
+            
+            tjsev.gj_ga_thrust_charged[i] = calcGA(2., 1., genJets[i]);
+            tjsev.gj_ga_thrust_all[i]     = calcGA(2., 1., genJets[i], true);
+            tjsev.gj_ga_thrust_puppi[i]   = calcGA(2., 1., genJets[i], true, true);
+            
+            tjsev.gj_c1_02_charged[i] = getC(1, 0.2, genJets[i]);
+            tjsev.gj_c1_02_all[i]     = getC(1, 0.2, genJets[i], true);
+            tjsev.gj_c1_02_puppi[i]   = getC(1, 0.2, genJets[i], true, true);
+            tjsev.gj_c1_05_charged[i] = getC(1, 0.5, genJets[i]);
+            tjsev.gj_c1_05_all[i]     = getC(1, 0.5, genJets[i], true);
+            tjsev.gj_c1_05_puppi[i]   = getC(1, 0.5, genJets[i], true, true);
+            tjsev.gj_c1_10_charged[i] = getC(1, 1.0, genJets[i]);
+            tjsev.gj_c1_10_all[i]     = getC(1, 1.0, genJets[i], true);
+            tjsev.gj_c1_10_puppi[i]   = getC(1, 1.0, genJets[i], true, true);
+            tjsev.gj_c1_20_charged[i] = getC(1, 2.0, genJets[i]);
+            tjsev.gj_c1_20_all[i]     = getC(1, 2.0, genJets[i], true);
+            tjsev.gj_c1_20_puppi[i]   = getC(1, 2.0, genJets[i], true, true);
+            tjsev.gj_c2_02_charged[i] = getC(2, 0.2, genJets[i]);
+            tjsev.gj_c2_02_all[i]     = getC(2, 0.2, genJets[i], true);
+            tjsev.gj_c2_02_puppi[i]   = getC(2, 0.2, genJets[i], true, true);
+            tjsev.gj_c2_05_charged[i] = getC(2, 0.5, genJets[i]);
+            tjsev.gj_c2_05_all[i]     = getC(2, 0.5, genJets[i], true);
+            tjsev.gj_c2_05_puppi[i]   = getC(2, 0.5, genJets[i], true, true);
+            tjsev.gj_c2_10_charged[i] = getC(2, 1.0, genJets[i]);
+            tjsev.gj_c2_10_all[i]     = getC(2, 1.0, genJets[i], true);
+            tjsev.gj_c2_10_puppi[i]   = getC(2, 1.0, genJets[i], true, true);
+            tjsev.gj_c2_20_charged[i] = getC(2, 2.0, genJets[i]);
+            tjsev.gj_c2_20_all[i]     = getC(2, 2.0, genJets[i], true);
+            tjsev.gj_c2_20_puppi[i]   = getC(2, 2.0, genJets[i], true, true);
+            tjsev.gj_c3_02_charged[i] = getC(3, 0.2, genJets[i]);
+            tjsev.gj_c3_02_all[i]     = getC(3, 0.2, genJets[i], true);
+            tjsev.gj_c3_02_puppi[i]   = getC(3, 0.2, genJets[i], true, true);
+            tjsev.gj_c3_05_charged[i] = getC(3, 0.5, genJets[i]);
+            tjsev.gj_c3_05_all[i]     = getC(3, 0.5, genJets[i], true);
+            tjsev.gj_c3_05_puppi[i]   = getC(3, 0.5, genJets[i], true, true);
+            tjsev.gj_c3_10_charged[i] = getC(3, 1.0, genJets[i]);
+            tjsev.gj_c3_10_all[i]     = getC(3, 1.0, genJets[i], true);
+            tjsev.gj_c3_10_puppi[i]   = getC(3, 1.0, genJets[i], true, true);
+            tjsev.gj_c3_20_charged[i] = getC(3, 2.0, genJets[i]);
+            tjsev.gj_c3_20_all[i]     = getC(3, 2.0, genJets[i], true);
+            tjsev.gj_c3_20_puppi[i]   = getC(3, 2.0, genJets[i], true, true);
+          }
+        }
+      }
+      else tjsev.gen_sel = -1;
+      
+      //proceed only if event is selected on gen or reco level
+      if (tjsev.gen_sel + tjsev.reco_sel == -2) continue;
       
       outT->Fill();
     }

@@ -9,8 +9,8 @@
 class Particle {
   
   public:
-    Particle(TLorentzVector p4, int charge = 1, double puppi = 1)
-      : p4_(p4), charge_(charge), puppi_(puppi) {}
+    Particle(TLorentzVector p4, int charge, int id, double puppi = 1)
+      : p4_(p4), charge_(charge), id_(id), puppi_(puppi) {}
     
     double px()     { return p4_.Px();  }
     double py()     { return p4_.Py();  }
@@ -20,15 +20,18 @@ class Particle {
     double eta()    { return p4_.Eta(); }
     double phi()    { return p4_.Phi(); }
     double energy() { return p4_.E(); }
+    double m()      { return p4_.M(); }
     double mass()   { return p4_.M(); }
     TLorentzVector p4()       { return p4_; }
     TLorentzVector momentum() { return p4_; }
     int charge()    { return charge_; }
+    int id()        { return id_; }
     double puppi()  { return puppi_; }
   
   private:
     TLorentzVector p4_;
     int charge_;
+    int id_;
     double puppi_;
 };
 
@@ -46,6 +49,7 @@ class Jet {
       : p4_(p4), csv_(csv), idx_(idx) {}
     ~Jet() {}
     
+    double pt()     { return p4_.Pt();  }
     TLorentzVector p4()       { return p4_; }
     TLorentzVector momentum() { return p4_; }
     std::vector<Particle> particles() { return particles_; }
