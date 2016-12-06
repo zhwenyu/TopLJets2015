@@ -215,6 +215,19 @@ EffCorrection_t LeptonEfficiencyWrapper::getTriggerCorrection(std::vector<int> p
 }
 
 //
+EffCorrection_t LeptonEfficiencyWrapper::getTriggerCorrection(std::vector<Particle> leptons)
+{
+  std::vector<int> pdgId;
+  std::vector<TLorentzVector> leptonp4;
+  for (auto& lepton : leptons)
+    {
+      pdgId.push_back(lepton.id());
+      leptonp4.push_back(lepton.p4());
+    }
+  return getTriggerCorrection(pdgId, leptonp4);
+}
+
+//
 EffCorrection_t LeptonEfficiencyWrapper::getOfflineCorrection(int pdgId,float pt,float eta)
 {
   EffCorrection_t corr(1.0,0.0);
@@ -258,6 +271,12 @@ EffCorrection_t LeptonEfficiencyWrapper::getOfflineCorrection(int pdgId,float pt
     }
 
   return corr;
+}
+
+//
+EffCorrection_t LeptonEfficiencyWrapper::getOfflineCorrection(Particle lepton)
+{
+  return getOfflineCorrection(lepton.id(),lepton.pt(),lepton.eta());
 }
 
 LeptonEfficiencyWrapper::~LeptonEfficiencyWrapper()
