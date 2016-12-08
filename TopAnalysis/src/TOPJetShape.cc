@@ -78,7 +78,7 @@ void RunTopJetShape(TString filename,
   TTree *t = (TTree*)f->Get("analysis/data");
   attachToMiniEventTree(t,ev, true);
   Int_t nentries(t->GetEntriesFast());
-  nentries = 10000; //restrict number of entries for testing
+  //nentries = 10000; //restrict number of entries for testing
   t->GetEntry(0);
 
   cout << "...producing " << outname << " from " << nentries << " events" << endl;
@@ -372,6 +372,7 @@ void RunTopJetShape(TString filename,
         tjsev.j_c2_20_charged[ij] = getC(2, 2.0, jets[ij]);
         tjsev.j_c2_20_all[ij]     = getC(2, 2.0, jets[ij], true);
         tjsev.j_c2_20_puppi[ij]   = getC(2, 2.0, jets[ij], true, true);
+        //39 min without C3
         tjsev.j_c3_02_charged[ij] = getC(3, 0.2, jets[ij]);
         tjsev.j_c3_02_all[ij]     = getC(3, 0.2, jets[ij], true);
         tjsev.j_c3_02_puppi[ij]   = getC(3, 0.2, jets[ij], true, true);
@@ -695,13 +696,13 @@ double getWidth(Jet jet, bool includeNeutrals, bool usePuppi, double ptcut) {
   int mult = 0;
   double sumpt   = 0.;
   double sumptdr = 0.;
-  Particle axis(TLorentzVector(), 0., 0.);
+  TLorentzVector axis(0., 0., 0., 0.);
   for (auto p : jet.particles()) {
     if (not includeNeutrals and p.charge() == 0) continue;
     if (ptcut > p.pt()) continue;
     double weight = usePuppi ? p.puppi() : 1.;
     if (weight > 0.) ++mult;
-    axis.p4() += p.momentum()*weight;
+    axis += p.momentum()*weight;
   }
   if (mult < 2) return -1.;
   for (auto p : jet.particles()) {
@@ -709,7 +710,7 @@ double getWidth(Jet jet, bool includeNeutrals, bool usePuppi, double ptcut) {
     if (ptcut > p.pt()) continue;
     double weight = usePuppi ? p.puppi() : 1.;
     sumpt   += p.pt()*weight;
-    sumptdr += p.pt()*weight * deltaR(axis.momentum(), p.momentum());
+    sumptdr += p.pt()*weight * deltaR(axis, p.momentum());
   }
   double width = sumptdr/sumpt;
   return width;
@@ -719,13 +720,13 @@ double getEcc(Jet jet, bool includeNeutrals, bool usePuppi, double ptcut) {
   //std::cout << "getEcc()" << std::endl;
   // Get mean axis
   int mult = 0;
-  Particle axis(TLorentzVector(), 0., 0.);
+  TLorentzVector axis(0., 0., 0., 0.);
   for (auto p : jet.particles()) {
     if (not includeNeutrals and p.charge() == 0) continue;
     if (ptcut > p.pt()) continue;
     double weight = usePuppi ? p.puppi() : 1.;
     if (weight > 0.) ++mult;
-    axis.p4() += p.momentum()*weight;
+    axis += p.momentum()*weight;
   }
   if (mult < 4) return -1.;
   // Covariance matrix
@@ -735,10 +736,10 @@ double getEcc(Jet jet, bool includeNeutrals, bool usePuppi, double ptcut) {
     if (ptcut > p.pt()) continue;
     double weight = usePuppi ? p.puppi() : 1.;
     Matrix<2> MPart;
-    MPart.set(0, 0, (p.eta() - axis.eta()) * (p.eta() - axis.eta()));
-    MPart.set(0, 1, (p.eta() - axis.eta()) * mapAngleMPiToPi(p.phi() - axis.phi()));
-    MPart.set(1, 0, mapAngleMPiToPi(p.phi() - axis.phi()) * (p.eta() - axis.eta()));
-    MPart.set(1, 1, mapAngleMPiToPi(p.phi() - axis.phi()) * mapAngleMPiToPi(p.phi() - axis.phi()));
+    MPart.set(0, 0, (p.eta() - axis.Eta()) * (p.eta() - axis.Eta()));
+    MPart.set(0, 1, (p.eta() - axis.Eta()) * mapAngleMPiToPi(p.phi() - axis.Phi()));
+    MPart.set(1, 0, mapAngleMPiToPi(p.phi() - axis.Phi()) * (p.eta() - axis.Eta()));
+    MPart.set(1, 1, mapAngleMPiToPi(p.phi() - axis.Phi()) * mapAngleMPiToPi(p.phi() - axis.Phi()));
     M += MPart * p.energy() * weight;
   }
   // Calculate eccentricity from eigenvalues
