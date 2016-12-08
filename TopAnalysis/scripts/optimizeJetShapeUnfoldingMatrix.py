@@ -11,7 +11,7 @@ from math import sqrt
 """
 Analysis loop
 """
-def optimize(inputfile, output, obs, reco, ptcut):
+def optimize(inputfile, output, obs, reco, ptcut, rootoutput):
     ROOT.gROOT.SetBatch(ROOT.kTRUE)
     ROOT.gStyle.SetOptStat(0)
     ROOT.gStyle.SetPadTopMargin(0.07);
@@ -137,7 +137,9 @@ def optimize(inputfile, output, obs, reco, ptcut):
     
     print("Starting with bin width " + str((highbin-lowbin)/float(nbins)))
     
-    h = ROOT.TH2F("", labels, nbins, lowbin, highbin, nbins, lowbin, highbin)
+    f = ROOT.TFile(output + "/" + obs + "_" + reco +"_" + ptcut +".root", "RECREATE");
+    
+    h = ROOT.TH2F("h", labels, nbins, lowbin, highbin, nbins, lowbin, highbin)
     
     fillHist(h, tree, obs, reco, ptcut)
     
@@ -218,7 +220,7 @@ def optimize(inputfile, output, obs, reco, ptcut):
     print(bins)
     print("Number of bins = " + str(len(bins)-1))
     
-    hnorm = ROOT.TH2F("", labels, nbins, lowbin, highbin, nbins, lowbin, highbin)
+    hnorm = ROOT.TH2F("hnorm", labels, nbins, lowbin, highbin, nbins, lowbin, highbin)
     for g in range(1, h.GetNbinsX()+1):
         for r in range(1, h.GetNbinsY()+1):
             if recosums[r-1] > 0:
@@ -232,14 +234,17 @@ def optimize(inputfile, output, obs, reco, ptcut):
     c.Print(output + "/" + obs + "_" + reco +"_" + ptcut +"_hnorm.eps")
     
     # reco bin splitting
-    divisor = 1
+    divisor = 2
+    minWidth = 0.
+    if (obs == "mult"): minWidth = 1.0
     bins2 = []
     for i in range(len(bins)-1):
-        for j in range(divisor):
-            bins2.append(bins[i] + abs(bins[i]-bins[i+1])/divisor*j)
+        if (abs(bins[i]-bins[i+1]) >= minWidth*divisor):
+          for j in range(divisor):
+              bins2.append(bins[i] + abs(bins[i]-bins[i+1])/divisor*j)
     bins2.append(bins[-1])
     
-    #print(bins2)
+    print(bins2)
     
     # original reco bins
     bins3 = []
@@ -251,7 +256,7 @@ def optimize(inputfile, output, obs, reco, ptcut):
     binArray = array('d', bins)
     bin2Array = array('d', bins2) # put bins2 for reco bin split
     
-    hopt = ROOT.TH2F("", labels, len(binArray)-1, binArray, len(bin2Array)-1, bin2Array)
+    hopt = ROOT.TH2F("hopt", labels, len(binArray)-1, binArray, len(binArray)-1, binArray)
     fillHist(hopt, tree, obs, reco, ptcut)
     
     hopt.SetMinimum(-1e-10)
@@ -293,9 +298,9 @@ def optimize(inputfile, output, obs, reco, ptcut):
             recosum += hopt.GetBinContent(g, r)
         optrecosums.append(recosum)
     
-    hoptpur  = ROOT.TH1F("", label1, len(binArray)-1, binArray)
-    hoptsta  = ROOT.TH1F("", label1, len(binArray)-1, binArray)
-    hoptnorm = ROOT.TH2F("", labels, len(binArray)-1, binArray, len(bin2Array)-1, bin2Array)
+    hoptpur  = ROOT.TH1F("hoptpur", label1, len(binArray)-1, binArray)
+    hoptsta  = ROOT.TH1F("hoptsta", label1, len(binArray)-1, binArray)
+    hoptnorm = ROOT.TH2F("hoptnorm", labels, len(binArray)-1, binArray, len(binArray)-1, binArray)
     for g in range(1, hopt.GetNbinsX()+1):
         for r in range(1, hopt.GetNbinsY()+1):
             purity    = 0
@@ -328,6 +333,13 @@ def optimize(inputfile, output, obs, reco, ptcut):
     leg.AddEntry(hoptsta, "stability", "l")
     leg.Draw()
     c.Print(output + "/" + obs + "_" + reco +"_" + ptcut +"_hoptpursta.eps")
+    
+    responsematrix = ROOT.TH2F("responsematrix", labels, len(binArray)-1, binArray, len(bin2Array)-1, bin2Array)
+    fillHist(responsematrix, tree, obs, reco, ptcut)
+    responsematrix.ProjectionX()
+    responsematrix.ProjectionY()
+    
+    f.Write();
     
     del h
     del hopt
@@ -520,11 +532,15 @@ def main():
                             dest='all',
                             action="store_true",default=False,
                             help='Run all plots [default: %default]')
+    parser.add_option('-O', '--rootoutput',
+                            dest='rootoutput',
+                            action="store_true",default=False,
+                            help='Run all plots [default: %default]')
     (opt, args) = parser.parse_args()
 
     os.system('mkdir -p %s' % opt.output)
 
-    if (not opt.all): optimize(opt.input, opt.output, opt.obs, opt.reco, opt.ptcut)
+    if (not opt.all): optimize(opt.input, opt.output, opt.obs, opt.reco, opt.ptcut, opt.rootoutput)
     else:
         observables = ["mult", "width", "ptd", "ecc", "tau21", "tau32", "tau43", "zg", "zgxdr", "zgdr", "ga_width", "ga_lha", "ga_thrust", "c1_02", "c1_05", "c1_10", "c1_20", "c2_02", "c2_05", "c2_10", "c2_20", "c3_02", "c3_05", "c3_10", "c3_20"]
         reco        = ["charged", "puppi", "all"]
@@ -533,7 +549,7 @@ def main():
         for o in observables:
             for r in reco:
                 #for p in ptcuts:
-                optimize(opt.input, opt.output, o, r, opt.ptcut)
+                optimize(opt.input, opt.output, o, r, opt.ptcut, opt.rootoutput)
         
 
 if __name__ == "__main__":
