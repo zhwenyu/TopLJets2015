@@ -78,7 +78,7 @@ void RunTopJetShape(TString filename,
   TTree *t = (TTree*)f->Get("analysis/data");
   attachToMiniEventTree(t,ev, true);
   Int_t nentries(t->GetEntriesFast());
-  nentries = 10000; //restrict number of entries for testing
+  if (debug) nentries = 10000; //restrict number of entries for testing
   t->GetEntry(0);
 
   cout << "...producing " << outname << " from " << nentries << " events" << endl;
@@ -372,6 +372,7 @@ void RunTopJetShape(TString filename,
         tjsev.j_c2_20_charged[ij] = getC(2, 2.0, jets[ij]);
         tjsev.j_c2_20_all[ij]     = getC(2, 2.0, jets[ij], true);
         tjsev.j_c2_20_puppi[ij]   = getC(2, 2.0, jets[ij], true, true);
+        //39 min without C3
         tjsev.j_c3_02_charged[ij] = getC(3, 0.2, jets[ij]);
         tjsev.j_c3_02_all[ij]     = getC(3, 0.2, jets[ij], true);
         tjsev.j_c3_02_puppi[ij]   = getC(3, 0.2, jets[ij], true, true);
@@ -391,89 +392,46 @@ void RunTopJetShape(TString filename,
       tjsev.met_pt=ev.met_pt[0];
       tjsev.met_phi=ev.met_phi[0];
       
-      /////////////////////////////////////////////
-      // GENERATOR LEVEL SELECTION AND ANALYSIS //
-      ///////////////////////////////////////////
       
-      std::vector<Jet> genJets;
+      ///////////////////////
+      // GENERATOR LEVEL  //
+      /////////////////////
+      
       if (isTTbar) {
-        int sel_ngleptons = 0;
-        int vet_ngleptons = 0;
-        int sel_ngbjets   = 0;
-        int sel_ngwcand   = 0;
+        //////////////////////////
+        // GEN LEVEL SELECTION //
+        ////////////////////////
         
-        //loop over gen jets and leptons from pseudotop producer
-        //leptons
-        for (int i = 0; i < ev.ng; i++) {
-          if (abs(ev.g_id[i])>10) {
-            //store to tree
-            tjsev.gl_id [tjsev.ngl] = ev.g_id [i];
-            tjsev.gl_pt [tjsev.ngl] = ev.g_pt [i];
-            tjsev.gl_eta[tjsev.ngl] = ev.g_eta[i];
-            tjsev.gl_phi[tjsev.ngl] = ev.g_phi[i];
-            tjsev.gl_m  [tjsev.ngl] = ev.g_m  [i];
-            tjsev.gl_id [tjsev.ngl] = ev.g_id [i];
-            //count
-            tjsev.ngl++;
-            if      (ev.g_pt[i]>30 && abs(ev.g_eta[i])<2.1) sel_ngleptons++;
-            else if (ev.g_pt[i]>15 && abs(ev.g_eta[i])<2.5) vet_ngleptons++;
-          }
-        }
-        //jets
-        for (int i = 0; i < ev.ng; i++) {
-          if (ev.g_pt[i]>30 && abs(ev.g_eta[i])<2.4 && abs(ev.g_id[i])<10) {
-            TLorentzVector jp4; jp4.SetPtEtaPhiM(ev.g_pt[i],ev.g_eta[i],ev.g_phi[i],ev.g_m[i]);
-            //check overlap with leptons
-            bool lepJetOverlap = false;
-            for (int l = 0; l < tjsev.ngl; l++) {
-              if (tjsev.gl_pt[l] < 30) continue;
-              TLorentzVector lp4; lp4.SetPtEtaPhiM(tjsev.gl_pt[l],tjsev.gl_eta[l],tjsev.gl_phi[l],tjsev.gl_m[l]);
-              if (jp4.DeltaR(lp4) < 0.4) lepJetOverlap = true;
-            }
-            if (lepJetOverlap) continue;
-            genJets.push_back(Jet(jp4, abs(ev.g_id[i]), i));
-            //count
-            tjsev.ngj++;
-            if (abs(ev.g_id[i])==5) sel_ngbjets++;
-          }
+        //get gen leptons
+        std::vector<Particle> genLeptons = getGenLeptons(ev, 30., 2.1, true, 15., 2.5);
+        
+        //decide the lepton channel
+        TString genChTag = getGenChannel(leptons);
+              
+        //get jets
+        std::vector<Jet> genJets = getGenJets(ev, 30., 2.4, leptons);
+        
+        //count b and W candidates
+        int sel_ngbjets = 0;
+        int sel_ngwcand = 0;
+
+        for (auto& jet : genJets) {
+          if (jet.flavor() == 5) ++sel_ngbjets;
+          if (jet.flavor() == 1) ++sel_ngwcand;
         }
         
-        //flag non-b jets as part of W boson candidates: flavor 0->1
-        //TODO: matched events at 8 TeV: mu=84.23, sigma=12.39 GeV. Correction needed?
-        for (int i = 0; i < tjsev.ngj; i++) {
-          for (int j = i+1; j < tjsev.ngj; j++) {
-            if (genJets[i].p4().DeltaR(genJets[j].p4()) < 0.8) {
-              genJets[i].setOverlap(1);
-              genJets[j].setOverlap(1);
-            }
-            if (genJets[i].flavor()==5 or genJets[j].flavor()==5) continue;
-            TLorentzVector wCand = genJets[i].p4() + genJets[j].p4();
-            if (abs(wCand.M()-80.4) < 15.) {
-              genJets[i].setFlavor(1);
-              genJets[j].setFlavor(1);
-              sel_ngwcand++;
-            }
-          }
-        }
+        //event selected on gen level?
+        bool genSingleLepton(genChTag=="E" || chTag=="M");
+        if (sel_ngbjets==2 && sel_ngwcand>0 && genSingleLepton) tjsev.gen_sel = 1;
         
-        //event selected on generator level?
-        if (sel_ngbjets==2 && sel_ngwcand>0 && 
-            sel_ngleptons==1 && vet_ngleptons==0) tjsev.gen_sel = 1;
+        tjsev.ngj = genJets.size();
+            
+        /////////////////////////
+        // GEN LEVEL ANALYSIS //
+        ///////////////////////
 
         if (tjsev.gen_sel == 1) {
-          //fill jet constituents
-          for (int i = 0; i < tjsev.ngj; i++) {
-            int idx = genJets[i].getJetIndex();
-            for (int p = 0; p < ev.ngpf; p++) {
-              if (ev.gpf_g[p] == idx) {
-                TLorentzVector pp4;
-                pp4.SetPtEtaPhiM(ev.gpf_pt[p],ev.gpf_eta[p],ev.gpf_phi[p],ev.gpf_m[p]);
-                genJets[i].addParticle(Particle(pp4, ev.gpf_c[p], ev.gpf_id[p], 1.));
-              }
-            }
-          }
-          
-          //store jets to tree, including generalized angularities (jet shapes)
+          //store jets to tree
           for (int i = 0; i < tjsev.ngj; i++) {
             tjsev.gj_pt     [i] = genJets[i].p4().Pt();
             tjsev.gj_eta    [i] = genJets[i].p4().Eta();
@@ -491,6 +449,7 @@ void RunTopJetShape(TString filename,
               break;
             }
             
+            //calculate jet properties            
             tjsev.gj_mult_charged[i] = getMult(genJets[i]);
             tjsev.gj_mult_all[i]     = getMult(genJets[i], true);
             tjsev.gj_mult_puppi[i]   = getMult(genJets[i], true, true);
@@ -695,13 +654,13 @@ double getWidth(Jet jet, bool includeNeutrals, bool usePuppi, double ptcut) {
   int mult = 0;
   double sumpt   = 0.;
   double sumptdr = 0.;
-  Particle axis(TLorentzVector(), 0., 0.);
+  TLorentzVector axis(0., 0., 0., 0.);
   for (auto p : jet.particles()) {
     if (not includeNeutrals and p.charge() == 0) continue;
     if (ptcut > p.pt()) continue;
     double weight = usePuppi ? p.puppi() : 1.;
     if (weight > 0.) ++mult;
-    axis.p4() += p.momentum()*weight;
+    axis += p.momentum()*weight;
   }
   if (mult < 2) return -1.;
   for (auto p : jet.particles()) {
@@ -709,7 +668,7 @@ double getWidth(Jet jet, bool includeNeutrals, bool usePuppi, double ptcut) {
     if (ptcut > p.pt()) continue;
     double weight = usePuppi ? p.puppi() : 1.;
     sumpt   += p.pt()*weight;
-    sumptdr += p.pt()*weight * deltaR(axis.momentum(), p.momentum());
+    sumptdr += p.pt()*weight * deltaR(axis, p.momentum());
   }
   double width = sumptdr/sumpt;
   return width;
@@ -719,13 +678,13 @@ double getEcc(Jet jet, bool includeNeutrals, bool usePuppi, double ptcut) {
   //std::cout << "getEcc()" << std::endl;
   // Get mean axis
   int mult = 0;
-  Particle axis(TLorentzVector(), 0., 0.);
+  TLorentzVector axis(0., 0., 0., 0.);
   for (auto p : jet.particles()) {
     if (not includeNeutrals and p.charge() == 0) continue;
     if (ptcut > p.pt()) continue;
     double weight = usePuppi ? p.puppi() : 1.;
     if (weight > 0.) ++mult;
-    axis.p4() += p.momentum()*weight;
+    axis += p.momentum()*weight;
   }
   if (mult < 4) return -1.;
   // Covariance matrix
@@ -735,10 +694,10 @@ double getEcc(Jet jet, bool includeNeutrals, bool usePuppi, double ptcut) {
     if (ptcut > p.pt()) continue;
     double weight = usePuppi ? p.puppi() : 1.;
     Matrix<2> MPart;
-    MPart.set(0, 0, (p.eta() - axis.eta()) * (p.eta() - axis.eta()));
-    MPart.set(0, 1, (p.eta() - axis.eta()) * mapAngleMPiToPi(p.phi() - axis.phi()));
-    MPart.set(1, 0, mapAngleMPiToPi(p.phi() - axis.phi()) * (p.eta() - axis.eta()));
-    MPart.set(1, 1, mapAngleMPiToPi(p.phi() - axis.phi()) * mapAngleMPiToPi(p.phi() - axis.phi()));
+    MPart.set(0, 0, (p.eta() - axis.Eta()) * (p.eta() - axis.Eta()));
+    MPart.set(0, 1, (p.eta() - axis.Eta()) * mapAngleMPiToPi(p.phi() - axis.Phi()));
+    MPart.set(1, 0, mapAngleMPiToPi(p.phi() - axis.Phi()) * (p.eta() - axis.Eta()));
+    MPart.set(1, 1, mapAngleMPiToPi(p.phi() - axis.Phi()) * mapAngleMPiToPi(p.phi() - axis.Phi()));
     M += MPart * p.energy() * weight;
   }
   // Calculate eccentricity from eigenvalues
