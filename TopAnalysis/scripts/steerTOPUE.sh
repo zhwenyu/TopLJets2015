@@ -62,9 +62,11 @@ case $WHAT in
 	cp test/index.php ${wwwdir}/sel
 	;;
     ANA )
-	echo "Coming soon hopefully"
-	#python test/TopUEAnalysis/runUEanalysis.py -i ${outdir}/MC13TeV_TTJets_dilpowheg_0.root --step 1;
-	#python test/TopUEAnalysis/runUEanalysis.py -i ${outdir}/MC13TeV_TTJets_dilpowheg_*.root --step 2;
+	eosprefix=root://eoscms//eos/cms
+	echo "Computing resolutions"
+	#python test/TopUEAnalysis/runUEanalysis.py -i ${eosprefix}/${summaryeosdir}/MC13TeV_TTJets_dilpowheg_0.root --step 0;
+	echo "Defining analysis configuration"
+	python test/TopUEAnalysis/runUEanalysis.py -i ${eosprefix}/${summaryeosdir}/MC13TeV_TTJets_dilpowheg_0.root --step 1;
 	#python test/TopUEAnalysis/runUEanalysis.py --step 3;
 	;;
 
