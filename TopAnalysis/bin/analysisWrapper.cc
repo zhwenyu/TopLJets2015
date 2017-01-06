@@ -5,7 +5,6 @@
 #include "TopLJets2015/TopAnalysis/interface/TOP-16-019.h"
 #include "TopLJets2015/TopAnalysis/interface/TOP-16-023.h"
 #include "TopLJets2015/TopAnalysis/interface/TOP-UE.h"
-#include "TopLJets2015/TopAnalysis/interface/TopCharmedMesonAnalysis.h"
 #include "TopLJets2015/TopAnalysis/interface/TOPJetShape.h"
 
 #include "TH1F.h"
@@ -50,6 +49,8 @@ int main(int argc, char* argv[])
     else if(arg.find("--method")!=string::npos && i+1<argc)   { method=argv[i+1]; i++;}
   }
 
+  if(debug) cout << "Debug mode is active" << endl;
+
   //open normalization file
   TH1F *normH=0;
   TFile *normF=TFile::Open(era+"/genweights.root");
@@ -83,7 +84,6 @@ int main(int argc, char* argv[])
   if(method=="TOP-16-006::RunTop16006")                                  RunTop16006(in,out,channel,charge,FlavourSplitting(flav),normH,runSysts,era);
   else if(method=="TOP-16-019::RunTop16019")                             RunTop16019(in,out,channel,charge,FlavourSplitting(flav),normH,runSysts,era);
   else if(method=="TOP-16-023::RunTop16023")                             RunTop16023(in,out,channel,charge,FlavourSplitting(flav),normH,runSysts,era);
-  else if(method=="TopCharmedMesonAnalysis::RunTopCharmedMesonAnalysis") RunTopCharmedMesonAnalysis(in,out,channel,charge,FlavourSplitting(flav),normH,runSysts,era,debug);
   else if(method=="TOP-UE::RunTopUE")                                    RunTopUE(in,out,channel,charge,FlavourSplitting(flav),normH,runSysts,era);
   else if(method=="TOPJetShape::RunTopJetShape")                         RunTopJetShape(in,out,channel,charge,FlavourSplitting(flav),normH,runSysts,era);
   else

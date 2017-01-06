@@ -7,20 +7,20 @@ struct MiniEvent_t
 {
   MiniEvent_t()
   {
-    ttbar_nw=0;
-    ng=0; ngtop=0; ngpf=0;
+    g_nw=0; ng=0; ngtop=0; ngpf=0;
     nl=0; nj=0; nmet=0; npf=0;
   }
 
   Bool_t isData;
   Int_t run,event,lumi;
 
-
   //gen level event
-  Int_t pu,putrue;
-  Int_t ttbar_nw, ttbar_allmepartons, ttbar_matchmepartons;
-  Float_t ttbar_w[500];
-  Int_t ng,ngjets,ngbjets,ngleptons,ngtop,ngpf;
+  Int_t g_id1, g_id2;
+  Float_t g_x1, g_x2, g_qscale;
+  Int_t g_pu,g_putrue;
+  Int_t g_nw;
+  Float_t g_w[500];
+  Int_t ng,ngtop,ngpf;
   Int_t g_id[500];
   Float_t g_pt[500],g_eta[500],g_phi[500],g_m[500]; 
   Int_t gtop_id[15];
@@ -30,10 +30,10 @@ struct MiniEvent_t
 
   //reco level event
   Int_t nvtx;
-  Int_t elTrigger,muTrigger;
+  Int_t triggerBits;
   Float_t rho;
-  Int_t nl,nleptons;
-  Bool_t isPromptFinalState[50], isDirectPromptTauDecayProductFinalState[50];
+  Int_t nl;
+  Bool_t l_isPromptFinalState[50], l_isDirectPromptTauDecayProductFinalState[50];
   Int_t l_id[50],l_charge[50],l_pid[50],l_g[200];
   Float_t l_pt[50],l_eta[50],l_phi[50], l_mass[50], l_scaleUnc[50], l_miniIso[50], l_chargedHadronIso[50], l_relIso[50], l_ip3d[50], l_ip3dsig[50];
 

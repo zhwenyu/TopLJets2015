@@ -183,11 +183,11 @@ TString getChannel(MiniEvent_t ev, TString filename, std::vector<Particle> lepto
   if(ev.isData && filename.Contains("SingleMuon"))     requireMTriggers=true;
   
   //check if triggers have fired
-  bool hasEETrigger(requireEETriggers && ((ev.elTrigger>>1)&0x1)!=0 || ((ev.elTrigger>>4)&0x1)!=0);
-  bool hasMMTrigger(requireMMTriggers && ((ev.muTrigger>>2)&0x3)!=0);
-  bool hasEMTrigger(requireEMTriggers && ((ev.elTrigger>>2)&0x3)!=0);
-  bool hasETrigger (requireETriggers  && ((ev.elTrigger>>0)&0x1)!=0);
-  bool hasMTrigger (requireMTriggers  && ((ev.muTrigger>>0)&0x3)!=0);
+  bool hasEETrigger(requireEETriggers && ((ev.triggerBits>>1)&0x1)!=0 || ((ev.triggerBits>>4)&0x1)!=0);
+  bool hasMMTrigger(requireMMTriggers && ((ev.triggerBits>>2)&0x3)!=0);
+  bool hasEMTrigger(requireEMTriggers && ((ev.triggerBits>>2)&0x3)!=0);
+  bool hasETrigger (requireETriggers  && ((ev.triggerBits>>0)&0x1)!=0);
+  bool hasMTrigger (requireMTriggers  && ((ev.triggerBits>>0)&0x3)!=0);
   if(!ev.isData) { 
     hasEETrigger = true;
     hasMMTrigger = true;

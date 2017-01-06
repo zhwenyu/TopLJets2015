@@ -260,7 +260,7 @@ void RunTopUE(TString filename,
 	  allPlots["puwgtctr"]->Fill(0.,1.0);
 	  for(size_t iwgt=0; iwgt<3; iwgt++)
 	    {
-	      puWgts[iwgt]=puWgtGr[iwgt]->Eval(ev.putrue);  
+	      puWgts[iwgt]=puWgtGr[iwgt]->Eval(ev.g_putrue);  
 	      allPlots["puwgtctr"]->Fill(iwgt+1,puWgts[iwgt]);
 	    }
 	}
@@ -289,9 +289,9 @@ void RunTopUE(TString filename,
 	}
       
       //check if triggers have fired
-      bool hasEETrigger(((ev.elTrigger>>1)&0x1)!=0 || ((ev.elTrigger>>4)&0x1)!=0);
-      bool hasMMTrigger(((ev.muTrigger>>2)&0x3)!=0);
-      bool hasEMTrigger(((ev.elTrigger>>2)&0x3)!=0);
+      bool hasEETrigger(((ev.triggerBits>>1)&0x1)!=0 || ((ev.triggerBits>>4)&0x1)!=0);
+      bool hasMMTrigger(((ev.triggerBits>>2)&0x3)!=0);
+      bool hasEMTrigger(((ev.triggerBits>>2)&0x3)!=0);
       if(!ev.isData)
 	{ 
 	  hasEETrigger=true;
@@ -515,7 +515,7 @@ void RunTopUE(TString filename,
 	  
 	  //update nominal event weight
 	  wgt=triggerCorrWgt.first*lepSelCorrWgt.first*puWgts[0]*norm;
-	  if(ev.ttbar_nw>0) wgt*=ev.ttbar_w[0];
+	  if(ev.g_nw>0) wgt*=ev.g_w[0];
 	}
       
       
@@ -552,10 +552,10 @@ void RunTopUE(TString filename,
 	  tue.weight[6]=wgt*(lepSelCorrWgt.first-lepSelCorrWgt.second)/lepSelCorrWgt.first;
 	  tue.weight[7]=wgt*topPtWgts[0];
 	  tue.weight[8]=wgt*topPtWgts[1];
-	  if(ev.ttbar_nw>0)
+	  if(ev.g_nw>0)
 	    {
-	      tue.nw+=ev.ttbar_nw;
-	      for(int iw=1; iw<=ev.ttbar_nw; iw++) tue.weight[8+iw]=wgt*ev.ttbar_w[iw]/ev.ttbar_w[0];
+	      tue.nw+=ev.g_nw;
+	      for(int iw=1; iw<=ev.g_nw; iw++) tue.weight[8+iw]=wgt*ev.g_w[iw]/ev.g_w[0];
 	    }
 	}
       else

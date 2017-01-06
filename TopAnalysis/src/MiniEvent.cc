@@ -9,18 +9,18 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev)
   t->Branch("event",     &ev.event,     "event/I");
   t->Branch("lumi",      &ev.lumi,      "lumi/I");
 
-  //generator level event
-  t->Branch("pu",      &ev.pu,      "pu/I");
-  t->Branch("putrue",      &ev.putrue,      "putrue/I");
-  t->Branch("ttbar_nw",        &ev.ttbar_nw,        "ttbar_nw/I");
-  t->Branch("ttbar_allmepartons",        &ev.ttbar_allmepartons,        "ttbar_allmepartons/I");
-  t->Branch("ttbar_matchmepartons",        &ev.ttbar_matchmepartons,        "ttbar_matchmepartons/I");
-  t->Branch("ttbar_w",        ev.ttbar_w,        "ttbar_w[ttbar_nw]/F");
+  //generator level information
+  t->Branch("g_pu",      &ev.g_pu,     "g_pu/I");
+  t->Branch("g_putrue",  &ev.g_putrue, "g_putrue/I");
+  t->Branch("g_id1",     &ev.g_id1,    "g_id1/I");
+  t->Branch("g_id2",     &ev.g_id2,    "g_id2/I");
+  t->Branch("g_x1",      &ev.g_x1,     "g_x1/F");
+  t->Branch("g_x2",      &ev.g_x2,     "g_x2/F");
+  t->Branch("g_qscale",  &ev.g_qscale, "g_qscale/F");
+  t->Branch("g_nw",      &ev.g_nw,     "g_nw/I");
+  t->Branch("g_w",        ev.g_w,      "g_w[ttbar_nw]/F");
 
   //gen event (jets and dressed leptons)
-  t->Branch("ngjets",       &ev.ngjets,       "ngjets/I");
-  t->Branch("ngbjets",       &ev.ngbjets,       "ngbjets/I");
-  t->Branch("ngleptons",       &ev.ngleptons,       "ngleptons/I");
   t->Branch("ng",       &ev.ng,       "ng/I");
   t->Branch("g_id",      ev.g_id,     "g_id[ng]/I");
   t->Branch("g_pt",      ev.g_pt,     "g_pt[ng]/F");
@@ -36,7 +36,7 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev)
   t->Branch("gtop_phi",   ev.gtop_phi,   "gtop_phi[ngtop]/F");
   t->Branch("gtop_m",     ev.gtop_m,     "gtop_m[ngtop]/F");
 
-  //final state
+  //final state particles
   t->Branch("ngpf",       &ev.ngpf,       "ngpf/I");
   t->Branch("gpf_id",      ev.gpf_id,     "gpf_id[ngpf]/I");
   t->Branch("gpf_c",       ev.gpf_c,      "gpf_c[ngpf]/I");
@@ -49,13 +49,12 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev)
   //reco level event
   t->Branch("nvtx",      &ev.nvtx,      "nvtx/I");
   t->Branch("rho",      &ev.rho,      "rho/F");
-  t->Branch("muTrigger",        &ev.muTrigger,        "muTrigger/I");
-  t->Branch("elTrigger",        &ev.elTrigger,        "elTrigger/I");
+  t->Branch("triggerBits",   &ev.triggerBits,        "triggerBits/I");
 
-  t->Branch("nleptons", &ev.nleptons, "nleptons/I");
+  //leptons
   t->Branch("nl", &ev.nl, "nl/I");
-  t->Branch("isPromptFinalState",                         ev.isPromptFinalState,        "isPromptFinalState[nl]/O");
-  t->Branch("isDirectPromptTauDecayProductFinalState",    ev.isDirectPromptTauDecayProductFinalState,        "isDirectPromptTauDecayProductFinalState[nl]/O");
+  t->Branch("l_isPromptFinalState",                         ev.l_isPromptFinalState,                       "l_isPromptFinalState[nl]/O");
+  t->Branch("l_isDirectPromptTauDecayProductFinalState",    ev.l_isDirectPromptTauDecayProductFinalState,  "l_isDirectPromptTauDecayProductFinalState[nl]/O");
   t->Branch("l_id",       ev.l_id,      "l_id[nl]/I");
   t->Branch("l_pid",      ev.l_pid,     "l_pid[nl]/I");
   t->Branch("l_g",        ev.l_g,       "l_g[nl]/I");
@@ -64,7 +63,7 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev)
   t->Branch("l_eta",      ev.l_eta,     "l_eta[nl]/F");
   t->Branch("l_phi",      ev.l_phi,     "l_phi[nl]/F");
   t->Branch("l_mass",     ev.l_mass,    "l_mass[nl]/F");
-  t->Branch("l_scaleUnc",       ev.l_scaleUnc,      "l_scaleUnc[nl]/F");
+  t->Branch("l_scaleUnc",         ev.l_scaleUnc,         "l_scaleUnc[nl]/F");
   t->Branch("l_chargedHadronIso", ev.l_chargedHadronIso, "l_chargedHadronIso[nl]/F");
   t->Branch("l_miniIso",          ev.l_miniIso,          "l_miniIso[nl]/F");
   t->Branch("l_relIso",           ev.l_relIso,           "l_relIso[nl]/F");
@@ -73,28 +72,28 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev)
 
   //jet info
   t->Branch("nj",        &ev.nj,        "nj/I");
-  t->Branch("j_g",        ev.j_g,   "j_g[nj]/I");
-  t->Branch("j_area",     ev.j_area,      "j_area[nj]/F");
-  t->Branch("j_rawsf",    ev.j_rawsf,      "j_rawsf[nj]/F");
+  t->Branch("j_g",        ev.j_g,       "j_g[nj]/I");
+  t->Branch("j_area",     ev.j_area,    "j_area[nj]/F");
+  t->Branch("j_rawsf",    ev.j_rawsf,   "j_rawsf[nj]/F");
   t->Branch("j_pt",       ev.j_pt,      "j_pt[nj]/F");
   t->Branch("j_eta",      ev.j_eta,     "j_eta[nj]/F");
   t->Branch("j_phi",      ev.j_phi,     "j_phi[nj]/F");
-  t->Branch("j_mass",     ev.j_mass,     "j_mass[nj]/F");
+  t->Branch("j_mass",     ev.j_mass,    "j_mass[nj]/F");
   t->Branch("j_csv",      ev.j_csv,     "j_csv[nj]/F");
   t->Branch("j_btag",     ev.j_btag,    "j_btag[nj]/O");
-  t->Branch("j_csvl",     ev.j_cvsl,     "j_cvsl[nj]/F");
-  t->Branch("j_cvsb",     ev.j_cvsb,     "j_cvsb[nj]/F");
-  t->Branch("j_vtxpx",    ev.j_vtxpx, "j_vtxpx[nj]/F");
-  t->Branch("j_vtxpy",    ev.j_vtxpy, "j_vtxpy[nj]/F");
-  t->Branch("j_vtxpz",    ev.j_vtxpz, "j_vtxpz[nj]/F");
+  t->Branch("j_csvl",     ev.j_cvsl,    "j_cvsl[nj]/F");
+  t->Branch("j_cvsb",     ev.j_cvsb,    "j_cvsb[nj]/F");
+  t->Branch("j_vtxpx",    ev.j_vtxpx,   "j_vtxpx[nj]/F");
+  t->Branch("j_vtxpy",    ev.j_vtxpy,   "j_vtxpy[nj]/F");
+  t->Branch("j_vtxpz",    ev.j_vtxpz,   "j_vtxpz[nj]/F");
   t->Branch("j_vtxmass",  ev.j_vtxmass, "j_vtxmass[nj]/F");
   t->Branch("j_vtxNtracks",  ev.j_vtxNtracks, "j_vtxNtracks[nj]/I");
-  t->Branch("j_vtx3DVal",    ev.j_vtx3DVal, "j_vtx3DVal[nj]/F");
-  t->Branch("j_vtx3DSig",    ev.j_vtx3DSig, "j_vtx3DSig[nj]/F");
-  t->Branch("j_puid",        ev.j_puid,    "j_puid[nj]/F");  
-  t->Branch("j_flav",        ev.j_flav,    "j_flav[nj]/I");
+  t->Branch("j_vtx3DVal",    ev.j_vtx3DVal,   "j_vtx3DVal[nj]/F");
+  t->Branch("j_vtx3DSig",    ev.j_vtx3DSig,   "j_vtx3DSig[nj]/F");
+  t->Branch("j_puid",        ev.j_puid,       "j_puid[nj]/F");  
+  t->Branch("j_flav",        ev.j_flav,       "j_flav[nj]/I");
   t->Branch("j_hadflav",     ev.j_hadflav,    "j_hadflav[nj]/I");
-  t->Branch("j_pid",         ev.j_pid,     "j_pid[nj]/I");
+  t->Branch("j_pid",         ev.j_pid,        "j_pid[nj]/I");
 
   //pf candidates (only charged if outside jets)
   t->Branch("npf",        &ev.npf,         "npf/I");
@@ -117,23 +116,23 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev)
 void attachToMiniEventTree(TTree *t,MiniEvent_t &ev,bool full)
 {
   //event header
-  t->SetBranchAddress("isData",     &ev.isData);
+  t->SetBranchAddress("isData",    &ev.isData);
   t->SetBranchAddress("run",       &ev.run);
   t->SetBranchAddress("event",     &ev.event);
   t->SetBranchAddress("lumi",      &ev.lumi);
 
   //generator level event
-  t->SetBranchAddress("pu",      &ev.pu);
-  t->SetBranchAddress("putrue",      &ev.putrue);
-  t->SetBranchAddress("ttbar_nw",        &ev.ttbar_nw);
-  t->SetBranchAddress("ttbar_allmepartons",        &ev.ttbar_allmepartons);
-  t->SetBranchAddress("ttbar_matchmepartons",        &ev.ttbar_matchmepartons);
-  t->SetBranchAddress("ttbar_w",        ev.ttbar_w);
+  t->SetBranchAddress("g_pu",      &ev.g_pu);
+  t->SetBranchAddress("g_putrue",  &ev.g_putrue);
+  t->SetBranchAddress("g_id1",     &ev.g_id1);
+  t->SetBranchAddress("g_id2",     &ev.g_id2);
+  t->SetBranchAddress("g_x1",      &ev.g_x1);
+  t->SetBranchAddress("g_x2",      &ev.g_x2);
+  t->SetBranchAddress("g_qscale",  &ev.g_qscale);
+  t->SetBranchAddress("g_nw",      &ev.g_nw);
+  t->SetBranchAddress("g_w",       ev.g_w);
 
   //gen event (jets and dressed leptons)
-  t->SetBranchAddress("ngjets",       &ev.ngjets);
-  t->SetBranchAddress("ngbjets",       &ev.ngbjets);
-  t->SetBranchAddress("ngleptons",       &ev.ngleptons);
   t->SetBranchAddress("ng",       &ev.ng);
   t->SetBranchAddress("g_id",      ev.g_id);
   t->SetBranchAddress("g_pt",      ev.g_pt);
@@ -164,13 +163,13 @@ void attachToMiniEventTree(TTree *t,MiniEvent_t &ev,bool full)
 
   //reco level event
   t->SetBranchAddress("nvtx",      &ev.nvtx);
-  t->SetBranchAddress("muTrigger",        &ev.muTrigger);
-  t->SetBranchAddress("elTrigger",        &ev.elTrigger);
-
-  t->SetBranchAddress("nleptons", &ev.nleptons);
+  t->SetBranchAddress("rho",      &ev.rho);
+  t->SetBranchAddress("triggerBits",        &ev.triggerBits);
+  
+  //lepton info
   t->SetBranchAddress("nl", &ev.nl);
-  t->SetBranchAddress("isPromptFinalState",                         ev.isPromptFinalState);
-  t->SetBranchAddress("isDirectPromptTauDecayProductFinalState",    ev.isDirectPromptTauDecayProductFinalState);
+  t->SetBranchAddress("l_isPromptFinalState",                         ev.l_isPromptFinalState);
+  t->SetBranchAddress("l_isDirectPromptTauDecayProductFinalState",    ev.l_isDirectPromptTauDecayProductFinalState);
   t->SetBranchAddress("l_id",       ev.l_id);
   t->SetBranchAddress("l_pid",      ev.l_pid);
   t->SetBranchAddress("l_g",        ev.l_g);
@@ -179,7 +178,7 @@ void attachToMiniEventTree(TTree *t,MiniEvent_t &ev,bool full)
   t->SetBranchAddress("l_eta",      ev.l_eta);
   t->SetBranchAddress("l_phi",      ev.l_phi);
   t->SetBranchAddress("l_mass",     ev.l_mass);
-  t->SetBranchAddress("l_scaleUnc",       ev.l_scaleUnc);
+  t->SetBranchAddress("l_scaleUnc",         ev.l_scaleUnc);
   t->SetBranchAddress("l_chargedHadronIso", ev.l_chargedHadronIso);
   t->SetBranchAddress("l_miniIso",          ev.l_miniIso);
   t->SetBranchAddress("l_relIso",           ev.l_relIso);

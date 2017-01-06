@@ -221,7 +221,7 @@ void RunTopJetShape(TString filename,
           allPlots["puwgtctr"]->Fill(0.,1.0);
           for(size_t iwgt=0; iwgt<3; iwgt++)
             {
-              puWgts[iwgt]=puWgtGr[iwgt]->Eval(ev.putrue);  
+              puWgts[iwgt]=puWgtGr[iwgt]->Eval(ev.g_putrue);  
               allPlots["puwgtctr"]->Fill(iwgt+1,puWgts[iwgt]);
             }
 
@@ -238,7 +238,7 @@ void RunTopJetShape(TString filename,
 	    
 	        //update nominal event weight
 	        wgt=triggerCorrWgt.first*lepSelCorrWgt.first*puWgts[0]*norm;
-	        if(ev.ttbar_nw>0) wgt*=ev.ttbar_w[0];
+	        if(ev.g_nw>0) wgt*=ev.g_w[0];
 	      }
       
       //control histograms

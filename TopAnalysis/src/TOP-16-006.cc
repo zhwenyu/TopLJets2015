@@ -364,12 +364,12 @@ void RunTop16006(TString filename,
       //apply trigger requirement
       if(ev.l_id[lepIdx]==13)
 	{
-	  if(ev.isData  && (ev.muTrigger & 0x3)==0) continue;
+	  if(ev.isData  && (ev.triggerBits & 0x3)==0) continue;
 	  //if(!ev.isData && (ev.muTrigger & 0x3)==0) continue;
 	}
       if(ev.l_id[lepIdx]==11)
 	{ 
-	  if(ev.isData && ((ev.elTrigger>>0)&0x1)==0 ) continue;
+	  if(ev.isData && ((ev.triggerBits>>0)&0x1)==0 ) continue;
 	  //if(!ev.isData && ((ev.elTrigger>>0)&0x1)==0 ) continue;
 	}
 
@@ -549,15 +549,15 @@ void RunTop16006(TString filename,
 	  //update pileup weights, if found
 	  if(puWgtGr.size())
 	    {
-	      puWeight[0]=puWgtGr[0]->Eval(ev.putrue);  
-	      puWeight[1]=puWgtGr[1]->Eval(ev.putrue); 
-	      puWeight[2]=puWgtGr[2]->Eval(ev.putrue);
+	      puWeight[0]=puWgtGr[0]->Eval(ev.g_putrue);  
+	      puWeight[1]=puWgtGr[1]->Eval(ev.g_putrue); 
+	      puWeight[2]=puWgtGr[2]->Eval(ev.g_putrue);
 	    }
 	  
 	  //update nominal event weight
 	  float norm( normH ? normH->GetBinContent(1) : 1.0);
 	  wgt=lepTriggerSF[0]*lepSelSF[0]*puWeight[0]*norm;
-	  if(ev.ttbar_nw>0) wgt*=ev.ttbar_w[0];
+	  if(ev.g_nw>0) wgt*=ev.g_w[0];
 	}
 
       //nominal selection control histograms
@@ -629,7 +629,7 @@ void RunTop16006(TString filename,
 	    {
 	      for(size_t icat=0; icat<2; icat++)
 		{
-		  float newWgt = wgt*ev.ttbar_w[igen]/ev.ttbar_w[0];
+		  float newWgt = wgt*ev.g_w[igen]/ev.g_w[0];
 		  
 		  //for signal we only consider shapes and acceptance effects as it will be fit
 		  if(isTTbar) 
