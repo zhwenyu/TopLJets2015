@@ -12,10 +12,7 @@
 #include "TopLJets2015/TopAnalysis/interface/TOP-16-019.h"
 #include "TopLJets2015/TopAnalysis/interface/LeptonEfficiencyWrapper.h"
 #include "TopLJets2015/TopAnalysis/interface/TOP-UE.h"
-#include "TopLJets2015/TopAnalysis/interface/BtagUncertaintyComputer.h"
-
-#include "CondFormats/BTauObjects/interface/BTagCalibration.h"
-#include "CondFormats/BTauObjects/interface/BTagCalibrationReader.h"
+#include "TopLJets2015/TopAnalysis/interface/CorrectionTools.h"
 
 
 #include <vector>
@@ -51,9 +48,6 @@ void RunTopUE(TString filename,
     }
   bool isTTbar( filename.Contains("_TTJets") );
 
-  //LEPTON EFFICIENCIES
-  LeptonEfficiencyWrapper lepEffH(filename.Contains("Data13TeV"),era);
-
   //prepare output
   TopUE_t tue;
   TFile *fOut=TFile::Open(outname,"RECREATE");
@@ -72,60 +66,36 @@ void RunTopUE(TString filename,
   attachToMiniEventTree(t,ev,true);
   Int_t nentries(t->GetEntriesFast());
   t->GetEntry(0);
+
+  //TRIGGERS TO USE
   bool requireEETriggers(false);
   if(ev.isData && filename.Contains("DoubleEG"))       requireEETriggers=true;
   bool requireMMTriggers(false);
   if(ev.isData && filename.Contains("DoubleMuon"))     requireMMTriggers=true;
   bool requireEMTriggers(false);
   if(ev.isData && filename.Contains("MuonEG"))         requireEMTriggers=true;
-  //bool vetoEtrigger(false),vetoMtrigger(false);
-  //if(ev.isData && filename.Contains("SingleElectron")) vetoMtrigger=true;
 
+  //LEPTON EFFICIENCIES
+  LeptonEfficiencyWrapper lepEffH(filename.Contains("Data13TeV"),era);
 
   //PILEUP WEIGHTING
   std::vector<TGraph *>puWgtGr;
   if(!ev.isData) puWgtGr=getPileupWeights(era,puTrue);
     
   //B-TAG CALIBRATION
-  std::vector<BTagCalibrationReader *> sfbReaders, sflReaders;
-  std::map<TString, TGraphAsymmErrors *> expBtagEff, expBtagEffPy8;
-  BTagSFUtil myBTagSFUtil;
-  if(!ev.isData)
+  std::map<BTagEntry::JetFlavor, BTagCalibrationReader *> btvsfReaders  = getBTVcalibrationReaders(era,BTagEntry::OP_MEDIUM);
+  std::map<BTagEntry::JetFlavor, TGraphAsymmErrors *>    expBtagEffPy8 = readExpectedBtagEff(era);
+  TString btagExpPostFix("");
+  if(isTTbar)
     {
-      TString btagUncUrl(era+"/btagSFactors.csv");
-      gSystem->ExpandPathName(btagUncUrl);
-      BTagCalibration btvcalib("csvv2", btagUncUrl.Data());
-      sfbReaders.push_back( new BTagCalibrationReader(&btvcalib, BTagEntry::OP_MEDIUM, "mujets", "central") );
-      sflReaders.push_back( new BTagCalibrationReader(&btvcalib, BTagEntry::OP_MEDIUM, "incl", "central") );
-      sfbReaders.push_back( new BTagCalibrationReader(&btvcalib, BTagEntry::OP_MEDIUM, "mujets", "up") );
-      sflReaders.push_back( new BTagCalibrationReader(&btvcalib, BTagEntry::OP_MEDIUM, "incl", "up") );
-      sfbReaders.push_back( new BTagCalibrationReader(&btvcalib, BTagEntry::OP_MEDIUM, "mujets", "down") );
-      sflReaders.push_back( new BTagCalibrationReader(&btvcalib, BTagEntry::OP_MEDIUM, "incl", "down") );
-
-      TString btagEffExpUrl(era+"/expTageff.root");
-      gSystem->ExpandPathName(btagEffExpUrl);
-      TFile *beffIn=TFile::Open(btagEffExpUrl);
-      expBtagEffPy8["b"]=(TGraphAsymmErrors *)beffIn->Get("b");
-      expBtagEffPy8["c"]=(TGraphAsymmErrors *)beffIn->Get("c");
-      expBtagEffPy8["udsg"]=(TGraphAsymmErrors *)beffIn->Get("udsg");
-      beffIn->Close();
-      
-      TString btagExpPostFix("");
-      if(isTTbar)
-	{
-	  if(filename.Contains("_herwig")) btagExpPostFix="_herwig";
-	  if(filename.Contains("_scaleup")) btagExpPostFix="_scaleup";
-	  if(filename.Contains("_scaledown")) btagExpPostFix="_scaledown";
-	}
-      btagEffExpUrl.ReplaceAll(".root",btagExpPostFix+".root");
-      beffIn=TFile::Open(btagEffExpUrl);
-      expBtagEff["b"]=(TGraphAsymmErrors *)beffIn->Get("b");
-      expBtagEff["c"]=(TGraphAsymmErrors *)beffIn->Get("c");
-      expBtagEff["udsg"]=(TGraphAsymmErrors *)beffIn->Get("udsg");
-      beffIn->Close();
+      if(filename.Contains("_herwig")) btagExpPostFix="_herwig";
+      if(filename.Contains("_scaleup")) btagExpPostFix="_scaleup";
+      if(filename.Contains("_scaledown")) btagExpPostFix="_scaledown";
     }
+  std::map<BTagEntry::JetFlavor, TGraphAsymmErrors *> expBtagEff=readExpectedBtagEff(era,btagExpPostFix);
+  BTagSFUtil myBTagSFUtil;
 
-  //jet energy uncertainties
+  //JES UNCERTAINTIES
   TString jecUncUrl(era+"/jecUncertaintySources_AK4PFchs.txt");
   gSystem->ExpandPathName(jecUncUrl);
   JetCorrectorParameters *jecParam = new JetCorrectorParameters(jecUncUrl.Data(),"Total");
@@ -277,7 +247,6 @@ void RunTopUE(TString filename,
 	      tue.gen_n++;
 	    }
 	  
-
 	  //other weights
 	  //top pt weights
           if(ptsf>0 && ntops==2)
@@ -415,34 +384,17 @@ void RunTopUE(TString filename,
 		{
 		  float jptForBtag(jp4.Pt()>1000. ? 999. : jp4.Pt()), jetaForBtag(fabs(jp4.Eta()));
 		  float expEff(1.0), jetBtagSF(1.0);
-		  
-		  if(abs(ev.j_hadflav[k])==4) 
-		    { 	
-		      int sfIdx(0);
-		      if(ivar==5) sfIdx=1;
-		      if(ivar==6) sfIdx=2;
-		      expEff    = expBtagEff["c"]->Eval(jptForBtag); 
-		      jetBtagSF = sfbReaders[sfIdx]->eval( BTagEntry::FLAV_C, jetaForBtag, jptForBtag);
-		      jetBtagSF *= expEff>0 ? expBtagEffPy8["c"]->Eval(jptForBtag)/expBtagEff["c"]->Eval(jptForBtag) : 0.;
-		    }
-		  else if(abs(ev.j_hadflav[k])==5) 
-		    { 
-		      expEff    = expBtagEff["b"]->Eval(jptForBtag); 
-		      int sfIdx(0);
-		      if(ivar==5) sfIdx=1;
-		      if(ivar==6) sfIdx=2;
-		      jetBtagSF = sfbReaders[sfIdx]->eval( BTagEntry::FLAV_B, jetaForBtag, jptForBtag);
-		      jetBtagSF *= expEff>0 ? expBtagEffPy8["b"]->Eval(jptForBtag)/expBtagEff["b"]->Eval(jptForBtag) : 0.;
-		    }
-		  else
-		    {
-		      expEff    = expBtagEff["udsg"]->Eval(jptForBtag);
-		      int sfIdx(0);
-		      if(ivar==7) sfIdx=1;
-		      if(ivar==8) sfIdx=2;
-		      jetBtagSF = sflReaders[sfIdx]->eval( BTagEntry::FLAV_UDSG, jetaForBtag, jptForBtag);
-		      jetBtagSF *= expEff> 0 ? expBtagEffPy8["udsg"]->Eval(jptForBtag)/expBtagEff["udsg"]->Eval(jptForBtag) : 0.;
-		    }
+
+		  //determine expected efficiency and scale factor
+		  BTagEntry::JetFlavor hadFlav=BTagEntry::FLAV_UDSG;
+		  if(abs(ev.j_hadflav[k])==4) hadFlav=BTagEntry::FLAV_C;
+		  if(abs(ev.j_hadflav[k])==5) hadFlav=BTagEntry::FLAV_B;
+		  std::string btagVar="central";
+		  if(ivar==5) btagVar="up";
+		  if(ivar==6) btagVar="down";
+		  expEff    = expBtagEff[hadFlav]->Eval(jptForBtag); 
+		  jetBtagSF = btvsfReaders[hadFlav]->eval_auto_bounds( btagVar, hadFlav, jetaForBtag, jptForBtag);
+		  jetBtagSF *= expEff>0 ? expBtagEffPy8[hadFlav]->Eval(jptForBtag)/expBtagEff[hadFlav]->Eval(jptForBtag) : 0.;
 		  
 		  //updated b-tagging decision with the data/MC scale factor
 		  myBTagSFUtil.modifyBTagsWithSF(isBTagged,      jetBtagSF,      expEff);

@@ -30,7 +30,7 @@ struct MiniEvent_t
 
   //reco level event
   Int_t nvtx;
-  Int_t muTrigger,elTrigger;
+  Int_t elTrigger,muTrigger;
   Float_t rho;
   Int_t nl,nleptons;
   Bool_t isPromptFinalState[50], isDirectPromptTauDecayProductFinalState[50];

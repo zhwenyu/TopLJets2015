@@ -15,9 +15,6 @@
 #include "TopLJets2015/TopAnalysis/interface/LeptonEfficiencyWrapper.h"
 #include "TopLJets2015/TopAnalysis/interface/BtagUncertaintyComputer.h"
 
-#include "CondFormats/BTauObjects/interface/BTagCalibration.h"
-#include "CondFormats/BTauObjects/interface/BTagCalibrationReader.h"
-
 #include <vector>
 #include <iostream>
 #include <algorithm>
@@ -95,40 +92,21 @@ void RunTopJetShape(TString filename,
 
 
   //B-TAG CALIBRATION
-  BTagCalibrationReader* sfbReader;
-  BTagCalibrationReader* sflReader;
-  std::map<TString, TGraphAsymmErrors*> expBtagEff, expBtagEffPy8;
   BTagSFUtil* myBTagSFUtil = new BTagSFUtil();
-  
-  TString btagUncUrl(era+"/btagSFactors.csv");
-  gSystem->ExpandPathName(btagUncUrl);
-  BTagCalibration btvcalib("csvv2", btagUncUrl.Data());
-  sfbReader = new BTagCalibrationReader(&btvcalib, BTagEntry::OP_MEDIUM, "mujets", "central");
-  sflReader = new BTagCalibrationReader(&btvcalib, BTagEntry::OP_MEDIUM, "incl",   "central");
-  //dummy calls
-  sfbReader->eval( BTagEntry::FLAV_B,    0., 30.);
-  sflReader->eval( BTagEntry::FLAV_UDSG, 0., 30.);
+  std::map<BTagEntry::JetFlavor, BTagCalibrationReader *> btvsfReaders  = getBTVcalibrationReaders(era,BTagEntry::OP_MEDIUM);
 
-  TString btagEffExpUrl(era+"/expTageff.root");
-  gSystem->ExpandPathName(btagEffExpUrl);
-  TFile *beffIn=TFile::Open(btagEffExpUrl);
-  expBtagEffPy8["b"]    = (TGraphAsymmErrors*) beffIn->Get("b");
-  expBtagEffPy8["c"]    = (TGraphAsymmErrors*) beffIn->Get("c");
-  expBtagEffPy8["udsg"] = (TGraphAsymmErrors*) beffIn->Get("udsg");
-  beffIn->Close();
-  
+  //dummy calls
+  btvsfReaders[BTagEntry::FLAV_B]->eval_auto_bounds("central", BTagEntry::FLAV_B,   0., 30.);
+  btvsfReaders[BTagEntry::FLAV_UDSG]->eval_auto_bounds( "central", BTagEntry::FLAV_UDSG,   0., 30.);
+
+  std::map<BTagEntry::JetFlavor, TGraphAsymmErrors *>    expBtagEffPy8 = readExpectedBtagEff(era);
   TString btagExpPostFix("");
   if(isTTbar) {
     if(filename.Contains("_herwig"))    btagExpPostFix="_herwig";
     if(filename.Contains("_scaleup"))   btagExpPostFix="_scaleup";
     if(filename.Contains("_scaledown")) btagExpPostFix="_scaledown";
   }
-  btagEffExpUrl.ReplaceAll(".root",btagExpPostFix+".root");
-  beffIn=TFile::Open(btagEffExpUrl);
-  expBtagEff["b"]    = (TGraphAsymmErrors*) beffIn->Get("b");
-  expBtagEff["c"]    = (TGraphAsymmErrors*) beffIn->Get("c");
-  expBtagEff["udsg"] = (TGraphAsymmErrors*) beffIn->Get("udsg");
-  beffIn->Close();
+  std::map<BTagEntry::JetFlavor, TGraphAsymmErrors *> expBtagEff=readExpectedBtagEff(era,btagExpPostFix);
   
   
   //JET ENERGY UNCERTAINTIES
@@ -179,7 +157,7 @@ void RunTopJetShape(TString filename,
       ev = addBTagDecisions(ev);
       if(!ev.isData) {
         ev = smearJetEnergies(ev);
-        ev = updateBTagDecisions(ev, sfbReader, sflReader, expBtagEff, expBtagEffPy8, myBTagSFUtil);      
+        ev = updateBTagDecisions(ev, btvsfReaders,expBtagEff,expBtagEffPy8,myBTagSFUtil);
       }
       
       ///////////////////////////
