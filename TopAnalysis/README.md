@@ -1,33 +1,33 @@
 # TopLJets2015
 
-## Analysis twiki
-Please keep 
-https://twiki.cern.ch/twiki/bin/view/Main/TopLJ2015Analysis
-up to date with the on-going tasks and results
-
 ## Installation instructions
-To execute in your lxplus work area.
+These installation instructions correspond to the 2016 data/MC Moriond17 re-reco.
+To install execute the following in your work area.
 ```
-cmsrel CMSSW_8_0_11 
-cd CMSSW_8_0_11/src 
+cmsrel CMSSW_8_0_24_patch1
+cd CMSSW_8_0_24_patch1/src 
 cmsenv
 git cms-init
+
 #EGM smearer
-git remote add -f -t ecal_smear_fix_80X emanueledimarco https://github.com/emanueledimarco/cmssw.git
-git cms-addpkg EgammaAnalysis/ElectronTools
-git checkout -b from-52f192a 52f192a
+git cms-merge-topic shervin86:Moriond2017_JEC_energyScales
 cd EgammaAnalysis/ElectronTools/data
-git clone -b ICHEP2016_v2 https://github.com/ECALELFS/ScalesSmearings.git
+# download the txt files with the corrections
+git clone git@github.com:ECALELFS/ScalesSmearings.git
+cd - 
+
+#BTV DeepCSV
+git cms-merge-topic -u mverzett:DeepFlavourCMVA-from-CMSSW_8_0_21
+mkdir RecoBTag /DeepFlavour/data/
+cd RecoBTag /DeepFlavour/data/
+wget http://home.fnal.gov/~verzetti//DeepFlavour/training/DeepFlavourNoSL.json
+wget http://mon.iihe.ac.be/~smoortga/DeepFlavour/CMSSW_implementation_DeepCMVA/Model_DeepCMVA.json
 cd -
-#Pseudo-top producer with Markus fix
-git remote add -f -t bugfix-pseudotop-bjets-81X intrepid42 https://github.com/intrepid42/cmssw.git
-git cms-addpkg TopQuarkAnalysis/TopEventProducers
-git fetch intrepid42
-git checkout intrepid42/bugfix-pseudotop-bjets-81X
-#analysis code
+
+#ntuplizer
 git clone git@github.com:pfs/TopLJets2015.git
 cd TopLJets2015/TopAnalysis
-git checkout 80x_dev
+git checkout 80x_rereco_rev
 scram b -j 8
 ```
 
