@@ -82,8 +82,7 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev)
   t->Branch("j_csv",      ev.j_csv,     "j_csv[nj]/F");
   t->Branch("j_btag",     ev.j_btag,    "j_btag[nj]/O");
   t->Branch("j_deepcsvl",     ev.j_deepcsvl,    "j_deepcsvl[nj]/F");
-  t->Branch("j_deepcsvc",     ev.j_deepcsvc,    "j_deepcsvc[nj]/F");
-  t->Branch("j_deepcsvbb",    ev.j_deepcsvbb,   "j_deepcsvbb[nj]/F");
+  t->Branch("j_deepcsvc",     ev.j_deepcsvc,    "j_deepcsvc[nj]/F");  
   t->Branch("j_deepcsvb",     ev.j_deepcsvb,    "j_deepcsvb[nj]/F");
   t->Branch("j_vtxpx",    ev.j_vtxpx,   "j_vtxpx[nj]/F");
   t->Branch("j_vtxpy",    ev.j_vtxpy,   "j_vtxpy[nj]/F");
@@ -200,7 +199,6 @@ void attachToMiniEventTree(TTree *t,MiniEvent_t &ev,bool full)
   t->SetBranchAddress("j_deepcsvl",     ev.j_deepcsvl);
   t->SetBranchAddress("j_deepcsvc",     ev.j_deepcsvc);
   t->SetBranchAddress("j_deepcsvb",     ev.j_deepcsvb);
-  t->SetBranchAddress("j_deepcsvbb",     ev.j_deepcsvbb);
   t->SetBranchAddress("j_vtxpx",    ev.j_vtxpx);
   t->SetBranchAddress("j_vtxpy",    ev.j_vtxpy);
   t->SetBranchAddress("j_vtxpz",    ev.j_vtxpz);

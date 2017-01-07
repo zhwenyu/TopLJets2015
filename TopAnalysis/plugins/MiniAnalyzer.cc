@@ -642,9 +642,8 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       ev_.j_csv[ev_.nj]=j->bDiscriminator("pfCombinedInclusiveSecondaryVertexV2BJetTags");
       ev_.j_btag[ev_.nj]       = (ev_.j_csv[ev_.nj]>0.800);
       ev_.j_deepcsvl[ev_.nj]   = j->bDiscriminator("deepFlavourJetTags:probudsg");
-      ev_.j_deepcsvc[ev_.nj]   = j->bDiscriminator("deepFlavourJetTags:probc");
-      ev_.j_deepcsvb[ev_.nj]   = j->bDiscriminator("deepFlavourJetTags:probb");
-      ev_.j_deepcsvbb[ev_.nj]  = j->bDiscriminator("deepFlavourJetTags:probbb");      
+      ev_.j_deepcsvc[ev_.nj]   = j->bDiscriminator("deepFlavourJetTags:probc")+j->bDiscriminator("deepFlavourJetTags:probcc");
+      ev_.j_deepcsvb[ev_.nj]   = j->bDiscriminator("deepFlavourJetTags:probb")+j->bDiscriminator("deepFlavourJetTags:probbb");
       ev_.j_vtxpx[ev_.nj]      = j->userFloat("vtxPx");
       ev_.j_vtxpy[ev_.nj]      = j->userFloat("vtxPy");
       ev_.j_vtxpz[ev_.nj]      = j->userFloat("vtxPz");
