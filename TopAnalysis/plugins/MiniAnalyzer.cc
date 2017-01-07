@@ -625,13 +625,13 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
      
       //save jet
       const reco::Candidate *genParton = j->genParton();
-      ev_.j_area[ev_.nj]=j->jetArea();
-      ev_.j_rawsf[ev_.nj]=j->correctedJet("Uncorrected").pt()/j->pt();
-      ev_.j_pt[ev_.nj]=j->pt();
-      ev_.j_mass[ev_.nj]=j->mass();
-      ev_.j_eta[ev_.nj]=j->eta();
-      ev_.j_phi[ev_.nj]=j->phi();
-      ev_.j_g[ev_.nj]=-1;
+      ev_.j_area[ev_.nj]  = j->jetArea();
+      ev_.j_rawsf[ev_.nj] = j->correctedJet("Uncorrected").pt()/j->pt();
+      ev_.j_pt[ev_.nj]    = j->pt();
+      ev_.j_mass[ev_.nj]  = j->mass();
+      ev_.j_eta[ev_.nj]   = j->eta();
+      ev_.j_phi[ev_.nj]   = j->phi();
+      ev_.j_g[ev_.nj]     = -1;
       for(int ig=0; ig<ev_.ng; ig++)
 	{
 	  if(abs(ev_.g_id[ig])==11 || abs(ev_.g_id[ig])==13) continue;
@@ -640,20 +640,21 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
 	  break;
 	}	 
       ev_.j_csv[ev_.nj]=j->bDiscriminator("pfCombinedInclusiveSecondaryVertexV2BJetTags");
-      ev_.j_btag[ev_.nj]=(ev_.j_csv[ev_.nj]>0.800);
-      ev_.j_cvsl[ev_.nj]=j->bDiscriminator("pfCombinedCvsLJetTags");
-      ev_.j_cvsb[ev_.nj]=j->bDiscriminator("pfCombinedCvsBJetTags");
-      ev_.j_vtxpx[ev_.nj]=j->userFloat("vtxPx");
-      ev_.j_vtxpy[ev_.nj]=j->userFloat("vtxPy");
-      ev_.j_vtxpz[ev_.nj]=j->userFloat("vtxPz");
-      ev_.j_vtxmass[ev_.nj]=j->userFloat("vtxMass");
-      ev_.j_vtxNtracks[ev_.nj]=j->userFloat("vtxNtracks");
-      ev_.j_vtx3DVal[ev_.nj]=j->userFloat("vtx3DVal");
-      ev_.j_vtx3DSig[ev_.nj]=j->userFloat("vtx3DSig");
-      ev_.j_puid[ev_.nj]=j->userFloat("pileupJetId:fullDiscriminant");      
-      ev_.j_flav[ev_.nj]=j->partonFlavour();
-      ev_.j_hadflav[ev_.nj]=j->hadronFlavour();
-      ev_.j_pid[ev_.nj]=genParton ? genParton->pdgId() : 0;
+      ev_.j_btag[ev_.nj]       = (ev_.j_csv[ev_.nj]>0.800);
+      ev_.j_deepcsvl[ev_.nj]   = j->bDiscriminator("deepFlavourJetTags:probudsg");
+      ev_.j_deepcsvc[ev_.nj]   = j->bDiscriminator("deepFlavourJetTags:probc");
+      ev_.j_deepcsvb[ev_.nj]   = j->bDiscriminator("deepFlavourJetTags:probb");
+      ev_.j_deepcsvbb[ev_.nj]  = j->bDiscriminator("deepFlavourJetTags:probbb");      
+      ev_.j_vtxpx[ev_.nj]      = j->userFloat("vtxPx");
+      ev_.j_vtxpy[ev_.nj]      = j->userFloat("vtxPy");
+      ev_.j_vtxpz[ev_.nj]      = j->userFloat("vtxPz");
+      ev_.j_vtxmass[ev_.nj]    = j->userFloat("vtxMass");
+      ev_.j_vtxNtracks[ev_.nj] = j->userFloat("vtxNtracks");
+      ev_.j_vtx3DVal[ev_.nj]   = j->userFloat("vtx3DVal");
+      ev_.j_vtx3DSig[ev_.nj]   = j->userFloat("vtx3DSig");      
+      ev_.j_flav[ev_.nj]       = j->partonFlavour();
+      ev_.j_hadflav[ev_.nj]    = j->hadronFlavour();
+      ev_.j_pid[ev_.nj]        = genParton ? genParton->pdgId() : 0;
       ev_.nj++;
 
       //save all PF candidates central jet
@@ -672,8 +673,8 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       edm::Handle<pat::METCollection> mets;
       if(i==0) iEvent.getByToken(metToken_, mets);
       if(i==1) iEvent.getByToken(puppiMetToken_, mets);
-      ev_.met_pt[i]=mets->at(0).pt();
-      ev_.met_phi[i]=mets->at(0).phi();
+      ev_.met_pt[i]  = mets->at(0).pt();
+      ev_.met_phi[i] = mets->at(0).phi();
     }
 
   //PF candidates
