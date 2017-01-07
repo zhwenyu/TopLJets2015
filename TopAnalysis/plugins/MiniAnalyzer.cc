@@ -706,6 +706,8 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       ev_.pf_eta[ev_.npf]      = pf->eta();
       ev_.pf_phi[ev_.npf]      = pf->phi();
       ev_.pf_m[ev_.npf]        = pf->mass();
+      ev_.pf_dxy[ev_.npf]      = pf->dxy();
+      ev_.pf_dz[ev_.npf]       = pf->dz();
       ev_.pf_puppiWgt[ev_.npf] = pf->puppiWeight();      
       ev_.npf++;
     }
