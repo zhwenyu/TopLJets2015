@@ -604,7 +604,7 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
 	}
       ev_.nl++;
       
-      if( calibe->pt()>20 && fabs(calibe->eta())<2.5 && passLooseId ) nrecleptons++;
+      if( calibe->pt()>20 && passEta && passLooseId ) nrecleptons++;
     }
 
   // JETS
