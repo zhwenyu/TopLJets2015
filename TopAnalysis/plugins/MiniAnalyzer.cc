@@ -126,9 +126,8 @@ private:
   edm::EDGetTokenT<pat::PackedCandidateCollection> pfToken_;
   
   //Electron Decisions
-  edm::EDGetTokenT<edm::ValueMap<bool> > eleVetoIdMapToken_;
-  edm::EDGetTokenT<edm::ValueMap<bool> > eleTightIdMapToken_;
-  edm::EDGetTokenT<edm::ValueMap<vid::CutFlowResult> > eleTightIdFullInfoMapToken_;
+  edm::EDGetTokenT<edm::ValueMap<bool> > eleVetoIdMapToken_,eleLooseIdMapToken_,eleMediumIdMapToken_,eleTightIdMapToken_;
+  edm::EDGetTokenT<edm::ValueMap<vid::CutFlowResult> > eleVetoIdFullInfoMapToken_,eleLooseIdFullInfoMapToken_,eleMediumIdFullInfoMapToken_,eleTightIdFullInfoMapToken_;
 
   std::unordered_map<std::string,TH1*> histContainer_;
 
@@ -529,15 +528,19 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
     }
   
   // ELECTRON SELECTION: cf. https://twiki.cern.ch/twiki/bin/view/CMS/CutBasedElectronIdentificationRun2
-  edm::Handle<edm::ValueMap<bool> > veto_id_decisions;
-  iEvent.getByToken(eleVetoIdMapToken_ ,veto_id_decisions);
-  edm::Handle<edm::ValueMap<bool> > tight_id_decisions;
-  iEvent.getByToken(eleTightIdMapToken_ ,tight_id_decisions);
-  edm::Handle<edm::ValueMap<vid::CutFlowResult> > tight_id_cutflow_data;
-  iEvent.getByToken(eleTightIdFullInfoMapToken_,tight_id_cutflow_data);
-  edm::Handle<edm::View<pat::Electron> >    electrons,calibElectrons;
+  edm::Handle<edm::View<pat::Electron> > electrons,calibElectrons;
   iEvent.getByToken(electronToken_, electrons);    
   iEvent.getByToken(calibElectronToken_, calibElectrons);    
+  edm::Handle<edm::ValueMap<bool> > veto_id, loose_id, medium_id, tight_id;
+  iEvent.getByToken(eleVetoIdMapToken_,   veto_id);
+  iEvent.getByToken(eleLooseIdMapToken_,  loose_id);
+  iEvent.getByToken(eleMediumIdMapToken_, medium_id);
+  iEvent.getByToken(eleTightIdMapToken_,  tight_id);
+  edm::Handle<edm::ValueMap<vid::CutFlowResult> > veto_cuts, loose_cuts, medium_cuts, tight_cuts;
+  iEvent.getByToken(eleVetoIdFullInfoMapToken_,   veto_cuts);
+  iEvent.getByToken(eleLooseIdFullInfoMapToken_,  loose_cuts);
+  iEvent.getByToken(eleMediumIdFullInfoMapToken_, medium_cuts);
+  iEvent.getByToken(eleTightIdFullInfoMapToken_,  tight_cuts);
   Int_t nele(0);
   for (const pat::Electron &el : *electrons) 
     {        
@@ -549,16 +552,24 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       bool passPt(calibe->pt() > 15.0);
       bool passEta(fabs(calibe->eta()) < 2.5 && (fabs(calibe->superCluster()->eta()) < 1.4442 || fabs(calibe->superCluster()->eta()) > 1.5660));
       if(!passPt || !passEta) continue;
-     
-      //look up id decisions
-      bool passVetoId = (*veto_id_decisions)[e];
-      bool passTightId  = (*tight_id_decisions)[e];
-      vid::CutFlowResult fullCutFlowData = (*tight_id_cutflow_data)[e];
-      bool passTightIdExceptIso(true);
-      for(size_t icut = 0; icut<fullCutFlowData.cutFlowSize(); icut++)
- 	{
-	  if(icut!=9 && !fullCutFlowData.getCutResultByIndex(icut)) passTightIdExceptIso=false;
-	}
+      
+      //take out id information alone
+      bool passVetoId(true), passLooseId(true), passMediumId(true), passTightId(true);
+      vid::CutFlowResult vetoCutBits   = (*veto_cuts)[e];
+      for(size_t icut = 0; icut<vetoCutBits.cutFlowSize(); icut++)  { if(icut!=9 && !vetoCutBits.getCutResultByIndex(icut)) passVetoId=false; }
+      vid::CutFlowResult looseCutBits  = (*loose_cuts)[e];
+      for(size_t icut = 0; icut<looseCutBits.cutFlowSize(); icut++)  { if(icut!=9 && !looseCutBits.getCutResultByIndex(icut)) passLooseId=false; }
+      vid::CutFlowResult mediumCutBits = (*medium_cuts)[e];
+      for(size_t icut = 0; icut<mediumCutBits.cutFlowSize(); icut++) { if(icut!=9 && !mediumCutBits.getCutResultByIndex(icut)) passMediumId=false; }
+      vid::CutFlowResult tightCutBits  = (*tight_cuts)[e];
+      for(size_t icut = 0; icut<tightCutBits.cutFlowSize(); icut++)  { if(icut!=9 && !tightCutBits.getCutResultByIndex(icut)) passTightId=false; }
+      if(!passVetoId) continue;
+
+      //full id+iso decisions
+      bool isVeto( (*veto_id)[e] );
+      bool isLoose( (*loose_id)[e] );      
+      bool isMedium( (*medium_id)[e] );
+      bool isTight( (*tight_id)[e] );
 
       //save the electron
       const reco::GenParticle * gen=el.genLepton(); 
@@ -573,19 +584,18 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
 	  ev_.l_g[ev_.nl]=ig;
 	  break;
 	}	 
-      ev_.l_pid[ev_.nl]=(passVetoId | (passTightId<<1) | (passTightIdExceptIso<<2));
-      ev_.l_charge[ev_.nl]=el.charge();
-      ev_.l_pt[ev_.nl]=calibe->pt();
-      ev_.l_eta[ev_.nl]=calibe->eta();
-      ev_.l_phi[ev_.nl]=calibe->phi();
-      ev_.l_mass[ev_.nl]=calibe->mass();
-      ev_.l_scaleUnc[ev_.nl]=calibe->p4Error(reco::GsfElectron::P4_PFLOW_COMBINATION);
-      ev_.l_miniIso[ev_.nl]=getMiniIsolation(pfcands,&el,0.05, 0.2, 10., false);
-      //ev_.l_relIso[ev_.nl]=fullCutFlowData.getValueCutUpon(9);
-      ev_.l_relIso[ev_.nl]=(calibe->chargedHadronIso()+ max(0., calibe->neutralHadronIso() + calibe->photonIso()  - 0.5*calibe->puChargedHadronIso()))/calibe->pt();     
-      ev_.l_chargedHadronIso[ev_.nl]=calibe->chargedHadronIso();
-      ev_.l_ip3d[ev_.nl] = -9999.;
-      ev_.l_ip3dsig[ev_.nl] = -9999;
+      ev_.l_pid[ev_.nl]= (passVetoId | (isVeto<<1) | (passLooseId<<2) | (isLoose<<3) | (passMediumId<<4) | (isMedium<<5) | (passTightId<<6) | (isTight<<7));
+      ev_.l_charge[ev_.nl]   = el.charge();
+      ev_.l_pt[ev_.nl]       = calibe->pt();
+      ev_.l_eta[ev_.nl]      = calibe->eta();
+      ev_.l_phi[ev_.nl]      = calibe->phi();
+      ev_.l_mass[ev_.nl]     = calibe->mass();
+      ev_.l_scaleUnc[ev_.nl] = calibe->p4Error(reco::GsfElectron::P4_PFLOW_COMBINATION);
+      ev_.l_miniIso[ev_.nl]  = getMiniIsolation(pfcands,&el,0.05, 0.2, 10., false);
+      ev_.l_relIso[ev_.nl]   = (calibe->chargedHadronIso()+ max(0., calibe->neutralHadronIso() + calibe->photonIso()  - 0.5*calibe->puChargedHadronIso()))/calibe->pt();     
+      ev_.l_chargedHadronIso[ev_.nl] = calibe->chargedHadronIso();
+      ev_.l_ip3d[ev_.nl]     = -9999.;
+      ev_.l_ip3dsig[ev_.nl]  = -9999;
       if(el.gsfTrack().get())
 	{
 	  std::pair<bool,Measurement1D> ip3dRes = getImpactParameter<reco::GsfTrackRef>(el.gsfTrack(), primVtxRef, iSetup, true);
@@ -593,8 +603,8 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
 	  ev_.l_ip3dsig[ev_.nl] = ip3dRes.second.significance();
 	}
       ev_.nl++;
-
-      if( calibe->pt()>20 && fabs(calibe->eta())<2.5 && (passTightIdExceptIso||passVetoId) ) nrecleptons++;
+      
+      if( calibe->pt()>20 && fabs(calibe->eta())<2.5 && passLooseId ) nrecleptons++;
     }
 
   // JETS
