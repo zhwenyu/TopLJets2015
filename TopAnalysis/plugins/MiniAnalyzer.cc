@@ -101,7 +101,8 @@ private:
                          float r_iso_min, float r_iso_max, float kt_scale,
                          bool charged_only);
 
-  bool ICHEP2016isMediumMuon(const reco::Muon & recoMu);
+  bool isSoftMuon(const reco::Muon & recoMu,const reco::Vertex &vertex);
+  bool isMediumMuon2016ReReco(const reco::Muon & recoMu);
 
   // member data 
   edm::EDGetTokenT<GenEventInfoProduct> generatorToken_;
@@ -476,17 +477,19 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
 	}
 
       //kinematics
-      bool passPt( p4.Pt() > 10 );
-      bool passEta(fabs(p4.Eta()) < 2.4 );
+      bool passPt(p4.Pt() > 10);
+      bool passEta(fabs(p4.Eta()) < 2.5);
       if(!passPt || !passEta) continue;
 
       //ID
-      //bool isMediumStd(muon::isMediumMuon(mu));
-      bool isMedium(ICHEP2016isMediumMuon(mu));
+      bool isSoft(isSoftMuon(mu,primVtx));
+      bool isLoose(muon::isLooseMuon(mu));
+      bool isMedium(muon::isMediumMuon(mu));
+      bool isMedium2016ReReco(isMediumMuon2016ReReco(mu));
       bool isTight(muon::isTightMuon(mu,primVtx));
-      if(!isMedium) continue;
+      if(!isSoft && !isLoose) continue;
 
-      //save it
+      //save info
       const reco::GenParticle * gen=mu.genLepton(); 
       ev_.l_isPromptFinalState[ev_.nl] = gen ? gen->isPromptFinalState() : false;
       ev_.l_isDirectPromptTauDecayProductFinalState[ev_.nl] = gen ? gen->isDirectPromptTauDecayProductFinalState() : false;
@@ -499,17 +502,20 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
 	  ev_.l_g[ev_.nl]=ig;
 	  break;
 	}	 
-      ev_.l_charge[ev_.nl]=mu.charge();
-      ev_.l_pt[ev_.nl]=p4.Pt();
-      ev_.l_eta[ev_.nl]=p4.Eta();
-      ev_.l_phi[ev_.nl]=p4.Phi();
-      ev_.l_mass[ev_.nl]=p4.M();
-      ev_.l_scaleUnc[ev_.nl]=qter;
-      ev_.l_pid[ev_.nl]=(isMedium | (isTight<<1));
-      ev_.l_chargedHadronIso[ev_.nl]=mu.pfIsolationR04().sumChargedHadronPt;
-      ev_.l_miniIso[ev_.nl]=getMiniIsolation(pfcands,&mu,0.05,0.2, 10., false);
-      ev_.l_relIso[ev_.nl]=(mu.pfIsolationR04().sumChargedHadronPt + max(0., mu.pfIsolationR04().sumNeutralHadronEt + mu.pfIsolationR04().sumPhotonEt - 0.5*mu.pfIsolationR04().sumPUPt))/p4.Pt();
-      ev_.l_ip3d[ev_.nl] = -9999.;
+      ev_.l_charge[ev_.nl]   = mu.charge();
+      ev_.l_pt[ev_.nl]       = p4.Pt();
+      ev_.l_eta[ev_.nl]      = p4.Eta();
+      ev_.l_phi[ev_.nl]      = p4.Phi();
+      ev_.l_mass[ev_.nl]     = p4.M();
+      ev_.l_scaleUnc[ev_.nl] = qter;
+      ev_.l_pid[ev_.nl]      = (isSoft | (isLoose<<1) | (isMedium<<2) | (isMedium2016ReReco<<3) | (isTight<<4));
+      ev_.l_chargedHadronIso[ev_.nl] = mu.pfIsolationR04().sumChargedHadronPt;
+      ev_.l_miniIso[ev_.nl]  = getMiniIsolation(pfcands,&mu,0.05,0.2, 10., false);
+      ev_.l_relIso[ev_.nl]   = (
+				mu.pfIsolationR04().sumChargedHadronPt 
+				+ max(0., mu.pfIsolationR04().sumNeutralHadronEt + mu.pfIsolationR04().sumPhotonEt - 0.5*mu.pfIsolationR04().sumPUPt)
+				) / p4.Pt();
+      ev_.l_ip3d[ev_.nl]    = -9999.;
       ev_.l_ip3dsig[ev_.nl] = -9999;
       if(mu.innerTrack().get())
 	{
@@ -519,7 +525,7 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
 	}   
       ev_.nl++;    
 
-      if( p4.Pt()>20 && fabs(p4.Eta())<2.5 && isMedium) nrecleptons++;
+      if( p4.Pt()>20 && fabs(p4.Eta())<2.5 && isLoose) nrecleptons++;
     }
   
   // ELECTRON SELECTION: cf. https://twiki.cern.ch/twiki/bin/view/CMS/CutBasedElectronIdentificationRun2
@@ -697,8 +703,19 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
   return nrecleptons;
 }
 
-//
-bool MiniAnalyzer::ICHEP2016isMediumMuon(const reco::Muon & recoMu) 
+//cf. https://twiki.cern.ch/twiki/bin/viewauth/CMS/SWGuideMuonIdRun2#Soft_Muon
+bool MiniAnalyzer::isSoftMuon(const reco::Muon & recoMu,const reco::Vertex &vertex)
+{
+  bool isGood(muon::isGoodMuon(recoMu, muon::TMOneStationTight));
+  bool passLayersWithMeas(recoMu.innerTrack()->hitPattern().trackerLayersWithMeasurement() > 5
+			  && recoMu.innerTrack()->hitPattern().pixelLayersWithMeasurement() > 0 );
+  bool matchesVertex(fabs(recoMu.innerTrack()->dxy(vertex.position())) < 0.3 
+		     && fabs(recoMu.innerTrack()->dz(vertex.position())) < 20. );
+  return (isGood && passLayersWithMeas && matchesVertex);
+}
+
+//cf. https://twiki.cern.ch/twiki/bin/viewauth/CMS/SWGuideMuonIdRun2#Standard_MediumID_to_be_used_wit
+bool MiniAnalyzer::isMediumMuon2016ReReco(const reco::Muon & recoMu) 
 {
   bool goodGlob = recoMu.isGlobalMuon() && 
     recoMu.globalTrack()->normalizedChi2() < 3 && 
