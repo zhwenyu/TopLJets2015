@@ -129,7 +129,7 @@ private:
   edm::EDGetTokenT<edm::ValueMap<bool> > eleTightIdMapToken_;
   edm::EDGetTokenT<edm::ValueMap<vid::CutFlowResult> > eleTightIdFullInfoMapToken_;
 
-  std::unordered_map<std::string,TH1F*> histContainer_;
+  std::unordered_map<std::string,TH1*> histContainer_;
 
   //muon rochester corrections
   rochcor2016 *rochcor_;
@@ -141,9 +141,6 @@ private:
   bool saveTree_,savePF_;
   TTree *tree_;
   MiniEvent_t ev_;
-
-  //a counter for generator level scans (e.g. sms scans)
-  std::map<TString, float>  genScanCounter_;
 
   edm::Service<TFileService> fs;
 };
@@ -188,24 +185,20 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig) :
   savePF_( iConfig.getParameter<bool>("savePF") )
 {
   //now do what ever initialization is needed
-  electronToken_ = mayConsume<edm::View<pat::Electron> >(iConfig.getParameter<edm::InputTag>("electrons"));
+  electronToken_      = mayConsume<edm::View<pat::Electron> >(iConfig.getParameter<edm::InputTag>("electrons"));
   calibElectronToken_ = mayConsume<edm::View<pat::Electron> >(iConfig.getParameter<edm::InputTag>("calibElectrons"));
-  triggersToUse_ = iConfig.getParameter<std::vector<std::string> >("triggersToUse");
+  triggersToUse_      = iConfig.getParameter<std::vector<std::string> >("triggersToUse");
   
   //start the rochester correction tool
   rochcor_=new rochcor2016(2016);
 
-  //  usesResource("TFileService");
-
-  for(Int_t igenjet=0; igenjet<5; igenjet++)
-    {
-      TString tag("fidcounter"); tag+=igenjet;
-      histContainer_[tag.Data()] = fs->make<TH1F>(tag,    ";Variation;Events", 1000, 0., 1000.); 
-    }
-  histContainer_["counter"] = fs->make<TH1F>("counter", ";Counter;Events",2,0,2);
-  histContainer_["pu"]      = fs->make<TH1F>("pu",      ";Pileup observed;Events",100,0,100);
-  histContainer_["putrue"]  = fs->make<TH1F>("putrue",  ";Pileup true;Events",100,0,100);
-  for(std::unordered_map<std::string,TH1F*>::iterator it=histContainer_.begin();   it!=histContainer_.end();   it++) it->second->Sumw2();
+  histContainer_["triggerList"] = fs->make<TH1F>("triggerList", ";Trigger bits;",triggersToUse_.size(),0,triggersToUse_.size());
+  for(size_t i=0; i<triggersToUse_.size(); i++) histContainer_["triggerList"] ->GetXaxis()->SetBinLabel(i,triggersToUse_[i].c_str());
+  histContainer_["counter"]    = fs->make<TH1F>("counter", ";Counter;Events",2,0,2);
+  histContainer_["fidcounter"] = (TH1 *)fs->make<TH2F>("fidcounter",    ";Variation;Events", 1000, 0., 1000.,11,0,11); 
+  histContainer_["pu"]         = fs->make<TH1F>("pu",      ";Pileup observed;Events",100,0,100);
+  histContainer_["putrue"]     = fs->make<TH1F>("putrue",  ";Pileup true;Events",100,0,100);
+  for(std::unordered_map<std::string,TH1*>::iterator it=histContainer_.begin();   it!=histContainer_.end();   it++) it->second->Sumw2();
 
   //create a tree for the selected events
   if(saveTree_)
@@ -248,12 +241,12 @@ int MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
   //
   // GENERATOR WEIGHTS
   //
-  ev_.g_nw=0;
+  ev_.g_nw=0; ev_.g_w[0]=1.0;
   edm::Handle<GenEventInfoProduct> evt;
   iEvent.getByToken( generatorToken_,evt);
   if(evt.isValid())
     {
-      ev_.g_w[0]           = evt->weight();
+      ev_.g_w[0] = evt->weight();
       ev_.g_nw++;
     }
   histContainer_["counter"]->Fill(1,ev_.g_w[0]);
@@ -283,8 +276,7 @@ int MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
     {
       //map the gen particles which are clustered in this jet
       std::vector< const reco::Candidate * > jconst=genJet->getJetConstituentsQuick ();
-      for(size_t ijc=0; ijc <jconst.size(); ijc++)
-	jetConstsMap[ jconst[ijc] ] = ev_.ng;
+      for(size_t ijc=0; ijc <jconst.size(); ijc++) jetConstsMap[ jconst[ijc] ] = ev_.ng;
       
       ev_.g_id[ev_.ng]   = genJet->pdgId();
       ev_.g_pt[ev_.ng]   = genJet->pt();
@@ -308,9 +300,8 @@ int MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
   for(auto genLep = dressedLeptons->begin();  genLep != dressedLeptons->end(); ++genLep)
     {
       //map the gen particles which are clustered in this lepton
-      std::vector< const reco::Candidate * > jconst=genLep->getJetConstituentsQuick ();
-      for(size_t ijc=0; ijc <jconst.size(); ijc++)
-	jetConstsMap[ jconst[ijc] ] = ev_.ng;
+      std::vector< const reco::Candidate * > jconst=genLep->getJetConstituentsQuick();
+      for(size_t ijc=0; ijc <jconst.size(); ijc++) jetConstsMap[ jconst[ijc] ] = ev_.ng;
       
       ev_.g_pt[ev_.ng]   = genLep->pt();
       ev_.g_id[ev_.ng]   = genLep->pdgId();
@@ -355,21 +346,16 @@ int MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       ev_.ngpf++;    
     }
 
-  //top or stop quarks (lastCopy)
+  //top quarks (lastCopy)
   edm::Handle<reco::GenParticleCollection> prunedGenParticles;
   iEvent.getByToken(prunedGenParticlesToken_,prunedGenParticles);
   ev_.ngtop=0; 
-  float mStop(-1),mNeutralino(-1);
   for (size_t i = 0; i < prunedGenParticles->size(); ++i)
     {
       const reco::GenParticle & genIt = (*prunedGenParticles)[i];
       int absid=abs(genIt.pdgId());
-      if(absid!=6 && absid!=1000006 && absid!=1000022) continue;
+      if(absid!=6) continue;
       if(!genIt.isLastCopy()) continue;      
-
-      if(absid==1000006) mStop=genIt.mass();
-      if(absid==1000022) mNeutralino=genIt.mass();
-
       ev_.gtop_id[ ev_.ngtop ]  = genIt.pdgId();
       ev_.gtop_pt[ ev_.ngtop ]  = genIt.pt();
       ev_.gtop_eta[ ev_.ngtop ] = genIt.eta();
@@ -378,16 +364,7 @@ int MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       ev_.ngtop++;
     }
 
-  //check if this is a SMS scan
-  if(mStop>0 && mNeutralino>0)
-    {
-      TString key(Form("mstop_%d_mchi0_%d",int(10*mStop),int(10*mNeutralino)));
-      if(genScanCounter_.find(key)==genScanCounter_.end()) genScanCounter_[key]=0.;
-      genScanCounter_[key]+=ev_.g_w[0];
-    }
-    
-
-  //pseudo-tops 
+  //pseudo-tops (particle level)
   edm::Handle<reco::GenParticleCollection> pseudoTop;
   iEvent.getByToken(pseudoTopToken_,pseudoTop);
   for (size_t i = 0; i < pseudoTop->size(); ++i)
@@ -402,17 +379,25 @@ int MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
     }
   
   //fiducial counters
-  for(Int_t igenjet=0; igenjet<5; igenjet++)
+  for(Int_t iw=0; iw<ev_.g_nw; iw++)
     {
-      TString tag("fidcounter"); tag+=igenjet;
-      histContainer_[tag.Data()]->Fill(0.,ev_.g_w[0]);
-      if(igenjet<=ngjets && ngleptons>0)
-	{
-	  for(Int_t iw=1; iw<ev_.g_nw; iw++)
-	    histContainer_[tag.Data()]->Fill((float)iw,ev_.g_w[iw]);
-	}
+      Double_t x(iw);
+      Double_t wgt(ev_.g_w[iw]);
+      TH2F *fidCounter=(TH2F *)histContainer_["fidcounter"];
+      fidCounter->Fill(x,0.,wgt);
+      if(ngleptons>0)               fidCounter->Fill(x, 1., wgt);
+      if(ngleptons>1)               fidCounter->Fill(x, 2., wgt);
+      if(ngleptons>0 && ngjets>0)   fidCounter->Fill(x, 3., wgt);
+      if(ngleptons>1 && ngjets>0)   fidCounter->Fill(x, 4., wgt);
+      if(ngleptons>0 && ngjets>1)   fidCounter->Fill(x, 5., wgt);
+      if(ngleptons>1 && ngjets>1)   fidCounter->Fill(x, 6., wgt);
+      if(ngleptons>0 && ngjets>2)   fidCounter->Fill(x, 7., wgt);
+      if(ngleptons>1 && ngjets>2)   fidCounter->Fill(x, 8., wgt);
+      if(ngleptons>0 && ngjets>3)   fidCounter->Fill(x, 9., wgt);
+      if(ngleptons>1 && ngjets>3)   fidCounter->Fill(x, 10.,wgt);
     }
-
+  
+  //return number of leptons in fiducial range
   return ngleptons;
 }
 
@@ -761,15 +746,6 @@ MiniAnalyzer::endRun(const edm::Run& iRun,
   try{
 
     cout << "[MiniAnalyzer::endRun]" << endl;
-
-    //save histograms with the counts per point in the gen scan (if available)
-    for(auto it=genScanCounter_.begin(); it!=genScanCounter_.end(); it++)
-      {
-	TString key(it->first);
-	float counts(it->second);
-	histContainer_[key.Data()]=fs->make<TH1F>(key,key,1,0,1);
-	histContainer_[key.Data()]->SetBinContent(1,counts);
-      }
 
     edm::Handle<LHERunInfoProduct> lheruninfo;
     typedef std::vector<LHERunInfoProduct::Header>::const_iterator headers_const_iterator;
