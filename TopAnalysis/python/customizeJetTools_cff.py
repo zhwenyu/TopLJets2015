@@ -34,8 +34,6 @@ def customizeJetTools(process,jecTag,baseJetCollection,runOnData):
 
 	## add an es_prefer statement to resolve a possible conflict from simultaneous connection to a global tag
 	process.es_prefer_jec = cms.ESPrefer('PoolDBESSource','jec')
-
-
 	
 	from PhysicsTools.PatAlgos.tools.jetTools import updateJetCollection
 	updateJetCollection(
@@ -53,5 +51,6 @@ def customizeJetTools(process,jecTag,baseJetCollection,runOnData):
 				      ],
 		btagInfos = ['pfInclusiveSecondaryVertexFinderTagInfos']
 		)
+	process.updatedPatJetsUpdatedJECBTag.addTagInfos = cms.bool(True)
 
 	process.updatedPatJetsSeq = cms.Sequence(process.patJetCorrFactorsUpdatedJECBTag*process.updatedPatJetsUpdatedJECBTag)
