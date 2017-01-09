@@ -1,8 +1,10 @@
 # TopLJets2015
 
 ## Installation instructions
+
 These installation instructions correspond to the 2016 data/MC Moriond17 re-reco.
 To install execute the following in your work area.
+
 ```
 cmsrel CMSSW_8_0_24_patch1
 cd CMSSW_8_0_24_patch1/src 
@@ -32,16 +34,15 @@ scram b -j 8
 ```
 
 ## Running ntuple creation
-First time create a symbolic link to the jet energy corrections files
-```
-ln -s data/era2016/Spring16_25nsV6_DATA.db
-ln -s data/era2016/Spring16_25nsV6_MC.db
-ln -s data/era2016/RoccoR_13tev.txt 
-```
-To run locally the ntuplizer, for testing purposes
+
+The ntuplizer is steered with test/runMiniAnalyzer_cfg.py.
+It takes several options from command line (see cfg for details).
+To run locally the ntuplizer, for testing purposes do something like:
+
 ```
 cmsRun test/runMiniAnalyzer_cfg.py runOnData=False/True outFilename=MiniEvents.root
 ```
+
 To submit a list of samples, described in a json file to the grid you can use the following script.
 ```
 python scripts/submitToGrid.py -j data/era2016/samples.json -c ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/runMiniAnalyzer_cfg.py --lfn my_output_directory_in_eos -s

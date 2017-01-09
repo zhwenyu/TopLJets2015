@@ -18,7 +18,7 @@ def customizeJetTools(process,jecLevels,jecTag,baseJetCollection='slimmedJetsPup
 						      ## here you add as many jet types as you need
 						      ## note that the tag name is specific for the particular sqlite file 
 						      ), 
-				   connect = cms.string('sqlite_file:%s.db'%jecTag)
+				   connect = cms.string('sqlite_file:data/era2016/%s.db'%jecTag)
 				   )
 
 	## add an es_prefer statement to resolve a possible conflict from simultaneous connection to a global tag

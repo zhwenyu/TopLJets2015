@@ -18,7 +18,7 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev)
   t->Branch("g_x2",      &ev.g_x2,     "g_x2/F");
   t->Branch("g_qscale",  &ev.g_qscale, "g_qscale/F");
   t->Branch("g_nw",      &ev.g_nw,     "g_nw/I");
-  t->Branch("g_w",        ev.g_w,      "g_w[ttbar_nw]/F");
+  t->Branch("g_w",        ev.g_w,      "g_w[g_nw]/F");
 
   //gen event (jets and dressed leptons)
   t->Branch("ng",       &ev.ng,       "ng/I");
