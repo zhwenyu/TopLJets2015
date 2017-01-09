@@ -62,7 +62,7 @@ process.source = cms.Source("PoolSource",
                             duplicateCheckMode = cms.untracked.string('noDuplicateCheck') 
                             )
 if options.runOnData:
-    process.source.fileNames = cms.untracked.vstring('/store/data/Run2016B/SingleElectron/MINIAOD/PromptReco-v2/000/273/158/00000/0A7BD549-131A-E611-8287-02163E0134FC.root')
+    process.source.fileNames = cms.untracked.vstring('/store/data/Run2016D/SingleMuon/MINIAOD/23Sep2016-v1/70000/F0A8215C-5295-E611-AB44-008CFAFBF2BE.root')
 
 #analysis
 process.load('TopLJets2015.TopAnalysis.miniAnalyzer_cfi')
@@ -109,8 +109,9 @@ process.load('JetMETCorrections.Configuration.DefaultJEC_cff')
 from JetMETCorrections.Configuration.DefaultJEC_cff import *
 from JetMETCorrections.Configuration.JetCorrectionServices_cff import *
 from TopLJets2015.TopAnalysis.customizeJetTools_cff import *
+jecTag='Spring16_23Sep2016AllV2' if options.runOnData else 'Spring16_23Sep2016V2'
 customizeJetTools(process=process,
-                  jecTag='Spring16_23Sep2016V2',
+                  jecTag=jecTag,
                   baseJetCollection='slimmedJetsPuppi',
                   runOnData=options.runOnData)
 
