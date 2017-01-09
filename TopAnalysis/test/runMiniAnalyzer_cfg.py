@@ -112,7 +112,7 @@ jecTag='Spring16_23Sep2016V2_MC'
 if options.runOnData : 
     jecLevels.append( 'L2L3Residual' )
     jecTag='Spring16_23Sep2016AllV2_DATA'
-customizeJetTools(process=process,jecLevels=jecLevels,jecTag=jecTag,baseJetCollection='slimmedJetsPuppi')
+customizeJetTools(process=process,jecLevels=jecLevels,jecTag=jecTag,baseJetCollection=process.analysis.jets)
 
 #tfile service
 process.TFileService = cms.Service("TFileService",

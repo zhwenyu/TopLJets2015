@@ -650,13 +650,25 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       ev_.j_deepcsvl[ev_.nj]   = j->bDiscriminator("deepFlavourJetTags:probudsg");
       ev_.j_deepcsvc[ev_.nj]   = j->bDiscriminator("deepFlavourJetTags:probc")+j->bDiscriminator("deepFlavourJetTags:probcc");
       ev_.j_deepcsvb[ev_.nj]   = j->bDiscriminator("deepFlavourJetTags:probb")+j->bDiscriminator("deepFlavourJetTags:probbb");
-      ev_.j_vtxpx[ev_.nj]      = j->userFloat("vtxPx");
-      ev_.j_vtxpy[ev_.nj]      = j->userFloat("vtxPy");
-      ev_.j_vtxpz[ev_.nj]      = j->userFloat("vtxPz");
-      ev_.j_vtxmass[ev_.nj]    = j->userFloat("vtxMass");
-      ev_.j_vtxNtracks[ev_.nj] = j->userFloat("vtxNtracks");
-      ev_.j_vtx3DVal[ev_.nj]   = j->userFloat("vtx3DVal");
-      ev_.j_vtx3DSig[ev_.nj]   = j->userFloat("vtx3DSig");      
+
+      if( j->hasTagInfo("pfInclusiveSecondaryVertexFinder") )
+	{
+	  const reco::CandSecondaryVertexTagInfo *candSVTagInfo = j->tagInfoCandSecondaryVertex("pfInclusiveSecondaryVertexFinder");
+	  if( candSVTagInfo->nVertices() >= 1 ) 
+	    {
+	      math::XYZTLorentzVectorD vp4=candSVTagInfo->secondaryVertex(0).p4();
+	      ev_.j_vtxpx[ev_.nj]      = vp4.px();
+	      ev_.j_vtxpy[ev_.nj]      = vp4.py();
+	      ev_.j_vtxpz[ev_.nj]      = vp4.pz();
+	      ev_.j_vtxmass[ev_.nj]    = vp4.mass();
+	      ev_.j_vtxNtracks[ev_.nj] = candSVTagInfo->vertexTracks().size();
+	      ev_.j_vtx3DVal[ev_.nj]   = candSVTagInfo->flightDistance(0).value();
+	      ev_.j_vtx3DSig[ev_.nj]   = candSVTagInfo->flightDistance(0).significance();
+	      std::cout << "Found secondary vertex with a flight distance of " << candSVTagInfo->flightDistance(0).value() << " cm" << std::endl;
+	    }
+	}
+
+
       ev_.j_flav[ev_.nj]       = j->partonFlavour();
       ev_.j_hadflav[ev_.nj]    = j->hadronFlavour();
       ev_.j_pid[ev_.nj]        = genParton ? genParton->pdgId() : 0;

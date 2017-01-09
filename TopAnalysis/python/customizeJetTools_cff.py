@@ -1,6 +1,6 @@
 import FWCore.ParameterSet.Config as cms
 
-def customizeJetTools(process,jecLevels,jecTag,baseJetCollection='slimmedJetsPuppi'):
+def customizeJetTools(process,jecLevels,jecTag,baseJetCollection):
 
 	process.load('CondCore.CondDB.CondDB_cfi')
 	from CondCore.CondDB.CondDB_cfi import CondDB
@@ -30,13 +30,14 @@ def customizeJetTools(process,jecLevels,jecTag,baseJetCollection='slimmedJetsPup
 	from PhysicsTools.PatAlgos.tools.jetTools import updateJetCollection
 	updateJetCollection(
 		process,
-		jetSource = cms.InputTag(baseJetCollection),
-		jetCorrections = (payloads[baseJetCollection], cms.vstring(jecLevels), 'None'),
+		jetSource = baseJetCollection,
+		jetCorrections = (payloads[baseJetCollection.value()], cms.vstring(jecLevels), 'None'),
 		btagDiscriminators = ['deepFlavourJetTags:probudsg', 
 				      'deepFlavourJetTags:probb', 
 				      'deepFlavourJetTags:probc', 
 				      'deepFlavourJetTags:probbb',
-				      'deepFlavourJetTags:probcc']
+				      'deepFlavourJetTags:probcc',
+				      'pfSimpleSecondaryVertexHighEffBJetTags',
+				      'pfCombinedInclusiveSecondaryVertexV2BJetTags'
+				      ]
 		)
-
-	
