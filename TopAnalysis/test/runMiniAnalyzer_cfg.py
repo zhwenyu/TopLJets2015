@@ -73,6 +73,8 @@ if not options.savePF:
     print 'Summary PF info won\'t be saved'
     process.analysis.savePF=cms.bool(False)
 
+process.options = cms.untracked.PSet(wantSummary = cms.untracked.bool(True))
+
 #pseudo-top
 if not options.runOnData:
     process.load('TopQuarkAnalysis.TopEventProducers.producers.pseudoTop_cfi')
@@ -107,12 +109,10 @@ process.load('JetMETCorrections.Configuration.DefaultJEC_cff')
 from JetMETCorrections.Configuration.DefaultJEC_cff import *
 from JetMETCorrections.Configuration.JetCorrectionServices_cff import *
 from TopLJets2015.TopAnalysis.customizeJetTools_cff import *
-jecLevels=['L1FastJet','L2Relative','L3Absolute']
-jecTag='Spring16_23Sep2016V2_MC'
-if options.runOnData : 
-    jecLevels.append( 'L2L3Residual' )
-    jecTag='Spring16_23Sep2016AllV2_DATA'
-customizeJetTools(process=process,jecLevels=jecLevels,jecTag=jecTag,baseJetCollection=process.analysis.jets)
+customizeJetTools(process=process,
+                  jecTag='Spring16_23Sep2016V2',
+                  baseJetCollection='slimmedJetsPuppi',
+                  runOnData=options.runOnData)
 
 #tfile service
 process.TFileService = cms.Service("TFileService",
@@ -120,6 +120,6 @@ process.TFileService = cms.Service("TFileService",
                                    )
 
 if options.runOnData:
-    process.p = cms.Path(process.calibratedPatElectrons*process.egmGsfElectronIDSequence*process.analysis)
+    process.p = cms.Path(process.updatedPatJetsSeq*process.calibratedPatElectrons*process.egmGsfElectronIDSequence*process.analysis)
 else:
-    process.p = cms.Path(process.calibratedPatElectrons*process.egmGsfElectronIDSequence*process.pseudoTop*process.analysis)
+    process.p = cms.Path(process.updatedPatJetsSeq*process.calibratedPatElectrons*process.egmGsfElectronIDSequence*process.pseudoTop*process.analysis)

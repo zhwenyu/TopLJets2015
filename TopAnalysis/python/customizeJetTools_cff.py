@@ -1,7 +1,18 @@
 import FWCore.ParameterSet.Config as cms
 
-def customizeJetTools(process,jecLevels,jecTag,baseJetCollection):
+def customizeJetTools(process,jecTag,baseJetCollection,runOnData):
 
+	#general configurations
+	jecTag += '_DATA' if runOnData else '_MC'
+	payload='AK4PFchs'
+	jecLevels=['L1FastJet','L2Relative','L3Absolute']
+	if 'Puppi' in baseJetCollection: 
+		payload='AK4PFPuppi'
+		jecLevels = ['L2Relative', 'L3Absolute']		
+	if runOnData : jecLevels.append( 'L2L3Residual' )
+	print '[customizeJetTools]',jecTag,payload,jecLevels
+
+	#setup the source for JEC 
 	process.load('CondCore.CondDB.CondDB_cfi')
 	from CondCore.CondDB.CondDB_cfi import CondDB
 	process.jec = cms.ESSource("PoolDBESSource",
@@ -24,14 +35,14 @@ def customizeJetTools(process,jecLevels,jecTag,baseJetCollection):
 	## add an es_prefer statement to resolve a possible conflict from simultaneous connection to a global tag
 	process.es_prefer_jec = cms.ESPrefer('PoolDBESSource','jec')
 
-	payloads={'slimmedJets':'AK4PFchs',
-		  'slimmedJetsPuppi':'AK4PFPuppi'}
+
 	
 	from PhysicsTools.PatAlgos.tools.jetTools import updateJetCollection
 	updateJetCollection(
 		process,
-		jetSource = baseJetCollection,
-		jetCorrections = (payloads[baseJetCollection.value()], cms.vstring(jecLevels), 'None'),
+		labelName='UpdatedJECBTag',
+		jetSource = cms.InputTag(baseJetCollection),
+		jetCorrections = (payload, cms.vstring(jecLevels), 'None'),
 		btagDiscriminators = ['deepFlavourJetTags:probudsg', 
 				      'deepFlavourJetTags:probb', 
 				      'deepFlavourJetTags:probc', 
@@ -39,5 +50,8 @@ def customizeJetTools(process,jecLevels,jecTag,baseJetCollection):
 				      'deepFlavourJetTags:probcc',
 				      'pfSimpleSecondaryVertexHighEffBJetTags',
 				      'pfCombinedInclusiveSecondaryVertexV2BJetTags'
-				      ]
+				      ],
+		btagInfos = ['pfInclusiveSecondaryVertexFinderTagInfos']
 		)
+
+	process.updatedPatJetsSeq = cms.Sequence(process.patJetCorrFactorsUpdatedJECBTag*process.updatedPatJetsUpdatedJECBTag)
