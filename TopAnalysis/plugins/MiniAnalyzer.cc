@@ -656,14 +656,14 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
 	  const reco::CandSecondaryVertexTagInfo *candSVTagInfo = j->tagInfoCandSecondaryVertex("pfInclusiveSecondaryVertexFinder");
 	  if( candSVTagInfo->nVertices() >= 1 ) 
 	    {
-	      math::XYZTLorentzVectorD vp4=candSVTagInfo->secondaryVertex(0).p4();
-	      ev_.j_vtxpx[ev_.nj]      = vp4.px();
-	      ev_.j_vtxpy[ev_.nj]      = vp4.py();
-	      ev_.j_vtxpz[ev_.nj]      = vp4.pz();
-	      ev_.j_vtxmass[ev_.nj]    = vp4.mass();
-	      ev_.j_vtxNtracks[ev_.nj] = candSVTagInfo->vertexTracks().size();
-	      ev_.j_vtx3DVal[ev_.nj]   = candSVTagInfo->flightDistance(0).value();
-	      ev_.j_vtx3DSig[ev_.nj]   = candSVTagInfo->flightDistance(0).significance();
+	      math::XYZTLorentzVectorD vp4 = candSVTagInfo->secondaryVertex(0).p4();
+	      ev_.j_vtxpx[ev_.nj]          = vp4.px();
+	      ev_.j_vtxpy[ev_.nj]          = vp4.py();
+	      ev_.j_vtxpz[ev_.nj]          = vp4.pz();
+	      ev_.j_vtxmass[ev_.nj]        = vp4.mass();
+	      ev_.j_vtxNtracks[ev_.nj]     = candSVTagInfo->nVertexTracks(0);
+	      ev_.j_vtx3DVal[ev_.nj]       = candSVTagInfo->flightDistance(0).value();
+	      ev_.j_vtx3DSig[ev_.nj]       = candSVTagInfo->flightDistance(0).significance();
 	      std::cout << "Found secondary vertex with a flight distance of " << candSVTagInfo->flightDistance(0).value() << " cm" << std::endl;
 	    }
 	}
@@ -736,10 +736,13 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
 //cf. https://twiki.cern.ch/twiki/bin/viewauth/CMS/SWGuideMuonIdRun2#Soft_Muon
 bool MiniAnalyzer::isSoftMuon(const reco::Muon & recoMu,const reco::Vertex &vertex)
 {
+
   bool isGood(muon::isGoodMuon(recoMu, muon::TMOneStationTight));
-  bool passLayersWithMeas(recoMu.innerTrack()->hitPattern().trackerLayersWithMeasurement() > 5
+  bool passLayersWithMeas(recoMu.innerTrack().isNonnull()
+			  && recoMu.innerTrack()->hitPattern().trackerLayersWithMeasurement() > 5
 			  && recoMu.innerTrack()->hitPattern().pixelLayersWithMeasurement() > 0 );
-  bool matchesVertex(fabs(recoMu.innerTrack()->dxy(vertex.position())) < 0.3 
+  bool matchesVertex(recoMu.innerTrack().isNonnull()
+		     && fabs(recoMu.innerTrack()->dxy(vertex.position())) < 0.3 
 		     && fabs(recoMu.innerTrack()->dz(vertex.position())) < 20. );
   return (isGood && passLayersWithMeas && matchesVertex);
 }
