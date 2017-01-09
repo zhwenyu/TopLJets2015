@@ -18,8 +18,8 @@ cd -
 
 #BTV DeepCSV
 git cms-merge-topic -u mverzett:DeepFlavourCMVA-from-CMSSW_8_0_21
-mkdir RecoBTag /DeepFlavour/data/
-cd RecoBTag /DeepFlavour/data/
+mkdir RecoBTag/DeepFlavour/data/
+cd RecoBTag/DeepFlavour/data/
 wget http://home.fnal.gov/~verzetti//DeepFlavour/training/DeepFlavourNoSL.json
 wget http://mon.iihe.ac.be/~smoortga/DeepFlavour/CMSSW_implementation_DeepCMVA/Model_DeepCMVA.json
 cd -
