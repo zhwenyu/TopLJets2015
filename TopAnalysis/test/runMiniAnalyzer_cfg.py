@@ -58,7 +58,7 @@ process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 # set input to process
 process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
 process.source = cms.Source("PoolSource",
-                            fileNames = cms.untracked.vstring('/store/mc/RunIISpring16MiniAODv1/TTToSemiLeptonic_13TeV_ScaleDown-powheg/MINIAODSIM/PUSpring16_80X_mcRun2_asymptotic_2016_v3-v1/00000/067717F2-220A-E611-A553-0090FAA58D84.root'),
+                            fileNames = cms.untracked.vstring('/store/mc/RunIISummer16MiniAODv2/TT_TuneCUETP8M2T4_13TeV-powheg-pythia8/MINIAODSIM/PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/50000/F4D90DE7-9ABE-E611-9FDE-0CC47A4D765A.root'),
                             duplicateCheckMode = cms.untracked.string('noDuplicateCheck') 
                             )
 if options.runOnData:
