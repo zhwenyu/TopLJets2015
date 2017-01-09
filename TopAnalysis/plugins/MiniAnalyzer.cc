@@ -434,6 +434,7 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
 	{
 	  if (triggerList[i].find(triggersToUse_[itrig])==string::npos) continue;
 	  ev_.triggerBits |= (1 << itrig);
+	  histContainer_["triggerList"]->Fill(itrig);
 	}
     }
   bool passTrigger(ev_.isData ? ev_.triggerBits!=0 : true);
