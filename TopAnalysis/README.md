@@ -40,7 +40,8 @@ It takes several options from command line (see cfg for details).
 To run locally the ntuplizer, for testing purposes do something like:
 
 ```
-cmsRun test/runMiniAnalyzer_cfg.py runOnData=False/True outFilename=MiniEvents.root
+cmsRun test/runMiniAnalyzer_cfg.py runOnData=False globalTag=80X_mcRun2_asymptotic_2016_miniAODv2_v1 outFilename=mc.root
+cmsRun test/runMiniAnalyzer_cfg.py runOnData=True  globalTag=80X_dataRun2_2016SeptRepro_v5           outFilename=data.root
 ```
 
 To submit a list of samples, described in a json file to the grid you can use the following script.
