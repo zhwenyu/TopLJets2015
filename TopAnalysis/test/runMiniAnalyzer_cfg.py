@@ -117,7 +117,7 @@ customizeJetTools(process=process,
 
 #tfile service
 process.TFileService = cms.Service("TFileService",
-                                   fileName = cms.string('histo.root')
+                                   fileName = cms.string(options.outFilename)
                                    )
 
 if options.runOnData:
