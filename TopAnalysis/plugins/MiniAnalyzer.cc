@@ -671,7 +671,6 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
 	      ev_.j_vtxNtracks[ev_.nj]     = candSVTagInfo->nVertexTracks(0);
 	      ev_.j_vtx3DVal[ev_.nj]       = candSVTagInfo->flightDistance(0).value();
 	      ev_.j_vtx3DSig[ev_.nj]       = candSVTagInfo->flightDistance(0).significance();
-	      std::cout << "Found secondary vertex with a flight distance of " << candSVTagInfo->flightDistance(0).value() << " cm" << std::endl;
 	    }
 	}
 

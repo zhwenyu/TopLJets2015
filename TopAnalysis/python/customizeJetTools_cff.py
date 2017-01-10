@@ -36,6 +36,7 @@ def customizeJetTools(process,jecTag,baseJetCollection,runOnData):
 	process.es_prefer_jec = cms.ESPrefer('PoolDBESSource','jec')
 	
 	from PhysicsTools.PatAlgos.tools.jetTools import updateJetCollection
+	print 'here'
 	updateJetCollection(
 		process,
 		labelName='UpdatedJECBTag',
@@ -51,6 +52,5 @@ def customizeJetTools(process,jecTag,baseJetCollection,runOnData):
 				      ],
 		btagInfos = ['pfInclusiveSecondaryVertexFinderTagInfos']
 		)
-	process.updatedPatJetsUpdatedJECBTag.addTagInfos = cms.bool(True)
+	process.updatedPatJetsTransientCorrectedUpdatedJECBTag.addTagInfos = cms.bool(True)
 
-	process.updatedPatJetsSeq = cms.Sequence(process.patJetCorrFactorsUpdatedJECBTag*process.updatedPatJetsUpdatedJECBTag)

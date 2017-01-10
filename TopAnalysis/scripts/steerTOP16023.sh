@@ -45,8 +45,8 @@ case $WHAT in
 	commonOpts="--era era5TeV -m TOP-16-023::RunTop16023"
 
 	#muon channel
-	python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_mu       ${commonOpts} --ch 13   --only MC --runSysts;
-	python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_munoniso ${commonOpts} --ch 1300 --only MC;
+	#python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_mu       ${commonOpts} --ch 13   --only MC --runSysts;
+	#python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_munoniso ${commonOpts} --ch 1300 --only MC;
 	python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_mu       ${commonOpts} --ch 13   --only FilteredSingleMuHighPt;
 	python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_munoniso ${commonOpts} --ch 1300 --only FilteredSingleMuHighPt;
 

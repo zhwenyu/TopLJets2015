@@ -116,7 +116,7 @@ void RunTop16023(TString inFileName,
   outT->Branch("w",    &ljev.w,       "w/F");
   outT->Branch("nj",   &ljev.nj,      "nj/I");
   outT->Branch("nb",   &ljev.nb,      "nb/I");
-  outT->Branch("j_btag", ljev.j_btag, "j_btag[nj]/O");
+  outT->Branch("j_btag", ljev.j_btag, "j_btag[nj]/I");
   outT->Branch("j_pt",   ljev.j_pt,   "j_pt[nj]/F");
   outT->Branch("j_eta",  ljev.j_eta,  "j_eta[nj]/F");
   outT->Branch("j_phi",  ljev.j_phi,  "j_phi[nj]/F");
@@ -817,7 +817,7 @@ void RunTop16023(TString inFileName,
 
 	    //systematic variations
 	    Int_t jflav(abs(refparton_flavor[jetIter]));	    
-	    bool passCSVM(discr_csvV2[jetIter]>0.8),passCSVMUp(passCSVM),passCSVMDn(passCSVM);	    
+	    bool passCSVL(discr_csvV2[jetIter]>0.460), passCSVM(discr_csvV2[jetIter]>0.8),passCSVMUp(passCSVM),passCSVMDn(passCSVM);	    
 	    std::vector<float> jerSmear(3,1.0),jesScaleUnc(3,1.0);
 	    if(isMC)
 	      {
@@ -863,7 +863,7 @@ void RunTop16023(TString inFileName,
 		    ljev.j_eta[ljev.nj]=jp4.Eta();
 		    ljev.j_phi[ljev.nj]=jp4.Phi();
 		    ljev.j_m[ljev.nj]=jp4.M();
-		    ljev.j_btag[ljev.nj]=passCSVM;
+		    ljev.j_btag[ljev.nj]=passCSVL | (passCSVM<1);
 		    ljev.nj++;
 		  }
 
