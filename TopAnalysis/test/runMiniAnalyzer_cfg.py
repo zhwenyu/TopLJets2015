@@ -17,6 +17,11 @@ options.register('outFilename', 'MiniEvents.root',
                  VarParsing.varType.string,
                  "Output file name"
                  )
+options.register('baseJetCollection','slimmedJetsPuppi',
+                 VarParsing.multiplicity.singleton,
+                 VarParsing.varType.string,
+                 "Base jet collection"
+                 )
 options.register('inputDir', None,
                  VarParsing.multiplicity.singleton,
                  VarParsing.varType.string,
@@ -115,8 +120,7 @@ from TopLJets2015.TopAnalysis.customizeJetTools_cff import *
 jecTag='Spring16_23Sep2016AllV2' if options.runOnData else 'Spring16_23Sep2016V2'
 customizeJetTools(process=process,
                   jecTag=jecTag,
-                  #baseJetCollection='slimmedJetsPuppi',
-                  baseJetCollection='slimmedJets', 
+                  baseJetCollection=options.baseJetCollection,
                   runOnData=options.runOnData)
 
 #tfile service

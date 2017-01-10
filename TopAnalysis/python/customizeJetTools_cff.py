@@ -36,7 +36,6 @@ def customizeJetTools(process,jecTag,baseJetCollection,runOnData):
 	process.es_prefer_jec = cms.ESPrefer('PoolDBESSource','jec')
 	
 	from PhysicsTools.PatAlgos.tools.jetTools import updateJetCollection
-	print 'here'
 	updateJetCollection(
 		process,
 		labelName='UpdatedJECBTag',
