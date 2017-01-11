@@ -198,7 +198,7 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig) :
   
   //lepton corrections
   applyLeptonCorrections_=iConfig.getParameter<bool>("applyLeptonCorrections");
-  rochcor_ = applyLeptonCorrections_ ? new rochcor2016(2016) : 0;
+  rochcor_ = applyLeptonCorrections_ ? new rochcor2016(2016,iConfig.getParameter<std::string>("muonCorrFile")) : 0;
 
   histContainer_["triggerList"] = fs->make<TH1F>("triggerList", ";Trigger bits;",triggersToUse_.size(),0,triggersToUse_.size());
   for(size_t i=0; i<triggersToUse_.size(); i++) histContainer_["triggerList"] ->GetXaxis()->SetBinLabel(i+1,triggersToUse_[i].c_str());

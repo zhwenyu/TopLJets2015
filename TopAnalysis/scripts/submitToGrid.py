@@ -8,12 +8,8 @@ creates the crab cfg and submits the job
 """
 def submitProduction(tag,lfnDirBase,dataset,isData,cfg,workDir,lumiMask,era='era2016',submit=False):
     
-
-    globalTags={'era2016':('80X_mcRun2_asymptotic_2016_miniAODv2_v1','80X_dataRun2_2016SeptRepro_v5')}
-    jecDB='jec_DATA.db' if bool(isData) else 'jec_MC.db'
-
-    muCorFile='RoccoR_13tev.txt'
-    os.system('ln -s ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/%s/%s'%(era,muCorFile))
+    from TopLJets2015.TopAnalysis.EraConfig import getEraConfiguration
+    globalTag, jecTag, jecDB, muonDB = getEraConfiguration(era=era,isData=bool(isData))
 
     os.system("rm -rvf %s/*%s* "%(workDir,tag))
     crabConfigFile=workDir+'/'+tag+'_cfg.py'
@@ -32,8 +28,8 @@ def submitProduction(tag,lfnDirBase,dataset,isData,cfg,workDir,lumiMask,era='era
     config_file.write('config.JobType.pluginName = "Analysis"\n')
     config_file.write('config.JobType.psetName = "'+cfg+'"\n')
     config_file.write('config.JobType.disableAutomaticOutputCollection = False\n')
-    config_file.write('config.JobType.pyCfgParams = [\'runOnData=%s\',\'globalTag=%s\']\n' % (bool(isData), globalTags[era][isData]))
-    config_file.write('config.JobType.inputFiles = [\'%s\',\'%s\']\n'%(jecDB,muCorFile))
+    config_file.write('config.JobType.pyCfgParams = [\'runOnData=%s\',\'era=%s\']\n' % (bool(isData), era))
+    config_file.write('config.JobType.inputFiles = [\'%s\',\'%s\']\n'%(jecDB,muonDB))
     config_file.write('\n')
     config_file.write('config.section_("Data")\n')
     config_file.write('config.Data.inputDataset = "%s"\n' % dataset)

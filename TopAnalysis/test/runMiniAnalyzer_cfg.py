@@ -7,10 +7,10 @@ options.register('runOnData', False,
                  VarParsing.varType.bool,
                  "Run this on real data"
                  )
-options.register('globalTag', None,
+options.register('era', 'era2016',
                  VarParsing.multiplicity.singleton,
                  VarParsing.varType.string,
-                 "Global tag to use"
+                 "era to use (configurations defined in python/EraConfig.py)",
                  )
 options.register('outFilename', 'MiniEvents.root',
                  VarParsing.multiplicity.singleton,
@@ -38,6 +38,10 @@ options.register('savePF', True,
                  'save PF candidates'
                  )
 options.parseArguments()
+
+#get the configuration to apply
+from TopLJets2015.TopAnalysis.EraConfig import getEraConfiguration
+globalTag, jecTag, jecDB, muonDB = getEraConfiguration(era=options.era,options.runOnData)
 
 process = cms.Process("MiniAnalysis")
 
@@ -71,12 +75,15 @@ if options.runOnData:
 
 #analysis
 process.load('TopLJets2015.TopAnalysis.miniAnalyzer_cfi')
+process.analysis.muonCorrFile=cms.string(muonDB)
 if not options.saveTree:
     print 'Summary tree won\'t be saved'
     process.analysis.saveTree=cms.bool(False)
 if not options.savePF:
     print 'Summary PF info won\'t be saved'
     process.analysis.savePF=cms.bool(False)
+
+
 
 process.options   = cms.untracked.PSet(
     wantSummary = cms.untracked.bool(True),
@@ -117,13 +124,6 @@ process.load('JetMETCorrections.Configuration.DefaultJEC_cff')
 from JetMETCorrections.Configuration.DefaultJEC_cff import *
 from JetMETCorrections.Configuration.JetCorrectionServices_cff import *
 from TopLJets2015.TopAnalysis.customizeJetTools_cff import *
-jecTag='Spring16_23Sep2016AllV2' if options.runOnData else 'Spring16_23Sep2016V2'
-jecDB_pf='DATA' if options.runOnData else 'MC'
-jecDB='jec_%s.db'%jecDB_pf
-import os
-if not os.path.isfile(jecDB) and not os.path.islink(jecDB):
-    print 'Creating symbolic link to JEC db'
-    os.system('ln -s ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/era2016/%s_%s.db %s'%(jecTag,jecDB_pf,jecDB))
 customizeJetTools(process=process,
                   jecTag=jecTag,
                   jecDB=jecDB,

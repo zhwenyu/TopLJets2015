@@ -243,9 +243,9 @@ rochcor2016::rochcor2016(){
 
 }
 
-rochcor2016::rochcor2016(int seed){
+rochcor2016::rochcor2016(int seed,std::string url){
 
-  muresol1.init("./RoccoR_13tev.txt");
+  muresol1.init(url);
   muresol1.dumpParams();
 
   eran.SetSeed(123456);
