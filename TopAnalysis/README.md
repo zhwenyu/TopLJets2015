@@ -44,15 +44,20 @@ cmsRun test/runMiniAnalyzer_cfg.py runOnData=False globalTag=80X_mcRun2_asymptot
 cmsRun test/runMiniAnalyzer_cfg.py runOnData=True  globalTag=80X_dataRun2_2016SeptRepro_v5           outFilename=data.root
 ```
 
-To submit a list of samples, described in a json file to the grid you can use the following script.
-```
-python scripts/submitToGrid.py -j data/era2016/samples.json -c ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/runMiniAnalyzer_cfg.py --lfn my_output_directory_in_eos -s
-```
-Partial submission can be made adding "-o csv_list" as an option
-Don't forget to init the environment for crab3 (e.g. https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3CheatSheet#Environment_setup)
+To submit the ntuplizer to the grid start by setting the environment for crab3.
+More details can be found in [CRAB3CheatSheet](https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3CheatSheet#Environment_setup)
 ```
 source /cvmfs/cms.cern.ch/crab3/crab.sh
 ```
+
+The following script helps submitting a list of files described in a json file.
+Partial submission can be made adding "-o csv_list" as an option.
+Adding "-s" will trigger the submission to the grid (otherwise the script only writes down the crab cfg files)
+```
+python scripts/submitToGrid.py -j data/era2016/samples.json -c ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/runMiniAnalyzer_cfg.py 
+```
+
+
 As soon as ntuple production starts to finish, to move from crab output directories to a simpler directory structure which can be easily parsed by the local analysis runThe merging can be run locally if needed by using the checkProductionIntegrity.py script
 ```
 python scripts/submitCheckProductionIntegrity.py -i /store/group/phys_top/psilva/8db9ad6 -o /store/cmst3/user/psilva/LJets2016/8db9ad6
