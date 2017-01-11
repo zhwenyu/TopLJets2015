@@ -118,8 +118,15 @@ from JetMETCorrections.Configuration.DefaultJEC_cff import *
 from JetMETCorrections.Configuration.JetCorrectionServices_cff import *
 from TopLJets2015.TopAnalysis.customizeJetTools_cff import *
 jecTag='Spring16_23Sep2016AllV2' if options.runOnData else 'Spring16_23Sep2016V2'
+jecDB_pf='DATA' if options.runOnData else 'MC'
+jecDB='jec_%s.db'%jecDB_pf
+import os
+if not os.path.isfile(jecDB) and not os.path.islink(jecDB):
+    print 'Creating symbolic link to JEC db'
+    os.system('ln -s ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/era2016/%s_%s.db %s'%(jecTag,jecDB_pf,jecDB))
 customizeJetTools(process=process,
                   jecTag=jecTag,
+                  jecDB=jecDB,
                   baseJetCollection=options.baseJetCollection,
                   runOnData=options.runOnData)
 

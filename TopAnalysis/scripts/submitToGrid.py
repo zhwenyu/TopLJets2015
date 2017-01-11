@@ -10,7 +10,7 @@ def submitProduction(tag,lfnDirBase,dataset,isData,cfg,workDir,lumiMask,era='era
     
 
     globalTags={'era2016':('80X_mcRun2_asymptotic_2016_miniAODv2_v1','80X_dataRun2_2016SeptRepro_v5')}
-
+    jecDB='jec_DATA.db' if bool(isData) else 'jec_MC.db'
 
     muCorFile='RoccoR_13tev.txt'
     os.system('ln -s ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/%s/%s'%(era,muCorFile))

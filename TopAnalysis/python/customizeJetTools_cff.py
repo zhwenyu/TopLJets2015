@@ -1,6 +1,6 @@
 import FWCore.ParameterSet.Config as cms
 
-def customizeJetTools(process,jecTag,baseJetCollection,runOnData):
+def customizeJetTools(process,jecDB,jecTag,baseJetCollection,runOnData):
 
 	#general configurations
 	jecTag += '_DATA' if runOnData else '_MC'
@@ -10,7 +10,7 @@ def customizeJetTools(process,jecTag,baseJetCollection,runOnData):
 		payload='AK4PFPuppi'
 		jecLevels = ['L2Relative', 'L3Absolute']		
 	if runOnData : jecLevels.append( 'L2L3Residual' )
-	print '[customizeJetTools]',jecTag,payload,jecLevels
+	print '[customizeJetTools]',jecDB,jecTag,payload,jecLevels
 
 	#setup the source for JEC 
 	process.load('CondCore.CondDB.CondDB_cfi')
@@ -29,7 +29,7 @@ def customizeJetTools(process,jecTag,baseJetCollection,runOnData):
 						      ## here you add as many jet types as you need
 						      ## note that the tag name is specific for the particular sqlite file 
 						      ), 
-				   connect = cms.string('sqlite_file:data/era2016/%s.db'%jecTag)
+				   connect = cms.string('sqlite_file:%s'%jecDB)
 				   )
 
 	## add an es_prefer statement to resolve a possible conflict from simultaneous connection to a global tag
