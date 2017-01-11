@@ -10,7 +10,7 @@ options.register('runOnData', False,
 options.register('era', 'era2016',
                  VarParsing.multiplicity.singleton,
                  VarParsing.varType.string,
-                 "era to use (configurations defined in python/EraConfig.py)",
+                 "era to use (configurations defined in python/EraConfig.py)"
                  )
 options.register('outFilename', 'MiniEvents.root',
                  VarParsing.multiplicity.singleton,
@@ -37,11 +37,16 @@ options.register('savePF', True,
                  VarParsing.varType.bool,
                  'save PF candidates'
                  )
+options.register('applyLeptonCorrections', False,
+                 VarParsing.multiplicity.singleton,
+                 VarParsing.varType.bool,
+                 'Switch to apply lepton corrections'
+                 )
 options.parseArguments()
 
 #get the configuration to apply
 from TopLJets2015.TopAnalysis.EraConfig import getEraConfiguration
-globalTag, jecTag, jecDB, muonDB = getEraConfiguration(era=options.era,options.runOnData)
+globalTag, jecTag, jecDB, muonDB = getEraConfiguration(era=options.era,isData=options.runOnData)
 
 process = cms.Process("MiniAnalysis")
 
@@ -55,7 +60,7 @@ process.load('Configuration.StandardSequences.MagneticField_38T_cff')
 # global tag
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 from Configuration.AlCa.GlobalTag import GlobalTag
-process.GlobalTag = GlobalTag(process.GlobalTag, options.globalTag)
+process.GlobalTag = GlobalTag(process.GlobalTag, globalTag)
 
 
 #message logger
@@ -76,14 +81,19 @@ if options.runOnData:
 #analysis
 process.load('TopLJets2015.TopAnalysis.miniAnalyzer_cfi')
 process.analysis.muonCorrFile=cms.string(muonDB)
-if not options.saveTree:
-    print 'Summary tree won\'t be saved'
-    process.analysis.saveTree=cms.bool(False)
-if not options.savePF:
+process.analysis.applyLeptonCorrections=cms.bool(options.applyLeptonCorrections)
+process.analysis.saveTree=cms.bool(options.saveTree)
+process.analysis.savePF=cms.bool(options.savePF)
+print 'Ntuplizer configuration is as follows'
+if process.analysis.applyLeptonCorrections:
+    print '\t Muon corrections served from',process.analysis.muonCorrFile
+else:
+    print '\t Lepton corrections are disabled'
+if not process.analysis.saveTree :
+    print '\t Summary tree won\'t be saved'
+if not process.analysis.savePF :
     print 'Summary PF info won\'t be saved'
-    process.analysis.savePF=cms.bool(False)
-
-
+    
 
 process.options   = cms.untracked.PSet(
     wantSummary = cms.untracked.bool(True),
