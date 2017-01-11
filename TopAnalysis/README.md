@@ -41,7 +41,7 @@ To run locally the ntuplizer, for testing purposes do something like:
 
 ```
 cmsRun test/runMiniAnalyzer_cfg.py runOnData=False era=era2016 outFilename=mc.root
-cmsRun test/runMiniAnalyzer_cfg.py runOnData=True  era=era2016 outFilename=data.root
+cmsRun test/runMiniAnalyzer_cfg.py runOnData=True  era=era2016 outFilename=data.root lumiJson=/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/Final/Cert_271036-284044_13TeV_PromptReco_Collisions16_JSON.txt
 ```
 
 To submit the ntuplizer to the grid start by setting the environment for crab3.

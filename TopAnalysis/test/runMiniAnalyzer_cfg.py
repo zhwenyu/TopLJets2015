@@ -27,6 +27,11 @@ options.register('inputDir', None,
                  VarParsing.varType.string,
                  "input directory with files to process"
                  )
+options.register('lumiJson', None,
+                 VarParsing.multiplicity.singleton,
+                 VarParsing.varType.string,
+                 'apply this lumi json file'
+                 )
 options.register('saveTree', True,
                  VarParsing.multiplicity.singleton,
                  VarParsing.varType.bool,
@@ -76,7 +81,17 @@ process.source = cms.Source("PoolSource",
                             duplicateCheckMode = cms.untracked.string('noDuplicateCheck') 
                             )
 if options.runOnData:
-    process.source.fileNames = cms.untracked.vstring('/store/data/Run2016D/SingleMuon/MINIAOD/23Sep2016-v1/70000/F0A8215C-5295-E611-AB44-008CFAFBF2BE.root')
+    process.source.fileNames = cms.untracked.vstring('/store/data/Run2016B/MuonEG/MINIAOD/23Sep2016-v3/00000/024ADA16-1F98-E611-AD32-0242AC130005.root')
+
+#apply lumi json, if passed in command line
+if options.lumiJson:
+    print 'Lumi sections will be selected with',options.lumiJson
+    from FWCore.PythonUtilities.LumiList import LumiList
+    myLumis = LumiList(filename = options.lumiJson).getCMSSWString().split(',')
+    process.source.lumisToProcess = cms.untracked.VLuminosityBlockRange()
+    process.source.lumisToProcess.extend(myLumis)
+
+
 
 #analysis
 process.load('TopLJets2015.TopAnalysis.miniAnalyzer_cfi')
