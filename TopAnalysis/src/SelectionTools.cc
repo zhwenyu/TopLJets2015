@@ -1,7 +1,11 @@
 #include "TopLJets2015/TopAnalysis/interface/SelectionTools.h"
 
-SelectionTool::SelectionTool(TString dataset) :
-  acceptE_(true), acceptM_(true), acceptEE_(true), acceptEM_(true), acceptMM_(true)
+#include <iostream>
+
+using namespace std;
+
+SelectionTool::SelectionTool(TString dataset,bool debug) :
+  acceptE_(true), acceptM_(true), acceptEE_(true), acceptEM_(true), acceptMM_(true), debug_(debug)
 {
   if(dataset.Contains("SingleElectron")) { acceptE_=true;  acceptM_=false; acceptEE_=false;  acceptMM_=false; acceptEM_=false;}
   if(dataset.Contains("SingleMuon"))     { acceptE_=false; acceptM_=true;  acceptEE_=false;  acceptMM_=false; acceptEM_=false;}
@@ -35,6 +39,11 @@ std::vector<Particle> SelectionTool::getTopFlaggedLeptons(MiniEvent_t ev){
 	if( pt>10 && eta<2.4 && ((pid>>1) &0x1) && relIso<0.25)  topLeptonQualityFlagsWord |= (0x1 << PASSLVETO);
 	if( pt>26 && eta<2.1 && ((pid>>4) &0x1) && relIso>0.25)  topLeptonQualityFlagsWord |= (0x1 << PASSLIDNONISO);
       }
+
+    if(debug_) cout << "Lepton #" << il << " id=" << ev.l_id[il] 
+		    << " pt=" << pt << " eta=" << eta << " relIso=" << relIso 
+		    << " flag=" << std::hex << topLeptonQualityFlagsWord << std::dec << endl;
+
     if(topLeptonQualityFlagsWord==0) continue;
 
     TLorentzVector lp4;
@@ -55,7 +64,7 @@ std::vector<Particle> SelectionTool::getGoodLeptons(std::vector<Particle> &lepto
       if( !leptons[i].hasQualityFlag(qualBit) ) continue;
 
       //check kinematics
-      if(leptons[i].pt()<minPt || fabs(leptons[i].eta())<maxEta) continue;
+      if(leptons[i].pt()<minPt || fabs(leptons[i].eta())>maxEta) continue;
 
       //check if this lepton should be vetoed by request
       if(vetoParticles){
@@ -257,7 +266,7 @@ TString SelectionTool::flagFinalState(MiniEvent_t ev, std::vector<Particle> pres
 
   //select jets based on the leptons
   jets_=getGoodJets(ev,30.,2.4,leptons_);
-  
+
   //final consistency check for data 
   if(ev.isData)
     {
@@ -267,7 +276,13 @@ TString SelectionTool::flagFinalState(MiniEvent_t ev, std::vector<Particle> pres
       else if(chTag=="E"  && !acceptE_)  chTag="";
       else if(chTag=="M"  && !acceptM_)  chTag="";
     }
- 
+
+  if(debug_) cout << "[flagFinalState] chTag=" << chTag << endl
+		  << "\t Pre-selection lepton mult." << preselleptons.size() << endl
+		  << "\t 2l cands=" << passllid.size() << " 1l cands=" << passlid.size() << endl
+		  << "\t Trig bits. e=" << hasETrigger << " m=" << hasMTrigger << " em=" << hasEMTrigger << " mm=" << hasMMTrigger << " ee=" << hasEETrigger << endl
+		  << "\t Sel mult. l=" << leptons_.size() << " vl=" << vetoLeptons_.size() << " j=" << jets_.size() << endl;
+
   //all done
   return chTag;
 }

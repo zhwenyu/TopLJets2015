@@ -11,7 +11,7 @@
 class SelectionTool {
 
  public:
-  SelectionTool(TString dataset="");
+  SelectionTool(TString dataset="",bool debug=false);
   ~SelectionTool() {}
 
   enum FlavourSplitting {NOFLAVOURSPLITTING=0, UDSGSPLITTING=1, CSPLITTING=4, BSPLITTING=5 };
@@ -38,6 +38,7 @@ class SelectionTool {
   bool acceptE_, acceptM_, acceptEE_, acceptEM_, acceptMM_;
   std::vector<Particle> leptons_,vetoLeptons_;
   std::vector<Jet> jets_;
+  bool debug_;
 
 };
 

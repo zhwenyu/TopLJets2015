@@ -33,16 +33,30 @@ git checkout 80x_rereco_rev
 scram b -j 8
 ```
 
-## Running ntuple creation
+## Running ntuple creation and checking the selection
 
 The ntuplizer is steered with test/runMiniAnalyzer_cfg.py.
 It takes several options from command line (see cfg for details).
 To run locally the ntuplizer, for testing purposes do something like:
 
 ```
-cmsRun test/runMiniAnalyzer_cfg.py runOnData=False era=era2016 outFilename=mc.root
-cmsRun test/runMiniAnalyzer_cfg.py runOnData=True  era=era2016 outFilename=data.root
+cmsRun test/runMiniAnalyzer_cfg.py runOnData=False era=era2016 outFilename=MC13TeV_TTJets.root
+cmsRun test/runMiniAnalyzer_cfg.py runOnData=True  era=era2016 outFilename=Data13TeV_MuonEG.root
 ```
+
+The default files point to the ones used in the TOP synchronization exercise
+(see details in )
+The output files can be analyzed with a simple executable (also a skeleton for the implementation of new analysis) as detailed below.
+The output file will contain cutflow histograms which can be used to check the selection against the synchronization twiki.
+Check the implementation of this analysis in src/TOPSynchExercise.cc. 
+Other analysis should also be implemented there.
+
+```
+analysisWrapper --in mc.root   --out mc_synch.root   --method TOPSynchExercise::RunTOPSynchExercise
+analysisWrapper --in data.root --out data_synch.root --method TOPSynchExercise::RunTOPSynchExercise
+```
+
+## Submitting ntuple creation through the grid
 
 To submit the ntuplizer to the grid start by setting the environment for crab3.
 More details can be found in [CRAB3CheatSheet](https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3CheatSheet#Environment_setup)
