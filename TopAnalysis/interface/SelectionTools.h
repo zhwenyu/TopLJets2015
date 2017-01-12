@@ -18,26 +18,30 @@ class SelectionTool {
   enum TOPLeptonQualityFlags { PASSLLID=0, PASSLID, PASSLVETO, PASSLIDNONISO }; 
 
   //this function will make the standard top selection
-  TString flagFinalState(MiniEvent_t ev, std::vector<Particle> preselleptons={});
+  TString flagFinalState(MiniEvent_t &ev, std::vector<Particle> preselleptons={});
   std::vector<Particle> &getSelLeptons()  { return leptons_; }
   std::vector<Particle> &getVetoLeptons() { return vetoLeptons_; }
   std::vector<Jet>      &getJets()        { return jets_; }
 
-  //object selection can also be customized with the following functions
-  std::vector<Particle> getTopFlaggedLeptons(MiniEvent_t ev);
+  //selection at particle level
+  TString flagGenFinalState(MiniEvent_t &ev, std::vector<Particle> preselleptons={});
+  std::vector<Particle> &getGenLeptons()  { return genLeptons_; }
+  std::vector<Jet>      &getGenJets()     { return genJets_; }
+ 
+ //object selection can also be customized with the following functions
+  std::vector<Particle> getTopFlaggedLeptons(MiniEvent_t &ev);
   std::vector<Particle> getGoodLeptons(std::vector<Particle> &topFlaggedLeptons,int qualBit=PASSLLID, double minPt=0., double maxEta=99., std::vector<Particle> *vetoParticles=0);
-  std::vector<Jet> getGoodJets(MiniEvent_t ev, double minPt = 30., double maxEta = 2.4, std::vector<Particle> leptons = {});
+  std::vector<Jet> getGoodJets(MiniEvent_t &ev, double minPt = 30., double maxEta = 2.4, std::vector<Particle> leptons = {});
 
-  //gen level selection
-  TString flagGenFinalState(std::vector<Particle> preselleptons={});
-  std::vector<Particle> getGenLeptons(MiniEvent_t ev, double tightMinPt = 30., double tightMaxEta = 2.1, bool vetoLoose = false, double looseMinPt = 15., double looseMaxEta = 2.5);
-  std::vector<Jet> getGenJets(MiniEvent_t ev, double minPt = 30., double maxEta = 2.4, std::vector<Particle> leptons = {});
+  //gen level selection customization
+  std::vector<Particle> getGenLeptons(MiniEvent_t &ev, double minPt = 30., double maxEta = 2.1);
+  std::vector<Jet> getGenJets(MiniEvent_t &ev, double minPt = 30., double maxEta = 2.4, std::vector<Particle> *leptons = 0);
 
 
  private:
   bool acceptE_, acceptM_, acceptEE_, acceptEM_, acceptMM_;
-  std::vector<Particle> leptons_,vetoLeptons_;
-  std::vector<Jet> jets_;
+  std::vector<Particle> leptons_,vetoLeptons_,genLeptons_;
+  std::vector<Jet> jets_,genJets_;
   bool debug_;
 
 };

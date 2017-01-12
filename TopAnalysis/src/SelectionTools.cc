@@ -15,7 +15,7 @@ SelectionTool::SelectionTool(TString dataset,bool debug) :
 }
 
 //
-std::vector<Particle> SelectionTool::getTopFlaggedLeptons(MiniEvent_t ev){
+std::vector<Particle> SelectionTool::getTopFlaggedLeptons(MiniEvent_t &ev){
   std::vector<Particle> leptons;
   for (int il=0; il<ev.nl; il++) {
 
@@ -86,31 +86,25 @@ std::vector<Particle> SelectionTool::getGoodLeptons(std::vector<Particle> &lepto
 }
 
 //
-std::vector<Particle> SelectionTool::getGenLeptons(MiniEvent_t ev, double tightMinPt, double tightMaxEta, bool vetoLoose, double looseMinPt, double looseMaxEta) {
+std::vector<Particle> SelectionTool::getGenLeptons(MiniEvent_t &ev, double minPt, double maxEta){
   std::vector<Particle> leptons;
   
   //loop over leptons from pseudotop producer
   for (int i = 0; i < ev.ng; i++) {
-    if (abs(ev.g_id[i])>10) {
-      bool passTightKin(ev.g_pt[i]>tightMinPt && fabs(ev.g_eta[i])<tightMaxEta);
-      bool passLooseKin(ev.g_pt[i]>looseMinPt && fabs(ev.g_eta[i])<looseMaxEta);
-      
-      if(passTightKin) {
-        TLorentzVector lp4;
-        lp4.SetPtEtaPhiM(ev.g_pt[i],ev.g_eta[i],ev.g_phi[i],ev.g_m[i]);
-        leptons.push_back( Particle(lp4, -ev.g_id[i]/abs(ev.g_id[i]), ev.g_id[i], 0, 1) );
-      }
-      else if(vetoLoose && passLooseKin) {
-        return {};
-      }
-    }
+    if (abs(ev.g_id[i])<10) continue;
+    bool passKin(ev.g_pt[i]>minPt && fabs(ev.g_eta[i])<maxEta);
+    if(!passKin) continue;
+
+    TLorentzVector lp4;
+    lp4.SetPtEtaPhiM(ev.g_pt[i],ev.g_eta[i],ev.g_phi[i],ev.g_m[i]);
+    leptons.push_back( Particle(lp4, -ev.g_id[i]/abs(ev.g_id[i]), ev.g_id[i], 0, 1) );
   }
   
   return leptons;
 }
 
 //
-std::vector<Jet> SelectionTool::getGoodJets(MiniEvent_t ev, double minPt, double maxEta, std::vector<Particle> leptons) {
+std::vector<Jet> SelectionTool::getGoodJets(MiniEvent_t &ev, double minPt, double maxEta, std::vector<Particle> leptons) {
   std::vector<Jet> jets;
   
   for (int k=0; k<ev.nj; k++) {
@@ -170,41 +164,42 @@ std::vector<Jet> SelectionTool::getGoodJets(MiniEvent_t ev, double minPt, double
 }
 
 //
-std::vector<Jet> SelectionTool::getGenJets(MiniEvent_t ev, double minPt, double maxEta, std::vector<Particle> leptons) {
+std::vector<Jet> SelectionTool::getGenJets(MiniEvent_t &ev, double minPt, double maxEta, std::vector<Particle> *leptons) {
   std::vector<Jet> jets;
   
   for (int i = 0; i < ev.ng; i++) {
-    if (abs(ev.g_id[i])<10) {
-      TLorentzVector jp4;
-      jp4.SetPtEtaPhiM(ev.g_pt[i],ev.g_eta[i],ev.g_phi[i],ev.g_m[i]);
+    if (abs(ev.g_id[i])>10) continue;
+    TLorentzVector jp4;
+    jp4.SetPtEtaPhiM(ev.g_pt[i],ev.g_eta[i],ev.g_phi[i],ev.g_m[i]);
 
-      //cross clean with leptons
-      bool overlapsWithLepton(false);
-      for (auto& lepton : leptons) {
+    //cross clean with leptons
+    bool overlapsWithLepton(false);
+    if(leptons){
+      for (auto& lepton : *leptons) {
         if(jp4.DeltaR(lepton.p4())<0.4) overlapsWithLepton=true;
       }
       if(overlapsWithLepton) continue;
-      
-      //jet kinematic selection
-      if(jp4.Pt() < minPt || abs(jp4.Eta()) > maxEta) continue;
-
-      //flavor
-      int flavor = ev.g_id[i];
-      
-      Jet jet(jp4, flavor, i);
-      
-      //fill jet constituents
-      for (int p = 0; p < ev.ngpf; p++) {
-        if (ev.gpf_g[p] == i) {
-          TLorentzVector pp4;
-          pp4.SetPtEtaPhiM(ev.gpf_pt[p],ev.gpf_eta[p],ev.gpf_phi[p],ev.gpf_m[p]);
-          jet.addParticle(Particle(pp4, ev.gpf_c[p], ev.gpf_id[p], 0, p, 1.));
-          if (ev.gpf_c[p] != 0) jet.addTrack(pp4, ev.gpf_id[p]);
-        }
-      }
-      
-      jets.push_back(jet);
     }
+
+    //jet kinematic selection
+    if(jp4.Pt() < minPt || abs(jp4.Eta()) > maxEta) continue;
+
+    //flavor
+    int flavor = ev.g_id[i];
+      
+    Jet jet(jp4, flavor, i);
+      
+    //fill jet constituents
+    for (int p = 0; p < ev.ngpf; p++) {
+      if (ev.gpf_g[p] == i) {
+	TLorentzVector pp4;
+	pp4.SetPtEtaPhiM(ev.gpf_pt[p],ev.gpf_eta[p],ev.gpf_phi[p],ev.gpf_m[p]);
+	jet.addParticle(Particle(pp4, ev.gpf_c[p], ev.gpf_id[p], 0, p, 1.));
+	if (ev.gpf_c[p] != 0) jet.addTrack(pp4, ev.gpf_id[p]);
+      }
+    }
+
+    jets.push_back(jet);
   }
   
   //additional jet-jet information
@@ -229,7 +224,7 @@ std::vector<Jet> SelectionTool::getGenJets(MiniEvent_t ev, double minPt, double 
 }
 
 //
-TString SelectionTool::flagFinalState(MiniEvent_t ev, std::vector<Particle> preselleptons) {
+TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> preselleptons) {
 
   //clear vectors
   leptons_.clear(); 
@@ -287,17 +282,24 @@ TString SelectionTool::flagFinalState(MiniEvent_t ev, std::vector<Particle> pres
   return chTag;
 }
 
-TString SelectionTool::flagGenFinalState(std::vector<Particle> leptons) {
+//
+TString SelectionTool::flagGenFinalState(MiniEvent_t &ev, std::vector<Particle> leptons) 
+{
+  //update current state
+  genLeptons_=leptons;
+  if(genLeptons_.size()==0) genLeptons_=getGenLeptons(ev,20.,2.5);
+  genJets_=getGenJets(ev,30.,2.4,&genLeptons_);
+
   //decide the channel
   TString chTag("");
   if(leptons.size()>=2) {
-    if      (abs(leptons[0].id()*leptons[1].id())==11*13) chTag = "EM";
-    else if (abs(leptons[0].id()*leptons[1].id())==13*13) chTag = "MM";
-    else if (abs(leptons[0].id()*leptons[1].id())==11*11) chTag = "EE";
+    if      (abs(genLeptons_[0].id()*genLeptons_[1].id())==11*13) chTag = "EM";
+    else if (abs(genLeptons_[0].id()*genLeptons_[1].id())==13*13) chTag = "MM";
+    else if (abs(genLeptons_[0].id()*genLeptons_[1].id())==11*11) chTag = "EE";
   }
   if(leptons.size()==1) {
-    if      (abs(leptons[0].id())==13) chTag = "M";
-    else if (abs(leptons[0].id())==11) chTag = "E";
+    if      (abs(genLeptons_[0].id())==13) chTag = "M";
+    else if (abs(genLeptons_[0].id())==11) chTag = "E";
   }
   
   return chTag;

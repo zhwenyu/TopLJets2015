@@ -377,15 +377,12 @@ void RunTopJetShape(TString filename,
         //////////////////////////
         // GEN LEVEL SELECTION //
         ////////////////////////
+       
         
-        //get gen leptons
-        std::vector<Particle> genLeptons = evsel.getGenLeptons(ev, 30., 2.1, true, 15., 2.5);
-        
-        //decide the lepton channel
-        TString genChTag = evsel.flagGenFinalState(genLeptons);
-              
-        //get jets
-        std::vector<Jet> genJets = evsel.getGenJets(ev, 30., 2.4, genLeptons);
+        //decide the lepton channel at particle level
+        TString genChTag = evsel.flagGenFinalState(ev);
+        std::vector<Particle> &genLeptons = evsel.getGenLeptons();
+        std::vector<Jet>      &genJets    = evsel.getGenJets();
         
         //count b and W candidates
         int sel_ngbjets = 0;
