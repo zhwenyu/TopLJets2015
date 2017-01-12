@@ -5,6 +5,8 @@
 #include "TString.h"
 #include "TFile.h"
 
+#include "TopLJets2015/TopAnalysis/interface/SelectionTools.h"
+
 #include <map>
 
 struct TopUE_t
@@ -32,7 +34,7 @@ void RunTopUE(TString filename,
 	      TString outname,
 	      Int_t channelSelection, 
 	      Int_t chargeSelection, 
-	      FlavourSplitting flavourSplitting,
+	      SelectionTool::FlavourSplitting flavourSplitting,
 	      TH1F *normH, 
 	      Bool_t runSysts,
 	      TString era);

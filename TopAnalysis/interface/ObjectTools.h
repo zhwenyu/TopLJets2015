@@ -9,9 +9,12 @@
 class Particle {
   
   public:
-    Particle(TLorentzVector p4, int charge, int id, double puppi = 1)
-      : p4_(p4), charge_(charge), id_(id), puppi_(puppi) {}
-    
+    Particle(TLorentzVector p4, int charge, int id, int qualityFlags, int origRef, double puppi = 1)
+      : p4_(p4), charge_(charge), id_(id), qualityFlags_(qualityFlags), puppi_(puppi) {}
+   
+    Particle( const Particle &p) 
+      : p4_(p.p4_), charge_(p.charge_), id_(p.id_), qualityFlags_(p.qualityFlags_), origRef_(p.origRef_), puppi_(p.puppi_) {}
+
     double px()     { return p4_.Px();  }
     double py()     { return p4_.Py();  }
     double pz()     { return p4_.Pz();  }
@@ -26,12 +29,14 @@ class Particle {
     TLorentzVector momentum() { return p4_; }
     int charge()    { return charge_; }
     int id()        { return id_; }
+    int qualityFlags() { return qualityFlags_; }
+    bool hasQualityFlag(int bit) { return ((qualityFlags_>>bit)&0x1); }
+    int originalReference() { return origRef_; }
     double puppi()  { return puppi_; }
-  
+
   private:
     TLorentzVector p4_;
-    int charge_;
-    int id_;
+    int charge_, id_, qualityFlags_,origRef_;
     double puppi_;
 };
 
@@ -47,8 +52,10 @@ class Jet {
       : p4_(p4), flavor_(flavor), idx_(idx), overlap_(0) {}
     Jet(TLorentzVector p4, float csv, int idx)
       : p4_(p4), csv_(csv), idx_(idx) {}
+    Jet(const Jet &j) 
+      : p4_(j.p4_), particles_(j.particles_), trks_(j.trks_), csv_(j.csv_), flavor_(j.flavor_), idx_(j.idx_), overlap_(j.overlap_) {}
     ~Jet() {}
-    
+
     double pt()     { return p4_.Pt();  }
     TLorentzVector p4()       { return p4_; }
     TLorentzVector momentum() { return p4_; }

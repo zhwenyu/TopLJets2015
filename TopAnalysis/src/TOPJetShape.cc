@@ -9,7 +9,6 @@
 
 #include "TopLJets2015/TopAnalysis/interface/MiniEvent.h"
 #include "TopLJets2015/TopAnalysis/interface/CommonTools.h"
-#include "TopLJets2015/TopAnalysis/interface/SelectionTools.h"
 #include "TopLJets2015/TopAnalysis/interface/CorrectionTools.h"
 #include "TopLJets2015/TopAnalysis/interface/TOPJetShape.h"
 #include "TopLJets2015/TopAnalysis/interface/LeptonEfficiencyWrapper.h"
@@ -37,14 +36,14 @@ using namespace std;
 
 //
 void RunTopJetShape(TString filename,
-				TString outname,
-				Int_t channelSelection, 
-				Int_t chargeSelection, 
-				FlavourSplitting flavourSplitting,
-				TH1F *normH, 
-				Bool_t runSysts,
-				TString era,
-				Bool_t debug)
+		    TString outname,
+		    Int_t channelSelection, 
+		    Int_t chargeSelection, 
+		    SelectionTool::FlavourSplitting flavourSplitting,
+		    TH1F *normH, 
+		    Bool_t runSysts,
+		    TString era,
+		    Bool_t debug)
 {
 
   /////////////////////
@@ -88,7 +87,7 @@ void RunTopJetShape(TString filename,
   
   //LEPTON EFFICIENCIES
   LeptonEfficiencyWrapper lepEffH(filename.Contains("Data13TeV"),era);
-  bool hardCodedLES(era=="era2015");
+  //bool hardCodedLES(era=="era2015");
 
 
   //B-TAG CALIBRATION
@@ -112,8 +111,8 @@ void RunTopJetShape(TString filename,
   //JET ENERGY UNCERTAINTIES
   TString jecUncUrl(era+"/jecUncertaintySources_AK4PFchs.txt");
   gSystem->ExpandPathName(jecUncUrl);
-  JetCorrectorParameters *jecParam = new JetCorrectorParameters(jecUncUrl.Data(),"Total");
-  JetCorrectionUncertainty *jecUnc = new JetCorrectionUncertainty( *jecParam );
+  //JetCorrectorParameters *jecParam = new JetCorrectorParameters(jecUncUrl.Data(),"Total");
+  //JetCorrectionUncertainty *jecUnc = new JetCorrectionUncertainty( *jecParam );
 
 
   //BOOK HISTOGRAMS
@@ -144,6 +143,7 @@ void RunTopJetShape(TString filename,
   ///////////////////////
   // LOOP OVER EVENTS //
   /////////////////////
+  SelectionTool evsel;
   for (Int_t iev=0;iev<nentries;iev++)
     {
       t->GetEntry(iev);
@@ -164,14 +164,12 @@ void RunTopJetShape(TString filename,
       // RECO LEVEL SELECTION //
       /////////////////////////
       
-      //get good leptons
-      std::vector<Particle> leptons = getGoodLeptons(ev, 30., 2.1, true, 15., 2.5);
-      
-      //decide the lepton channel
-      TString chTag = getChannel(ev, filename, leptons);
+      //decide the lepton channel and get selected objects
+      TString chTag = evsel.flagFinalState(ev);
+      std::vector<Particle> &leptons     = evsel.getSelLeptons(); 
+      //std::vector<Particle> &vetoLeptons = evsel.getVetoLeptons();      
+      std::vector<Jet>      &jets        = evsel.getJets();  
             
-      //get jets
-      std::vector<Jet> jets = getGoodJets(ev, 30., 2.4, leptons);
       
       //count b and W candidates
       int sel_nbjets = 0;
@@ -381,13 +379,13 @@ void RunTopJetShape(TString filename,
         ////////////////////////
         
         //get gen leptons
-        std::vector<Particle> genLeptons = getGenLeptons(ev, 30., 2.1, true, 15., 2.5);
+        std::vector<Particle> genLeptons = evsel.getGenLeptons(ev, 30., 2.1, true, 15., 2.5);
         
         //decide the lepton channel
-        TString genChTag = getGenChannel(leptons);
+        TString genChTag = evsel.flagGenFinalState(genLeptons);
               
         //get jets
-        std::vector<Jet> genJets = getGenJets(ev, 30., 2.4, leptons);
+        std::vector<Jet> genJets = evsel.getGenJets(ev, 30., 2.4, genLeptons);
         
         //count b and W candidates
         int sel_ngbjets = 0;

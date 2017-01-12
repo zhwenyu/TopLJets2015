@@ -23,7 +23,6 @@ void RunTop16023(TString filename,
 		     TString outname,
 		     Int_t channelSelection, 
 		     Int_t chargeSelection, 
-		     FlavourSplitting flavourSplitting,
 		     TH1F *normH, 
 		     Bool_t runSysts,
 		     TString era);

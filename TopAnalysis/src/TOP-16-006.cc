@@ -26,7 +26,7 @@ void RunTop16006(TString filename,
 		 TString outname,
 		 Int_t channelSelection, 
 		 Int_t chargeSelection, 
-		 FlavourSplitting flavourSplitting,
+		 SelectionTool::FlavourSplitting flavourSplitting,
 		 TH1F *normH, 
 		 Bool_t runSysts,
 		 TString era)
@@ -459,11 +459,11 @@ void RunTop16006(TString filename,
       //check if flavour splitting was required
       if(!ev.isData)
 	{
-	  if(flavourSplitting!=FlavourSplitting::NOFLAVOURSPLITTING)
+	  if(flavourSplitting!=SelectionTool::FlavourSplitting::NOFLAVOURSPLITTING)
 	    {
-	      if(flavourSplitting==FlavourSplitting::BSPLITTING)         { if(nbjets==0)    continue; }
-	      else if(flavourSplitting==FlavourSplitting::CSPLITTING)    { if(ncjets==0 || nbjets!=0)    continue; }
-	      else if(flavourSplitting==FlavourSplitting::UDSGSPLITTING) { if(nljets==0 || ncjets!=0 || nbjets!=0) continue; }
+	      if(flavourSplitting==SelectionTool::FlavourSplitting::BSPLITTING)         { if(nbjets==0)    continue; }
+	      else if(flavourSplitting==SelectionTool::FlavourSplitting::CSPLITTING)    { if(ncjets==0 || nbjets!=0)    continue; }
+	      else if(flavourSplitting==SelectionTool::FlavourSplitting::UDSGSPLITTING) { if(nljets==0 || ncjets!=0 || nbjets!=0) continue; }
 	    }
 	}
 
@@ -830,7 +830,7 @@ void RunTop16006(TString filename,
 
   //save histos to file  
   TString selPrefix("");  
-  if(flavourSplitting!=NOFLAVOURSPLITTING) selPrefix=Form("%d_",flavourSplitting);
+  if(flavourSplitting!=SelectionTool::FlavourSplitting::NOFLAVOURSPLITTING) selPrefix=Form("%d_",flavourSplitting);
   TString baseName=gSystem->BaseName(outname); 
   TString dirName=gSystem->DirName(outname);
   TFile *fOut=TFile::Open(dirName+"/"+selPrefix+baseName,"RECREATE");

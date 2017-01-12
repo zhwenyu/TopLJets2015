@@ -11,7 +11,6 @@
 #include "TopLJets2015/TopAnalysis/interface/LeptonEfficiencyWrapper.h"
 #include "TopLJets2015/TopAnalysis/interface/BtagUncertaintyComputer.h"
 #include "TopLJets2015/TopAnalysis/interface/TOP-16-023.h"
-#include "TopLJets2015/TopAnalysis/interface/TOP-16-006.h"
 
 #include <string>
 #include <vector>
@@ -47,11 +46,10 @@ void RunTop16023(TString inFileName,
 		 TString outFileName,
 		 Int_t channelSelection,
 		 Int_t chargeSelection,
-		 FlavourSplitting flavourSplitting,
 		 TH1F *normH,
 		 Bool_t runSysts,
 		 TString era)
-{
+{		 
 
   Float_t JETPTTHRESHOLD=30;
   Float_t DRJJTHRESHOLD=2.0;

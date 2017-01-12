@@ -3,16 +3,17 @@
 
 #include "TLorentzVector.h"
 #include "TopLJets2015/TopAnalysis/interface/ObjectTools.h"
+#include "TopLJets2015/TopAnalysis/interface/SelectionTools.h"
 
 void RunTopJetShape(TString filename,
-				TString outname,
-				Int_t channelSelection, 
-				Int_t chargeSelection, 
-				FlavourSplitting flavourSplitting,
-				TH1F *normH, 
-				Bool_t runSysts,
-				TString era,
-				Bool_t debug=false);
+		    TString outname,
+		    Int_t channelSelection, 
+		    Int_t chargeSelection, 
+		    SelectionTool::FlavourSplitting flavourSplitting,
+		    TH1F *normH, 
+		    Bool_t runSysts,
+		    TString era,
+		    Bool_t debug=false);
 
 struct TopJetShapeEvent_t
 {

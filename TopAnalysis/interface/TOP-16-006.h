@@ -9,12 +9,13 @@
 #include <vector>
 
 #include "TopLJets2015/TopAnalysis/interface/CommonTools.h"
+#include "TopLJets2015/TopAnalysis/interface/SelectionTools.h"
 
 void RunTop16006(TString filename,
 		 TString outname,
 		 Int_t channelSelection, 
 		 Int_t chargeSelection, 
-		 FlavourSplitting flavourSplitting,
+		 SelectionTool::FlavourSplitting flavourSplitting,
 		 TH1F *normH, 
 		 Bool_t runSysts,
 		 TString era);
