@@ -704,6 +704,7 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       if(i==1) iEvent.getByToken(puppiMetToken_, mets);
       ev_.met_pt[i]  = mets->at(0).pt();
       ev_.met_phi[i] = mets->at(0).phi();
+      ev_.met_sig[i] = mets->at(0).significance();
     }
 
   //PF candidates
