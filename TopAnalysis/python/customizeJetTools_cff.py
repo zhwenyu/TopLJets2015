@@ -53,3 +53,8 @@ def customizeJetTools(process,jecDB,jecTag,baseJetCollection,runOnData):
 		)
 	process.updatedPatJetsTransientCorrectedUpdatedJECBTag.addTagInfos = cms.bool(True)
 
+	#MET
+	from PhysicsTools.PatUtils.tools.runMETCorrectionsAndUncertainties import runMetCorAndUncFromMiniAOD
+	runMetCorAndUncFromMiniAOD(process,isData=runOnData)
+	runMetCorAndUncFromMiniAOD(process,isData=runOnData,metType="Puppi",postfix="Puppi")
+
