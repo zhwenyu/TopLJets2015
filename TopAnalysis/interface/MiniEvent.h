@@ -47,6 +47,7 @@ struct MiniEvent_t
   //met
   Int_t nmet;
   Float_t met_pt[2],met_phi[2],met_sig[2];
+  Int_t met_filterBits;
 
   //PF candidates
   Int_t npf,pf_j[5000];

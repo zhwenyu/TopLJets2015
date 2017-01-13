@@ -161,6 +161,6 @@ process.TFileService = cms.Service("TFileService",
                                    )
 
 if options.runOnData:
-    process.p = cms.Path(process.calibratedPatElectrons*process.egmGsfElectronIDSequence*process.analysis)
+    process.p = cms.Path(process.calibratedPatElectrons*process.egmGsfElectronIDSequence*process.jetmetSeq*process.analysis)
 else:
-    process.p = cms.Path(process.calibratedPatElectrons*process.egmGsfElectronIDSequence*process.pseudoTop*process.analysis)
+    process.p = cms.Path(process.calibratedPatElectrons*process.egmGsfElectronIDSequence*process.jetmetSeq*process.pseudoTop*process.analysis)

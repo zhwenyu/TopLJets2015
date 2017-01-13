@@ -58,3 +58,12 @@ def customizeJetTools(process,jecDB,jecTag,baseJetCollection,runOnData):
 	#runMetCorAndUncFromMiniAOD(process,isData=runOnData,metType='', postfix='JEC')
 	#runMetCorAndUncFromMiniAOD(process,isData=runOnData,metType="Puppi",postfix="PuppiJEC")
 
+	process.load('RecoMET.METFilters.BadPFMuonFilter_cfi')
+	process.BadPFMuonFilter.muons = cms.InputTag("slimmedMuons")
+	process.BadPFMuonFilter.PFCandidates = cms.InputTag("packedPFCandidates")
+
+	process.load('RecoMET.METFilters.BadChargedCandidateFilter_cfi')
+	process.BadChargedCandidateFilter.muons = cms.InputTag("slimmedMuons")
+	process.BadChargedCandidateFilter.PFCandidates = cms.InputTag("packedPFCandidates")
+
+	process.jetmetSeq=cms.Sequence(process.BadPFMuonFilter+process.BadChargedCandidateFilter)

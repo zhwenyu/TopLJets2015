@@ -13,6 +13,7 @@ git cms-init
 
 #MET
 git cms-merge-topic cms-met:METRecipe_8020
+git cms-merge-topic cms-met:fromCMSSW_8_0_20_postICHEPfilter
 
 #EGM smearer
 git cms-merge-topic shervin86:Moriond2017_JEC_energyScales

@@ -115,7 +115,7 @@ private:
   edm::EDGetTokenT<reco::GenParticleCollection> prunedGenParticlesToken_;
   edm::EDGetTokenT<reco::GenParticleCollection> pseudoTopToken_;
 
-  edm::EDGetTokenT<edm::TriggerResults> triggerBits_;
+  edm::EDGetTokenT<edm::TriggerResults> triggerBits_,metFilterBits_;
   edm::EDGetTokenT<pat::PackedTriggerPrescales> triggerPrescales_;
   edm::EDGetTokenT<reco::VertexCollection> vtxToken_;
   edm::EDGetTokenT<double> rhoToken_;
@@ -129,6 +129,8 @@ private:
   edm::EDGetTokenT<edm::ValueMap<bool> > eleVetoIdMapToken_,eleLooseIdMapToken_,eleMediumIdMapToken_,eleTightIdMapToken_;
   edm::EDGetTokenT<edm::ValueMap<vid::CutFlowResult> > eleVetoIdFullInfoMapToken_,eleLooseIdFullInfoMapToken_,eleMediumIdFullInfoMapToken_,eleTightIdFullInfoMapToken_;
 
+  edm::EDGetTokenT<bool> BadChCandFilterToken_,BadPFMuonFilterToken_;
+
   std::unordered_map<std::string,TH1*> histContainer_;
 
   bool applyLeptonCorrections_;
@@ -138,7 +140,7 @@ private:
 
   PFJetIDSelectionFunctor pfjetIDLoose_;
 
-  std::vector<std::string> triggersToUse_;
+  std::vector<std::string> triggersToUse_,metFiltersToUse_;
 
   bool saveTree_,savePF_;
   TTree *tree_;
@@ -171,6 +173,7 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig) :
   prunedGenParticlesToken_(consumes<reco::GenParticleCollection>(edm::InputTag("prunedGenParticles"))),
   pseudoTopToken_(consumes<reco::GenParticleCollection>(edm::InputTag("pseudoTop"))),
   triggerBits_(consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("triggerBits"))),
+  metFilterBits_(consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("metFilterbits"))),
   triggerPrescales_(consumes<pat::PackedTriggerPrescales>(iConfig.getParameter<edm::InputTag>("prescales"))),
   vtxToken_(consumes<reco::VertexCollection>(iConfig.getParameter<edm::InputTag>("vertices"))),
   rhoToken_(consumes<double>(iConfig.getParameter<edm::InputTag>("rho"))),
@@ -187,6 +190,8 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig) :
   eleLooseIdFullInfoMapToken_(consumes<edm::ValueMap<vid::CutFlowResult> >(iConfig.getParameter<edm::InputTag>("eleLooseIdFullInfoMap"))),
   eleMediumIdFullInfoMapToken_(consumes<edm::ValueMap<vid::CutFlowResult> >(iConfig.getParameter<edm::InputTag>("eleMediumIdFullInfoMap"))),
   eleTightIdFullInfoMapToken_(consumes<edm::ValueMap<vid::CutFlowResult> >(iConfig.getParameter<edm::InputTag>("eleTightIdFullInfoMap"))),
+  BadChCandFilterToken_(consumes<bool>(iConfig.getParameter<edm::InputTag>("BadChargedCandidateFilter"))),
+  BadPFMuonFilterToken_(consumes<bool>(iConfig.getParameter<edm::InputTag>("BadPFMuonFilter"))),
   pfjetIDLoose_( PFJetIDSelectionFunctor::FIRSTDATA, PFJetIDSelectionFunctor::LOOSE ),  
   saveTree_( iConfig.getParameter<bool>("saveTree") ),
   savePF_( iConfig.getParameter<bool>("savePF") )
@@ -195,7 +200,8 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig) :
   electronToken_      = mayConsume<edm::View<pat::Electron> >(iConfig.getParameter<edm::InputTag>("electrons"));
   calibElectronToken_ = mayConsume<edm::View<pat::Electron> >(iConfig.getParameter<edm::InputTag>("calibElectrons"));
   triggersToUse_      = iConfig.getParameter<std::vector<std::string> >("triggersToUse");
-  
+  metFiltersToUse_  = iConfig.getParameter<std::vector<std::string> >("metFiltersToUse");
+
   //lepton corrections
   applyLeptonCorrections_=iConfig.getParameter<bool>("applyLeptonCorrections");
   rochcor_ = applyLeptonCorrections_ ? new rochcor2016(2016,iConfig.getParameter<std::string>("muonCorrFile")) : 0;
@@ -706,6 +712,34 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       ev_.met_phi[i] = mets->at(0).phi();
       ev_.met_sig[i] = mets->at(0).significance();
     }
+
+  //MET filter bits
+  ev_.met_filterBits=0;
+  edm::Handle<edm::TriggerResults> h_metFilters;
+  iEvent.getByToken(metFilterBits_, h_metFilters);
+  std::vector<string> metFilterNames;
+  Service<service::TriggerNamesService> mfns;
+  mfns->getTrigPaths(*h_metFilters,metFilterNames);
+  for (unsigned int i=0; i< h_metFilters->size(); i++) 
+    {	
+      if( !(*h_metFilters)[i].accept() ) continue;
+      cout << metFilterNames[i] << endl;
+      for(size_t itrig=0; itrig<metFiltersToUse_.size(); itrig++)
+	{
+	  if (metFilterNames[i].find(metFiltersToUse_[itrig])==string::npos) continue;
+	  ev_.met_filterBits |= (1<<itrig);
+	}
+    }
+
+  edm::Handle<bool> ifilterbadChCand;
+  iEvent.getByToken(BadChCandFilterToken_, ifilterbadChCand);
+  bool  filterbadChCandidate = *ifilterbadChCand;
+  ev_.met_filterBits |= (filterbadChCandidate<<metFiltersToUse_.size());
+
+  edm::Handle<bool> ifilterbadPFMuon;
+  iEvent.getByToken(BadPFMuonFilterToken_, ifilterbadPFMuon);
+  bool filterbadPFMuon = *ifilterbadPFMuon;
+  ev_.met_filterBits |= (filterbadPFMuon<<(metFiltersToUse_.size()+1));
 
   //PF candidates
   ev_.npf=0;
