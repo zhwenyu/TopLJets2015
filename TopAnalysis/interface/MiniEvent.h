@@ -12,7 +12,7 @@ struct MiniEvent_t
   }
 
   Bool_t isData;
-  Int_t run,event,lumi;
+  UInt_t run,event,lumi;
 
   //gen level event
   Int_t g_id1, g_id2;

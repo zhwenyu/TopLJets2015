@@ -4,10 +4,10 @@
 void createMiniEventTree(TTree *t,MiniEvent_t &ev)
 {
   //event header
-  t->Branch("isData",     &ev.isData,     "isData/O");
-  t->Branch("run",       &ev.run,       "run/I");
-  t->Branch("event",     &ev.event,     "event/I");
-  t->Branch("lumi",      &ev.lumi,      "lumi/I");
+  t->Branch("isData",    &ev.isData,   "isData/O");
+  t->Branch("run",       &ev.run,      "run/i");
+  t->Branch("event",     &ev.event,    "event/i");
+  t->Branch("lumi",      &ev.lumi,     "lumi/i");
 
   //generator level information
   t->Branch("g_pu",      &ev.g_pu,     "g_pu/I");
