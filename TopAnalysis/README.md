@@ -34,7 +34,13 @@ cd -
 git clone git@github.com:pfs/TopLJets2015.git
 cd TopLJets2015/TopAnalysis
 git checkout 80x_rereco_rev
-scram b -j 8
+
+#delete, not used
+cd -
+rm -rf DQMOffline
+
+#compile
+scram b
 ```
 
 ## Running ntuple creation and checking the selection

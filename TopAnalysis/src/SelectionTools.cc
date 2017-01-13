@@ -15,6 +15,14 @@ SelectionTool::SelectionTool(TString dataset,bool debug) :
 }
 
 //
+bool SelectionTool::passMETFilters(MiniEvent_t &ev){
+  
+  if(ev.isData) return ev.met_filterBits==0xff;
+  else          return ((ev.met_filterBits>>2)&0x1) && ((ev.met_filterBits>>6) & 0x3);
+
+}
+
+//
 std::vector<Particle> SelectionTool::getTopFlaggedLeptons(MiniEvent_t &ev){
   std::vector<Particle> leptons;
   for (int il=0; il<ev.nl; il++) {

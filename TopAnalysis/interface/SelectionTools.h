@@ -37,6 +37,8 @@ class SelectionTool {
   std::vector<Particle> getGenLeptons(MiniEvent_t &ev, double minPt = 30., double maxEta = 2.1);
   std::vector<Jet> getGenJets(MiniEvent_t &ev, double minPt = 30., double maxEta = 2.4, std::vector<Particle> *leptons = 0);
 
+  //check met filter flags cf. https://twiki.cern.ch/twiki/bin/view/CMS/MissingETOptionalFiltersRun2
+  bool passMETFilters(MiniEvent_t &ev);
 
  private:
   bool acceptE_, acceptM_, acceptEE_, acceptEM_, acceptMM_;
