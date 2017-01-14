@@ -13,6 +13,7 @@ git cms-init
 
 #MET
 git cms-merge-topic cms-met:METRecipe_8020
+git cms-merge-topic ahinzmann:METRecipe_8020_Moriond17
 git cms-merge-topic cms-met:fromCMSSW_8_0_20_postICHEPfilter
 
 #EGM smearer
