@@ -5,6 +5,7 @@ import json
 import sys
 import os
 import numpy
+import array
 from TopLJets2015.TopAnalysis.storeTools import getEOSlslist
 from TopLJets2015.TopAnalysis.nuSolutions import *
 
@@ -15,18 +16,6 @@ def convertToPtEtaPhiM(lVec,xyz,m=0.):
     en=ROOT.TMath.Sqrt(xyz[0]**2+xyz[1]**2+xyz[2]**2)
     p4=ROOT.TLorentzVector(xyz[0],xyz[1],xyz[2],en)
     return lVec(p4.Pt(),p4.Eta(),p4.Phi(),p4.M())
-
-"""
-stop quark/chi0 filter the arguments are the masses to filter out
-"""
-def stopChiFilter(tree,filtArgs):
-    weight=-1.0
-    mstop,mchi0=0,0
-    for i in xrange(0,tree.nt):
-        if abs(tree.t_id[i])==1000006 : mstop=tree.t_m[i]
-        if abs(tree.t_id[i])==1000022 : mchi0=tree.t_m[i]
-    if mstop==float(filtArgs[0]) and mchi0==float(filtArgs[1]): weight=1.0
-    return weight
 
 
 """
@@ -67,6 +56,10 @@ Analysis loop
 def runAnomalousTopProductionAnalysis(fileName,outFileName,filterName):
         
     print '....analysing',fileName,'with output @',outFileName
+
+    fOut=ROOT.TFile.Open(outFileName,'RECREATE')
+    fOut.cd()
+    ntuple = ROOT.TNtuple("data","data","b1pt:b1eta:b1phi:b2pt:b2eta:b2phi:l1pt:l1eta:l1phi:l2pt:l2eta:l2phi:metx:mety:nj:ptest1:ptest2:ptgen")
 
     #book histograms
     observablesH={}
@@ -118,12 +111,6 @@ def runAnomalousTopProductionAnalysis(fileName,outFileName,filterName):
             weightH.Divide(smFile.Get(distName))
             smFile.Close()
             filtArgs=[weightH]
-        elif filtFunc=='stopChiFilter':
-            filtArgs=filtArgsList.split(',')
-            fIn=ROOT.TFile.Open(fileName)
-            key='mstop_%d_mchi0_%d'%(int(10*float(filtArgs[0])),int(10*float(filtArgs[1])))
-            filtNormRwgt=fIn.Get(key).GetBinContent(1)
-            fIn.Close()
 
     #loop over events in the tree and fill histos
     totalEntries=tree.GetEntries()
@@ -172,8 +159,8 @@ def runAnomalousTopProductionAnalysis(fileName,outFileName,filterName):
                                           (leptons[0], leptons[1]),
                                           (metx,mety) )
             for isol in xrange(0,len(sols.nunu_s)):               
-                top=bjets[0]+leptons[0]+convertToPtEtaPhiM(lVec,sols.nunu_s[isol][0],0.)
-                top_=bjets[1]+leptons[1]+convertToPtEtaPhiM(lVec,sols.nunu_s[isol][1],0.)
+                top  = bjets[0]+leptons[0]+convertToPtEtaPhiM(lVec,sols.nunu_s[isol][0],0.)
+                top_ = bjets[1]+leptons[1]+convertToPtEtaPhiM(lVec,sols.nunu_s[isol][1],0.)
                 allSols.append( (0,top,top_) )
         except numpy.linalg.linalg.LinAlgError:
             pass        
@@ -182,8 +169,8 @@ def runAnomalousTopProductionAnalysis(fileName,outFileName,filterName):
                                           (leptons[1], leptons[0]),
                                           (metx,mety) )
             for isol in xrange(0,len(sols.nunu_s)):
-                top=bjets[0]+leptons[1]+convertToPtEtaPhiM(lVec,sols.nunu_s[isol][0],0.)
-                top_=bjets[1]+leptons[0]+convertToPtEtaPhiM(lVec,sols.nunu_s[isol][1],0.)
+                top  = bjets[0]+leptons[1]+convertToPtEtaPhiM(lVec,sols.nunu_s[isol][0],0.)
+                top_ = bjets[1]+leptons[0]+convertToPtEtaPhiM(lVec,sols.nunu_s[isol][1],0.)
                 allSols.append( (1,top,top_) )
         except numpy.linalg.linalg.LinAlgError :
             pass
@@ -191,6 +178,30 @@ def runAnomalousTopProductionAnalysis(fileName,outFileName,filterName):
         #sort solutions by increasing m(ttbar)
         if len(allSols)==0: continue
         allSols=sorted(allSols, key=lambda sol: (sol[1]+sol[2]).mass() )        
+
+        #mc truth
+        genTops=[]
+        for i in xrange(0,tree.nt):
+            p4=lVec(tree.t_pt[i],tree.t_eta[i],tree.t_phi[i],tree.t_m[i])
+            if abs(tree.t_id[i])!=6 : continue
+            genTops.append(p4)
+
+        values = [ bjets[0].Pt(), bjets[0].Eta(),     bjets[0].Phi(),
+                   bjets[1].Pt(), bjets[1].Eta(),     bjets[1].Phi(),
+                   leptons[0].Pt(), leptons[0].Eta(), leptons[0].Phi(),
+                   leptons[1].Pt(), leptons[1].Eta(), leptons[1].Phi(),
+                   metx,mety,
+                   len(otherjets)+len(bjets),
+                   (allSols[0][1]+allSols[0][2]).pt() ]
+        if len(allSols)>1 :
+            values += [ (allSols[1][1]+allSols[1][2]).pt() ]
+        else :
+            values += [ -1 ]
+        values += [ (genTops[0]+genTops[1]).pt() ]
+
+        ntuple.Fill(array.array("f",values))
+
+        #lowest mttbar solution
         l1idx=0 if allSols[0][0]==0 else 1
         l2idx=1 if allSols[0][0]==0 else 0
  
@@ -225,7 +236,8 @@ def runAnomalousTopProductionAnalysis(fileName,outFileName,filterName):
         outFileName=outFileName.replace(postfix,'%s_%s'%(filterName,postfix))
         outFileName=outFileName.replace('=','_')
         outFileName=outFileName.replace(',','_')
-    fOut=ROOT.TFile.Open(outFileName,'RECREATE')
+    fOut.cd()
+    ntuple.Write()
     for var in observablesH: 
         observablesH[var].Write()
     fOut.Close()
