@@ -16,10 +16,10 @@ git cms-merge-topic cms-met:METRecipe_8020
 git cms-merge-topic ahinzmann:METRecipe_8020_Moriond17
 git cms-merge-topic cms-met:fromCMSSW_8_0_20_postICHEPfilter
 
-#EGM smearer
+#EGM regression + smearer
+git cms-merge-topic rafaellopesdesa:Regression80XEgammaAnalysis_v2
 git cms-merge-topic shervin86:Moriond2017_JEC_energyScales
 cd EgammaAnalysis/ElectronTools/data
-# download the txt files with the corrections
 git clone git@github.com:ECALELFS/ScalesSmearings.git
 cd - 
 

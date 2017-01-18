@@ -122,7 +122,10 @@ if not options.runOnData:
     process.pseudoTop.leptonMaxEta=cms.double(2.5)
     process.pseudoTop.jetMaxEta=cms.double(5.0)
 
-#EGM smearer https://twiki.cern.ch/twiki/bin/view/CMS/EGMSmearer
+#EGM corrections
+# scale regression https://twiki.cern.ch/twiki/bin/view/CMS/EGMRegression
+# smearer https://twiki.cern.ch/twiki/bin/view/CMS/EGMSmearer
+process.load('EgammaAnalysis.ElectronTools.regressionApplication_cff')
 process.load('Configuration.StandardSequences.Services_cff')
 process.RandomNumberGeneratorService = cms.Service("RandomNumberGeneratorService",
                                                    calibratedPatElectrons  = cms.PSet( initialSeed = cms.untracked.uint32(81),
@@ -143,6 +146,10 @@ my_id_modules = ['RecoEgamma.ElectronIdentification.Identification.mvaElectronID
 for idmod in my_id_modules:
     setupAllVIDIdsInModule(process,idmod,setupVIDElectronSelection)
 
+#given regression is applied vid must be fixed https://hypernews.cern.ch/HyperNews/CMS/get/egamma/1837.html
+process.electronIDValueMapProducer.srcMiniAOD = cms.InputTag('slimmedElectrons')
+process.electronMVAValueMapProducer.srcMiniAOD = cms.InputTag('slimmedElectrons')
+
 
 #jet energy corrections
 process.load('JetMETCorrections.Configuration.DefaultJEC_cff')
@@ -161,6 +168,6 @@ process.TFileService = cms.Service("TFileService",
                                    )
 
 if options.runOnData:
-    process.p = cms.Path(process.calibratedPatElectrons*process.egmGsfElectronIDSequence*process.jetmetSeq*process.analysis)
+    process.p = cms.Path(process.regressionApplication*process.calibratedPatElectrons*process.egmGsfElectronIDSequence*process.jetmetSeq*process.analysis)
 else:
-    process.p = cms.Path(process.calibratedPatElectrons*process.egmGsfElectronIDSequence*process.jetmetSeq*process.pseudoTop*process.analysis)
+    process.p = cms.Path(process.regressionApplication*process.calibratedPatElectrons*process.egmGsfElectronIDSequence*process.jetmetSeq*process.pseudoTop*process.analysis)
