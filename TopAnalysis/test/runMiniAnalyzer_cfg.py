@@ -17,7 +17,7 @@ options.register('outFilename', 'MiniEvents.root',
                  VarParsing.varType.string,
                  "Output file name"
                  )
-options.register('baseJetCollection','slimmedJetsPuppi',
+options.register('baseJetCollection','slimmedJets',
                  VarParsing.multiplicity.singleton,
                  VarParsing.varType.string,
                  "Base jet collection"
