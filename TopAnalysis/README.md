@@ -9,7 +9,6 @@ To install execute the following in your work area.
 cmsrel CMSSW_8_0_25
 cd CMSSW_8_0_25/src 
 cmsenv
-git cms-init
 
 #MET
 git cms-merge-topic cms-met:METRecipe_8020
@@ -38,10 +37,9 @@ git checkout 80x_rereco_rev
 
 #delete, not used
 cd -
-rm -rf DQMOffline
 
 #compile
-scram b
+scram b -j 8
 ```
 
 ## Running ntuple creation and checking the selection

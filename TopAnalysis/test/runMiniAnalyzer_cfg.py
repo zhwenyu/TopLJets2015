@@ -147,7 +147,7 @@ for idmod in my_id_modules:
     setupAllVIDIdsInModule(process,idmod,setupVIDElectronSelection)
 
 #given regression is applied vid must be fixed https://hypernews.cern.ch/HyperNews/CMS/get/egamma/1837.html
-process.electronIDValueMapProducer.srcMiniAOD = cms.InputTag('slimmedElectrons')
+process.electronRegressionValueMapProducer.srcMiniAOD = cms.InputTag('slimmedElectrons')
 process.electronMVAValueMapProducer.srcMiniAOD = cms.InputTag('slimmedElectrons')
 
 
