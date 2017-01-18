@@ -590,6 +590,9 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       for(size_t icut = 0; icut<tightCutBits.cutFlowSize(); icut++)  { if(icut!=9 && !tightCutBits.getCutResultByIndex(icut)) passTightId=false; }
       if(!passVetoId) continue;
 
+      for(size_t icut = 0; icut<vetoCutBits.cutFlowSize(); icut++)
+	  std::cout << vetoCutBits.getNameAtIndex (icut) << std::endl;
+	  
       //full id+iso decisions
       bool isVeto( (*veto_id)[e] );
       bool isLoose( (*loose_id)[e] );      
