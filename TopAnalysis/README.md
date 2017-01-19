@@ -22,6 +22,14 @@ cd EgammaAnalysis/ElectronTools/data
 git clone git@github.com:ECALELFS/ScalesSmearings.git
 cd - 
 
+#EGM
+git cms-merge-topic ikrav:egm_id_80X_v2
+cd $CMSSW_BASE/external/$SCRAM_ARCH
+git clone https://github.com/ikrav/RecoEgamma-ElectronIdentification.git data/RecoEgamma/ElectronIdentification/data
+cd data/RecoEgamma/ElectronIdentification/data
+git checkout egm_id_80X_v1
+cd -
+
 #BTV DeepCSV
 git cms-merge-topic -u mverzett:DeepFlavourCMVA-from-CMSSW_8_0_21
 mkdir RecoBTag/DeepFlavour/data/

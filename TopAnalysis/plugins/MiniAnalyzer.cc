@@ -126,6 +126,7 @@ private:
   edm::EDGetTokenT<pat::PackedCandidateCollection> pfToken_;
   
   //Electron Decisions
+  edm::EDGetTokenT<edm::ValueMap<float> > eleMvaIdMapToken_;
   edm::EDGetTokenT<edm::ValueMap<bool> > eleVetoIdMapToken_,eleLooseIdMapToken_,eleMediumIdMapToken_,eleTightIdMapToken_;
   edm::EDGetTokenT<edm::ValueMap<vid::CutFlowResult> > eleVetoIdFullInfoMapToken_,eleLooseIdFullInfoMapToken_,eleMediumIdFullInfoMapToken_,eleTightIdFullInfoMapToken_;
 
@@ -182,6 +183,7 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig) :
   metToken_(consumes<pat::METCollection>(iConfig.getParameter<edm::InputTag>("mets"))),
   puppiMetToken_(consumes<pat::METCollection>(iConfig.getParameter<edm::InputTag>("puppimets"))),
   pfToken_(consumes<pat::PackedCandidateCollection>(iConfig.getParameter<edm::InputTag>("pfCands"))),
+  eleMvaIdMapToken_(consumes<edm::ValueMap<float> >(iConfig.getParameter<edm::InputTag>("eleMvaIdMap"))),
   eleVetoIdMapToken_(consumes<edm::ValueMap<bool> >(iConfig.getParameter<edm::InputTag>("eleVetoIdMap"))),
   eleLooseIdMapToken_(consumes<edm::ValueMap<bool> >(iConfig.getParameter<edm::InputTag>("eleLooseIdMap"))),
   eleMediumIdMapToken_(consumes<edm::ValueMap<bool> >(iConfig.getParameter<edm::InputTag>("eleMediumIdMap"))),
@@ -532,6 +534,7 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       ev_.l_phi[ev_.nl]      = p4.Phi();
       ev_.l_mass[ev_.nl]     = p4.M();
       ev_.l_scaleUnc[ev_.nl] = qter;
+      ev_.l_mva[ev_.nl]      = 0;
       ev_.l_pid[ev_.nl]      = (isSoft | (isLoose<<1) | (isMedium<<2) | (isMedium2016ReReco<<3) | (isTight<<4));
       ev_.l_chargedHadronIso[ev_.nl] = mu.pfIsolationR04().sumChargedHadronPt;
       ev_.l_miniIso[ev_.nl]  = getMiniIsolation(pfcands,&mu,0.05,0.2, 10., false);
@@ -566,6 +569,8 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
   iEvent.getByToken(eleLooseIdFullInfoMapToken_,  loose_cuts);
   iEvent.getByToken(eleMediumIdFullInfoMapToken_, medium_cuts);
   iEvent.getByToken(eleTightIdFullInfoMapToken_,  tight_cuts);
+  edm::Handle<edm::ValueMap<float> > emva_id;
+  iEvent.getByToken(eleMvaIdMapToken_, emva_id);
   Int_t nele(0);
   for (const pat::Electron &el : *electrons) 
     {        
@@ -590,8 +595,8 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       for(size_t icut = 0; icut<tightCutBits.cutFlowSize(); icut++)  { if(icut!=9 && !tightCutBits.getCutResultByIndex(icut)) passTightId=false; }
       if(!passVetoId) continue;
 
-      for(size_t icut = 0; icut<vetoCutBits.cutFlowSize(); icut++)
-	  std::cout << vetoCutBits.getNameAtIndex (icut) << std::endl;
+      //for(size_t icut = 0; icut<vetoCutBits.cutFlowSize(); icut++)
+      //	  std::cout << vetoCutBits.getNameAtIndex (icut) << std::endl;
 	  
       //full id+iso decisions
       bool isVeto( (*veto_id)[e] );
@@ -612,6 +617,7 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
 	  ev_.l_g[ev_.nl]=ig;
 	  break;
 	}	 
+      ev_.l_mva[ev_.nl]=(*emva_id)[e];
       ev_.l_pid[ev_.nl]= (passVetoId | (isVeto<<1) | (passLooseId<<2) | (isLoose<<3) | (passMediumId<<4) | (isMedium<<5) | (passTightId<<6) | (isTight<<7));
       ev_.l_charge[ev_.nl]   = el.charge();
       ev_.l_pt[ev_.nl]       = calibe->pt();
