@@ -22,9 +22,9 @@ cd EgammaAnalysis/ElectronTools/data
 git clone git@github.com:ECALELFS/ScalesSmearings.git
 cd - 
 
-#EGM
+#EGM electron MVA
 git cms-merge-topic ikrav:egm_id_80X_v2
-scram b -j 10
+scram b
 cd $CMSSW_BASE/external/$SCRAM_ARCH
 git clone https://github.com/ikrav/RecoEgamma-ElectronIdentification.git data/RecoEgamma/ElectronIdentification/data
 cd data/RecoEgamma/ElectronIdentification/data
