@@ -604,6 +604,20 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       bool isMedium( (*medium_id)[e] );
       bool isTight( (*tight_id)[e] );
 
+      //impact parameter cuts
+      //see details in https://twiki.cern.ch/twiki/bin/view/CMS/CutBasedElectronIdentificationRun2
+      bool passIpCuts(true);
+      float dxy(fabs(el.gsfTrack()->dxy(primVtx.position()));
+      float dz(fabs(el.gsfTrack()->dz(primVtx.position()));
+      if(fabs(calibe->superCluster()->eta()) < 1.4442)
+      {
+	 if(dxy>0.05 || dz>0.10) passIpCuts=false;
+      }
+      else
+      {
+	 if(dxy>0.10 || dz>0.20) passIpCuts=false;
+      }	  
+	  
       //save the electron
       const reco::GenParticle * gen=el.genLepton(); 
       ev_.l_isPromptFinalState[ev_.nl] = gen ? gen->isPromptFinalState() : false;
@@ -616,9 +630,14 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
 	  if(deltaR( el.eta(),el.phi(), ev_.g_eta[ig],ev_.g_phi[ig])>0.4) continue;
 	  ev_.l_g[ev_.nl]=ig;
 	  break;
-	}	 
+	}	      
       ev_.l_mva[ev_.nl]=(*emva_id)[e];
-      ev_.l_pid[ev_.nl]= (passVetoId | (isVeto<<1) | (passLooseId<<2) | (isLoose<<3) | (passMediumId<<4) | (isMedium<<5) | (passTightId<<6) | (isTight<<7));
+      ev_.l_pid[ev_.nl]= (passVetoId | (isVeto<<1) 
+			  | (passLooseId<<2) | (isLoose<<3) 
+			  | (passMediumId<<4) | (isMedium<<5) 
+			  | (passTightId<<6) | (isTight<<7)
+			  | (passIpCuts<<8)
+			 );
       ev_.l_charge[ev_.nl]   = el.charge();
       ev_.l_pt[ev_.nl]       = calibe->pt();
       ev_.l_eta[ev_.nl]      = calibe->eta();
