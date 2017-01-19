@@ -17,7 +17,7 @@ cd $CMSSW_BASE/external/$SCRAM_ARCH
 git clone https://github.com/ikrav/RecoEgamma-ElectronIdentification.git data/RecoEgamma/ElectronIdentification/data
 cd data/RecoEgamma/ElectronIdentification/data
 git checkout egm_id_80X_v1
-cd -
+cd $CMSSW_BASE/src
 
 #EGM regression + smearer
 git cms-merge-topic rafaellopesdesa:Regression80XEgammaAnalysis_v2
