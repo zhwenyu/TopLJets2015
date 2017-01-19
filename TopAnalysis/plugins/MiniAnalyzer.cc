@@ -129,7 +129,7 @@ private:
   edm::EDGetTokenT<edm::ValueMap<float> > eleMvaIdMapToken_;
   edm::EDGetTokenT<edm::ValueMap<bool> > eleVetoIdMapToken_,eleLooseIdMapToken_,eleMediumIdMapToken_,eleTightIdMapToken_;
   edm::EDGetTokenT<edm::ValueMap<vid::CutFlowResult> > eleVetoIdFullInfoMapToken_,eleLooseIdFullInfoMapToken_,eleMediumIdFullInfoMapToken_,eleTightIdFullInfoMapToken_;
-
+  unsigned int evetoIsoBit_, elooseIsoBit_, emediumIsoBit_, etightIsoBit_;
   edm::EDGetTokenT<bool> BadChCandFilterToken_,BadPFMuonFilterToken_;
 
   std::unordered_map<std::string,TH1*> histContainer_;
@@ -192,6 +192,7 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig) :
   eleLooseIdFullInfoMapToken_(consumes<edm::ValueMap<vid::CutFlowResult> >(iConfig.getParameter<edm::InputTag>("eleLooseIdFullInfoMap"))),
   eleMediumIdFullInfoMapToken_(consumes<edm::ValueMap<vid::CutFlowResult> >(iConfig.getParameter<edm::InputTag>("eleMediumIdFullInfoMap"))),
   eleTightIdFullInfoMapToken_(consumes<edm::ValueMap<vid::CutFlowResult> >(iConfig.getParameter<edm::InputTag>("eleTightIdFullInfoMap"))),
+  evetoIsoBit_(999), elooseIsoBit_(999), emediumIsoBit_(999), etightIsoBit_(999),
   BadChCandFilterToken_(consumes<bool>(iConfig.getParameter<edm::InputTag>("badChCandFilter"))),
   BadPFMuonFilterToken_(consumes<bool>(iConfig.getParameter<edm::InputTag>("badPFMuonFilter"))),
   pfjetIDLoose_( PFJetIDSelectionFunctor::FIRSTDATA, PFJetIDSelectionFunctor::LOOSE ),  
@@ -225,12 +226,11 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig) :
 }
 
 
+//
 MiniAnalyzer::~MiniAnalyzer()
 {
- 
   // do anything here that needs to be done at desctruction time
   // (e.g. close files, deallocate resources etc.)
-
 }
 
 
@@ -586,13 +586,61 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       //take out id information alone
       bool passVetoId(true), passLooseId(true), passMediumId(true), passTightId(true);
       vid::CutFlowResult vetoCutBits   = (*veto_cuts)[e];
-      for(size_t icut = 0; icut<vetoCutBits.cutFlowSize(); icut++)  { if(icut!=9 && !vetoCutBits.getCutResultByIndex(icut)) passVetoId=false; }
+      for(size_t icut = 0; icut<vetoCutBits.cutFlowSize(); icut++)  
+	{ 
+	  if(evetoIsoBit_==999)
+	    {
+	      const std::string &cutName=vetoCutBits.getNameAtIndex(icut);
+	      if(cutName.find("PFIso")!=std::string::npos)
+		{
+		  cout << "e veto isolation bit set to:" << icut << " from " << cutName << endl;
+		  evetoIsoBit_=icut;
+		}
+	    }
+	  if(icut!=evetoIsoBit_ && !vetoCutBits.getCutResultByIndex(icut)) passVetoId=false; 
+	}
       vid::CutFlowResult looseCutBits  = (*loose_cuts)[e];
-      for(size_t icut = 0; icut<looseCutBits.cutFlowSize(); icut++)  { if(icut!=9 && !looseCutBits.getCutResultByIndex(icut)) passLooseId=false; }
+      for(size_t icut = 0; icut<looseCutBits.cutFlowSize(); icut++)  
+	{
+	  if(elooseIsoBit_==999)
+            {
+              const std::string &cutName=looseCutBits.getNameAtIndex(icut);
+              if(cutName.find("PFIso")!=std::string::npos)
+                {
+		  cout <<"e loose isolation bit set to:" << icut << " from " << cutName << endl;
+                  elooseIsoBit_=icut;
+                }
+            }
+	  if(icut!=elooseIsoBit_ && !looseCutBits.getCutResultByIndex(icut)) passLooseId=false; 
+	}
       vid::CutFlowResult mediumCutBits = (*medium_cuts)[e];
-      for(size_t icut = 0; icut<mediumCutBits.cutFlowSize(); icut++) { if(icut!=9 && !mediumCutBits.getCutResultByIndex(icut)) passMediumId=false; }
+      for(size_t icut = 0; icut<mediumCutBits.cutFlowSize(); icut++) 
+	{ 
+	  if(emediumIsoBit_==999)
+            {
+              const std::string &cutName=mediumCutBits.getNameAtIndex(icut);
+              if(cutName.find("PFIso")!=std::string::npos)
+                {
+                  cout <<"e medium isolation bit set to:" << icut << " from " << cutName << endl;
+                  emediumIsoBit_=icut;
+                }
+            }
+	  if(icut!=emediumIsoBit_ && !mediumCutBits.getCutResultByIndex(icut)) passMediumId=false; 
+	}
       vid::CutFlowResult tightCutBits  = (*tight_cuts)[e];
-      for(size_t icut = 0; icut<tightCutBits.cutFlowSize(); icut++)  { if(icut!=9 && !tightCutBits.getCutResultByIndex(icut)) passTightId=false; }
+      for(size_t icut = 0; icut<tightCutBits.cutFlowSize(); icut++) 
+	{
+	  if(etightIsoBit_==999)
+            {
+              const std::string &cutName=tightCutBits.getNameAtIndex(icut);
+              if(cutName.find("PFIso")!=std::string::npos)
+                {
+                  cout <<"e tight isolation bit set to:" << icut << " from " << cutName << endl;
+                  etightIsoBit_=icut;
+                }
+            }
+	  if(icut!=etightIsoBit_ && !tightCutBits.getCutResultByIndex(icut)) passTightId=false;
+	}
       if(!passVetoId) continue;
 
       //for(size_t icut = 0; icut<vetoCutBits.cutFlowSize(); icut++)
