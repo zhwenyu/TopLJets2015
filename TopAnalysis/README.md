@@ -24,6 +24,7 @@ cd -
 
 #EGM
 git cms-merge-topic ikrav:egm_id_80X_v2
+scram b -j 10
 cd $CMSSW_BASE/external/$SCRAM_ARCH
 git clone https://github.com/ikrav/RecoEgamma-ElectronIdentification.git data/RecoEgamma/ElectronIdentification/data
 cd data/RecoEgamma/ElectronIdentification/data
