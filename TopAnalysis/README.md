@@ -46,6 +46,7 @@ git checkout 80x_rereco_rev
 
 #delete, not used
 cd -
+rm -rf DQMOffline
 
 #compile
 scram b -j 8
