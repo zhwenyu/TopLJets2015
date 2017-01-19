@@ -607,16 +607,23 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       //impact parameter cuts
       //see details in https://twiki.cern.ch/twiki/bin/view/CMS/CutBasedElectronIdentificationRun2
       bool passIpCuts(true);
-      float dxy(fabs(el.gsfTrack()->dxy(primVtx.position()));
-      float dz(fabs(el.gsfTrack()->dz(primVtx.position()));
-      if(fabs(calibe->superCluster()->eta()) < 1.4442)
-      {
-	 if(dxy>0.05 || dz>0.10) passIpCuts=false;
-      }
+      if(el.gsfTrack().isNonnull())
+	{
+	  float dxy(fabs(el.gsfTrack()->dxy(primVtx.position())));
+	  float dz(fabs(el.gsfTrack()->dz(primVtx.position())));
+	  if(fabs(calibe->superCluster()->eta()) < 1.4442)
+	    {
+	      if(dxy>0.05 || dz>0.10) passIpCuts=false;
+	    }
+	  else
+	    {
+	      if(dxy>0.10 || dz>0.20) passIpCuts=false;
+	    }	  
+	}
       else
-      {
-	 if(dxy>0.10 || dz>0.20) passIpCuts=false;
-      }	  
+	{
+	  passIpCuts=false;
+	}
 	  
       //save the electron
       const reco::GenParticle * gen=el.genLepton(); 
