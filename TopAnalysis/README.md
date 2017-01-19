@@ -10,18 +10,6 @@ cmsrel CMSSW_8_0_25
 cd CMSSW_8_0_25/src 
 cmsenv
 
-#MET
-git cms-merge-topic cms-met:METRecipe_8020
-git cms-merge-topic ahinzmann:METRecipe_8020_Moriond17
-git cms-merge-topic cms-met:fromCMSSW_8_0_20_postICHEPfilter
-
-#EGM regression + smearer
-git cms-merge-topic rafaellopesdesa:Regression80XEgammaAnalysis_v2
-git cms-merge-topic shervin86:Moriond2017_JEC_energyScales
-cd EgammaAnalysis/ElectronTools/data
-git clone git@github.com:ECALELFS/ScalesSmearings.git
-cd - 
-
 #EGM electron MVA
 git cms-merge-topic ikrav:egm_id_80X_v2
 scram b
@@ -30,6 +18,18 @@ git clone https://github.com/ikrav/RecoEgamma-ElectronIdentification.git data/Re
 cd data/RecoEgamma/ElectronIdentification/data
 git checkout egm_id_80X_v1
 cd -
+
+#EGM regression + smearer
+git cms-merge-topic rafaellopesdesa:Regression80XEgammaAnalysis_v2
+git cms-merge-topic shervin86:Moriond2017_JEC_energyScales
+cd EgammaAnalysis/ElectronTools/data
+git clone git@github.com:ECALELFS/ScalesSmearings.git
+cd - 
+
+#MET
+git cms-merge-topic cms-met:METRecipe_8020
+git cms-merge-topic ahinzmann:METRecipe_8020_Moriond17
+git cms-merge-topic cms-met:fromCMSSW_8_0_20_postICHEPfilter
 
 #BTV DeepCSV
 git cms-merge-topic -u mverzett:DeepFlavourCMVA-from-CMSSW_8_0_21
