@@ -52,17 +52,15 @@ void RunTOPSynchExercise(TString filename, TString outname, Bool_t debug)
       //count b-tags (CSVM by default)
       int nbtags(0);
       for (auto& jet : jets) nbtags += (abs(jet.flavor())==5);
-      
-      cout << ev.run << " " << ev.lumi << " " << ev.event << " " << leptons.size() << " " <<jets.size() << " " << nbtags << endl;
-
-      
+     
       //
       if(chTag=="") continue;
-      allPlots["cutflow_"+chTag]->Fill(1);
       
       //veto second loose leptons in the single lepton channel
       if(chTag=="E" || chTag=="M")
 	{
+	  allPlots["cutflow_"+chTag]->Fill(1);
+
 	  if(vetoLeptons.size()) continue;
 	  allPlots["cutflow_"+chTag]->Fill(2);
 
@@ -78,10 +76,15 @@ void RunTOPSynchExercise(TString filename, TString outname, Bool_t debug)
 	}
       else
 	{
+	  if(leptons[0].p4().Pt()<25 && leptons[1].p4().Pt()<25) continue;
+	  allPlots["cutflow_"+chTag]->Fill(1);
+
 	  float mll=(leptons[0].p4()+leptons[1].p4()).M();
 	  if(mll<20) continue;
 	  allPlots["cutflow_"+chTag]->Fill(2);
 
+	  if(chTag=="EM") cout << ev.run << " " << ev.lumi << " " << ev.event << " " << leptons.size() << " " <<jets.size() << " " << nbtags << endl;
+	  
 	  if((chTag=="EE" || chTag=="MM"))
 	    {
 	      if((mll-91)<15) continue;
