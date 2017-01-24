@@ -36,6 +36,7 @@ class Plot(object):
 
     def __init__(self,name,com='13 TeV'):
         self.name = name
+        self.cmsLabel='#bf{CMS} #it{preliminary}'
         self.com=com
         self.wideCanvas = True if 'ratevsrun' in self.name else False
         self.mc = OrderedDict()
@@ -117,7 +118,7 @@ class Plot(object):
             except:
                 pass
 
-    def show(self, outDir,lumi,noStack=False,saveTeX=False,extraText=None):
+    def show(self, outDir,lumi,noStack=False,saveTeX=False,extraText=None,noRatio=False):
 
         if len(self.mc)<2 and self.dataH is None:
             print '%s has 0 or 1 MC!' % self.name
@@ -137,11 +138,11 @@ class Plot(object):
         #holds the main plot
         c.cd()
         p1 = None
-        if self.dataH:
+        if self.dataH and not noRatio:
             p1=ROOT.TPad('p1','p1',0.0,0.2,1.0,1.0) if cwid!=1000 else ROOT.TPad('p1','p1',0.0,0.0,1.0,1.0)
             p1.SetRightMargin(0.05)
             p1.SetLeftMargin(0.12)
-            p1.SetTopMargin(0.01)
+            p1.SetTopMargin(0.04)
             p1.SetBottomMargin(0.01)
             if self.wideCanvas and len(self.mc)==0 : p1.SetBottomMargin(0.12)
         else:
@@ -149,6 +150,8 @@ class Plot(object):
             p1.SetRightMargin(0.05)
             p1.SetLeftMargin(0.12)
             p1.SetTopMargin(0.1)
+            if noRatio: 
+                p1.SetTopMargin(0.05)
             p1.SetBottomMargin(0.12)
         p1.Draw()
 
@@ -159,9 +162,10 @@ class Plot(object):
 
         # legend
         iniy=0.9 if self.wideCanvas else 0.85
-        dy=0.1 
-        ndy= 0.2*max(len(self.mc)-2,1)
-        inix,dx =0.45,0.5
+        dy=0.2
+        ndy= 0.25*max(len(self.mc)-2,1)
+        inix,dx =0.65,0.4
+        if noRatio: inix=0.6
         if noStack:
             inix,dx=0.6,0.35
             iniy,dy,ndy=0.95,0.02,len(self.mc)
@@ -171,7 +175,8 @@ class Plot(object):
         leg.SetBorderSize(0)
         leg.SetFillStyle(0)        
         leg.SetTextFont(42)
-        leg.SetTextSize(0.045 if self.wideCanvas else 0.035)
+        leg.SetTextSize(0.045 if self.wideCanvas else 0.04)
+        if noRatio : leg.SetTextSize(0.035)
         nlegCols = 0
 
         if self.dataH is not None:
@@ -196,8 +201,8 @@ class Plot(object):
             print '%s is empty'%self.name
             return
 
-        if not noStack:
-            leg.SetNColumns(ROOT.TMath.Min(nlegCols/2,3))
+        #if not noStack:
+        #    leg.SetNColumns(ROOT.TMath.Min(nlegCols/2,3))
 
         # Build the stack to plot from all backgrounds
         totalMC = None
@@ -247,10 +252,15 @@ class Plot(object):
         frame.GetYaxis().SetLabelSize(0.04)
         frame.GetYaxis().SetNoExponent()
         frame.GetYaxis().SetTitleOffset(1.3)
+        if noRatio:
+            frame.GetYaxis().SetTitleOffset(1.4)
         if self.dataH:
             frame.GetXaxis().SetTitleSize(0.0)
             frame.GetXaxis().SetLabelSize(0.0)
         else :
+            frame.GetXaxis().SetTitleSize(0.045)
+            frame.GetXaxis().SetLabelSize(0.04)
+        if noRatio:
             frame.GetXaxis().SetTitleSize(0.045)
             frame.GetXaxis().SetLabelSize(0.04)
         if self.wideCanvas and totalMC is None : 
@@ -272,12 +282,13 @@ class Plot(object):
         txt.SetTextFont(42)
         txt.SetTextSize(0.05)
         txt.SetTextAlign(12)
-        iniy=0.9 if self.wideCanvas else 0.95
+        iniy=0.90 if self.wideCanvas else 0.90
         inix=0.12 if noStack else 0.18
+        txt.DrawLatex(inix,iniy,self.cmsLabel)
         if lumi<100:
-            txt.DrawLatex(inix,iniy,'#bf{CMS} #it{Preliminary} #scale[0.8]{%3.1f pb^{-1} (%s)}' % (lumi,self.com) )
+            txt.DrawLatex(0.63,0.98,'#scale[0.8]{%3.1f pb^{-1} (%s)}' % (lumi,self.com) )
         else:
-            txt.DrawLatex(inix,iniy,'#bf{CMS} #it{Preliminary} #scale[0.8]{%3.1f fb^{-1} (%s)}' % (lumi/1000.,self.com) )
+            txt.DrawLatex(0.63,0.98,'#scale[0.8]{%3.1f fb^{-1} (%s)}' % (lumi/1000.,self.com) )
         try:
             extraCtr=1
             for extra in extraText.split('\\'):
@@ -289,7 +300,7 @@ class Plot(object):
 
         #holds the ratio
         c.cd()
-        if len(self.mc)>0 and self.dataH:
+        if len(self.mc)>0 and self.dataH and not noRatio:        
             p2 = ROOT.TPad('p2','p2',0.0,0.0,1.0,0.2)
             p2.Draw()
             p2.SetBottomMargin(0.4)
@@ -339,6 +350,7 @@ class Plot(object):
                 pass
 
         #all done
+        if p1: p1.RedrawAxis()
         c.cd()
         c.Modified()
         c.Update()

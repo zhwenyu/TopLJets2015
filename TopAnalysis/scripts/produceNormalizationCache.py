@@ -34,15 +34,21 @@ def main():
             if not opt.HiForest:
                 if wgtCounter is None:
                     try:
-                        wgtCounter=fIn.Get('analysis/fidcounter0').Clone('genwgts')
+                        wgtCounter=fIn.Get('analysis/fidcounter').ProjectionX('genwgts',1,1)
                     except:
                         print 'Check eos/cms/%s/%s/%s probably corrupted?' % (opt.inDir,sample,f )
                         continue
                     wgtCounter.SetDirectory(0)
                     wgtCounter.Reset('ICE')
                 labelH=fIn.Get('analysis/generator_initrwgt')
-                if labelH : labelH.SetDirectory(0)                
-                wgtCounter.Add(fIn.Get('analysis/fidcounter0'))
+                if labelH : labelH.SetDirectory(0)                             
+                try:
+                    px=fIn.Get('analysis/fidcounter').ProjectionX('px',1,1)
+                    wgtCounter.Add(px)
+                    px.Delete()
+                except:
+                    print 'Check eos/cms/%s/%s/%s probably corrupted?' % (opt.inDir,sample,f )
+                    continue
             else:
                 if wgtCounter is None:
                     wgtCounter=ROOT.TH1F('genwgts','genwgts',500,0,500)

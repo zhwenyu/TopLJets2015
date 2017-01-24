@@ -43,10 +43,9 @@ case $WHAT in
 	echo -e "[ ${RED} Sending out jobs to batch ${NC} ]"
 
 	commonOpts="--era era5TeV -m TOP-16-023::RunTop16023"
-
 	#muon channel
-	#python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_mu       ${commonOpts} --ch 13   --only MC --runSysts;
-	#python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_munoniso ${commonOpts} --ch 1300 --only MC;
+	python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_mu       ${commonOpts} --ch 13   --only MC --runSysts;
+	python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_munoniso ${commonOpts} --ch 1300 --only MC;
 	python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_mu       ${commonOpts} --ch 13   --only FilteredSingleMuHighPt;
 	python scripts/runLocalAnalysis.py -i ${sourcedir} -q ${queue} -o ${outdir}/analysis_munoniso ${commonOpts} --ch 1300 --only FilteredSingleMuHighPt;
 
@@ -69,7 +68,7 @@ case $WHAT in
 	for i in ${a[@]}; do
 	    python scripts/plotter.py -i ${outdir}/analysis_${i}  -j data/era5TeV/samples.json  --com "5.02 TeV"  -l ${lumi} --silent;
 	done
-	for ch in e mu; do
+	for ch in mu e; do
 	    python scripts/runQCDEstimation.py \
 		--iso    ${outdir}/analysis_${ch}/plots/plotter.root \
 		--noniso ${outdir}/analysis_${ch}noniso/plots/plotter.root \
@@ -81,22 +80,28 @@ case $WHAT in
 	echo -e "[ ${RED} Running plotter ${NC} ]"
 	a=(mu munoniso e enoniso)
 	for i in ${a[@]}; do
+	    continue
 	    python scripts/plotter.py -i ${outdir}/analysis_${i}  -j data/era5TeV/Wsamples.json     --com "5.02 TeV" -l ${lumi} --saveLog --noStack;	
 	    mkdir ~/${outdir}/analysis_${i}/wplots;
 	    mv ~/${outdir}/analysis_${i}/plots/* ~/${outdir}/analysis_${i}/wplots/;
 	    python scripts/plotter.py -i ${outdir}/analysis_${i}  -j data/era5TeV/samples.json      --com "5.02 TeV" -l ${lumi} --saveLog;	
 	    python scripts/plotter.py -i ${outdir}/analysis_${i}  -j data/era5TeV/syst_samples.json --com "5.02 TeV" -l ${lumi} -o syst_plotter.root --silent;	
 	done
+	python test/TopLJAnalysis/combinePlotsForAllCategories.py data/era5TeV/samples.json metpt_0b,metpt_1b,metpt_2b,rankedmjj_0b,rankedmjj_1b,rankedmjj_2b,drjj_0b,drjj_1b,drjj_2b;
 	;;
 
     WWW )
 	echo -e "[ ${RED} Moving plots to ${outdir} ${NC} ]"
 	a=(mu munoniso e enoniso)
 	for i in ${a[@]}; do
+	    continue
 	    mkdir -p ${wwwdir}/analysis_${i}
 	    cp ${outdir}/analysis_${i}/plots/*.{png,pdf} ${wwwdir}/analysis_${i}
 	    cp test/index.php ${wwwdir}/analysis_${i}
 	done
+	mkdir -p ${wwwdir}/combined
+	mv plots/* ${wwwdir}/combined
+	cp test/index.php ${wwwdir}/combined
 	;;
     PREPAREFIT )
 	echo -e "[ ${RED} Creating datacards for ${DIST} with rebin=${REBINFACTOR} ${NC} ]"

@@ -108,7 +108,8 @@ if not process.analysis.saveTree :
     print '\t Summary tree won\'t be saved'
 if not process.analysis.savePF :
     print 'Summary PF info won\'t be saved'
-    
+if options.runOnData:
+    process.analysis.metFilterBits = cms.InputTag("TriggerResults","","RECO")
 
 process.options   = cms.untracked.PSet(
     wantSummary = cms.untracked.bool(True),

@@ -138,17 +138,17 @@ def main():
 
         #do not subtract anything in the CR
         dataNonIsoUp=dataNonIso.Clone('%s_QCD%sUp'%(dist,category))
-        dataNonIsoUp.SetTitle('QCD multijets (data) - up')
+        dataNonIsoUp.SetTitle('QCD multijets - up')
 
         #subtract 2xMC in the CR
         dataNonIsoDown=dataNonIso.Clone('%s_QCD%sDown'%(dist,category))
         dataNonIsoDown.Add(sumMCNonIso,-2)       
-        dataNonIsoDown.SetTitle('QCD multijets (data) - down')
+        dataNonIsoDown.SetTitle('QCD multijets - down')
 
         #subtract 1xMC in the CR
         dataNonIso.Add(sumMCNonIso,-1)  
         dataNonIso.SetName(dist)
-        dataNonIso.SetTitle('QCD multijets (data)')
+        dataNonIso.SetTitle('QCD multijets')
 
         try:
             dataNonIso.Scale( nonIsoTemplateSF[category][0] )
