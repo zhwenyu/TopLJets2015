@@ -35,7 +35,7 @@ std::vector<Particle> SelectionTool::getTopFlaggedLeptons(MiniEvent_t &ev){
     int topLeptonQualityFlagsWord(0);
     if(abs(ev.l_id[il])==11)
       {
-	if( pt>20 && eta<2.4 && ((pid>>4) &0x1))                                     topLeptonQualityFlagsWord |= (0x1 << PASSLLID);
+	if( pt>20 && eta<2.4 && ((pid>>7) &0x1))                                     topLeptonQualityFlagsWord |= (0x1 << PASSLLID);
 	if( pt>30 && eta<2.4 && ((pid>>4) &0x1))                                     topLeptonQualityFlagsWord |= (0x1 << PASSLID);
 	if( pt>10 && eta<2.4 && ((pid>>2) &0x1))                                     topLeptonQualityFlagsWord |= (0x1 << PASSLVETO);
 	if( pt>26 && eta<2.1 && ((pid>>5) &0x1) && ((pid>>4) &0x1)==0 && relIso>0.4) topLeptonQualityFlagsWord |= (0x1 << PASSLIDNONISO);
@@ -50,7 +50,7 @@ std::vector<Particle> SelectionTool::getTopFlaggedLeptons(MiniEvent_t &ev){
 
     if(debug_) cout << "Lepton #" << il << " id=" << ev.l_id[il] 
 		    << " pt=" << pt << " eta=" << eta << " relIso=" << relIso 
-		    << " flag=" << std::hex << topLeptonQualityFlagsWord << std::dec << endl;
+		    << " flag=0x" << std::hex << topLeptonQualityFlagsWord << std::dec << endl;
 
     if(topLeptonQualityFlagsWord==0) continue;
 

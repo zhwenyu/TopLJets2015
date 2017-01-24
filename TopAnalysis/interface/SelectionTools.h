@@ -40,6 +40,8 @@ class SelectionTool {
   //check met filter flags cf. https://twiki.cern.ch/twiki/bin/view/CMS/MissingETOptionalFiltersRun2
   bool passMETFilters(MiniEvent_t &ev);
 
+  void setDebug(bool flag) { debug_=flag; }
+
  private:
   bool acceptE_, acceptM_, acceptEE_, acceptEM_, acceptMM_;
   std::vector<Particle> leptons_,vetoLeptons_,genLeptons_;
