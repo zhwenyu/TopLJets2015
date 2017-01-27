@@ -1,5 +1,5 @@
-#ifndef _top16023_h_
-#define _top16023_h_
+#ifndef _tophiforest_h_
+#define _tophiforest_h_
 
 #include "TopLJets2015/TopAnalysis/interface/TOP-16-006.h"
 

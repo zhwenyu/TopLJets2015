@@ -10,7 +10,7 @@
 
 #include "TopLJets2015/TopAnalysis/interface/LeptonEfficiencyWrapper.h"
 #include "TopLJets2015/TopAnalysis/interface/BtagUncertaintyComputer.h"
-#include "TopLJets2015/TopAnalysis/interface/TOP-16-023.h"
+#include "TopLJets2015/TopAnalysis/interface/TOP-HIForest.h"
 
 #include <string>
 #include <vector>
@@ -958,7 +958,7 @@ void RunToppPb(TString inFileName,
 		  {
 		    int pfid(pfId_p->at(ipf));
 		    if(pfid!=211 && pfid!=11 && pfid!=13) continue;
-		    if(fabs(pfPt_eta->at(ipf))>2.5 || pfPt_p->at(ipf)<0.9) continue;
+		    if(fabs(pfEta_p->at(ipf))>2.5 || pfPt_p->at(ipf)<0.9) continue;
 
 		    ljev.ntracks++;
 		    TLorentzVector pfp4(0,0,0,0);
