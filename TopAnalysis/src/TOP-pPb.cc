@@ -12,6 +12,8 @@
 #include "TopLJets2015/TopAnalysis/interface/BtagUncertaintyComputer.h"
 #include "TopLJets2015/TopAnalysis/interface/TOP-HIForest.h"
 
+#include "DataFormats/ParticleFlowCandidate/interface/PFCandidate.h"
+
 #include <string>
 #include <vector>
 #include <algorithm>
@@ -808,11 +810,11 @@ void RunToppPb(TString inFileName,
 
 		if(ljev.nj<20)
 		  {
-		    ljev.j_pt[ljev.nj]=jp4.Pt();
-		    ljev.j_eta[ljev.nj]=jp4.Eta();
-		    ljev.j_phi[ljev.nj]=jp4.Phi();
-		    ljev.j_m[ljev.nj]=jp4.M();
-		    ljev.j_btag[ljev.nj]=passCSVL | (passCSVM<1);
+		    ljev.j_pt[ljev.nj]  = jp4.Pt();
+		    ljev.j_eta[ljev.nj] =jp4.Eta();
+		    ljev.j_phi[ljev.nj] =jp4.Phi();
+		    ljev.j_m[ljev.nj]   =jp4.M();
+		    ljev.j_btag[ljev.nj]=passCSVL | (passCSVM<<1);
 		    ljev.nj++;
 		  }
 
@@ -956,10 +958,12 @@ void RunToppPb(TString inFileName,
 		ljev.ntracks_hp=0;
 		for(size_t ipf=0; ipf<pfId_p->size(); ipf++)
 		  {
-		    int pfid(pfId_p->at(ipf));
-		    if(pfid!=211 && pfid!=11 && pfid!=13) continue;
+
 		    if(fabs(pfEta_p->at(ipf))>2.5 || pfPt_p->at(ipf)<0.9) continue;
 
+		    int pfid(abs(pfId_p->at(ipf)));		    
+		    if(pfid!=reco::PFCandidate::h && pfid!=reco::PFCandidate::e && pfid!=reco::PFCandidate::mu) continue;
+		    
 		    ljev.ntracks++;
 		    TLorentzVector pfp4(0,0,0,0);
 		    pfp4.SetPtEtaPhiE(pfPt_p->at(ipf),pfEta_p->at(ipf),pfPhi_p->at(ipf),pfEnergy_p->at(ipf));
