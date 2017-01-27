@@ -138,6 +138,7 @@ process.RandomNumberGeneratorService = cms.Service("RandomNumberGeneratorService
 process.load('EgammaAnalysis.ElectronTools.calibratedElectronsRun2_cfi')
 process.calibratedPatElectrons.correctionFile = 'EgammaAnalysis/ElectronTools/data/ScalesSmearings/Winter_2016_reReco_v1_ele'
 process.calibratedPatElectrons.isMC=False if options.runOnData else True
+process.calibratedPatElectrons.isSynchronization = cms.bool(True)
 print 'Using calibrated electrons with corrections from',process.calibratedPatElectrons.correctionFile
 
 # Set up electron ID (VID framework)

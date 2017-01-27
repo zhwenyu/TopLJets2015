@@ -50,6 +50,7 @@ std::vector<Particle> SelectionTool::getTopFlaggedLeptons(MiniEvent_t &ev){
 
     if(debug_) cout << "Lepton #" << il << " id=" << ev.l_id[il] 
 		    << " pt=" << pt << " eta=" << eta << " relIso=" << relIso 
+		    << " charge=" << ev.l_charge[il]
 		    << " flag=0x" << std::hex << topLeptonQualityFlagsWord << std::dec << endl;
 
     if(topLeptonQualityFlagsWord==0) continue;
@@ -146,6 +147,10 @@ std::vector<Jet> SelectionTool::getGoodJets(MiniEvent_t &ev, double minPt, doubl
         if (ev.pf_c[p] != 0) jet.addTrack(pp4, ev.pf_id[p]);
       }
     }
+
+    if(debug_) cout << "Jet #" << jets.size() 
+		    << " pt=" << jp4.Pt() << " eta=" << jp4.Eta() << " csv=" << ev.j_csv[k] << endl;
+
     
     jets.push_back(jet);
   }
@@ -243,11 +248,13 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
   if(preselleptons.size()==0) preselleptons=getTopFlaggedLeptons(ev);
 
   //check if triggers have fired
-  bool hasETrigger(((ev.triggerBits>>0)&0x1)!=0);
-  bool hasMTrigger(((ev.triggerBits>>1)&0x3)!=0);
-  bool hasEMTrigger(hasETrigger || hasMTrigger || ((ev.triggerBits>>3)&0x8)!=0);
-  bool hasMMTrigger(hasETrigger || ((ev.triggerBits>>9)&0x1)!=0);
-  bool hasEETrigger(hasETrigger || ((ev.triggerBits>>10)&0x1)!=0);
+  //bool hasETrigger(((ev.triggerBits>>0)&0x1)!=0);
+  //bool hasMTrigger(((ev.triggerBits>>1)&0x3)!=0);
+  //bool hasEMTrigger(hasETrigger || hasMTrigger || ((ev.triggerBits>>3)&0xf)!=0);
+  //bool hasMMTrigger(hasETrigger || ((ev.triggerBits>>9)&0x1)!=0);
+  //bool hasEETrigger(hasETrigger || ((ev.triggerBits>>10)&0x1)!=0);
+
+  bool hasETrigger(true), hasMTrigger(true), hasEMTrigger(true), hasMMTrigger(true), hasEETrigger(true);
 
   //decide the channel based on the lepton multiplicity and set lepton collections
   std::vector<Particle> passllid( getGoodLeptons(preselleptons,PASSLLID) ), passlid( getGoodLeptons(preselleptons,PASSLID) );

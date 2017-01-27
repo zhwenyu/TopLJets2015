@@ -42,18 +42,15 @@ void RunTOPSynchExercise(TString filename, TString outname, Bool_t debug)
       t->GetEntry(iev);
             
       //decide the lepton channel
-      if(ev.event==21853 || ev.event==21927) 
-	{
-	  cout << ev.run << " " << ev.lumi << " " << ev.event << " " << endl;
-	  evsel.setDebug(true);
+      if(ev.event==21702 || ev.event==21705 || ev.event==21927)
+       	{
+      	  cout << ev.run << " " << ev.lumi << " " << ev.event << " " << endl;
+      	  evsel.setDebug(true);
+	  cout << "MET: "<< ev.met_pt[0] << endl;
 	}
       else evsel.setDebug(false);
-      //{
-      //cout << ev.run << " " << ev.lumi << " " << ev.event << " " << leptons.size() << " " <<jets.size() << " " << nbtags << endl;
-      //      for(int k=0; k<2; k++)
-      //	cout << leptons[k].id() << leptons[k].p4().Pt() << " " << leptons[k].p4().Eta() << " " << leptons[k].p4().Phi() << endl;
-      //    }
       TString chTag = evsel.flagFinalState(ev);
+      if(!evsel.passMETFilters(ev)) continue;
 
       //separate leptons depending on the channel being looked at
       std::vector<Particle> &leptons     = evsel.getSelLeptons();
@@ -88,19 +85,22 @@ void RunTOPSynchExercise(TString filename, TString outname, Bool_t debug)
       else
 	{
 	  if(leptons[0].p4().Pt()<25 && leptons[1].p4().Pt()<25) continue;
-
+	  if(leptons[0].charge()*leptons[1].charge()>0) continue;
 	  allPlots["cutflow_"+chTag]->Fill(1);
 
 	  float mll=(leptons[0].p4()+leptons[1].p4()).M();
 	  if(mll<20) continue;
 	  allPlots["cutflow_"+chTag]->Fill(2);
+	  
+	  //if(chTag=="MM")
+	    //  cout << ev.run << " " << ev.lumi << " " << ev.event << " " << chTag << " " << leptons.size() << " " <<jets.size() << " " << nbtags << endl;
 
 	  if((chTag=="EE" || chTag=="MM"))
 	    {
-	      if((mll-91)<15) continue;
+	      if(fabs(mll-91)<15) continue;
 	      allPlots["cutflow_"+chTag]->Fill(3);
 	 
-	      if(ev.met_pt[1]<40) continue;
+	      if(ev.met_pt[0]<40) continue;
 	      allPlots["cutflow_"+chTag]->Fill(4);
 	    }
  

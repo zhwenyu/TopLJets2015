@@ -19,77 +19,15 @@
 using namespace std;
 
 //
-void defineTreeBranches(TTree *outT,LJEvent_t &ljev,bool isMC)
-{
-  outT->Branch("w",    &ljev.w,       "w/F");
-  outT->Branch("nj",   &ljev.nj,      "nj/I");
-  outT->Branch("nb",   &ljev.nb,      "nb/I");
-  outT->Branch("j_btag", ljev.j_btag, "j_btag[nj]/I");
-  outT->Branch("j_pt",   ljev.j_pt,   "j_pt[nj]/F");
-  outT->Branch("j_eta",  ljev.j_eta,  "j_eta[nj]/F");
-  outT->Branch("j_phi",  ljev.j_phi,  "j_phi[nj]/F");
-  outT->Branch("j_m",    ljev.j_m,    "j_m[nj]/F");
-  outT->Branch("l_id",  &ljev.l_id,   "l_id/I");
-  outT->Branch("l_pt",  &ljev.l_pt,   "l_pt/F");
-  outT->Branch("l_eta", &ljev.l_eta,  "l_eta/F");
-  outT->Branch("l_phi", &ljev.l_phi,  "l_phi/F");
-  outT->Branch("l_m",   &ljev.l_m,    "l_m/F");
-  outT->Branch("met_pt", &ljev.met_pt,  "met_pt/F");
-  outT->Branch("met_phi",   &ljev.met_phi,    "met_phi/F");
-  outT->Branch("ntracks",   &ljev.ntracks,    "ntracks/I");
-  outT->Branch("ntracks_hp",   &ljev.ntracks_hp,    "ntracks_hp/I");
-  if(isMC)
-    {
-      outT->Branch("ngp",   &ljev.ngp,    "ngp/I");
-      outT->Branch("gp_pt",   ljev.gp_pt,   "gp_pt[ngp]/F");
-      outT->Branch("gp_eta",  ljev.gp_eta,  "gp_eta[ngp]/F");
-      outT->Branch("gp_phi",  ljev.gp_phi,  "gp_phi[ngp]/F");
-      outT->Branch("gp_m",    ljev.gp_m,    "gp_m[ngp]/F");      
-      outT->Branch("ngj",   &ljev.ngj,    "ngj/I");
-      outT->Branch("gj_pt",   ljev.gj_pt,   "gj_pt[ngj]/F");
-      outT->Branch("gj_eta",  ljev.gj_eta,  "gj_eta[ngj]/F");
-      outT->Branch("gj_phi",  ljev.gj_phi,  "gj_phi[ngj]/F");
-      outT->Branch("gj_m",    ljev.gj_m,    "gj_m[ngj]/F");
-      outT->Branch("gl_pt",  &ljev.gl_pt,   "gl_pt/F");
-      outT->Branch("gl_eta", &ljev.gl_eta,  "gl_eta/F");
-      outT->Branch("gl_phi", &ljev.gl_phi,  "gl_phi/F");
-      outT->Branch("gl_m",   &ljev.gl_m,    "gl_m/F");
-    }
-}
-
-//
-bool sortDijetKeys(std::pair< std::pair<int,int>, float > a,
-		   std::pair< std::pair<int,int>, float > b)
-{
-  return a.second < b.second;
-}
-
-
-//
-std::pair<int,int> getDijetsSystemCandidate(std::vector<TLorentzVector> &lightJets)
-{
-  std::vector< std::pair< std::pair<int,int>, float > > rankedDijets;
-  for(size_t i=0; i<lightJets.size(); i++)
-    for(size_t j=i+1; j<lightJets.size(); j++)
-      {
-	std::pair<int,int> jetKey(i,j);
-	float dR=lightJets[i].DeltaR(lightJets[j]);
-	rankedDijets.push_back( std::pair< std::pair<int,int>, float >(jetKey,dR) );
-      }
-  sort(rankedDijets.begin(),rankedDijets.end(),sortDijetKeys);  
-  return rankedDijets[0].first;
-}
-
-//
-void RunTop16023(TString inFileName,
-		 TString outFileName,
-		 Int_t channelSelection,
-		 Int_t chargeSelection,
-		 TH1F *normH,
-		 Bool_t runSysts,
-		 TString era)
+void RunToppPb(TString inFileName,
+	       TString outFileName,
+	       Int_t channelSelection,
+	       Int_t chargeSelection,
+	       TH1F *normH,
+	       Bool_t runSysts,
+	       TString era)
 {		 
-
+  
   Float_t JETPTTHRESHOLD=30;
   Float_t DRJJTHRESHOLD=2.0;
 
@@ -209,6 +147,7 @@ void RunTop16023(TString inFileName,
       histos["etajj_"+pf]    = new TH1F("etajj_"+pf,";#eta(j,j');Events" ,10,-3.,3.);
       histos["mlb_"+pf]    = new TH1F("mlb_"+pf,";Mass(l,b) [GeV];Events" ,20,0.,300.);
       histos["njets_"+pf]  = new TH1F("njets_"+pf,";Jet multiplicity;Events" ,6,2.,8.);
+      histos["mbjj_"+pf]    = new TH1F("mbjj_"+pf,";Mass(bjj') [GeV];Events" ,20,0.,400.);
 
       if(isMC && runSysts)
 	{
@@ -463,7 +402,7 @@ void RunTop16023(TString inFileName,
     std::string triggerName;
     if(channelSelection==13 || channelSelection==1300)
       {
-	triggerName = isMC ? "HLT_HIL2Mu15ForPPRef_v1" : "HLT_HIL2Mu15_v1"; 
+	triggerName = isMC ? "HLT_PAL3Mu15_v1" : "HLT_PAL3Mu15_v1";
       }
     
     if(channelSelection==11 || channelSelection==1100) 
@@ -786,6 +725,8 @@ void RunTop16023(TString inFileName,
 
 	//raw MET (noHF)
 	TLorentzVector rawMET(0,0,0,0);	
+	ljev.ntracks=0;
+	ljev.ntracks_hp=0;
 	for(size_t ipf=0; ipf<pfId_p->size(); ipf++)
 	  {
 	    Float_t abseta=TMath::Abs(pfEta_p->at(ipf));
@@ -793,9 +734,9 @@ void RunTop16023(TString inFileName,
 	    rawMET += TLorentzVector(-pfPt_p->at(ipf)*TMath::Cos(pfPhi_p->at(ipf)),
 				     -pfPt_p->at(ipf)*TMath::Sin(pfPhi_p->at(ipf)),
 				     0,
-				     0);
+				     0);	    
 	  }
-
+	
 	//transverse mass
 	float mt(computeMT(goodLeptons[0],rawMET));
 
@@ -955,7 +896,6 @@ void RunTop16023(TString inFileName,
 		  }
 	      }
 	  }
-	
 
 	//
 	for(Int_t ivar=0; ivar<=nSysts; ivar++)
@@ -975,22 +915,29 @@ void RunTop16023(TString inFileName,
 	    Float_t mjj( (lightJets[jetIdx][0]+lightJets[jetIdx][1]).M() );
 	    std::pair<int,int> jjLegsIdx=getDijetsSystemCandidate(lightJets[jetIdx]);
 	    int idx1(jjLegsIdx.first),idx2(jjLegsIdx.second);
-	    Float_t rankedmjj( (lightJets[jetIdx][idx1]+lightJets[jetIdx][idx2]).M() );
+	    TLorentzVector rankedjjp4(lightJets[jetIdx][idx1]+lightJets[jetIdx][idx2]);
+	    Float_t rankedmjj( rankedjjp4.M() );
 	    Float_t drjj( lightJets[jetIdx][idx1].DeltaR( lightJets[jetIdx][idx2]) );
-	    Float_t ptjj( (lightJets[jetIdx][idx1]+lightJets[jetIdx][idx2]).Pt() );
-	    Float_t etajj( (lightJets[jetIdx][idx1]+lightJets[jetIdx][idx2]).Eta() );
+	    Float_t ptjj( rankedjjp4.Pt() );
+	    Float_t etajj( rankedjjp4.Eta() );
 	    Float_t htsum(0);
 	    for(Int_t ij=0; ij<nbtags; ij++) htsum += bJets[jetIdx][ij].Pt();
 	    for(Int_t ij=0; ij<nljets; ij++) htsum += lightJets[jetIdx][ij].Pt();
 
+
+	    Float_t mbjj(-1);
 	    Float_t mlb( TMath::Min( (goodLeptons[0]+lightJets[jetIdx][idx1]).M(),
 				     (goodLeptons[0]+lightJets[jetIdx][idx2]).M()) );
 	    if(nbtags>0)
 	      {
+		mbjj=(rankedjjp4+bJets[jetIdx][0]).M();
 		mlb=(goodLeptons[0]+bJets[jetIdx][0]).M();
 		if(nbtags>1)
 		  {
 		    mlb=TMath::Min( mlb, Float_t((goodLeptons[0]+bJets[jetIdx][1]).M()) );
+		    mbjj = rankedjjp4.DeltaR(bJets[jetIdx][0])<rankedjjp4.DeltaR(bJets[jetIdx][1]) ? 
+		      (rankedjjp4+bJets[jetIdx][0]).M() :
+		      (rankedjjp4+bJets[jetIdx][1]).M();
 		  }
 	      }
 
@@ -1004,6 +951,27 @@ void RunTop16023(TString inFileName,
 	    //fill histos and tree
 	    if(ivar==0)
 	      {
+		//number of tracks and tracks overlapping with hard process objects
+		ljev.ntracks=0;
+		ljev.ntracks_hp=0;
+		for(size_t ipf=0; ipf<pfId_p->size(); ipf++)
+		  {
+		    int pfid(pfId_p->at(ipf));
+		    if(pfid!=211 && pfid!=11 && pfid!=13) continue;
+		    if(fabs(pfPt_eta->at(ipf))>2.5 || pfPt_p->at(ipf)<0.9) continue;
+
+		    ljev.ntracks++;
+		    TLorentzVector pfp4(0,0,0,0);
+		    pfp4.SetPtEtaPhiE(pfPt_p->at(ipf),pfEta_p->at(ipf),pfPhi_p->at(ipf),pfEnergy_p->at(ipf));
+		    bool overlapsWithHPobjects(false);
+		    if(goodLeptons[0].DeltaR(pfp4)<0.01)              overlapsWithHPobjects=true;
+		    if(lightJets[jetIdx][idx1].DeltaR(pfp4)<0.4)      overlapsWithHPobjects=true;
+		    if(lightJets[jetIdx][idx2].DeltaR(pfp4)<0.4)      overlapsWithHPobjects=true;
+		    if(nbtags>0 && bJets[jetIdx][0].DeltaR(pfp4)<0.4) overlapsWithHPobjects=true;
+		    if(nbtags>0 && bJets[jetIdx][1].DeltaR(pfp4)<0.4) overlapsWithHPobjects=true;
+		    if(!overlapsWithHPobjects) continue;
+		    ljev.ntracks_hp++;
+		  }
 
 		ljev.w=iweight;
 		ljev.l_id=channelSelection;
@@ -1012,10 +980,13 @@ void RunTop16023(TString inFileName,
 		ljev.l_phi=goodLeptons[0].Phi();
 		ljev.l_m=goodLeptons[0].M();
 		ljev.nb=nbtags;
+		ljev.met_pt=rawMET.Pt();
+		ljev.met_phi=rawMET.Phi();
 		outT->Fill();
 		
 		histos["mjj_"+pf]->Fill(mjj,iweight);
 		histos["rankedmjj_"+pf]->Fill(rankedmjj,iweight);
+		histos["mbjj_"+pf]->Fill(mbjj,iweight);
 		histos["drjj_"+pf]->Fill(drjj,iweight);
 		histos["lpt_"+pf]->Fill(goodLeptons[0].Pt(),iweight);
 		histos["leta_"+pf]->Fill(fabs(goodLeptons[0].Eta()),iweight);

@@ -483,7 +483,7 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       TLorentzVector p4;
       p4.SetPtEtaPhiM(mu.pt(),mu.eta(),mu.phi(),mu.mass());
       float qter(1.0);
-      if(applyLeptonCorrections_)
+      if(false) //applyLeptonCorrections_)
 	{
 	  try{
 	    if(iEvent.isRealData())
@@ -687,6 +687,8 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
 	  break;
 	}	      
       ev_.l_mva[ev_.nl]=(*emva_id)[e];
+
+      ev_.l_pid[ev_.nl]=0;
       ev_.l_pid[ev_.nl]= (passVetoId | (isVeto<<1) 
 			  | (passLooseId<<2) | (isLoose<<3) 
 			  | (passMediumId<<4) | (isMedium<<5) 

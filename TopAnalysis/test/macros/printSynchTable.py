@@ -7,13 +7,13 @@ fIn=ROOT.TFile.Open(sys.argv[1])
 tables={'EM':[ (1,'visited'),
                (3,'dileptons'),
                (6,'>=2j'),
-               (9,'>=2b') ],
+               (8,'>=1b') ],
         'EE':[ (1,'visited'),
                (3,'dileptons'),
                (4,'Z veto'),
                (5,'MET>40'),
                (6,'>=2j'),
-               (9,'>=2b') ]}
+               (8,'>=1b') ]}
 tables['MM']=tables['EE']
 
 for ch in tables:
