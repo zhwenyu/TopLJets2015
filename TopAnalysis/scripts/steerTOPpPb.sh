@@ -24,13 +24,11 @@ case $WHAT in
 
 	commonOpts="--era era5TeV -m TOP-HIForest::RunToppPb"	
 	inDir=/store/cmst3/group/top/mverweij/PA8TeV/data/PASingleMuon/crab_FilteredPASingleMuHighPt_PPb_v4/161219_092237/
-	queue=local
 	a=(`eos ls ${inDir}`)
 	for i in ${a[@]}; do
 	    python scripts/runLocalAnalysis.py -i ${inDir}/${i}/ -q ${queue} -o ${outdir}/analysis_pPb       ${commonOpts} --ch 13;
 	done
 
-	exit -1
 	inDir=/store/cmst3/group/top/mverweij/PA8TeV/data/PASingleMuon/crab_FilteredPASingleMuHighPt_PbP_v6/170105_162741/
 	a=(`eos ls ${inDir}`)
         for i in ${a[@]}; do
