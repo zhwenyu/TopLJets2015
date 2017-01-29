@@ -21,6 +21,9 @@ using namespace std;
 //
 void defineTreeBranches(TTree *outT,LJEvent_t &ljev,bool isMC)
 {
+  outT->Branch("run",     &ljev.run,      "run/l");
+  outT->Branch("lumi",    &ljev.lumi,     "lumi/l");
+  outT->Branch("event",   &ljev.event,    "event/l");
   outT->Branch("w",    &ljev.w,       "w/F");
   outT->Branch("nj",   &ljev.nj,      "nj/I");
   outT->Branch("nb",   &ljev.nb,      "nb/I");

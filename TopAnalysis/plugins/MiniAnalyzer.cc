@@ -483,7 +483,7 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       TLorentzVector p4;
       p4.SetPtEtaPhiM(mu.pt(),mu.eta(),mu.phi(),mu.mass());
       float qter(1.0);
-      if(false) //applyLeptonCorrections_)
+      if(applyLeptonCorrections_)
 	{
 	  try{
 	    if(iEvent.isRealData())
@@ -575,7 +575,7 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
   for (const pat::Electron &el : *electrons) 
     {        
       const auto e = electrons->ptrAt(nele); 
-      const auto calibe = applyLeptonCorrections_ ? calibElectrons->ptrAt(nele) : e; 
+      const auto calibe = calibElectrons->ptrAt(nele);
       nele++;
 
       //kinematics cuts

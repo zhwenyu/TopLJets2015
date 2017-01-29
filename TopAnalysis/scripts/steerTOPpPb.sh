@@ -29,8 +29,10 @@ case $WHAT in
 	    python scripts/runLocalAnalysis.py -i ${inDir}/${i}/ -q ${queue} -o ${outdir}/analysis_pPb       ${commonOpts} --ch 13;
 	done
 
+	exit -1
 	inDir=/store/cmst3/group/top/mverweij/PA8TeV/data/PASingleMuon/crab_FilteredPASingleMuHighPt_PbP_v6/170105_162741/
 	a=(`eos ls ${inDir}`)
+	a=(0006 0007 0008 0009)
         for i in ${a[@]}; do
 	    python scripts/runLocalAnalysis.py -i ${inDir}/${i} -q ${queue} -o ${outdir}/analysis_Pbp       ${commonOpts} --ch 13;
 	done
