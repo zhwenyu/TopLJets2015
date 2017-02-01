@@ -22,9 +22,12 @@ def main():
     (opt, args) = parser.parse_args()
     
     #simulated pileup
-    NPUBINS=len(mix.input.nbPileupEvents.probValue)
-    simPuH=ROOT.TH1F('simPuH','',NPUBINS,float(0),float(NPUBINS))
-    for xbin in xrange(0,NPUBINS):
+    #NPUBINS=len(mix.input.nbPileupEvents.probValue)
+    #MAXPU=100
+    NPUBINS=1000
+    MAXPU=100
+    simPuH=ROOT.TH1F('simPuH','',NPUBINS,float(0),MAXPU)
+    for xbin in xrange(0,len(mix.input.nbPileupEvents.probValue)):
         probVal=mix.input.nbPileupEvents.probValue[xbin]
         simPuH.SetBinContent(xbin,probVal)
     simPuH.Scale(1./simPuH.Integral())
@@ -35,7 +38,7 @@ def main():
     MINBIASXSEC={'nom':opt.mbXsec,'up':opt.mbXsec*1.05,'down':opt.mbXsec*0.95}
     for scenario in MINBIASXSEC:
         print scenario, 'xsec=',MINBIASXSEC[scenario]
-        cmd='pileupCalc.py -i %s --inputLumiJSON %s --calcMode true --minBiasXsec %f --maxPileupBin %d --numPileupBins %s Pileup.root'%(opt.inJson,opt.puJson,MINBIASXSEC[scenario],NPUBINS,NPUBINS)
+        cmd='pileupCalc.py -i %s --inputLumiJSON %s --calcMode true --minBiasXsec %f --maxPileupBin %d --numPileupBins %s Pileup.root'%(opt.inJson,opt.puJson,MINBIASXSEC[scenario],MAXPU,NPUBINS)
         commands.getstatusoutput(cmd)
 
         fIn=ROOT.TFile.Open('Pileup.root')

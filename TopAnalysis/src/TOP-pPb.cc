@@ -997,8 +997,14 @@ void RunToppPb(TString inFileName,
 		ljev.nb=nbtags;
 		ljev.met_pt=rawMET.Pt();
 		ljev.met_phi=rawMET.Phi();
-		outT->Fill();
-		
+		if(channelSelection==1300 || channelSelection==1100)
+		  {
+		    if(ljev.nj>2)	outT->Fill();
+		  }
+		else
+		  {
+		    outT->Fill();
+		  }
 		histos["mjj_"+pf]->Fill(mjj,iweight);
 		histos["rankedmjj_"+pf]->Fill(rankedmjj,iweight);
 		histos["mbjj_"+pf]->Fill(mbjj,iweight);
