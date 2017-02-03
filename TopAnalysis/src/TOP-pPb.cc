@@ -410,7 +410,7 @@ void RunToppPb(TString inFileName,
     
     if(channelSelection==11 || channelSelection==1100) 
       {
-	triggerName = isMC ? "HLT_HISinglePhoton40_Eta3p1ForPPRef_v1" : "HLT_HISinglePhoton40_Eta3p1_v1";
+	triggerName = isMC ? "HLT_HISinglePhoton40_Eta3p1ForPPRef_v1" : "HLT_PASinglePhoton30_Eta3p1_v1"; 
       }
     
     hltTree_p->SetBranchStatus(triggerName.data(),1);
@@ -578,7 +578,7 @@ void RunToppPb(TString inFileName,
 	    bool passPt(elePt_p->at(elIter) > 15.0);  
 	    bool passEta(fabs(eleEta_p->at(elIter)) < 2.5);
 	    if(!passPt || !passEta) continue;
-	    bool passMediumId ((fabs(eleEta_p->at(elIter)) <= 1.4479
+	    bool passMedium2015Id ((fabs(eleEta_p->at(elIter)) <= 1.4479
 				&& fabs(eleSigmaIEtaIEta_p->at(elIter)) < 0.0101
 				&& fabs(eledEtaAtVtx_p->at(elIter)) < 0.0103
 				&& fabs(eledPhiAtVtx_p->at(elIter)) < 0.0336
@@ -600,7 +600,7 @@ void RunToppPb(TString inFileName,
 				&& fabs(eleMissHits_p->at(elIter)) <= 1 
 				&& elepassConversionVeto_p->at(elIter)==1)
 			       );
-	    bool passVetoId ((fabs(eleEta_p->at(elIter)) <= 1.4479
+	    bool passVeto2015Id ((fabs(eleEta_p->at(elIter)) <= 1.4479
 			      && fabs(eleSigmaIEtaIEta_p->at(elIter)) < 0.0114
 			      && fabs(eledEtaAtVtx_p->at(elIter)) < 0.0152
 			      && fabs(eledPhiAtVtx_p->at(elIter)) < 0.216
@@ -622,16 +622,60 @@ void RunToppPb(TString inFileName,
 			      && fabs(eleMissHits_p->at(elIter)) <= 3 
 			      && fabs(elepassConversionVeto_p->at(elIter)))
 			     );
+	    bool passMedium2016Id ((fabs(eleEta_p->at(elIter)) <= 1.4479
+				    && fabs(eleSigmaIEtaIEta_p->at(elIter)) < 0.011
+				    && fabs(eledEtaAtVtx_p->at(elIter)) < 0.0047
+				    && fabs(eledPhiAtVtx_p->at(elIter)) < 0.222 
+				    && fabs(eleHoverE_p->at(elIter)) < 0.298
+				    && fabs(eleEoverP_p->at(elIter)) < 0.241
+				    && fabs(eleD0_p->at(elIter)) < 0.05
+				    && fabs(eleDz_p->at(elIter)) < 0.373
+				    && fabs(eleMissHits_p->at(elIter)) <= 1
+				    && elepassConversionVeto_p->at(elIter)==1)
+				   ||
+				   (fabs(eleEta_p->at(elIter)) > 1.4479
+				    && fabs(eleSigmaIEtaIEta_p->at(elIter)) < 0.0314
+				    && fabs(eledEtaAtVtx_p->at(elIter)) < 0.00868
+				    && fabs(eledPhiAtVtx_p->at(elIter)) < 0.213 
+				    && fabs(eleHoverE_p->at(elIter)) < 0.101
+				    && fabs(eleEoverP_p->at(elIter)) < 0.14 
+				    && fabs(eleD0_p->at(elIter)) < 0.10
+				    && fabs(eleDz_p->at(elIter)) < 0.602
+				    && fabs(eleMissHits_p->at(elIter)) <= 1 
+				    && elepassConversionVeto_p->at(elIter)==1)
+				   );
+	    bool passVeto2016Id ((fabs(eleEta_p->at(elIter)) <= 1.4479
+				  && fabs(eleSigmaIEtaIEta_p->at(elIter)) < 0.0115
+				  && fabs(eledEtaAtVtx_p->at(elIter)) < 0.00749
+				  && fabs(eledPhiAtVtx_p->at(elIter)) < 0.228
+				  && fabs(eleHoverE_p->at(elIter)) <0.356 
+				  && fabs(eleEoverP_p->at(elIter)) < 0.299
+				  && fabs(eleD0_p->at(elIter)) < 0.0564
+				  && fabs(eleDz_p->at(elIter)) < 0.472
+				  && fabs(eleMissHits_p->at(elIter)) <= 2 
+				  && fabs(elepassConversionVeto_p->at(elIter)))
+				 ||
+				 (fabs(eleEta_p->at(elIter)) > 1.4479
+				  && fabs(eleSigmaIEtaIEta_p->at(elIter)) < 0.037 
+				  && fabs(eledEtaAtVtx_p->at(elIter)) < 0.00895
+				  && fabs(eledPhiAtVtx_p->at(elIter)) < 0.213 
+				  && fabs(eleHoverE_p->at(elIter)) <0.211
+				  && fabs(eleEoverP_p->at(elIter)) < 0.15
+				  && fabs(eleD0_p->at(elIter)) < 0.222
+				  && fabs(eleDz_p->at(elIter)) < 0.921
+				  && fabs(eleMissHits_p->at(elIter)) <= 3 
+				  && fabs(elepassConversionVeto_p->at(elIter)))
+);
 	    
 	    double deposit, corrEA_isolation;
 	    deposit =  fabs(elePFPhoIso_p->at(elIter)+elePFNeuIso_p->at(elIter)-eleEffAreaTimesRho_p->at(elIter));
 	    corrEA_isolation = (elePFChIso_p->at(elIter) + TMath::Max (0.0, deposit )) / elePt_p->at(elIter);
 
-	    bool passMediumIso( (corrEA_isolation < 0.04 && fabs(eleEta_p->at(elIter)) <= 1.4479) || (corrEA_isolation < 0.005 && fabs(eleEta_p->at(elIter)) > 1.4479) );
-	    bool passVetoIso( (corrEA_isolation < 0.126 && fabs(eleEta_p->at(elIter)) <= 1.4479) || (corrEA_isolation < 0.144 && fabs(eleEta_p->at(elIter)) > 1.4479) );
+	    bool passMediumIso( (corrEA_isolation < 0.0994 && fabs(eleEta_p->at(elIter)) <= 1.4479) || (corrEA_isolation < 0.107 && fabs(eleEta_p->at(elIter)) > 1.4479) );
+	    bool passVetoIso( (corrEA_isolation < 0.175 && fabs(eleEta_p->at(elIter)) <= 1.4479) || (corrEA_isolation < 0.159 && fabs(eleEta_p->at(elIter)) > 1.4479) );
 
 	    TString pf(fabs(eleEta_p->at(elIter)) > 1.4479 ? "_ee" : "_eb");
-	    if(passMediumId)
+	    if(passMedium2016Id)
 	      {
 		histos["reliso"+pf]->Fill( corrEA_isolation,evWeight);
 	      }
@@ -653,22 +697,22 @@ void RunToppPb(TString inFileName,
 	    TLorentzVector p4(0,0,0,0);
 	    p4.SetPtEtaPhiM(elePt_p->at(elIter),eleEta_p->at(elIter),elePhi_p->at(elIter), 0.0510);
 	        
-	    if (passMediumPt && passMediumEta && passMediumId && corrEA_isolation > 0.2)
+	    if (passMediumPt && passMediumEta && passMedium2016Id && corrEA_isolation > 0.2)
 	      {
 		mediumElectronsNonIso.push_back( p4 );
 		elCharge.push_back(eleCharge_p->at(elIter));
 	      }
-	    else if(passMediumPt && passMediumEta && passMediumId && passMediumIso)
+	    else if(passMediumPt && passMediumEta && passMedium2016Id && passMediumIso)
 	      {
 		mediumElectrons.push_back( p4 );
 		elCharge.push_back(eleCharge_p->at(elIter));
 	      }
-	    else if (passVetoId && passVetoIso)
+	    else if (passVeto2016Id && passVetoIso)
 	      {
 		vetoElectrons.push_back( p4 );
 		elCharge.push_back(eleCharge_p->at(elIter));
 	      }
-	    else if (passMediumPt && passMediumEta && !passVetoId)
+	    else if (passMediumPt && passMediumEta && !passVeto2016Id)
               {
                 mediumElectronsFailId.push_back( p4 );
 		elCharge.push_back(eleCharge_p->at(elIter));
