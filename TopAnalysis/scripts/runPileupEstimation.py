@@ -22,10 +22,8 @@ def main():
     (opt, args) = parser.parse_args()
     
     #simulated pileup
-    #NPUBINS=len(mix.input.nbPileupEvents.probValue)
-    #MAXPU=100
-    NPUBINS=1000
-    MAXPU=100
+    NPUBINS=len(mix.input.nbPileupEvents.probValue)
+    MAXPU=NPUBINS    
     simPuH=ROOT.TH1F('simPuH','',NPUBINS,float(0),MAXPU)
     for xbin in xrange(0,len(mix.input.nbPileupEvents.probValue)):
         probVal=mix.input.nbPileupEvents.probValue[xbin]
@@ -51,7 +49,7 @@ def main():
         puWgts.append( ROOT.TGraph(pileupH) )
         puWgts[-1].SetName('puwgts_'+scenario)
         fIn.Close()
-    commands.getstatusoutput('rm Pileup.root')
+        commands.getstatusoutput('rm Pileup.root')
 
     #save pileup weights to file
     fOut=ROOT.TFile.Open(opt.output,'RECREATE')
