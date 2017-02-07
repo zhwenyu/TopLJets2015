@@ -14,8 +14,8 @@ export LSB_JOB_REPORT_MAIL=N
 
 queue=2nw
 githash=8274336
-lumi=36000
-lumiSpecs="--lumiSpecs EE:11391"
+lumi=36460
+lumiSpecs="" #--lumiSpecs EE:11391"
 lumiUnc=0.026
 whoami=`whoami`
 myletter=${whoami:0:1}
@@ -30,7 +30,7 @@ NC='\e[0m'
 case $WHAT in
 
     FULLSEL ) 
-	python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} -o ${outdir} --era era2016 -m TOP-UE::RunTopUE --ch 0;
+	python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} -o ${outdir} --era era2016 -m TOP-UE::RunTopUE --ch 0; 
 	;;
 
     SEL )

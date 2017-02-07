@@ -53,15 +53,17 @@ void RunTopUE(TString filename,
     { 
       TString tag(lfsVec[ilfs]);
       allPlots["nvtx_"+tag]   = new TH1F("nvtx_"+tag,";Vertex multiplicity;Events",40,0,40);
+      allPlots["rho_"+tag]   = new TH1F("rho_"+tag,";#rho;Events",40,0,20);
       allPlots["mll_"+tag]    = new TH1F("mll_"+tag,";Dilepton invariant mass [GeV];Events",50,0,400);
       allPlots["ptpos_"+tag]   = new TH1F("ptpos_"+tag,";Lepton transverse momentum [GeV];Events",50,20,200);
       allPlots["ptll_"+tag]    = new TH1F("ptll_"+tag,";Dilepton transverse momentum [GeV];Events",50,0,200);
       allPlots["sumpt_"+tag]   = new TH1F("sumpt_"+tag,";Transverse momentum sum [GeV];Events",50,40,300);
+      allPlots["met_"+tag]   = new TH1F("met_"+tag,";Missing transverse momentum [GeV];Events",50,0,300);
       allPlots["njets_"+tag]  = new TH1F("njets_"+tag,";Jet multiplicity;Events",4,2,6);
       allPlots["nbtags_"+tag] = new TH1F("nbtags_"+tag,";b-tag multiplicity;Events",5,0,5);
       allPlots["nch_"+tag]  = new TH1F("nch_"+tag,";Charged particle multiplicity;Events",200,0,200);      
       allPlots["chavgpt_"+tag]  = new TH1F("chavgpt_"+tag,";Charged particle average p_{T} [GeV];Events",100,0,20);      
-      allPlots["chsumpt_"+tag]  = new TH1F("chsumpt_"+tag,";Charged particle sum p_{T} [GeV];Events",100,0,20);
+      allPlots["chsumpt_"+tag]  = new TH1F("chsumpt_"+tag,";Charged particle sum p_{T} [GeV];Events",100,0,200);
     }
   for (auto& it : allPlots)   { it.second->Sumw2(); it.second->SetDirectory(0); }
 
@@ -73,12 +75,16 @@ void RunTopUE(TString filename,
   //READ TREE FROM FILE
   MiniEvent_t ev;
   TFile *f = TFile::Open(filename);
-  TH1 *puTrue=(TH1 *)f->Get("analysis/putrue");
-  puTrue->SetDirectory(0);
-  puTrue->Scale(1./puTrue->Integral());
+  TH1 *genPU=(TH1 *)f->Get("analysis/pu");
   TTree *t = (TTree*)f->Get("analysis/data");
   attachToMiniEventTree(t,ev,true);
   Int_t nentries(t->GetEntriesFast());
+
+  //CORRECTIONS
+  //pileup
+  std::vector<TGraph *>puWgtGr;
+  if( !filename.Contains("Data") ) puWgtGr=getPileupWeights(era,genPU);
+
 
   //LOOP OVER EVENTS
   for (Int_t iev=0;iev<nentries;iev++)
@@ -93,7 +99,7 @@ void RunTopUE(TString filename,
 
       //selection
       TString chTag = evsel.flagFinalState(ev);
-      if(chTag=="") continue;
+      if(chTag!="EM" && chTag!="EE" && chTag!="MM") continue;
       std::vector<Particle> &leptons=evsel.getSelLeptons();
       TLorentzVector dil(leptons[0].p4()+leptons[1].p4());
       float mll=dil.M();
@@ -154,7 +160,7 @@ void RunTopUE(TString filename,
       rec_tt += evsel.getMET();
       tue.ptttbar[0]=rec_tt.Pt();
       tue.phittbar[0]=rec_tt.Phi();	  
-    	      
+      
       int posLepton( leptons[0].charge()>0 ? 0 : 1 );
       tue.mll[0]    = mll;
       tue.ptpos[0]  = leptons[posLepton].pt();
@@ -163,7 +169,7 @@ void RunTopUE(TString filename,
       tue.phill[0]  = dil.Phi();
       tue.sumpt[0]  = leptons[0].pt()+leptons[1].pt();
       tue.dphill[0] = TMath::Abs(leptons[0].p4().DeltaPhi(leptons[1].p4()));
-    
+      
       //save PF cands
       tue.n=selTracks.size();
       float nch(0.),chSumPt(0.);
@@ -181,13 +187,14 @@ void RunTopUE(TString filename,
       float wgt(1.0);
       if(!ev.isData) 
 	{
-	  wgt = (normH? normH->GetBinContent(1) : 1.0);
-	  if(ev.g_nw>0) wgt*=ev.g_w[0];
+	  wgt  = (normH? normH->GetBinContent(1) : 1.0);
+	  wgt *= puWgtGr[0]->Eval(ev.g_pu);
+	  wgt *= (ev.g_nw>0 ? ev.g_w[0] : 1.0);
 	}
-      
       
       //nominal selection control histograms
       allPlots["nvtx_"+chTag]->Fill(ev.nvtx,wgt);
+      allPlots["rho_"+chTag]->Fill(ev.rho,wgt);
       allPlots["mll_"+chTag]->Fill(tue.mll[0],wgt);
       allPlots["ptpos_"+chTag]->Fill(tue.ptpos[0],wgt);
       allPlots["ptll_"+chTag]->Fill(tue.ptll[0],wgt);
@@ -195,6 +202,7 @@ void RunTopUE(TString filename,
       allPlots["nbtags_"+chTag]->Fill(tue.nb[0],wgt);
       if(tue.nb[0]>1) 
 	{
+	  allPlots["met_"+chTag]->Fill(evsel.getMET().Pt(),wgt);
 	  allPlots["njets_"+chTag]->Fill(tue.nj[0],wgt);
 	  allPlots["nch_"+chTag]->Fill(nch,wgt);	  
 	  allPlots["chavgpt_"+chTag]->Fill(nch>0 ? chSumPt/nch : -1,wgt);

@@ -17,7 +17,6 @@
 
 std::map<Int_t,Float_t> lumiPerRun(TString era="era2015");
 Float_t computeMT(TLorentzVector &a, TLorentzVector &b);
-std::vector<TGraph *> getPileupWeights(TString era,TH1 *puTrue);
 FactorizedJetCorrector *getFactorizedJetEnergyCorrector(TString,bool);
 std::vector<float> getJetResolutionScales(float pt, float eta, float genjpt);
 float getLeptonEnergyScaleUncertainty(int l_id,float l_pt,float l_eta);
