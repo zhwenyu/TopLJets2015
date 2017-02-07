@@ -397,7 +397,7 @@ void RunTopUE(TString filename,
 		  jetBtagSF *= expEff>0 ? expBtagEffPy8[hadFlav]->Eval(jptForBtag)/expBtagEff[hadFlav]->Eval(jptForBtag) : 0.;
 		  
 		  //updated b-tagging decision with the data/MC scale factor
-		  myBTagSFUtil.modifyBTagsWithSF(isBTagged,      jetBtagSF,      expEff);
+		  //myBTagSFUtil.modifyBTagsWithSF(isBTagged,      jetBtagSF,      expEff);
 		}
 	      
 	      
@@ -501,6 +501,7 @@ void RunTopUE(TString filename,
       EffCorrection_t lepSelCorrWgt(1.0,0.0), triggerCorrWgt(1.0,0.0);
       if(!ev.isData)
 	{
+	  /*
 	  if(chTag!="")
 	    {
 	      //trigger/id+iso efficiency corrections
@@ -512,7 +513,8 @@ void RunTopUE(TString filename,
 		  lepSelCorrWgt.first *= selSF.first;
 		}
 	    }
-	  
+	  */
+
 	  //update nominal event weight
 	  wgt=triggerCorrWgt.first*lepSelCorrWgt.first*puWgts[0]*norm;
 	  if(ev.g_nw>0) wgt*=ev.g_w[0];
@@ -565,7 +567,7 @@ void RunTopUE(TString filename,
 	}
    
       //all done, save it
-      outT->Fill();
+      //outT->Fill();
     }
   
   //save histos to file  

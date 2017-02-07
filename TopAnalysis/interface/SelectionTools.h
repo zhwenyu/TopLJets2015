@@ -43,7 +43,7 @@ class SelectionTool {
   void setDebug(bool flag) { debug_=flag; }
 
  private:
-  bool acceptE_, acceptM_, acceptEE_, acceptEM_, acceptMM_;
+  bool isSingleElectronPD_,isSingleMuonPD_,isDoubleEGPD_,isDoubleMuonPD_,isMuonEGPD_;
   std::vector<Particle> leptons_,vetoLeptons_,genLeptons_;
   std::vector<Jet> jets_,genJets_;
   bool debug_;

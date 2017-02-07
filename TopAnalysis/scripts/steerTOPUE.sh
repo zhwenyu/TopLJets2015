@@ -13,16 +13,16 @@ export LSB_JOB_REPORT_MAIL=N
 
 
 queue=2nw
-githash=8db9ad6
+githash=8274336
 lumi=12870
 lumiSpecs="--lumiSpecs EE:11391"
 lumiUnc=0.062
 whoami=`whoami`
 myletter=${whoami:0:1}
-eosdir=/store/cmst3/user/psilva/LJets2016/${githash}
-summaryeosdir=/store/cmst3/group/top/summer2016/TopUE_era2016/
-outdir=/afs/cern.ch/work/${myletter}/${whoami}/TopUE_era2016/
-wwwdir=~/www/TopUE_era2016/
+eosdir=/store/cmst3/group/top/ReReco2016/${githash}
+summaryeosdir=/store/cmst3/group/top/summer2016/TopUE_ReReco2016/
+outdir=/afs/cern.ch/work/${myletter}/${whoami}/TopUE_ReReco2016
+wwwdir=~/www/TopUE_ReReco2016/
 
 
 RED='\e[31m'
@@ -30,8 +30,7 @@ NC='\e[0m'
 case $WHAT in
 
     FULLSEL ) 
-	queue=local
-	python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} -o ${outdir} --era era2016 -m TOP-UE::RunTopUE --ch 0 --only dilpow;
+	python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} -o ${outdir} --era era2016 -m TOP-UE::RunTopUE --ch 0;
 	;;
 
     SEL )
@@ -39,7 +38,7 @@ case $WHAT in
 	for s in ${samplesToProcess[@]}; do
 	    
 	    echo -e "${RED} Submitting ${s} ${NC}"
-	    python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} -o ${outdir} --era era2016 -m TOP-UE::RunTopUE --ch 0 --runSysts --only ${s} --babySit; 
+	    python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} -o ${outdir} --era era2016 -m TOP-UE::RunTopUE --ch 0 --runSysts --only ${s} --babySit;
 
 	    echo -e "${RED} Merging ${s} ${NC}"
 	    ./scripts/mergeOutputs.py ${outdir} True;	
