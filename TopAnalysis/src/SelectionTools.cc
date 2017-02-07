@@ -274,44 +274,44 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
   //check if triggers have fired
   bool hasETrigger(((ev.triggerBits>>0)&0x1)!=0);
   bool hasMTrigger(((ev.triggerBits>>1)&0x3)!=0);
-  bool hasEMTrigger(hasETrigger || hasMTrigger || ((ev.triggerBits>>3)&0xf)!=0);
-  bool hasMMTrigger(hasETrigger || ((ev.triggerBits>>9)&0x1)!=0);
-  bool hasEETrigger(hasETrigger || ((ev.triggerBits>>10)&0x1)!=0);
+  bool hasEMTrigger(((ev.triggerBits>>3)&0x3)!=0  || ((ev.triggerBits>>5)&0x7)!=0 );
+  bool hasMMTrigger(((ev.triggerBits>>8)&0x3)!=0);
+  bool hasEETrigger(((ev.triggerBits>>10)&0x1)!=0);
 
   //check consistency with data
   if(chTag=="EM")
     {
-      if(isDoubleEGPD_      || isDoubleMuonPD_)                 chTag="";
-      if(isSingleElectronPD_ && (hasEMTrigger || !hasETrigger)) chTag="";
-      if(isSingleMuonPD_    && (hasEMTrigger || !hasMTrigger))  chTag="";
-      if(isMuonEGPD_        && !hasEMTrigger)                   chTag="";
-      if(!hasEMTrigger && !hasETrigger && !hasMTrigger)         chTag="";
+      if(!hasEMTrigger && !hasETrigger && !hasMTrigger)                         chTag="";
+      if(isDoubleEGPD_      || isDoubleMuonPD_)                                 chTag="";
+      if(isSingleElectronPD_ && (hasEMTrigger || !hasETrigger))                 chTag="";
+      if(isSingleMuonPD_    && (hasEMTrigger  || hasETrigger || !hasMTrigger))  chTag="";
+      if(isMuonEGPD_        && !hasEMTrigger)                                   chTag="";
     }
   if(chTag=="EE")
     {
+      if(!hasEETrigger && !hasETrigger)                          chTag="";
       if(isMuonEGPD_ || isSingleMuonPD_ || isDoubleMuonPD_)      chTag="";
       if(isSingleElectronPD_ && (hasEETrigger || !hasETrigger) ) chTag="";
       if(isDoubleEGPD_      && !hasEETrigger)                    chTag="";
-      if(!hasEETrigger && !hasETrigger)                          chTag="";
     }
   if(chTag=="MM")
     {
+      if(!hasMMTrigger && !hasMTrigger)                         chTag="";
       if(isMuonEGPD_ || isSingleElectronPD_ || isDoubleEGPD_)   chTag="";
       if(isSingleMuonPD_ && (hasMMTrigger || !hasMTrigger) )    chTag="";
       if(isDoubleMuonPD_ && !hasMMTrigger)                      chTag="";
-      if(!hasMMTrigger && !hasMTrigger)                         chTag="";
     }
   if(chTag=="M")
     {
+      if(!hasMTrigger)                    chTag="";
       if(isMuonEGPD_ || isDoubleMuonPD_ || isDoubleEGPD_ || isSingleElectronPD_)   chTag="";
       if(isSingleMuonPD_ && !hasMTrigger) chTag="";
-      if(!hasMTrigger)                    chTag="";
     }
   if(chTag=="E")
     {
+      if(!hasETrigger)                        chTag="";
       if(isMuonEGPD_ || isDoubleMuonPD_ || isDoubleEGPD_ || isSingleMuonPD_)   chTag="";
       if(isSingleElectronPD_ && !hasETrigger) chTag="";
-      if(!hasETrigger)                        chTag="";
     }
       
 
