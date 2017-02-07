@@ -59,7 +59,7 @@ class Jet {
     double pt()     { return p4_.Pt();  }
     TLorentzVector p4()       { return p4_; }
     TLorentzVector momentum() { return p4_; }
-    std::vector<Particle> particles() { return particles_; }
+    std::vector<Particle> &particles() { return particles_; }
     int flavor()  { return flavor_; }
     int overlap() { return overlap_; }
     

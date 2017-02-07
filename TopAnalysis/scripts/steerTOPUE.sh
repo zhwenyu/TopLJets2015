@@ -14,9 +14,9 @@ export LSB_JOB_REPORT_MAIL=N
 
 queue=2nw
 githash=8274336
-lumi=12870
+lumi=36000
 lumiSpecs="--lumiSpecs EE:11391"
-lumiUnc=0.062
+lumiUnc=0.026
 whoami=`whoami`
 myletter=${whoami:0:1}
 eosdir=/store/cmst3/group/top/ReReco2016/${githash}
@@ -52,8 +52,11 @@ case $WHAT in
 	    done
 	done
 	;;
+    MERGE )
+	./scripts/mergeOutputs.py ${outdir} True;
+	;;
     PLOTSEL )
-	python scripts/plotter.py -i ${outdir} --puNormSF puwgtctr  -j data/era2016/samples.json -l ${lumi} ${lumiSpecs} --saveLog --mcUnc ${lumiUnc};	
+	python scripts/plotter.py -i ${outdir} --puNormSF puwgtctr  -j data/era2016/samples.json -l ${lumi}  --saveLog --mcUnc ${lumiUnc};	
 	;;
     WWWSEL )
 	mkdir -p ${wwwdir}/sel

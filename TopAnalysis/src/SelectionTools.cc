@@ -264,6 +264,12 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
     vetoLeptons_=getGoodLeptons(preselleptons,SelectionTool::PASSLVETO, 0., 99., &leptons_);
   }
 
+  //select jets based on the leptons
+  jets_=getGoodJets(ev,30.,2.4,leptons_);
+
+  //build the met
+  met_.SetPtEtaPhiM( ev.met_pt[0], 0, ev.met_phi[0], 0. );
+
 
   //check if triggers have fired
   bool hasETrigger(((ev.triggerBits>>0)&0x1)!=0);
@@ -308,10 +314,6 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
       if(!hasETrigger)                        chTag="";
     }
       
-
-  //select jets based on the leptons
-  jets_=getGoodJets(ev,30.,2.4,leptons_);
-
 
   if(debug_) cout << "[flagFinalState] chTag=" << chTag << endl
 		  << "\t Pre-selection lepton mult." << preselleptons.size() << endl
