@@ -68,11 +68,9 @@ void RunTopJetShape(TString filename,
   //READ TREE FROM FILE
   MiniEvent_t ev;
   TFile *f = TFile::Open(filename);
-  TH1 *puTrue=(TH1 *)f->Get("analysis/putrue");
-  puTrue->SetDirectory(0);
-  puTrue->Scale(1./puTrue->Integral());
+  TH1 *genPU=(TH1 *)f->Get("analysis/pu");
   TTree *t = (TTree*)f->Get("analysis/data");
-  attachToMiniEventTree(t,ev, true);
+  attachToMiniEventTree(t,ev,true);
   Int_t nentries(t->GetEntriesFast());
   if (debug) nentries = 10000; //restrict number of entries for testing
   t->GetEntry(0);
@@ -82,7 +80,7 @@ void RunTopJetShape(TString filename,
 
   //PILEUP WEIGHTING
   std::vector<TGraph *>puWgtGr;
-  if(!ev.isData) puWgtGr=getPileupWeights(era,puTrue);
+  if( !filename.Contains("Data") ) puWgtGr=getPileupWeights(era,genPU);
   
   
   //LEPTON EFFICIENCIES
@@ -231,7 +229,7 @@ void RunTopJetShape(TString filename,
   ///////////////////////
   // LOOP OVER EVENTS //
   /////////////////////
-  SelectionTool evsel;
+  SelectionTool selector;
   for (Int_t iev=0;iev<nentries;iev++)
     {
       t->GetEntry(iev);
@@ -253,10 +251,9 @@ void RunTopJetShape(TString filename,
       /////////////////////////
       
       //decide the lepton channel and get selected objects
-      TString chTag = evsel.flagFinalState(ev);
-      std::vector<Particle> &leptons     = evsel.getSelLeptons(); 
-      //std::vector<Particle> &vetoLeptons = evsel.getVetoLeptons();      
-      std::vector<Jet>      &jets        = evsel.getJets();  
+      TString chTag = selector.flagFinalState(ev);
+      std::vector<Particle> &leptons     = selector.getSelLeptons(); 
+      std::vector<Jet>      &jets        = selector.getJets();  
             
       
       //count b and W candidates
@@ -269,10 +266,11 @@ void RunTopJetShape(TString filename,
       }
       
       //event selected on reco level?
-      bool singleLepton         (chTag=="E" || chTag=="M");
-      bool singleLepton4Jets    (singleLepton && jets.size()>=4);
-      bool singleLepton4Jets2b  (singleLepton4Jets && sel_nbjets==2);
-      bool singleLepton4Jets2b2W(singleLepton4Jets2b && sel_nwjets>0);
+      bool singleLepton         ((chTag=="E" or chTag=="M") and
+                                 (selector.getVetoLeptons().size() == 0));
+      bool singleLepton4Jets    (singleLepton and jets.size()>=4);
+      bool singleLepton4Jets2b  (singleLepton4Jets and sel_nbjets==2);
+      bool singleLepton4Jets2b2W(singleLepton4Jets2b and sel_nwjets>0);
       
       std::vector<bool> recoPass; recoPass.push_back(singleLepton); recoPass.push_back(singleLepton4Jets); recoPass.push_back(singleLepton4Jets2b); recoPass.push_back(singleLepton4Jets2b2W); 
       
@@ -286,54 +284,12 @@ void RunTopJetShape(TString filename,
       
       //event weight
       float wgt(1.0);
-      std::vector<float> puWgts(3,1.0),topPtWgts(2,1.0);
-      EffCorrection_t lepSelCorrWgt(1.0,0.0), triggerCorrWgt(1.0,0.0);
-      if(!ev.isData)
+      if(!ev.isData) 
         {
-          //MC normalization weight
-          float norm( normH ? normH->GetBinContent(1) : 1.0);
-
-          //top pt
-          Int_t ntops(0);
-          float ptsf(1.0);
-          for(Int_t igen=0; igen<ev.ngtop; igen++)
-            {
-              if(abs(ev.gtop_id[igen])!=6) continue;
-              ntops++;
-              ptsf *= TMath::Exp(0.156-0.00137*ev.gtop_pt[igen]);
-            }
-          if(ptsf>0 && ntops==2)
-            {
-              ptsf=TMath::Sqrt(ptsf);
-              topPtWgts[0]=1./ptsf;
-              topPtWgts[1]=ptsf;
-            }
-
-          //account for pu weights and effect on normalization
-          allPlots["puwgtctr"]->Fill(0.,1.0);
-          for(size_t iwgt=0; iwgt<3; iwgt++)
-            {
-              puWgts[iwgt]=puWgtGr[iwgt]->Eval(ev.g_putrue);  
-              allPlots["puwgtctr"]->Fill(iwgt+1,puWgts[iwgt]);
-            }
-
-          if(chTag!="")
-            {
-              //trigger/id+iso efficiency corrections
-              triggerCorrWgt=lepEffH.getTriggerCorrection(leptons);
-              for(auto& lepton : leptons) {
-                EffCorrection_t selSF=lepEffH.getOfflineCorrection(lepton);
-                lepSelCorrWgt.second = sqrt( pow(lepSelCorrWgt.first*selSF.second,2)+pow(lepSelCorrWgt.second*selSF.first,2));
-                lepSelCorrWgt.first *= selSF.first;
-              }
-            }
-	    
-	        //update nominal event weight
-	        wgt=triggerCorrWgt.first*lepSelCorrWgt.first*puWgts[0]*norm;
-	        if(ev.g_nw>0) wgt*=ev.g_w[0];
-	        
-	        if (wgt > 1e-12) std::cout << "wgt=" << wgt << " triggerCorrWgt=" << triggerCorrWgt.first << " lepSelCorrWgt=" << lepSelCorrWgt.first << " puWgts=" << puWgts[0] << " norm=" << norm << std::endl;
-	      }
+          wgt  = (normH? normH->GetBinContent(1) : 1.0);
+          wgt *= puWgtGr[0]->Eval(ev.g_pu);
+          wgt *= (ev.g_nw>0 ? ev.g_w[0] : 1.0);
+        }
       
       ////////////////////
       // CONTROL PLOTS //
@@ -613,9 +569,10 @@ void RunTopJetShape(TString filename,
        
         
         //decide the lepton channel at particle level
-        TString genChTag = evsel.flagGenFinalState(ev);
-        std::vector<Particle> &genLeptons = evsel.getGenLeptons();
-        std::vector<Jet>      &genJets    = evsel.getGenJets();
+        std::vector<Particle> genVetoLeptons = selector.getGenLeptons(ev,15.,2.5);
+        std::vector<Particle> genLeptons     = selector.getGenLeptons(ev,30.,2.1);
+        TString genChTag = selector.flagGenFinalState(ev, genLeptons);
+        std::vector<Jet> genJets = selector.getGenJets();
         
         //count b and W candidates
         int sel_ngbjets = 0;
@@ -627,7 +584,8 @@ void RunTopJetShape(TString filename,
         }
         
         //event selected on gen level?
-        bool genSingleLepton(genChTag=="E" || genChTag=="M");
+        bool genSingleLepton((genChTag=="E" or genChTag=="M") and
+                             (genVetoLeptons.size() == 1)); // only selected lepton in veto collection
         if (sel_ngbjets==2 && sel_ngwcand>0 && genSingleLepton) tjsev.gen_sel = 1;
         
         tjsev.ngj = genJets.size();
