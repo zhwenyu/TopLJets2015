@@ -63,7 +63,7 @@ std::vector<Particle> SelectionTool::getTopFlaggedLeptons(MiniEvent_t &ev){
 }
 
 //
-std::vector<Particle> SelectionTool::getGoodLeptons(std::vector<Particle> &leptons,int qualBit,double minPt, double maxEta,std::vector<Particle> *vetoParticles){
+std::vector<Particle> SelectionTool::getLeptons(std::vector<Particle> &leptons,int qualBit,double minPt, double maxEta,std::vector<Particle> *vetoParticles){
   std::vector<Particle> selLeptons;
 
   for(size_t i =0; i<leptons.size(); i++)
@@ -247,21 +247,21 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
   if(preselleptons.size()==0) preselleptons=getTopFlaggedLeptons(ev);
 
   //decide the channel based on the lepton multiplicity and set lepton collections
-  std::vector<Particle> passllid( getGoodLeptons(preselleptons,PASSLLID) ), passlid( getGoodLeptons(preselleptons,PASSLID) );
+  std::vector<Particle> passllid( getLeptons(preselleptons,PASSLLID) ), passlid( getLeptons(preselleptons,PASSLID) );
   TString chTag("");
   if(passllid.size()>=2){
     int ch( abs(passllid[0].id()*passllid[1].id()) );
     if      (ch==11*13) chTag = "EM";
     else if (ch==13*13) chTag = "MM";
     else if (ch==11*11) chTag = "EE";
-    leptons_=preselleptons;
+    leptons_=passllid;
   }
   else if(passlid.size()==1){
     int ch(abs(passlid[0].id()) );
     if      (ch==13) chTag = "M";
     else if (ch==11) chTag = "E";
-    leptons_=preselleptons;
-    vetoLeptons_=getGoodLeptons(preselleptons,SelectionTool::PASSLVETO, 0., 99., &leptons_);
+    leptons_=passlid;
+    vetoLeptons_=getLeptons(preselleptons,SelectionTool::PASSLVETO, 0., 99., &leptons_);
   }
 
   //select jets based on the leptons

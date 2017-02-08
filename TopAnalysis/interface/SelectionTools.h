@@ -31,7 +31,7 @@ class SelectionTool {
  
  //object selection can also be customized with the following functions
   std::vector<Particle> getTopFlaggedLeptons(MiniEvent_t &ev);
-  std::vector<Particle> getGoodLeptons(std::vector<Particle> &topFlaggedLeptons,int qualBit=PASSLLID, double minPt=0., double maxEta=99., std::vector<Particle> *vetoParticles=0);
+  std::vector<Particle> getLeptons(std::vector<Particle> &topFlaggedLeptons,int qualBit=PASSLLID, double minPt=0., double maxEta=99., std::vector<Particle> *vetoParticles=0);
   std::vector<Jet> getGoodJets(MiniEvent_t &ev, double minPt = 30., double maxEta = 2.4, std::vector<Particle> leptons = {});
 
   //gen level selection customization
