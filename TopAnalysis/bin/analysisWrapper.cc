@@ -87,7 +87,7 @@ int main(int argc, char* argv[])
   else if(method=="TOP-HIForest::RunTop16023")               RunTop16023(in,out,channel,charge,normH,runSysts,era);
   else if(method=="TOP-HIForest::RunToppPb")                    RunToppPb(in,out,channel,charge,normH,runSysts,era);
   else if(method=="TOP-UE::RunTopUE")                      RunTopUE(in,out,channel,charge,SelectionTool::FlavourSplitting(flav),normH,runSysts,era);
-  else if(method=="TOPJetShape::RunTopJetShape")           RunTopJetShape(in,out,channel,charge,SelectionTool::FlavourSplitting(flav),normH,runSysts,era);
+  else if(method=="TOPJetShape::RunTopJetShape")           RunTopJetShape(in,out,channel,charge,SelectionTool::FlavourSplitting(flav),normH,runSysts,era,debug);
   else if(method=="TOPSynchExercise::RunTOPSynchExercise") RunTOPSynchExercise(in,out,debug);
   else
     {

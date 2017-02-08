@@ -57,6 +57,7 @@ class Jet {
     ~Jet() {}
 
     double pt()     { return p4_.Pt();  }
+    double eta()    { return p4_.Eta();  }
     TLorentzVector p4()       { return p4_; }
     TLorentzVector momentum() { return p4_; }
     std::vector<Particle> &particles() { return particles_; }
