@@ -97,6 +97,8 @@ As soon as ntuple production starts to finish, to move from crab output director
 python scripts/submitCheckProductionIntegrity.py -i /store/group/phys_top/psilva/8274336 -o /store/cmst3/group/top/ReReco2016/8274336
 ```
 
+## Luminosity
+
 After ntuples are processed, you can create the list of runs/lumi sections processed using crab as:
 ```
 a=(`find grid/ -maxdepth 1 | grep crab_Data `)
@@ -104,23 +106,20 @@ for i in ${a[@]}; do
     crab report ${i}; 
 done
 ``` 
-Then you can merge the json files for the same dataset to get the full list of run/lumi sections to analyse
+You can then run the brilcalc tool to get the integrated luminosity in total and per run (see https://twiki.cern.ch/twiki/bin/view/CMS/2015LumiNormtag for more details).
 ```
-mergeJSON.py grid/crab_Data13TeV_DoubleMuon_2016B/results/processedLumis.json grid/crab_Data13TeV_DoubleMuon_2015C/results/processedLumis.json grid/crab_Data13TeV_DoubleMuon_2015D/results/processedLumis.json --output data/era2016/Data13TeV_DoubleMuon_lumis.json
+export PATH=$HOME/.local/bin:/afs/cern.ch/cms/lumi/brilconda-1.0.3/bin:$PATH
+brilcalc lumi --normtag /afs/cern.ch/user/l/lumipro/public/normtag_file/normtag_DATACERT.json -i /afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/Final/Cert_271036-284044_13TeV_PromptReco_Collisions16_JSON.txt > data/era2016/lumiPerRun.txt
 ```
-
+Use the table which is printed out to update the "lumisec.root" file which stores the value of luminosities per run
+```
+python scripts/convertLumiTable.py data/era2016/lumiPerRun.txt
+```
 
 ## Preparing the analysis 
 
 Correction and uncertainty files are stored under data by era directories (e.g. data/era2015, data/era2016) in order no to mix different periods.
 
-You can then run the brilcalc tool to get the integrated luminosity in total and per run (see https://twiki.cern.ch/twiki/bin/view/CMS/2015LumiNormtag for more details).
-```
-export PATH=$HOME/.local/bin:/afs/cern.ch/cms/lumi/brilconda-1.0.3/bin:$PATH
-brilcalc lumi --normtag /afs/cern.ch/user/l/lumipro/public/normtag_file/normtag_DATACERT.json -i data/era2016/Data13TeV_DoubleMuon_lumis.json
-```
-Use the table which is printed out to update the "lumiPerRun" method in ReadTree.cc.
-That will be used to monitor the event yields per run in order to identify outlier runs.
 * Pileup weighting. To update the pileup distributions run the script below. It will store the data pileup distributions for different min.bias cross section in data/pileupWgts.root
 ```
 python scripts/runPileupEstimation.py --json /afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/ReReco/Final/Cert_271036-284044_13TeV_23Sep2016ReReco_Collisions16_JSON.txt --out data/era2016/pileupWgts.root

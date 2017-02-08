@@ -15,7 +15,8 @@
 
 #include <vector>
 
-std::map<Int_t,Float_t> lumiPerRun(TString era="era2015");
+std::pair<std::map<Int_t,Float_t>, TH1F *> parseLumiInfo(TString era);
+std::map<Int_t,Float_t> lumiPerRun(TString era="era2015") { return parseLumiInfo(era).first; }
 Float_t computeMT(TLorentzVector &a, TLorentzVector &b);
 FactorizedJetCorrector *getFactorizedJetEnergyCorrector(TString,bool);
 std::vector<float> getJetResolutionScales(float pt, float eta, float genjpt);
