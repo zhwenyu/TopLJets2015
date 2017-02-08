@@ -3,7 +3,7 @@ import os,sys
 import json
 import commands
 import ROOT
-from SimGeneral.MixingModule.mix_2016_25ns_SpringMC_PUScenarioV1_PoissonOOTPU_cfi import *
+from SimGeneral.MixingModule.mix_2016_25ns_Moriond17MC_PoissonOOTPU_cfi import *
 
 """
 steer the script
@@ -23,8 +23,9 @@ def main():
     
     #simulated pileup
     NPUBINS=len(mix.input.nbPileupEvents.probValue)
-    simPuH=ROOT.TH1F('simPuH','',NPUBINS,float(0),float(NPUBINS))
-    for xbin in xrange(0,NPUBINS):
+    MAXPU=NPUBINS    
+    simPuH=ROOT.TH1F('simPuH','',NPUBINS,float(0),MAXPU)
+    for xbin in xrange(0,len(mix.input.nbPileupEvents.probValue)):
         probVal=mix.input.nbPileupEvents.probValue[xbin]
         simPuH.SetBinContent(xbin,probVal)
     simPuH.Scale(1./simPuH.Integral())
@@ -35,7 +36,7 @@ def main():
     MINBIASXSEC={'nom':opt.mbXsec,'up':opt.mbXsec*1.05,'down':opt.mbXsec*0.95}
     for scenario in MINBIASXSEC:
         print scenario, 'xsec=',MINBIASXSEC[scenario]
-        cmd='pileupCalc.py -i %s --inputLumiJSON %s --calcMode true --minBiasXsec %f --maxPileupBin %d --numPileupBins %s Pileup.root'%(opt.inJson,opt.puJson,MINBIASXSEC[scenario],NPUBINS,NPUBINS)
+        cmd='pileupCalc.py -i %s --inputLumiJSON %s --calcMode true --minBiasXsec %f --maxPileupBin %d --numPileupBins %s Pileup.root'%(opt.inJson,opt.puJson,MINBIASXSEC[scenario],MAXPU,NPUBINS)
         commands.getstatusoutput(cmd)
 
         fIn=ROOT.TFile.Open('Pileup.root')
@@ -48,7 +49,7 @@ def main():
         puWgts.append( ROOT.TGraph(pileupH) )
         puWgts[-1].SetName('puwgts_'+scenario)
         fIn.Close()
-    commands.getstatusoutput('rm Pileup.root')
+        commands.getstatusoutput('rm Pileup.root')
 
     #save pileup weights to file
     fOut=ROOT.TFile.Open(opt.output,'RECREATE')

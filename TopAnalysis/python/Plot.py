@@ -57,6 +57,13 @@ class Plot(object):
         if 'ratevsrun' in self.name and not isData: return
 
         h.SetTitle(title)
+
+        #check if color is given in hexadec format
+        try:
+            if '#' in color : color=ROOT.TColor.GetColor(color)
+        except:
+            pass
+
         if isData:
             try:
                 self.dataH.Add(h)
@@ -322,8 +329,8 @@ class Plot(object):
             ratioframe.GetXaxis().SetLabelSize(0.15)
             ratioframe.GetXaxis().SetTitleSize(0.2)
             ratioframe.GetXaxis().SetTitleOffset(0.8)
-            ratioframe.SetFillStyle(3001)
-            ratioframe.SetFillColor(ROOT.kGray+2)
+            ratioframe.SetFillStyle(1001)
+            ratioframe.SetFillColor(ROOT.TColor.GetColor('#99d8c9'))
             totalMCnoUnc=totalMC.Clone('totalMCnounc')
             self._garbageList.append(totalMCnoUnc)
             for xbin in xrange(1,totalMC.GetNbinsX()+1):

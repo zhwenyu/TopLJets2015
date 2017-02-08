@@ -5,13 +5,12 @@
 using namespace std;
 
 SelectionTool::SelectionTool(TString dataset,bool debug) :
-  acceptE_(true), acceptM_(true), acceptEE_(true), acceptEM_(true), acceptMM_(true), debug_(debug)
+  isSingleElectronPD_(dataset.Contains("SingleElectron")), 
+  isSingleMuonPD_(dataset.Contains("SingleMuon")), 
+  isDoubleEGPD_(dataset.Contains("DoubleEG")), 
+  isDoubleMuonPD_(dataset.Contains("DoubleMuon")), 
+  isMuonEGPD_(dataset.Contains("MuonEG"))
 {
-  if(dataset.Contains("SingleElectron")) { acceptE_=true;  acceptM_=false; acceptEE_=false;  acceptMM_=false; acceptEM_=false;}
-  if(dataset.Contains("SingleMuon"))     { acceptE_=false; acceptM_=true;  acceptEE_=false;  acceptMM_=false; acceptEM_=false;}
-  if(dataset.Contains("DoubleEG"))       { acceptE_=false; acceptM_=false; acceptEE_=true;   acceptMM_=false; acceptEM_=false;}
-  if(dataset.Contains("DoubleMuon"))     { acceptE_=false; acceptM_=false; acceptEE_=false;  acceptMM_=true;  acceptEM_=false;}
-  if(dataset.Contains("MuonEG"))         { acceptE_=false; acceptM_=false; acceptEE_=false;  acceptMM_=false; acceptEM_=true; }
 }
 
 //
@@ -247,29 +246,20 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
   //if no set of pre-selected leptons has been passed, use standard top selections
   if(preselleptons.size()==0) preselleptons=getTopFlaggedLeptons(ev);
 
-  //check if triggers have fired
-  //bool hasETrigger(((ev.triggerBits>>0)&0x1)!=0);
-  //bool hasMTrigger(((ev.triggerBits>>1)&0x3)!=0);
-  //bool hasEMTrigger(hasETrigger || hasMTrigger || ((ev.triggerBits>>3)&0xf)!=0);
-  //bool hasMMTrigger(hasETrigger || ((ev.triggerBits>>9)&0x1)!=0);
-  //bool hasEETrigger(hasETrigger || ((ev.triggerBits>>10)&0x1)!=0);
-
-  bool hasETrigger(true), hasMTrigger(true), hasEMTrigger(true), hasMMTrigger(true), hasEETrigger(true);
-
   //decide the channel based on the lepton multiplicity and set lepton collections
   std::vector<Particle> passllid( getGoodLeptons(preselleptons,PASSLLID) ), passlid( getGoodLeptons(preselleptons,PASSLID) );
   TString chTag("");
   if(passllid.size()>=2){
     int ch( abs(passllid[0].id()*passllid[1].id()) );
-    if      (ch==11*13 && hasEMTrigger) chTag = "EM";
-    else if (ch==13*13 && hasMMTrigger) chTag = "MM";
-    else if (ch==11*11 && hasEETrigger) chTag = "EE";
+    if      (ch==11*13) chTag = "EM";
+    else if (ch==13*13) chTag = "MM";
+    else if (ch==11*11) chTag = "EE";
     leptons_=preselleptons;
   }
   else if(passlid.size()==1){
     int ch(abs(passlid[0].id()) );
-    if      (ch==13 && hasMTrigger) chTag = "M";
-    else if (ch==11 && hasETrigger) chTag = "E";
+    if      (ch==13) chTag = "M";
+    else if (ch==11) chTag = "E";
     leptons_=preselleptons;
     vetoLeptons_=getGoodLeptons(preselleptons,SelectionTool::PASSLVETO, 0., 99., &leptons_);
   }
@@ -277,15 +267,53 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
   //select jets based on the leptons
   jets_=getGoodJets(ev,30.,2.4,leptons_);
 
-  //final consistency check for data 
-  if(ev.isData)
+  //build the met
+  met_.SetPtEtaPhiM( ev.met_pt[0], 0, ev.met_phi[0], 0. );
+
+
+  //check if triggers have fired
+  bool hasETrigger(((ev.triggerBits>>0)&0x1)!=0);
+  bool hasMTrigger(((ev.triggerBits>>1)&0x3)!=0);
+  bool hasEMTrigger(((ev.triggerBits>>3)&0x3)!=0  || ((ev.triggerBits>>5)&0x7)!=0 );
+  bool hasMMTrigger(((ev.triggerBits>>8)&0x3)!=0);
+  bool hasEETrigger(((ev.triggerBits>>10)&0x1)!=0);
+
+  //check consistency with data
+  if(chTag=="EM")
     {
-      if(chTag=="EE"      && !acceptEE_) chTag="";
-      else if(chTag=="MM" && !acceptMM_) chTag="";
-      else if(chTag=="EM" && !acceptEM_) chTag="";
-      else if(chTag=="E"  && !acceptE_)  chTag="";
-      else if(chTag=="M"  && !acceptM_)  chTag="";
+      if(!hasEMTrigger && !hasETrigger && !hasMTrigger)                         chTag="";
+      if(isDoubleEGPD_      || isDoubleMuonPD_)                                 chTag="";
+      if(isSingleElectronPD_ && (hasEMTrigger || !hasETrigger))                 chTag="";
+      if(isSingleMuonPD_    && (hasEMTrigger  || hasETrigger || !hasMTrigger))  chTag="";
+      if(isMuonEGPD_        && !hasEMTrigger)                                   chTag="";
     }
+  if(chTag=="EE")
+    {
+      if(!hasEETrigger && !hasETrigger)                          chTag="";
+      if(isMuonEGPD_ || isSingleMuonPD_ || isDoubleMuonPD_)      chTag="";
+      if(isSingleElectronPD_ && (hasEETrigger || !hasETrigger) ) chTag="";
+      if(isDoubleEGPD_      && !hasEETrigger)                    chTag="";
+    }
+  if(chTag=="MM")
+    {
+      if(!hasMMTrigger && !hasMTrigger)                         chTag="";
+      if(isMuonEGPD_ || isSingleElectronPD_ || isDoubleEGPD_)   chTag="";
+      if(isSingleMuonPD_ && (hasMMTrigger || !hasMTrigger) )    chTag="";
+      if(isDoubleMuonPD_ && !hasMMTrigger)                      chTag="";
+    }
+  if(chTag=="M")
+    {
+      if(!hasMTrigger)                    chTag="";
+      if(isMuonEGPD_ || isDoubleMuonPD_ || isDoubleEGPD_ || isSingleElectronPD_)   chTag="";
+      if(isSingleMuonPD_ && !hasMTrigger) chTag="";
+    }
+  if(chTag=="E")
+    {
+      if(!hasETrigger)                        chTag="";
+      if(isMuonEGPD_ || isDoubleMuonPD_ || isDoubleEGPD_ || isSingleMuonPD_)   chTag="";
+      if(isSingleElectronPD_ && !hasETrigger) chTag="";
+    }
+      
 
   if(debug_) cout << "[flagFinalState] chTag=" << chTag << endl
 		  << "\t Pre-selection lepton mult." << preselleptons.size() << endl

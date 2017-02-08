@@ -123,37 +123,9 @@ if not options.runOnData:
     process.pseudoTop.leptonMaxEta=cms.double(2.5)
     process.pseudoTop.jetMaxEta=cms.double(5.0)
 
-#EGM corrections
-# scale regression https://twiki.cern.ch/twiki/bin/view/CMS/EGMRegression
-# smearer https://twiki.cern.ch/twiki/bin/view/CMS/EGMSmearer
-from EgammaAnalysis.ElectronTools.regressionWeights_cfi import regressionWeights
-process = regressionWeights(process)
-process.load('EgammaAnalysis.ElectronTools.regressionApplication_cff')
-process.load('Configuration.StandardSequences.Services_cff')
-process.RandomNumberGeneratorService = cms.Service("RandomNumberGeneratorService",
-                                                   calibratedPatElectrons  = cms.PSet( initialSeed = cms.untracked.uint32(81),
-                                                                                       engineName = cms.untracked.string('TRandom3'),
-                                                                                       )
-                                                   )
-process.load('EgammaAnalysis.ElectronTools.calibratedElectronsRun2_cfi')
-process.calibratedPatElectrons.correctionFile = 'EgammaAnalysis/ElectronTools/data/ScalesSmearings/Winter_2016_reReco_v1_ele'
-process.calibratedPatElectrons.isMC=False if options.runOnData else True
-process.calibratedPatElectrons.isSynchronization = cms.bool(True)
-print 'Using calibrated electrons with corrections from',process.calibratedPatElectrons.correctionFile
-
-# Set up electron ID (VID framework)
-from PhysicsTools.SelectorUtils.tools.vid_id_tools import *
-dataFormat = DataFormat.MiniAOD
-switchOnVIDElectronIdProducer(process, dataFormat)
-my_id_modules = ['RecoEgamma.ElectronIdentification.Identification.mvaElectronID_Spring16_GeneralPurpose_V1_cff',
-                 'RecoEgamma.ElectronIdentification.Identification.cutBasedElectronID_Spring15_25ns_V1_cff'] 
-for idmod in my_id_modules:
-    setupAllVIDIdsInModule(process,idmod,setupVIDElectronSelection)
-
-#given regression is applied vid must be fixed https://hypernews.cern.ch/HyperNews/CMS/get/egamma/1837.html
-process.electronRegressionValueMapProducer.srcMiniAOD = cms.InputTag('slimmedElectrons')
-process.electronMVAValueMapProducer.srcMiniAOD = cms.InputTag('slimmedElectrons')
-
+#EGM
+from TopLJets2015.TopAnalysis.customizeEGM_cff import *
+customizeEGM(process=process,applyEGMRegression=options.applyLeptonCorrections,runOnData=options.runOnData)
 
 #jet energy corrections
 process.load('JetMETCorrections.Configuration.DefaultJEC_cff')
@@ -172,6 +144,6 @@ process.TFileService = cms.Service("TFileService",
                                    )
 
 if options.runOnData:
-    process.p = cms.Path(process.regressionApplication*process.calibratedPatElectrons*process.egmGsfElectronIDSequence*process.jetmetSeq*process.analysis)
+    process.p = cms.Path(process.egmSeq*process.jetmetSeq*process.analysis)
 else:
-    process.p = cms.Path(process.regressionApplication*process.calibratedPatElectrons*process.egmGsfElectronIDSequence*process.jetmetSeq*process.pseudoTop*process.analysis)
+    process.p = cms.Path(process.egmSeq*process.jetmetSeq*process.pseudoTop*process.analysis)

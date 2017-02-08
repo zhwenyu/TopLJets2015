@@ -22,26 +22,26 @@ case $WHAT in
     SEL )
 	echo -e "[ ${RED} Sending out jobs to batch ${NC} ]"
 
-	commonOpts="--era era5TeV -m TOP-HIForest::RunToppPb"
-	queue=local
+	commonOpts="--era era5TeV -m TOP-HIForest::RunToppPb"	
 	inDir=/store/cmst3/group/top/mverweij/PA8TeV/data/PASingleMuon/crab_FilteredPASingleMuHighPt_PPb_v4/161219_092237/
 	a=(`eos ls ${inDir}`)
 	for i in ${a[@]}; do
-	    python scripts/runLocalAnalysis.py -i ${inDir}/${i}/ -q ${queue} -o ${outdir}/analysis_pPb       ${commonOpts} --ch 13;
+	    python scripts/runLocalAnalysis.py -i ${inDir}/${i}/ -q ${queue} -o ${outdir}/analysis_pPb         ${commonOpts} --ch 13;
+	    python scripts/runLocalAnalysis.py -i ${inDir}/${i}/ -q ${queue} -o ${outdir}/analysis_pPb_noniso  ${commonOpts} --ch 1300;
 	done
-	
+
 	inDir=/store/cmst3/group/top/mverweij/PA8TeV/data/PASingleMuon/crab_FilteredPASingleMuHighPt_PbP_v6/170105_162741/
 	a=(`eos ls ${inDir}`)
         for i in ${a[@]}; do
-	    python scripts/runLocalAnalysis.py -i ${inDir}/${i} -q ${queue} -o ${outdir}/analysis_Pbp       ${commonOpts} --ch 13;
+	    python scripts/runLocalAnalysis.py -i ${inDir}/${i} -q ${queue} -o ${outdir}/analysis_Pbp          ${commonOpts} --ch 13;
+	    python scripts/runLocalAnalysis.py -i ${inDir}/${i}/ -q ${queue} -o ${outdir}/analysis_Pbp_noniso  ${commonOpts} --ch 1300;
 	done
 
 	;;
     MERGE )
 	exit -1
 	echo -e "[ ${RED} Merging job output ${NC} ]"
-	a=(pPb Pbp)
-	for i in ${a[@]}; do
+	for i in pPb; do #Pbp
 	    ./scripts/mergeOutputs.py ${outdir}/analysis_${i};
 	done
 	;;

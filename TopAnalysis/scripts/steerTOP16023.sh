@@ -80,14 +80,14 @@ case $WHAT in
 	echo -e "[ ${RED} Running plotter ${NC} ]"
 	a=(mu munoniso e enoniso)
 	for i in ${a[@]}; do
-	    continue
-	    python scripts/plotter.py -i ${outdir}/analysis_${i}  -j data/era5TeV/Wsamples.json     --com "5.02 TeV" -l ${lumi} --saveLog --noStack;	
-	    mkdir ~/${outdir}/analysis_${i}/wplots;
-	    mv ~/${outdir}/analysis_${i}/plots/* ~/${outdir}/analysis_${i}/wplots/;
-	    python scripts/plotter.py -i ${outdir}/analysis_${i}  -j data/era5TeV/samples.json      --com "5.02 TeV" -l ${lumi} --saveLog;	
-	    python scripts/plotter.py -i ${outdir}/analysis_${i}  -j data/era5TeV/syst_samples.json --com "5.02 TeV" -l ${lumi} -o syst_plotter.root --silent;	
+	    #python scripts/plotter.py -i ${outdir}/analysis_${i}  -j data/era5TeV/Wsamples.json     --com "5.02 TeV" -l ${lumi} --saveLog --noStack;	
+	    #mkdir ~/${outdir}/analysis_${i}/wplots;
+	    #mv ~/${outdir}/analysis_${i}/plots/* ~/${outdir}/analysis_${i}/wplots/;
+	    python scripts/plotter.py -i ${outdir}/analysis_${i}  -j data/era5TeV/samples.json --com "5.02 TeV" -l ${lumi} -o count_plotter.root --only drjj --rebin 12 --saveTeX;
+	    #python scripts/plotter.py -i ${outdir}/analysis_${i}  -j data/era5TeV/samples.json      --com "5.02 TeV" -l ${lumi} --saveLog;	
+	    #python scripts/plotter.py -i ${outdir}/analysis_${i}  -j data/era5TeV/syst_samples.json --com "5.02 TeV" -l ${lumi} -o syst_plotter.root --silent;	
 	done
-	python test/TopLJAnalysis/combinePlotsForAllCategories.py data/era5TeV/samples.json metpt_0b,metpt_1b,metpt_2b,rankedmjj_0b,rankedmjj_1b,rankedmjj_2b,drjj_0b,drjj_1b,drjj_2b;
+	#python test/TopLJAnalysis/combinePlotsForAllCategories.py data/era5TeV/samples.json metpt_0b,metpt_1b,metpt_2b,rankedmjj_0b,rankedmjj_1b,rankedmjj_2b,drjj_0b,drjj_1b,drjj_2b;
 	;;
 
     WWW )

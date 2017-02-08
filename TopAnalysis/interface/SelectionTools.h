@@ -22,6 +22,7 @@ class SelectionTool {
   std::vector<Particle> &getSelLeptons()  { return leptons_; }
   std::vector<Particle> &getVetoLeptons() { return vetoLeptons_; }
   std::vector<Jet>      &getJets()        { return jets_; }
+  TLorentzVector        &getMET()         { return met_; }
 
   //selection at particle level
   TString flagGenFinalState(MiniEvent_t &ev, std::vector<Particle> preselleptons={});
@@ -43,9 +44,10 @@ class SelectionTool {
   void setDebug(bool flag) { debug_=flag; }
 
  private:
-  bool acceptE_, acceptM_, acceptEE_, acceptEM_, acceptMM_;
+  bool isSingleElectronPD_,isSingleMuonPD_,isDoubleEGPD_,isDoubleMuonPD_,isMuonEGPD_;
   std::vector<Particle> leptons_,vetoLeptons_,genLeptons_;
   std::vector<Jet> jets_,genJets_;
+  TLorentzVector met_;
   bool debug_;
 
 };

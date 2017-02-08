@@ -13,6 +13,9 @@
 
 #include "TGraphAsymmErrors.h"
 
+//pileup weighting
+std::vector<TGraph *> getPileupWeights(TString era,TH1 *genPU);
+
 //apply jet energy resolutions
 MiniEvent_t smearJetEnergies(MiniEvent_t ev, std::string option = "central");
 
@@ -26,7 +29,6 @@ MiniEvent_t updateBTagDecisions(MiniEvent_t ev,
 				std::map<BTagEntry::JetFlavor, TGraphAsymmErrors*> &expBtagEffPy8, 
 				BTagSFUtil *myBTagSFUtil, 
 				std::string option = "central");
-
 
 //details in https://twiki.cern.ch/twiki/bin/view/CMS/BTagCalibration
 std::map<BTagEntry::JetFlavor,BTagCalibrationReader *> getBTVcalibrationReaders(TString era,BTagEntry::OperatingPoint btagOP=BTagEntry::OP_MEDIUM);

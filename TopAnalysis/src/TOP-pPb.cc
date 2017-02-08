@@ -12,6 +12,8 @@
 #include "TopLJets2015/TopAnalysis/interface/BtagUncertaintyComputer.h"
 #include "TopLJets2015/TopAnalysis/interface/TOP-HIForest.h"
 
+#include "DataFormats/ParticleFlowCandidate/interface/PFCandidate.h"
+
 #include <string>
 #include <vector>
 #include <algorithm>
@@ -28,7 +30,7 @@ void RunToppPb(TString inFileName,
 	       TString era)
 {		 
   
-  Float_t JETPTTHRESHOLD=30;
+  Float_t JETPTTHRESHOLD=25;
   Float_t DRJJTHRESHOLD=2.0;
 
   if(inFileName=="") 
@@ -101,7 +103,7 @@ void RunToppPb(TString inFileName,
   histos["mt"]   = new TH1F("mt",";Transverse Mass [GeV];Events" ,20,0.,200.);
   histos["metpt"]= new TH1F("metpt",";Missing transverse energy [GeV];Events" ,20,0.,200.);
 
-  //electron selection control plots
+   //electron selection control plots
   for(int ireg=0; ireg<2; ireg++)
     {
       TString pf(ireg==0 ? "_ee" : "_eb");
@@ -148,6 +150,7 @@ void RunToppPb(TString inFileName,
       histos["mlb_"+pf]    = new TH1F("mlb_"+pf,";Mass(l,b) [GeV];Events" ,20,0.,300.);
       histos["njets_"+pf]  = new TH1F("njets_"+pf,";Jet multiplicity;Events" ,6,2.,8.);
       histos["mbjj_"+pf]    = new TH1F("mbjj_"+pf,";Mass(bjj') [GeV];Events" ,20,0.,400.);
+      histos["rankedmbjj_"+pf]    = new TH1F("rankedmbjj_"+pf,";Mass(bjj') [GeV];Events" ,20,0.,400.);
 
       if(isMC && runSysts)
 	{
@@ -407,7 +410,7 @@ void RunToppPb(TString inFileName,
     
     if(channelSelection==11 || channelSelection==1100) 
       {
-	triggerName = isMC ? "HLT_HISinglePhoton40_Eta3p1ForPPRef_v1" : "HLT_HISinglePhoton40_Eta3p1_v1";
+	triggerName = isMC ? "HLT_HISinglePhoton40_Eta3p1ForPPRef_v1" : "HLT_PASinglePhoton30_Eta3p1_v1"; 
       }
     
     hltTree_p->SetBranchStatus(triggerName.data(),1);
@@ -532,7 +535,7 @@ void RunToppPb(TString inFileName,
 	for(Int_t muIter = 0; muIter < nMu; muIter++)
 	  {
 	    bool passLooseKin( muPt_p->at(muIter) > 15. && TMath::Abs(muEta_p->at(muIter))<2.4);
-	    bool passTightKin( muPt_p->at(muIter) > 25. && TMath::Abs(muEta_p->at(muIter))<2.1);
+	    bool passTightKin( muPt_p->at(muIter) > 20. && TMath::Abs(muEta_p->at(muIter))<2.1);
 	    bool passLooseId(true);
 	    bool passTightId( passLooseId
 			      && muChi2NDF_p->at(muIter) < 10
@@ -575,7 +578,7 @@ void RunToppPb(TString inFileName,
 	    bool passPt(elePt_p->at(elIter) > 15.0);  
 	    bool passEta(fabs(eleEta_p->at(elIter)) < 2.5);
 	    if(!passPt || !passEta) continue;
-	    bool passMediumId ((fabs(eleEta_p->at(elIter)) <= 1.4479
+	    bool passMedium2015Id ((fabs(eleEta_p->at(elIter)) <= 1.4479
 				&& fabs(eleSigmaIEtaIEta_p->at(elIter)) < 0.0101
 				&& fabs(eledEtaAtVtx_p->at(elIter)) < 0.0103
 				&& fabs(eledPhiAtVtx_p->at(elIter)) < 0.0336
@@ -597,7 +600,7 @@ void RunToppPb(TString inFileName,
 				&& fabs(eleMissHits_p->at(elIter)) <= 1 
 				&& elepassConversionVeto_p->at(elIter)==1)
 			       );
-	    bool passVetoId ((fabs(eleEta_p->at(elIter)) <= 1.4479
+	    bool passVeto2015Id ((fabs(eleEta_p->at(elIter)) <= 1.4479
 			      && fabs(eleSigmaIEtaIEta_p->at(elIter)) < 0.0114
 			      && fabs(eledEtaAtVtx_p->at(elIter)) < 0.0152
 			      && fabs(eledPhiAtVtx_p->at(elIter)) < 0.216
@@ -619,16 +622,60 @@ void RunToppPb(TString inFileName,
 			      && fabs(eleMissHits_p->at(elIter)) <= 3 
 			      && fabs(elepassConversionVeto_p->at(elIter)))
 			     );
+	    bool passMedium2016Id ((fabs(eleEta_p->at(elIter)) <= 1.4479
+				    && fabs(eleSigmaIEtaIEta_p->at(elIter)) < 0.011
+				    && fabs(eledEtaAtVtx_p->at(elIter)) < 0.0047
+				    && fabs(eledPhiAtVtx_p->at(elIter)) < 0.222 
+				    && fabs(eleHoverE_p->at(elIter)) < 0.298
+				    && fabs(eleEoverP_p->at(elIter)) < 0.241
+				    && fabs(eleD0_p->at(elIter)) < 0.05
+				    && fabs(eleDz_p->at(elIter)) < 0.373
+				    && fabs(eleMissHits_p->at(elIter)) <= 1
+				    && elepassConversionVeto_p->at(elIter)==1)
+				   ||
+				   (fabs(eleEta_p->at(elIter)) > 1.4479
+				    && fabs(eleSigmaIEtaIEta_p->at(elIter)) < 0.0314
+				    && fabs(eledEtaAtVtx_p->at(elIter)) < 0.00868
+				    && fabs(eledPhiAtVtx_p->at(elIter)) < 0.213 
+				    && fabs(eleHoverE_p->at(elIter)) < 0.101
+				    && fabs(eleEoverP_p->at(elIter)) < 0.14 
+				    && fabs(eleD0_p->at(elIter)) < 0.10
+				    && fabs(eleDz_p->at(elIter)) < 0.602
+				    && fabs(eleMissHits_p->at(elIter)) <= 1 
+				    && elepassConversionVeto_p->at(elIter)==1)
+				   );
+	    bool passVeto2016Id ((fabs(eleEta_p->at(elIter)) <= 1.4479
+				  && fabs(eleSigmaIEtaIEta_p->at(elIter)) < 0.0115
+				  && fabs(eledEtaAtVtx_p->at(elIter)) < 0.00749
+				  && fabs(eledPhiAtVtx_p->at(elIter)) < 0.228
+				  && fabs(eleHoverE_p->at(elIter)) <0.356 
+				  && fabs(eleEoverP_p->at(elIter)) < 0.299
+				  && fabs(eleD0_p->at(elIter)) < 0.0564
+				  && fabs(eleDz_p->at(elIter)) < 0.472
+				  && fabs(eleMissHits_p->at(elIter)) <= 2 
+				  && fabs(elepassConversionVeto_p->at(elIter)))
+				 ||
+				 (fabs(eleEta_p->at(elIter)) > 1.4479
+				  && fabs(eleSigmaIEtaIEta_p->at(elIter)) < 0.037 
+				  && fabs(eledEtaAtVtx_p->at(elIter)) < 0.00895
+				  && fabs(eledPhiAtVtx_p->at(elIter)) < 0.213 
+				  && fabs(eleHoverE_p->at(elIter)) <0.211
+				  && fabs(eleEoverP_p->at(elIter)) < 0.15
+				  && fabs(eleD0_p->at(elIter)) < 0.222
+				  && fabs(eleDz_p->at(elIter)) < 0.921
+				  && fabs(eleMissHits_p->at(elIter)) <= 3 
+				  && fabs(elepassConversionVeto_p->at(elIter)))
+);
 	    
 	    double deposit, corrEA_isolation;
 	    deposit =  fabs(elePFPhoIso_p->at(elIter)+elePFNeuIso_p->at(elIter)-eleEffAreaTimesRho_p->at(elIter));
 	    corrEA_isolation = (elePFChIso_p->at(elIter) + TMath::Max (0.0, deposit )) / elePt_p->at(elIter);
 
-	    bool passMediumIso( (corrEA_isolation < 0.04 && fabs(eleEta_p->at(elIter)) <= 1.4479) || (corrEA_isolation < 0.005 && fabs(eleEta_p->at(elIter)) > 1.4479) );
-	    bool passVetoIso( (corrEA_isolation < 0.126 && fabs(eleEta_p->at(elIter)) <= 1.4479) || (corrEA_isolation < 0.144 && fabs(eleEta_p->at(elIter)) > 1.4479) );
+	    bool passMediumIso( (corrEA_isolation < 0.0994 && fabs(eleEta_p->at(elIter)) <= 1.4479) || (corrEA_isolation < 0.107 && fabs(eleEta_p->at(elIter)) > 1.4479) );
+	    bool passVetoIso( (corrEA_isolation < 0.175 && fabs(eleEta_p->at(elIter)) <= 1.4479) || (corrEA_isolation < 0.159 && fabs(eleEta_p->at(elIter)) > 1.4479) );
 
 	    TString pf(fabs(eleEta_p->at(elIter)) > 1.4479 ? "_ee" : "_eb");
-	    if(passMediumId)
+	    if(passMedium2016Id)
 	      {
 		histos["reliso"+pf]->Fill( corrEA_isolation,evWeight);
 	      }
@@ -650,22 +697,22 @@ void RunToppPb(TString inFileName,
 	    TLorentzVector p4(0,0,0,0);
 	    p4.SetPtEtaPhiM(elePt_p->at(elIter),eleEta_p->at(elIter),elePhi_p->at(elIter), 0.0510);
 	        
-	    if (passMediumPt && passMediumEta && passMediumId && corrEA_isolation > 0.2)
+	    if (passMediumPt && passMediumEta && passMedium2016Id && corrEA_isolation > 0.2)
 	      {
 		mediumElectronsNonIso.push_back( p4 );
 		elCharge.push_back(eleCharge_p->at(elIter));
 	      }
-	    else if(passMediumPt && passMediumEta && passMediumId && passMediumIso)
+	    else if(passMediumPt && passMediumEta && passMedium2016Id && passMediumIso)
 	      {
 		mediumElectrons.push_back( p4 );
 		elCharge.push_back(eleCharge_p->at(elIter));
 	      }
-	    else if (passVetoId && passVetoIso)
+	    else if (passVeto2016Id && passVetoIso)
 	      {
 		vetoElectrons.push_back( p4 );
 		elCharge.push_back(eleCharge_p->at(elIter));
 	      }
-	    else if (passMediumPt && passMediumEta && !passVetoId)
+	    else if (passMediumPt && passMediumEta && !passVeto2016Id)
               {
                 mediumElectronsFailId.push_back( p4 );
 		elCharge.push_back(eleCharge_p->at(elIter));
@@ -808,11 +855,11 @@ void RunToppPb(TString inFileName,
 
 		if(ljev.nj<20)
 		  {
-		    ljev.j_pt[ljev.nj]=jp4.Pt();
-		    ljev.j_eta[ljev.nj]=jp4.Eta();
-		    ljev.j_phi[ljev.nj]=jp4.Phi();
-		    ljev.j_m[ljev.nj]=jp4.M();
-		    ljev.j_btag[ljev.nj]=passCSVL | (passCSVM<1);
+		    ljev.j_pt[ljev.nj]  = jp4.Pt();
+		    ljev.j_eta[ljev.nj] =jp4.Eta();
+		    ljev.j_phi[ljev.nj] =jp4.Phi();
+		    ljev.j_m[ljev.nj]   =jp4.M();
+		    ljev.j_btag[ljev.nj]=passCSVL | (passCSVM<<1);
 		    ljev.nj++;
 		  }
 
@@ -912,7 +959,8 @@ void RunToppPb(TString inFileName,
 	    TString pf(Form("%db",TMath::Min(nbtags,2)));
 	    
 	    //jet-related quantities
-	    Float_t mjj( (lightJets[jetIdx][0]+lightJets[jetIdx][1]).M() );
+	    TLorentzVector jjp4((lightJets[jetIdx][0]+lightJets[jetIdx][1]));
+	    Float_t mjj( jjp4.M() );
 	    std::pair<int,int> jjLegsIdx=getDijetsSystemCandidate(lightJets[jetIdx]);
 	    int idx1(jjLegsIdx.first),idx2(jjLegsIdx.second);
 	    TLorentzVector rankedjjp4(lightJets[jetIdx][idx1]+lightJets[jetIdx][idx2]);
@@ -925,17 +973,22 @@ void RunToppPb(TString inFileName,
 	    for(Int_t ij=0; ij<nljets; ij++) htsum += lightJets[jetIdx][ij].Pt();
 
 
-	    Float_t mbjj(-1);
+	    Float_t mbjj(-1),rankedmbjj(-1);
 	    Float_t mlb( TMath::Min( (goodLeptons[0]+lightJets[jetIdx][idx1]).M(),
 				     (goodLeptons[0]+lightJets[jetIdx][idx2]).M()) );
 	    if(nbtags>0)
 	      {
-		mbjj=(rankedjjp4+bJets[jetIdx][0]).M();
+		mbjj=(jjp4+bJets[jetIdx][0]).M();
+		rankedmbjj=(rankedjjp4+bJets[jetIdx][0]).M();
 		mlb=(goodLeptons[0]+bJets[jetIdx][0]).M();
 		if(nbtags>1)
 		  {
 		    mlb=TMath::Min( mlb, Float_t((goodLeptons[0]+bJets[jetIdx][1]).M()) );
-		    mbjj = rankedjjp4.DeltaR(bJets[jetIdx][0])<rankedjjp4.DeltaR(bJets[jetIdx][1]) ? 
+		    
+		    mbjj = jjp4.DeltaR(bJets[jetIdx][0])<jjp4.DeltaR(bJets[jetIdx][1]) ?
+		      (rankedjjp4+bJets[jetIdx][0]).M():
+		      (rankedjjp4+bJets[jetIdx][1]).M();
+		    rankedmbjj = rankedjjp4.DeltaR(bJets[jetIdx][0])<rankedjjp4.DeltaR(bJets[jetIdx][1]) ? 
 		      (rankedjjp4+bJets[jetIdx][0]).M() :
 		      (rankedjjp4+bJets[jetIdx][1]).M();
 		  }
@@ -951,15 +1004,21 @@ void RunToppPb(TString inFileName,
 	    //fill histos and tree
 	    if(ivar==0)
 	      {
+		ljev.run=run_;
+		ljev.lumi=lumi_;
+		ljev.event=evt_;
+
 		//number of tracks and tracks overlapping with hard process objects
 		ljev.ntracks=0;
 		ljev.ntracks_hp=0;
 		for(size_t ipf=0; ipf<pfId_p->size(); ipf++)
 		  {
-		    int pfid(pfId_p->at(ipf));
-		    if(pfid!=211 && pfid!=11 && pfid!=13) continue;
+
 		    if(fabs(pfEta_p->at(ipf))>2.5 || pfPt_p->at(ipf)<0.9) continue;
 
+		    int pfid(abs(pfId_p->at(ipf)));		    
+		    if(pfid!=reco::PFCandidate::h && pfid!=reco::PFCandidate::e && pfid!=reco::PFCandidate::mu) continue;
+		    
 		    ljev.ntracks++;
 		    TLorentzVector pfp4(0,0,0,0);
 		    pfp4.SetPtEtaPhiE(pfPt_p->at(ipf),pfEta_p->at(ipf),pfPhi_p->at(ipf),pfEnergy_p->at(ipf));
@@ -982,11 +1041,18 @@ void RunToppPb(TString inFileName,
 		ljev.nb=nbtags;
 		ljev.met_pt=rawMET.Pt();
 		ljev.met_phi=rawMET.Phi();
-		outT->Fill();
-		
+		if(channelSelection==1300 || channelSelection==1100)
+		  {
+		    if(ljev.nj>2)	outT->Fill();
+		  }
+		else
+		  {
+		    outT->Fill();
+		  }
 		histos["mjj_"+pf]->Fill(mjj,iweight);
 		histos["rankedmjj_"+pf]->Fill(rankedmjj,iweight);
 		histos["mbjj_"+pf]->Fill(mbjj,iweight);
+		histos["rankedmbjj_"+pf]->Fill(rankedmbjj,iweight);
 		histos["drjj_"+pf]->Fill(drjj,iweight);
 		histos["lpt_"+pf]->Fill(goodLeptons[0].Pt(),iweight);
 		histos["leta_"+pf]->Fill(fabs(goodLeptons[0].Eta()),iweight);

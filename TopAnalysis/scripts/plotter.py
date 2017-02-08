@@ -103,41 +103,53 @@ def main():
                         else :
                             report += '%s was scaled by %3.3f for pileup normalization\n' % (sp[0],puNormSF)
 
-                try:
-                    for tkey in fIn.GetListOfKeys():
+                for tkey in fIn.GetListOfKeys():
+
+                    try:
                         key=tkey.GetName()
+
+                        #filter plots using a selection list
                         keep=False if len(onlyList)>0 else True
                         for pname in onlyList: 
-                            if pname in key: keep=True
+                            if pname in key: 
+                                keep=True
+                                break
                         if not keep: continue
+
                         obj=fIn.Get(key)
                         if not obj.InheritsFrom('TH1') : continue
                         if not obj.InheritsFrom('TH2') : fixExtremities(obj, False, False)
 
                         if not isData and not '(data)' in sp[1]: 
-                            sfVal=1.0
+
+                            #check if a special scale factor needs to be applied
+                            sfVal=1.0                            
                             for procToScale in procSF:
                                 if sp[1]==procToScale:
-                                    #if procToScale in sp[1]:
                                     for pcat in procSF[procToScale]:                                    
                                         if pcat not in key: continue
                                         sfVal=procSF[procToScale][pcat][0]
-                                     #print '[Warning] Applying scale factor for ',sp[1],key,sfVal
-                           
+                                        break
+
                             #scale by lumi
                             lumi=opt.lumi
                             for tag in lumiSpecs:
                                 if not tag in key: continue
                                 lumi=lumiSpecs[tag]
-                                #print '[Warning] applying',lumi,'for',tag
                                 break
                                         
                             obj.Scale(xsec*lumi*puNormSF*sfVal)                    
+                        
+                        #rebin if needed
                         if opt.rebin>1:  obj.Rebin(opt.rebin)
+
+                        #create new plot if needed
                         if not key in plots : plots[key]=Plot(key,com=opt.com)
+
+                        #add process to plot
                         plots[key].add(h=obj,title=sp[1],color=sp[2],isData=sample[1],spImpose=isSignal)
-                except:
-                    pass
+                    except:
+                        pass
 
     #show plots
     ROOT.gStyle.SetOptTitle(0)
