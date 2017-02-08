@@ -120,22 +120,110 @@ void RunTopJetShape(TString filename,
   std::map<TString, TH2 *> all2dPlots;
   allPlots["puwgtctr"] = new TH1F("puwgtctr","Weight sums",2,0,2);
 
-  std::vector<TString> stageVec = { "pre", "final" }; 
-  for(size_t ilfs=0; ilfs<stageVec.size(); ilfs++) { 
-    TString tag(stageVec[ilfs]);
-    allPlots["nvtx_"+tag]  = new TH1F("nvtx_"+tag,";Vertex multiplicity;Events",30,0,30);
-    allPlots["njets_"+tag]  = new TH1F("njets_"+tag,";Jet multiplicity;Events",10,-0.5,9.5);
-    for(int i=0; i<2; i++) {
-      TString pf(Form("l%d",i));          
-      allPlots[pf+"pt_"+tag]  = new TH1F(pf+"pt_"+tag,";Lepton p_{t} [GeV];Events",50,0,250);
-      allPlots[pf+"eta_"+tag]  = new TH1F(pf+"eta_"+tag,";Lepton pseudo-rapidity;Events",50,0,2.5);
-    }
-    for(int i=0; i<6; i++) {
-      TString pf(Form("j%d",i));
-      allPlots[pf+"pt_"+tag]  = new TH1F(pf+"pt_"+tag,";Jet transverse momentum [GeV];Events",50,0,250);
-      allPlots[pf+"eta_"+tag]  = new TH1F(pf+"eta_"+tag,";Jet pseudo-rapidity;Events",50,0,4.7);
+  std::vector<TString> stageVec = { "s1", "s2", "s3", "s4" };
+  std::vector<TString> chTags = { "", "E", "M" };
+  for(auto& stage : stageVec) {
+    for(auto& channel : chTags) {  
+      TString tag(stage+channel);
+      
+      allPlots["nvtx_"+tag]   = new TH1F("nvtx_"+tag,";Vertex multiplicity;Events",30,0,30);
+      allPlots["nleps_"+tag]  = new TH1F("nleps_"+tag,";Lepton multiplicity;Events",5,-0.5,4.5);
+      allPlots["njets_"+tag]  = new TH1F("njets_"+tag,";Jet multiplicity;Events",10,-0.5,9.5);
+      allPlots["nbjets_"+tag] = new TH1F("nbjets_"+tag,";b jet multiplicity;Events",5,-0.5,4.5);
+      allPlots["nwjets_"+tag] = new TH1F("nwjets_"+tag,";W jet multiplicity;Events",10,-0.5,9.5);
+      allPlots["wcandm_"+tag] = new TH1F("wcandm_"+tag,";W candidate mass;W candidates",60,0,300);
+      allPlots["tcandm_"+tag] = new TH1F("tcandm_"+tag,";top candidate mass;top candidates",70,50,400);
+      allPlots["tcandwcutm_"+tag] = new TH1F("tcandwcutm_"+tag,";top candidate mass;top candidates (W cut)",70,50,400);
+      for(int i=0; i<2; i++) {
+        TString pf(Form("l%d",i));          
+        allPlots[pf+"pt_"+tag]  = new TH1F(pf+"pt_"+tag,";Lepton p_{t} [GeV];Events",50,0,250);
+        allPlots[pf+"eta_"+tag]  = new TH1F(pf+"eta_"+tag,";Lepton pseudo-rapidity;Events",50,-2.5,2.5);
+      }
+      for(int i=0; i<6; i++) {
+        TString pf(Form("j%d",i));
+        allPlots[pf+"pt_"+tag]  = new TH1F(pf+"pt_"+tag,";Jet transverse momentum [GeV];Events",50,0,250);
+        allPlots[pf+"eta_"+tag] = new TH1F(pf+"eta_"+tag,";Jet pseudo-rapidity;Events",50,-5,5);
+      }
+      allPlots["met_"+tag] = new TH1F("met_"+tag,";MET [GeV];Events",50,0,250);
     }
   }
+  
+  allPlots["js_mult_charged"] = new TH1F("js_mult_charged",";N (charged);Jets",30,0,30);
+  allPlots["js_mult_puppi"] = new TH1F("js_mult_puppi",";N (puppi);Jets",30,0,30);
+  allPlots["js_mult_all"] = new TH1F("js_mult_all",";N (all);Jets",30,0,30);
+  allPlots["js_width_charged"] = new TH1F("js_width_charged",";width (charged);Jets",50,0,0.25);
+  allPlots["js_width_puppi"] = new TH1F("js_width_puppi",";width (puppi);Jets",50,0,0.25);
+  allPlots["js_width_all"] = new TH1F("js_width_all",";width (all);Jets",50,0,0.25);
+  allPlots["js_ptd_charged"] = new TH1F("js_ptd_charged",";p_{T}D (charged);Jets",50,0,1);
+  allPlots["js_ptd_puppi"] = new TH1F("js_ptd_puppi",";p_{T}D (puppi);Jets",50,0,1);
+  allPlots["js_ptd_all"] = new TH1F("js_ptd_all",";p_{T}D (all);Jets",50,0,1);
+  allPlots["js_ecc_charged"] = new TH1F("js_ecc_charged",";eccentricity (charged);Jets",50,0,1);
+  allPlots["js_ecc_puppi"] = new TH1F("js_ecc_puppi",";eccentricity (puppi);Jets",50,0,1);
+  allPlots["js_ecc_all"] = new TH1F("js_ecc_all",";eccentricity (all);Jets",50,0,1);
+  allPlots["js_tau21_charged"] = new TH1F("js_tau21_charged",";#tau_{21} (charged);Jets",50,0,1);
+  allPlots["js_tau21_puppi"] = new TH1F("js_tau21_puppi",";#tau_{21} (puppi);Jets",50,0,1);
+  allPlots["js_tau21_all"] = new TH1F("js_tau21_all",";#tau_{21} (all);Jets",50,0,1);
+  allPlots["js_tau32_charged"] = new TH1F("js_tau32_charged",";#tau_{32} (charged);Jets",50,0,1);
+  allPlots["js_tau32_puppi"] = new TH1F("js_tau32_puppi",";#tau_{32} (puppi);Jets",50,0,1);
+  allPlots["js_tau32_all"] = new TH1F("js_tau32_all",";#tau_{32} (all);Jets",50,0,1);
+  allPlots["js_tau43_charged"] = new TH1F("js_tau43_charged",";#tau_{43} (charged);Jets",50,0,1);
+  allPlots["js_tau43_puppi"] = new TH1F("js_tau43_puppi",";#tau_{43} (puppi);Jets",50,0,1);
+  allPlots["js_tau43_all"] = new TH1F("js_tau43_all",";#tau_{43} (all);Jets",50,0,1);
+  allPlots["js_zg_charged"] = new TH1F("js_zg_charged",";z_{g} (charged);Jets",40,0.1,0.5);
+  allPlots["js_zg_puppi"] = new TH1F("js_zg_puppi",";z_{g} (puppi);Jets",40,0.1,0.5);
+  allPlots["js_zg_all"] = new TH1F("js_zg_all",";z_{g} (all);Jets",40,0.1,0.5);
+  allPlots["js_zgxdr_charged"] = new TH1F("js_zgxdr_charged",";z_{g} #times #DeltaR (charged);Jets",50,0,0.25);
+  allPlots["js_zgxdr_puppi"] = new TH1F("js_zgxdr_puppi",";z_{g} #times #DeltaR (puppi);Jets",50,0,0.25);
+  allPlots["js_zgxdr_all"] = new TH1F("js_zgxdr_all",";z_{g} #times #DeltaR (all);Jets",50,0,0.25);
+  allPlots["js_zgdr_charged"] = new TH1F("js_zgdr_charged",";z_{g} #DeltaR (charged);Jets",50,0,0.5);
+  allPlots["js_zgdr_puppi"] = new TH1F("js_zgdr_puppi",";z_{g} #DeltaR (puppi);Jets",50,0,0.5);
+  allPlots["js_zgdr_all"] = new TH1F("js_zgdr_all",";z_{g} #DeltaR (all);Jets",50,0,0.5);
+  allPlots["js_ga_width_charged"] = new TH1F("js_ga_width_charged",";#lambda_{ 1}^{1} (width) (charged);Jets",50,0,1);
+  allPlots["js_ga_width_puppi"] = new TH1F("js_ga_width_puppi",";#lambda_{ 1}^{1} (width) (puppi);Jets",50,0,1);
+  allPlots["js_ga_width_all"] = new TH1F("js_ga_width_all",";#lambda_{ 1}^{1} (width) (all);Jets",50,0,1);
+  allPlots["js_ga_lha_charged"] = new TH1F("js_ga_lha_charged",";#lambda_{ 0.5}^{1} (LHA) (charged);Jets",50,0,1);
+  allPlots["js_ga_lha_puppi"] = new TH1F("js_ga_lha_puppi",";#lambda_{ 0.5}^{1} (LHA) (puppi);Jets",50,0,1);
+  allPlots["js_ga_lha_all"] = new TH1F("js_ga_lha_all",";#lambda_{ 0.5}^{1} (LHA) (all);Jets",50,0,1);
+  allPlots["js_ga_thrust_charged"] = new TH1F("js_ga_thrust_charged",";#lambda_{ 2}^{1} (thrust) (charged);Jets",50,0,0.5);
+  allPlots["js_ga_thrust_puppi"] = new TH1F("js_ga_thrust_puppi",";#lambda_{ 2}^{1} (thrust) (puppi);Jets",50,0,0.5);
+  allPlots["js_ga_thrust_all"] = new TH1F("js_ga_thrust_all",";#lambda_{ 2}^{1} (thrust) (all);Jets",50,0,0.5);
+  allPlots["js_c1_02_charged"] = new TH1F("js_c1_02_charged",";C_{ 1}^{ (0.2)} (charged);Jets",50,0,0.5);
+  allPlots["js_c1_02_puppi"] = new TH1F("js_c1_02_puppi",";C_{ 1}^{ (0.2)} (puppi);Jets",50,0,0.5);
+  allPlots["js_c1_02_all"] = new TH1F("js_c1_02_all",";C_{ 1}^{ (0.2)} (all);Jets",50,0,0.5);
+  allPlots["js_c1_05_charged"] = new TH1F("js_c1_05_charged",";C_{ 1}^{ (0.5)} (charged);Jets",60,0,0.3);
+  allPlots["js_c1_05_puppi"] = new TH1F("js_c1_05_puppi",";C_{ 1}^{ (0.5)} (puppi);Jets",60,0,0.3);
+  allPlots["js_c1_05_all"] = new TH1F("js_c1_05_all",";C_{ 1}^{ (0.5)} (all);Jets",60,0,0.3);
+  allPlots["js_c1_10_charged"] = new TH1F("js_c1_10_charged",";C_{ 1}^{ (1.0)} (charged);Jets",40,0,0.2);
+  allPlots["js_c1_10_puppi"] = new TH1F("js_c1_10_puppi",";C_{ 1}^{ (1.0)} (puppi);Jets",40,0,0.2);
+  allPlots["js_c1_10_all"] = new TH1F("js_c1_10_all",";C_{ 1}^{ (1.0)} (all);Jets",40,0,0.2);
+  allPlots["js_c1_20_charged"] = new TH1F("js_c1_20_charged",";C_{ 1}^{ (2.0)} (charged);Jets",50,0,0.1);
+  allPlots["js_c1_20_puppi"] = new TH1F("js_c1_20_puppi",";C_{ 1}^{ (2.0)} (puppi);Jets",50,0,0.1);
+  allPlots["js_c1_20_all"] = new TH1F("js_c1_20_all",";C_{ 1}^{ (2.0)} (all);Jets",50,0,0.1);
+  allPlots["js_c2_02_charged"] = new TH1F("js_c2_02_charged",";C_{ 2}^{ (0.2)} (charged);Jets",35,0,0.7);
+  allPlots["js_c2_02_puppi"] = new TH1F("js_c2_02_puppi",";C_{ 2}^{ (0.2)} (puppi);Jets",35,0,0.7);
+  allPlots["js_c2_02_all"] = new TH1F("js_c2_02_all",";C_{ 2}^{ (0.2)} (all);Jets",35,0,0.7);
+  allPlots["js_c2_05_charged"] = new TH1F("js_c2_05_charged",";C_{ 2}^{ (0.5)} (charged);Jets",40,0,0.4);
+  allPlots["js_c2_05_puppi"] = new TH1F("js_c2_05_puppi",";C_{ 2}^{ (0.5)} (puppi);Jets",40,0,0.4);
+  allPlots["js_c2_05_all"] = new TH1F("js_c2_05_all",";C_{ 2}^{ (0.5)} (all);Jets",40,0,0.4);
+  allPlots["js_c2_10_charged"] = new TH1F("js_c2_10_charged",";C_{ 2}^{ (1.0)} (charged);Jets",50,0,0.25);
+  allPlots["js_c2_10_puppi"] = new TH1F("js_c2_10_puppi",";C_{ 2}^{ (1.0)} (puppi);Jets",50,0,0.25);
+  allPlots["js_c2_10_all"] = new TH1F("js_c2_10_all",";C_{ 2}^{ (1.0)} (all);Jets",50,0,0.25);
+  allPlots["js_c2_20_charged"] = new TH1F("js_c2_20_charged",";C_{ 2}^{ (2.0)} (charged);Jets",30,0,0.15);
+  allPlots["js_c2_20_puppi"] = new TH1F("js_c2_20_puppi",";C_{ 2}^{ (2.0)} (puppi);Jets",30,0,0.15);
+  allPlots["js_c2_20_all"] = new TH1F("js_c2_20_all",";C_{ 2}^{ (2.0)} (all);Jets",30,0,0.15);
+  allPlots["js_c3_02_charged"] = new TH1F("js_c3_02_charged",";C_{ 3}^{ (0.2)} (charged);Jets",35,0,0.7);
+  allPlots["js_c3_02_puppi"] = new TH1F("js_c3_02_puppi",";C_{ 3}^{ (0.2)} (puppi);Jets",35,0,0.7);
+  allPlots["js_c3_02_all"] = new TH1F("js_c3_02_all",";C_{ 3}^{ (0.2)} (all);Jets",35,0,0.7);
+  allPlots["js_c3_05_charged"] = new TH1F("js_c3_05_charged",";C_{ 3}^{ (0.5)} (charged);Jets",40,0,0.4);
+  allPlots["js_c3_05_puppi"] = new TH1F("js_c3_05_puppi",";C_{ 3}^{ (0.5)} (puppi);Jets",40,0,0.4);
+  allPlots["js_c3_05_all"] = new TH1F("js_c3_05_all",";C_{ 3}^{ (0.5)} (all);Jets",40,0,0.4);
+  allPlots["js_c3_10_charged"] = new TH1F("js_c3_10_charged",";C_{ 3}^{ (1.0)} (charged);Jets",50,0,0.25);
+  allPlots["js_c3_10_puppi"] = new TH1F("js_c3_10_puppi",";C_{ 3}^{ (1.0)} (puppi);Jets",50,0,0.25);
+  allPlots["js_c3_10_all"] = new TH1F("js_c3_10_all",";C_{ 3}^{ (1.0)} (all);Jets",50,0,0.25);
+  allPlots["js_c3_20_charged"] = new TH1F("js_c3_20_charged",";C_{ 3}^{ (2.0)} (charged);Jets",30,0,0.15);
+  allPlots["js_c3_20_puppi"] = new TH1F("js_c3_20_puppi",";C_{ 3}^{ (2.0)} (puppi);Jets",30,0,0.15);
+  allPlots["js_c3_20_all"] = new TH1F("js_c3_20_all",";C_{ 3}^{ (2.0)} (all);Jets",30,0,0.15);
+  
   for (auto& it : allPlots)   { it.second->Sumw2(); it.second->SetDirectory(0); }
   for (auto& it : all2dPlots) { it.second->Sumw2(); it.second->SetDirectory(0); }
 
@@ -173,16 +261,22 @@ void RunTopJetShape(TString filename,
       
       //count b and W candidates
       int sel_nbjets = 0;
-      int sel_nwcand = 0;
+      int sel_nwjets = 0;
 
       for (auto& jet : jets) {
         if (jet.flavor() == 5) ++sel_nbjets;
-        if (jet.flavor() == 1) ++sel_nwcand;
+        if (jet.flavor() == 1) ++sel_nwjets;
       }
       
       //event selected on reco level?
-      bool singleLepton(chTag=="E" || chTag=="M");
-      if (sel_nbjets==2 && sel_nwcand>0 && singleLepton) tjsev.reco_sel = 1;
+      bool singleLepton         (chTag=="E" || chTag=="M");
+      bool singleLepton4Jets    (singleLepton && jets.size()>=4);
+      bool singleLepton4Jets2b  (singleLepton4Jets && sel_nbjets==2);
+      bool singleLepton4Jets2b2W(singleLepton4Jets2b && sel_nwjets>0);
+      
+      std::vector<bool> recoPass; recoPass.push_back(singleLepton); recoPass.push_back(singleLepton4Jets); recoPass.push_back(singleLepton4Jets2b); recoPass.push_back(singleLepton4Jets2b2W); 
+      
+      if (singleLepton4Jets2b2W) tjsev.reco_sel = 1;
       
       tjsev.nj=jets.size();
       
@@ -237,15 +331,76 @@ void RunTopJetShape(TString filename,
 	        //update nominal event weight
 	        wgt=triggerCorrWgt.first*lepSelCorrWgt.first*puWgts[0]*norm;
 	        if(ev.g_nw>0) wgt*=ev.g_w[0];
+	        
+	        if (wgt > 1e-12) std::cout << "wgt=" << wgt << " triggerCorrWgt=" << triggerCorrWgt.first << " lepSelCorrWgt=" << lepSelCorrWgt.first << " puWgts=" << puWgts[0] << " norm=" << norm << std::endl;
 	      }
       
-      //control histograms
-      for(size_t ilfs=0; ilfs<stageVec.size(); ilfs++) { 
-        if (ilfs > 0 and tjsev.reco_sel == -1) continue;
-        TString tag(stageVec[ilfs]);
-        allPlots["nvtx_"+tag]->Fill(ev.nvtx,wgt);
-        allPlots["njets_"+tag]->Fill(jets.size(), wgt);
+      ////////////////////
+      // CONTROL PLOTS //
+      //////////////////
+      
+      //W and top masses
+      std::vector<TLorentzVector> wCands;
+      for (unsigned int i = 0; i < jets.size(); i++) {
+        for (unsigned int j = i+1; j < jets.size(); j++) {
+          if (jets[i].flavor()==5 or jets[j].flavor()==5) continue;
+          TLorentzVector wCand = jets[i].p4() + jets[j].p4();
+          wCands.push_back(wCand);
+        }
       }
+      std::vector<TLorentzVector> tCands;
+      for (unsigned int i = 0; i < jets.size(); i++) {
+        if (jets[i].flavor()!=5) continue;
+        for (auto& wCand : wCands) {
+          TLorentzVector tCand = jets[i].p4() + wCand;
+          tCands.push_back(tCand);
+        }
+      }
+      std::vector<TLorentzVector> tCandsWcut;
+      for (unsigned int i = 0; i < jets.size(); i++) {
+        if (jets[i].flavor()!=5) continue;
+        for (auto& wCand : wCands) {
+          if (abs(wCand.M()-80.4) > 15.) continue;
+          TLorentzVector tCand = jets[i].p4() + wCand;
+          tCandsWcut.push_back(tCand);
+        }
+      }
+      
+      //control histograms
+      for(size_t istage=0; istage<stageVec.size(); istage++) { 
+        for(auto& channel : chTags) { 
+          if (not recoPass[istage]) continue;
+          if (channel == "E" and chTag != "E") continue;
+          if (channel == "M" and chTag != "M") continue;
+          TString tag(stageVec[istage]+channel);
+          
+          allPlots["nvtx_"+tag]->Fill(ev.nvtx, wgt);
+          allPlots["nleps_"+tag]->Fill(leptons.size(), wgt);
+          allPlots["njets_"+tag]->Fill(jets.size(), wgt);
+          allPlots["nbjets_"+tag]->Fill(sel_nbjets, wgt);
+          allPlots["nwjets_"+tag]->Fill(sel_nwjets, wgt);
+          for (auto& wCand : wCands) allPlots["wcandm_"+tag]->Fill(wCand.M(), wgt);
+          for (auto& tCand : tCands) allPlots["tcandm_"+tag]->Fill(tCand.M(), wgt);
+          for (auto& tCand : tCandsWcut) allPlots["tcandwcutm_"+tag]->Fill(tCand.M(), wgt);
+          for(unsigned int i=0; i<leptons.size(); i++) {
+            if (i>1) break;
+            TString pf(Form("l%d",i));          
+            allPlots[pf+"pt_"+tag] ->Fill(leptons[i].pt(),wgt);
+            allPlots[pf+"eta_"+tag]->Fill(leptons[i].eta(),wgt);
+          }
+          for(unsigned int i=0; i<jets.size(); i++) {
+            if (i>5) break;
+            TString pf(Form("j%d",i));
+            allPlots[pf+"pt_"+tag] ->Fill(jets[i].pt(),wgt);
+            allPlots[pf+"eta_"+tag]->Fill(jets[i].eta(),wgt);
+          }
+          allPlots["met_"+tag]->Fill(ev.met_pt[0], wgt);
+        }
+      }
+
+      //////////////////////////
+      // RECO LEVEL ANALYSIS //
+      ////////////////////////
 
       //fill leptons
       tjsev.nl=leptons.size();
@@ -267,6 +422,8 @@ void RunTopJetShape(TString filename,
         tjsev.j_m[ij]       = jets[ij].p4().M(); 
         tjsev.j_flavor[ij]  = jets[ij].flavor();
         tjsev.j_overlap[ij] = jets[ij].overlap();
+        
+        if (tjsev.reco_sel != 1) continue;
         
         tjsev.j_mult_charged[ij] = getMult(jets[ij]);
         tjsev.j_mult_all[ij]     = getMult(jets[ij], true);
@@ -361,6 +518,82 @@ void RunTopJetShape(TString filename,
         tjsev.j_c3_20_charged[ij] = getC(3, 2.0, jets[ij]);
         tjsev.j_c3_20_all[ij]     = getC(3, 2.0, jets[ij], true);
         tjsev.j_c3_20_puppi[ij]   = getC(3, 2.0, jets[ij], true, true);
+        
+        allPlots["js_mult_charged"]->Fill(tjsev.j_mult_charged[ij], wgt);
+        allPlots["js_mult_puppi"]->Fill(tjsev.j_mult_puppi[ij], wgt);
+        allPlots["js_mult_all"]->Fill(tjsev.j_mult_all[ij], wgt);
+        allPlots["js_width_charged"]->Fill(tjsev.j_width_charged[ij], wgt);
+        allPlots["js_width_puppi"]->Fill(tjsev.j_width_puppi[ij], wgt);
+        allPlots["js_width_all"]->Fill(tjsev.j_width_all[ij], wgt);
+        allPlots["js_ptd_charged"]->Fill(tjsev.j_ptd_charged[ij], wgt);
+        allPlots["js_ptd_puppi"]->Fill(tjsev.j_ptd_puppi[ij], wgt);
+        allPlots["js_ptd_all"]->Fill(tjsev.j_ptd_all[ij], wgt);
+        allPlots["js_ecc_charged"]->Fill(tjsev.j_ecc_charged[ij], wgt);
+        allPlots["js_ecc_puppi"]->Fill(tjsev.j_ecc_puppi[ij], wgt);
+        allPlots["js_ecc_all"]->Fill(tjsev.j_ecc_all[ij], wgt);
+        allPlots["js_tau21_charged"]->Fill(tjsev.j_tau21_charged[ij], wgt);
+        allPlots["js_tau21_puppi"]->Fill(tjsev.j_tau21_puppi[ij], wgt);
+        allPlots["js_tau21_all"]->Fill(tjsev.j_tau21_all[ij], wgt);
+        allPlots["js_tau32_charged"]->Fill(tjsev.j_tau32_charged[ij], wgt);
+        allPlots["js_tau32_puppi"]->Fill(tjsev.j_tau32_puppi[ij], wgt);
+        allPlots["js_tau32_all"]->Fill(tjsev.j_tau32_all[ij], wgt);
+        allPlots["js_tau43_charged"]->Fill(tjsev.j_tau43_charged[ij], wgt);
+        allPlots["js_tau43_puppi"]->Fill(tjsev.j_tau43_puppi[ij], wgt);
+        allPlots["js_tau43_all"]->Fill(tjsev.j_tau43_all[ij], wgt);
+        allPlots["js_zg_charged"]->Fill(tjsev.j_zg_charged[ij], wgt);
+        allPlots["js_zg_puppi"]->Fill(tjsev.j_zg_puppi[ij], wgt);
+        allPlots["js_zg_all"]->Fill(tjsev.j_zg_all[ij], wgt);
+        allPlots["js_zgxdr_charged"]->Fill(tjsev.j_zgxdr_charged[ij], wgt);
+        allPlots["js_zgxdr_puppi"]->Fill(tjsev.j_zgxdr_puppi[ij], wgt);
+        allPlots["js_zgxdr_all"]->Fill(tjsev.j_zgxdr_all[ij], wgt);
+        allPlots["js_zgdr_charged"]->Fill(tjsev.j_zgdr_charged[ij], wgt);
+        allPlots["js_zgdr_puppi"]->Fill(tjsev.j_zgdr_puppi[ij], wgt);
+        allPlots["js_zgdr_all"]->Fill(tjsev.j_zgdr_all[ij], wgt);
+        allPlots["js_ga_width_charged"]->Fill(tjsev.j_ga_width_charged[ij], wgt);
+        allPlots["js_ga_width_puppi"]->Fill(tjsev.j_ga_width_puppi[ij], wgt);
+        allPlots["js_ga_width_all"]->Fill(tjsev.j_ga_width_all[ij], wgt);
+        allPlots["js_ga_lha_charged"]->Fill(tjsev.j_ga_lha_charged[ij], wgt);
+        allPlots["js_ga_lha_puppi"]->Fill(tjsev.j_ga_lha_puppi[ij], wgt);
+        allPlots["js_ga_lha_all"]->Fill(tjsev.j_ga_lha_all[ij], wgt);
+        allPlots["js_ga_thrust_charged"]->Fill(tjsev.j_ga_thrust_charged[ij], wgt);
+        allPlots["js_ga_thrust_puppi"]->Fill(tjsev.j_ga_thrust_puppi[ij], wgt);
+        allPlots["js_ga_thrust_all"]->Fill(tjsev.j_ga_thrust_all[ij], wgt);
+        allPlots["js_c1_02_charged"]->Fill(tjsev.j_c1_02_charged[ij], wgt);
+        allPlots["js_c1_02_puppi"]->Fill(tjsev.j_c1_02_puppi[ij], wgt);
+        allPlots["js_c1_02_all"]->Fill(tjsev.j_c1_02_all[ij], wgt);
+        allPlots["js_c1_05_charged"]->Fill(tjsev.j_c1_05_charged[ij], wgt);
+        allPlots["js_c1_05_puppi"]->Fill(tjsev.j_c1_05_puppi[ij], wgt);
+        allPlots["js_c1_05_all"]->Fill(tjsev.j_c1_05_all[ij], wgt);
+        allPlots["js_c1_10_charged"]->Fill(tjsev.j_c1_10_charged[ij], wgt);
+        allPlots["js_c1_10_puppi"]->Fill(tjsev.j_c1_10_puppi[ij], wgt);
+        allPlots["js_c1_10_all"]->Fill(tjsev.j_c1_10_all[ij], wgt);
+        allPlots["js_c1_20_charged"]->Fill(tjsev.j_c1_20_charged[ij], wgt);
+        allPlots["js_c1_20_puppi"]->Fill(tjsev.j_c1_20_puppi[ij], wgt);
+        allPlots["js_c1_20_all"]->Fill(tjsev.j_c1_20_all[ij], wgt);
+        allPlots["js_c2_02_charged"]->Fill(tjsev.j_c2_02_charged[ij], wgt);
+        allPlots["js_c2_02_puppi"]->Fill(tjsev.j_c2_02_puppi[ij], wgt);
+        allPlots["js_c2_02_all"]->Fill(tjsev.j_c2_02_all[ij], wgt);
+        allPlots["js_c2_05_charged"]->Fill(tjsev.j_c2_05_charged[ij], wgt);
+        allPlots["js_c2_05_puppi"]->Fill(tjsev.j_c2_05_puppi[ij], wgt);
+        allPlots["js_c2_05_all"]->Fill(tjsev.j_c2_05_all[ij], wgt);
+        allPlots["js_c2_10_charged"]->Fill(tjsev.j_c2_10_charged[ij], wgt);
+        allPlots["js_c2_10_puppi"]->Fill(tjsev.j_c2_10_puppi[ij], wgt);
+        allPlots["js_c2_10_all"]->Fill(tjsev.j_c2_10_all[ij], wgt);
+        allPlots["js_c2_20_charged"]->Fill(tjsev.j_c2_20_charged[ij], wgt);
+        allPlots["js_c2_20_puppi"]->Fill(tjsev.j_c2_20_puppi[ij], wgt);
+        allPlots["js_c2_20_all"]->Fill(tjsev.j_c2_20_all[ij], wgt);
+        allPlots["js_c3_02_charged"]->Fill(tjsev.j_c3_02_charged[ij], wgt);
+        allPlots["js_c3_02_puppi"]->Fill(tjsev.j_c3_02_puppi[ij], wgt);
+        allPlots["js_c3_02_all"]->Fill(tjsev.j_c3_02_all[ij], wgt);
+        allPlots["js_c3_05_charged"]->Fill(tjsev.j_c3_05_charged[ij], wgt);
+        allPlots["js_c3_05_puppi"]->Fill(tjsev.j_c3_05_puppi[ij], wgt);
+        allPlots["js_c3_05_all"]->Fill(tjsev.j_c3_05_all[ij], wgt);
+        allPlots["js_c3_10_charged"]->Fill(tjsev.j_c3_10_charged[ij], wgt);
+        allPlots["js_c3_10_puppi"]->Fill(tjsev.j_c3_10_puppi[ij], wgt);
+        allPlots["js_c3_10_all"]->Fill(tjsev.j_c3_10_all[ij], wgt);
+        allPlots["js_c3_20_charged"]->Fill(tjsev.j_c3_20_charged[ij], wgt);
+        allPlots["js_c3_20_puppi"]->Fill(tjsev.j_c3_20_puppi[ij], wgt);
+        allPlots["js_c3_20_all"]->Fill(tjsev.j_c3_20_all[ij], wgt);
       }
 
       tjsev.nw=1;
@@ -394,7 +627,7 @@ void RunTopJetShape(TString filename,
         }
         
         //event selected on gen level?
-        bool genSingleLepton(genChTag=="E" || chTag=="M");
+        bool genSingleLepton(genChTag=="E" || genChTag=="M");
         if (sel_ngbjets==2 && sel_ngwcand>0 && genSingleLepton) tjsev.gen_sel = 1;
         
         tjsev.ngj = genJets.size();
@@ -403,119 +636,119 @@ void RunTopJetShape(TString filename,
         // GEN LEVEL ANALYSIS //
         ///////////////////////
 
-        if (tjsev.gen_sel == 1) {
-          //store jets to tree
-          for (int i = 0; i < tjsev.ngj; i++) {
-            tjsev.gj_pt     [i] = genJets[i].p4().Pt();
-            tjsev.gj_eta    [i] = genJets[i].p4().Eta();
-            tjsev.gj_phi    [i] = genJets[i].p4().Phi();
-            tjsev.gj_m      [i] = genJets[i].p4().M();
-            tjsev.gj_flavor [i] = genJets[i].flavor();
-            tjsev.gj_overlap[i] = genJets[i].overlap();
-            
-            //matching to reco jet
-            for(unsigned int ij = 0; ij< jets.size(); ij++) {
-              int ig = i;
-              if(jets[ij].p4().DeltaR(genJets[ig].p4())>0.4) continue;
-              tjsev.j_gj[ij] = ig;
-              tjsev.gj_j[ig] = ij;
-              break;
-            }
-            
-            //calculate jet properties            
-            tjsev.gj_mult_charged[i] = getMult(genJets[i]);
-            tjsev.gj_mult_all[i]     = getMult(genJets[i], true);
-            tjsev.gj_mult_puppi[i]   = getMult(genJets[i], true, true);
-            
-            tjsev.gj_ptd_charged[i] = getPtD(genJets[i]);
-            tjsev.gj_ptd_all[i]     = getPtD(genJets[i], true);
-            tjsev.gj_ptd_puppi[i]   = getPtD(genJets[i], true, true);
-            
-            tjsev.gj_width_charged[i] = getWidth(genJets[i]);
-            tjsev.gj_width_all[i]     = getWidth(genJets[i], true);
-            tjsev.gj_width_puppi[i]   = getWidth(genJets[i], true, true);
-            
-            tjsev.gj_ecc_charged[i] = getEcc(genJets[i]);
-            tjsev.gj_ecc_all[i]     = getEcc(genJets[i], true);
-            tjsev.gj_ecc_puppi[i]   = getEcc(genJets[i], true, true);
-            
-            tjsev.gj_tau21_charged[i] = getTau(2, 1, genJets[i]);
-            tjsev.gj_tau21_all[i]     = getTau(2, 1, genJets[i], true);
-            tjsev.gj_tau21_puppi[i]   = getTau(2, 1, genJets[i], true, true);
-            
-            tjsev.gj_tau32_charged[i] = getTau(3, 2, genJets[i]);
-            tjsev.gj_tau32_all[i]     = getTau(3, 2, genJets[i], true);
-            tjsev.gj_tau32_puppi[i]   = getTau(3, 2, genJets[i], true, true);
-            
-            tjsev.gj_tau43_charged[i] = getTau(4, 3, genJets[i]);
-            tjsev.gj_tau43_all[i]     = getTau(4, 3, genJets[i], true);
-            tjsev.gj_tau43_puppi[i]   = getTau(4, 3, genJets[i], true, true);
-            
-            std::vector<double> zgResult_charged = getZg(genJets[i]);
-            std::vector<double> zgResult_all     = getZg(genJets[i], true);
-            std::vector<double> zgResult_puppi   = getZg(genJets[i], true, true);
-            
-            tjsev.gj_zg_charged[i]    = zgResult_charged[0];
-            tjsev.gj_zg_all[i]        = zgResult_all[0];
-            tjsev.gj_zg_puppi[i]      = zgResult_puppi[0];
-            
-            tjsev.gj_zgxdr_charged[i] = zgResult_charged[1];
-            tjsev.gj_zgxdr_all[i]     = zgResult_all[1];
-            tjsev.gj_zgxdr_puppi[i]   = zgResult_puppi[1];
-            
-            tjsev.gj_zgdr_charged[i]  = zgResult_charged[2];
-            tjsev.gj_zgdr_all[i]      = zgResult_all[2];
-            tjsev.gj_zgdr_puppi[i]    = zgResult_puppi[2];
-            
-            tjsev.gj_ga_width_charged[i]  = calcGA(1., 1., genJets[i]);
-            tjsev.gj_ga_width_all[i]      = calcGA(1., 1., genJets[i], true);
-            tjsev.gj_ga_width_puppi[i]    = calcGA(1., 1., genJets[i], true, true);
-            
-            tjsev.gj_ga_lha_charged[i]    = calcGA(0.5, 1., genJets[i]);
-            tjsev.gj_ga_lha_all[i]        = calcGA(0.5, 1., genJets[i], true);
-            tjsev.gj_ga_lha_puppi[i]      = calcGA(0.5, 1., genJets[i], true, true);
-            
-            tjsev.gj_ga_thrust_charged[i] = calcGA(2., 1., genJets[i]);
-            tjsev.gj_ga_thrust_all[i]     = calcGA(2., 1., genJets[i], true);
-            tjsev.gj_ga_thrust_puppi[i]   = calcGA(2., 1., genJets[i], true, true);
-            
-            tjsev.gj_c1_02_charged[i] = getC(1, 0.2, genJets[i]);
-            tjsev.gj_c1_02_all[i]     = getC(1, 0.2, genJets[i], true);
-            tjsev.gj_c1_02_puppi[i]   = getC(1, 0.2, genJets[i], true, true);
-            tjsev.gj_c1_05_charged[i] = getC(1, 0.5, genJets[i]);
-            tjsev.gj_c1_05_all[i]     = getC(1, 0.5, genJets[i], true);
-            tjsev.gj_c1_05_puppi[i]   = getC(1, 0.5, genJets[i], true, true);
-            tjsev.gj_c1_10_charged[i] = getC(1, 1.0, genJets[i]);
-            tjsev.gj_c1_10_all[i]     = getC(1, 1.0, genJets[i], true);
-            tjsev.gj_c1_10_puppi[i]   = getC(1, 1.0, genJets[i], true, true);
-            tjsev.gj_c1_20_charged[i] = getC(1, 2.0, genJets[i]);
-            tjsev.gj_c1_20_all[i]     = getC(1, 2.0, genJets[i], true);
-            tjsev.gj_c1_20_puppi[i]   = getC(1, 2.0, genJets[i], true, true);
-            tjsev.gj_c2_02_charged[i] = getC(2, 0.2, genJets[i]);
-            tjsev.gj_c2_02_all[i]     = getC(2, 0.2, genJets[i], true);
-            tjsev.gj_c2_02_puppi[i]   = getC(2, 0.2, genJets[i], true, true);
-            tjsev.gj_c2_05_charged[i] = getC(2, 0.5, genJets[i]);
-            tjsev.gj_c2_05_all[i]     = getC(2, 0.5, genJets[i], true);
-            tjsev.gj_c2_05_puppi[i]   = getC(2, 0.5, genJets[i], true, true);
-            tjsev.gj_c2_10_charged[i] = getC(2, 1.0, genJets[i]);
-            tjsev.gj_c2_10_all[i]     = getC(2, 1.0, genJets[i], true);
-            tjsev.gj_c2_10_puppi[i]   = getC(2, 1.0, genJets[i], true, true);
-            tjsev.gj_c2_20_charged[i] = getC(2, 2.0, genJets[i]);
-            tjsev.gj_c2_20_all[i]     = getC(2, 2.0, genJets[i], true);
-            tjsev.gj_c2_20_puppi[i]   = getC(2, 2.0, genJets[i], true, true);
-            tjsev.gj_c3_02_charged[i] = getC(3, 0.2, genJets[i]);
-            tjsev.gj_c3_02_all[i]     = getC(3, 0.2, genJets[i], true);
-            tjsev.gj_c3_02_puppi[i]   = getC(3, 0.2, genJets[i], true, true);
-            tjsev.gj_c3_05_charged[i] = getC(3, 0.5, genJets[i]);
-            tjsev.gj_c3_05_all[i]     = getC(3, 0.5, genJets[i], true);
-            tjsev.gj_c3_05_puppi[i]   = getC(3, 0.5, genJets[i], true, true);
-            tjsev.gj_c3_10_charged[i] = getC(3, 1.0, genJets[i]);
-            tjsev.gj_c3_10_all[i]     = getC(3, 1.0, genJets[i], true);
-            tjsev.gj_c3_10_puppi[i]   = getC(3, 1.0, genJets[i], true, true);
-            tjsev.gj_c3_20_charged[i] = getC(3, 2.0, genJets[i]);
-            tjsev.gj_c3_20_all[i]     = getC(3, 2.0, genJets[i], true);
-            tjsev.gj_c3_20_puppi[i]   = getC(3, 2.0, genJets[i], true, true);
+        //store jets to tree
+        for (int i = 0; i < tjsev.ngj; i++) {
+          tjsev.gj_pt     [i] = genJets[i].p4().Pt();
+          tjsev.gj_eta    [i] = genJets[i].p4().Eta();
+          tjsev.gj_phi    [i] = genJets[i].p4().Phi();
+          tjsev.gj_m      [i] = genJets[i].p4().M();
+          tjsev.gj_flavor [i] = genJets[i].flavor();
+          tjsev.gj_overlap[i] = genJets[i].overlap();
+          
+          //matching to reco jet
+          for(unsigned int ij = 0; ij< jets.size(); ij++) {
+            int ig = i;
+            if(jets[ij].p4().DeltaR(genJets[ig].p4())>0.4) continue;
+            tjsev.j_gj[ij] = ig;
+            tjsev.gj_j[ig] = ij;
+            break;
           }
+          
+          if (tjsev.gen_sel != 1) continue;
+          
+          //calculate jet properties            
+          tjsev.gj_mult_charged[i] = getMult(genJets[i]);
+          tjsev.gj_mult_all[i]     = getMult(genJets[i], true);
+          tjsev.gj_mult_puppi[i]   = getMult(genJets[i], true, true);
+          
+          tjsev.gj_ptd_charged[i] = getPtD(genJets[i]);
+          tjsev.gj_ptd_all[i]     = getPtD(genJets[i], true);
+          tjsev.gj_ptd_puppi[i]   = getPtD(genJets[i], true, true);
+          
+          tjsev.gj_width_charged[i] = getWidth(genJets[i]);
+          tjsev.gj_width_all[i]     = getWidth(genJets[i], true);
+          tjsev.gj_width_puppi[i]   = getWidth(genJets[i], true, true);
+          
+          tjsev.gj_ecc_charged[i] = getEcc(genJets[i]);
+          tjsev.gj_ecc_all[i]     = getEcc(genJets[i], true);
+          tjsev.gj_ecc_puppi[i]   = getEcc(genJets[i], true, true);
+          
+          tjsev.gj_tau21_charged[i] = getTau(2, 1, genJets[i]);
+          tjsev.gj_tau21_all[i]     = getTau(2, 1, genJets[i], true);
+          tjsev.gj_tau21_puppi[i]   = getTau(2, 1, genJets[i], true, true);
+          
+          tjsev.gj_tau32_charged[i] = getTau(3, 2, genJets[i]);
+          tjsev.gj_tau32_all[i]     = getTau(3, 2, genJets[i], true);
+          tjsev.gj_tau32_puppi[i]   = getTau(3, 2, genJets[i], true, true);
+          
+          tjsev.gj_tau43_charged[i] = getTau(4, 3, genJets[i]);
+          tjsev.gj_tau43_all[i]     = getTau(4, 3, genJets[i], true);
+          tjsev.gj_tau43_puppi[i]   = getTau(4, 3, genJets[i], true, true);
+          
+          std::vector<double> zgResult_charged = getZg(genJets[i]);
+          std::vector<double> zgResult_all     = getZg(genJets[i], true);
+          std::vector<double> zgResult_puppi   = getZg(genJets[i], true, true);
+          
+          tjsev.gj_zg_charged[i]    = zgResult_charged[0];
+          tjsev.gj_zg_all[i]        = zgResult_all[0];
+          tjsev.gj_zg_puppi[i]      = zgResult_puppi[0];
+          
+          tjsev.gj_zgxdr_charged[i] = zgResult_charged[1];
+          tjsev.gj_zgxdr_all[i]     = zgResult_all[1];
+          tjsev.gj_zgxdr_puppi[i]   = zgResult_puppi[1];
+          
+          tjsev.gj_zgdr_charged[i]  = zgResult_charged[2];
+          tjsev.gj_zgdr_all[i]      = zgResult_all[2];
+          tjsev.gj_zgdr_puppi[i]    = zgResult_puppi[2];
+          
+          tjsev.gj_ga_width_charged[i]  = calcGA(1., 1., genJets[i]);
+          tjsev.gj_ga_width_all[i]      = calcGA(1., 1., genJets[i], true);
+          tjsev.gj_ga_width_puppi[i]    = calcGA(1., 1., genJets[i], true, true);
+          
+          tjsev.gj_ga_lha_charged[i]    = calcGA(0.5, 1., genJets[i]);
+          tjsev.gj_ga_lha_all[i]        = calcGA(0.5, 1., genJets[i], true);
+          tjsev.gj_ga_lha_puppi[i]      = calcGA(0.5, 1., genJets[i], true, true);
+          
+          tjsev.gj_ga_thrust_charged[i] = calcGA(2., 1., genJets[i]);
+          tjsev.gj_ga_thrust_all[i]     = calcGA(2., 1., genJets[i], true);
+          tjsev.gj_ga_thrust_puppi[i]   = calcGA(2., 1., genJets[i], true, true);
+          
+          tjsev.gj_c1_02_charged[i] = getC(1, 0.2, genJets[i]);
+          tjsev.gj_c1_02_all[i]     = getC(1, 0.2, genJets[i], true);
+          tjsev.gj_c1_02_puppi[i]   = getC(1, 0.2, genJets[i], true, true);
+          tjsev.gj_c1_05_charged[i] = getC(1, 0.5, genJets[i]);
+          tjsev.gj_c1_05_all[i]     = getC(1, 0.5, genJets[i], true);
+          tjsev.gj_c1_05_puppi[i]   = getC(1, 0.5, genJets[i], true, true);
+          tjsev.gj_c1_10_charged[i] = getC(1, 1.0, genJets[i]);
+          tjsev.gj_c1_10_all[i]     = getC(1, 1.0, genJets[i], true);
+          tjsev.gj_c1_10_puppi[i]   = getC(1, 1.0, genJets[i], true, true);
+          tjsev.gj_c1_20_charged[i] = getC(1, 2.0, genJets[i]);
+          tjsev.gj_c1_20_all[i]     = getC(1, 2.0, genJets[i], true);
+          tjsev.gj_c1_20_puppi[i]   = getC(1, 2.0, genJets[i], true, true);
+          tjsev.gj_c2_02_charged[i] = getC(2, 0.2, genJets[i]);
+          tjsev.gj_c2_02_all[i]     = getC(2, 0.2, genJets[i], true);
+          tjsev.gj_c2_02_puppi[i]   = getC(2, 0.2, genJets[i], true, true);
+          tjsev.gj_c2_05_charged[i] = getC(2, 0.5, genJets[i]);
+          tjsev.gj_c2_05_all[i]     = getC(2, 0.5, genJets[i], true);
+          tjsev.gj_c2_05_puppi[i]   = getC(2, 0.5, genJets[i], true, true);
+          tjsev.gj_c2_10_charged[i] = getC(2, 1.0, genJets[i]);
+          tjsev.gj_c2_10_all[i]     = getC(2, 1.0, genJets[i], true);
+          tjsev.gj_c2_10_puppi[i]   = getC(2, 1.0, genJets[i], true, true);
+          tjsev.gj_c2_20_charged[i] = getC(2, 2.0, genJets[i]);
+          tjsev.gj_c2_20_all[i]     = getC(2, 2.0, genJets[i], true);
+          tjsev.gj_c2_20_puppi[i]   = getC(2, 2.0, genJets[i], true, true);
+          tjsev.gj_c3_02_charged[i] = getC(3, 0.2, genJets[i]);
+          tjsev.gj_c3_02_all[i]     = getC(3, 0.2, genJets[i], true);
+          tjsev.gj_c3_02_puppi[i]   = getC(3, 0.2, genJets[i], true, true);
+          tjsev.gj_c3_05_charged[i] = getC(3, 0.5, genJets[i]);
+          tjsev.gj_c3_05_all[i]     = getC(3, 0.5, genJets[i], true);
+          tjsev.gj_c3_05_puppi[i]   = getC(3, 0.5, genJets[i], true, true);
+          tjsev.gj_c3_10_charged[i] = getC(3, 1.0, genJets[i]);
+          tjsev.gj_c3_10_all[i]     = getC(3, 1.0, genJets[i], true);
+          tjsev.gj_c3_10_puppi[i]   = getC(3, 1.0, genJets[i], true, true);
+          tjsev.gj_c3_20_charged[i] = getC(3, 2.0, genJets[i]);
+          tjsev.gj_c3_20_all[i]     = getC(3, 2.0, genJets[i], true);
+          tjsev.gj_c3_20_puppi[i]   = getC(3, 2.0, genJets[i], true, true);
         }
       }
       else tjsev.gen_sel = -1;
@@ -980,157 +1213,157 @@ void resetTopJetShapeEvent(TopJetShapeEvent_t &tjsev)
     tjsev.j_pt[i]=0;   tjsev.j_eta[i]=0;   tjsev.j_phi[i]=0;   tjsev.j_m[i]=0; tjsev.j_flavor[i]=0; tjsev.j_overlap[i]=0; tjsev.j_gj[i]=-1;
     tjsev.gj_pt[i]=0;   tjsev.gj_eta[i]=0;   tjsev.gj_phi[i]=0;   tjsev.gj_m[i]=0; tjsev.gj_flavor[i]=0; tjsev.gj_overlap[i]=0; tjsev.gj_j[i]=-1;
     
-  tjsev.j_mult_charged[i]=-99;
-  tjsev.j_mult_puppi[i]=-99;
-  tjsev.j_mult_all[i]=-99;
-  tjsev.j_width_charged[i]=-99;
-  tjsev.j_width_puppi[i]=-99;
-  tjsev.j_width_all[i]=-99;
-  tjsev.j_ptd_charged[i]=-99;
-  tjsev.j_ptd_puppi[i]=-99;
-  tjsev.j_ptd_all[i]=-99;
-  tjsev.j_ecc_charged[i]=-99;
-  tjsev.j_ecc_puppi[i]=-99;
-  tjsev.j_ecc_all[i]=-99;
-  tjsev.j_tau21_charged[i]=-99;
-  tjsev.j_tau21_puppi[i]=-99;
-  tjsev.j_tau21_all[i]=-99;
-  tjsev.j_tau32_charged[i]=-99;
-  tjsev.j_tau32_puppi[i]=-99;
-  tjsev.j_tau32_all[i]=-99;
-  tjsev.j_tau43_charged[i]=-99;
-  tjsev.j_tau43_puppi[i]=-99;
-  tjsev.j_tau43_all[i]=-99;
-  tjsev.j_zg_charged[i]=-99;
-  tjsev.j_zg_puppi[i]=-99;
-  tjsev.j_zg_all[i]=-99;
-  tjsev.j_zgxdr_charged[i]=-99;
-  tjsev.j_zgxdr_puppi[i]=-99;
-  tjsev.j_zgxdr_all[i]=-99;
-  tjsev.j_zgdr_charged[i]=-99;
-  tjsev.j_zgdr_puppi[i]=-99;
-  tjsev.j_zgdr_all[i]=-99;
-  tjsev.j_ga_width_charged[i]=-99;
-  tjsev.j_ga_width_puppi[i]=-99;
-  tjsev.j_ga_width_all[i]=-99;
-  tjsev.j_ga_lha_charged[i]=-99;
-  tjsev.j_ga_lha_puppi[i]=-99;
-  tjsev.j_ga_lha_all[i]=-99;
-  tjsev.j_ga_thrust_charged[i]=-99;
-  tjsev.j_ga_thrust_puppi[i]=-99;
-  tjsev.j_ga_thrust_all[i]=-99;
-  tjsev.j_c1_02_charged[i]=-99;
-  tjsev.j_c1_02_puppi[i]=-99;
-  tjsev.j_c1_02_all[i]=-99;
-  tjsev.j_c1_05_charged[i]=-99;
-  tjsev.j_c1_05_puppi[i]=-99;
-  tjsev.j_c1_05_all[i]=-99;
-  tjsev.j_c1_10_charged[i]=-99;
-  tjsev.j_c1_10_puppi[i]=-99;
-  tjsev.j_c1_10_all[i]=-99;
-  tjsev.j_c1_20_charged[i]=-99;
-  tjsev.j_c1_20_puppi[i]=-99;
-  tjsev.j_c1_20_all[i]=-99;
-  tjsev.j_c2_02_charged[i]=-99;
-  tjsev.j_c2_02_puppi[i]=-99;
-  tjsev.j_c2_02_all[i]=-99;
-  tjsev.j_c2_05_charged[i]=-99;
-  tjsev.j_c2_05_puppi[i]=-99;
-  tjsev.j_c2_05_all[i]=-99;
-  tjsev.j_c2_10_charged[i]=-99;
-  tjsev.j_c2_10_puppi[i]=-99;
-  tjsev.j_c2_10_all[i]=-99;
-  tjsev.j_c2_20_charged[i]=-99;
-  tjsev.j_c2_20_puppi[i]=-99;
-  tjsev.j_c2_20_all[i]=-99;
-  tjsev.j_c3_02_charged[i]=-99;
-  tjsev.j_c3_02_puppi[i]=-99;
-  tjsev.j_c3_02_all[i]=-99;
-  tjsev.j_c3_05_charged[i]=-99;
-  tjsev.j_c3_05_puppi[i]=-99;
-  tjsev.j_c3_05_all[i]=-99;
-  tjsev.j_c3_10_charged[i]=-99;
-  tjsev.j_c3_10_puppi[i]=-99;
-  tjsev.j_c3_10_all[i]=-99;
-  tjsev.j_c3_20_charged[i]=-99;
-  tjsev.j_c3_20_puppi[i]=-99;
-  tjsev.j_c3_20_all[i]=-99;
+    tjsev.j_mult_charged[i]=-99;
+    tjsev.j_mult_puppi[i]=-99;
+    tjsev.j_mult_all[i]=-99;
+    tjsev.j_width_charged[i]=-99;
+    tjsev.j_width_puppi[i]=-99;
+    tjsev.j_width_all[i]=-99;
+    tjsev.j_ptd_charged[i]=-99;
+    tjsev.j_ptd_puppi[i]=-99;
+    tjsev.j_ptd_all[i]=-99;
+    tjsev.j_ecc_charged[i]=-99;
+    tjsev.j_ecc_puppi[i]=-99;
+    tjsev.j_ecc_all[i]=-99;
+    tjsev.j_tau21_charged[i]=-99;
+    tjsev.j_tau21_puppi[i]=-99;
+    tjsev.j_tau21_all[i]=-99;
+    tjsev.j_tau32_charged[i]=-99;
+    tjsev.j_tau32_puppi[i]=-99;
+    tjsev.j_tau32_all[i]=-99;
+    tjsev.j_tau43_charged[i]=-99;
+    tjsev.j_tau43_puppi[i]=-99;
+    tjsev.j_tau43_all[i]=-99;
+    tjsev.j_zg_charged[i]=-99;
+    tjsev.j_zg_puppi[i]=-99;
+    tjsev.j_zg_all[i]=-99;
+    tjsev.j_zgxdr_charged[i]=-99;
+    tjsev.j_zgxdr_puppi[i]=-99;
+    tjsev.j_zgxdr_all[i]=-99;
+    tjsev.j_zgdr_charged[i]=-99;
+    tjsev.j_zgdr_puppi[i]=-99;
+    tjsev.j_zgdr_all[i]=-99;
+    tjsev.j_ga_width_charged[i]=-99;
+    tjsev.j_ga_width_puppi[i]=-99;
+    tjsev.j_ga_width_all[i]=-99;
+    tjsev.j_ga_lha_charged[i]=-99;
+    tjsev.j_ga_lha_puppi[i]=-99;
+    tjsev.j_ga_lha_all[i]=-99;
+    tjsev.j_ga_thrust_charged[i]=-99;
+    tjsev.j_ga_thrust_puppi[i]=-99;
+    tjsev.j_ga_thrust_all[i]=-99;
+    tjsev.j_c1_02_charged[i]=-99;
+    tjsev.j_c1_02_puppi[i]=-99;
+    tjsev.j_c1_02_all[i]=-99;
+    tjsev.j_c1_05_charged[i]=-99;
+    tjsev.j_c1_05_puppi[i]=-99;
+    tjsev.j_c1_05_all[i]=-99;
+    tjsev.j_c1_10_charged[i]=-99;
+    tjsev.j_c1_10_puppi[i]=-99;
+    tjsev.j_c1_10_all[i]=-99;
+    tjsev.j_c1_20_charged[i]=-99;
+    tjsev.j_c1_20_puppi[i]=-99;
+    tjsev.j_c1_20_all[i]=-99;
+    tjsev.j_c2_02_charged[i]=-99;
+    tjsev.j_c2_02_puppi[i]=-99;
+    tjsev.j_c2_02_all[i]=-99;
+    tjsev.j_c2_05_charged[i]=-99;
+    tjsev.j_c2_05_puppi[i]=-99;
+    tjsev.j_c2_05_all[i]=-99;
+    tjsev.j_c2_10_charged[i]=-99;
+    tjsev.j_c2_10_puppi[i]=-99;
+    tjsev.j_c2_10_all[i]=-99;
+    tjsev.j_c2_20_charged[i]=-99;
+    tjsev.j_c2_20_puppi[i]=-99;
+    tjsev.j_c2_20_all[i]=-99;
+    tjsev.j_c3_02_charged[i]=-99;
+    tjsev.j_c3_02_puppi[i]=-99;
+    tjsev.j_c3_02_all[i]=-99;
+    tjsev.j_c3_05_charged[i]=-99;
+    tjsev.j_c3_05_puppi[i]=-99;
+    tjsev.j_c3_05_all[i]=-99;
+    tjsev.j_c3_10_charged[i]=-99;
+    tjsev.j_c3_10_puppi[i]=-99;
+    tjsev.j_c3_10_all[i]=-99;
+    tjsev.j_c3_20_charged[i]=-99;
+    tjsev.j_c3_20_puppi[i]=-99;
+    tjsev.j_c3_20_all[i]=-99;
 
-  tjsev.gj_mult_charged[i]=-99;
-  tjsev.gj_mult_puppi[i]=-99;
-  tjsev.gj_mult_all[i]=-99;
-  tjsev.gj_width_charged[i]=-99;
-  tjsev.gj_width_puppi[i]=-99;
-  tjsev.gj_width_all[i]=-99;
-  tjsev.gj_ptd_charged[i]=-99;
-  tjsev.gj_ptd_puppi[i]=-99;
-  tjsev.gj_ptd_all[i]=-99;
-  tjsev.gj_ecc_charged[i]=-99;
-  tjsev.gj_ecc_puppi[i]=-99;
-  tjsev.gj_ecc_all[i]=-99;
-  tjsev.gj_tau21_charged[i]=-99;
-  tjsev.gj_tau21_puppi[i]=-99;
-  tjsev.gj_tau21_all[i]=-99;
-  tjsev.gj_tau32_charged[i]=-99;
-  tjsev.gj_tau32_puppi[i]=-99;
-  tjsev.gj_tau32_all[i]=-99;
-  tjsev.gj_tau43_charged[i]=-99;
-  tjsev.gj_tau43_puppi[i]=-99;
-  tjsev.gj_tau43_all[i]=-99;
-  tjsev.gj_zg_charged[i]=-99;
-  tjsev.gj_zg_puppi[i]=-99;
-  tjsev.gj_zg_all[i]=-99;
-  tjsev.gj_zgxdr_charged[i]=-99;
-  tjsev.gj_zgxdr_puppi[i]=-99;
-  tjsev.gj_zgxdr_all[i]=-99;
-  tjsev.gj_zgdr_charged[i]=-99;
-  tjsev.gj_zgdr_puppi[i]=-99;
-  tjsev.gj_zgdr_all[i]=-99;
-  tjsev.gj_ga_width_charged[i]=-99;
-  tjsev.gj_ga_width_puppi[i]=-99;
-  tjsev.gj_ga_width_all[i]=-99;
-  tjsev.gj_ga_lha_charged[i]=-99;
-  tjsev.gj_ga_lha_puppi[i]=-99;
-  tjsev.gj_ga_lha_all[i]=-99;
-  tjsev.gj_ga_thrust_charged[i]=-99;
-  tjsev.gj_ga_thrust_puppi[i]=-99;
-  tjsev.gj_ga_thrust_all[i]=-99;
-  tjsev.gj_c1_02_charged[i]=-99;
-  tjsev.gj_c1_02_puppi[i]=-99;
-  tjsev.gj_c1_02_all[i]=-99;
-  tjsev.gj_c1_05_charged[i]=-99;
-  tjsev.gj_c1_05_puppi[i]=-99;
-  tjsev.gj_c1_05_all[i]=-99;
-  tjsev.gj_c1_10_charged[i]=-99;
-  tjsev.gj_c1_10_puppi[i]=-99;
-  tjsev.gj_c1_10_all[i]=-99;
-  tjsev.gj_c1_20_charged[i]=-99;
-  tjsev.gj_c1_20_puppi[i]=-99;
-  tjsev.gj_c1_20_all[i]=-99;
-  tjsev.gj_c2_02_charged[i]=-99;
-  tjsev.gj_c2_02_puppi[i]=-99;
-  tjsev.gj_c2_02_all[i]=-99;
-  tjsev.gj_c2_05_charged[i]=-99;
-  tjsev.gj_c2_05_puppi[i]=-99;
-  tjsev.gj_c2_05_all[i]=-99;
-  tjsev.gj_c2_10_charged[i]=-99;
-  tjsev.gj_c2_10_puppi[i]=-99;
-  tjsev.gj_c2_10_all[i]=-99;
-  tjsev.gj_c2_20_charged[i]=-99;
-  tjsev.gj_c2_20_puppi[i]=-99;
-  tjsev.gj_c2_20_all[i]=-99;
-  tjsev.gj_c3_02_charged[i]=-99;
-  tjsev.gj_c3_02_puppi[i]=-99;
-  tjsev.gj_c3_02_all[i]=-99;
-  tjsev.gj_c3_05_charged[i]=-99;
-  tjsev.gj_c3_05_puppi[i]=-99;
-  tjsev.gj_c3_05_all[i]=-99;
-  tjsev.gj_c3_10_charged[i]=-99;
-  tjsev.gj_c3_10_puppi[i]=-99;
-  tjsev.gj_c3_10_all[i]=-99;
-  tjsev.gj_c3_20_charged[i]=-99;
-  tjsev.gj_c3_20_puppi[i]=-99;
-  tjsev.gj_c3_20_all[i]=-99;
+    tjsev.gj_mult_charged[i]=-99;
+    tjsev.gj_mult_puppi[i]=-99;
+    tjsev.gj_mult_all[i]=-99;
+    tjsev.gj_width_charged[i]=-99;
+    tjsev.gj_width_puppi[i]=-99;
+    tjsev.gj_width_all[i]=-99;
+    tjsev.gj_ptd_charged[i]=-99;
+    tjsev.gj_ptd_puppi[i]=-99;
+    tjsev.gj_ptd_all[i]=-99;
+    tjsev.gj_ecc_charged[i]=-99;
+    tjsev.gj_ecc_puppi[i]=-99;
+    tjsev.gj_ecc_all[i]=-99;
+    tjsev.gj_tau21_charged[i]=-99;
+    tjsev.gj_tau21_puppi[i]=-99;
+    tjsev.gj_tau21_all[i]=-99;
+    tjsev.gj_tau32_charged[i]=-99;
+    tjsev.gj_tau32_puppi[i]=-99;
+    tjsev.gj_tau32_all[i]=-99;
+    tjsev.gj_tau43_charged[i]=-99;
+    tjsev.gj_tau43_puppi[i]=-99;
+    tjsev.gj_tau43_all[i]=-99;
+    tjsev.gj_zg_charged[i]=-99;
+    tjsev.gj_zg_puppi[i]=-99;
+    tjsev.gj_zg_all[i]=-99;
+    tjsev.gj_zgxdr_charged[i]=-99;
+    tjsev.gj_zgxdr_puppi[i]=-99;
+    tjsev.gj_zgxdr_all[i]=-99;
+    tjsev.gj_zgdr_charged[i]=-99;
+    tjsev.gj_zgdr_puppi[i]=-99;
+    tjsev.gj_zgdr_all[i]=-99;
+    tjsev.gj_ga_width_charged[i]=-99;
+    tjsev.gj_ga_width_puppi[i]=-99;
+    tjsev.gj_ga_width_all[i]=-99;
+    tjsev.gj_ga_lha_charged[i]=-99;
+    tjsev.gj_ga_lha_puppi[i]=-99;
+    tjsev.gj_ga_lha_all[i]=-99;
+    tjsev.gj_ga_thrust_charged[i]=-99;
+    tjsev.gj_ga_thrust_puppi[i]=-99;
+    tjsev.gj_ga_thrust_all[i]=-99;
+    tjsev.gj_c1_02_charged[i]=-99;
+    tjsev.gj_c1_02_puppi[i]=-99;
+    tjsev.gj_c1_02_all[i]=-99;
+    tjsev.gj_c1_05_charged[i]=-99;
+    tjsev.gj_c1_05_puppi[i]=-99;
+    tjsev.gj_c1_05_all[i]=-99;
+    tjsev.gj_c1_10_charged[i]=-99;
+    tjsev.gj_c1_10_puppi[i]=-99;
+    tjsev.gj_c1_10_all[i]=-99;
+    tjsev.gj_c1_20_charged[i]=-99;
+    tjsev.gj_c1_20_puppi[i]=-99;
+    tjsev.gj_c1_20_all[i]=-99;
+    tjsev.gj_c2_02_charged[i]=-99;
+    tjsev.gj_c2_02_puppi[i]=-99;
+    tjsev.gj_c2_02_all[i]=-99;
+    tjsev.gj_c2_05_charged[i]=-99;
+    tjsev.gj_c2_05_puppi[i]=-99;
+    tjsev.gj_c2_05_all[i]=-99;
+    tjsev.gj_c2_10_charged[i]=-99;
+    tjsev.gj_c2_10_puppi[i]=-99;
+    tjsev.gj_c2_10_all[i]=-99;
+    tjsev.gj_c2_20_charged[i]=-99;
+    tjsev.gj_c2_20_puppi[i]=-99;
+    tjsev.gj_c2_20_all[i]=-99;
+    tjsev.gj_c3_02_charged[i]=-99;
+    tjsev.gj_c3_02_puppi[i]=-99;
+    tjsev.gj_c3_02_all[i]=-99;
+    tjsev.gj_c3_05_charged[i]=-99;
+    tjsev.gj_c3_05_puppi[i]=-99;
+    tjsev.gj_c3_05_all[i]=-99;
+    tjsev.gj_c3_10_charged[i]=-99;
+    tjsev.gj_c3_10_puppi[i]=-99;
+    tjsev.gj_c3_10_all[i]=-99;
+    tjsev.gj_c3_20_charged[i]=-99;
+    tjsev.gj_c3_20_puppi[i]=-99;
+    tjsev.gj_c3_20_all[i]=-99;
 
   } 
   
