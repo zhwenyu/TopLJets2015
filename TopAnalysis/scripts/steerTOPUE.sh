@@ -30,7 +30,7 @@ NC='\e[0m'
 case $WHAT in
 
     FULLSEL ) 
-	python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} -o ${outdir} --era era2016 -m TOP-UE::RunTopUE --ch 0; 
+	python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} -o ${outdir} --era era2016 -m TOP-UE::RunTopUE --ch 0 --only MC;
 	;;
 
     SEL )

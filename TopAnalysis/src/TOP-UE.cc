@@ -7,11 +7,10 @@
 #include <TLorentzVector.h>
 #include <TGraphAsymmErrors.h>
 
-//#include "TopLJets2015/TopAnalysis/interface/TOP-16-006.h"
-//#include "TopLJets2015/TopAnalysis/interface/TOP-16-019.h"
 #include "TopLJets2015/TopAnalysis/interface/TOP-UE.h"
 #include "TopLJets2015/TopAnalysis/interface/CorrectionTools.h"
 #include "TopLJets2015/TopAnalysis/interface/SelectionTools.h"
+#include "TopLJets2015/TopAnalysis/interface/CommonTools.h"
 
 
 #include <vector>
@@ -34,8 +33,36 @@ void RunTopUE(TString filename,
 	      Bool_t runSysts,
 	      TString era)
 {
+  //check file type from name
+  if(filename.Contains("Data")) runSysts=false;
+  runSysts=false;
+  //  bool isTTbar( filename.Contains("_TTJets") );
+
+  //READ TREE FROM FILE
+  MiniEvent_t ev;
+  TFile *f = TFile::Open(filename);
+  TH1 *genPU=(TH1 *)f->Get("analysis/putrue");
+  TTree *t = (TTree*)f->Get("analysis/data");
+  attachToMiniEventTree(t,ev,true);
+  Int_t nentries(t->GetEntriesFast());
+
   //EVENT SELECTION WRAPPER
   SelectionTool evsel(filename,false);
+
+  //CORRECTIONS
+  //lumi
+  TH1F *ratevsrunH=0;
+  std::map<Int_t,Float_t> lumiMap;
+  if( filename.Contains("Data") )  
+    {
+      std::pair<std::map<Int_t,Float_t>, TH1F *> result=parseLumiInfo(era);
+      lumiMap   = result.first;
+      ratevsrunH = result.second;
+    }
+
+  //pileup
+  std::vector<TGraph *>puWgtGr;
+  if( !filename.Contains("Data") ) puWgtGr=getPileupWeights(era,genPU);
 
   //PREPARE OUTPUT
   TopUE_t tue;
@@ -52,6 +79,7 @@ void RunTopUE(TString filename,
   for(size_t ilfs=0; ilfs<lfsVec.size(); ilfs++)   
     { 
       TString tag(lfsVec[ilfs]);
+      if(ratevsrunH) allPlots["ratevsrun_"+tag] = (TH1 *)ratevsrunH->Clone("ratevsrun_"+tag);
       allPlots["nvtx_"+tag]   = new TH1F("nvtx_"+tag,";Vertex multiplicity;Events",40,0,40);
       allPlots["rho_"+tag]   = new TH1F("rho_"+tag,";#rho;Events",40,0,20);
       allPlots["mll_"+tag]    = new TH1F("mll_"+tag,";Dilepton invariant mass [GeV];Events",50,0,400);
@@ -67,24 +95,6 @@ void RunTopUE(TString filename,
     }
   for (auto& it : allPlots)   { it.second->Sumw2(); it.second->SetDirectory(0); }
 
-  //check file type from name
-  if(filename.Contains("Data")) runSysts=false;
-  runSysts=false;
-  //  bool isTTbar( filename.Contains("_TTJets") );
-
-  //READ TREE FROM FILE
-  MiniEvent_t ev;
-  TFile *f = TFile::Open(filename);
-  TH1 *genPU=(TH1 *)f->Get("analysis/pu");
-  TTree *t = (TTree*)f->Get("analysis/data");
-  attachToMiniEventTree(t,ev,true);
-  Int_t nentries(t->GetEntriesFast());
-
-  //CORRECTIONS
-  //pileup
-  std::vector<TGraph *>puWgtGr;
-  if( !filename.Contains("Data") ) puWgtGr=getPileupWeights(era,genPU);
-
 
   //LOOP OVER EVENTS
   for (Int_t iev=0;iev<nentries;iev++)
@@ -92,7 +102,7 @@ void RunTopUE(TString filename,
       t->GetEntry(iev);
       resetTopUE(tue);
       if(iev%10000==0) printf("\r [%3.0f/100] done",100.*(float)(iev)/(float)(nentries));
-
+      
       //
       //RECO LEVEL analysis
       //
@@ -185,14 +195,20 @@ void RunTopUE(TString filename,
       
       //event weight
       float wgt(1.0);
+      allPlots["puwgtctr"]->Fill(0.,1.0);
       if(!ev.isData) 
 	{
+	  float puWgt(puWgtGr[0]->Eval(ev.g_pu));
+	  allPlots["puwgtctr"]->Fill(1,puWgt);
+
 	  wgt  = (normH? normH->GetBinContent(1) : 1.0);
-	  wgt *= puWgtGr[0]->Eval(ev.g_pu);
+	  wgt *= puWgt;
 	  wgt *= (ev.g_nw>0 ? ev.g_w[0] : 1.0);
 	}
       
       //nominal selection control histograms
+      std::map<Int_t,Float_t>::iterator rIt=lumiMap.find(ev.run);
+      if(rIt!=lumiMap.end() && ratevsrunH) allPlots["ratevsrun_"+chTag]->Fill(std::distance(lumiMap.begin(),rIt),1./rIt->second);
       allPlots["nvtx_"+chTag]->Fill(ev.nvtx,wgt);
       allPlots["rho_"+chTag]->Fill(ev.rho,wgt);
       allPlots["mll_"+chTag]->Fill(tue.mll[0],wgt);
