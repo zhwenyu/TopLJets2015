@@ -7,6 +7,7 @@ std::vector<TGraph *> getPileupWeights(TString era,TH1 *genPU)
   std::vector<TGraph *>puWgtGr;
   if(genPU==0) return  puWgtGr;
 
+  if(genPU->GetNbinsX()==1000) genPU->Rebin(10);
   genPU->Scale(1./genPU->Integral());
 
   //readout the pileup weights and take the ratio of data/MC

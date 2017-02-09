@@ -73,6 +73,12 @@ Float_t computeMT(TLorentzVector &a, TLorentzVector &b)
 }
 
 //
+std::map<Int_t,Float_t> lumiPerRun(TString era)
+{
+  return parseLumiInfo(era).first; 
+}
+
+//
 std::pair<std::map<Int_t,Float_t>, TH1F *> parseLumiInfo(TString era)
 {
   std::map<Int_t,Float_t> lumiMap;
@@ -80,7 +86,7 @@ std::pair<std::map<Int_t,Float_t>, TH1F *> parseLumiInfo(TString era)
   std::pair<std::map<Int_t,Float_t>, TH1F *> toReturn(lumiMap,countH);
 
   //read out the values from the histogram stored in lumisec.root
-  TFile *inF=TFile::Open(Form("${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/%s/lumisec.root",era.Data()),"READ");
+  TFile *inF=TFile::Open(Form("%s/lumisec.root",era.Data()),"READ");
   if(inF==0) return toReturn;
   if(inF->IsZombie()) return toReturn;
   TH2F *h=(TH2F *)inF->Get("lumisec");
