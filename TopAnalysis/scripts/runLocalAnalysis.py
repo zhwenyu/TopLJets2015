@@ -124,7 +124,7 @@ def main():
                     nexisting += 1
                     continue
                 task_list.append( (opt.method,inF,outF,opt.channel,opt.charge,opt.flav,opt.runSysts,opt.era,tag,opt.debug) )
-            if (opt.skipexisting): print '--skipexisting: skipping %d of %d tasks as files already exist'%(nexisting,len(input_list))
+            if (opt.skipexisting and nexisting): print '--skipexisting: skipping %d of %d tasks as files already exist'%(nexisting,len(input_list))
 
     #run the analysis jobs
     if opt.queue=='local':

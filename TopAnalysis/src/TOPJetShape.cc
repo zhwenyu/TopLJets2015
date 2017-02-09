@@ -51,7 +51,7 @@ void RunTopJetShape(TString filename,
   ///////////////////
   
   
-  bool isTTbar( filename.Contains("_TTJets") or TString(normH->GetTitle()).Contains("_TTJets"));
+  bool isTTbar( filename.Contains("_TTJets") or (normH and TString(normH->GetTitle()).Contains("_TTJets")));
 
 
   //PREPARE OUTPUT
