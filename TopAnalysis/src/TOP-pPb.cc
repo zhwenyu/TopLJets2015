@@ -410,7 +410,7 @@ void RunToppPb(TString inFileName,
     
     if(channelSelection==11 || channelSelection==1100) 
       {
-	triggerName = isMC ? "HLT_HISinglePhoton40_Eta3p1ForPPRef_v1" : "HLT_PASinglePhoton30_Eta3p1_v1"; 
+	triggerName = isMC ? "HLT_PASinglePhoton30_Eta3p1_v1" : "HLT_PASinglePhoton30_Eta3p1_v1"; 
       }
     
     hltTree_p->SetBranchStatus(triggerName.data(),1);
@@ -1027,7 +1027,7 @@ void RunToppPb(TString inFileName,
 		    if(lightJets[jetIdx][idx1].DeltaR(pfp4)<0.4)      overlapsWithHPobjects=true;
 		    if(lightJets[jetIdx][idx2].DeltaR(pfp4)<0.4)      overlapsWithHPobjects=true;
 		    if(nbtags>0 && bJets[jetIdx][0].DeltaR(pfp4)<0.4) overlapsWithHPobjects=true;
-		    if(nbtags>0 && bJets[jetIdx][1].DeltaR(pfp4)<0.4) overlapsWithHPobjects=true;
+		    if(nbtags>1 && bJets[jetIdx][1].DeltaR(pfp4)<0.4) overlapsWithHPobjects=true;
 		    if(!overlapsWithHPobjects) continue;
 		    ljev.ntracks_hp++;
 		  }
