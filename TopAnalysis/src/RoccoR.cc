@@ -1,12 +1,14 @@
 #ifndef ElectroWeakAnalysis_RoccoR
 #define ElectroWeakAnalysis_RoccoR
 
+#include <iostream>
 #include <fstream>
 #include <sstream>
 #include "TSystem.h"
 #include "TMath.h"
-#include "RoccoR.h"
+#include "TopLJets2015/TopAnalysis/interface/RoccoR.h"
 
+using namespace std;
 
 int RocRes::getBin(double x, const int NN, const double *b) const{
     for(int i=0; i<NN; ++i) if(x<b[i+1]) return i;

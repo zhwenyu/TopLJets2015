@@ -60,8 +60,6 @@
 
 #include "DataFormats/EgammaCandidates/interface/GsfElectron.h"
 
-#include "TopLJets2015/TopAnalysis/interface/rochcor2016.h"
-
 #include "TLorentzVector.h"
 #include "TH1.h"
 #include "TH1F.h"
@@ -134,11 +132,6 @@ private:
 
   std::unordered_map<std::string,TH1*> histContainer_;
 
-  bool applyLeptonCorrections_;
-
-  //muon rochester corrections
-  rochcor2016 *rochcor_;
-
   PFJetIDSelectionFunctor pfjetIDLoose_;
 
   std::vector<std::string> triggersToUse_,metFiltersToUse_;
@@ -204,10 +197,6 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig) :
   calibElectronToken_ = mayConsume<edm::View<pat::Electron> >(iConfig.getParameter<edm::InputTag>("calibElectrons"));
   triggersToUse_      = iConfig.getParameter<std::vector<std::string> >("triggersToUse");
   metFiltersToUse_  = iConfig.getParameter<std::vector<std::string> >("metFiltersToUse");
-
-  //lepton corrections
-  applyLeptonCorrections_=iConfig.getParameter<bool>("applyLeptonCorrections");
-  rochcor_ = applyLeptonCorrections_ ? new rochcor2016(2016,iConfig.getParameter<std::string>("muonCorrFile")) : 0;
 
   histContainer_["triggerList"] = fs->make<TH1F>("triggerList", ";Trigger bits;",triggersToUse_.size(),0,triggersToUse_.size());
   for(size_t i=0; i<triggersToUse_.size(); i++) histContainer_["triggerList"] ->GetXaxis()->SetBinLabel(i+1,triggersToUse_[i].c_str());
@@ -482,25 +471,6 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       //correct the 4-momentum
       TLorentzVector p4;
       p4.SetPtEtaPhiM(mu.pt(),mu.eta(),mu.phi(),mu.mass());
-      float qter(1.0);
-      if(applyLeptonCorrections_)
-	{
-	  try{
-	    if(iEvent.isRealData())
-	      {
-		rochcor_->momcor_data(p4, mu.charge(), 0, qter);
-	      }
-	    else
-	      {
-		int ntrk=mu.innerTrack()->hitPattern().trackerLayersWithMeasurement();
-		rochcor_->momcor_data(p4, mu.charge(), ntrk, qter);
-	      }
-	  }
-	  catch(...)
-	    {
-	      //probably no inner track...
-	    }
-	}
 
       //kinematics
       bool passPt(p4.Pt() > 10);
@@ -533,7 +503,7 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       ev_.l_eta[ev_.nl]      = p4.Eta();
       ev_.l_phi[ev_.nl]      = p4.Phi();
       ev_.l_mass[ev_.nl]     = p4.M();
-      ev_.l_scaleUnc[ev_.nl] = qter;
+      ev_.l_scaleUnc[ev_.nl] = 0;
       ev_.l_mva[ev_.nl]      = 0;
       ev_.l_pid[ev_.nl]      = (isSoft | (isLoose<<1) | (isMedium<<2) | (isMedium2016ReReco<<3) | (isTight<<4));
       ev_.l_chargedHadronIso[ev_.nl] = mu.pfIsolationR04().sumChargedHadronPt;
@@ -700,7 +670,7 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       ev_.l_eta[ev_.nl]      = calibe->eta();
       ev_.l_phi[ev_.nl]      = calibe->phi();
       ev_.l_mass[ev_.nl]     = calibe->mass();
-      ev_.l_scaleUnc[ev_.nl] = applyLeptonCorrections_ ? calibe->p4Error(reco::GsfElectron::P4_PFLOW_COMBINATION) : 1.0;
+      ev_.l_scaleUnc[ev_.nl] = calibe->p4Error(reco::GsfElectron::P4_PFLOW_COMBINATION);
       ev_.l_miniIso[ev_.nl]  = getMiniIsolation(pfcands,&el,0.05, 0.2, 10., false);
       ev_.l_relIso[ev_.nl]   = (calibe->chargedHadronIso()+ max(0., calibe->neutralHadronIso() + calibe->photonIso()  - 0.5*calibe->puChargedHadronIso()))/calibe->pt();     
       ev_.l_chargedHadronIso[ev_.nl] = calibe->chargedHadronIso();

@@ -42,16 +42,11 @@ options.register('savePF', True,
                  VarParsing.varType.bool,
                  'save PF candidates'
                  )
-options.register('applyLeptonCorrections', False,
-                 VarParsing.multiplicity.singleton,
-                 VarParsing.varType.bool,
-                 'Switch to apply lepton corrections'
-                 )
 options.parseArguments()
 
 #get the configuration to apply
 from TopLJets2015.TopAnalysis.EraConfig import getEraConfiguration
-globalTag, jecTag, jecDB, muonDB = getEraConfiguration(era=options.era,isData=options.runOnData)
+globalTag, jecTag, jecDB = getEraConfiguration(era=options.era,isData=options.runOnData)
 
 process = cms.Process("MiniAnalysis")
 
@@ -83,7 +78,7 @@ process.source = cms.Source("PoolSource",
 if options.runOnData:
     process.source.fileNames = cms.untracked.vstring('/store/data/Run2016B/MuonEG/MINIAOD/23Sep2016-v3/00000/024ADA16-1F98-E611-AD32-0242AC130005.root')
 
-if len(options.inputFile)!=0:
+if options.inputFile and len(options.inputFile)!=0:
     process.source.fileNames = cms.untracked.vstring(options.inputFile)
 
 #apply lumi json, if passed in command line
@@ -98,15 +93,9 @@ if options.lumiJson:
 
 #analysis
 process.load('TopLJets2015.TopAnalysis.miniAnalyzer_cfi')
-process.analysis.muonCorrFile=cms.string(muonDB)
-process.analysis.applyLeptonCorrections=cms.bool(options.applyLeptonCorrections)
 process.analysis.saveTree=cms.bool(options.saveTree)
 process.analysis.savePF=cms.bool(options.savePF)
 print 'Ntuplizer configuration is as follows'
-if process.analysis.applyLeptonCorrections:
-    print '\t Muon corrections served from',process.analysis.muonCorrFile
-else:
-    print '\t Lepton corrections are disabled'
 if not process.analysis.saveTree :
     print '\t Summary tree won\'t be saved'
 if not process.analysis.savePF :
@@ -128,7 +117,12 @@ if not options.runOnData:
 
 #EGM
 from TopLJets2015.TopAnalysis.customizeEGM_cff import *
-customizeEGM(process=process,applyEGMRegression=options.applyLeptonCorrections,runOnData=options.runOnData)
+customizeEGM(process=process,runOnData=options.runOnData)
+process.RandomNumberGeneratorService = cms.Service("RandomNumberGeneratorService",
+                                                   calibratedPatElectrons  = cms.PSet( initialSeed = cms.untracked.uint32(81),
+                                                                                       engineName = cms.untracked.string('TRandom3'),
+                                                                                       )
+                                                   )
 
 #jet energy corrections
 process.load('JetMETCorrections.Configuration.DefaultJEC_cff')
