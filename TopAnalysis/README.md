@@ -6,8 +6,8 @@ These installation instructions correspond to the 2016 data/MC Moriond17 re-reco
 To install execute the following in your work area.
 
 ```
-cmsrel CMSSW_8_0_25
-cd CMSSW_8_0_25/src 
+cmsrel CMSSW_8_0_26
+cd CMSSW_8_0_26/src 
 cmsenv
 
 #EGM electron MVA
@@ -18,13 +18,6 @@ git clone https://github.com/ikrav/RecoEgamma-ElectronIdentification.git data/Re
 cd data/RecoEgamma/ElectronIdentification/data
 git checkout egm_id_80X_v1
 cd $CMSSW_BASE/src
-
-#EGM regression + smearer
-git cms-merge-topic rafaellopesdesa:Regression80XEgammaAnalysis_v2
-git cms-merge-topic shervin86:Moriond2017_JEC_energyScales
-cd EgammaAnalysis/ElectronTools/data
-git clone git@github.com:ECALELFS/ScalesSmearings.git
-cd - 
 
 #MET
 git cms-merge-topic cms-met:METRecipe_8020
@@ -38,6 +31,9 @@ cd RecoBTag/DeepFlavour/data/
 wget http://home.fnal.gov/~verzetti//DeepFlavour/training/DeepFlavourNoSL.json
 wget http://mon.iihe.ac.be/~smoortga/DeepFlavour/CMSSW_implementation_DeepCMVA/Model_DeepCMVA.json
 cd -
+
+#pseudo-top rivet based
+git cms-merge-topic -u intrepid42:pseudotoprivet_80x
 
 #ntuplizer
 git clone git@github.com:pfs/TopLJets2015.git

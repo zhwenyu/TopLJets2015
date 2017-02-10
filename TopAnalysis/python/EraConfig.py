@@ -2,7 +2,7 @@ import os
 
 def getEraConfiguration(era,isData):
     globalTags = {'era2016':('80X_mcRun2_asymptotic_2016_TrancheIV_v7', '80X_dataRun2_2016SeptRepro_v6')  }
-    jecTags    = {'era2016':('Spring16_23Sep2016V2',                    'Spring16_23Sep2016AllV2')}
+    jecTags    = {'era2016':('Summer16_23Sep2016V4',                    'Summer16_23Sep2016AllV4')}
     muonCorrs  = {'era2016':('RoccoR_13tev',                            'RoccoR_13tev')}
 
     idx=1 if isData else 0
