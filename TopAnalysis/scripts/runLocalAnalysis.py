@@ -6,6 +6,7 @@ import pickle
 import json
 import re
 import commands
+import LaunchOnCondor
 from TopLJets2015.TopAnalysis.storeTools import *
 from TopLJets2015.TopAnalysis.batchTools import *
 
@@ -13,7 +14,6 @@ from TopLJets2015.TopAnalysis.batchTools import *
 Wrapper to be used when run in parallel
 """
 def RunMethodPacked(args):
-
 
     method,inF,outF,channel,charge,flav,runSysts,era,tag,debug=args
     print 'Running ',method,' on ',inF
@@ -55,7 +55,6 @@ def main():
     parser.add_option('-o', '--out',         dest='output',      help='output directory (or file if single file to process)  [%default]',  default='analysis', type='string')
     parser.add_option(      '--only',        dest='only',        help='csv list of samples to process  [%default]',             default=None,       type='string')
     parser.add_option(      '--runSysts',    dest='runSysts',    help='run systematics  [%default]',                            default=False,      action='store_true')
-    parser.add_option(      '--babySit',     dest='babySit',     help='babysit batch execution  [%default]',                    default=False,      action='store_true')
     parser.add_option(      '--debug',       dest='debug',      help='debug mode  [%default]',                            default=False,      action='store_true')
     parser.add_option(      '--flav',        dest='flav',        help='split according to heavy flavour content  [%default]',   default=0,          type=int)
     parser.add_option(      '--ch',          dest='channel',     help='channel  [%default]',                                    default=13,         type=int)
@@ -137,20 +136,50 @@ def main():
             pool.map(RunMethodPacked, task_list)
     else:
         print 'launching %d tasks to submit to the %s queue'%(len(task_list),opt.queue)        
-        command_out=''
+
+        FarmDirectory                      = opt.output+"/FARM"
+        JobName                            = 'runLocalAnalysis'
+        LaunchOnCondor.Jobs_RunHere        = 1
+        LaunchOnCondor.Jobs_Queue          = opt.queue
+        LaunchOnCondor.Jobs_LSFRequirement = '"pool>30000"'
+        LaunchOnCondor.Jobs_EmailReport    = False
+        LaunchOnCondor.SendCluster_Create(FarmDirectory, JobName)
+
+        jobNb=0
         for method,inF,outF,channel,charge,flav,runSysts,era,tag,debug in task_list:
-            localRun='python %s/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py -i %s -o %s --charge %d --ch %d --era %s --tag %s --flav %d --method %s' % (cmsswBase,inF,outF,charge,channel,era,tag,flav,method)
-            if runSysts : localRun += ' --runSysts'            
-            if debug : localRun += ' --debug'
-            cmd='bsub -q %s %s/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh \"%s\"' % (opt.queue,cmsswBase,localRun)
-            command_out+=commands.getstatusoutput(cmd)[1]
+            jobNb+=1
+            cfgfile='%s/job_%d.sh'%(FarmDirectory,jobNb)
+            cfg=open(cfgfile,'w')
+            cfg.write('#!/bin/bash\n')
+            cfg.write('cd %s\n'%cmsswBase)
+            cfg.write('eval `scram r -sh`\n')
+            cfg.write('cd -\n')
+            localOutF=os.path.basename(outF)
+            runOpts='-i %s -o %s --charge %d --ch %d --era %s --tag %s --flav %d --method %s'%(inF,
+                                                                                               localOutF,
+                                                                                               charge,
+                                                                                               channel,
+                                                                                               era,
+                                                                                               tag,
+                                                                                               flav,
+                                                                                               method)
+            if runSysts : runOpts += ' --runSysts'
+            if debug :    runOpts += ' --debug'
+            cfg.write('python %s/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py %s\n'%(cmsswBase,runOpts))
+            if '/store' in outF:
+                cfg.write('xrdcp %s root://eoscms//eos/cms/%s\n'%(localOutF,outF))
+            elif outF!=localOutF:
+                cfg.write('mv -v %s %s\n'%(localOutF,outF))
+            cfg.close()
+
+            #LaunchOnCondor.SendCluster_Push(["BASH", 'sh %s'%cfgfile])
+            
+            #cmd='bsub -q %s %s/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh \"%s\"' % (opt.queue,cmsswBase,localRun)
+            #command_out+=commands.getstatusoutput(cmd)[1]
+
+            
         
-        #quit only when jobs have run, if required
-        if opt.babySit:
-            jobNumbers=[int(s) for s in re.findall(r'\<(.*?)\>', command_out) if s.isdigit()]
-            print 'Will babysit %d'%len(jobNumbers)
-            babySitBatchJobs(jobNumbers,waitTime=30)
-            print 'All done...'
+
 
 """
 for execution from another script
