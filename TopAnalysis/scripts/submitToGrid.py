@@ -62,7 +62,7 @@ def main():
     parser.add_option('-c', '--cfg',         dest='cfg'   ,      help='cfg to be sent to grid',       default=None,    type='string')
     parser.add_option('-j', '--json',        dest='json'  ,      help='json with list of files',      default=None,    type='string')
     parser.add_option('-o', '--only',        dest='only'  ,      help='submit only these (csv)',      default=None,    type='string')
-    parser.add_option('-l', '--lumi',        dest='lumiMask',    help='json with list of good lumis', default='/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/Final/Cert_271036-284044_13TeV_23Sep2016ReReco_Collisions16_JSON.txt')
+    parser.add_option('-l', '--lumi',        dest='lumiMask',    help='json with list of good lumis', default='/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/ReReco/Final/Cert_271036-284044_13TeV_23Sep2016ReReco_Collisions16_JSON.txt')
     parser.add_option(      '--era',         dest='era',         help='era to use (sub-dir in data/)', default='era2016',  type='string')
     parser.add_option('-w', '--workDir',     dest='workDir',     help='working directory',             default='grid',     type='string')
     parser.add_option(      '--lfn',         dest='lfn',         help='base lfn to store outputs',     default='/store/group/cmst3/group/top/psilva', type='string')
