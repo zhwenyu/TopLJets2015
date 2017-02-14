@@ -108,7 +108,8 @@ private:
   edm::EDGetTokenT<LHEEventProduct> generatorlheToken_;
   edm::EDGetTokenT<LHERunInfoProduct> generatorRunInfoToken_;
   edm::EDGetTokenT<std::vector<PileupSummaryInfo> > puToken_;
-  edm::EDGetTokenT<std::vector<reco::GenJet>  > genLeptonsToken_,   genJetsToken_;
+  edm::EDGetTokenT<reco::GenParticleCollection> genLeptonsToken_;
+  edm::EDGetTokenT<std::vector<reco::GenJet>  > genJetsToken_;
   edm::EDGetTokenT<pat::PackedGenParticleCollection> genParticlesToken_;
   edm::EDGetTokenT<reco::GenParticleCollection> prunedGenParticlesToken_;
   edm::EDGetTokenT<reco::GenParticleCollection> pseudoTopToken_;
@@ -161,7 +162,7 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig) :
   generatorlheToken_(consumes<LHEEventProduct>(edm::InputTag("externalLHEProducer",""))),
   generatorRunInfoToken_(consumes<LHERunInfoProduct,edm::InRun>({"externalLHEProducer"})),
   puToken_(consumes<std::vector<PileupSummaryInfo>>(edm::InputTag("slimmedAddPileupInfo"))),  
-  genLeptonsToken_(consumes<std::vector<reco::GenJet> >(edm::InputTag("pseudoTop:leptons"))),
+  genLeptonsToken_(consumes<reco::GenParticleCollection>(edm::InputTag("pseudoTop:leptons"))),
   genJetsToken_(consumes<std::vector<reco::GenJet> >(edm::InputTag("pseudoTop:jets"))),
   genParticlesToken_(consumes<pat::PackedGenParticleCollection>(edm::InputTag("packedGenParticles"))),
   prunedGenParticlesToken_(consumes<reco::GenParticleCollection>(edm::InputTag("prunedGenParticles"))),
@@ -307,14 +308,11 @@ int MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
 
   //leptons
   int ngleptons(0);
-  edm::Handle<std::vector<reco::GenJet> > dressedLeptons;
+  //edm::Handle<std::vector<reco::GenJet> > dressedLeptons;
+  edm::Handle<reco::GenParticleCollection> dressedLeptons;
   iEvent.getByToken(genLeptonsToken_,dressedLeptons);
   for(auto genLep = dressedLeptons->begin();  genLep != dressedLeptons->end(); ++genLep)
     {
-      //map the gen particles which are clustered in this lepton
-      std::vector< const reco::Candidate * > jconst=genLep->getJetConstituentsQuick();
-      for(size_t ijc=0; ijc <jconst.size(); ijc++) jetConstsMap[ jconst[ijc] ] = ev_.ng;
-      
       ev_.g_pt[ev_.ng]   = genLep->pt();
       ev_.g_id[ev_.ng]   = genLep->pdgId();
       ev_.g_eta[ev_.ng]  = genLep->eta();

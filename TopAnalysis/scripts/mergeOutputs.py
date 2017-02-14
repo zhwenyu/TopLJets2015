@@ -78,4 +78,6 @@ for basename, files in counters.iteritems():
 
 if (len(badFiles) > 0):
     print '-----------------------'
-    print 'The following files are not done yet or require resubmission, please check LSF output:', badFiles
+    print 'The following files are not done yet or require resubmission, please check LSF output:'
+    for file in badFiles:
+        print file,
