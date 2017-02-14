@@ -118,7 +118,16 @@ process.options   = cms.untracked.PSet(
 
 #pseudo-top
 if not options.runOnData:
-    process.load('TopQuarkAnalysis.TopEventProducers.producers.pseudoTop_cfi')
+    process.load('SimGeneral.HepPDTESSource.pythiapdt_cfi')
+    process.mergedGenParticles = cms.EDProducer("MergedGenParticleProducer",
+        inputPruned = cms.InputTag("prunedGenParticles"),
+        inputPacked = cms.InputTag("packedGenParticles"),
+    )
+    process.genParticles2HepMC = cms.EDProducer("GenParticles2HepMCConverter",
+        genParticles = cms.InputTag("mergedGenParticles"),
+        genEventInfo = cms.InputTag("generator"),
+    )
+    process.load("TopQuarkAnalysis.TopEventProducers.producers.pseudoTop_cfi")
     process.pseudoTop.leptonMinPt=cms.double(20)
     process.pseudoTop.leptonMaxEta=cms.double(2.5)
     process.pseudoTop.jetMaxEta=cms.double(5.0)

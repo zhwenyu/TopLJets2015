@@ -39,6 +39,9 @@ wget http://home.fnal.gov/~verzetti//DeepFlavour/training/DeepFlavourNoSL.json
 wget http://mon.iihe.ac.be/~smoortga/DeepFlavour/CMSSW_implementation_DeepCMVA/Model_DeepCMVA.json
 cd -
 
+#New PseudoTopProducer
+git cms-merge-topic -u intrepid42:pseudotoprivet_80x
+
 #ntuplizer
 git clone git@github.com:pfs/TopLJets2015.git
 cd TopLJets2015/TopAnalysis
