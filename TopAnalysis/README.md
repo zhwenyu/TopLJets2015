@@ -24,13 +24,13 @@ git cms-merge-topic cms-met:METRecipe_8020
 git cms-merge-topic ahinzmann:METRecipe_8020_Moriond17
 git cms-merge-topic cms-met:fromCMSSW_8_0_20_postICHEPfilter
 
-#BTV DeepCSV
-git cms-merge-topic -u mverzett:DeepFlavourCMVA-from-CMSSW_8_0_21
-mkdir RecoBTag/DeepFlavour/data/
-cd RecoBTag/DeepFlavour/data/
-wget http://home.fnal.gov/~verzetti//DeepFlavour/training/DeepFlavourNoSL.json
-wget http://mon.iihe.ac.be/~smoortga/DeepFlavour/CMSSW_implementation_DeepCMVA/Model_DeepCMVA.json
-cd -
+#BTV DeepCSV (disabled for the moment)
+#git cms-merge-topic -u mverzett:DeepFlavourCMVA-from-CMSSW_8_0_21
+#mkdir RecoBTag/DeepFlavour/data/
+#cd RecoBTag/DeepFlavour/data/
+#wget http://home.fnal.gov/~verzetti//DeepFlavour/training/DeepFlavourNoSL.json
+#wget http://mon.iihe.ac.be/~smoortga/DeepFlavour/CMSSW_implementation_DeepCMVA/Model_DeepCMVA.json
+#cd -
 
 #pseudo-top rivet based
 git cms-merge-topic -u intrepid42:pseudotoprivet_80x
