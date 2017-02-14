@@ -68,7 +68,7 @@ void RunTopJetShape(TString filename,
   //READ TREE FROM FILE
   MiniEvent_t ev;
   TFile *f = TFile::Open(filename);
-  TH1 *genPU=(TH1 *)f->Get("analysis/pu");
+  TH1 *genPU=(TH1 *)f->Get("analysis/putrue");
   TTree *t = (TTree*)f->Get("analysis/data");
   attachToMiniEventTree(t,ev,true);
   Int_t nentries(t->GetEntriesFast());
@@ -77,7 +77,16 @@ void RunTopJetShape(TString filename,
 
   cout << "...producing " << outname << " from " << nentries << " events" << endl;
 
-
+  //lumi
+  TH1F *ratevsrunH=0;
+  std::map<Int_t,Float_t> lumiMap;
+  if( filename.Contains("Data") )  
+    {
+      std::pair<std::map<Int_t,Float_t>, TH1F *> result=parseLumiInfo(era);
+      lumiMap   = result.first;
+      ratevsrunH = result.second;
+    }
+  
   //PILEUP WEIGHTING
   std::vector<TGraph *>puWgtGr;
   if( !filename.Contains("Data") ) puWgtGr=getPileupWeights(era,genPU);
@@ -124,6 +133,8 @@ void RunTopJetShape(TString filename,
     for(auto& channel : chTags) {  
       TString tag(stage+channel);
       
+      if(ratevsrunH)
+        allPlots["ratevsrun_"+tag] = (TH1 *)ratevsrunH->Clone("ratevsrun_"+tag);
       allPlots["nvtx_"+tag]   = new TH1F("nvtx_"+tag,";Vertex multiplicity;Events",30,0,30);
       allPlots["nleps_"+tag]  = new TH1F("nleps_"+tag,";Lepton multiplicity;Events",5,-0.5,4.5);
       allPlots["njets_"+tag]  = new TH1F("njets_"+tag,";Jet multiplicity;Events",10,-0.5,9.5);
@@ -229,7 +240,10 @@ void RunTopJetShape(TString filename,
   ///////////////////////
   // LOOP OVER EVENTS //
   /////////////////////
-  SelectionTool selector;
+  
+  //EVENT SELECTION WRAPPER
+  SelectionTool selector(filename);
+  
   for (Int_t iev=0;iev<nentries;iev++)
     {
       t->GetEntry(iev);
@@ -284,10 +298,14 @@ void RunTopJetShape(TString filename,
       
       //event weight
       float wgt(1.0);
+      allPlots["puwgtctr"]->Fill(0.,1.0);
       if(!ev.isData) 
         {
+          float puWgt(puWgtGr[0]->Eval(ev.g_pu));
+          allPlots["puwgtctr"]->Fill(1,puWgt);
+
           wgt  = (normH? normH->GetBinContent(1) : 1.0);
-          wgt *= puWgtGr[0]->Eval(ev.g_pu);
+          wgt *= puWgt;
           wgt *= (ev.g_nw>0 ? ev.g_w[0] : 1.0);
         }
       
@@ -329,6 +347,9 @@ void RunTopJetShape(TString filename,
           if (channel == "E" and chTag != "E") continue;
           if (channel == "M" and chTag != "M") continue;
           TString tag(stageVec[istage]+channel);
+          
+          std::map<Int_t,Float_t>::iterator rIt=lumiMap.find(ev.run);
+          if(rIt!=lumiMap.end() && ratevsrunH) allPlots["ratevsrun_"+tag]->Fill(std::distance(lumiMap.begin(),rIt),1./rIt->second);
           
           allPlots["nvtx_"+tag]->Fill(ev.nvtx, wgt);
           allPlots["nleps_"+tag]->Fill(leptons.size(), wgt);
