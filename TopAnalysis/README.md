@@ -6,8 +6,8 @@ These installation instructions correspond to the 2016 data/MC Moriond17 re-reco
 To install execute the following in your work area.
 
 ```
-cmsrel CMSSW_8_0_25
-cd CMSSW_8_0_25/src 
+cmsrel CMSSW_8_0_26
+cd CMSSW_8_0_26/src 
 cmsenv
 
 #EGM electron MVA
@@ -18,13 +18,6 @@ git clone https://github.com/ikrav/RecoEgamma-ElectronIdentification.git data/Re
 cd data/RecoEgamma/ElectronIdentification/data
 git checkout egm_id_80X_v1
 cd $CMSSW_BASE/src
-
-#EGM regression + smearer
-git cms-merge-topic rafaellopesdesa:Regression80XEgammaAnalysis_v2
-git cms-merge-topic shervin86:Moriond2017_JEC_energyScales
-cd EgammaAnalysis/ElectronTools/data
-git clone git@github.com:ECALELFS/ScalesSmearings.git
-cd - 
 
 #MET
 git cms-merge-topic cms-met:METRecipe_8020
@@ -39,7 +32,7 @@ wget http://home.fnal.gov/~verzetti//DeepFlavour/training/DeepFlavourNoSL.json
 wget http://mon.iihe.ac.be/~smoortga/DeepFlavour/CMSSW_implementation_DeepCMVA/Model_DeepCMVA.json
 cd -
 
-#New PseudoTopProducer
+#pseudo-top rivet based
 git cms-merge-topic -u intrepid42:pseudotoprivet_80x
 
 #ntuplizer
@@ -78,6 +71,10 @@ analysisWrapper --in MC13TeV_TTJets.root   --out mc_synch.root   --method TOPSyn
 analysisWrapper --in Data13TeV_MuonEG.root --out data_synch.root --method TOPSynchExercise::RunTOPSynchExercise
 ```
 
+A wrapper script is also provided to run over directories with trees or single files and allowing to schedule the execution to the job.
+See examples under scripts/ in ```steer*Analysis.sh```.
+
+
 ## Submitting ntuple creation through the grid
 
 To submit the ntuplizer to the grid start by setting the environment for crab3.
@@ -97,7 +94,7 @@ python scripts/submitToGrid.py -j data/era2016/samples.json -c ${CMSSW_BASE}/src
 As soon as ntuple production starts to finish, to move from crab output directories to a simpler directory structure which can be easily parsed by the local analysis runThe merging can be run locally if needed by using the checkProductionIntegrity.py script
 
 ```
-python scripts/submitCheckProductionIntegrity.py -i /store/group/phys_top/psilva/8274336 -o /store/cmst3/group/top/ReReco2016/8274336
+python scripts/submitCheckProductionIntegrity.py -i /store/cmst3/group/top/psilva/6b4948e -o /store/cmst3/group/top/ReReco2016/82ba04e
 ```
 
 ## Luminosity
@@ -109,14 +106,13 @@ for i in ${a[@]}; do
     crab report ${i}; 
 done
 ``` 
-You can then run the brilcalc tool to get the integrated luminosity in total and per run (see https://twiki.cern.ch/twiki/bin/view/CMS/2015LumiNormtag for more details).
+You can then run the brilcalc tool to get the integrated luminosity in total and per run 
+(see https://twiki.cern.ch/twiki/bin/view/CMS/2015LumiNormtag for more details). 
+The following script runs brilcalc inclusively and per trigger path, and stores the results in a ROOT file with the total integrated lumi per run.
+It takes a bit to run, depending on the number of triggers configured to use in the analysis
 ```
-export PATH=$HOME/.local/bin:/afs/cern.ch/cms/lumi/brilconda-1.0.3/bin:$PATH
-brilcalc lumi --normtag /afs/cern.ch/user/l/lumipro/public/normtag_file/normtag_DATACERT.json -i /afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/Final/Cert_271036-284044_13TeV_PromptReco_Collisions16_JSON.txt > data/era2016/lumiPerRun.txt
-```
-Use the table which is printed out to update the "lumisec.root" file which stores the value of luminosities per run
-```
-python scripts/convertLumiTable.py data/era2016/lumiPerRun.txt
+export PATH=$HOME/.local/bin:/afs/cern.ch/cms/lumi/brilconda-1.1.7/bin:$PATH
+python scripts/convertLumiTable.py -o data/era2016/
 ```
 
 ## Preparing the analysis 
@@ -139,76 +135,10 @@ The lepton trigger/id/iso efficiencies should also be placed under data/era2016.
 The src/LeptonEfficiencyWrapper.cc  should then be updated to handle the reading of the ROOT files and the application of the scale factors
 event by event.
 
-
-## Running locally the analysis for testing
-
-The analysis (histogram filling, final selection) is in src/ReadTree.cc.
-Recompile (scram b) everytime you change it so that you can test the new features.
-To test the code on a single file to produce plots.
-```
-python scripts/runLocalAnalysis.py -i MiniEvents.root
-```
-To run the code on a set of samples stored in EOS you can run it as shown below.
-If "-q queue_name" is appended the jobs are submitted to the batch system instead of running locally. 
-To check the status of your jobs run "bjobs" and then "bpeek job_number" if you want to inspect how the job is running in the cluster.
-If "-n n_jobs" is passed the script runs locally using "n_jobs" parallel threads.
-```
-python scripts/runLocalAnalysis.py -i /store/cmst3/user/psilva/LJets2015/7e62835 -n 8 --runSysts -o analysis_muplus   --ch 13   --charge 1
-```
-If you want to suppress the mails sent automatically after job completion please do
-```
-export LSB_JOB_REPORT_MAIL=N
-```
-before submitting the jobs to the batch. After the jobs have run you can merge the outputs with
-```
-./scripts/mergeOutputs.py analysis_muplus
-```
+## Plotting
 To plot the output of the local analysis you can run the following:
 ```
 python scripts/plotter.py -i analysis_muplus/   -j data/era2016/samples.json  -l 12870
-```
-After the plotters are created one can run the QCD estimation normalization, by fitting the MET distribution.
-The script will also produce the QCD templates using the data from the sideband region. It runs as
-```
-python scripts/runQCDEstimation.py --iso analysis_muplus/plots/plotter.root --noniso analysis_munoniso/plots/plotter.root --out analysis_muplus/
-```
-The output is a ROOT file called Data_QCDMultijets.root which can now be used in addition to the predictions of all the other backgrounds.
-To include it in the final plots you can run the plotter script again (see instructions above).
-
-## Submitting the full analysis to the batch system
-
-A script wraps up the above procedure for all the signal and control regions used in the analyis.
-To use it you can use the following script
-```
-sh scripts/steerAnalysis.sh <DISTS/MERGE/PLOT/BKG>
-```
-
-## Cross section fitting
-
-We use the Higgs combination tool to perform the fit of the production cross section.
-(cf. https://twiki.cern.ch/twiki/bin/viewauth/CMS/SWGuideHiggsAnalysisCombinedLimit for details of the release to use).
-It currently has to be run from a CMSSW_7_1_5 release. To create the datacard you can run the following script
-```
-python scripts/createDataCard.py -i analysis_muplus/plots/plotter.root -o  analysis_muplus/datacard  -q analysis_muplus/.qcdscalefactors.pck -d nbtags
-```
-The script can be used to create the datacard from any histogram stored in plotter.root.
-For the systematic variations it expects a 2D histogram named as HISTONAMEshapes_{exp,gen} filled with alternative variations of the shape,
-being exp/gen used for experimental/generator-level systematics.
-Additional systematics from alternative samples can also be used to build the datacards using the --systInput option.
-Other options are available to choose the categories to use.
-The datacards can be further combined using the standard combineCards.py script provided by the Higgs Combination package.
-
-To run the fits and show the results you can use the following script.
-```
-python scripts/fitCrossSection.py "#mu^{+}"=analysis_muplus/datacard/datacard.dat -o analysis_muplus/datacard &
-```
-If --noFit is passed it displays the results of the last fit. The script is a wrapper used to run combine 
-to perform the fit with and without systematics, produce the post-fit nuisance parameters summary
-and the likelihood scans.
-For the standard analysis one can re-use the steerAnalysis.sh script with two options CinC/SHAPE
-will run the Cut-in-Categories/Shape analyses.
-```
-sh scripts/steerAnalysis.sh CinC/SHAPE
 ```
 
 ## Updating the code
@@ -221,5 +151,4 @@ Push to your forked repository
 ```
 git push git@github.com:MYGITHUBLOGIN/TopLJets2015.git
 ```
-From the github area of the repository cleak on the green button "Compare,review and create a pull request"
-to create the PR to merge with your colleagues.
+From the github area of the repository cleak on the green button "Compare,review and create a pull request" to create the PR to merge with your colleagues.
