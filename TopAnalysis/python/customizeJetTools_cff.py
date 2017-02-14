@@ -1,6 +1,6 @@
 import FWCore.ParameterSet.Config as cms
 
-def customizeJetTools(process,jecDB,jecTag,baseJetCollection,runOnData):
+def customizeJetTools(process,jecDB,jecTag,baseJetCollection,runOnData,useDeepCSV=False):
 
 	#general configurations
 	jecTag += '_DATA' if runOnData else '_MC'
@@ -36,20 +36,21 @@ def customizeJetTools(process,jecDB,jecTag,baseJetCollection,runOnData):
 	process.es_prefer_jec = cms.ESPrefer('PoolDBESSource','jec')
 	
 	from PhysicsTools.PatAlgos.tools.jetTools import updateJetCollection
+	btagDiscriminators=['pfSimpleSecondaryVertexHighEffBJetTags','pfCombinedInclusiveSecondaryVertexV2BJetTags']
+	btagInfos=['pfInclusiveSecondaryVertexFinderTagInfos']
+	if useDeepCSV:
+		btagDiscriminators += ['deepFlavourJetTags:probudsg',
+				       'deepFlavourJetTags:probb',
+				       'deepFlavourJetTags:probc',
+				       'deepFlavourJetTags:probbb',
+				       'deepFlavourJetTags:probcc']
 	updateJetCollection(
 		process,
 		labelName='UpdatedJECBTag',
 		jetSource = cms.InputTag(baseJetCollection),
 		jetCorrections = (payload, cms.vstring(jecLevels), 'None'),
-		btagDiscriminators = ['deepFlavourJetTags:probudsg', 
-				      'deepFlavourJetTags:probb', 
-				      'deepFlavourJetTags:probc', 
-				      'deepFlavourJetTags:probbb',
-				      'deepFlavourJetTags:probcc',
-				      'pfSimpleSecondaryVertexHighEffBJetTags',
-				      'pfCombinedInclusiveSecondaryVertexV2BJetTags'
-				      ],
-		btagInfos = ['pfInclusiveSecondaryVertexFinderTagInfos']
+		btagDiscriminators = btagDiscriminators,
+		btagInfos = btagInfos
 		)
 	process.updatedPatJetsTransientCorrectedUpdatedJECBTag.addTagInfos = cms.bool(True)
 

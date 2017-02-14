@@ -76,7 +76,7 @@ process.source = cms.Source("PoolSource",
                             duplicateCheckMode = cms.untracked.string('noDuplicateCheck') 
                             )
 if options.runOnData:
-    process.source.fileNames = cms.untracked.vstring('/store/data/Run2016B/MuonEG/MINIAOD/23Sep2016-v3/00000/024ADA16-1F98-E611-AD32-0242AC130005.root')
+    process.source.fileNames = cms.untracked.vstring('/store/data/Run2016B/MuonEG/MINIAOD/23Sep2016-v3/120000/E8C2C234-BF97-E611-82BB-0025907B4EE4.root')
 
 if options.inputFile and len(options.inputFile)!=0:
     process.source.fileNames = cms.untracked.vstring(options.inputFile)

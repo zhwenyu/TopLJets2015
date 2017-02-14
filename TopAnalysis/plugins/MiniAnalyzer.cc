@@ -721,9 +721,9 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
 	}	 
       ev_.j_csv[ev_.nj]=j->bDiscriminator("pfCombinedInclusiveSecondaryVertexV2BJetTags");
       ev_.j_btag[ev_.nj]       = (ev_.j_csv[ev_.nj]>0.8484);
-      ev_.j_deepcsvl[ev_.nj]   = j->bDiscriminator("deepFlavourJetTags:probudsg");
-      ev_.j_deepcsvc[ev_.nj]   = j->bDiscriminator("deepFlavourJetTags:probc")+j->bDiscriminator("deepFlavourJetTags:probcc");
-      ev_.j_deepcsvb[ev_.nj]   = j->bDiscriminator("deepFlavourJetTags:probb")+j->bDiscriminator("deepFlavourJetTags:probbb");
+      ev_.j_deepcsvl[ev_.nj]   = 0; //j->bDiscriminator("deepFlavourJetTags:probudsg");
+      ev_.j_deepcsvc[ev_.nj]   = 0; //j->bDiscriminator("deepFlavourJetTags:probc")+j->bDiscriminator("deepFlavourJetTags:probcc");
+      ev_.j_deepcsvb[ev_.nj]   = 0; //j->bDiscriminator("deepFlavourJetTags:probb")+j->bDiscriminator("deepFlavourJetTags:probbb");
 
       if( j->hasTagInfo("pfInclusiveSecondaryVertexFinder") )
 	{
@@ -740,7 +740,6 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
 	      ev_.j_vtx3DSig[ev_.nj]       = candSVTagInfo->flightDistance(0).significance();
 	    }
 	}
-
 
       ev_.j_flav[ev_.nj]       = j->partonFlavour();
       ev_.j_hadflav[ev_.nj]    = j->hadronFlavour();
