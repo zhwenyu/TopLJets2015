@@ -9,7 +9,7 @@ creates the crab cfg and submits the job
 def submitProduction(tag,lfnDirBase,dataset,isData,cfg,workDir,lumiMask,era='era2016',submit=False):
     
     from TopLJets2015.TopAnalysis.EraConfig import getEraConfiguration
-    globalTag, jecTag, jecDB, muonDB = getEraConfiguration(era=era,isData=bool(isData))
+    globalTag, jecTag, jecDB = getEraConfiguration(era=era,isData=bool(isData))
 
     os.system("rm -rvf %s/*%s* "%(workDir,tag))
     crabConfigFile=workDir+'/'+tag+'_cfg.py'
@@ -29,21 +29,21 @@ def submitProduction(tag,lfnDirBase,dataset,isData,cfg,workDir,lumiMask,era='era
     config_file.write('config.JobType.psetName = "'+cfg+'"\n')
     config_file.write('config.JobType.disableAutomaticOutputCollection = False\n')
     config_file.write('config.JobType.pyCfgParams = [\'runOnData=%s\',\'era=%s\']\n' % (bool(isData), era))
-    config_file.write('config.JobType.inputFiles = [\'%s\',\'%s\']\n'%(jecDB,muonDB))
+    config_file.write('config.JobType.inputFiles = [\'%s\']\n'%(jecDB))
     config_file.write('\n')
     config_file.write('config.section_("Data")\n')
     config_file.write('config.Data.inputDataset = "%s"\n' % dataset)
     config_file.write('config.Data.inputDBS = "global"\n')
     if isData : 
         config_file.write('config.Data.splitting = "LumiBased"\n')
-        config_file.write('config.Data.unitsPerJob = 200\n')
+        config_file.write('config.Data.unitsPerJob = 150\n')
         config_file.write('config.Data.lumiMask = \'%s\'\n' %lumiMask)
     else : 
         config_file.write('config.Data.splitting = "FileBased"\n')
         config_file.write('config.Data.unitsPerJob = 4\n')
-    config_file.write('config.Data.publication = True\n')
-    config_file.write('config.Data.ignoreLocality = False\n')
-    config_file.write('config.Data.outLFNDirBase = \'%s\'\n' % lfnDirBase)
+    config_file.write('config.Data.publication = False\n')
+    config_file.write('config.Data.ignoreLocality = True\n')
+    config_file.write('config.Data.outLFNDirBase = \"%s\"\n' % lfnDirBase)
     config_file.write('\n')
     config_file.write('config.section_("Site")\n')
     config_file.write('config.Site.storageSite = "T2_CH_CERN"\n')
@@ -62,10 +62,10 @@ def main():
     parser.add_option('-c', '--cfg',         dest='cfg'   ,      help='cfg to be sent to grid',       default=None,    type='string')
     parser.add_option('-j', '--json',        dest='json'  ,      help='json with list of files',      default=None,    type='string')
     parser.add_option('-o', '--only',        dest='only'  ,      help='submit only these (csv)',      default=None,    type='string')
-    parser.add_option('-l', '--lumi',        dest='lumiMask',    help='json with list of good lumis', default='/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/Final/Cert_271036-284044_13TeV_PromptReco_Collisions16_JSON.txt')
+    parser.add_option('-l', '--lumi',        dest='lumiMask',    help='json with list of good lumis', default='/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/ReReco/Final/Cert_271036-284044_13TeV_23Sep2016ReReco_Collisions16_JSON.txt')
     parser.add_option(      '--era',         dest='era',         help='era to use (sub-dir in data/)', default='era2016',  type='string')
     parser.add_option('-w', '--workDir',     dest='workDir',     help='working directory',             default='grid',     type='string')
-    parser.add_option(      '--lfn',         dest='lfn',         help='base lfn to store outputs',     default='/store/group/phys_top/psilva/', type='string')
+    parser.add_option(      '--lfn',         dest='lfn',         help='base lfn to store outputs',     default='/store/group/cmst3/group/top/psilva', type='string')
     parser.add_option('-s', '--submit',      dest='submit',      help='submit jobs',                   default=False,   action='store_true')
     (opt, args) = parser.parse_args()
 
