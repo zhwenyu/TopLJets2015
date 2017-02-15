@@ -25,7 +25,8 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev)
   t->Branch("g_id",      ev.g_id,     "g_id[ng]/I");
   t->Branch("g_bid",     ev.g_bid,    "g_bid[ng]/I");
   t->Branch("g_isSemiLepBhad",     ev.g_isSemiLepBhad,    "g_isSemiLepBhad[ng]/O");
-  t->Branch("g_xb",      ev.g_xb,     "g_xb[ng]/F");
+  t->Branch("g_xb",      ev.g_xb,     "g_xb[ng]/F");  
+  t->Branch("g_xbp",      ev.g_xbp,   "g_xbp[ng]/F");
   t->Branch("g_pt",      ev.g_pt,     "g_pt[ng]/F");
   t->Branch("g_eta",     ev.g_eta,    "g_eta[ng]/F");
   t->Branch("g_phi",     ev.g_phi,    "g_phi[ng]/F");
@@ -146,6 +147,7 @@ void attachToMiniEventTree(TTree *t,MiniEvent_t &ev,bool full)
   t->SetBranchAddress("g_bid",     ev.g_bid);
   t->SetBranchAddress("g_isSemiLepBhad", ev.g_isSemiLepBhad);
   t->SetBranchAddress("g_xb",      ev.g_xb);
+  t->SetBranchAddress("g_xbp",     ev.g_xbp);
   t->SetBranchAddress("g_pt",      ev.g_pt);
   t->SetBranchAddress("g_eta",     ev.g_eta);
   t->SetBranchAddress("g_phi",     ev.g_phi);

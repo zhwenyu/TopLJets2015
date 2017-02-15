@@ -331,13 +331,10 @@ int MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
   int ngjets(0),ngbjets(0);
   for(auto genJet = genJets->begin();  genJet != genJets->end(); ++genJet)
     {
-      //map the gen particles which are clustered in this jet
-      std::vector< const reco::Candidate * > jconst=genJet->getJetConstituentsQuick ();
-      for(size_t ijc=0; ijc <jconst.size(); ijc++) jetConstsMap[ jconst[ijc] ] = ev_.ng;
-
       //match to Bhadron
       ev_.g_isSemiLepBhad[ev_.ng] = false;
-      ev_.g_xb[ev_.ng]            = 0;
+      ev_.g_xb[ev_.ng]            = 0;      
+      ev_.g_xbp[ev_.ng]           = 0;
       ev_.g_bid[ev_.ng]           = 0;
       for(size_t i=0; i<bHadrons.size(); i++)
 	{
@@ -345,8 +342,12 @@ int MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
 	  ev_.g_isSemiLepBhad[ev_.ng] = bHadrons[i].second;
 	  ev_.g_xb[ev_.ng]            = bHadrons[i].first->pt()/genJet->pt();
 	  ev_.g_bid[ev_.ng]           = bHadrons[i].first->pdgId();
+	  break;
 	}
 
+      //map the gen particles which are clustered in this jet
+      std::vector< const reco::Candidate * > jconst=genJet->getJetConstituentsQuick ();
+      for(size_t ijc=0; ijc <jconst.size(); ijc++) jetConstsMap[ jconst[ijc] ] = ev_.ng;
       ev_.g_id[ev_.ng]   = genJet->pdgId();
       ev_.g_pt[ev_.ng]   = genJet->pt();
       ev_.g_eta[ev_.ng]  = genJet->eta();
@@ -742,6 +743,7 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
 	  if(abs(ev_.g_id[ig])==11 || abs(ev_.g_id[ig])==13) continue;
 	  if(deltaR( j->eta(),j->phi(), ev_.g_eta[ig],ev_.g_phi[ig])>0.4) continue;
 	  ev_.j_g[ev_.nj]=ig;
+	  ev_.g_xbp[ig]  = genParton   ? ev_.g_xb[ig]*ev_.g_pt[ig]/genParton->pt() : 0.;
 	  break;
 	}	 
       ev_.j_csv[ev_.nj]=j->bDiscriminator("pfCombinedInclusiveSecondaryVertexV2BJetTags");
