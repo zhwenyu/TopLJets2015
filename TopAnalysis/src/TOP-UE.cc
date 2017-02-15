@@ -42,12 +42,13 @@ void RunTopUE(TString filename,
   MiniEvent_t ev;
   TFile *f = TFile::Open(filename);
   TH1 *genPU=(TH1 *)f->Get("analysis/putrue");
+  TH1 *triggerList=(TH1 *)f->Get("analysis/triggerList");
   TTree *t = (TTree*)f->Get("analysis/data");
   attachToMiniEventTree(t,ev,true);
   Int_t nentries(t->GetEntriesFast());
 
   //EVENT SELECTION WRAPPER
-  SelectionTool evsel(filename,false);
+  SelectionTool evsel(filename,false,triggerList);
 
   //CORRECTIONS
   //lumi

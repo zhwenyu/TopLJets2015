@@ -78,6 +78,9 @@ using namespace std;
 using namespace reco;
 using namespace pat; 
 
+#define IS_BHADRON_PDGID(id) ( ((abs(id)/100)%10 == 5) || (abs(id) >= 5000 && abs(id) <= 5999) )
+#define IS_NEUTRINO_PDGID(id) ( (abs(id) == 12) || (abs(id) == 14) || (abs(id) == 16) )
+
 //
 // class declaration
 //
@@ -289,8 +292,16 @@ int MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
     {
       //map the gen particles which are clustered in this jet
       std::vector< const reco::Candidate * > jconst=genJet->getJetConstituentsQuick ();
-      for(size_t ijc=0; ijc <jconst.size(); ijc++) jetConstsMap[ jconst[ijc] ] = ev_.ng;
-      
+      for(size_t ijc=0; ijc <jconst.size(); ijc++) 
+	{
+	  jetConstsMap[ jconst[ijc] ] = ev_.ng;
+	  if(abs(genJet->pdgId())==5)
+	    {
+	      int cid=jconst[ijc]->pdgId();
+	      cout << cid << " " << IS_BHADRON_PDGID(cid) << " " << IS_NEUTRINO_PDGID(cid) << endl;
+	    }
+	}
+
       ev_.g_id[ev_.ng]   = genJet->pdgId();
       ev_.g_pt[ev_.ng]   = genJet->pt();
       ev_.g_eta[ev_.ng]  = genJet->eta();
@@ -302,7 +313,7 @@ int MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       if(genJet->pt()>25 && fabs(genJet->eta())<2.5)
 	{
 	  ngjets++;	
-	  if(abs(genJet->pdgId())) ngbjets++;
+	  if(abs(genJet->pdgId())==5) ngbjets++;
 	}
     }
 
