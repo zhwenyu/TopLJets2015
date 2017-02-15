@@ -78,6 +78,9 @@ using namespace std;
 using namespace reco;
 using namespace pat; 
 
+#define IS_BHADRON_PDGID(id) ( ((abs(id)/100)%10 == 5) || (abs(id) >= 5000 && abs(id) <= 5999) )
+#define IS_NEUTRINO_PDGID(id) ( (abs(id) == 12) || (abs(id) == 14) || (abs(id) == 16) )
+
 //
 // class declaration
 //
@@ -111,7 +114,6 @@ private:
   edm::EDGetTokenT<std::vector<reco::GenJet>  > genLeptonsToken_,   genJetsToken_;
   edm::EDGetTokenT<pat::PackedGenParticleCollection> genParticlesToken_;
   edm::EDGetTokenT<reco::GenParticleCollection> prunedGenParticlesToken_;
-  edm::EDGetTokenT<reco::GenParticleCollection> pseudoTopToken_;
 
   edm::EDGetTokenT<edm::TriggerResults> triggerBits_,metFilterBits_;
   edm::EDGetTokenT<pat::PackedTriggerPrescales> triggerPrescales_;
@@ -165,7 +167,6 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig) :
   genJetsToken_(consumes<std::vector<reco::GenJet> >(edm::InputTag("pseudoTop:jets"))),
   genParticlesToken_(consumes<pat::PackedGenParticleCollection>(edm::InputTag("packedGenParticles"))),
   prunedGenParticlesToken_(consumes<reco::GenParticleCollection>(edm::InputTag("prunedGenParticles"))),
-  pseudoTopToken_(consumes<reco::GenParticleCollection>(edm::InputTag("pseudoTop"))),
   triggerBits_(consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("triggerBits"))),
   metFilterBits_(consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("metFilterBits"))),
   triggerPrescales_(consumes<pat::PackedTriggerPrescales>(iConfig.getParameter<edm::InputTag>("prescales"))),
@@ -203,7 +204,7 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig) :
   histContainer_["counter"]    = fs->make<TH1F>("counter", ";Counter;Events",2,0,2);
   histContainer_["fidcounter"] = (TH1 *)fs->make<TH2F>("fidcounter",    ";Variation;Events", 1000, 0., 1000.,11,0,11); 
   histContainer_["pu"]         = fs->make<TH1F>("pu",      ";Pileup observed;Events / 1",100,0,100);
-  histContainer_["putrue"]     = fs->make<TH1F>("putrue",  ";Pileup true;Events / 0.1",1000,0,100);
+  histContainer_["putrue"]     = fs->make<TH1F>("putrue",  ";Pileup true;Events / 0.1",100,0,100);
   for(std::unordered_map<std::string,TH1*>::iterator it=histContainer_.begin();   it!=histContainer_.end();   it++) it->second->Sumw2();
 
   //create a tree for the selected events
@@ -279,6 +280,50 @@ int MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
   //
   // GENERATOR LEVEL EVENT
   //
+  //Bhadrons and top quarks (lastCopy)
+  edm::Handle<reco::GenParticleCollection> prunedGenParticles;
+  iEvent.getByToken(prunedGenParticlesToken_,prunedGenParticles);
+  ev_.ngtop=0; 
+  std::vector<std::pair<const reco::Candidate *,bool> > bHadrons;
+  for (size_t i = 0; i < prunedGenParticles->size(); ++i)
+    {
+      const reco::GenParticle & genIt = (*prunedGenParticles)[i];
+      int absid=abs(genIt.pdgId());
+      
+      //B-hadrons
+      if(IS_BHADRON_PDGID(absid) && genIt.numberOfDaughters()>1)
+	{
+	  bool hasBDaughter = false;
+	  bool hasNuDaughter = false;
+	  for(unsigned int j = 0; j < genIt.numberOfDaughters(); ++j) 
+	    {
+	      const reco::Candidate * d = genIt.daughter( j );
+	      int dauId = d->pdgId();
+	      if (IS_BHADRON_PDGID(dauId)) 
+		{
+		  hasBDaughter = true;
+		  break;
+		}
+	      if (IS_NEUTRINO_PDGID(dauId)) hasNuDaughter = true;
+	    }
+	  if(hasBDaughter) continue;
+	  bHadrons.push_back( std::pair<const reco::Candidate *,bool>( &genIt, hasNuDaughter) );
+	}
+
+      //top quarks
+      if(absid==6 && genIt.isLastCopy()) 
+	{
+	  ev_.gtop_id[ ev_.ngtop ]  = genIt.pdgId();
+	  ev_.gtop_pt[ ev_.ngtop ]  = genIt.pt();
+	  ev_.gtop_eta[ ev_.ngtop ] = genIt.eta();
+	  ev_.gtop_phi[ ev_.ngtop ] = genIt.phi();
+	  ev_.gtop_m[ ev_.ngtop ]   = genIt.mass();
+	  ev_.ngtop++;
+	}
+    }
+
+
+
   ev_.ng=0; 
   edm::Handle<std::vector<reco::GenJet> > genJets;
   iEvent.getByToken(genJetsToken_,genJets);  
@@ -289,7 +334,19 @@ int MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       //map the gen particles which are clustered in this jet
       std::vector< const reco::Candidate * > jconst=genJet->getJetConstituentsQuick ();
       for(size_t ijc=0; ijc <jconst.size(); ijc++) jetConstsMap[ jconst[ijc] ] = ev_.ng;
-      
+
+      //match to Bhadron
+      ev_.g_isSemiLepBhad[ev_.ng] = false;
+      ev_.g_xb[ev_.ng]            = 0;
+      ev_.g_bid[ev_.ng]           = 0;
+      for(size_t i=0; i<bHadrons.size(); i++)
+	{
+	  if( deltaR( *(bHadrons[i].first), *genJet ) > 0.4) continue;
+	  ev_.g_isSemiLepBhad[ev_.ng] = bHadrons[i].second;
+	  ev_.g_xb[ev_.ng]            = bHadrons[i].first->pt()/genJet->pt();
+	  ev_.g_bid[ev_.ng]           = bHadrons[i].first->pdgId();
+	}
+
       ev_.g_id[ev_.ng]   = genJet->pdgId();
       ev_.g_pt[ev_.ng]   = genJet->pt();
       ev_.g_eta[ev_.ng]  = genJet->eta();
@@ -301,13 +358,13 @@ int MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       if(genJet->pt()>25 && fabs(genJet->eta())<2.5)
 	{
 	  ngjets++;	
-	  if(abs(genJet->pdgId())) ngbjets++;
+	  if(abs(genJet->pdgId())==5) ngbjets++;
 	}
     }
 
   //leptons
   int ngleptons(0);
-  edm::Handle<std::vector<reco::GenJet> > dressedLeptons;
+  edm::Handle<std::vector<reco::GenJet> > dressedLeptons;  
   iEvent.getByToken(genLeptonsToken_,dressedLeptons);
   for(auto genLep = dressedLeptons->begin();  genLep != dressedLeptons->end(); ++genLep)
     {
@@ -356,38 +413,6 @@ int MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       ev_.gpf_phi[ev_.ngpf]    = genIt.phi();
       ev_.gpf_m[ev_.ngpf]      = genIt.mass();
       ev_.ngpf++;    
-    }
-
-  //top quarks (lastCopy)
-  edm::Handle<reco::GenParticleCollection> prunedGenParticles;
-  iEvent.getByToken(prunedGenParticlesToken_,prunedGenParticles);
-  ev_.ngtop=0; 
-  for (size_t i = 0; i < prunedGenParticles->size(); ++i)
-    {
-      const reco::GenParticle & genIt = (*prunedGenParticles)[i];
-      int absid=abs(genIt.pdgId());
-      if(absid!=6) continue;
-      if(!genIt.isLastCopy()) continue;      
-      ev_.gtop_id[ ev_.ngtop ]  = genIt.pdgId();
-      ev_.gtop_pt[ ev_.ngtop ]  = genIt.pt();
-      ev_.gtop_eta[ ev_.ngtop ] = genIt.eta();
-      ev_.gtop_phi[ ev_.ngtop ] = genIt.phi();
-      ev_.gtop_m[ ev_.ngtop ]   = genIt.mass();
-      ev_.ngtop++;
-    }
-
-  //pseudo-tops (particle level)
-  edm::Handle<reco::GenParticleCollection> pseudoTop;
-  iEvent.getByToken(pseudoTopToken_,pseudoTop);
-  for (size_t i = 0; i < pseudoTop->size(); ++i)
-    {
-      const GenParticle & genIt = (*pseudoTop)[i];
-      ev_.gtop_id[ ev_.ngtop ]  = genIt.pdgId()*1000;
-      ev_.gtop_pt[ ev_.ngtop ]  = genIt.pt();
-      ev_.gtop_eta[ ev_.ngtop ] = genIt.eta();
-      ev_.gtop_phi[ ev_.ngtop ] = genIt.phi();
-      ev_.gtop_m[ ev_.ngtop ]   = genIt.mass();
-      ev_.ngtop++;
     }
   
   //fiducial counters

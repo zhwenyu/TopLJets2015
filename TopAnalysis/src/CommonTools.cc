@@ -89,7 +89,7 @@ std::pair<std::map<Int_t,Float_t>, TH1F *> parseLumiInfo(TString era)
   TFile *inF=TFile::Open(Form("%s/lumisec.root",era.Data()),"READ");
   if(inF==0) return toReturn;
   if(inF->IsZombie()) return toReturn;
-  TH2F *h=(TH2F *)inF->Get("lumisec");
+  TH2F *h=(TH2F *)inF->Get("lumisec_inc");
   int nruns(h->GetNbinsX());
   countH=new TH1F("ratevsrun","ratevsrun;Run;Events/pb",nruns,0,nruns);
   countH->SetDirectory(0);

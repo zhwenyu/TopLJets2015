@@ -94,7 +94,7 @@ python scripts/submitToGrid.py -j data/era2016/samples.json -c ${CMSSW_BASE}/src
 As soon as ntuple production starts to finish, to move from crab output directories to a simpler directory structure which can be easily parsed by the local analysis runThe merging can be run locally if needed by using the checkProductionIntegrity.py script
 
 ```
-python scripts/submitCheckProductionIntegrity.py -i /store/cmst3/group/top/psilva/6b4948e -o /store/cmst3/group/top/ReReco2016/82ba04e
+python scripts/submitCheckProductionIntegrity.py -i /store/cmst3/group/top/psilva/4b72bd3 -o /store/cmst3/group/top/ReReco2016/4b72bd3
 ```
 
 ## Luminosity
@@ -107,7 +107,7 @@ for i in ${a[@]}; do
 done
 ``` 
 You can then run the brilcalc tool to get the integrated luminosity in total and per run 
-(see https://twiki.cern.ch/twiki/bin/view/CMS/2015LumiNormtag for more details). 
+(see http://cms-service-lumi.web.cern.ch/cms-service-lumi/brilwsdoc.html for more details).
 The following script runs brilcalc inclusively and per trigger path, and stores the results in a ROOT file with the total integrated lumi per run.
 It takes a bit to run, depending on the number of triggers configured to use in the analysis
 ```
