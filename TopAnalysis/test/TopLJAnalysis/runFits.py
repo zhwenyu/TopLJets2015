@@ -282,8 +282,8 @@ def defineTemplatePDF(dataMC,w,bins,xmin,xmax,fitVar):
         
                 
         w.factory("HistPdf::Sig_%s(%s,%s)"%(cat,fitVar,template.GetName()))
-        w.factory("Gaussian::sigResPass(%s,sig_mu,sig_sigma)"%fitVar)
-        w.factory("FCONV::S_%s(%s, Sig_%s, sigResPass)"%(cat,fitVar,cat));
+        w.factory("Gaussian::SigRes(%s,sig_mu,sig_sigma)"%fitVar)
+        w.factory("FCONV::S_%s(%s, Sig_%s, SigRes)"%(cat,fitVar,cat));
         
         pdf=w.factory('SUM:model_%s(Nsig_%s*S_%s,Nqcd_%s*QCD_%s,Nw_%s*W_%s)'%(cat,cat,cat,cat,j,cat,j))
         simPDF.addPdf(w.pdf('model_%s'%cat),cat)
