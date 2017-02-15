@@ -7,6 +7,8 @@ import random
 
 from kinTools import *
 
+weightVar = ROOT.RooRealVar("w","w",1)
+
 EVENTCATEGORIES=[
     '1l4j2b','1l4j1b','1l4j1q','1f4j1q','1f4j1b','1f4j2b',
     '1l3j1b','1l3j1q','1f3j1q','1f3j1b'
@@ -37,7 +39,8 @@ def startWorkspace(opt):
              ]
     for var in varList :
         args.add( ws.factory(var) )
-
+    if opt.mc:
+        args.add( weightVar )
     #categories for the data
     sample=ROOT.RooCategory('sample','sample')
     for name in EVENTCATEGORIES :
@@ -52,7 +55,7 @@ def startWorkspace(opt):
 """
 books control distributions and loops over the events to fill the dataset for the fit
 """
-def fillDataAndPlots(data,ws,args,tree,baseCat='1l'):
+def fillDataAndPlots(opt,data,ws,args,tree,baseCat='1l'):
 
     p4=ROOT.TLorentzVector(0,0,0,0)
     
@@ -150,22 +153,22 @@ def fillDataAndPlots(data,ws,args,tree,baseCat='1l'):
         nueTrks=tree.ntracks-tree.ntracks_hp
 
         #fill histograms
-        plots['ntrksue_%s'%cat].Fill(nueTrks)
-        plots['y_l_%s'%cat].Fill(lepton.Rapidity())
-        plots['pt_l_%s'%cat].Fill(lepton.Pt())
-        plots['dr_jj_%s'%cat].Fill(drjj)
-        plots['y_wjj_%s'%cat].Fill(wjj.Rapidity())
-        plots['pt_wjj_%s'%cat].Fill(wjj.Pt())
-        plots['m_wjj_%s'%cat].Fill(wjj.M())
-        plots['jsf_%s'%cat].Fill(jsf)
-        plots['dr_bwjj_%s'%cat].Fill(drbwjj)
-        plots['y_bwjj_%s'%cat].Fill(bwjj.Rapidity())
-        plots['m_bwjj_%s'%cat].Fill(bwjj.M())
-        plots['m_bwjj_vs_m_wjj_%s'%cat].Fill(bwjj.M(),wjj.M())
+        plots['ntrksue_%s'%cat].Fill(nueTrks,tree.w)
+        plots['y_l_%s'%cat].Fill(lepton.Rapidity(),tree.w)
+        plots['pt_l_%s'%cat].Fill(lepton.Pt(),tree.w)
+        plots['dr_jj_%s'%cat].Fill(drjj,tree.w)
+        plots['y_wjj_%s'%cat].Fill(wjj.Rapidity(),tree.w)
+        plots['pt_wjj_%s'%cat].Fill(wjj.Pt(),tree.w)
+        plots['m_wjj_%s'%cat].Fill(wjj.M(),tree.w)
+        plots['jsf_%s'%cat].Fill(jsf,tree.w)
+        plots['dr_bwjj_%s'%cat].Fill(drbwjj,tree.w)
+        plots['y_bwjj_%s'%cat].Fill(bwjj.Rapidity(),tree.w)
+        plots['m_bwjj_%s'%cat].Fill(bwjj.M(),tree.w)
+        plots['m_bwjj_vs_m_wjj_%s'%cat].Fill(bwjj.M(),wjj.M(),tree.w)
         if bwl:
-            plots['m_bwjj_vs_m_bwl_%s'%cat].Fill(bwjj.M(),bwl.M())
-            plots['m_bwl_%s'%cat].Fill(bwl.M())
-            plots['y_bwl_%s'%cat].Fill(bwl.Rapidity())
+            plots['m_bwjj_vs_m_bwl_%s'%cat].Fill(bwjj.M(),bwl.M(),tree.w)
+            plots['m_bwl_%s'%cat].Fill(bwl.M(),tree.w)
+            plots['y_bwl_%s'%cat].Fill(bwl.Rapidity(),tree.w)
 
         #add entry to dataset
         ws.cat('sample').setLabel(cat)
@@ -186,7 +189,10 @@ def fillDataAndPlots(data,ws,args,tree,baseCat='1l'):
                    ]
         for argName,argVal in argValList:
             args.find(argName).setVal(argVal)
+        if opt.mc:
+            weightVar.setVal(tree.w)
         data.add(args)
+
                            
     return plots
 
@@ -286,6 +292,7 @@ def main():
     usage = 'usage: %prog [options]'
     parser = optparse.OptionParser(usage)
     parser.add_option('-v', '--verbose',   dest='verbose',   default=0, type=int,   help='Verbose mode [%default]')
+    parser.add_option('-t','--mc',   dest='mc',   default=False,   help='Run on MC [%default]')
     (opt, args) = parser.parse_args()
 
     #init the workspace
@@ -298,7 +305,7 @@ def main():
         fIn=ROOT.TFile(url)
         tree=fIn.Get('data')
         baseCat='1f' if 'non-iso' in coll else '1l'
-        allPlots.append( fillDataAndPlots(data,ws,args,tree,baseCat) )
+        allPlots.append( fillDataAndPlots(opt,data,ws,args,tree,baseCat) )
 
         color=ROOT.TColor.GetColor(color)
         for p in allPlots[-1]:
@@ -307,13 +314,25 @@ def main():
             allPlots[-1][p].SetFillColor(color)
             allPlots[-1][p].SetLineColor(color)
             allPlots[-1][p].SetTitle(coll)
-            allPlots[-1][p].Sumw2()
+            #allPlots[-1][p].Sumw2()
             allPlots[-1][p].SetDirectory(0)
         
         fIn.Close()
 
     #import data and save workspace
-    getattr(ws,'import')(data)
+    if opt.mc:
+        datasetWeight = ROOT.RooDataSet(data.GetName() + "_withWeights",                                       
+                                        "Weighted "+data.GetTitle(),
+                                        args,
+                                        ROOT.RooFit.Import(data),
+                                        ROOT.RooFit.WeightVar(weightVar)                                 
+                                        )                               
+        datasetWeight.Print('v')
+
+        getattr(ws,'import')(datasetWeight)
+    else:
+        getattr(ws,'import')(data)
+
     ws.writeToFile('workspace.root',True)
     
     #show results
