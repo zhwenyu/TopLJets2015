@@ -15,44 +15,23 @@ from TopLJets2015.TopAnalysis.storeTools import getEOSlslist
 
 #GLOBAL VARIABLES TO DEFINE THE ANALYSIS
 
-PTTTBAR_THR=150
+BASEQUANTILES=[ 100*x/50 for x in xrange(0,51) ]
 
-VARTITLES={
-    'ptttbar'  :'p_{T}(t#bar{t})',
-    'phittbar' :'#phi(t#bar{t})',
-    'ptpos'    :'p_{T}(l^{+})',
-    'phipos'   :'#phi(l^{+})',
-    'ptll'     :'p_{T}(l,l)',
-    'phill'    :'#phi(ll)',
-    'sumpt'    :'#Sigma p_{T}(l)',
-    'mll'      :'M(l,l)',
-    'dphill'   :'#Delta#phi(l,l)',
-    'nj'       :'N(jets)',
-    'chmult'   :'N(ch)',
-    'chflux'   :'#Sigma p_{T}(ch)',
-    'chavgpt'  :'#bar{p}_{T}(ch)'
-    }
-
-EVENTAXES=['phittbar','phipos','phill']
-
-SLICEQUANTILES={  
-    'ptttbar'  : [ 100*x/4  for x in xrange(0,5) ],
-    'phittbar' : [ 100*x/20 for x in xrange(0,21) ],
-    'ptpos'    : [ 100*x/20 for x in xrange(0,21) ],
-    'phipos'   : [ 100*x/20 for x in xrange(0,21) ],
-    'ptll'     : [ 100*x/20 for x in xrange(0,21) ],
-    'phill'    : [ 100*x/20 for x in xrange(0,21) ],
-    'sumpt'    : [ 100*x/20 for x in xrange(0,21) ],
-    'mll'      : [ 100*x/20 for x in xrange(0,21) ],
-    'dphill'   : [ 100*x/20 for x in xrange(0,21) ],
-    'nj'       : [ 100*x/20 for x in xrange(0,21) ],
-    'chmult'   : [ 100*x/20 for x in xrange(0,21) ]
-    }
-
-OBSQUANTILES={
-    'chmult' :[100*x/10 for x in xrange(0,11)],
-    'chflux' :[100*x/10 for x in xrange(0,11)],
-    'chavgpt':[100*x/10 for x in xrange(0,11)]
+#var name, var title, use to slice phase space, use as event axis, is angle
+VARS={
+    'ptttbar'  : ('p_{T}(t#bar{t})',  True,  False, False),
+    'phittbar' : ('#phi(t#bar{t})',   True,  True,  True),
+    'ptpos'    : ('p_{T}(l^{+})',     True,  False, False),
+    'phipos'   : ('#phi(l^{+})',      True,  True,  True),
+    'ptll'     : ('p_{T}(l,l)',       True,  False, False),
+    'phill'    : ('#phi(ll)',         True,  True,  True),
+    'sumpt'    : ('#Sigma p_{T}(l)',  True,  False, False),
+    'mll'      : ('M(l,l)',           True,  False, False),
+    'dphill'   : ('#Delta#phi(l,l)',  True,  False, True),
+    'nj'       : ('N(jets)',          True,  False, False),
+    'chmult'   : ('N(ch)',            True,  False, False),
+    'chflux'   : ('#Sigma p_{T}(ch)', False, False, False),
+    'chavgpt'  : ('#bar{p}_{T}(ch)',  False, False, False),
     }
 
 
@@ -67,12 +46,12 @@ def determineSliceResolutions(opt):
 
     #loop the available events and fill resolution arrays for events passing the selection cuts
     varVals={}
-    for var in SLICEQUANTILES : varVals[var]=[[],[]]
-    ue=UEEventCounter()
+    for var in VARS.keys() : varVals[var]=[[],[]]
+    ue=UEEventCounter(ptthreshold=opt.ptThr)
     totalEntries=t.GetEntries()
     for i in xrange(0,totalEntries):
         t.GetEntry(i)
-        if i%100==0 :
+        if i%1000==0 :
             sys.stdout.write('\r [ %d/100 ] done' %(int(float(100.*i)/float(totalEntries))) )
             sys.stdout.flush()
 
@@ -81,60 +60,51 @@ def determineSliceResolutions(opt):
         gen_passSel=t.gen_passSel
         if not passSel or not gen_passSel: continue
 
+        #count particles in the event
+        ue.count(t) #,debug=True)
+
         #fill resolution arrays
-        for obs,isAngle in [ ('ptttbar',  False),
-                             ('phittbar', True),
-                             ('ptpos',    False),
-                             ('phipos',   True),
-                             ('ptll',     False),
-                             ('phill',    True),
-                             ('sumpt',    False),
-                             ('mll',      False),
-                             ('dphill',   True),
-                             ('nj',       False)
-                             ]:
-            var=getattr(t,'gen_%s'%obs)
-            dVar=getattr(t,obs)[0]-var
+        for var in VARS.keys():
+            isAngle=VARS[var][3]
+            try:
+                val=getattr(t,'gen_%s'%var)
+                deltaVal=getattr(t,var)[0]-val
+            except:
+                val=getattr(ue,'gen_%s'%var) 
+                deltaVal=getattr(ue,'rec_%s'%var) - val
+
             if isAngle : 
-                var  = var*180./ROOT.TMath.Pi()
-                dVar = ROOT.TVector2.Phi_mpi_pi(dVar)*180./ROOT.TMath.Pi()
-                var  = ROOT.TMath.Abs(var)
-            varVals[obs][0].append( var )
-            varVals[obs][1].append( dVar )
+                val  = val*180./ROOT.TMath.Pi()
+                deltaVal = ROOT.TVector2.Phi_mpi_pi(deltaVal)*180./ROOT.TMath.Pi()
+                val  = ROOT.TMath.Abs(val)
+            varVals[var][0].append( val )
+            varVals[var][1].append( deltaVal )
 
-        #special case for charged particle counting
-        ue.count(t)
-        varVals['chmult'][0].append(ue.gen_chmult)
-        varVals['chmult'][1].append(ue.rec_chmult-ue.gen_chmult)
-
-
-    varResolutions={}
-
-    #prepare canvas
+    #prepare canvas for the resolution plots
     ROOT.gStyle.SetOptStat(0)
     ROOT.gStyle.SetOptTitle(0)
-    ROOT.gStyle.SetPalette(ROOT.kBird)
+    ROOT.gStyle.SetPalette(ROOT.kTemperatureMap)
     c=ROOT.TCanvas('c','c',550,500)
     c.SetTopMargin(0.05)
     c.SetRightMargin(0.12)
     c.SetBottomMargin(0.1)
 
     #determine resolution for 10 quantiles
+    varResolutions={}
     for var in varVals:
 
         #use quantiles and extremes to define the 2D resolution histogram
         genvarQ=[]
         if var=='nj': 
             genvarQ = [0,1,2,5]
-        elif var=='ptttbar': 
-            filtVarVals=np.array(varVals[var][0])
-            genvarQ = np.percentile( filtVarVals[filtVarVals>PTTTBAR_THR], SLICEQUANTILES[var])
         else : 
-            genvarQ = np.percentile( np.array(varVals[var][0]), SLICEQUANTILES[var])
+            genvarQ = np.percentile( np.array(varVals[var][0]), BASEQUANTILES )
         dvarQ = np.percentile( np.array(varVals[var][1]), [2.5,97.5])
         h2d=ROOT.TH2F(var,
-                      ';%s (gen. level);Resolution;'%VARTITLES[var]+'%', 
-                      len(genvarQ)-1,array.array('d',genvarQ),50,dvarQ[0],dvarQ[1])
+                      ';%s (gen. level);Resolution;'%VARS[var][0],
+                      len(genvarQ)-1,
+                      array.array('d',genvarQ),50,dvarQ[0],dvarQ[1])
+        h2d.GetZaxis().SetNdivisions(5)
         for i in xrange(0,len(varVals[var][0])):
             h2d.Fill(varVals[var][0][i],varVals[var][1][i])
         
@@ -143,14 +113,21 @@ def determineSliceResolutions(opt):
         resGr.SetName(var+'_resol')
         resGr.SetMarkerStyle(20)
         for xbin in xrange(1,h2d.GetNbinsX()+1):
+            
             tmp=h2d.ProjectionY('tmp',xbin,xbin)
-            tmp.Fit('gaus','MQ+')
-            gaus=tmp.GetFunction('gaus')
-            resGr.SetPoint(xbin-1,h2d.GetXaxis().GetBinCenter(xbin),gaus.GetParameter(1))
-            resGr.SetPointError(xbin-1,0,gaus.GetParameter(2))
+
+            total=tmp.Integral(0,tmp.GetNbinsX()+1)
+            if total==0 : continue
+
+            #require minimum stats for resolution fit
+            if total>10 :
+                tmp.Fit('gaus','MQ+')
+                gaus=tmp.GetFunction('gaus')
+                npts=resGr.GetN()
+                resGr.SetPoint(npts,h2d.GetXaxis().GetBinCenter(xbin),gaus.GetParameter(1))
+                resGr.SetPointError(npts,0,gaus.GetParameter(2))
 
             #normalize entries in quantile
-            total=tmp.Integral()
             for ybin in xrange(1,h2d.GetNbinsY()+1):
                 val=h2d.GetBinContent(xbin,ybin)
                 err=h2d.GetBinError(xbin,ybin)
@@ -167,7 +144,7 @@ def determineSliceResolutions(opt):
         tex.SetTextFont(42)
         tex.SetTextSize(0.035)
         tex.SetNDC()
-        tex.DrawLatex(0.1,0.96,'#bf{CMS} #it{simulation preliminary} %s'%VARTITLES[var])
+        tex.DrawLatex(0.1,0.96,'#bf{CMS} #it{simulation preliminary} %s'%VARS[var][0])
         tex.DrawLatex(0.8,0.96,'#sqrt{s}=13 TeV')
         c.Modified()
         c.Update()
@@ -179,15 +156,16 @@ def determineSliceResolutions(opt):
     #compute correlations at generator level
     ROOT.gStyle.SetPaintTextFormat("4.0f")
     hcorr=ROOT.TH2F('slicecorr',';Variable; Variable; Correlation (%)',len(varVals),0,len(varVals),len(varVals),0,len(varVals))
+    hcorr.GetZaxis().SetNdivisions(5)
     xbin=0
     for var1 in varVals:
         xbin+=1
-        hcorr.GetXaxis().SetBinLabel(xbin,VARTITLES[var1])
+        hcorr.GetXaxis().SetBinLabel(xbin,VARS[var][0])
         ybin=0
         for var2 in varVals:
             rho=np.corrcoef(varVals[var1][0],varVals[var2][0])[0][1]
             ybin+=1
-            hcorr.GetYaxis().SetBinLabel(ybin,VARTITLES[var2])
+            hcorr.GetYaxis().SetBinLabel(ybin,VARS[var2][0])
             hcorr.SetBinContent(xbin,ybin,rho*100)
     c.Clear()
     hcorr.Draw('colztext')
@@ -515,6 +493,7 @@ def main():
     usage = 'usage: %prog [options]'
     parser = optparse.OptionParser(usage)
     parser.add_option('-i', '--in',    dest='input',  help='input',                       default='MC13TeV_TTJets_dilpowheg_0.root',   type='string')
+    parser.add_option(      '--ptThr', dest='ptThr',  help='ptThreshold',                 default=0.9,   type=float)
     parser.add_option('-s', '--step',  dest='step',   help='step',                        default=1,   type=int)
     parser.add_option('-w', '--wgt',   dest='wgtIdx', help='weight index to use',         default=0,   type=int)
     parser.add_option('-v', '--var',   dest='varIdx', help='calib index to use',          default=0,   type=int)

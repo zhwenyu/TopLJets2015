@@ -20,7 +20,7 @@ lumiUnc=0.026
 whoami=`whoami`
 myletter=${whoami:0:1}
 eosdir=/store/cmst3/group/top/ReReco2016/${githash}
-summaryeosdir=/store/cmst3/group/top/summer2016/TopUE_ReReco2016/
+summaryeosdir=/store/cmst3/group/top/summer2016/TopUE_era2016
 outdir=/afs/cern.ch/work/${myletter}/${whoami}/TopUE_ReReco2016
 wwwdir=~/www/TopUE_ReReco2016/
 
@@ -66,9 +66,11 @@ case $WHAT in
     ANA )
 	eosprefix=root://eoscms//eos/cms
 	echo "Computing resolutions"
-	#python test/TopUEAnalysis/runUEanalysis.py -i ${eosprefix}/${summaryeosdir}/MC13TeV_TTJets_dilpowheg_0.root --step 0;
-	echo "Defining analysis configuration"
-	python test/TopUEAnalysis/runUEanalysis.py -i ${eosprefix}/${summaryeosdir}/MC13TeV_TTJets_dilpowheg_0.root --step 1;
+	#python test/TopUEAnalysis/runUEanalysis.py -i ${eosprefix}/${summaryeosdir}/MC13TeV_TTJets_dilpowheg_0.root --step 0 --ptThr 1.5 -o UEanalysis_1.5;
+	python test/TopUEAnalysis/runUEanalysis.py -i ${eosprefix}/${summaryeosdir}/MC13TeV_TTJets_dilpowheg_0.root --step 0 --ptThr 0.9;
+	#python test/TopUEAnalysis/runUEanalysis.py -i ${eosprefix}/${summaryeosdir}/MC13TeV_TTJets_dilpowheg_0.root --step 0 --ptThr 0.0 -o UEanalysis_inc;
+	#echo "Defining analysis configuration"
+	#python test/TopUEAnalysis/runUEanalysis.py -i ${eosprefix}/${summaryeosdir}/MC13TeV_TTJets_dilpowheg_0.root --step 1;
 	#python test/TopUEAnalysis/runUEanalysis.py --step 3;
 	;;
 

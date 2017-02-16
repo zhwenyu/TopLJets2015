@@ -10,8 +10,11 @@ class UEEventCounter:
     """
     start variables
     """
-    def __init__(self,axes=[]):
+    def __init__(self,axes=[],ptthreshold=0.9):
  
+        self.ptthreshold = ptthreshold #pt threshold at gen/reco levels
+        self.etathreshold = 0.9
+
         self.rec_chmult  = 0           #inclusive rec counts
         self.rec_chflux  = 0
         self.rec_chavgpt = 0
@@ -107,6 +110,10 @@ class UEEventCounter:
         passSel=((t.passSel>>varIdx)&0x1)
         if passSel:                    
             for n in xrange(0,t.n):
+
+                if t.pt[n]<self.ptthreshold : continue
+                if abs(t.eta[n])>self.etathreshold : continue
+
                 isInB=(t.isInBFlags[n] & 0x1)
                 if isInB : continue
                 self.rec_chmult +=1
@@ -142,6 +149,10 @@ class UEEventCounter:
         passSel=(t.gen_passSel&0x1)
         if passSel:
             for n in xrange(0,t.gen_n):
+
+                if t.gen_pt[n]<self.ptthreshold : continue
+                if abs(t.gen_eta[n])>self.etathreshold : continue
+
                 self.gen_chmult +=1
                 self.gen_chflux += t.gen_pt[n]
                 for a in self.gen_chmult_wrtTo:
