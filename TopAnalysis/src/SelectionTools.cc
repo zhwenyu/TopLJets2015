@@ -102,7 +102,9 @@ std::vector<Particle> SelectionTool::getGenLeptons(MiniEvent_t &ev, double minPt
   
   //loop over leptons from pseudotop producer
   for (int i = 0; i < ev.ng; i++) {
-    if (abs(ev.g_id[i])<10) continue;
+    int absid(abs(ev.g_id[i]));
+    if(absid!=11 && absid!=13) continue;
+
     bool passKin(ev.g_pt[i]>minPt && fabs(ev.g_eta[i])<maxEta);
     if(!passKin) continue;
 
@@ -374,14 +376,16 @@ TString SelectionTool::flagGenFinalState(MiniEvent_t &ev, std::vector<Particle> 
 
   //decide the channel
   TString chTag("");
-  if(leptons.size()>=2) {
-    if      (abs(genLeptons_[0].id()*genLeptons_[1].id())==11*13) chTag = "EM";
-    else if (abs(genLeptons_[0].id()*genLeptons_[1].id())==13*13) chTag = "MM";
-    else if (abs(genLeptons_[0].id()*genLeptons_[1].id())==11*11) chTag = "EE";
+  if(genLeptons_.size()>=2) {
+    int chId(abs(genLeptons_[0].id()*genLeptons_[1].id()));
+    if      (chId==11*13) chTag = "EM";
+    else if (chId==13*13) chTag = "MM";
+    else if (chId==11*11) chTag = "EE";
   }
-  if(leptons.size()==1) {
-    if      (abs(genLeptons_[0].id())==13) chTag = "M";
-    else if (abs(genLeptons_[0].id())==11) chTag = "E";
+  if(genLeptons_.size()==1) {
+    int absid(abs(genLeptons_[0].id()));
+    if      (absid==13) chTag = "M";
+    else if (absid==11) chTag = "E";
   }
   
   return chTag;

@@ -113,9 +113,9 @@ class UEEventCounter:
 
                 if t.pt[n]<self.ptthreshold[1] : continue
                 if abs(t.eta[n])>self.etathreshold : continue
-
                 isInB=(t.isInBFlags[n] & 0x1)
                 if isInB : continue
+                
                 self.rec_chmult +=1
                 self.rec_chflux += t.pt[n]
                 for a in self.rec_chmult_wrtTo:
@@ -146,13 +146,14 @@ class UEEventCounter:
                     self.rec_chavgpt_incWrtTo[a][k]=self.rec_chflux_incWrtTo[a][k]/ncounted
 
         #gen level
+        print ':REC'
         passSel=(t.gen_passSel&0x1)
         if passSel:
             for n in xrange(0,t.gen_n):
 
                 if t.gen_pt[n] < self.ptthreshold[0] : continue
                 if abs(t.gen_eta[n])>self.etathreshold : continue
-
+        
                 self.gen_chmult +=1
                 self.gen_chflux += t.gen_pt[n]
                 for a in self.gen_chmult_wrtTo:
@@ -170,4 +171,42 @@ class UEEventCounter:
                     if ncounted==0 : continue
                     self.gen_chavgpt_wrtTo[a][k]=self.gen_chflux_wrtTo[a][k]/ncounted
         
-        if debug : self.show()
+        if debug : 
+            self.show()
+            recbias=0
+            recsum=0
+            for n in xrange(0,t.n):
+                if t.pt[n]<self.ptthreshold[1] : continue
+                if abs(t.eta[n])>self.etathreshold : continue
+                isInB=(t.isInBFlags[n] & 0x1)
+                if isInB : continue
+                recsum+=t.pt[n]
+                mindR=999
+                matchedpt=999
+                for k in xrange(0,t.gen_n):
+                    dR=ROOT.TMath.Sqrt((t.eta[n]-t.gen_eta[k])**2+ROOT.TVector2.Phi_mpi_pi(t.phi[n]-t.gen_phi[k])**2)
+                    if dR>mindR:continue
+                    mindR=dR
+                    matchedpt=t.gen_pt[k]
+                if mindR>0.1:
+                    recbias+=t.pt[n]
+                    print '\t unmatched rec:',t.pt[n],t.eta[n],t.phi[n],mindR
+                elif abs(t.pt[n]/matchedpt-1)>0.5:
+                    print '\t large fluc rec:',t.pt[n],t.eta[n],t.phi[n],matchedpt,mindR
+            print 'rec bias=',recbias,'sum=',recsum
+
+            genbias=0
+            gensum=0
+            for k in xrange(0,t.gen_n):
+                if t.gen_pt[k] < self.ptthreshold[0] : continue
+                if abs(t.gen_eta[k])>self.etathreshold : continue
+                gensum+=t.gen_pt[k]
+                mindR=999
+                for n in xrange(0,t.n):
+                    dR=ROOT.TMath.Sqrt((t.eta[n]-t.gen_eta[k])**2+ROOT.TVector2.Phi_mpi_pi(t.phi[n]-t.gen_phi[k])**2)
+                    if dR>mindR:continue
+                    mindR=dR
+                if mindR>0.1:
+                    genbias+=t.gen_pt[k]
+                    print '\t unmatched gen:',t.gen_pt[k],t.gen_eta[k],t.gen_phi[k],mindR
+            print 'gen bias=',genbias,'sum=',gensum

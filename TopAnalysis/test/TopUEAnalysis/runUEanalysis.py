@@ -61,7 +61,7 @@ def determineSliceResolutions(opt):
         if not passSel or not gen_passSel: continue
 
         #count particles in the event
-        ue.count(t) #,debug=True)
+        ue.count(t,debug=True)
 
         #fill resolution arrays
         for var in VARS.keys():

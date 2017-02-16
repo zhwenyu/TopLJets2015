@@ -29,6 +29,14 @@ RED='\e[31m'
 NC='\e[0m'
 case $WHAT in
 
+    TESTSEL )
+	analysisWrapper --in MC13TeV_TTJets.root \
+	    --out ue_test.root \
+	    --era ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/era2016 \
+	    --method TOP-UE::RunTopUE \
+	    --ch 0;
+	;;
+
     FULLSEL ) 
 	python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} -o ${outdir} --era era2016 -m TOP-UE::RunTopUE --ch 0 --only MC;
 	;;

@@ -110,121 +110,239 @@ void RunTopUE(TString filename,
 
       //selection
       TString chTag = evsel.flagFinalState(ev);
-      if(chTag!="EM" && chTag!="EE" && chTag!="MM") continue;
-      std::vector<Particle> &leptons=evsel.getSelLeptons();
-      TLorentzVector dil(leptons[0].p4()+leptons[1].p4());
-      float mll=dil.M();
-      if(mll<12) continue;
-      if(leptons[0].pt()<25 && leptons[1].pt()<25)  continue;
-      if(fabs(leptons[0].eta())>2.5 || fabs(leptons[1].eta())>2.5) continue;
-
-      //divide jets
-      std::vector<Jet>      &jets=evsel.getJets() ;
-      std::vector<size_t> lightJetsIdx, bJetsIdx;
-      for(size_t ij=0; ij<jets.size(); ij++)
+      if(chTag=="EM" || chTag=="EE" || chTag=="MM")
 	{
-	  if(abs(jets[ij].flavor())==5) bJetsIdx.push_back(ij);
-	  else                          lightJetsIdx.push_back(ij);
-	}
+	  std::vector<Particle> &leptons=evsel.getSelLeptons();
+	  TLorentzVector dil(leptons[0].p4()+leptons[1].p4());
+	  float mll=dil.M();
+	  bool passLepPresel(mll>12
+			     && (leptons[0].pt()>25 || leptons[1].pt()<25)
+			     && (fabs(leptons[0].eta())<2.5 && fabs(leptons[1].eta())<2.5) );
 
-      //select the charged PF candidates 
-      //veto neutrals
-      //veto charged within 0.01 of the selected leptons
-      //veto if associated to the two leading b-jets
-      std::vector<std::pair<int,TLorentzVector> > selTracks,hpTracks;
-      for(int ipf = 0; ipf < ev.npf; ipf++) 
-	{
-	  if(ev.pf_c[ipf]==0) continue;
-	  if(ev.pf_pt[ipf]<0.9) continue;
-	  if(fabs(ev.pf_eta[ipf])>2.5) continue;
-	
-	  TLorentzVector tkP4(0,0,0,0);
-	  tkP4.SetPtEtaPhiM(ev.pf_pt[ipf],ev.pf_eta[ipf],ev.pf_phi[ipf],0.);
-
-	  bool isHP(false);
-	  if(leptons.size()>0 && tkP4.DeltaR(leptons[0].p4())<0.01) isHP=true;
-	  if(leptons.size()>1 && tkP4.DeltaR(leptons[1].p4())<0.01) isHP=true;
-	  for(size_t ibj=0; ibj<min(bJetsIdx.size(),size_t(2)); ibj++)
+	  //divide jets
+	  std::vector<Jet>      &jets=evsel.getJets() ;
+	  std::vector<size_t> lightJetsIdx, bJetsIdx;
+	  for(size_t ij=0; ij<jets.size(); ij++)
 	    {
-	      std::vector<Particle> &pinJet=jets[ bJetsIdx[ibj] ].particles();
-	      for(size_t ipinj=0; ipinj<pinJet.size(); ipinj++)
+	      if(abs(jets[ij].flavor())==5) bJetsIdx.push_back(ij);
+	      else                          lightJetsIdx.push_back(ij);
+	    }
+	  bool passPresel = passLepPresel && (bJetsIdx.size()>=2);
+	  if(chTag=="EE" || chTag=="MM") passPresel &= fabs(mll-91)>15;
+	  
+	  //select the charged PF candidates 
+	  //veto neutrals
+	  //veto if associated to the two leading b-jets
+	  std::vector<std::pair<int,TLorentzVector> > selTracks,hpTracks;
+	  for(int ipf = 0; ipf < ev.npf; ipf++) 
+	    {
+	      if(ev.pf_c[ipf]==0) continue;
+	      if(ev.pf_pt[ipf]<0.9) continue;
+	      if(fabs(ev.pf_eta[ipf])>2.5) continue;
+	
+	      TLorentzVector tkP4(0,0,0,0);
+	      tkP4.SetPtEtaPhiM(ev.pf_pt[ipf],ev.pf_eta[ipf],ev.pf_phi[ipf],0.);
+	      
+	      bool isHP(false);
+	      
+	      //check if matching the leptons
+	      Double_t minDR2lep(999.);
+	      for(int ilep=0; ilep<2; ilep++)
+		minDR2lep=TMath::Min(minDR2lep,tkP4.DeltaR(leptons[ilep].p4()));
+	      if(minDR2lep<0.02) isHP=true;
+
+	      for(size_t ibj=0; ibj<min(bJetsIdx.size(),size_t(2)); ibj++)
 		{
-		  if(pinJet[ipinj].charge()==0) continue;
-		  if(pinJet[ipinj].originalReference()!=ipf) continue;
-		  isHP=true;
-		  break;
+		  std::vector<Particle> &pinJet=jets[ bJetsIdx[ibj] ].particles();
+		  for(size_t ipinj=0; ipinj<pinJet.size(); ipinj++)
+		    {
+		      if(pinJet[ipinj].charge()==0) continue;
+		      if(pinJet[ipinj].originalReference()!=ipf) continue;
+		      isHP=true;
+		      break;
+		    }
 		}
+	  
+	      if(!isHP) selTracks.push_back(std::pair<int,TLorentzVector>(ipf,tkP4) );
+	      else      hpTracks.push_back(std::pair<int,TLorentzVector>(ipf,tkP4) );
+	    }
+
+	  //save PF cands
+	  tue.n=selTracks.size();
+	  float nch(0.),chSumPt(0.);
+	  for(size_t ipf=0; ipf<selTracks.size(); ipf++)
+	    {
+	      tue.pt[ipf]  = selTracks[ipf].second.Pt();
+	      tue.eta[ipf] = selTracks[ipf].second.Eta();
+	      tue.phi[ipf] = selTracks[ipf].second.Phi();
+	      tue.id[ipf]  = ev.pf_id[ selTracks[ipf].first ];	      
+	      tue.isInBFlags[ipf] = 0;
+	      nch++;
+	      chSumPt+=tue.pt[ipf];
 	    }
 	  
-	  if(!isHP) selTracks.push_back(std::pair<int,TLorentzVector>(ipf,tkP4) );
-	  else      hpTracks.push_back(std::pair<int,TLorentzVector>(ipf,tkP4) );
-	}
+	  //flag if passes selection
+	  tue.passSel |= passPresel;
+	  tue.nj[0]=jets.size();
+	  tue.nb[0]=bJetsIdx.size();
+
+	  TLorentzVector rec_tt(leptons[0].p4()+leptons[1].p4());
+	  if(bJetsIdx.size()>0) rec_tt += jets[ bJetsIdx[0] ].p4();
+	  if(bJetsIdx.size()>1) rec_tt += jets[ bJetsIdx[1] ].p4();
+	  rec_tt += evsel.getMET();
+	  tue.ptttbar[0]=rec_tt.Pt();
+	  tue.phittbar[0]=rec_tt.Phi();	  
+      
+	  int posLepton( leptons[0].charge()>0 ? 0 : 1 );
+	  tue.mll[0]    = mll;
+	  tue.ptpos[0]  = leptons[posLepton].pt();
+	  tue.phipos[0] = leptons[posLepton].phi();
+	  tue.ptll[0]   = dil.Pt();
+	  tue.phill[0]  = dil.Phi();
+	  tue.sumpt[0]  = leptons[0].pt()+leptons[1].pt();
+	  tue.dphill[0] = TMath::Abs(leptons[0].p4().DeltaPhi(leptons[1].p4()));
+            
+	  //event weight
+	  float wgt(1.0);
+	  allPlots["puwgtctr"]->Fill(0.,1.0);
+	  if(!ev.isData) 
+	    {
+	      float puWgt(puWgtGr[0]->Eval(ev.g_pu));
+	      allPlots["puwgtctr"]->Fill(1,puWgt);
+	      
+	      wgt  = (normH? normH->GetBinContent(1) : 1.0);
+	      wgt *= puWgt;
+	      wgt *= (ev.g_nw>0 ? ev.g_w[0] : 1.0);
+	    }
+
+	  //weights
+	  tue.nw=1;
+	  tue.weight[0]=wgt;
 	  
-      //flag if passes selection
-      tue.passSel |= (bJetsIdx.size()>=2);
-      tue.nj[0]=jets.size();
-      tue.nb[0]=bJetsIdx.size();
+	  //nominal selection control histograms
+	  if(passLepPresel)
+	    {
+	      allPlots["nvtx_"+chTag]->Fill(ev.nvtx,wgt);
+	      allPlots["rho_"+chTag]->Fill(ev.rho,wgt);
+	      allPlots["mll_"+chTag]->Fill(tue.mll[0],wgt);
+	      allPlots["nbtags_"+chTag]->Fill(tue.nb[0],wgt);
+	    }
+	  if(passPresel)
+	    {
+	      std::map<Int_t,Float_t>::iterator rIt=lumiMap.find(ev.run);
+	      if(rIt!=lumiMap.end() && ratevsrunH) allPlots["ratevsrun_"+chTag]->Fill(std::distance(lumiMap.begin(),rIt),1./rIt->second);
+	      allPlots["ptpos_"+chTag]->Fill(tue.ptpos[0],wgt);
+	      allPlots["ptll_"+chTag]->Fill(tue.ptll[0],wgt);
+	      allPlots["sumpt_"+chTag]->Fill(tue.sumpt[0],wgt);	     
+	      allPlots["met_"+chTag]->Fill(evsel.getMET().Pt(),wgt);
+	      allPlots["njets_"+chTag]->Fill(tue.nj[0],wgt);
+	      allPlots["nch_"+chTag]->Fill(nch,wgt);	  
+	      allPlots["chavgpt_"+chTag]->Fill(nch>0 ? chSumPt/nch : -1,wgt);
+	      allPlots["chsumpt_"+chTag]->Fill(chSumPt,wgt);
+	    }
+	}
 
-      TLorentzVector rec_tt(leptons[0].p4()+leptons[1].p4());
-      if(bJetsIdx.size()>0) rec_tt += jets[ bJetsIdx[0] ].p4();
-      if(bJetsIdx.size()>1) rec_tt += jets[ bJetsIdx[1] ].p4();
-      rec_tt += evsel.getMET();
-      tue.ptttbar[0]=rec_tt.Pt();
-      tue.phittbar[0]=rec_tt.Phi();	  
-      
-      int posLepton( leptons[0].charge()>0 ? 0 : 1 );
-      tue.mll[0]    = mll;
-      tue.ptpos[0]  = leptons[posLepton].pt();
-      tue.phipos[0] = leptons[posLepton].phi();
-      tue.ptll[0]   = dil.Pt();
-      tue.phill[0]  = dil.Phi();
-      tue.sumpt[0]  = leptons[0].pt()+leptons[1].pt();
-      tue.dphill[0] = TMath::Abs(leptons[0].p4().DeltaPhi(leptons[1].p4()));
-      
-      //save PF cands
-      tue.n=selTracks.size();
-      float nch(0.),chSumPt(0.);
-      for(size_t ipf=0; ipf<selTracks.size(); ipf++)
+      //
+      // GEN LEVEL ANALYSIS
+      //
+      TString genChTag = evsel.flagGenFinalState(ev);
+      if(!ev.isData && (genChTag=="EM" || genChTag=="EE" || genChTag=="MM"))
 	{
-	  tue.pt[ipf]         = selTracks[ipf].second.Pt();
-	  tue.eta[ipf]        = selTracks[ipf].second.Eta();
-	  tue.phi[ipf]        = selTracks[ipf].second.Phi();
-	  tue.isInBFlags[ipf] = 0;
-	  nch++;
-	  chSumPt+=tue.pt[ipf];
-	}
-      
-      //event weight
-      float wgt(1.0);
-      allPlots["puwgtctr"]->Fill(0.,1.0);
-      if(!ev.isData) 
-	{
-	  float puWgt(puWgtGr[0]->Eval(ev.g_pu));
-	  allPlots["puwgtctr"]->Fill(1,puWgt);
+	  std::vector<Particle> &leptons=evsel.getGenLeptons();
+	  TLorentzVector dil(leptons[0].p4()+leptons[1].p4());
+	  float mll=dil.M();
+	  bool passLepPresel(mll>12
+                             && (leptons[0].pt()>25 || leptons[1].pt()<25)
+                             && (fabs(leptons[0].eta())<2.5 && fabs(leptons[1].eta())<2.5) );
 
-	  wgt  = (normH? normH->GetBinContent(1) : 1.0);
-	  wgt *= puWgt;
-	  wgt *= (ev.g_nw>0 ? ev.g_w[0] : 1.0);
+	  //divide jets                                                                                                                              
+	  std::vector<Jet> &jets=evsel.getGenJets() ;
+	  std::vector<size_t> lightJetsIdx, bJetsIdx;
+          for(size_t ij=0; ij<jets.size(); ij++)
+            {
+              if(abs(jets[ij].flavor())==5) bJetsIdx.push_back(ij);
+              else                          lightJetsIdx.push_back(ij);
+            }
+          bool passPresel = passLepPresel && (bJetsIdx.size()>=2);
+          if(genChTag=="EE" || genChTag=="MM") passPresel &= fabs(mll-91)>15;
+
+	  //track selection
+	  std::vector<std::pair<int,TLorentzVector> > selTracks,hpTracks;
+	  for(int ipf = 0; ipf < ev.ngpf; ipf++) 
+	    {
+
+	      if(ev.gpf_c[ipf]==0) continue;
+	      if(ev.gpf_pt[ipf]<0.9) continue;
+	      if(fabs(ev.gpf_eta[ipf])>2.5) continue;
+	      
+	      TLorentzVector tkP4(0,0,0,0);
+	      tkP4.SetPtEtaPhiM(ev.gpf_pt[ipf],ev.gpf_eta[ipf],ev.gpf_phi[ipf],0.);
+	      
+	      bool isHP(false);
+	      
+	      //check if matching the leptons
+	      Double_t minDR2lep(999.);
+	      for(int ilep=0; ilep<2; ilep++)
+		minDR2lep=TMath::Min(minDR2lep,tkP4.DeltaR(leptons[ilep].p4()));
+	      if(minDR2lep<0.02) isHP=true;
+
+	      for(size_t ibj=0; ibj<min(bJetsIdx.size(),size_t(2)); ibj++)
+		{
+		  std::vector<Particle> &pinJet=jets[ bJetsIdx[ibj] ].particles();
+		  for(size_t ipinj=0; ipinj<pinJet.size(); ipinj++)
+		    {
+		      if(pinJet[ipinj].charge()==0) continue;
+		      if(pinJet[ipinj].originalReference()!=ipf) continue;
+		      isHP=true;
+		      break;
+		    }
+		}
+	  
+	      if(!isHP) selTracks.push_back(std::pair<int,TLorentzVector>(ipf,tkP4) );
+	      else      hpTracks.push_back(std::pair<int,TLorentzVector>(ipf,tkP4) );
+	    }
+	  
+	  //save gen candidates
+	  tue.gen_n=selTracks.size();
+	  for(size_t ipf=0; ipf<selTracks.size(); ipf++)
+	    {
+	      tue.gen_pt[ipf]  = selTracks[ipf].second.Pt();
+	      tue.gen_eta[ipf] = selTracks[ipf].second.Eta();
+	      tue.gen_phi[ipf] = selTracks[ipf].second.Phi();
+	      tue.gen_id[ipf]  = ev.gpf_id[ selTracks[ipf].first ];
+	    }
+	  
+	  //flag if passes selection  
+	  tue.gen_passSel=passPresel;
+	  tue.gen_nj=jets.size();
+          tue.gen_nb=bJetsIdx.size();
+	  
+	  int posLepton( leptons[0].charge()>0 ? 0 : 1 );
+          tue.gen_mll    = mll;
+          tue.gen_ptpos  = leptons[posLepton].pt();
+          tue.gen_phipos = leptons[posLepton].phi();
+          tue.gen_ptll   = dil.Pt();
+          tue.gen_phill  = dil.Phi();
+          tue.gen_sumpt  = leptons[0].pt()+leptons[1].pt();
+          tue.gen_dphill = TMath::Abs(leptons[0].p4().DeltaPhi(leptons[1].p4()));
+
+	  //save ttbar and pseudo-ttbar kinematics
+	  if(ev.ngtop==2)
+	    {
+	      TLorentzVector ttbar(0,0,0,0);
+	      for(size_t it=0; it<2; it++)
+		{
+		  TLorentzVector p4(0,0,0,0);
+		  p4.SetPtEtaPhiM(ev.gtop_pt[0],ev.gtop_eta[0],ev.gtop_phi[0],ev.gtop_m[0]);
+		  ttbar += p4;
+		}
+	      tue.gen_ptttbar=ttbar.Pt();
+	      tue.gen_phittbar=ttbar.Phi();
+	    }
 	}
       
-      //nominal selection control histograms
-      std::map<Int_t,Float_t>::iterator rIt=lumiMap.find(ev.run);
-      if(rIt!=lumiMap.end() && ratevsrunH) allPlots["ratevsrun_"+chTag]->Fill(std::distance(lumiMap.begin(),rIt),1./rIt->second);
-      allPlots["nvtx_"+chTag]->Fill(ev.nvtx,wgt);
-      allPlots["rho_"+chTag]->Fill(ev.rho,wgt);
-      allPlots["mll_"+chTag]->Fill(tue.mll[0],wgt);
-      allPlots["ptpos_"+chTag]->Fill(tue.ptpos[0],wgt);
-      allPlots["ptll_"+chTag]->Fill(tue.ptll[0],wgt);
-      allPlots["sumpt_"+chTag]->Fill(tue.sumpt[0],wgt);
-      allPlots["nbtags_"+chTag]->Fill(tue.nb[0],wgt);
-      if(tue.nb[0]>1) 
-	{
-	  allPlots["met_"+chTag]->Fill(evsel.getMET().Pt(),wgt);
-	  allPlots["njets_"+chTag]->Fill(tue.nj[0],wgt);
-	  allPlots["nch_"+chTag]->Fill(nch,wgt);	  
-	  allPlots["chavgpt_"+chTag]->Fill(nch>0 ? chSumPt/nch : -1,wgt);
-	  allPlots["chsumpt_"+chTag]->Fill(chSumPt,wgt);
-	}
+      //check it if it passed at least one of the selections
+      if(tue.passSel==0 && tue.gen_passSel==0) continue;
 
       //finalize ntuple
       tue.cat=0;
@@ -235,11 +353,9 @@ void RunTopUE(TString filename,
       tue.event=ev.event;
       tue.lumi=ev.lumi;
       tue.nvtx=ev.nvtx;
-      tue.nw=1;
-      tue.weight[0]=wgt;
    
-      //all done, save it
-      //outT->Fill();
+      //all done
+      outT->Fill();
     }
   
   //save histos to file  
@@ -274,8 +390,6 @@ void createTopUETree(TTree *t,TopUE_t &tue)
   t->Branch("weight",  tue.weight, "weight[nw]/F");
 
   //ptttbar
-  t->Branch("parton_ptttbar",      &tue.parton_ptttbar,   "parton_ptttbar/F");
-  t->Branch("parton_phittbar",     &tue.parton_phittbar,  "parton_phittbar/F");
   t->Branch("gen_ptttbar",         &tue.gen_ptttbar,      "gen_pttbar/F");
   t->Branch("gen_phittbar",        &tue.gen_phittbar,     "gen_phittbar/F");
   t->Branch("ptttbar",              tue.ptttbar,          "ptttbar[9]/F");
@@ -299,6 +413,7 @@ void createTopUETree(TTree *t,TopUE_t &tue)
 
   //charged particles
   t->Branch("n",          &tue.n,            "n/I");
+  t->Branch("id",          tue.id ,          "id[n]/I");
   t->Branch("pt",          tue.pt ,          "pt[n]/F");
   t->Branch("eta",         tue.eta ,         "eta[n]/F");
   t->Branch("phi",         tue.phi ,         "phi[n]/F");
@@ -306,6 +421,7 @@ void createTopUETree(TTree *t,TopUE_t &tue)
 
   //gen charged particles
   t->Branch("gen_n",   &tue.gen_n,     "gen_n/I");
+  t->Branch("gen_id",   tue.gen_id ,   "gen_id[gen_n]/I");
   t->Branch("gen_pt",   tue.gen_pt ,   "gen_pt[gen_n]/F");
   t->Branch("gen_eta",  tue.gen_eta ,  "gen_eta[gen_n]/F");
   t->Branch("gen_phi",  tue.gen_phi ,  "gen_phi[gen_n]/F");
@@ -326,8 +442,6 @@ void resetTopUE(TopUE_t &tue)
   tue.nw=0;      
   
   //reset all MC truth
-  tue.parton_ptttbar=0;       
-  tue.parton_phittbar=0;
   tue.gen_ptttbar=0; 
   tue.gen_phittbar=0;
   tue.gen_ptpos=0;
