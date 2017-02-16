@@ -79,6 +79,7 @@ using namespace reco;
 using namespace pat; 
 
 #define IS_BHADRON_PDGID(id) ( ((abs(id)/100)%10 == 5) || (abs(id) >= 5000 && abs(id) <= 5999) )
+#define IS_CHADRON_PDGID(id) ( ((abs(id)/100)%10 == 4) || (abs(id) >= 4000 && abs(id) <= 4999) )
 #define IS_NEUTRINO_PDGID(id) ( (abs(id) == 12) || (abs(id) == 14) || (abs(id) == 16) )
 
 //
@@ -280,50 +281,6 @@ int MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
   //
   // GENERATOR LEVEL EVENT
   //
-  //Bhadrons and top quarks (lastCopy)
-  edm::Handle<reco::GenParticleCollection> prunedGenParticles;
-  iEvent.getByToken(prunedGenParticlesToken_,prunedGenParticles);
-  ev_.ngtop=0; 
-  std::vector<std::pair<const reco::Candidate *,bool> > bHadrons;
-  for (size_t i = 0; i < prunedGenParticles->size(); ++i)
-    {
-      const reco::GenParticle & genIt = (*prunedGenParticles)[i];
-      int absid=abs(genIt.pdgId());
-      
-      //B-hadrons
-      if(IS_BHADRON_PDGID(absid) && genIt.numberOfDaughters()>1)
-	{
-	  bool hasBDaughter = false;
-	  bool hasNuDaughter = false;
-	  for(unsigned int j = 0; j < genIt.numberOfDaughters(); ++j) 
-	    {
-	      const reco::Candidate * d = genIt.daughter( j );
-	      int dauId = d->pdgId();
-	      if (IS_BHADRON_PDGID(dauId)) 
-		{
-		  hasBDaughter = true;
-		  break;
-		}
-	      if (IS_NEUTRINO_PDGID(dauId)) hasNuDaughter = true;
-	    }
-	  if(hasBDaughter) continue;
-	  bHadrons.push_back( std::pair<const reco::Candidate *,bool>( &genIt, hasNuDaughter) );
-	}
-
-      //top quarks
-      if(absid==6 && genIt.isLastCopy()) 
-	{
-	  ev_.gtop_id[ ev_.ngtop ]  = genIt.pdgId();
-	  ev_.gtop_pt[ ev_.ngtop ]  = genIt.pt();
-	  ev_.gtop_eta[ ev_.ngtop ] = genIt.eta();
-	  ev_.gtop_phi[ ev_.ngtop ] = genIt.phi();
-	  ev_.gtop_m[ ev_.ngtop ]   = genIt.mass();
-	  ev_.ngtop++;
-	}
-    }
-
-
-
   ev_.ng=0; 
   edm::Handle<std::vector<reco::GenJet> > genJets;
   iEvent.getByToken(genJetsToken_,genJets);  
@@ -331,23 +288,30 @@ int MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
   int ngjets(0),ngbjets(0);
   for(auto genJet = genJets->begin();  genJet != genJets->end(); ++genJet)
     {
-      //match to Bhadron
-      ev_.g_isSemiLepBhad[ev_.ng] = false;
-      ev_.g_xb[ev_.ng]            = 0;      
-      ev_.g_xbp[ev_.ng]           = 0;
-      ev_.g_bid[ev_.ng]           = 0;
-      for(size_t i=0; i<bHadrons.size(); i++)
-	{
-	  if( deltaR( *(bHadrons[i].first), *genJet ) > 0.4) continue;
-	  ev_.g_isSemiLepBhad[ev_.ng] = bHadrons[i].second;
-	  ev_.g_xb[ev_.ng]            = bHadrons[i].first->pt()/genJet->pt();
-	  ev_.g_bid[ev_.ng]           = bHadrons[i].first->pdgId();
-	  break;
-	}
-
       //map the gen particles which are clustered in this jet
       std::vector< const reco::Candidate * > jconst=genJet->getJetConstituentsQuick ();
-      for(size_t ijc=0; ijc <jconst.size(); ijc++) jetConstsMap[ jconst[ijc] ] = ev_.ng;
+      int nbtags(0),nctags(0),ntautags(0);
+      
+      const reco::Candidate *leadTagConst=0;
+      for(size_t ijc=0; ijc <jconst.size(); ijc++) 
+	{
+	  const reco::Candidate *par=jconst[ijc];
+	  jetConstsMap[ par ] = ev_.ng;
+	  if(par->status()!=2) continue;
+	  
+	  if(abs(par->pdgId())==15)          ntautags++;
+	  if(IS_BHADRON_PDGID(par->pdgId())) nbtags++;
+	  if(IS_CHADRON_PDGID(par->pdgId())) nctags++;
+	  
+	  if(leadTagConst && leadTagConst->pt()>par->pt()) continue;
+	  leadTagConst=par;
+	}
+      
+      ev_.g_isSemiLepBhad[ev_.ng] = false;  //this will be set below
+      ev_.g_tagCtrs[ev_.ng]       = (nbtags&0xf) | ((nctags&0xf)<<4) | ((ntautags&0xf)<<8);
+      ev_.g_xb[ev_.ng]            = leadTagConst ? (leadTagConst->pt()/1.0e-20)/genJet->pt() : -1;
+      ev_.g_bid[ev_.ng]           = leadTagConst ? leadTagConst->pdgId() : 0.;	  
+
       ev_.g_id[ev_.ng]   = genJet->pdgId();
       ev_.g_pt[ev_.ng]   = genJet->pt();
       ev_.g_eta[ev_.ng]  = genJet->eta();
@@ -414,6 +378,57 @@ int MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       ev_.gpf_phi[ev_.ngpf]    = genIt.phi();
       ev_.gpf_m[ev_.ngpf]      = genIt.mass();
       ev_.ngpf++;    
+    }
+
+
+ //Bhadrons and top quarks (lastCopy)
+  edm::Handle<reco::GenParticleCollection> prunedGenParticles;
+  iEvent.getByToken(prunedGenParticlesToken_,prunedGenParticles);
+  ev_.ngtop=0; 
+  for (size_t i = 0; i < prunedGenParticles->size(); ++i)
+    {
+      const reco::GenParticle & genIt = (*prunedGenParticles)[i];
+      int absid=abs(genIt.pdgId());
+      
+      //identify b-hadrons decaying semi-leptonically
+      if(IS_BHADRON_PDGID(genIt.pdgId()) && genIt.numberOfDaughters()>1)
+	{
+	  bool hasBDaughter = false;
+	  bool hasNuDaughter = false;
+	  for(unsigned int j = 0; j < genIt.numberOfDaughters(); ++j) 
+	    {
+	      const reco::Candidate * d = genIt.daughter( j );
+	      int dauId = d->pdgId();
+	      if (IS_BHADRON_PDGID(dauId)) 
+		{
+		  hasBDaughter = true;
+		  break;
+		}
+	      if (IS_NEUTRINO_PDGID(dauId)) hasNuDaughter = true;
+	    }
+	  if(hasBDaughter) continue;
+	  if(!hasNuDaughter) continue;
+	  
+	  for(std::map<const reco::Candidate *,int>::iterator it=jetConstsMap.begin();
+	      it!=jetConstsMap.end();
+	      it++)
+	    {
+	      if(it->first->status()!=2) continue;
+	      if( deltaR( genIt, *(it->first) ) > 0.01) continue;
+	      ev_.g_isSemiLepBhad[it->second]=true;
+	    }
+	}
+
+      //top quarks
+      if(absid==6 && genIt.isLastCopy()) 
+	{
+	  ev_.gtop_id[ ev_.ngtop ]  = genIt.pdgId();
+	  ev_.gtop_pt[ ev_.ngtop ]  = genIt.pt();
+	  ev_.gtop_eta[ ev_.ngtop ] = genIt.eta();
+	  ev_.gtop_phi[ ev_.ngtop ] = genIt.phi();
+	  ev_.gtop_m[ ev_.ngtop ]   = genIt.mass();
+	  ev_.ngtop++;
+	}
     }
   
   //fiducial counters

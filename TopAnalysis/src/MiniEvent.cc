@@ -24,6 +24,7 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev)
   t->Branch("ng",       &ev.ng,       "ng/I");
   t->Branch("g_id",      ev.g_id,     "g_id[ng]/I");
   t->Branch("g_bid",     ev.g_bid,    "g_bid[ng]/I");
+  t->Branch("g_tagCtrs",     ev.g_tagCtrs,    "g_tagCtrs[ng]/I");
   t->Branch("g_isSemiLepBhad",     ev.g_isSemiLepBhad,    "g_isSemiLepBhad[ng]/O");
   t->Branch("g_xb",      ev.g_xb,     "g_xb[ng]/F");  
   t->Branch("g_xbp",      ev.g_xbp,   "g_xbp[ng]/F");
@@ -144,6 +145,7 @@ void attachToMiniEventTree(TTree *t,MiniEvent_t &ev,bool full)
   //gen event (jets and dressed leptons)
   t->SetBranchAddress("ng",       &ev.ng);
   t->SetBranchAddress("g_id",      ev.g_id);
+  t->SetBranchAddress("g_tagCtrs", ev.g_tagCtrs);
   t->SetBranchAddress("g_bid",     ev.g_bid);
   t->SetBranchAddress("g_isSemiLepBhad", ev.g_isSemiLepBhad);
   t->SetBranchAddress("g_xb",      ev.g_xb);
