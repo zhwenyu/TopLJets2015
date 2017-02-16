@@ -292,24 +292,34 @@ int MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       std::vector< const reco::Candidate * > jconst=genJet->getJetConstituentsQuick ();
       int nbtags(0),nctags(0),ntautags(0);
       
+      reco::Candidate::LorentzVector nup4(0,0,0,0);
       const reco::Candidate *leadTagConst=0;
+      ev_.g_isSemiLepBhad[ev_.ng] = false;
       for(size_t ijc=0; ijc <jconst.size(); ijc++) 
 	{
 	  const reco::Candidate *par=jconst[ijc];
 	  jetConstsMap[ par ] = ev_.ng;
+
+	  int absid=abs(par->pdgId());
+	  if(par->status()==1 && IS_NEUTRINO_PDGID(absid)) 
+	    {
+	      nup4 += par->p4()*1e20;
+	      int motherid( abs(par->mother()->pdgId()) );
+	      if(IS_BHADRON_PDGID(motherid)) ev_.g_isSemiLepBhad[ev_.ng] = true;
+	    }
 	  if(par->status()!=2) continue;
 	  
-	  if(abs(par->pdgId())==15)          ntautags++;
-	  if(IS_BHADRON_PDGID(par->pdgId())) nbtags++;
-	  if(IS_CHADRON_PDGID(par->pdgId())) nctags++;
-	  
+	  if(absid==15)               ntautags++;
+	  if(IS_BHADRON_PDGID(absid)) nbtags++;
+	  if(IS_CHADRON_PDGID(absid)) nctags++;
 	  if(leadTagConst && leadTagConst->pt()>par->pt()) continue;
 	  leadTagConst=par;
 	}
       
-      ev_.g_isSemiLepBhad[ev_.ng] = false;  //this will be set below
+      reco::Candidate::LorentzVector totalP4(genJet->p4()+nup4);
+
       ev_.g_tagCtrs[ev_.ng]       = (nbtags&0xf) | ((nctags&0xf)<<4) | ((ntautags&0xf)<<8);
-      ev_.g_xb[ev_.ng]            = leadTagConst ? (leadTagConst->pt()/1.0e-20)/genJet->pt() : -1;
+      ev_.g_xb[ev_.ng]            = leadTagConst ? (leadTagConst->pt()/1.0e-20)/totalP4.pt() : -1;
       ev_.g_bid[ev_.ng]           = leadTagConst ? leadTagConst->pdgId() : 0.;	  
 
       ev_.g_id[ev_.ng]   = genJet->pdgId();
@@ -389,36 +399,7 @@ int MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
     {
       const reco::GenParticle & genIt = (*prunedGenParticles)[i];
       int absid=abs(genIt.pdgId());
-      
-      //identify b-hadrons decaying semi-leptonically
-      if(IS_BHADRON_PDGID(genIt.pdgId()) && genIt.numberOfDaughters()>1)
-	{
-	  bool hasBDaughter = false;
-	  bool hasNuDaughter = false;
-	  for(unsigned int j = 0; j < genIt.numberOfDaughters(); ++j) 
-	    {
-	      const reco::Candidate * d = genIt.daughter( j );
-	      int dauId = d->pdgId();
-	      if (IS_BHADRON_PDGID(dauId)) 
-		{
-		  hasBDaughter = true;
-		  break;
-		}
-	      if (IS_NEUTRINO_PDGID(dauId)) hasNuDaughter = true;
-	    }
-	  if(hasBDaughter) continue;
-	  if(!hasNuDaughter) continue;
-	  
-	  for(std::map<const reco::Candidate *,int>::iterator it=jetConstsMap.begin();
-	      it!=jetConstsMap.end();
-	      it++)
-	    {
-	      if(it->first->status()!=2) continue;
-	      if( deltaR( genIt, *(it->first) ) > 0.01) continue;
-	      ev_.g_isSemiLepBhad[it->second]=true;
-	    }
-	}
-
+  
       //top quarks
       if(absid==6 && genIt.isLastCopy()) 
 	{
