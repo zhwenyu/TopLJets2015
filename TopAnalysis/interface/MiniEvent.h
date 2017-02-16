@@ -21,8 +21,9 @@ struct MiniEvent_t
   Int_t g_nw;
   Float_t g_w[500];
   Int_t ng,ngtop,ngpf;
-  Int_t g_id[500];
-  Float_t g_pt[500],g_eta[500],g_phi[500],g_m[500]; 
+  Int_t g_id[500],g_bid[500];
+  Bool_t g_isSemiLepBhad[500];
+  Float_t g_pt[500],g_eta[500],g_phi[500],g_m[500],g_xb[500],g_xbp[500]; 
   Int_t gtop_id[15];
   Float_t gtop_pt[15],gtop_eta[15],gtop_phi[15],gtop_m[15]; 
   Int_t gpf_id[5000],gpf_c[5000],gpf_g[5000];

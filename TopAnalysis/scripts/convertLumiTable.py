@@ -10,10 +10,13 @@ import ROOT
 """
 runs lumicalc
 """
-def getLumiTable(trig,opt,templateH=None):
+def getLumiTable(args):
+
+    trig,opt=args      
+    if len(trig)==0: trig='inc'
 
     #run brilcalc
-    extraOpt='--hltpath %s*'%trig if len(trig)>0 else ''
+    extraOpt='--hltpath %s*'%trig if trig!='inc' else ''    
     rawLumiTable=commands.getstatusoutput('brilcalc lumi -b "STABLE BEAMS" --normtag %s -u /pb -i %s %s'%(opt.normtag,opt.lumiMask,extraOpt))[1].split('\n')
 
     #parse lumi output file
@@ -30,7 +33,10 @@ def getLumiTable(trig,opt,templateH=None):
     #fill histogram
     nRuns=len(valList)
     try:
-        h=templateH.Clone('lumisec%s'%trig)
+        f=ROOT.TFile.Open('%s/lumisec_inc.root'%opt.out)
+        h=f.Get('lumisec_inc').Clone('lumisec_%s'%trig)
+        h.SetDirectory(0)
+        f.Close()
         h.Reset('ICE')
         for i in xrange(0,nRuns):
             run,lumi=valList[i]
@@ -41,14 +47,19 @@ def getLumiTable(trig,opt,templateH=None):
                 h.SetBinContent(xbin,lumi)
                 break
     except:
-        h=ROOT.TH1F('lumisec%s'%trig,'lumisec;Run number;Lumi recorded (pb);',nRuns,0,nRuns)
+        h=ROOT.TH1F('lumisec_%s'%trig,'lumisec;Run number;Lumi recorded (pb);',nRuns,0,nRuns)
         for i in xrange(0,nRuns):
             run,lumi=valList[i]
             h.GetXaxis().SetBinLabel(i+1,'%d'%run)
             h.SetBinContent(i+1,lumi)
 
-    h.SetDirectory(0)
-    return h
+    #save to file
+    print trig,' lumi=',h.Integral(),'/pb'
+    f=ROOT.TFile.Open('%s/lumisec_%s.root'%(opt.out,trig),'RECREATE')
+    h.SetDirectory(f)
+    h.Write()
+    f.Close()
+
 
 
 """
@@ -61,25 +72,26 @@ def main():
     parser = optparse.OptionParser(usage)
     parser.add_option('-n', '--normtag',  dest='normtag',     help='normtag',       default='/afs/cern.ch/user/l/lumipro/public/Normtags/normtag_DATACERT.json',    type='string')
     parser.add_option('-o', '--out',      dest='out'   ,      help='output dir',    default='data/era2016/',    type='string')
-    parser.add_option('-l', '--lumi',     dest='lumiMask',    help='json with list of good lumis', default='/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/Final/Cert_271036-284044_13TeV_PromptReco_Collisions16_JSON.txt')
+    parser.add_option('-l', '--lumi',     dest='lumiMask',    help='json with list of good lumis', default='/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/ReReco/Final/Cert_271036-284044_13TeV_23Sep2016ReReco_Collisions16_JSON.txt')
     (opt, args) = parser.parse_args()
+    
 
-    #build the integ lumi tables
-    lumiTables={}
+    #inclusive (run separetely to create template histogram)
+    getLumiTable( ('',opt) )
+
+    #per trigger path
+    task_list=[]
     triggerPaths=analysis.triggersToUse
-    lumiTables['']=getLumiTable(trig='',opt=opt)
-    print 'Total lumi',lumiTables[''].Integral(),'/pb'
     for trig in triggerPaths:
-        lumiTables[trig]=getLumiTable(trig=trig,opt=opt,templateH=lumiTables[''])
-        print trig,lumiTables[trig].Integral(),'/pb'
+        task_list.append( (trig,opt) )
+    from multiprocessing import Pool
+    pool=Pool(8)
+    pool.map(getLumiTable, task_list)
 
-    #open file to save lumitables
-    fOut=ROOT.TFile.Open('%s/lumisec.root'%opt.out,'RECREATE')
-    for key in lumiTables:
-        print key,lumiTables[key].Integral(),'/pb'
-        lumiTables[key].SetDirectory(fOut)
-        lumiTables[key].Write('lumisec%s'%key)
-    fOut.Close()
+
+    os.system('hadd -f %s/lumisec.root %s/lumisec_*.root'%(opt.out,opt.out))
+    os.system('rm %s/lumisec_*.root'%opt.out)
+
 
 """
 for execution from another script

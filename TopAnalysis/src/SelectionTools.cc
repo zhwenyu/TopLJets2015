@@ -4,13 +4,16 @@
 
 using namespace std;
 
-SelectionTool::SelectionTool(TString dataset,bool debug) :
+SelectionTool::SelectionTool(TString dataset,bool debug,TH1 *triggerList) :
   isSingleElectronPD_(dataset.Contains("SingleElectron")), 
   isSingleMuonPD_(dataset.Contains("SingleMuon")), 
   isDoubleEGPD_(dataset.Contains("DoubleEG")), 
   isDoubleMuonPD_(dataset.Contains("DoubleMuon")), 
   isMuonEGPD_(dataset.Contains("MuonEG"))
 {
+  if(triggerList!=0)
+    for(int xbin=0; xbin<triggerList->GetNbinsX(); xbin++)
+      triggerBits_[ triggerList->GetXaxis()->GetBinLabel(xbin+1) ] = xbin;
 }
 
 //
@@ -272,11 +275,38 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
 
 
   //check if triggers have fired
-  bool hasETrigger(((ev.triggerBits>>0)&0x1)!=0);
-  bool hasMTrigger(((ev.triggerBits>>1)&0x3)!=0);
-  bool hasEMTrigger(((ev.triggerBits>>3)&0x3)!=0  || ((ev.triggerBits>>5)&0x7)!=0 );
-  bool hasMMTrigger(((ev.triggerBits>>8)&0x3)!=0);
-  bool hasEETrigger(((ev.triggerBits>>10)&0x1)!=0);
+  bool hasETrigger(  hasTriggerBit("HLT_Ele27_WPTight_Gsf_v",                              ev.triggerBits) );
+  bool hasMTrigger(  hasTriggerBit("HLT_IsoMu24_v",                                        ev.triggerBits) || 
+		     hasTriggerBit("HLT_IsoTkMu24_v",                                      ev.triggerBits) );
+  bool hasEMTrigger( hasTriggerBit("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_v",     ev.triggerBits) ||
+		     hasTriggerBit("HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_v",    ev.triggerBits) ||
+		     hasTriggerBit("HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_v", ev.triggerBits) ||
+		     hasTriggerBit("HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_v",    ev.triggerBits) ||
+		     hasTriggerBit("HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ_v", ev.triggerBits) );
+  bool hasMMTrigger( hasTriggerBit("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_v",                ev.triggerBits) ||
+		     hasTriggerBit("HLT_Mu17_TrkIsoVVL_TkMu8_TrkIsoVVL_DZ_v",              ev.triggerBits) );
+  bool hasEETrigger( hasTriggerBit("HLT_DoubleEle24_22_eta2p1_WPLoose_Gsf_v",              ev.triggerBits) ||
+		     hasTriggerBit("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ_v",          ev.triggerBits) );
+  if(ev.isData)
+    {
+      hasEMTrigger=false;
+      if(ev.run<=280385)
+	{
+	  hasEMTrigger |= hasTriggerBit("HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_v", ev.triggerBits);
+	  hasEMTrigger |= hasTriggerBit("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_v",  ev.triggerBits);
+	}
+      if(ev.run>=278273 && ev.run<=280385)
+	{
+	  hasEMTrigger |= hasTriggerBit("HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_v", ev.triggerBits);
+	}
+      if(ev.run>=278273)
+	{
+	  hasEMTrigger |= hasTriggerBit("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_v",  ev.triggerBits);
+	  hasEMTrigger |= hasTriggerBit("HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_v", ev.triggerBits);
+	  hasEMTrigger |= hasTriggerBit("HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ_v", ev.triggerBits);
+	}
+    }
+
 
   //check consistency with data
   if(chTag=="EM")
@@ -323,6 +353,15 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
 
   //all done
   return chTag;
+}
+
+//
+bool SelectionTool::hasTriggerBit(TString triggerName,unsigned int word) 
+{ 
+  std::map<TString,unsigned int>::iterator it=triggerBits_.find(triggerName);
+  if(it==triggerBits_.end()) return false;
+  unsigned int bit=it->second;
+  return ((word>>bit)&0x1); 
 }
 
 //

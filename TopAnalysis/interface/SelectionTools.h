@@ -2,8 +2,10 @@
 #define _selection_tools_h_
 
 #include <vector>
+#include <map>
 
 #include "TString.h"
+#include "TH1.h"
 
 #include "TopLJets2015/TopAnalysis/interface/MiniEvent.h"
 #include "TopLJets2015/TopAnalysis/interface/ObjectTools.h"
@@ -11,7 +13,7 @@
 class SelectionTool {
 
  public:
-  SelectionTool(TString dataset="",bool debug=false);
+  SelectionTool(TString dataset="",bool debug=false,TH1 *triggerList=0);
   ~SelectionTool() {}
 
   enum FlavourSplitting {NOFLAVOURSPLITTING=0, UDSGSPLITTING=1, CSPLITTING=4, BSPLITTING=5 };
@@ -44,12 +46,13 @@ class SelectionTool {
   void setDebug(bool flag) { debug_=flag; }
 
  private:
+  bool hasTriggerBit(TString triggerName,unsigned int word);
   bool isSingleElectronPD_,isSingleMuonPD_,isDoubleEGPD_,isDoubleMuonPD_,isMuonEGPD_;
   std::vector<Particle> leptons_,vetoLeptons_,genLeptons_;
   std::vector<Jet> jets_,genJets_;
   TLorentzVector met_;
   bool debug_;
-
+  std::map<TString,unsigned int> triggerBits_;
 };
 
 #endif
