@@ -66,9 +66,8 @@ case $WHAT in
     ANA )
 	eosprefix=root://eoscms//eos/cms
 	echo "Computing resolutions"
-	#python test/TopUEAnalysis/runUEanalysis.py -i ${eosprefix}/${summaryeosdir}/MC13TeV_TTJets_dilpowheg_0.root --step 0 --ptThr 1.5 -o UEanalysis_1.5;
-	python test/TopUEAnalysis/runUEanalysis.py -i ${eosprefix}/${summaryeosdir}/MC13TeV_TTJets_dilpowheg_0.root --step 0 --ptThr 0.9;
-	#python test/TopUEAnalysis/runUEanalysis.py -i ${eosprefix}/${summaryeosdir}/MC13TeV_TTJets_dilpowheg_0.root --step 0 --ptThr 0.0 -o UEanalysis_inc;
+	python test/TopUEAnalysis/runUEanalysis.py -i ${eosprefix}/${summaryeosdir}/MC13TeV_TTJets_dilpowheg_0.root --step 0 --ptThr 1.0,0.9;
+
 	#echo "Defining analysis configuration"
 	#python test/TopUEAnalysis/runUEanalysis.py -i ${eosprefix}/${summaryeosdir}/MC13TeV_TTJets_dilpowheg_0.root --step 1;
 	#python test/TopUEAnalysis/runUEanalysis.py --step 3;

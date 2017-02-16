@@ -47,7 +47,7 @@ def determineSliceResolutions(opt):
     #loop the available events and fill resolution arrays for events passing the selection cuts
     varVals={}
     for var in VARS.keys() : varVals[var]=[[],[]]
-    ue=UEEventCounter(ptthreshold=opt.ptThr)
+    ue=UEEventCounter(ptthreshold=[float(x) for x in opt.ptThr.split(',')])
     totalEntries=t.GetEntries()
     for i in xrange(0,totalEntries):
         t.GetEntry(i)
@@ -74,9 +74,9 @@ def determineSliceResolutions(opt):
                 deltaVal=getattr(ue,'rec_%s'%var) - val
 
             if isAngle : 
-                val  = val*180./ROOT.TMath.Pi()
+                val      = val*180./ROOT.TMath.Pi()
                 deltaVal = ROOT.TVector2.Phi_mpi_pi(deltaVal)*180./ROOT.TMath.Pi()
-                val  = ROOT.TMath.Abs(val)
+                val      = ROOT.TMath.Abs(val)
             varVals[var][0].append( val )
             varVals[var][1].append( deltaVal )
 
@@ -101,7 +101,7 @@ def determineSliceResolutions(opt):
             genvarQ = np.percentile( np.array(varVals[var][0]), BASEQUANTILES )
         dvarQ = np.percentile( np.array(varVals[var][1]), [2.5,97.5])
         h2d=ROOT.TH2F(var,
-                      ';%s (gen. level);Resolution;'%VARS[var][0],
+                      ';%s (gen. level);#Delta(reco-gen);'%VARS[var][0],
                       len(genvarQ)-1,
                       array.array('d',genvarQ),50,dvarQ[0],dvarQ[1])
         h2d.GetZaxis().SetNdivisions(5)
@@ -160,7 +160,7 @@ def determineSliceResolutions(opt):
     xbin=0
     for var1 in varVals:
         xbin+=1
-        hcorr.GetXaxis().SetBinLabel(xbin,VARS[var][0])
+        hcorr.GetXaxis().SetBinLabel(xbin,VARS[var1][0])
         ybin=0
         for var2 in varVals:
             rho=np.corrcoef(varVals[var1][0],varVals[var2][0])[0][1]
@@ -493,7 +493,7 @@ def main():
     usage = 'usage: %prog [options]'
     parser = optparse.OptionParser(usage)
     parser.add_option('-i', '--in',    dest='input',  help='input',                       default='MC13TeV_TTJets_dilpowheg_0.root',   type='string')
-    parser.add_option(      '--ptThr', dest='ptThr',  help='ptThreshold',                 default=0.9,   type=float)
+    parser.add_option(      '--ptThr', dest='ptThr',  help='ptThreshold gen,reco',        default='1.0,0.9',   type='string')
     parser.add_option('-s', '--step',  dest='step',   help='step',                        default=1,   type=int)
     parser.add_option('-w', '--wgt',   dest='wgtIdx', help='weight index to use',         default=0,   type=int)
     parser.add_option('-v', '--var',   dest='varIdx', help='calib index to use',          default=0,   type=int)
