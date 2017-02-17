@@ -15,8 +15,8 @@ class UEAnalysisHandler:
         
         with open(analysisCfg,'r') as cachefile:
             self.axes=pickle.load(cachefile)
-            self.sliceAxes=pickle.load(cachefile)
             self.histos=pickle.load(cachefile)
+        print self.histos.keys()
 
     """
     inclusive histogram filling
@@ -29,39 +29,39 @@ class UEAnalysisHandler:
         recSliceShift,genSliceShift=0,0
         try:
             sliceVar,genSliceVal,recSliceVal=sliceVarVals
-            genSliceShift=self.getBinForVariable(genSliceVal, self.sliceAxes[ (sliceVar,False) ])-1
-            recSliceShift=self.getBinForVariable(recSliceVal, self.sliceAxes[ (sliceVar,True) ])-1
+            genSliceShift=self.getBinForVariable(genSliceVal, self.axes[ (sliceVar,False) ])-1
+            recSliceShift=self.getBinForVariable(recSliceVal, self.axes[ (sliceVar,True) ])-1
         except:
             pass
 
         #RECO level counting
         recCts=getattr(ue,'rec_chmult')
         recVal=getattr(ue,'rec_'+obs)
-        recBin=self.getBinForVariable( recVal,  self.axes[(obs,'inc',0,True)])-1
-        recBin += recSliceShift*(self.axes[(obs,'inc',0,True)].GetNbins())
+        recBin=self.getBinForVariable( recVal,  self.axes[(obs,True)])-1
+        recBin += recSliceShift*(self.axes[(obs,True)].GetNbins())
         if not passSel : recBin=-1
         if recCts>0:
             if sliceVar :
-                self.histos[(obs,'inc',True,sliceVar)].Fill(recBin,weight)
+                self.histos[(obs,True,sliceVar)].Fill(recBin,weight)
             else:
                 self.histos[(obs,'inc',True)].Fill(recBin,weight)
 
         #GEN level counting
         genCts=getattr(ue,'gen_chmult')
         genVal=getattr(ue,'gen_'+obs)
-        genBin=self.getBinForVariable(genVal, self.axes[(obs,'inc',0,False)])-1
-        genBin += genSliceShift*(self.axes[(obs,'inc',0,False)].GetNbins())
+        genBin=self.getBinForVariable(genVal, self.axes[(obs,False)])-1
+        genBin += genSliceShift*(self.axes[(obs,False)].GetNbins())
         if not gen_passSel : genBin=-1        
         if genCts>0: 
             if sliceVar:
-                self.histos[(obs,'inc',False,sliceVar)].Fill(genBin,weight)
+                self.histos[(obs,False,sliceVar)].Fill(genBin,weight)
             else:
                 self.histos[(obs,'inc',False)].Fill(genBin,weight)
                 
         #Migration matrix
         if genCts>0 or recCts>0 : 
             if sliceVar:
-                self.histos[(obs,'inc',sliceVar)].Fill(genBin,recBin,weight)
+                self.histos[(obs,sliceVar)].Fill(genBin,recBin,weight)
             else:
                 self.histos[(obs,'inc')].Fill(genBin,recBin,weight)
 

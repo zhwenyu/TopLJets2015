@@ -74,11 +74,13 @@ case $WHAT in
     ANA )
 	eosprefix=root://eoscms//eos/cms
 	echo "Computing resolutions"
-	python test/TopUEAnalysis/runUEanalysis.py -i ${eosprefix}/${summaryeosdir}/MC13TeV_TTJets_0.root --step 0 --ptThr 1.0,0.9;
+	#python test/TopUEAnalysis/runUEanalysis.py -i ${eosprefix}/${summaryeosdir}/MC13TeV_TTJets_0.root,${eosprefix}/${summaryeosdir}/MC13TeV_TTJets_1.root,${eosprefix}/${summaryeosdir}/MC13TeV_TTJets_2.root --step 0 --ptThr 1.0,0.9;
 
-	#echo "Defining analysis configuration"
-	#python test/TopUEAnalysis/runUEanalysis.py -i ${eosprefix}/${summaryeosdir}/MC13TeV_TTJets_dilpowheg_0.root --step 1;
-	#python test/TopUEAnalysis/runUEanalysis.py --step 3;
+	echo "Defining analysis configuration"
+	#python test/TopUEAnalysis/runUEanalysis.py -i ${eosprefix}/${summaryeosdir}/MC13TeV_TTJets_0.root --step 1;
+	
+	echo "Filling the histograms"
+	python test/TopUEAnalysis/runUEanalysis.py -i ${summaryeosdir} --step 2;
 	;;
 
 esac
