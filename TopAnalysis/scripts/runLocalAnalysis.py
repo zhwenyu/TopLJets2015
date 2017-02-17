@@ -171,13 +171,12 @@ def main():
             elif outF!=localOutF:
                 cfg.write('mv -v %s %s\n'%(localOutF,outF))
             cfg.close()
+            os.system('chmod u+x %s'%cfgfile)
 
-            #LaunchOnCondor.SendCluster_Push(["BASH", 'sh %s'%cfgfile])
-            
-            #cmd='bsub -q %s %s/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh \"%s\"' % (opt.queue,cmsswBase,localRun)
-            #command_out+=commands.getstatusoutput(cmd)[1]
+            LaunchOnCondor.SendCluster_Push(["BASH", cfgfile])
 
-            
+        if jobNb>0:
+            LaunchOnCondor.SendCluster_Submit()            
         
 
 
