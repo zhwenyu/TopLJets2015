@@ -17,22 +17,27 @@ from TopLJets2015.TopAnalysis.storeTools import getEOSlslist
 
 BASEQUANTILES=[ 100*x/50 for x in xrange(0,51) ]
 
-#var name, var title, use to slice phase space, use as event axis, is angle
+#var name, var title, use to slice phase space, use as observable, use as event axis, is angle
 VARS={
-    'ptttbar'  : ('p_{T}(t#bar{t})',  True,  False, False),
-    'phittbar' : ('#phi(t#bar{t})',   True,  True,  True),
-    'ptpos'    : ('p_{T}(l^{+})',     True,  False, False),
-    'phipos'   : ('#phi(l^{+})',      True,  True,  True),
-    'ptll'     : ('p_{T}(l,l)',       True,  False, False),
-    'phill'    : ('#phi(ll)',         True,  True,  True),
-    'sumpt'    : ('#Sigma p_{T}(l)',  True,  False, False),
-    'mll'      : ('M(l,l)',           True,  False, False),
-    'dphill'   : ('#Delta#phi(l,l)',  True,  False, True),
-    'nj'       : ('N(jets)',          True,  False, False),
-    'chmult'   : ('N(ch)',            True,  False, False),
-    'chflux'   : ('#Sigma p_{T}(ch)', False, False, False),
-    'chavgpt'  : ('#bar{p}_{T}(ch)',  False, False, False),
+    'ptttbar'  : ('p_{T}(t#bar{t})',  True,  False, False, False),
+    'phittbar' : ('#phi(t#bar{t})',   True,  False, True,  True),
+    'ptpos'    : ('p_{T}(l^{+})',     True,  False, False, False),
+    'phipos'   : ('#phi(l^{+})',      True,  False, True,  True),
+    'ptll'     : ('p_{T}(l,l)',       True,  False, False, False),
+    'phill'    : ('#phi(ll)',         True,  False, True,  True),
+    'sumpt'    : ('#Sigma p_{T}(l)',  True,  False, False, False),
+    'mll'      : ('M(l,l)',           True,  False, False, False),
+    'dphill'   : ('#Delta#phi(l,l)',  True,  False, False, True),
+    'nj'       : ('N(jets)',          True,  False, False, False),
+    'chmult'   : ('N(ch)',            True,  True,  False, False),
+    'chflux'   : ('#Sigma p_{T}(ch)', False, True,  False, False),
+    'chavgpt'  : ('#bar{p}_{T}(ch)',  False, True,  False, False),
     }
+
+OBSVARS   = filter(lambda var: VARS[var][2], VARS)
+EVAXES    = filter(lambda var : VARS[var][3], VARS)
+SLICEVARS = filter(lambda var : VARS[var][1], VARS)
+
 
 
 """
@@ -61,11 +66,11 @@ def determineSliceResolutions(opt):
         if not passSel or not gen_passSel: continue
 
         #count particles in the event
-        ue.count(t,debug=True)
+        ue.count(t,debug=False)
 
         #fill resolution arrays
         for var in VARS.keys():
-            isAngle=VARS[var][3]
+            isAngle=VARS[var][4]
             try:
                 val=getattr(t,'gen_%s'%var)
                 deltaVal=getattr(t,var)[0]-val
@@ -196,13 +201,12 @@ def defineAnalysisBinning(opt):
     with open(os.path.join(opt.out,'sliceresolutions.pck'),'r') as cachefile:
         varResolutions = pickle.load(cachefile)
 
-
     #
-    # SLICE VARIABLES
+    # VARIABLES
     # readout resolution curves and determine the bins for the observables
     #
     print 'Defining axes for the slice variables'
-    slicingAxes={}
+    varAxes={}
     for var in varResolutions:
 
         #special case for jet multiplicity
@@ -260,136 +264,69 @@ def defineAnalysisBinning(opt):
             recBin.append( genBin[-1] )
         
         #save binning in histos
-        slicingAxes[(var,False)] = ROOT.TAxis(len(genBin)-1,array.array('d',genBin))
-        slicingAxes[(var,False)].SetName('%s_genSlices'%var)
-        slicingAxes[(var,True)]  = ROOT.TAxis(len(recBin)-1,array.array('d',recBin))
-        slicingAxes[(var,True)].SetName('%s_recSlices'%var)
-
-
-    #
-    # OBSERVABLES
-    # use quantiles to determine the binning for the observables : nch, sumpt and avgpt
-    #
-    print 'Defining axes for the observables'
-    obsVals={}
-    for obs in OBSQUANTILES: 
+        varAxes[(var,False)] = ROOT.TAxis(len(genBin)-1,array.array('d',genBin))
+        varAxes[(var,False)].SetName('%s_genSlices'%var)
+        varAxes[(var,True)]  = ROOT.TAxis(len(recBin)-1,array.array('d',recBin))
+        varAxes[(var,True)].SetName('%s_recSlices'%var)
+        print '%30s'%('Bin definition for '+var),
         for level in [False,True]:
-            obsVals[(obs,level)]={'inc':[[]]}
-            for a in EVENTAXES: 
-                obsVals[(obs,level)][a]=[[],[],[]]
-    ue=UEEventCounter(EVENTAXES)
-    t=ROOT.TChain('tue')
-    for f in opt.input.split(','): t.AddFile(f)
-    totalEntries=t.GetEntries()
-    for i in xrange(0,totalEntries):
-        t.GetEntry(i)
-        if i%100==0 :
-            sys.stdout.write('\r [ %d/100 ] done' %(int(float(100.*i)/float(totalEntries))) )
-            sys.stdout.flush()
-
-        #require a pure event selected at reco and gen levels
-        passSel=(t.passSel&0x1)
-        gen_passSel=t.gen_passSel
-        if not passSel or not gen_passSel: continue
-        ue.count(t)
-
-        obsVals[('chmult',False)]['inc'][0].append(ue.gen_chmult)
-        obsVals[('chflux',False)]['inc'][0].append(ue.gen_chflux)
-        obsVals[('chavgpt',False)]['inc'][0].append(ue.gen_chavgpt) 
-        obsVals[('chmult',True)]['inc'][0].append(ue.rec_chmult)
-        obsVals[('chflux',True)]['inc'][0].append(ue.rec_chflux)
-        obsVals[('chavgpt',True)]['inc'][0].append(ue.rec_chavgpt)
-        for a in EVENTAXES:
-            for k in xrange(0,3):
-                obsVals[('chmult',False)][a][k].append( ue.gen_chmult_wrtTo[a][k] )
-                obsVals[('chflux',False)][a][k].append( ue.gen_chflux_wrtTo[a][k] )
-                obsVals[('chavgpt',False)][a][k].append( ue.gen_chavgpt_wrtTo[a][k] )
-                obsVals[('chmult',True)][a][k].append( ue.rec_chmult_incWrtTo[a][k] )
-                obsVals[('chflux',True)][a][k].append( ue.rec_chflux_incWrtTo[a][k] )
-                obsVals[('chavgpt',True)][a][k].append( ue.rec_chavgpt_incWrtTo[a][k] )
-
-    #determine quantiles and save as binnings
-    obsAxes={}
-    for key in obsVals:
-        obs,level=key
-        for a in obsVals[key]:
-            for i in xrange(0,len(obsVals[key][a])):
-                levelStr='rec' if level else 'gen'
-                varQ = np.percentile( np.array( obsVals[key][a][i] ), OBSQUANTILES[obs])
-                varQ[0]=0.                
-                if level:
-                    recBin=[]
-                    for k in xrange(1,len(varQ)):
-                        dx=(varQ[k]-varQ[k-1])*0.5
-                        recBin.append( varQ[k-1] )
-                        recBin.append( varQ[k-1]+dx)
-                    recBin.append( varQ[-1] )
-                    obsAxes[ (obs,a,i,level) ] = ROOT.TAxis(len(recBin)-1,array.array('d',recBin))
-                else:
-                    obsAxes[ (obs,a,i,level) ] = ROOT.TAxis(len(varQ)-1,array.array('d',varQ))
-                obsAxes[ (obs,a,i,level) ].SetName('%s_%s%s_%d'%(levelStr,obs,a,i))
-
+            nbins=varAxes[(var,level)].GetNbins()
+            print '%30s'%('[%3.1f,%3.1f] / %d @ %s'%(varAxes[(var,level)].GetBinLowEdge(1),
+                                                     varAxes[(var,level)].GetBinUpEdge(nbins),
+                                                     nbins,
+                                                     'rec' if level else 'gen')),
+        print ''
 
     #
     # DEFINE MIGRATION MATRICES, GEN/REC LEVEL HISTOS
     #
-    print 'Saving gen/rec level histos and migration matrix templates'
     histos={}    
-    for key in obsVals:
-        if key[1] : continue
-        obs=key[0]
-        for a in obsVals[key]:
+    print 'Saving gen/rec level histos and migration matrix templates'
+    print 'Observables:',OBSVARS
+    print 'Event axes:',EVAXES
+    print 'Slice vars:',SLICEVARS
+
+    #inclusive
+    for var in OBSVARS:
+        for a in EVAXES+['inc']:
+            nbins={}
+            for level in [False,True]:
+
+                name='%s_%s%s'%('rec' if level else 'gen',a,var)            
+                nbins[level]=varAxes[(var,level)].GetNbins()
+                if a != 'inc' : nbins[level]*=3
+                histos[ (var,a,level) ] = ROOT.TH1F(name,name,nbins[level],0,nbins[level])
+                histos[ (var,a,level) ].SetDirectory(0)
+            name='m_%s%s'%(a,var)
+            histos[ (var,a) ] = ROOT.TH2F(name,name,nbins[False],0,nbins[False],nbins[True],0,nbins[True])
+            histos[ (var,a) ].SetDirectory(0)
+
+    #sliced
+    for var in SLICEVARS:
+        
+        nslicebins={
+            False:varAxes[(var,False)].GetNbins(),
+            True:varAxes[(var,True)].GetNbins()
+            }
+
+        for obs in OBSVARS:
 
             nbins={}
             for level in [False,True]:
-                levelStr='rec' if level else 'gen' 
-                name='%s_%s%s'%(levelStr,a,obs)            
-                nbins[level]=0
-                newKey=(obs,level)
-                for i in xrange(0,len(obsVals[newKey][a])): nbins[level] += obsAxes[ (obs,a,i,level) ].GetNbins()
-                histos[ (obs,a,level) ] = ROOT.TH1F(name,name,nbins[level],0,nbins[level])
-                histos[ (obs,a,level) ].SetDirectory(0)
+                nbinsObs=varAxes[(obs,level)].GetNbins()
+                nbins[level]=nslicebins[level]*nbinsObs
 
-            name='m_%s%s'%(a,obs)
-            histos[ (obs,a) ] = ROOT.TH2F(name,name,nbins[False],0,nbins[False],nbins[True],0,nbins[True])
-            histos[ (obs,a) ].SetDirectory(0)
+                name='%s_%s_%s'%('rec' if level else 'gen',obs,var)
+                histos[ (obs,level,var) ] = ROOT.TH1F(name,name,nbins[level],0,nbins[level])
+                histos[ (obs,level,var) ].SetDirectory(0)
 
-    #sliced
-    for var,isRec in slicingAxes:
-        if isRec: continue
-
-        nslicebins={
-            False:slicingAxes[(var,False)].GetNbins(),
-            True:slicingAxes[(var,True)].GetNbins()
-            }
-
-        for key in obsVals:
-            if key[1]: continue
-            obs=key[0]
-            for a in obsVals[key]:
-
-                nbins={}
-                for level in [False,True]:
-
-                    newKey=(obs,level)
-
-                    nbinsObs=0
-                    for i in xrange(0,len(obsVals[newKey][a])): nbinsObs += obsAxes[ (obs,a,i,level) ].GetNbins()
-                    nbins[level]=nslicebins[level]*nbinsObs
-
-                    levelStr='rec' if level else 'gen'
-                    name='%s_%s%s_%s'%(levelStr,a,obs,var)
-                    histos[ (obs,a,level,var) ] = ROOT.TH1F(name,name,nbins[level],0,nbins[level])
-                    histos[ (obs,a,level,var) ].SetDirectory(0)
-
-                name='m_%s%s_%s'%(a,obs,var)
-                histos[ (obs,a,var) ] = ROOT.TH2F(name,name,nbins[False],0,nbins[False],nbins[True],0,nbins[True])
-                histos[ (obs,a,var) ].SetDirectory(0)
+            name='m_%s_%s'%(obs,var)
+            histos[ (obs,var) ] = ROOT.TH2F(name,name,nbins[False],0,nbins[False],nbins[True],0,nbins[True])
+            histos[ (obs,var) ].SetDirectory(0)
 
     #all done, save to pickle file
     with open(os.path.join(opt.out,'analysiscfg.pck'), 'w') as cachefile:
-        pickle.dump(obsAxes,     cachefile, pickle.HIGHEST_PROTOCOL)
-        pickle.dump(slicingAxes, cachefile, pickle.HIGHEST_PROTOCOL)
+        pickle.dump(varAxes,     cachefile, pickle.HIGHEST_PROTOCOL)
         pickle.dump(histos,      cachefile, pickle.HIGHEST_PROTOCOL)
 
 
@@ -404,7 +341,7 @@ def runUEAnalysis(inF,outF,wgtIdx,varIdx,cfgDir):
     ueHandler=UEAnalysisHandler(os.path.join(cfgDir,'analysiscfg.pck'))
 
     #loop over the tree to fill histos
-    ue=UEEventCounter(EVENTAXES)
+    ue=UEEventCounter(EVAXES)
     t=ROOT.TChain('tue')
     t.AddFile(inF)
     totalEntries=t.GetEntries()
@@ -419,12 +356,11 @@ def runUEAnalysis(inF,outF,wgtIdx,varIdx,cfgDir):
 
         #selection flags
         gen_passSel        = t.gen_passSel
-        gen_passSelPtTtbar = True if (t.gen_ptttbar>PTTTBAR_THR and gen_passSel) else False
         passSel=((t.passSel>>varIdx) & 0x1)
-        passSelPtTtbar     = True if (t.ptttbar[varIdx]>PTTTBAR_THR and passSel) else False
+
 
         #fill histos (if sliceVar is None, non-sliced histos are filled)
-        for sliceVar in SLICEQUANTILES.keys()+[None]:
+        for sliceVar in [None]+SLICEVARS:
             
             #check if sliceVar is non null and configure values to use
             sliceVarVals=None
@@ -437,33 +373,23 @@ def runUEAnalysis(inF,outF,wgtIdx,varIdx,cfgDir):
                 pass
 
             #loop over UE observables
-            for obs in OBSQUANTILES:
+            for obs in OBSVARS:
                 ueHandler.fillInclusive(sliceVarVals=sliceVarVals,
                                         obs=obs,
                                         ue=ue,
-                                        weight=t.weight[wgtIdx],
+                                        weight=t.weight[wgtIdx] if passSel else 0.,
                                         gen_passSel=gen_passSel,
                                         passSel=passSel)
 
                 #loop over axes defining away/towards/transverse regions
-                for a in EVENTAXES:
-                    if a=='phittbar':
-                        ueHandler.fillDifferential(sliceVarVals=sliceVarVals,
-                                                   obs=obs,
-                                                   a=a,
-                                                   ue=ue,
-                                                   weight=t.weight[wgtIdx],
-                                                   gen_passSel=gen_passSelPtTtbar,
-                                                   passSel=passSelPtTtbar)
-                    else:
-                        ueHandler.fillDifferential(sliceVarVals=sliceVarVals,
-                                                   obs=obs,
-                                                   a=a,
-                                                   ue=ue,
-                                                   weight=t.weight[wgtIdx],
-                                                   gen_passSel=gen_passSel,
-                                                   passSel=passSel)
-
+                #for a in EVAXES:
+                #        ueHandler.fillDifferential(sliceVarVals=sliceVarVals,
+                #                                   obs=obs,
+                #                                   a=a,
+                #                                   ue=ue,
+                #                                   weight=t.weight[wgtIdx],
+                #                                   gen_passSel=gen_passSel,
+                #                                   passSel=passSel)
 
 
     #save histos to ROOT file

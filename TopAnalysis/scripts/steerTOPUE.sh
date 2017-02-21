@@ -13,14 +13,14 @@ export LSB_JOB_REPORT_MAIL=N
 
 
 queue=2nw
-githash=8274336
+githash=f016290
 lumi=36460
 lumiSpecs="" #--lumiSpecs EE:11391"
 lumiUnc=0.026
 whoami=`whoami`
 myletter=${whoami:0:1}
 eosdir=/store/cmst3/group/top/ReReco2016/${githash}
-summaryeosdir=/store/cmst3/group/top/summer2016/TopUE_era2016
+summaryeosdir=/store/cmst3/group/top/winter2017/TopUE
 outdir=/afs/cern.ch/work/${myletter}/${whoami}/TopUE_ReReco2016
 wwwdir=~/www/TopUE_ReReco2016/
 
@@ -38,7 +38,7 @@ case $WHAT in
 	;;
 
     FULLSEL ) 
-	python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} -o ${outdir} --era era2016 -m TOP-UE::RunTopUE --ch 0 --only MC;
+	python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} -o ${outdir} --era era2016 -m TOP-UE::RunTopUE --ch 0 --only TTJ;
 	;;
 
     SEL )
@@ -74,11 +74,13 @@ case $WHAT in
     ANA )
 	eosprefix=root://eoscms//eos/cms
 	echo "Computing resolutions"
-	python test/TopUEAnalysis/runUEanalysis.py -i ${eosprefix}/${summaryeosdir}/MC13TeV_TTJets_dilpowheg_0.root --step 0 --ptThr 1.0,0.9;
+	#python test/TopUEAnalysis/runUEanalysis.py -i ${eosprefix}/${summaryeosdir}/MC13TeV_TTJets_0.root,${eosprefix}/${summaryeosdir}/MC13TeV_TTJets_1.root,${eosprefix}/${summaryeosdir}/MC13TeV_TTJets_2.root --step 0 --ptThr 1.0,0.9;
 
-	#echo "Defining analysis configuration"
-	#python test/TopUEAnalysis/runUEanalysis.py -i ${eosprefix}/${summaryeosdir}/MC13TeV_TTJets_dilpowheg_0.root --step 1;
-	#python test/TopUEAnalysis/runUEanalysis.py --step 3;
+	echo "Defining analysis configuration"
+	#python test/TopUEAnalysis/runUEanalysis.py -i ${eosprefix}/${summaryeosdir}/MC13TeV_TTJets_0.root --step 1;
+	
+	echo "Filling the histograms"
+	python test/TopUEAnalysis/runUEanalysis.py -i ${summaryeosdir} --step 2;
 	;;
 
 esac

@@ -146,7 +146,6 @@ class UEEventCounter:
                     self.rec_chavgpt_incWrtTo[a][k]=self.rec_chflux_incWrtTo[a][k]/ncounted
 
         #gen level
-        print ':REC'
         passSel=(t.gen_passSel&0x1)
         if passSel:
             for n in xrange(0,t.gen_n):
