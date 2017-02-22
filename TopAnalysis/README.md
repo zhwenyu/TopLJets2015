@@ -102,9 +102,17 @@ After ntuples are processed, you can create the list of runs/lumi sections proce
 ```
 a=(`find grid/ -maxdepth 1 | grep crab_Data `)
 for i in ${a[@]}; do
+    crab status ${i};
     crab report ${i}; 
 done
 ``` 
+In case of failed jobs the missing lumis can be processed with the following script to wrap the tedious process of 
+updating the cfg with a finer grain luminosity per job and the missing lumis json
+```
+for i in ${a[@]}; do
+    python scripts/runMissingLumiSecs.py ${i}
+done
+```
 You can then run the brilcalc tool to get the integrated luminosity in total and per run 
 (see http://cms-service-lumi.web.cern.ch/cms-service-lumi/brilwsdoc.html for more details).
 The following script runs brilcalc inclusively and per trigger path, and stores the results in a ROOT file with the total integrated lumi per run.
