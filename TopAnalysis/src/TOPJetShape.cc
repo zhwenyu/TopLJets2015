@@ -50,6 +50,11 @@ void RunTopJetShape(TString filename,
   // INITIALIZATION //
   ///////////////////
   
+  TRandom* random = new TRandom(0); // random seed for period selection
+  std::vector<TString> periods     = { "BCDEF", "GH" };
+  std::vector<double>  periodLumis = { 19323.4, 16551.4 };
+  double totalLumi = 0;
+  for (auto periodLumi : periodLumis) totalLumi += periodLumi;
   
   bool isTTbar( filename.Contains("_TTJets") or (normH and TString(normH->GetTitle()).Contains("_TTJets")));
 
@@ -69,6 +74,7 @@ void RunTopJetShape(TString filename,
   MiniEvent_t ev;
   TFile *f = TFile::Open(filename);
   TH1 *genPU=(TH1 *)f->Get("analysis/putrue");
+  TH1 *triggerList=(TH1 *)f->Get("analysis/triggerList");
   TTree *t = (TTree*)f->Get("analysis/data");
   attachToMiniEventTree(t,ev,true);
   Int_t nentries(t->GetEntriesFast());
@@ -88,22 +94,21 @@ void RunTopJetShape(TString filename,
     }
   
   //PILEUP WEIGHTING
-  std::vector<TGraph *>puWgtGr;
-  if( !filename.Contains("Data") ) puWgtGr=getPileupWeights(era,genPU);
+  std::map<TString, std::vector<TGraph *> > puWgtGr;
+  if( !filename.Contains("Data") ) puWgtGr=getPileupWeightsMap(era,genPU,periods);
   
   
   //LEPTON EFFICIENCIES
   LeptonEfficiencyWrapper lepEffH(filename.Contains("Data13TeV"),era);
-  //bool hardCodedLES(era=="era2015");
 
 
   //B-TAG CALIBRATION
   BTagSFUtil* myBTagSFUtil = new BTagSFUtil();
-  std::map<BTagEntry::JetFlavor, BTagCalibrationReader *> btvsfReaders  = getBTVcalibrationReaders(era,BTagEntry::OP_MEDIUM);
+  std::map<TString, std::map<BTagEntry::JetFlavor, BTagCalibrationReader *> > btvsfReaders = getBTVcalibrationReadersMap(era, BTagEntry::OP_MEDIUM, periods);
 
   //dummy calls
-  btvsfReaders[BTagEntry::FLAV_B]->eval_auto_bounds("central", BTagEntry::FLAV_B,   0., 30.);
-  btvsfReaders[BTagEntry::FLAV_UDSG]->eval_auto_bounds( "central", BTagEntry::FLAV_UDSG,   0., 30.);
+  btvsfReaders[periods[0]][BTagEntry::FLAV_B]->eval_auto_bounds("central", BTagEntry::FLAV_B,   0., 30.);
+  btvsfReaders[periods[0]][BTagEntry::FLAV_UDSG]->eval_auto_bounds("central", BTagEntry::FLAV_UDSG,   0., 30.);
 
   std::map<BTagEntry::JetFlavor, TGraphAsymmErrors *>    expBtagEffPy8 = readExpectedBtagEff(era);
   TString btagExpPostFix("");
@@ -242,13 +247,23 @@ void RunTopJetShape(TString filename,
   /////////////////////
   
   //EVENT SELECTION WRAPPER
-  SelectionTool selector(filename);
+  SelectionTool selector(filename, false, triggerList);
   
   for (Int_t iev=0;iev<nentries;iev++)
     {
       t->GetEntry(iev);
       resetTopJetShapeEvent(tjsev);
       if(iev%100==0) printf ("\r [%3.0f/100] done",100.*(float)(iev)/(float)(nentries));
+      
+      // Select a random period to assign scale factors for MC
+      double pickLumi = random->Uniform(totalLumi);
+      double testLumi = 0; int iLumi = 0;
+      for (auto periodLumi : periodLumis) {
+        testLumi += periodLumi;
+        if (pickLumi < testLumi) break;
+        else ++iLumi;
+      }
+      TString period = periods[iLumi];
       
       //////////////////
       // CORRECTIONS //
@@ -257,7 +272,7 @@ void RunTopJetShape(TString filename,
       ev = addBTagDecisions(ev);
       if(!ev.isData) {
         ev = smearJetEnergies(ev);
-        ev = updateBTagDecisions(ev, btvsfReaders,expBtagEff,expBtagEffPy8,myBTagSFUtil);
+        ev = updateBTagDecisions(ev, btvsfReaders[period],expBtagEff,expBtagEffPy8,myBTagSFUtil);
       }
       
       ///////////////////////////
@@ -268,7 +283,6 @@ void RunTopJetShape(TString filename,
       TString chTag = selector.flagFinalState(ev);
       std::vector<Particle> &leptons     = selector.getSelLeptons(); 
       std::vector<Jet>      &jets        = selector.getJets();  
-            
       
       //count b and W candidates
       int sel_nbjets = 0;
@@ -292,16 +306,15 @@ void RunTopJetShape(TString filename,
       
       tjsev.nj=jets.size();
       
-      //////////////////////////
-      // RECO LEVEL ANALYSIS //
-      ////////////////////////
+      ////////////////////
+      // EVENT WEIGHTS //
+      //////////////////
       
-      //event weight
       float wgt(1.0);
       allPlots["puwgtctr"]->Fill(0.,1.0);
       if(!ev.isData) 
         {
-          float puWgt(puWgtGr[0]->Eval(ev.g_pu));
+          float puWgt(puWgtGr[period][0]->Eval(ev.g_pu));
           allPlots["puwgtctr"]->Fill(1,puWgt);
 
           wgt  = (normH? normH->GetBinContent(1) : 1.0);
