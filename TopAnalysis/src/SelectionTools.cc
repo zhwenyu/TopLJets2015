@@ -79,13 +79,13 @@ std::vector<Particle> SelectionTool::getLeptons(std::vector<Particle> &leptons,i
 
       //check if this lepton should be vetoed by request
       if(vetoParticles){
-	bool skipThisLepton(false);
-	for(auto &vetoL : *vetoParticles){
-	  if(vetoL.originalReference()!=leptons[i].originalReference()) continue;
-	  skipThisLepton=true;
-	  break;
-	}
-	if(skipThisLepton) continue;
+        bool skipThisLepton(false);
+        for(auto &vetoL : *vetoParticles){
+          if(vetoL.originalReference()!=leptons[i].originalReference()) continue;
+          skipThisLepton=true;
+          break;
+        }
+        if(skipThisLepton) continue;
       }
 
       //lepton is selected

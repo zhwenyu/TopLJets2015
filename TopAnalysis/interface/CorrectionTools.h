@@ -14,7 +14,8 @@
 #include "TGraphAsymmErrors.h"
 
 //pileup weighting
-std::vector<TGraph *> getPileupWeights(TString era,TH1 *genPU);
+std::vector<TGraph *> getPileupWeights(TString era, TH1 *genPU, TString period = "");
+std::map<TString, std::vector<TGraph *> > getPileupWeightsMap(TString era, TH1 *genPU, std::vector<TString> periods);
 
 //apply jet energy resolutions
 MiniEvent_t smearJetEnergies(MiniEvent_t ev, std::string option = "central");
@@ -31,7 +32,8 @@ MiniEvent_t updateBTagDecisions(MiniEvent_t ev,
 				std::string option = "central");
 
 //details in https://twiki.cern.ch/twiki/bin/view/CMS/BTagCalibration
-std::map<BTagEntry::JetFlavor,BTagCalibrationReader *> getBTVcalibrationReaders(TString era,BTagEntry::OperatingPoint btagOP=BTagEntry::OP_MEDIUM);
+std::map<BTagEntry::JetFlavor,BTagCalibrationReader *> getBTVcalibrationReaders(TString era,BTagEntry::OperatingPoint btagOP=BTagEntry::OP_MEDIUM, TString period = "");
+std::map<TString, std::map<BTagEntry::JetFlavor,BTagCalibrationReader *> > getBTVcalibrationReadersMap(TString era,BTagEntry::OperatingPoint btagOP=BTagEntry::OP_MEDIUM, std::vector<TString> periods = { "" });
 
 //the expections are created with the script scripts/saveExpectedBtagEff.py (cf README)
 std::map<BTagEntry::JetFlavor, TGraphAsymmErrors *> readExpectedBtagEff(TString era,TString btagExpPostFix="");

@@ -2,7 +2,7 @@
 
 
 //
-std::vector<TGraph *> getPileupWeights(TString era,TH1 *genPU)
+std::vector<TGraph *> getPileupWeights(TString era, TH1 *genPU, TString period)
 {
   std::vector<TGraph *>puWgtGr;
   if(genPU==0) return  puWgtGr;
@@ -11,7 +11,7 @@ std::vector<TGraph *> getPileupWeights(TString era,TH1 *genPU)
   genPU->Scale(1./genPU->Integral());
 
   //readout the pileup weights and take the ratio of data/MC
-  TString puWgtUrl(era+"/pileupWgts.root");
+  TString puWgtUrl(era+"/pileupWgts"+period+".root");
   gSystem->ExpandPathName(puWgtUrl);
   TFile *fIn=TFile::Open(puWgtUrl);
   for(size_t i=0; i<3; i++)
@@ -23,18 +23,31 @@ std::vector<TGraph *> getPileupWeights(TString era,TH1 *genPU)
       Float_t totalData=puData->Integral();
       TH1 *tmp=(TH1 *)genPU->Clone("tmp");
       for(Int_t xbin=1; xbin<=tmp->GetXaxis()->GetNbins(); xbin++)
-	{
-	  Float_t yexp=genPU->GetBinContent(xbin);
-	  Double_t xobs,yobs;
-	  puData->GetPoint(xbin-1,xobs,yobs);
-	  tmp->SetBinContent(xbin, yexp>0 ? yobs/(totalData*yexp) : 0. );
-	}
+        {
+          Float_t yexp=genPU->GetBinContent(xbin);
+          Double_t xobs,yobs;
+          puData->GetPoint(xbin-1,xobs,yobs);
+          tmp->SetBinContent(xbin, yexp>0 ? yobs/(totalData*yexp) : 0. );
+        }
       TGraph *gr=new TGraph(tmp);
       grName.ReplaceAll("pu","puwgts");
       gr->SetName(grName);
       puWgtGr.push_back( gr );
       tmp->Delete();
     }
+  return puWgtGr;
+}
+
+
+//
+std::map<TString, std::vector<TGraph *> > getPileupWeightsMap(TString era, TH1 *genPU, std::vector<TString> periods)
+{
+  std::map<TString, std::vector<TGraph *> > puWgtGr;
+  if(genPU==0) return puWgtGr;
+
+  for (auto period : periods) {
+    puWgtGr[period] = getPileupWeights(era, genPU, period);
+  }
   return puWgtGr;
 }
 
@@ -108,10 +121,11 @@ MiniEvent_t updateBTagDecisions(MiniEvent_t ev,
 }
 
 //details in https://twiki.cern.ch/twiki/bin/view/CMS/BTagCalibration
-std::map<BTagEntry::JetFlavor,BTagCalibrationReader *> getBTVcalibrationReaders(TString era,BTagEntry::OperatingPoint btagOP)
+std::map<BTagEntry::JetFlavor,BTagCalibrationReader *> getBTVcalibrationReaders(TString era,BTagEntry::OperatingPoint btagOP, TString period)
 {
   //start the btag calibration
   TString btagUncUrl(era+"/btagSFactors.csv");
+  if(era.Contains("era2016")) btagUncUrl = era+"/CSVv2_Moriond17_"+period+".csv";
   gSystem->ExpandPathName(btagUncUrl);
   BTagCalibration btvcalib("csvv2", btagUncUrl.Data());
 
@@ -127,6 +141,19 @@ std::map<BTagEntry::JetFlavor,BTagCalibrationReader *> getBTVcalibrationReaders(
   //all done
   return btvCalibReaders;
 }
+
+//
+std::map<TString, std::map<BTagEntry::JetFlavor,BTagCalibrationReader *> > getBTVcalibrationReadersMap(TString era,BTagEntry::OperatingPoint btagOP, std::vector<TString> periods)
+{
+  std::map<TString, std::map<BTagEntry::JetFlavor,BTagCalibrationReader *> > btvCalibReadersMap;
+  
+  for (auto period : periods) {
+    btvCalibReadersMap[period] = getBTVcalibrationReaders(era, btagOP, period);
+  }
+
+  return btvCalibReadersMap;
+}
+
 
 //the expections are created with the script scripts/saveExpectedBtagEff.py (cf README)
 std::map<BTagEntry::JetFlavor, TGraphAsymmErrors *> readExpectedBtagEff(TString era,TString btagExpPostFix)
