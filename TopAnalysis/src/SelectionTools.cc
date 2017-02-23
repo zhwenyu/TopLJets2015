@@ -277,8 +277,8 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
 
 
   //check if triggers have fired
-  bool hasETrigger(  hasTriggerBit("HLT_Ele27_WPTight_Gsf_v",                              ev.triggerBits) );
-  bool hasMTrigger(  hasTriggerBit("HLT_IsoMu24_v",                                        ev.triggerBits) || 
+  bool hasETrigger(  hasTriggerBit("HLT_Ele32_eta2p1_WPTight_Gsf_v",           ev.triggerBits) );
+  bool hasMTrigger(  hasTriggerBit("HLT_IsoMu24_v",                            ev.triggerBits) || 
 		     hasTriggerBit("HLT_IsoTkMu24_v",                                      ev.triggerBits) );
   bool hasEMTrigger( hasTriggerBit("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_v",     ev.triggerBits) ||
 		     hasTriggerBit("HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_v",    ev.triggerBits) ||
