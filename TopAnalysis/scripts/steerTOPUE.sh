@@ -16,7 +16,7 @@ queue=2nw
 githash=f016290
 lumi=36460
 lumiSpecs="" #--lumiSpecs EE:11391"
-lumiUnc=0.026
+lumiUnc=0.027
 whoami=`whoami`
 myletter=${whoami:0:1}
 eosdir=/store/cmst3/group/top/ReReco2016/${githash}
@@ -38,7 +38,7 @@ case $WHAT in
 	;;
 
     FULLSEL ) 
-	python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} -o ${outdir} --era era2016 -m TOP-UE::RunTopUE --ch 0 --only TTJ;
+	python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} -o ${summaryeosdir} --era era2016 -m TOP-UE::RunTopUE --ch 0 --only cflip;
 	;;
 
     SEL )

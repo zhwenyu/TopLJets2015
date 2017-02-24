@@ -6,7 +6,6 @@ import pickle
 import json
 import re
 import commands
-import LaunchOnCondor
 from TopLJets2015.TopAnalysis.storeTools import *
 from TopLJets2015.TopAnalysis.batchTools import *
 
@@ -74,9 +73,12 @@ def main():
         pass
 
     #prepare output if a directory
-    if not '.root' in opt.output:
-        os.system('mkdir -p %s/Chunks'%opt.output)
-    
+    if not '.root' in opt.output :
+        print opt.output
+        if not '/store/' in opt.output:
+            os.system('mkdir -p %s/Chunks'%opt.output)
+        else:
+            os.system('eos mkdir %s/Chunks'%opt.output)
     #correct location of corrections to be used using cmsswBase, if needed
     cmsswBase=os.environ['CMSSW_BASE']
     if not cmsswBase in opt.era : opt.era=cmsswBase+'/src/TopLJets2015/TopAnalysis/data/'+opt.era
@@ -138,45 +140,40 @@ def main():
         print 'launching %d tasks to submit to the %s queue'%(len(task_list),opt.queue)        
 
         FarmDirectory                      = opt.output+"/FARM"
-        JobName                            = 'runLocalAnalysis'
-        LaunchOnCondor.Jobs_RunHere        = 1
-        LaunchOnCondor.Jobs_Queue          = opt.queue
-        LaunchOnCondor.Jobs_LSFRequirement = '"pool>30000"'
-        LaunchOnCondor.Jobs_EmailReport    = False
-        LaunchOnCondor.SendCluster_Create(FarmDirectory, JobName)
+        if '/store' in FarmDirectory : FarmDirectory = './FARM'
+        os.system('mkdir -p %s'%FarmDirectory)
 
         jobNb=0
         for method,inF,outF,channel,charge,flav,runSysts,era,tag,debug in task_list:
             jobNb+=1
             cfgfile='%s/job_%d.sh'%(FarmDirectory,jobNb)
             cfg=open(cfgfile,'w')
-            cfg.write('#!/bin/bash\n')
+            cfg.write('WORKDIR=`pwd`\n')
+            cfg.write('echo "Working directory is ${WORKDIR}"\n')
             cfg.write('cd %s\n'%cmsswBase)
             cfg.write('eval `scram r -sh`\n')
-            cfg.write('cd -\n')
+            cfg.write('cd ${WORKDIR}\n')
             localOutF=os.path.basename(outF)
-            runOpts='-i %s -o %s --charge %d --ch %d --era %s --tag %s --flav %d --method %s'%(inF,
-                                                                                               localOutF,
-                                                                                               charge,
-                                                                                               channel,
-                                                                                               era,
-                                                                                               tag,
-                                                                                               flav,
-                                                                                               method)
+            runOpts='-i %s -o ${WORKDIR}/%s --charge %d --ch %d --era %s --tag %s --flav %d --method %s'%(inF,
+                                                                                                      localOutF,
+                                                                                                      charge,
+                                                                                                      channel,
+                                                                                                      era,
+                                                                                                      tag,
+                                                                                                      flav,
+                                                                                                      method)
             if runSysts : runOpts += ' --runSysts'
             if debug :    runOpts += ' --debug'
             cfg.write('python %s/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py %s\n'%(cmsswBase,runOpts))
             if '/store' in outF:
-                cfg.write('xrdcp %s root://eoscms//eos/cms/%s\n'%(localOutF,outF))
+                cfg.write('xrdcp ${WORKDIR}/%s root://eoscms//eos/cms/%s\n'%(localOutF,outF))
+                cfg.write('rm ${WORKDIR}/%s'%localOutF)
             elif outF!=localOutF:
-                cfg.write('mv -v %s %s\n'%(localOutF,outF))
+                cfg.write('mv -v ${WORKDIR}/%s %s\n'%(localOutF,outF))
             cfg.close()
             os.system('chmod u+x %s'%cfgfile)
-
-            LaunchOnCondor.SendCluster_Push(["BASH", cfgfile])
-
-        if jobNb>0:
-            LaunchOnCondor.SendCluster_Submit()            
+            os.system('bsub -q %s %s -R "pool>30000"'%(opt.queue,
+                                                       os.path.abspath(cfgfile)) )
         
 
 
