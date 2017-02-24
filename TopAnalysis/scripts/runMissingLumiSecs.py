@@ -19,9 +19,12 @@ print 'Starting',job
 
 jsonF='%s/results/lumisToProcess.json'%job
 runSel=[]
-with open(jsonF) as missingLumis :
-      data = json.load(missingLumis)
-      runSel=[int(x) for x in data.keys()]
+try:
+      with open(jsonF) as missingLumis :
+            data = json.load(missingLumis)
+            runSel=[int(x) for x in data.keys()]
+except:
+      print 'No missing lumis - yay!'
 if len(runSel)==0 : exit
 print '\t %d runs with missing lumi sections'%len(runSel)
 
