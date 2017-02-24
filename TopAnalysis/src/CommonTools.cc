@@ -72,39 +72,6 @@ Float_t computeMT(TLorentzVector &a, TLorentzVector &b)
   return TMath::Sqrt(2*a.Pt()*b.Pt()*(1-TMath::Cos(a.DeltaPhi(b))));
 }
 
-//
-std::map<Int_t,Float_t> lumiPerRun(TString era)
-{
-  return parseLumiInfo(era).first; 
-}
-
-//
-std::pair<std::map<Int_t,Float_t>, TH1F *> parseLumiInfo(TString era)
-{
-  std::map<Int_t,Float_t> lumiMap;
-  TH1F *countH=0;
-  std::pair<std::map<Int_t,Float_t>, TH1F *> toReturn(lumiMap,countH);
-
-  //read out the values from the histogram stored in lumisec.root
-  TFile *inF=TFile::Open(Form("%s/lumisec.root",era.Data()),"READ");
-  if(inF==0) return toReturn;
-  if(inF->IsZombie()) return toReturn;
-  TH2F *h=(TH2F *)inF->Get("lumisec_inc");
-  int nruns(h->GetNbinsX());
-  countH=new TH1F("ratevsrun","ratevsrun;Run;Events/pb",nruns,0,nruns);
-  countH->SetDirectory(0);
-  for(int xbin=1; xbin<=nruns; xbin++)
-    {
-      TString run=h->GetXaxis()->GetBinLabel(xbin);
-      lumiMap[run.Atoi()]=h->GetBinContent(xbin);
-      countH->GetXaxis()->SetBinLabel(xbin,run);
-    }
-  inF->Close();
-
-  toReturn.first=lumiMap;
-  toReturn.second=countH;
-  return toReturn;
-};
 
 // 
 float getLeptonEnergyScaleUncertainty(int l_id,float l_pt,float l_eta)

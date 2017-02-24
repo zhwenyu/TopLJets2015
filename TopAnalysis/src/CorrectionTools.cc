@@ -1,8 +1,76 @@
 #include "TopLJets2015/TopAnalysis/interface/CorrectionTools.h"
+#include "TH2F.h"
+
+//
+std::map<Int_t,Float_t> lumiPerRun(TString era)
+{
+  return parseLumiInfo(era).first; 
+}
+
+//
+std::pair<std::map<Int_t,Float_t>, TH1F *> parseLumiInfo(TString era)
+{
+  std::map<Int_t,Float_t> lumiMap;
+  TH1F *countH=0;
+  std::pair<std::map<Int_t,Float_t>, TH1F *> toReturn(lumiMap,countH);
+
+  //read out the values from the histogram stored in lumisec.root
+  TFile *inF=TFile::Open(Form("%s/lumisec.root",era.Data()),"READ");
+  if(inF==0) return toReturn;
+  if(inF->IsZombie()) return toReturn;
+  TH2F *h=(TH2F *)inF->Get("lumisec_inc");
+  int nruns(h->GetNbinsX());
+  countH=new TH1F("ratevsrun","ratevsrun;Run;Events/pb",nruns,0,nruns);
+  countH->SetDirectory(0);
+  for(int xbin=1; xbin<=nruns; xbin++)
+    {
+      TString run=h->GetXaxis()->GetBinLabel(xbin);
+      lumiMap[run.Atoi()]=h->GetBinContent(xbin);
+      countH->GetXaxis()->SetBinLabel(xbin,run);
+    }
+  inF->Close();
+
+  toReturn.first=lumiMap;
+  toReturn.second=countH;
+  return toReturn;
+};
+
+//
+std::vector<RunPeriod_t> getRunPeriods(TString era)
+{
+  //init the conditons of the run
+  std::vector<RunPeriod_t> periods;
+  if(era.Contains("era2016"))
+    {
+      periods.push_back( RunPeriod_t("BCDEF",19323.4) ); 
+      periods.push_back( RunPeriod_t("GH",   16551.4) );
+    }
+  return periods;
+}
+
+//
+TString assignRunPeriod(std::vector<RunPeriod_t> &runPeriods,TRandom *rand)
+{
+  float totalLumi(0.);
+  for (auto periodLumi : runPeriods) totalLumi += periodLumi.second;
+
+  //generate randomly in the total lumi range to pick one of the periods
+  float pickLumi( rand!=0 ? rand->Uniform(totalLumi) : gRandom->Uniform(totalLumi) );
+  float testLumi(0); 
+  int iLumi(0);
+  for (auto periodLumi : runPeriods) {
+    testLumi += periodLumi.second;
+    if (pickLumi < testLumi) break;
+    else ++iLumi;
+  }
+
+  //return the period
+  return runPeriods[iLumi].first;
+}
 
 
 //
-std::vector<TGraph *> getPileupWeights(TString era, TH1 *genPU, TString period)
+std::vector<TGraph *> getPileupWeights(TString era, TH1 *genPU,TString period)
 {
   std::vector<TGraph *>puWgtGr;
   if(genPU==0) return  puWgtGr;
@@ -40,13 +108,15 @@ std::vector<TGraph *> getPileupWeights(TString era, TH1 *genPU, TString period)
 
 
 //
-std::map<TString, std::vector<TGraph *> > getPileupWeightsMap(TString era, TH1 *genPU, std::vector<TString> periods)
+std::map<TString, std::vector<TGraph *> > getPileupWeightsMap(TString era, TH1 *genPU)
 {
   std::map<TString, std::vector<TGraph *> > puWgtGr;
   if(genPU==0) return puWgtGr;
 
+  std::vector<RunPeriod_t> periods=getRunPeriods(era);
+
   for (auto period : periods) {
-    puWgtGr[period] = getPileupWeights(era, genPU, period);
+    puWgtGr[period.first] = getPileupWeights(era, genPU, period.first);
   }
   return puWgtGr;
 }
@@ -121,7 +191,9 @@ MiniEvent_t updateBTagDecisions(MiniEvent_t ev,
 }
 
 //details in https://twiki.cern.ch/twiki/bin/view/CMS/BTagCalibration
-std::map<BTagEntry::JetFlavor,BTagCalibrationReader *> getBTVcalibrationReaders(TString era,BTagEntry::OperatingPoint btagOP, TString period)
+std::map<BTagEntry::JetFlavor,BTagCalibrationReader *> getBTVcalibrationReaders(TString era,
+										BTagEntry::OperatingPoint btagOP, 
+										TString period)
 {
   //start the btag calibration
   TString btagUncUrl(era+"/btagSFactors.csv");
@@ -143,12 +215,13 @@ std::map<BTagEntry::JetFlavor,BTagCalibrationReader *> getBTVcalibrationReaders(
 }
 
 //
-std::map<TString, std::map<BTagEntry::JetFlavor,BTagCalibrationReader *> > getBTVcalibrationReadersMap(TString era,BTagEntry::OperatingPoint btagOP, std::vector<TString> periods)
+std::map<TString, std::map<BTagEntry::JetFlavor,BTagCalibrationReader *> > getBTVcalibrationReadersMap(TString era,
+												       BTagEntry::OperatingPoint btagOP)
 {
   std::map<TString, std::map<BTagEntry::JetFlavor,BTagCalibrationReader *> > btvCalibReadersMap;
-  
+  std::vector<RunPeriod_t> periods=getRunPeriods(era);
   for (auto period : periods) {
-    btvCalibReadersMap[period] = getBTVcalibrationReaders(era, btagOP, period);
+    btvCalibReadersMap[period.first] = getBTVcalibrationReaders(era, btagOP, period.first);
   }
 
   return btvCalibReadersMap;

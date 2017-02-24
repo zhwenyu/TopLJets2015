@@ -51,6 +51,8 @@ void RunTopUE(TString filename,
   SelectionTool evsel(filename,false,triggerList);
 
   //CORRECTIONS
+  std::vector<RunPeriod_t> runPeriods=getRunPeriods(era);
+
   //lumi
   TH1F *ratevsrunH=0;
   std::map<Int_t,Float_t> lumiMap;
@@ -62,8 +64,13 @@ void RunTopUE(TString filename,
     }
 
   //pileup
-  std::vector<TGraph *>puWgtGr;
-  if( !filename.Contains("Data") ) puWgtGr=getPileupWeights(era,genPU);
+  std::map<TString, std::vector<TGraph *> > puWgtGr;
+  if( !filename.Contains("Data") ) puWgtGr=getPileupWeightsMap(era,genPU);
+
+  //b-tagging
+  BTagSFUtil myBTagSFUtil;
+  std::map<TString, std::map<BTagEntry::JetFlavor, BTagCalibrationReader *> > btvsfReaders = getBTVcalibrationReadersMap(era, BTagEntry::OP_MEDIUM);
+  std::map<BTagEntry::JetFlavor, TGraphAsymmErrors *> expBtagEff = readExpectedBtagEff(era);
 
   //PREPARE OUTPUT
   TopUE_t tue;
@@ -104,6 +111,17 @@ void RunTopUE(TString filename,
       resetTopUE(tue);
       if(iev%10000==0) printf("\r [%3.0f/100] done",100.*(float)(iev)/(float)(nentries));
       
+      //assign a run period and correct the event accordingly
+      float puWgt(1.0);
+      ev = addBTagDecisions(ev);
+      if(!ev.isData)
+	{
+	  TString period=assignRunPeriod(runPeriods);
+	  puWgt = puWgtGr[period][0]->Eval(ev.g_pu);
+	  ev = smearJetEnergies(ev);
+	  ev = updateBTagDecisions(ev, btvsfReaders[period],expBtagEff,expBtagEff,&myBTagSFUtil);
+	}
+
       //
       //RECO LEVEL analysis
       //
@@ -207,9 +225,7 @@ void RunTopUE(TString filename,
 	  allPlots["puwgtctr"]->Fill(0.,1.0);
 	  if(!ev.isData) 
 	    {
-	      float puWgt(puWgtGr[0]->Eval(ev.g_pu));
-	      allPlots["puwgtctr"]->Fill(1,puWgt);
-	      
+	      allPlots["puwgtctr"]->Fill(1,puWgt);	      
 	      wgt  = (normH? normH->GetBinContent(1) : 1.0);
 	      wgt *= puWgt;
 	      wgt *= (ev.g_nw>0 ? ev.g_w[0] : 1.0);

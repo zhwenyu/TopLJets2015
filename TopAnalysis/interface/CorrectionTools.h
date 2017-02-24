@@ -13,9 +13,17 @@
 
 #include "TGraphAsymmErrors.h"
 
+
+typedef std::pair<TString,float> RunPeriod_t;
+std::vector<RunPeriod_t> getRunPeriods(TString era);
+TString assignRunPeriod(std::vector<RunPeriod_t> &runPeriods,TRandom *rand=0);
+
+std::pair<std::map<Int_t,Float_t>, TH1F *> parseLumiInfo(TString era);
+std::map<Int_t,Float_t> lumiPerRun(TString era="era2016");
+
 //pileup weighting
 std::vector<TGraph *> getPileupWeights(TString era, TH1 *genPU, TString period = "");
-std::map<TString, std::vector<TGraph *> > getPileupWeightsMap(TString era, TH1 *genPU, std::vector<TString> periods);
+std::map<TString, std::vector<TGraph *> > getPileupWeightsMap(TString era, TH1 *genPU);
 
 //apply jet energy resolutions
 MiniEvent_t smearJetEnergies(MiniEvent_t ev, std::string option = "central");
@@ -32,8 +40,11 @@ MiniEvent_t updateBTagDecisions(MiniEvent_t ev,
 				std::string option = "central");
 
 //details in https://twiki.cern.ch/twiki/bin/view/CMS/BTagCalibration
-std::map<BTagEntry::JetFlavor,BTagCalibrationReader *> getBTVcalibrationReaders(TString era,BTagEntry::OperatingPoint btagOP=BTagEntry::OP_MEDIUM, TString period = "");
-std::map<TString, std::map<BTagEntry::JetFlavor,BTagCalibrationReader *> > getBTVcalibrationReadersMap(TString era,BTagEntry::OperatingPoint btagOP=BTagEntry::OP_MEDIUM, std::vector<TString> periods = { "" });
+std::map<BTagEntry::JetFlavor,BTagCalibrationReader *> getBTVcalibrationReaders(TString era,
+										BTagEntry::OperatingPoint btagOP=BTagEntry::OP_MEDIUM, 
+										TString period = "");
+std::map<TString, std::map<BTagEntry::JetFlavor,BTagCalibrationReader *> > getBTVcalibrationReadersMap(TString era,
+												       BTagEntry::OperatingPoint btagOP=BTagEntry::OP_MEDIUM); 
 
 //the expections are created with the script scripts/saveExpectedBtagEff.py (cf README)
 std::map<BTagEntry::JetFlavor, TGraphAsymmErrors *> readExpectedBtagEff(TString era,TString btagExpPostFix="");

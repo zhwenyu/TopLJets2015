@@ -49,13 +49,9 @@ void RunTopJetShape(TString filename,
   /////////////////////
   // INITIALIZATION //
   ///////////////////
-  
   TRandom* random = new TRandom(0); // random seed for period selection
-  std::vector<TString> periods     = { "BCDEF", "GH" };
-  std::vector<double>  periodLumis = { 19323.4, 16551.4 };
-  double totalLumi = 0;
-  for (auto periodLumi : periodLumis) totalLumi += periodLumi;
-  
+  std::vector<RunPeriod_t> runPeriods=getRunPeriods(era);
+
   bool isTTbar( filename.Contains("_TTJets") or (normH and TString(normH->GetTitle()).Contains("_TTJets")));
 
 
@@ -95,7 +91,7 @@ void RunTopJetShape(TString filename,
   
   //PILEUP WEIGHTING
   std::map<TString, std::vector<TGraph *> > puWgtGr;
-  if( !filename.Contains("Data") ) puWgtGr=getPileupWeightsMap(era,genPU,periods);
+  if( !filename.Contains("Data") ) puWgtGr=getPileupWeightsMap(era,genPU);
   
   
   //LEPTON EFFICIENCIES
@@ -104,11 +100,11 @@ void RunTopJetShape(TString filename,
 
   //B-TAG CALIBRATION
   BTagSFUtil* myBTagSFUtil = new BTagSFUtil();
-  std::map<TString, std::map<BTagEntry::JetFlavor, BTagCalibrationReader *> > btvsfReaders = getBTVcalibrationReadersMap(era, BTagEntry::OP_MEDIUM, periods);
+  std::map<TString, std::map<BTagEntry::JetFlavor, BTagCalibrationReader *> > btvsfReaders = getBTVcalibrationReadersMap(era, BTagEntry::OP_MEDIUM);
 
   //dummy calls
-  btvsfReaders[periods[0]][BTagEntry::FLAV_B]->eval_auto_bounds("central", BTagEntry::FLAV_B,   0., 30.);
-  btvsfReaders[periods[0]][BTagEntry::FLAV_UDSG]->eval_auto_bounds("central", BTagEntry::FLAV_UDSG,   0., 30.);
+  btvsfReaders[runPeriods[0].first][BTagEntry::FLAV_B]->eval_auto_bounds("central", BTagEntry::FLAV_B,   0., 30.);
+  btvsfReaders[runPeriods[0].first][BTagEntry::FLAV_UDSG]->eval_auto_bounds("central", BTagEntry::FLAV_UDSG,   0., 30.);
 
   std::map<BTagEntry::JetFlavor, TGraphAsymmErrors *>    expBtagEffPy8 = readExpectedBtagEff(era);
   TString btagExpPostFix("");
@@ -255,15 +251,8 @@ void RunTopJetShape(TString filename,
       resetTopJetShapeEvent(tjsev);
       if(iev%100==0) printf ("\r [%3.0f/100] done",100.*(float)(iev)/(float)(nentries));
       
-      // Select a random period to assign scale factors for MC
-      double pickLumi = random->Uniform(totalLumi);
-      double testLumi = 0; int iLumi = 0;
-      for (auto periodLumi : periodLumis) {
-        testLumi += periodLumi;
-        if (pickLumi < testLumi) break;
-        else ++iLumi;
-      }
-      TString period = periods[iLumi];
+      //assign randomly a run period
+      TString period = assignRunPeriod(runPeriods,random);
       
       //////////////////
       // CORRECTIONS //

@@ -136,7 +136,7 @@ python scripts/saveExpectedBtagEff.py -i /store/cmst3/group/top/ReReco2016/f0162
 ```
 * MC normalization. This will loop over all the samples available in EOS and produce a normalization cache (weights to normalize MC). The file will be available in data/genweights.pck
 ```
-python scripts/produceNormalizationCache.py -i /store/cmst3/group/top/ReReco2016/8274336 -o data/era2016/genweights.root
+python scripts/produceNormalizationCache.py -i /store/cmst3/group/top/ReReco2016/f016290 -o data/era2016/genweights.root
 ```
 The lepton trigger/id/iso efficiencies should also be placed under data/era2016. 
 The src/LeptonEfficiencyWrapper.cc  should then be updated to handle the reading of the ROOT files and the application of the scale factors
