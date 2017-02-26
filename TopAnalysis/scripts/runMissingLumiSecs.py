@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import das_client
-from sys import argv
+import sys
 import os
 import json
 def getListOfFiles(inputPD,runSel):
@@ -13,32 +13,38 @@ def getListOfFiles(inputPD,runSel):
       das_output = das_output[:-1]#remove last comma in list of secondary files
       return das_output
 
-job=argv[1]
+def main():
+      job=sys.argv[1]
+      
+      #check if any lumi section is missing
+      jsonF='%s/results/notFinishedLumis.json'%job
+      runSel=[]
+      try:
+            with open(jsonF) as missingLumis :
+                  data = json.load(missingLumis)
+                  runSel=[int(x) for x in data.keys()]
+      except:
+            sys.exit(0) 
+      if len(runSel)==0 : sys.exit(0)
 
-print 'Starting',job
+      print 'Starting',job
+      print '\t %d runs with missing lumi sections'%len(runSel)
+      cfg=job.replace('crab_','')+'_cfg.py'
+      newCfg='grid_new/%s'%os.path.basename(cfg.replace('_cfg','_ext_cfg'))
+      os.system('mkdir -p grid_new')
+      newCfgFile=open(newCfg,'w')
+      for line in open(cfg,'r'):
+            newLine=line      
+            if 'requestName' in newLine   : newLine=newLine[:-2]+"_ext\"\n"
+            if 'lumiMask' in newLine      : newLine='config.Data.lumiMask = \"%s\"\n'%os.path.abspath(jsonF)
+            if 'unitsPerJob' in newLine   : newLine='config.Data.unitsPerJob = 25\n'
+            if 'outLFNDirBase' in newLine : newLine=newLine[:-3]+"_ext\"\n"
+            newCfgFile.write( newLine )
+      newCfgFile.close()
+      print '\t new cfg to process missing lumis @',newCfg
+         
+      #os.system('crab submit -c %s' % newCfg)
+      print '\t jobs have been submitted'
 
-jsonF='%s/results/lumisToProcess.json'%job
-runSel=[]
-try:
-      with open(jsonF) as missingLumis :
-            data = json.load(missingLumis)
-            runSel=[int(x) for x in data.keys()]
-except:
-      print 'No missing lumis - yay!'
-if len(runSel)==0 : exit
-print '\t %d runs with missing lumi sections'%len(runSel)
-
-cfg=job.replace('crab_','')+'_cfg.py'
-newCfg=cfg.replace('_cfg','_ext_cfg')
-newCfgFile=open(newCfg,'w')
-for line in open(cfg,'r'):
-      newLine=line      
-      if 'requestName' in newLine : newLine=newLine[:-2]+"_ext\"\n"
-      if 'lumiMask' in newLine    : newLine='config.Data.lumiMask = \"%s\"\n'%os.path.abspath(jsonF)
-      if 'unitsPerJob' in newLine : newLine='config.Data.unitsPerJob = 25\n'
-      newCfgFile.write( newLine )
-newCfgFile.close()
-print '\t new cfg to process missing lumis @',newCfg
-                 
-os.system('crab submit -c %s' % newCfg)
-print '\t jobs have been submitted'
+if __name__ == "__main__":
+    main()

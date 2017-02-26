@@ -36,7 +36,7 @@ def submitProduction(tag,lfnDirBase,dataset,isData,cfg,workDir,lumiMask,era='era
     config_file.write('config.Data.inputDBS = "global"\n')
     if isData : 
         config_file.write('config.Data.splitting = "LumiBased"\n')
-        config_file.write('config.Data.unitsPerJob = 50\n')
+        config_file.write('config.Data.unitsPerJob = 100\n')
         config_file.write('config.Data.lumiMask = \'%s\'\n' %lumiMask)
         config_file.write('config.Data.ignoreLocality = False\n')
     else : 
