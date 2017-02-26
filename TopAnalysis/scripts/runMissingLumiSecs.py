@@ -43,7 +43,7 @@ def main():
       newCfgFile.close()
       print '\t new cfg to process missing lumis @',newCfg
          
-      #os.system('crab submit -c %s' % newCfg)
+      os.system('crab submit -c %s' % newCfg)
       print '\t jobs have been submitted'
 
 if __name__ == "__main__":
