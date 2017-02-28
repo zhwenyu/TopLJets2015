@@ -38,7 +38,7 @@ case $WHAT in
 	;;
 
     FULLSEL ) 
-	python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} -o ${summaryeosdir} --era era2016 -m TOP-UE::RunTopUE --ch 0 --only TTJ;
+	python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} -o ${summaryeosdir} --era era2016 -m TOP-UE::RunTopUE --ch 0;
 	;;
 
     SEL )
