@@ -4,6 +4,9 @@ import das_client
 import sys
 import os
 import json
+
+WORKAREA='grid_new'
+
 def getListOfFiles(inputPD,runSel):
       das_query_string = 'das_client.py --query="file dataset=%s  run in [%s] | grep file.name" --limit=0' % (inputPD,runSel)
       das_output = os.popen(das_query_string).read() #query DAS via bash
@@ -29,12 +32,13 @@ def main():
 
       print 'Starting',job
       print '\t %d runs with missing lumi sections'%len(runSel)
-      cfg=job.replace('crab_','')+'_cfg.py'
-      newCfg='grid_new/%s'%os.path.basename(cfg.replace('_cfg','_ext_cfg'))
+      cfg=job.replace('crab_','')+'_cfg.py'      
+      newCfg='%s/%s'%(WORKAREA,os.path.basename(cfg.replace('_cfg','_ext_cfg')))
       os.system('mkdir -p grid_new')
       newCfgFile=open(newCfg,'w')
       for line in open(cfg,'r'):
             newLine=line      
+            if 'workArea' in newLine      : newLine='config.General.workArea = \"%s\"\n'%WORKAREA
             if 'requestName' in newLine   : newLine=newLine[:-2]+"_ext\"\n"
             if 'lumiMask' in newLine      : newLine='config.Data.lumiMask = \"%s\"\n'%os.path.abspath(jsonF)
             if 'unitsPerJob' in newLine   : newLine='config.Data.unitsPerJob = 25\n'
