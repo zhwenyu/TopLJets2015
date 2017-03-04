@@ -41,30 +41,16 @@ case $WHAT in
 	python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} -o ${summaryeosdir} --era era2016 -m TOP-UE::RunTopUE --ch 0;
 	;;
 
-    SEL )
-	samplesToProcess=(Double,MuonEG DY,Single,W,ZZ _TT)
-	for s in ${samplesToProcess[@]}; do
-	    
-	    echo -e "${RED} Submitting ${s} ${NC}"
-	    python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} -o ${outdir} --era era2016 -m TOP-UE::RunTopUE --ch 0 --runSysts --only ${s} --babySit;
-
-	    echo -e "${RED} Merging ${s} ${NC}"
-	    ./scripts/mergeOutputs.py ${outdir} True;	
-
-	    echo -e "${RED} Moving to store ${s} ${NC}"
-	    a=(`ls ${outdir}/Chunks/*.root`)
-	    for i in ${a[@]}; do
-		baseName=`basename ${i}`
-		xrdcp ${i} root://eoscms//eos/cms/${summaryeosdir}/${baseName};
-		rm ${i};
-	    done
-	done
-	;;
     MERGE )
-	./scripts/mergeOutputs.py ${outdir} True;
+	/afs/cern.ch/project/eos/installation/0.3.84-aquamarine/bin/eos.select -b fuse mount eos;
+	./scripts/mergeOutputs.py eos/cms${summaryeosdir} True ${outdir};
+	/afs/cern.ch/project/eos/installation/0.3.84-aquamarine/bin/eos.select -b fuse umount eos;
 	;;
     PLOTSEL )
-	python scripts/plotter.py -i ${outdir} --puNormSF puwgtctr  -j data/era2016/samples.json -l ${lumi}  --saveLog --mcUnc ${lumiUnc};	
+	commonOpts="-i ${outdir} --puNormSF puwgtctr  -j data/era2016/samples.json -l ${lumi}  --saveLog --mcUnc ${lumiUnc}"
+	python scripts/plotter.py ${commonOpts} --only mll --outName mll_plotter.root;	
+     	python scripts/runDYRinRout.py --in ${outdir}/plots/mll_plotter.root --categs ""  --out ${outdir}/plots/;
+	python scripts/plotter.py ${commonOpts} --procSF DY:${outdir}/plots/.dyscalefactors.pck;
 	;;
     WWWSEL )
 	mkdir -p ${wwwdir}/sel
@@ -74,13 +60,26 @@ case $WHAT in
     ANA )
 	eosprefix=root://eoscms//eos/cms
 	echo "Computing resolutions"
-	#python test/TopUEAnalysis/runUEanalysis.py -i ${eosprefix}/${summaryeosdir}/MC13TeV_TTJets_0.root,${eosprefix}/${summaryeosdir}/MC13TeV_TTJets_1.root,${eosprefix}/${summaryeosdir}/MC13TeV_TTJets_2.root --step 0 --ptThr 1.0,0.9;
+	base="${eosprefix}/${summaryeosdir}/Chunks/MC13TeV_TTJets"
+	python test/TopUEAnalysis/runUEanalysis.py -i ${base}_0.root,${base}_1.root,${base}_2.root,${base}_3.root,${base}_4.root, --step 0 --ptThr 1.0,0.9;
 
 	echo "Defining analysis configuration"
-	#python test/TopUEAnalysis/runUEanalysis.py -i ${eosprefix}/${summaryeosdir}/MC13TeV_TTJets_0.root --step 1;
+	python test/TopUEAnalysis/runUEanalysis.py --step 1;
 	
 	echo "Filling the histograms"
-	python test/TopUEAnalysis/runUEanalysis.py -i ${summaryeosdir} --step 2;
+	python test/TopUEAnalysis/runUEanalysis.py -i ${summaryeosdir}/Chunks --step 2 -q 2nw;
+	;;
+    MERGEANA )
+	./scripts/mergeOutputs.py UEanalysis/analysis_0_0 True 
+	;;
+    PLOTANA )
+	python scripts/plotter.py -i UEanalysis/analysis_0_0   -j data/era2016/samples.json -l ${lumi}  --saveLog --mcUnc ${lumiUnc};	
+	python scripts/plotter.py -i UEanalysis/analysis_0_0   -j data/era2016/samples.json -l ${lumi}  --saveLog --mcUnc ${lumiUnc} --silent --outName syst_plotter.root;	
+	;;
+    WWWANA )
+	mkdir -p ${wwwdir}/rawana
+        cp UEanalysis/analysis_0_0/plots/*.{png,pdf} ${wwwdir}/rawana
+        cp test/index.php ${wwwdir}/rawana
 	;;
 
 esac

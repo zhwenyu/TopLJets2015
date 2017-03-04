@@ -56,6 +56,8 @@ noTrees=False
 if len(sys.argv)>2 and sys.argv[2]=='True': noTrees=True
 
 outputdir = inputdir
+if len(sys.argv)>3 : outputdir=sys.argv[3]
+
 chunkdir  = os.path.join(inputdir, 'Chunks')
 basenames = getBaseNames(chunkdir)
 print '-----------------------'

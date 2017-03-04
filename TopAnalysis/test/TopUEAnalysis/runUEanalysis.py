@@ -17,29 +17,6 @@ from TopLJets2015.TopAnalysis.storeTools import getEOSlslist
 
 BASEQUANTILES=[ 100*x/50 for x in xrange(0,51) ]
 
-#var name, var title, use to slice phase space, use as observable, use as event axis, is angle
-VARS={
-    'ptttbar'  : ('p_{T}(t#bar{t})',  True,  False, False, False),
-    'phittbar' : ('#phi(t#bar{t})',   True,  False, True,  True),
-    'ptpos'    : ('p_{T}(l^{+})',     True,  False, False, False),
-    'phipos'   : ('#phi(l^{+})',      True,  False, True,  True),
-    'ptll'     : ('p_{T}(l,l)',       True,  False, False, False),
-    'phill'    : ('#phi(ll)',         True,  False, True,  True),
-    'sumpt'    : ('#Sigma p_{T}(l)',  True,  False, False, False),
-    'mll'      : ('M(l,l)',           True,  False, False, False),
-    'dphill'   : ('#Delta#phi(l,l)',  True,  False, False, True),
-    'nj'       : ('N(jets)',          True,  False, False, False),
-    'chmult'   : ('N(ch)',            True,  True,  False, False),
-    'chflux'   : ('#Sigma p_{T}(ch)', False, True,  False, False),
-    'chavgpt'  : ('#bar{p}_{T}(ch)',  False, True,  False, False),
-    }
-
-OBSVARS   = filter(lambda var: VARS[var][2], VARS)
-EVAXES    = filter(lambda var : VARS[var][3], VARS)
-SLICEVARS = filter(lambda var : VARS[var][1], VARS)
-
-
-
 """
 determines the resolutions needed to define the migration matrices
 """
@@ -47,7 +24,9 @@ def determineSliceResolutions(opt):
 
     #build the chain
     t=ROOT.TChain('tue')
-    for f in opt.input.split(','): t.AddFile(f)
+    for f in opt.input.split(','): 
+        if len(f):
+            t.AddFile(f)
 
     #loop the available events and fill resolution arrays for events passing the selection cuts
     varVals={}
@@ -235,8 +214,12 @@ def defineAnalysisBinning(opt):
 
             #define gen bin merging quantiles if needed according to the resolution
             i=0
-            genBin=[ ROOT.TMath.Min(0,inigenBin[0]) ]
-            if var=='ptttbar': genBin.append( inigenBin[0] )
+            genBin=[]
+            if var=='ptttbar': 
+                genBin.append(0)
+            else : 
+                inigenBin[0]=0
+            genBin.append(inigenBin[0])
             while True:
 
                 if i>len(inigenBin)-2 : break
@@ -262,7 +245,10 @@ def defineAnalysisBinning(opt):
                 recBin.append( genBin[i-1] )
                 recBin.append( genBin[i-1]+dx)
             recBin.append( genBin[-1] )
-        
+
+            #first bin is special and will result in almost no events at reco-level for ch-mult related variables
+            if var=='chflux' or var=='chavgpt' or var=='chmult': recBin.pop(1)
+
         #save binning in histos
         varAxes[(var,False)] = ROOT.TAxis(len(genBin)-1,array.array('d',genBin))
         varAxes[(var,False)].SetName('%s_genSlices'%var)
@@ -441,7 +427,7 @@ def main():
     if opt.step==2:
 
         #prepare output
-        outDir=opt.out+'/analysis_%d_%d'%(opt.wgtIdx,opt.varIdx)
+        outDir=opt.out+'/analysis_%d_%d/Chunks'%(opt.wgtIdx,opt.varIdx)
         os.system('mkdir -p %s'%outDir)
 
         #create the tasklist

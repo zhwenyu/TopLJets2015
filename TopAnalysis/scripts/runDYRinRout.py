@@ -67,15 +67,16 @@ def main():
             
     #open inputs
     fIn=ROOT.TFile.Open(opt.input)
-
     dySF={}
     for sel in opt.categs.split(','):
-
         #compute integrals
         nin,nout,ndyin,ndyout={},{},{},{}
         intErr=ROOT.Double(0)
         for ch in ['EE','MM','EM']:
-            data, sumMC, refH  = getTemplates(fIn=fIn, dist='%s%s_mll'%(ch,sel), tag=ch+sel,refName='DY')
+            try:
+                data, sumMC, refH  = getTemplates(fIn=fIn, dist='%s%s_mll'%(ch,sel), tag=ch+sel,refName='DY')
+            except:
+                data, sumMC, refH  = getTemplates(fIn=fIn, dist='mll_%s%s'%(ch,sel), tag=ch+sel,refName='DY')
             binMin,binMax=data.GetXaxis().FindBin(20),data.GetNbinsX()+1
             bin1,bin2=data.GetXaxis().FindBin(76),data.GetXaxis().FindBin(106)
 
@@ -102,8 +103,8 @@ def main():
     fIn.Close()
 
     #dump to file    
-    print 'DY scale factors'
     cachefile=open('%s/.dyscalefactors.pck'%opt.outdir,'w')
+    print 'DY scale factors saved in ',cachefile.name
     pickle.dump(dySF, cachefile, pickle.HIGHEST_PROTOCOL)
     cachefile.close()
 

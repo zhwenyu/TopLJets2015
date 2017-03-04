@@ -5,6 +5,27 @@ import pickle
 import numpy as np
 import array as array
 
+#var name, var title, use to slice phase space, use as observable, use as event axis, is angle
+VARS={
+    'ptttbar'  : ('p_{T}(t#bar{t})',  True,  False, False, False),
+    'phittbar' : ('#phi(t#bar{t})',   True,  False, True,  True),
+    'ptpos'    : ('p_{T}(l^{+})',     True,  False, False, False),
+    'phipos'   : ('#phi(l^{+})',      True,  False, True,  True),
+    'ptll'     : ('p_{T}(l,l)',       True,  False, False, False),
+    'phill'    : ('#phi(ll)',         True,  False, True,  True),
+    'sumpt'    : ('#Sigma p_{T}(l)',  True,  False, False, False),
+    'mll'      : ('M(l,l)',           True,  False, False, False),
+    'dphill'   : ('#Delta#phi(l,l)',  True,  False, False, True),
+    'nj'       : ('N(jets)',          True,  False, False, False),
+    'chmult'   : ('N(ch)',            True,  True,  False, False),
+    'chflux'   : ('#Sigma p_{T}(ch)', False, True,  False, False),
+    'chavgpt'  : ('#bar{p}_{T}(ch)',  False, True,  False, False),
+    }
+
+OBSVARS   = filter(lambda var: VARS[var][2], VARS)
+EVAXES    = filter(lambda var : VARS[var][3], VARS)
+SLICEVARS = filter(lambda var : VARS[var][1], VARS)
+
 
 """
 parses the event and counts particles in each region at gen/rec levels
