@@ -9,16 +9,9 @@ from UEAnalysisHandler import *
 """
 """
 def getPurStab(h):
-    indices  = []
-    diagonal = []
-    gensums  = []
-    recosums = []
     
-    for g in range(1, h.GetNbinsX()+1):
-        gensum = 0
-        indices.append(g)
-        diagonal.append(h.GetBinContent(g, g))
-        for r in range(1, h.GetNbinsY()+1):
+    for xbin in range(1, h.GetNbinsX()+1):
+        for ybin in range(1, h.GetNbinsY()+1,2):
             gensum += h.GetBinContent(g, r)
         gensums.append(gensum)
     
@@ -54,15 +47,17 @@ def getPurStab(h):
 def showMatrices(opt):
 
     #prepare canvas
+    ROOT.gROOT.SetBatch(True)
     ROOT.gStyle.SetOptStat(0)
     ROOT.gStyle.SetOptTitle(0)
     ROOT.gStyle.SetPalette(ROOT.kTemperatureMap)
-    c=ROOT.TCanvas('c','c',1000,1000)
-    c.SetTopMargin(0.01)
-    c.SetRightMargin(0.1)
-    c.SetBottomMargin(0.15)
+    ROOT.gStyle.SetPaintTextFormat("4.0f");
+    c=ROOT.TCanvas('c','c',500,500)
+    c.SetTopMargin(0.05)
+    c.SetRightMargin(0.15)
+    c.SetBottomMargin(0.1)
+    c.SetLeftMargin(0.1)
 
-    
     #open ROOT file with the definitions
     ueHandler=UEAnalysisHandler(opt.cfg)
     fIn=ROOT.TFile.Open(opt.input)
@@ -80,54 +75,39 @@ def showMatrices(opt):
         h2d=fIn.Get(hname)
         for xbin in xrange(1,h2d.GetNbinsX()+1):
             tmp=h2d.ProjectionY('tmp',xbin,xbin)
-            total=tmp.Integral(0,tmp.GetNbinsX()+1)
+            total=tmp.Integral(1,tmp.GetNbinsX())
             tmp.Delete()
             if total==0 : continue
             for ybin in xrange(1,h2d.GetNbinsY()+1):
                 val=h2d.GetBinContent(xbin,ybin)
                 unc=h2d.GetBinError(xbin,ybin)
-                h2d.SetBinContent(xbin,ybin,val/total)
-                h2d.SetBinContent(xbin,ybin,unc/total)
+                h2d.SetBinContent(xbin,ybin,100.*val/total)
+                h2d.SetBinError(xbin,ybin,100.*unc/total)
 
+                
         #display the matrix
         c.Clear()
-        #c.SetLogz()
-        h2d.Draw('colz')
+        h2d.Draw('colz text')
         h2d.GetZaxis().SetLabelSize(0.03)
         h2d.GetYaxis().SetLabelSize(0.03)
         h2d.GetXaxis().SetLabelSize(0.03)
-        h2d.GetXaxis().SetTickLength(0)
-        h2d.GetYaxis().SetTickLength(0)
+        h2d.GetXaxis().SetTitle('Generator level bin')
+        h2d.GetYaxis().SetTitle('Reconstruction level bin')
+        h2d.GetZaxis().SetRangeUser(0.,100.)
+
         tex=ROOT.TLatex()
         tex.SetTextFont(42)
-        tex.SetTextSize(0.025)
+        tex.SetTextSize(0.04)
         tex.SetNDC()
-        tex.DrawLatex(0.01,0.96,'#bf{#splitline{Reco.}{level}}')
-        tex.DrawLatex(0.95,0.1,'#bf{#splitline{Gen.}{level}}')
-        sep=' ' if stit=='inclusive' else ' vs '
-        tex.DrawLatex(0.10,0.03,'#scale[1.2]{#bf{CMS}} #it{simulation preliminary} %s%s%s'%(stit,sep,otit))
+        tex.DrawLatex(0.12,0.90,'#bf{CMS} #it{simulation preliminary}')
+        tex.DrawLatex(0.12,0.85,otit)
+        tex.DrawLatex(0.68,0.96,'#scale[0.8]{36.7 fb^{-1} (13 TeV)}')
+
         c.Modified()
         c.Update()
-        raw_input()
-        gr1,gr2=getPurStab(h2d)
-        gr1.Draw('ap')
-        gr2.Draw('p')
-        raw_input()
-        #for ext in ['png','pdf']:
-        #    c.SaveAs('%s/%s_%s_migration.%s'%(opt.out,s,o,ext))
+        for ext in ['png']:
+            c.SaveAs('%s/%s_migration.%s'%(opt.out,var,ext))
 
-    #save to ROOT file
-#    fOut=ROOT.TFile.Open('%s/UEanalysis.root'%opt.out,'UPDATE')
-#    outDir=fOut.Get('final_'+mmDir)
-#    try:
-#        outDir.cd()
-#    except:
-#        outDir=fOut.mkdir('final_'+mmDir)
-#        outDir.cd()
-#    for k in bigMatrix:
-#        bigMatrix[k].SetDirectory(outDir)
-#        bigMatrix[k].Write(bigMatrix[k].GetName(),ROOT.TObject.kOverwrite)
-#    fOut.Close()
 
 """
 """
@@ -136,7 +116,7 @@ def main():
     #config
     usage = 'usage: %prog [options]'
     parser = optparse.OptionParser(usage)
-    parser.add_option('-i', '--in',    dest='input',  help='input',   default='./UEanalysis/analysis_0_0/MC13TeV_TTJets.root', type='string')
+    parser.add_option('-i', '--in',    dest='input',  help='input',   default='./UEanalysis/analysis_0_0/MC13TeV_TTJets_fsrdn.root', type='string')
     parser.add_option('-c', '--cfg',   dest='cfg',    help='cfg',     default='./UEanalysis/analysiscfg.pck',    type='string')
     parser.add_option('-o', '--out',   dest='out',    help='output',  default='./UEanalysis',                    type='string') 
     (opt, args) = parser.parse_args()

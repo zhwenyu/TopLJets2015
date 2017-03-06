@@ -195,59 +195,35 @@ def defineAnalysisBinning(opt):
         else:
              
             #get resolution map and quantiles       
-            inigenBin=[]           
-            genResol=[]
+            recBin,genBin=[0],[0]
             resolGr=varResolutions[var][1]
-            x,y=ROOT.Double(0),ROOT.Double(0)        
-            for n in xrange(0,resolGr.GetN()):
-                resolGr.GetPoint(n,x,y)
-                ey=resolGr.GetErrorY(n)
-                inigenBin.append(float(x))
-                genResol.append(float(ey))
+            nSigmaForBins=3.0
+            for n in xrange(1,resolGr.GetN()):
 
-            #use max. resolution as limiting factor
-            maxRes=np.amax(genResol)
-            #special case for angular variables
-            if var=='phill' or var=='dphill' or var=='phittbar' or var=='phipos':             
-                inigenBin=[i*18. for i in xrange(0,11)]
-                maxRes=18.
+                #center value, bias and resolution (don't correct bias)
+                xgen_i,delta_i=ROOT.Double(0),ROOT.Double(0)        
+                resolGr.GetPoint(n,xgen_i,delta_i)
+                resol_i=resolGr.GetErrorY(n-1)
+                dx=xgen_i-genBin[-1]
+                if dx<0 : continue
+                if dx<nSigmaForBins*resol_i : continue
 
-            #define gen bin merging quantiles if needed according to the resolution
-            i=0
-            genBin=[]
-            if var=='ptttbar': 
-                genBin.append(0)
-            else : 
-                inigenBin[0]=0
-            genBin.append(inigenBin[0])
-            while True:
+                genBin.append( xgen_i )
 
-                if i>len(inigenBin)-2 : break
-                
-                #next bin defined is saturated by the resolution
-                xi=inigenBin[i]
-                xj=genBin[-1]
-                xii=inigenBin[i+1]                
-                dx=xii-xi
-                if xii<=xj :
-                    i+=1 
-                    continue
-
-                if dx>maxRes:
-                    genBin.append(xii)
-                else:
-                    genBin.append(ROOT.TMath.Min(xj+maxRes,inigenBin[-1]))
-
-            #define rec bins from genBins/2
-            recBin=[]
-            for i in xrange(1,len(genBin)):
-                dx=(genBin[i]-genBin[i-1])*0.5
-                recBin.append( genBin[i-1] )
-                recBin.append( genBin[i-1]+dx)
-            recBin.append( genBin[-1] )
-
-            #first bin is special and will result in almost no events at reco-level for ch-mult related variables
-            if var=='chflux' or var=='chavgpt' or var=='chmult': recBin.pop(1)
+                xrec_i=genBin[-1]-0.5*nSigmaForBins*resol_i
+                recBin.append( xrec_i )
+                recBin.append( genBin[-1] )
+            
+            #special case for angular variables: override previous definition
+            if VARS[var][4]:
+                nbins=10
+                if var=='phittbar': nbins=4
+                delta=180./float(nbins)
+                genBin=[i*delta     for i in xrange(0,nbins+1)]
+                recBin=[i*delta*0.5 for i in xrange(0,2*nbins+1)]
+            print var
+            print genBin
+            print recBin
 
         #save binning in histos
         varAxes[(var,False)] = ROOT.TAxis(len(genBin)-1,array.array('d',genBin))
