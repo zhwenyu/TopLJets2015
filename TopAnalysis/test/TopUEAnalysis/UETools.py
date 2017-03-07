@@ -105,7 +105,7 @@ def showMatrices(opt):
 
         c.Modified()
         c.Update()
-        for ext in ['png']:
+        for ext in ['png','pdf']:
             c.SaveAs('%s/%s_migration.%s'%(opt.out,var,ext))
 
 
@@ -116,7 +116,7 @@ def main():
     #config
     usage = 'usage: %prog [options]'
     parser = optparse.OptionParser(usage)
-    parser.add_option('-i', '--in',    dest='input',  help='input',   default='./UEanalysis/analysis_0_0/MC13TeV_TTJets_fsrdn.root', type='string')
+    parser.add_option('-i', '--in',    dest='input',  help='input',   default='./UEanalysis/analysis_0_0/MC13TeV_TTJets.root', type='string')
     parser.add_option('-c', '--cfg',   dest='cfg',    help='cfg',     default='./UEanalysis/analysiscfg.pck',    type='string')
     parser.add_option('-o', '--out',   dest='out',    help='output',  default='./UEanalysis',                    type='string') 
     (opt, args) = parser.parse_args()

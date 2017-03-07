@@ -75,10 +75,13 @@ case $WHAT in
     PLOTANA )
 	python scripts/plotter.py -i UEanalysis/analysis_0_0 -j data/era2016/samples.json      -l ${lumi} --saveLog --mcUnc ${lumiUnc};	
 	python scripts/plotter.py -i UEanalysis/analysis_0_0 -j data/era2016/syst_samples.json -l ${lumi} --saveLog --mcUnc ${lumiUnc} --silent --outName syst_plotter.root;	
+	python test/TopUEAnalysis/compareAtRecoLevel.py UEanalysis/analysis_0_0/plots/plotter.root
+	python test/TopUEAnalysis/UETools.py -o UEanalysis/analysis_0_0/plots/
 	;;
     WWWANA )
 	mkdir -p ${wwwdir}/rawana
         cp UEanalysis/analysis_0_0/plots/*.{png,pdf} ${wwwdir}/rawana
+	cp  UEanalysis/analysis_0_0/plots/plotter/*.{png,pdf} ${wwwdir}/rawana
         cp test/index.php ${wwwdir}/rawana
 	;;
 
