@@ -237,6 +237,9 @@ def defineAnalysisBinning(opt):
                                                      varAxes[(var,level)].GetBinUpEdge(nbins),
                                                      nbins,
                                                      'rec' if level else 'gen')),
+            print var,level
+            print genBin
+            print recBin
         print ''
 
     #

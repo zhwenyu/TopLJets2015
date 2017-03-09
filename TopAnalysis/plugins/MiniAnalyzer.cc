@@ -838,8 +838,8 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
 	{
 	  if(pf->charge()==0) continue;
 	  if(pf->fromPV()<2) continue;
-	  if(pf->pt()<0.5 || fabs(pf->eta())>2.5) continue;
-	  if(pf->puppiWeight()<0.01) continue;
+	  if(pf->pt()<0.9 || fabs(pf->eta())>2.5) continue;
+	  //if(pf->puppiWeight()<0.01) continue;
 	}
       
       ev_.pf_id[ev_.npf]       = pf->pdgId();
@@ -850,6 +850,8 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       ev_.pf_m[ev_.npf]        = pf->mass();
       ev_.pf_dxy[ev_.npf]      = pf->dxy();
       ev_.pf_dz[ev_.npf]       = pf->dz();
+      ev_.pf_dxyUnc[ev_.npf]   = pf->dxyError();
+      ev_.pf_dzUnc[ev_.npf]    = pf->dzError();
       ev_.pf_puppiWgt[ev_.npf] = pf->puppiWeight();      
       ev_.npf++;
     }
@@ -879,7 +881,7 @@ bool MiniAnalyzer::isMediumMuon2016ReReco(const reco::Muon & recoMu)
     recoMu.combinedQuality().chi2LocalPosition < 12 && 
     recoMu.combinedQuality().trkKink < 20; 
   bool isMedium = muon::isLooseMuon(recoMu) && 
-    recoMu.innerTrack()->validFraction() > 0.49 && 
+    recoMu.innerTrack()->validFraction() > 0.8 && 
     muon::segmentCompatibility(recoMu) > (goodGlob ? 0.303 : 0.451); 
   return isMedium; 
 }

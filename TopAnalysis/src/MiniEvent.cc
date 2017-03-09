@@ -112,6 +112,8 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev)
   t->Branch("pf_m",        ev.pf_m,        "pf_m[npf]/F");
   t->Branch("pf_dxy",      ev.pf_dxy,      "pf_dxy[npf]/F");
   t->Branch("pf_dz",       ev.pf_dz,       "pf_dz[npf]/F");
+  t->Branch("pf_dxyUnc",   ev.pf_dxyUnc,   "pf_dxyUnc[npf]/F");
+  t->Branch("pf_dzUnc",    ev.pf_dzUnc,    "pf_dzUnc[npf]/F");
   t->Branch("pf_puppiWgt", ev.pf_puppiWgt, "pf_puppiWgt[npf]/F");
 
   //MET
@@ -239,6 +241,8 @@ void attachToMiniEventTree(TTree *t,MiniEvent_t &ev,bool full)
       t->SetBranchAddress("pf_m",        ev.pf_m);
       t->SetBranchAddress("pf_dxy",      ev.pf_dxy);
       t->SetBranchAddress("pf_dz",       ev.pf_dz);
+      t->SetBranchAddress("pf_dxyUnc",   ev.pf_dxyUnc);
+      t->SetBranchAddress("pf_dzUnc",    ev.pf_dzUnc);
       t->SetBranchAddress("pf_puppiWgt", ev.pf_puppiWgt);
     }
 

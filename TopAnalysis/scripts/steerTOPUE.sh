@@ -21,7 +21,7 @@ whoami=`whoami`
 myletter=${whoami:0:1}
 eosdir=/store/cmst3/group/top/ReReco2016/${githash}
 summaryeosdir=/store/cmst3/group/top/winter2017/TopUE
-outdir=/afs/cern.ch/work/${myletter}/${whoami}/TopUE_ReReco2016
+outdir=./UEanalysis/
 wwwdir=~/www/TopUE_ReReco2016/
 
 
@@ -50,6 +50,7 @@ case $WHAT in
 	commonOpts="-i ${outdir} --puNormSF puwgtctr  -j data/era2016/samples.json -l ${lumi}  --saveLog --mcUnc ${lumiUnc}"
 	python scripts/plotter.py ${commonOpts} --only mll --outName mll_plotter.root;	
      	python scripts/runDYRinRout.py --in ${outdir}/plots/mll_plotter.root --categs ""  --out ${outdir}/plots/;
+	python scripts/plotter.py ${commonOpts} --procSF DY:${outdir}/plots/.dyscalefactors.pck --only njets --rebin 4 --saveTeX --outName count_plotter.root;
 	python scripts/plotter.py ${commonOpts} --procSF DY:${outdir}/plots/.dyscalefactors.pck;
 	;;
     WWWSEL )
@@ -67,16 +68,16 @@ case $WHAT in
 	python test/TopUEAnalysis/runUEanalysis.py --step 1;
 	
 	echo "Filling the histograms"
-	python test/TopUEAnalysis/runUEanalysis.py -i ${summaryeosdir}/Chunks --step 2 -q ${queue};
+	#python test/TopUEAnalysis/runUEanalysis.py -i ${summaryeosdir}/Chunks --step 2 -q ${queue};
 	;;
     MERGEANA )
 	./scripts/mergeOutputs.py UEanalysis/analysis_0_0 True 
 	;;
     PLOTANA )
-	python scripts/plotter.py -i UEanalysis/analysis_0_0 -j data/era2016/samples.json      -l ${lumi} --saveLog --mcUnc ${lumiUnc};	
-	python scripts/plotter.py -i UEanalysis/analysis_0_0 -j data/era2016/syst_samples.json -l ${lumi} --saveLog --mcUnc ${lumiUnc} --silent --outName syst_plotter.root;	
-	python test/TopUEAnalysis/compareAtRecoLevel.py UEanalysis/analysis_0_0/plots/plotter.root
-	python test/TopUEAnalysis/UETools.py -o UEanalysis/analysis_0_0/plots/
+	#python scripts/plotter.py -i UEanalysis/analysis_0_0 -j data/era2016/samples.json      -l ${lumi} --saveLog --mcUnc ${lumiUnc};	
+	#python scripts/plotter.py -i UEanalysis/analysis_0_0 -j data/era2016/syst_samples.json -l ${lumi} --saveLog --mcUnc ${lumiUnc} --silent --outName syst_plotter.root;	
+	python test/TopUEAnalysis/compareAtRecoLevel.py UEanalysis/analysis_0_0/plots/plotter.root UEanalysis/analysis_0_0/plots/syst_plotter.root
+	#python test/TopUEAnalysis/UETools.py -o UEanalysis/analysis_0_0/plots/
 	;;
     WWWANA )
 	mkdir -p ${wwwdir}/rawana

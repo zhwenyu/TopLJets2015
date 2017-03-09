@@ -1,6 +1,7 @@
 import ROOT
 import os
 import sys
+import pickle
 import optparse
 import numpy as np
 from collections import OrderedDict
@@ -31,51 +32,29 @@ def getRelUncPlot(h,name,title='rel unc',color=ROOT.TColor.GetColor('#99d8c9'),f
 
 """
 """
-def getRatioPlotsFrom(pset1,pset2):
-    allPlots={}
-    for key in pset1:
-        if not key in pset2: continue
-        allPlots[key]=VarPlot(key,pset1[key].varH)
-        nomRatio=pset1[key].nomH.Clone()
-        nomRatio.Divide(pset2[key].nomH)
-        nomRatio.GetYaxis().SetTitle('Ratio')
-        allPlots[key].addNominal(nomRatio)
-
-        allRatios=[]
-        for varTitle in pset1[key].varH:
-            if not varTitle in pset2[key].varH : continue
-            allPlots[key].addCorrelation(varTitle)
-            for var in pset1[key].varH[varTitle]:
-                if not var in  pset2[key].varH[varTitle] : continue
-                allRatios.append( pset1[key].varH[varTitle][var].Clone() )
-                allRatios[-1].Divide( pset2[key].varH[varTitle][var] )
-                allRatios[-1].GetYaxis().SetTitle('Ratio')
-                allPlots[key].addVariation( allRatios[-1],var,varTitle )
-
-                for xbin in xrange(1,pset1[key].varH[varTitle][var].GetNbinsX()):
-                    xref=pset1[key].nomH.GetBinContent(xbin)
-                    yref=pset2[key].nomH.GetBinContent(xbin)
-                    if xref==0 or yref==0 : continue
-                    xcen=pset1[key].varH[varTitle][var].GetBinContent(xbin)/xref
-                    xunc=0.5*pset1[key].varH[varTitle][var].GetBinError(xbin)/xref
-                    ycen=pset2[key].varH[varTitle][var].GetBinContent(xbin)/yref
-                    yunc=0.5*pset2[key].varH[varTitle][var].GetBinError(xbin)/yref
-                    allPlots[key].addPointToCorrelation(varTitle,xcen,xunc,ycen,yunc)
-
-    return allPlots
-
-"""
-"""
 class VarPlot:
-    def __init__(self,var,varKeys):
+    def __init__(self,var,varKeys,realAxes):
         self.var=var
+        self.realAxes=realAxes
         self.nomH=None
         self.statUncRatioH=None
         self.varH=OrderedDict()
-        self.corrH=OrderedDict()
         for key in varKeys : self.varH[key]=OrderedDict()
+    def convertToRealAxes(self,h,name):
+        xvar=self.var.split('_')[1].replace('inc','')
+        print (xvar,True),self.realAxes[(xvar,True)]
+        nbins=self.realAxes[(xvar,True)].GetNbins()
+        hreal=ROOT.TH1F(name,h.GetTitle(),nbins,self.realAxes[(xvar,True)].GetXbins().GetArray())
+        hreal.SetDirectory(0)
+        for xbin in xrange(1,nbins):
+            xwid=self.realAxes[(xvar,True)].GetBinWidth(xbin)
+            val=h.GetBinContent(xbin)
+            unc=h.GetBinError(xbin)
+            hreal.SetBinContent(xbin,val/xwid)
+            hreal.SetBinError(xbin,unc/xwid)            
+        return hreal
     def addNominal(self,h):
-        self.nomH=h.Clone('nominal_%s'%self.var)
+        self.nomH=self.convertToRealAxes(h,'nominal_%s'%self.var)
         self.nomH.SetDirectory(0)
         self.statUncRatioH=getRelUncPlot(self.nomH,
                                          name='relstatunc_%s'%self.var,
@@ -113,7 +92,7 @@ class VarPlot:
                 hdiff.Add(irelVars[1],-1)
                 hdiff.Scale(0.5)
 
-                for xbin in xrange(1,hmean.GetNbinsX()+1):
+                for xbin in xrange(1,hmean.GetNbinsX()):
                     x,dx=hmean.GetXaxis().GetBinCenter(xbin),0.5*hmean.GetXaxis().GetBinWidth(xbin)
                     y,dy=hmean.GetBinContent(xbin),ROOT.TMath.Abs(hdiff.GetBinContent(xbin))
                     nomy=self.nomH.GetBinContent(xbin)
@@ -124,49 +103,18 @@ class VarPlot:
                 hdiff.Delete()
             elif len(irelVars)==1:
                 relVars[-1].SetLineWidth(2)
-                for xbin in xrange(1,irelVars[0].GetNbinsX()+1):
+                for xbin in xrange(1,irelVars[0].GetNbinsX()):
                     x,dx=irelVars[0].GetXaxis().GetBinCenter(xbin),0.5*irelVars[0].GetXaxis().GetBinWidth(xbin)
                     y=irelVars[0].GetBinContent(xbin)
                     nomy=self.nomH.GetBinContent(xbin)
                     relVars[-1].SetPoint(xbin-1,x,y/nomy)
                     relVars[-1].SetPointError(xbin-1,dx,0)
-            elif 'NNPDF' in varTitle:
-
-                hmean=self.nomH.Clone('hmean')
-
-                #the last two are treated as the alphaS variations
-                #hmean=irelVars[-1].Clone('hmean')
-                #hmean.Add(irelVars[-2])
-                #hmean.Scale(0.5)
-                hdiff=irelVars[-1].Clone('hdiff')
-                hdiff.Add(irelVars[-2],-1)
-                hdiff.Scale(0.5)
-
-                #all the others compute standard deviation and add in quadrature to the alphaS variation
-                npdfvars=len(relVars)
-                for xbin in xrange(1,irelVars[0].GetNbinsX()+1):
-
-
-                    pdfVarVals=[]
-                    for i in xrange(0,npdfvars-2) : pdfVarVals.append( irelVars[i].GetBinContent(xbin))
-                    rms2=np.var(pdfVarVals)
-
-                    x,dx=hmean.GetXaxis().GetBinCenter(xbin),0.5*hmean.GetXaxis().GetBinWidth(xbin)
-                    y,dy=hmean.GetBinContent(xbin),ROOT.TMath.Sqrt(hdiff.GetBinContent(xbin)**2+rms2)
-                    nomy=self.nomH.GetBinContent(xbin)
-
-                    relVars[-1].SetPoint(xbin-1,x,y/nomy)
-                    relVars[-1].SetPointError(xbin-1,dx,dy/nomy)
-
-                hmean.Delete()
-                hdiff.Delete()
 
         return relVars
 
     def addVariation(self,h,var,varTitle):
         if not varTitle in self.varH: self.varH[varTitle]={}
-        self.varH[varTitle][var]=h.Clone('variation_%s_%s'%(self.var,var))
-        self.varH[varTitle][var].SetDirectory(0)
+        self.varH[varTitle][var]=self.convertToRealAxes(h,'variation_%s_%s'%(self.var,var))
     def Print(self):
         print '%s plot'%self.var
         if self.nomH : print ' contains nominal distribution'
@@ -218,10 +166,10 @@ class VarPlot:
         frame.Reset('ICE')
         frame.SetDirectory(0)
         frame.GetYaxis().SetTitle('1/N dN/dx')
-        frame.GetYaxis().SetTitleSize(0.1)
-        frame.GetYaxis().SetLabelSize(0.09)
+        frame.GetYaxis().SetTitleSize(0.06)
+        frame.GetYaxis().SetLabelSize(0.055)
         frame.GetYaxis().SetNoExponent()
-        frame.GetYaxis().SetTitleOffset(0.6)
+        frame.GetYaxis().SetTitleOffset(1.0)
         frame.GetXaxis().SetTitleSize(0.0)
         frame.GetXaxis().SetLabelSize(0.0)
         frame.Draw()
@@ -233,16 +181,16 @@ class VarPlot:
         txt.SetTextFont(42)
         txt.SetTextSize(0.1)
         txt.SetTextAlign(12)
-        txt.SetTextSize(0.11)
-        txt.DrawLatex(0.6,0.9,'#bf{CMS} #it{preliminary}')
-        txt.DrawLatex(0.6,0.8,'#it{reconstruction level}')
-        txt.DrawLatex(0.6,0.7,'37 fb^{-1} (13 TeV)')
-        allLegs.append( ROOT.TLegend(0.6,0.65,0.9,0.4) )
+        txt.SetTextSize(0.06)
+        txt.DrawLatex(0.7,0.9,'#bf{CMS} #it{preliminary}')
+        txt.DrawLatex(0.7,0.8,'#it{reconstruction level}')
+        txt.DrawLatex(0.7,0.7,'37 fb^{-1} (13 TeV)')
+        allLegs.append( ROOT.TLegend(0.7,0.4,0.95,0.6) )
         allLegs[-1].SetBorderSize(0)
         allLegs[-1].SetFillStyle(0)
         allLegs[-1].SetTextFont(42)
-        allLegs[-1].SetTextSize(0.11)
-        allLegs[-1].AddEntry(self.nomH,self.nomH.GetTitle(),'p')
+        allLegs[-1].SetTextSize(0.06)
+        allLegs[-1].AddEntry(self.nomH,self.nomH.GetTitle(),'pe')
 
         #nominal histogram
         firstVar=self.varH.keys()[0]
@@ -250,6 +198,7 @@ class VarPlot:
             hname=self.varH[firstVar][var].Draw('histsame')
             allLegs[-1].AddEntry(self.varH[firstVar][var],self.varH[firstVar][var].GetTitle(),'l')
 
+        self.nomH.SetMarkerStyle(20)
         self.nomH.SetLineColor(1)
         self.nomH.SetLineWidth(2)
         self.nomH.Draw('e1same')
@@ -260,16 +209,16 @@ class VarPlot:
 
         #ratios
         ratioframe=frame.Clone('ratioframe')
-        ratioframe.GetYaxis().SetTitle('Data/MC')
+        ratioframe.GetYaxis().SetTitle('MC/Data')
         ratioframe.GetXaxis().SetTitle(self.var)
         ratioframe.GetYaxis().SetRangeUser(0.65,1.55)
         ratioframe.GetYaxis().SetNdivisions(5)
-        ratioframe.GetYaxis().SetLabelSize(0.09)
-        ratioframe.GetYaxis().SetTitleSize(0.1)
+        ratioframe.GetYaxis().SetLabelSize(0.055)
+        ratioframe.GetYaxis().SetTitleSize(0.06)
         ratioframe.GetYaxis().SetTitleOffset(0.55)
-        ratioframe.GetXaxis().SetLabelSize(0.09)
-        ratioframe.GetXaxis().SetTitleSize(0.1)
-        ratioframe.GetXaxis().SetTitleOffset(1.1)
+        ratioframe.GetXaxis().SetLabelSize(0.055)
+        ratioframe.GetXaxis().SetTitleSize(0.06)
+        ratioframe.GetXaxis().SetTitleOffset(1.5)
         ratioframe.GetYaxis().SetNoExponent()
         ratioframe.SetFillStyle(3001)
         ratioframe.SetFillColor(ROOT.kGray+2)
@@ -305,9 +254,9 @@ class VarPlot:
             allLegs[-1].SetBorderSize(0)
             allLegs[-1].SetFillStyle(0)
             allLegs[-1].SetTextFont(42)
-            allLegs[-1].SetTextSize(0.1)
+            allLegs[-1].SetTextSize(0.055)
             if ivarSet==nVarSets-1:
-                allLegs[-1].SetTextSize(0.08)
+                allLegs[-1].SetTextSize(0.05)
             allLegs[-1].SetNColumns(4)
             self.statUncRatioH.Draw('e2same')
             allLegs[-1].AddEntry(self.statUncRatioH,'Stat.','f')
@@ -337,6 +286,10 @@ class VarPlot:
 """
 """
 def readPlotsFrom(args,opt):
+
+    cfgFile=open(opt.cfg,'r')
+    realAxes=pickle.load(cfgFile)
+    cfgFile.close()
 
     outdir=args[0].replace('.root','')
 
@@ -380,7 +333,7 @@ def readPlotsFrom(args,opt):
             pass
 
         signal.Scale(1./signal.Integral())
-        plot=VarPlot(key,varTypes)
+        plot=VarPlot(key,varTypes,realAxes)
         plot.addNominal(data)
         signal.SetTitle('CUET8P2MT4')
         plot.addVariation(signal,'nominal','CUET8P2MT4')
@@ -409,10 +362,14 @@ def main():
                       help='signal [%default]',
                       type='string',
                       default='t#bar{t}')
+    parser.add_option('--cfg',
+                      dest='cfg',
+                      help='analysis cfg [%default]',
+                      default='./UEanalysis/analysiscfg.pck')
     parser.add_option('--vars',
                       dest='vars',
                       help='variations to outsource from other files [%default]',
-                      default='#deltaCUET8P2MT4:UEup,UEdn;FSR:fsr up,fsr dn;ISR:isr up,isr dn;HW++EE5C:Herwig++;m_{t}:m=166.5,m=178.5;Colour flip:cflip',
+                      default='#deltaCUET8P2MT4:UEup,UEdn;FSR:fsr up,fsr dn;ISR:isr up,isr dn;HW++EE5C:Herwig++;m_{t}:m=166.5,m=178.5',
                       type='string')
     (opt, args) = parser.parse_args()
 
