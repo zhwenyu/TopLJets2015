@@ -19,10 +19,10 @@ git checkout egm_id_80X_v1
 cd $CMSSW_BASE/src
 
 #EGM smearer
-git cms-merge-topic shervin86:Moriond17_23Jan
+git cms-merge-topic shervin86:Moriond17_23Jan -u
 cd EgammaAnalysis/ElectronTools/data
 git clone https://github.com/ECALELFS/ScalesSmearings.git
-git checkout shervin86/Moriond17_23Jan
+git checkout Moriond17_23Jan_v1
 cd -
 
 #MET
