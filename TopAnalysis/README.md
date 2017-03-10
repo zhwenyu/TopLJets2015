@@ -6,8 +6,8 @@ These installation instructions correspond to the 2016 data/MC Moriond17 re-reco
 To install execute the following in your work area.
 
 ```
-cmsrel CMSSW_8_0_26
-cd CMSSW_8_0_26/src 
+cmsrel CMSSW_8_0_26_patch1
+cd CMSSW_8_0_26_patch1/src 
 cmsenv
 
 #EGM electron MVA
@@ -22,12 +22,13 @@ cd $CMSSW_BASE/src
 git cms-merge-topic shervin86:Moriond17_23Jan
 cd EgammaAnalysis/ElectronTools/data
 git clone https://github.com/ECALELFS/ScalesSmearings.git
-git checkout Moriond17_23Jan_v1
+git checkout shervin86/Moriond17_23Jan_v1
+cd -
 
 #MET
-git cms-merge-topic cms-met:METRecipe_8020
-git cms-merge-topic ahinzmann:METRecipe_8020_Moriond17
-git cms-merge-topic cms-met:fromCMSSW_8_0_20_postICHEPfilter
+git cms-merge-topic cms-met:METRecipe_8020 -u
+git cms-merge-topic cms-met:METRecipe_80X_part2 -u
+git cms-merge-topic -u cms-met:fromCMSSW_8_0_20_postICHEPfilter
 
 #pseudo-top rivet based
 git cms-merge-topic -u intrepid42:pseudotoprivet_80x
