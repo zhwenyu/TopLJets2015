@@ -22,7 +22,7 @@ cd $CMSSW_BASE/src
 git cms-merge-topic shervin86:Moriond17_23Jan
 cd EgammaAnalysis/ElectronTools/data
 git clone https://github.com/ECALELFS/ScalesSmearings.git
-git checkout shervin86/Moriond17_23Jan_v1
+git checkout shervin86/Moriond17_23Jan
 cd -
 
 #MET
