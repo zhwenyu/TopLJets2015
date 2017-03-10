@@ -744,9 +744,9 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
 	}	 
       ev_.j_csv[ev_.nj]=j->bDiscriminator("pfCombinedInclusiveSecondaryVertexV2BJetTags");
       ev_.j_btag[ev_.nj]       = (ev_.j_csv[ev_.nj]>0.8484);
-      ev_.j_deepcsvl[ev_.nj]   = 0; //j->bDiscriminator("deepFlavourJetTags:probudsg");
-      ev_.j_deepcsvc[ev_.nj]   = 0; //j->bDiscriminator("deepFlavourJetTags:probc")+j->bDiscriminator("deepFlavourJetTags:probcc");
-      ev_.j_deepcsvb[ev_.nj]   = 0; //j->bDiscriminator("deepFlavourJetTags:probb")+j->bDiscriminator("deepFlavourJetTags:probbb");
+      //ev_.j_deepcsvl[ev_.nj]   = j->bDiscriminator("deepFlavourJetTags:probudsg");
+      //ev_.j_deepcsvc[ev_.nj]   = j->bDiscriminator("deepFlavourJetTags:probc")+j->bDiscriminator("deepFlavourJetTags:probcc");
+      //ev_.j_deepcsvb[ev_.nj]   = j->bDiscriminator("deepFlavourJetTags:probb")+j->bDiscriminator("deepFlavourJetTags:probbb");
 
       if( j->hasTagInfo("pfInclusiveSecondaryVertexFinder") )
 	{
@@ -833,13 +833,25 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
 	  break;
 	}
 
-      //extra requirements for unclustered PF candidates
-      if(ev_.pf_j[ev_.npf]==-1)
+      //if particle is not associated to jet and is neutral, discard
+      if(pf->charge()==0 && ev_.pf_j[ev_.npf]==-1) continue;
+
+      //if particle is charged require association to prim vertex
+      if(pf->charge()!=0)
 	{
-	  if(pf->charge()==0) continue;
-	  if(pf->fromPV()<2) continue;
+	  //if(pf->pvAssociationQuality()<pat::PackedCandidate::CompatibilityDz) continue;
+	  //if(pf->vertexRef().key()!=0) continue;
+
 	  if(pf->pt()<0.9 || fabs(pf->eta())>2.5) continue;
-	  //if(pf->puppiWeight()<0.01) continue;
+	  const pat::PackedCandidate::PVAssoc pvassoc=pf->fromPV();
+	  if(pvassoc< pat::PackedCandidate::PVTight) continue;
+	  
+	  ev_.pf_dxy[ev_.npf]      = pf->dxy();
+	  ev_.pf_dz[ev_.npf]       = pf->dz();
+	  //ev_.pf_dxyUnc[ev_.npf]   = pf->dxyError();
+	  //ev_.pf_dzUnc[ev_.npf]    = pf->dzError();
+	  //ev_.pf_vtxRef[ev_.npf]   = pf->vertexRef().key();
+	  //ev_.pf_pvAssoc[ev_.npf]  = pf->fromPV() + 10*(pf->pvAssociationQuality());
 	}
       
       ev_.pf_id[ev_.npf]       = pf->pdgId();
@@ -848,10 +860,6 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       ev_.pf_eta[ev_.npf]      = pf->eta();
       ev_.pf_phi[ev_.npf]      = pf->phi();
       ev_.pf_m[ev_.npf]        = pf->mass();
-      ev_.pf_dxy[ev_.npf]      = pf->dxy();
-      ev_.pf_dz[ev_.npf]       = pf->dz();
-      ev_.pf_dxyUnc[ev_.npf]   = pf->dxyError();
-      ev_.pf_dzUnc[ev_.npf]    = pf->dzError();
       ev_.pf_puppiWgt[ev_.npf] = pf->puppiWeight();      
       ev_.npf++;
     }

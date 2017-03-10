@@ -40,7 +40,7 @@ struct MiniEvent_t
 
   Int_t nj;
   Float_t j_pt[200],j_eta[200],j_phi[200],j_mass[200],j_area[200],j_rawsf[200];
-  Float_t j_csv[200],j_deepcsvl[200],j_deepcsvc[200],j_deepcsvb[200];
+  Float_t j_csv[200]; //,j_deepcsvl[200],j_deepcsvc[200],j_deepcsvb[200];
   Float_t j_vtxmass[200],j_vtx3DVal[200],j_vtx3DSig[200],j_vtxpx[200],j_vtxpy[200],j_vtxpz[200];
   Bool_t j_btag[200];
   Int_t j_vtxNtracks[200],j_flav[200],j_pid[200],j_hadflav[200],j_g[200];
@@ -53,7 +53,9 @@ struct MiniEvent_t
   //PF candidates
   Int_t npf,pf_j[5000];
   Int_t pf_id[5000],pf_c[5000];
-  Float_t pf_pt[5000],pf_eta[5000],pf_phi[5000],pf_m[5000],pf_puppiWgt[5000],pf_dxy[5000],pf_dz[5000],pf_dxyUnc[5000],pf_dzUnc[5000];
+  //Int_t pf_pvAssoc[5000],pf_vtxRef[5000];
+  Float_t pf_pt[5000],pf_eta[5000],pf_phi[5000],pf_m[5000],pf_puppiWgt[5000];
+  Float_t pf_dxy[5000],pf_dz[5000]; //pf_dxyUnc[5000],pf_dzUnc[5000];
 };
 
 void createMiniEventTree(TTree *t,MiniEvent_t &ev);
