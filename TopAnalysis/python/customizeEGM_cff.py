@@ -8,10 +8,10 @@ from PhysicsTools.SelectorUtils.tools.vid_id_tools import *
 def customizeEGM(process,runOnData):
 
     #smearing
-    #process.load('EgammaAnalysis.ElectronTools.calibratedElectronsRun2_cfi')
-    #process.calibratedPatElectrons.correctionFile = 'EgammaAnalysis/ElectronTools/data/ScalesSmearings/Winter_2016_reReco_v1_ele'
-    #process.calibratedPatElectrons.isMC=False if runOnData else True
-    #print 'Using smeared electrons with corrections from',process.calibratedPatElectrons.correctionFile
+    process.load('EgammaAnalysis.ElectronTools.calibratedElectronsRun2_cfi')
+    process.calibratedPatElectrons.correctionFile = 'EgammaAnalysis/ElectronTools/data/ScalesSmearings/Moriond17_23Jan_ele'
+    process.calibratedPatElectrons.isMC=False if runOnData else True
+    print 'Using smeared electrons with corrections from',process.calibratedPatElectrons.correctionFile
 
     # Set up electron ID (VID framework)
     dataFormat = DataFormat.MiniAOD
@@ -28,5 +28,5 @@ def customizeEGM(process,runOnData):
     print 'EGM regression will be applied prior to smearing'
     process.electronRegressionValueMapProducer.srcMiniAOD = cms.InputTag('slimmedElectrons')
     process.electronMVAValueMapProducer.srcMiniAOD = cms.InputTag('slimmedElectrons')
-    #process.egmSeq=cms.Sequence(process.regressionApplication*process.calibratedPatElectrons*process.egmGsfElectronIDSequence)
-    process.egmSeq=cms.Sequence(process.regressionApplication*process.egmGsfElectronIDSequence)
+    process.egmSeq=cms.Sequence(process.regressionApplication*process.calibratedPatElectrons*process.egmGsfElectronIDSequence)
+    #process.egmSeq=cms.Sequence(process.regressionApplication*process.egmGsfElectronIDSequence)
