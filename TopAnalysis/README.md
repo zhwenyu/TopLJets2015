@@ -24,7 +24,7 @@ cd EgammaAnalysis/ElectronTools/data
 git clone https://github.com/ECALELFS/ScalesSmearings.git
 cd ScalesSmearings
 git checkout Moriond17_gainSwitch_unc
-cd -
+cd $CMSSW_BASE/src
 
 #MET
 git cms-merge-topic cms-met:METRecipe_8020 -u
