@@ -29,7 +29,6 @@ cd $CMSSW_BASE/src
 #MET
 git cms-merge-topic cms-met:METRecipe_8020 -u
 git cms-merge-topic cms-met:METRecipe_80X_part2 -u
-git cms-merge-topic -u cms-met:fromCMSSW_8_0_20_postICHEPfilter
 
 #pseudo-top rivet based
 git cms-merge-topic -u intrepid42:pseudotoprivet_80x
