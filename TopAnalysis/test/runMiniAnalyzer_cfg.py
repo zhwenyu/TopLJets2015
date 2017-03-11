@@ -89,20 +89,6 @@ if options.lumiJson:
     process.source.lumisToProcess = cms.untracked.VLuminosityBlockRange()
     process.source.lumisToProcess.extend(myLumis)
 
-
-
-#analysis
-process.load('TopLJets2015.TopAnalysis.miniAnalyzer_cfi')
-process.analysis.saveTree=cms.bool(options.saveTree)
-process.analysis.savePF=cms.bool(options.savePF)
-print 'Ntuplizer configuration is as follows'
-if not process.analysis.saveTree :
-    print '\t Summary tree won\'t be saved'
-if not process.analysis.savePF :
-    print 'Summary PF info won\'t be saved'
-if options.runOnData:
-    process.analysis.metFilterBits = cms.InputTag("TriggerResults","","RECO")
-
 process.options   = cms.untracked.PSet(
     wantSummary = cms.untracked.bool(True),
     allowUnscheduled = cms.untracked.bool(True)
@@ -115,10 +101,10 @@ if not options.runOnData:
         inputPruned = cms.InputTag("prunedGenParticles"),
         inputPacked = cms.InputTag("packedGenParticles"),
     )
-    process.genParticles2HepMC = cms.EDProducer("GenParticles2HepMCConverter",
-        genParticles = cms.InputTag("mergedGenParticles"),
-        genEventInfo = cms.InputTag("generator"),
-    )
+
+    from GeneratorInterface.RivetInterface.genParticles2HepMC_cfi import genParticles2HepMC
+    process.genParticles2HepMC = genParticles2HepMC.clone( genParticles = cms.InputTag("mergedGenParticles") )
+
     process.load("TopQuarkAnalysis.TopEventProducers.producers.pseudoTop_cfi")
     process.pseudoTop.leptonMinPt=cms.double(20)
     process.pseudoTop.leptonMaxEta=cms.double(2.5)
@@ -148,6 +134,21 @@ customizeJetTools(process=process,
 process.TFileService = cms.Service("TFileService",
                                    fileName = cms.string(options.outFilename)
                                    )
+
+
+#analysis
+process.load('TopLJets2015.TopAnalysis.miniAnalyzer_cfi')
+process.analysis.saveTree=cms.bool(options.saveTree)
+process.analysis.savePF=cms.bool(options.savePF)
+process.analysis.egmscalecorr = process.calibratedPatElectrons.correctionFile
+print 'Ntuplizer configuration is as follows'
+if not process.analysis.saveTree :
+    print '\t Summary tree won\'t be saved'
+if not process.analysis.savePF :
+    print 'Summary PF info won\'t be saved'
+if options.runOnData:
+    process.analysis.metFilterBits = cms.InputTag("TriggerResults","","RECO")
+
 
 if options.runOnData:
     process.p = cms.Path(process.egmSeq*process.jetmetSeq*process.analysis)

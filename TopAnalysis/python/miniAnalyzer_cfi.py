@@ -30,6 +30,7 @@ analysis = cms.EDAnalyzer("MiniAnalyzer",
                           vertices               = cms.InputTag("offlineSlimmedPrimaryVertices"),                          
                           muons                  = cms.InputTag("slimmedMuons"),                          
                           electrons              = cms.InputTag("slimmedElectrons"),
+                          egmscalecorr           = cms.string('EgammaAnalysis/ElectronTools/data/ScalesSmearings/Moriond17_23Jan_ele'),
                           calibElectrons         = cms.InputTag("calibratedPatElectrons"), #slimmedElectrons
                           jets                   = cms.InputTag('selectedUpdatedPatJetsUpdatedJECBTag'),
                           metFilterBits          = cms.InputTag("TriggerResults","","PAT"),
