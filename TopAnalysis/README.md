@@ -22,7 +22,8 @@ cd $CMSSW_BASE/src
 git cms-merge-topic shervin86:Moriond17_23Jan -u
 cd EgammaAnalysis/ElectronTools/data
 git clone https://github.com/ECALELFS/ScalesSmearings.git
-git checkout Moriond17_23Jan_v1
+cd ScalesSmearings
+git checkout Moriond17_gainSwitch_unc
 cd -
 
 #MET
@@ -37,10 +38,6 @@ git cms-merge-topic -u intrepid42:pseudotoprivet_80x
 git clone git@github.com:pfs/TopLJets2015.git
 cd TopLJets2015/TopAnalysis
 git checkout 80x_rereco_rev
-
-#delete, not used
-cd -
-rm -rf DQMOffline
 
 #compile
 scram b -j 8
