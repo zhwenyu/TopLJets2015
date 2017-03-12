@@ -58,8 +58,6 @@
 #include "SimDataFormats/GeneratorProducts/interface/LHEEventProduct.h"
 #include "SimDataFormats/GeneratorProducts/interface/GenEventInfoProduct.h"
 
-#include "EgammaAnalysis/ElectronTools/interface/EnergyScaleCorrection_class.h"
-
 #include "DataFormats/EgammaCandidates/interface/GsfElectron.h"
 
 #include "TLorentzVector.h"
@@ -141,8 +139,6 @@ private:
 
   std::vector<std::string> triggersToUse_,metFiltersToUse_;
 
-  EnergyScaleCorrection_class egmScaleCorr_;
-
   bool saveTree_,savePF_;
   TTree *tree_;
   MiniEvent_t ev_;
@@ -195,7 +191,6 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig) :
   BadChCandFilterToken_(consumes<bool>(iConfig.getParameter<edm::InputTag>("badChCandFilter"))),
   BadPFMuonFilterToken_(consumes<bool>(iConfig.getParameter<edm::InputTag>("badPFMuonFilter"))),
   pfjetIDLoose_( PFJetIDSelectionFunctor::FIRSTDATA, PFJetIDSelectionFunctor::LOOSE ),  
-  egmScaleCorr_( iConfig.getParameter<std::string>("egmscalecorr") ),
   saveTree_( iConfig.getParameter<bool>("saveTree") ),
   savePF_( iConfig.getParameter<bool>("savePF") )
 {
@@ -697,17 +692,7 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       ev_.l_eta[ev_.nl]      = calibe->eta();
       ev_.l_phi[ev_.nl]      = calibe->phi();
       ev_.l_mass[ev_.nl]     = calibe->mass();
-      if(!iEvent.isRealData())
-	{
-	  ev_.l_scaleUnc[ev_.nl] = calibe->p4Error(reco::GsfElectron::P4_PFLOW_COMBINATION);
-	}
-      else{
-	ev_.l_scaleUnc[ev_.nl] = egmScaleCorr_.ScaleCorrectionUncertainty(iEvent.id().run(),
-									  el.isEB(), 
-									  el.r9(),
-									  el.superCluster()->eta(),
-									  el.et());
-      }
+      ev_.l_scaleUnc[ev_.nl] = calibe->correctedEcalEnergyError();
       ev_.l_miniIso[ev_.nl]  = getMiniIsolation(pfcands,&el,0.05, 0.2, 10., false);
       ev_.l_relIso[ev_.nl]   = (calibe->chargedHadronIso()+ max(0., calibe->neutralHadronIso() + calibe->photonIso()  - 0.5*calibe->puChargedHadronIso()))/calibe->pt();     
       ev_.l_chargedHadronIso[ev_.nl] = calibe->chargedHadronIso();
