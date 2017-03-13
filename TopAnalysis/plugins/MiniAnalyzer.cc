@@ -31,6 +31,7 @@
 #include "DataFormats/PatCandidates/interface/Electron.h"
 #include "DataFormats/PatCandidates/interface/Jet.h"
 #include "DataFormats/PatCandidates/interface/MET.h"
+#include "DataFormats/METReco/interface/METFwd.h"
 #include "DataFormats/PatCandidates/interface/PackedCandidate.h"
 #include "DataFormats/PatCandidates/interface/TriggerObjectStandAlone.h"
 #include "DataFormats/Math/interface/deltaR.h"
@@ -113,8 +114,10 @@ private:
   edm::EDGetTokenT<LHERunInfoProduct> generatorRunInfoToken_;
   edm::EDGetTokenT<std::vector<PileupSummaryInfo> > puToken_;
   edm::EDGetTokenT<std::vector<reco::GenJet>  > genLeptonsToken_,   genJetsToken_;
+  edm::EDGetTokenT<reco::METCollection> genMetsToken_;
   edm::EDGetTokenT<pat::PackedGenParticleCollection> genParticlesToken_;
   edm::EDGetTokenT<reco::GenParticleCollection> prunedGenParticlesToken_;
+  edm::EDGetTokenT<reco::GenParticleCollection> pseudoTopToken_;
 
   edm::EDGetTokenT<edm::TriggerResults> triggerBits_,metFilterBits_;
   edm::EDGetTokenT<pat::PackedTriggerPrescales> triggerPrescales_;
@@ -166,8 +169,10 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig) :
   puToken_(consumes<std::vector<PileupSummaryInfo>>(edm::InputTag("slimmedAddPileupInfo"))),  
   genLeptonsToken_(consumes<std::vector<reco::GenJet> >(edm::InputTag("pseudoTop:leptons"))),
   genJetsToken_(consumes<std::vector<reco::GenJet> >(edm::InputTag("pseudoTop:jets"))),
+  genMetsToken_(consumes<reco::METCollection>(edm::InputTag("pseudoTop:mets"))),
   genParticlesToken_(consumes<pat::PackedGenParticleCollection>(edm::InputTag("packedGenParticles"))),
   prunedGenParticlesToken_(consumes<reco::GenParticleCollection>(edm::InputTag("prunedGenParticles"))),
+  pseudoTopToken_(consumes<reco::GenParticleCollection>(edm::InputTag("pseudoTop"))),
   triggerBits_(consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("triggerBits"))),
   metFilterBits_(consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("metFilterBits"))),
   triggerPrescales_(consumes<pat::PackedTriggerPrescales>(iConfig.getParameter<edm::InputTag>("prescales"))),
@@ -412,6 +417,30 @@ int MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
 	}
     }
   
+  //pseudo-tops 
+  edm::Handle<reco::GenParticleCollection> pseudoTop;
+  iEvent.getByToken(pseudoTopToken_,pseudoTop);
+  for (size_t i = 0; i < pseudoTop->size(); ++i)
+    {
+      const GenParticle & genIt = (*pseudoTop)[i];
+      ev_.gtop_id[ ev_.ngtop ]  = genIt.pdgId()*1000;
+      ev_.gtop_pt[ ev_.ngtop ]  = genIt.pt();
+      ev_.gtop_eta[ ev_.ngtop ] = genIt.eta();
+      ev_.gtop_phi[ ev_.ngtop ] = genIt.phi();
+      ev_.gtop_m[ ev_.ngtop ]   = genIt.mass();
+      ev_.ngtop++;
+    }
+
+  //gen met
+  edm::Handle<reco::METCollection> genMet;
+  iEvent.getByToken(genMetsToken_,genMet);
+  ev_.gtop_id[ ev_.ngtop ]  = 0;
+  ev_.gtop_pt[ ev_.ngtop ]  = (*genMet)[0].pt();
+  ev_.gtop_eta[ ev_.ngtop ] = 0;
+  ev_.gtop_phi[ ev_.ngtop ] = (*genMet)[0].phi();
+  ev_.gtop_m[ ev_.ngtop ]   = 0;
+  ev_.ngtop++;
+
   //fiducial counters
   for(Int_t iw=0; iw<ev_.g_nw; iw++)
     {

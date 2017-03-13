@@ -10,21 +10,13 @@ cmsrel CMSSW_8_0_26_patch1
 cd CMSSW_8_0_26_patch1/src 
 cmsenv
 
-#EGM electron MVA
-scram b
-cd $CMSSW_BASE/external/$SCRAM_ARCH
-git clone https://github.com/ikrav/RecoEgamma-ElectronIdentification.git data/RecoEgamma/ElectronIdentification/data
-cd data/RecoEgamma/ElectronIdentification/data
-git checkout egm_id_80X_v1
-cd $CMSSW_BASE/src
-
-#EGM smearer
-git cms-merge-topic shervin86:Moriond17_23Jan -u
+#EGM electron regression+smearer
+git cms-init
+git cms-merge-topic rafaellopesdesa:EgammaAnalysis80_EGMSmearer_Moriond17_23Jan
 cd EgammaAnalysis/ElectronTools/data
 git clone https://github.com/ECALELFS/ScalesSmearings.git
-cd ScalesSmearings
-git checkout Moriond17_gainSwitch_unc
 cd $CMSSW_BASE/src
+scram b
 
 #MET
 git cms-merge-topic cms-met:METRecipe_8020 -u
