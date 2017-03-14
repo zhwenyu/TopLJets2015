@@ -20,7 +20,7 @@ struct TopJetShapeEvent_t
   Int_t nw, nl, ngl, nj, ngj;
   Int_t gen_sel, reco_sel;
   
-  Float_t weight[10];
+  Float_t weight[1000];
   
   Float_t l_pt[5], l_eta[5], l_phi[5], l_m[5];
   Int_t l_id[5];

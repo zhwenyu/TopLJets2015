@@ -301,29 +301,49 @@ void RunTopJetShape(TString filename,
       //////////////////
       
       float wgt(1.0);
+      std::vector<double> varweights;
       allPlots["puwgtctr"]->Fill(0.,1.0);
-      if(!ev.isData) 
-        {
-          // norm weight
-          wgt  = (normH? normH->GetBinContent(1) : 1.0);
-          
-          // pu weight
-          float puWgt(puWgtGr[period][0]->Eval(ev.g_pu));
-          allPlots["puwgtctr"]->Fill(1,puWgt);
-          wgt *= puWgt;
-
-          // lhe weight
-          wgt *= (ev.g_nw>0 ? ev.g_w[0] : 1.0);
-          
-          // lepton trigger*selection weight
-          double triggerCorrWgt = singleLepton ? lepEffH.getTriggerCorrection(leptons, period).first : 1.;
-          double lepSelCorrWgt  = singleLepton ? lepEffH.getOfflineCorrection(leptons[0], period).first : 1.;
-          wgt *= triggerCorrWgt*lepSelCorrWgt;
+      if (!ev.isData) {
+        // norm weight
+        wgt  = (normH? normH->GetBinContent(1) : 1.0);
+        
+        // pu weight
+        double puWgt(puWgtGr[period][0]->Eval(ev.g_pu));
+        allPlots["puwgtctr"]->Fill(1,puWgt);
+        wgt *= puWgt;
+        varweights.push_back(puWgtGr[period][1]->Eval(ev.g_pu));
+        varweights.push_back(puWgtGr[period][2]->Eval(ev.g_pu));
+        
+        // lepton trigger*selection weights
+        if (singleLepton) {
+          EffCorrection_t trigSF = lepEffH.getTriggerCorrection(leptons, period);
+          varweights.push_back(1.+trigSF.second);
+          varweights.push_back(1.-trigSF.second);
+          EffCorrection_t selSF = lepEffH.getOfflineCorrection(leptons[0], period);
+          varweights.push_back(1.+selSF.second);
+          varweights.push_back(1.-selSF.second);
+          wgt *= trigSF.first*selSF.first;
         }
+        else varweights.insert(varweights.end(), 4, 1.);
+        
+        // lhe weights
+        wgt *= (ev.g_nw>0 ? ev.g_w[0] : 1.0);
+        //TODO: add all variations (divided by default weight?)
+        
+        tjsev.nw = 1 + varweights.size();
+        tjsev.weight[0]=wgt;
+        for (unsigned int i = 0; i < varweights.size(); ++i) {
+          tjsev.weight[i+1] = varweights[i];
+        }
+      }
+      else {
+        tjsev.nw=1;
+        tjsev.weight[0]=wgt;
+      }
       
-      ////////////////////
-      // CONTROL PLOTS //
-      //////////////////
+      //////////////////////////
+      // RECO LEVEL ANALYSIS //
+      ////////////////////////
       
       //W and top masses
       std::vector<TLorentzVector> wCands;
@@ -387,10 +407,6 @@ void RunTopJetShape(TString filename,
         }
       }
 
-      //////////////////////////
-      // RECO LEVEL ANALYSIS //
-      ////////////////////////
-
       //fill leptons
       tjsev.nl=leptons.size();
       int il = 0;
@@ -402,6 +418,10 @@ void RunTopJetShape(TString filename,
         tjsev.l_id[il]  = lepton.id();
         il++;
       }
+      
+      //fill MET
+      tjsev.met_pt=ev.met_pt[0];
+      tjsev.met_phi=ev.met_phi[0];
       
       //fill jets (with jet shapes)
       for(int ij=0; ij<(int)jets.size(); ij++) {
@@ -584,11 +604,6 @@ void RunTopJetShape(TString filename,
         allPlots["js_c3_20_puppi"]->Fill(tjsev.j_c3_20_puppi[ij], wgt);
         allPlots["js_c3_20_all"]->Fill(tjsev.j_c3_20_all[ij], wgt);
       }
-
-      tjsev.nw=1;
-      tjsev.weight[0]=wgt;
-      tjsev.met_pt=ev.met_pt[0];
-      tjsev.met_phi=ev.met_phi[0];
       
       
       ///////////////////////
@@ -1198,7 +1213,7 @@ void createTopJetShapeEventTree(TTree *t,TopJetShapeEvent_t &tjsev)
 void resetTopJetShapeEvent(TopJetShapeEvent_t &tjsev)
 {
   tjsev.nw=0;   tjsev.nl=0;   tjsev.nj=0;   tjsev.ngj=0;   tjsev.ngl=0;   tjsev.met_pt=0; tjsev.met_phi=0;
-  for(int i=0; i<10; i++) tjsev.weight[i]=0;
+  for(int i=0; i<1000; i++) tjsev.weight[i]=0;
   for(int i=0; i<5; i++) { tjsev.l_pt[i]=0;   tjsev.l_eta[i]=0;   tjsev.l_phi[i]=0;   tjsev.l_m[i]=0; tjsev.l_id[i]=0; tjsev.gl_pt[i]=0;   tjsev.gl_eta[i]=0;   tjsev.gl_phi[i]=0;   tjsev.gl_m[i]=0; tjsev.gl_id[i]=0; }
   for(int i=0; i<50; i++) {
     tjsev.j_pt[i]=0;   tjsev.j_eta[i]=0;   tjsev.j_phi[i]=0;   tjsev.j_m[i]=0; tjsev.j_flavor[i]=0; tjsev.j_overlap[i]=0; tjsev.j_gj[i]=-1;
