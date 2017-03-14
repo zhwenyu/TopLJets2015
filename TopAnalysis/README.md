@@ -12,9 +12,9 @@ cmsenv
 
 #EGM electron regression+smearer
 git cms-init
-git cms-merge-topic rafaellopesdesa:EgammaAnalysis80_EGMSmearer_Moriond17_23Jan
+git cms-merge-topic cms-egamma:EGM_gain_v1
 cd EgammaAnalysis/ElectronTools/data
-git clone https://github.com/ECALELFS/ScalesSmearings.git
+git clone -b Moriond17_gainSwitch_unc https://github.com/ECALELFS/ScalesSmearings.git
 cd $CMSSW_BASE/src
 scram b
 
