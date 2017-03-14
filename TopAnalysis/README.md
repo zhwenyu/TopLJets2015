@@ -26,9 +26,7 @@ git cms-merge-topic cms-met:METRecipe_80X_part2 -u
 git cms-merge-topic -u intrepid42:pseudotoprivet_80x
 
 #ntuplizer
-git clone git@github.com:pfs/TopLJets2015.git
-cd TopLJets2015/TopAnalysis
-git checkout 80x_rereco_rev
+git clone -b 80x_rereco_rev git@github.com:pfs/TopLJets2015.git
 
 #compile
 scram b -j 8

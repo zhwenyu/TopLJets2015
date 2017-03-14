@@ -833,16 +833,23 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
 	}
     }
 
-  edm::Handle<bool> ifilterbadChCand;
-  iEvent.getByToken(BadChCandFilterToken_, ifilterbadChCand);
-  bool  filterbadChCandidate = *ifilterbadChCand;
-  ev_.met_filterBits |= (filterbadChCandidate<<metFiltersToUse_.size());
-
-  edm::Handle<bool> ifilterbadPFMuon;
-  iEvent.getByToken(BadPFMuonFilterToken_, ifilterbadPFMuon);
-  bool filterbadPFMuon = *ifilterbadPFMuon;
-  ev_.met_filterBits |= (filterbadPFMuon<<(metFiltersToUse_.size()+1));
-
+  try{
+    edm::Handle<bool> ifilterbadChCand;
+    iEvent.getByToken(BadChCandFilterToken_, ifilterbadChCand);
+    bool  filterbadChCandidate = *ifilterbadChCand;
+    ev_.met_filterBits |= (filterbadChCandidate<<metFiltersToUse_.size());
+  }
+  catch(...){
+  }
+  
+  try{
+    edm::Handle<bool> ifilterbadPFMuon;
+    iEvent.getByToken(BadPFMuonFilterToken_, ifilterbadPFMuon);
+    bool filterbadPFMuon = *ifilterbadPFMuon;
+    ev_.met_filterBits |= (filterbadPFMuon<<(metFiltersToUse_.size()+1));
+  }
+  catch(...){
+  }
 
   //PF candidates
   ev_.npf=0;

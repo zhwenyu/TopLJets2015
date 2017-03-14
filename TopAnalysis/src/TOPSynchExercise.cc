@@ -25,6 +25,7 @@ void RunTOPSynchExercise(TString filename, TString outname, Bool_t debug)
   MiniEvent_t ev;
   TFile *f = TFile::Open(filename);
   TTree *t = (TTree*)f->Get("analysis/data");
+  TH1 *triggerList=(TH1 *)f->Get("analysis/triggerList");
   attachToMiniEventTree(t,ev, true);
   Int_t nentries(t->GetEntriesFast());
   cout << "...producing " << outname << " from " << nentries << " events" << endl;
@@ -36,7 +37,7 @@ void RunTOPSynchExercise(TString filename, TString outname, Bool_t debug)
   ///////////////////////
   // LOOP OVER EVENTS //
   /////////////////////
-  SelectionTool evsel(filename,debug);
+  SelectionTool evsel(filename,debug,triggerList);
   for (Int_t iev=0;iev<nentries;iev++)
     {
       t->GetEntry(iev);
