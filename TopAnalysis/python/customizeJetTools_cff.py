@@ -70,4 +70,5 @@ def customizeJetTools(process,jecDB,jecTag,baseJetCollection,runOnData,useDeepCS
 	process.BadChargedCandidateFilter.muons = cms.InputTag("slimmedMuons")
 	process.BadChargedCandidateFilter.PFCandidates = cms.InputTag("packedPFCandidates")
 
-	process.jetmetSeq=cms.Sequence(process.BadPFMuonFilter+process.BadChargedCandidateFilter)
+	process.extraMetFilters = cms.Path(process.BadPFMuonFilter*process.BadChargedCandidateFilter)
+	#process.jetmetSeq=cms.Sequence(process.BadPFMuonFilter+process.BadChargedCandidateFilter)

@@ -151,6 +151,8 @@ if options.runOnData:
 
 
 if options.runOnData:
-    process.p = cms.Path(process.egmSeq*process.jetmetSeq*process.analysis)
+    process.p = cms.Path(process.analysis)
+    #process.p = cms.Path(process.egmSeq*process.jetmetSeq*process.analysis)
 else:
-    process.p = cms.Path(process.egmSeq*process.jetmetSeq*process.pseudoTop*process.analysis)
+    process.p = cms.Path(process.pseudoTop*process.analysis)
+    #process.p = cms.Path(process.egmSeq*process.jetmetSeq*process.pseudoTop*process.analysis)

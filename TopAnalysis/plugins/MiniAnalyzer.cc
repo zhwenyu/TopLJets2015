@@ -124,7 +124,7 @@ private:
   edm::EDGetTokenT<reco::VertexCollection> vtxToken_;
   edm::EDGetTokenT<double> rhoToken_;
   edm::EDGetTokenT<pat::MuonCollection> muonToken_;
-  edm::EDGetTokenT<edm::View<pat::Electron>  >  electronToken_,calibElectronToken_;
+  edm::EDGetTokenT<edm::View<pat::Electron>  >  electronToken_;
   edm::EDGetTokenT<edm::View<pat::Jet> > jetToken_;
   edm::EDGetTokenT<pat::METCollection> metToken_, puppiMetToken_;
   edm::EDGetTokenT<pat::PackedCandidateCollection> pfToken_;
@@ -201,7 +201,6 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig) :
 {
   //now do what ever initialization is needed
   electronToken_      = mayConsume<edm::View<pat::Electron> >(iConfig.getParameter<edm::InputTag>("electrons"));
-  calibElectronToken_ = mayConsume<edm::View<pat::Electron> >(iConfig.getParameter<edm::InputTag>("calibElectrons"));
   triggersToUse_      = iConfig.getParameter<std::vector<std::string> >("triggersToUse");
   metFiltersToUse_  = iConfig.getParameter<std::vector<std::string> >("metFiltersToUse");
 
@@ -577,9 +576,8 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
     }
   
   // ELECTRON SELECTION: cf. https://twiki.cern.ch/twiki/bin/view/CMS/CutBasedElectronIdentificationRun2
-  edm::Handle<edm::View<pat::Electron> > electrons,calibElectrons;
+  edm::Handle<edm::View<pat::Electron> > electrons;
   iEvent.getByToken(electronToken_, electrons);    
-  iEvent.getByToken(calibElectronToken_, calibElectrons);    
   edm::Handle<edm::ValueMap<bool> > veto_id, loose_id, medium_id, tight_id;
   iEvent.getByToken(eleVetoIdMapToken_,   veto_id);
   iEvent.getByToken(eleLooseIdMapToken_,  loose_id);
@@ -596,12 +594,11 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
   for (const pat::Electron &el : *electrons) 
     {        
       const auto e = electrons->ptrAt(nele); 
-      const auto calibe = calibElectrons->ptrAt(nele);
       nele++;
 
       //kinematics cuts
-      bool passPt(calibe->pt() > 15.0);
-      bool passEta(fabs(calibe->eta()) < 2.5 && (fabs(calibe->superCluster()->eta()) < 1.4442 || fabs(calibe->superCluster()->eta()) > 1.5660));
+      bool passPt(e->pt() > 15.0);
+      bool passEta(fabs(e->eta()) < 2.5 && (fabs(e->superCluster()->eta()) < 1.4442 || fabs(e->superCluster()->eta()) > 1.5660));
       if(!passPt || !passEta) continue;
       
       //take out id information alone
@@ -680,7 +677,7 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
 	{
 	  float dxy(fabs(el.gsfTrack()->dxy(primVtx.position())));
 	  float dz(fabs(el.gsfTrack()->dz(primVtx.position())));
-	  if(fabs(calibe->superCluster()->eta()) < 1.4442)
+	  if(fabs(e->superCluster()->eta()) < 1.4442)
 	    {
 	      if(dxy>0.05 || dz>0.10) passIpCuts=false;
 	    }
@@ -717,14 +714,14 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
 			  | (passIpCuts<<8)
 			 );
       ev_.l_charge[ev_.nl]   = el.charge();
-      ev_.l_pt[ev_.nl]       = calibe->pt();
-      ev_.l_eta[ev_.nl]      = calibe->eta();
-      ev_.l_phi[ev_.nl]      = calibe->phi();
-      ev_.l_mass[ev_.nl]     = calibe->mass();
-      ev_.l_scaleUnc[ev_.nl] = calibe->correctedEcalEnergyError();
+      ev_.l_pt[ev_.nl]       = e->pt();
+      ev_.l_eta[ev_.nl]      = e->eta();
+      ev_.l_phi[ev_.nl]      = e->phi();
+      ev_.l_mass[ev_.nl]     = e->mass();
+      ev_.l_scaleUnc[ev_.nl] = e->correctedEcalEnergyError();
       ev_.l_miniIso[ev_.nl]  = getMiniIsolation(pfcands,&el,0.05, 0.2, 10., false);
-      ev_.l_relIso[ev_.nl]   = (calibe->chargedHadronIso()+ max(0., calibe->neutralHadronIso() + calibe->photonIso()  - 0.5*calibe->puChargedHadronIso()))/calibe->pt();     
-      ev_.l_chargedHadronIso[ev_.nl] = calibe->chargedHadronIso();
+      ev_.l_relIso[ev_.nl]   = (e->chargedHadronIso()+ max(0., e->neutralHadronIso() + e->photonIso()  - 0.5*e->puChargedHadronIso()))/e->pt();     
+      ev_.l_chargedHadronIso[ev_.nl] = e->chargedHadronIso();
       ev_.l_ip3d[ev_.nl]     = -9999.;
       ev_.l_ip3dsig[ev_.nl]  = -9999;
       if(el.gsfTrack().get())
@@ -735,7 +732,7 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
 	}
       ev_.nl++;
       
-      if( calibe->pt()>20 && passEta && passLooseId ) nrecleptons++;
+      if( e->pt()>20 && passEta && passLooseId ) nrecleptons++;
     }
 
   // JETS
