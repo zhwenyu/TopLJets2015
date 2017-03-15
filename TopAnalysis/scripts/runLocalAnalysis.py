@@ -71,7 +71,8 @@ def main():
     if opt.systVar == 'all':
         allSystVars = ['jec_CorrelationGroupMPFInSitu', 'jec_CorrelationGroupInterCalibration',
                        'jec_CorrelationGroupUncorrelated', 'jec_FlavorPureGluon', 'jec_FlavorPureQuark',
-                       'jec_FlavorPureCharm', 'jec_FlavorPureBottom', 'jer']
+                       'jec_FlavorPureCharm', 'jec_FlavorPureBottom', 'jer',
+                       'btag_heavy', 'btag_light', 'csv_heavy', 'csv_light']
         for var in allSystVars:
             varList.append(var+'_up')
             varList.append(var+'_down')
