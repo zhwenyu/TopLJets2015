@@ -20,6 +20,9 @@
 
 #include "TMath.h"
 
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/split.hpp>
+
 #include "fastjet/tools/Recluster.hh"
 #include "fastjet/contrib/Nsubjettiness.hh"
 #include "fastjet/contrib/EnergyCorrelator.hh"
@@ -42,7 +45,7 @@ void RunTopJetShape(TString filename,
 		    SelectionTool::FlavourSplitting flavourSplitting,
 		    TH1F *normH, 
 		    Bool_t runSysts,
-		    TString systVar,
+		    std::string systVar,
 		    TString era,
 		    Bool_t debug)
 {
@@ -54,7 +57,9 @@ void RunTopJetShape(TString filename,
   std::vector<RunPeriod_t> runPeriods=getRunPeriods(era);
 
   bool isTTbar( filename.Contains("_TTJets") or (normH and TString(normH->GetTitle()).Contains("_TTJets")));
-
+  
+  std::vector<std::string> vSystVar;
+  boost::split(vSystVar, systVar, boost::is_any_of("_"));
 
   //PREPARE OUTPUT
   TopJetShapeEvent_t tjsev;
@@ -118,11 +123,18 @@ void RunTopJetShape(TString filename,
   
   
   //JET ENERGY UNCERTAINTIES
-  TString jecUncUrl(era+"/jecUncertaintySources_AK4PFchs.txt");
+  std::string jecVar = "Total";
+  if (vSystVar[0] == "jec") {
+    if (vSystVar.size() != 3) {
+      std::cout << "Wrong format of JEC uncertainty, expected jec_Source_up/down. Exiting..." << std::endl;
+      return;
+    }
+    jecVar = vSystVar[1];
+  }
+  TString jecUncUrl(era+"/Summer16_23Sep2016V4_MC_UncertaintySources_AK4PFchs.txt");
   gSystem->ExpandPathName(jecUncUrl);
-  //JetCorrectorParameters *jecParam = new JetCorrectorParameters(jecUncUrl.Data(),"Total");
-  //JetCorrectionUncertainty *jecUnc = new JetCorrectionUncertainty( *jecParam );
-
+  JetCorrectorParameters *jecParam = new JetCorrectorParameters(jecUncUrl.Data(), jecVar);
+  JetCorrectionUncertainty *jecUnc = new JetCorrectionUncertainty( *jecParam );
 
   //BOOK HISTOGRAMS
   std::map<TString, TH1 *> allPlots;
@@ -262,7 +274,16 @@ void RunTopJetShape(TString filename,
       
       ev = addBTagDecisions(ev);
       if(!ev.isData) {
-        ev = smearJetEnergies(ev);
+        //jec
+        if (vSystVar[0] == "jec") {
+          ev = applyJetCorrectionUncertainty(ev, jecUnc, jecVar, vSystVar[2]);
+        }
+        //jer
+        if (vSystVar[0] == "jer") {
+          ev = smearJetEnergies(ev, vSystVar[1]);
+        }
+        else ev = smearJetEnergies(ev);
+        //b tagging
         ev = updateBTagDecisions(ev, btvsfReaders[period],expBtagEff,expBtagEffPy8,myBTagSFUtil);
       }
       
