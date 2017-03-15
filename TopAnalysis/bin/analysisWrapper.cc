@@ -23,6 +23,7 @@ void printHelp()
        << "\t --charge  - charge selection to apply" << endl
        << "\t --flav    - flavour selection to apply" << endl
        << "\t --runSysts - activate running systematics" << endl
+       << "\t --systVar  - specify single systematic variation" << endl
        << "\t --era      - era directory to use for corrections, uncertainties" << endl
        << "\t --normTag  - normalization tag" << endl
        << "\t --method   - method to run" << endl;
@@ -32,13 +33,14 @@ void printHelp()
 int main(int argc, char* argv[])
 {
   //get input arguments
-  TString in(""),out(""),era(""),normTag(""),method("");
+  TString in(""),out(""),era(""),normTag(""),method(""),systVar("");
   bool runSysts(false),debug(false);
   int channel(0),charge(0),flav(0);
   for(int i=1;i<argc;i++){
     string arg(argv[i]);
     if(arg.find("--help") !=string::npos)                     { printHelp(); return -1;} 
     else if(arg.find("--runSysts")!=string::npos )            { runSysts=true;  }
+    else if(arg.find("--systVar")!=string::npos && i+1<argc)  { systVar=argv[i+1]; i++;}
     else if(arg.find("--channel")!=string::npos && i+1<argc)  { sscanf(argv[i+1],"%d",&channel); i++;}
     else if(arg.find("--charge")!=string::npos && i+1<argc)   { sscanf(argv[i+1],"%d",&charge); i++;}
     else if(arg.find("--flav")!=string::npos && i+1<argc)     { sscanf(argv[i+1],"%d",&flav); i++;}
@@ -87,7 +89,7 @@ int main(int argc, char* argv[])
   else if(method=="TOP-HIForest::RunTop16023")               RunTop16023(in,out,channel,charge,normH,runSysts,era);
   else if(method=="TOP-HIForest::RunToppPb")                    RunToppPb(in,out,channel,charge,normH,runSysts,era);
   else if(method=="TOP-UE::RunTopUE")                      RunTopUE(in,out,channel,charge,SelectionTool::FlavourSplitting(flav),normH,runSysts,era);
-  else if(method=="TOPJetShape::RunTopJetShape")           RunTopJetShape(in,out,channel,charge,SelectionTool::FlavourSplitting(flav),normH,runSysts,era,debug);
+  else if(method=="TOPJetShape::RunTopJetShape")           RunTopJetShape(in,out,channel,charge,SelectionTool::FlavourSplitting(flav),normH,runSysts,systVar,era,debug);
   else if(method=="TOPSynchExercise::RunTOPSynchExercise") RunTOPSynchExercise(in,out,debug);
   else
     {
