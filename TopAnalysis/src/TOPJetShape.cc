@@ -42,6 +42,7 @@ void RunTopJetShape(TString filename,
 		    SelectionTool::FlavourSplitting flavourSplitting,
 		    TH1F *normH, 
 		    Bool_t runSysts,
+		    TString systVar,
 		    TString era,
 		    Bool_t debug)
 {
@@ -250,7 +251,7 @@ void RunTopJetShape(TString filename,
     {
       t->GetEntry(iev);
       resetTopJetShapeEvent(tjsev);
-      printf ("\r %i/%i [%3.0f%%] done", 100.*(float)iev/(float)nentries);
+      if(iev%10==0) printf ("\r [%3.0f%%] done", 100.*(float)iev/(float)nentries);
       
       //assign randomly a run period
       TString period = assignRunPeriod(runPeriods,random);

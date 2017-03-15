@@ -12,6 +12,7 @@ void RunTopJetShape(TString filename,
 		    SelectionTool::FlavourSplitting flavourSplitting,
 		    TH1F *normH, 
 		    Bool_t runSysts,
+		    TString systVar,
 		    TString era,
 		    Bool_t debug=false);
 
