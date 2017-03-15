@@ -250,8 +250,14 @@ std::map<BTagEntry::JetFlavor, TGraphAsymmErrors *> readExpectedBtagEff(TString 
 
 
 // See https://twiki.cern.ch/twiki/bin/viewauth/CMS/JECUncertaintySources#Main_uncertainties_2016_80X
-MiniEvent_t applyJetCorrectionUncertainty(MiniEvent_t ev, JetCorrectionUncertainty *jecUnc, TString direction) {
+MiniEvent_t applyJetCorrectionUncertainty(MiniEvent_t ev, JetCorrectionUncertainty *jecUnc, TString jecVar, TString direction) {
   for (int k = 0; k < ev.nj; k++) {
+    if ((jecVar == "FlavorPureGluon"  and not (ev.j_flav[k] == 21 or ev.j_flav[k] == 0)) or
+        (jecVar == "FlavorPureQuark"  and not (abs(ev.j_flav[k]) <= 3 and abs(ev.j_flav[k]) != 0)) or
+        (jecVar == "FlavorPureCharm"  and not (abs(ev.j_flav[k]) == 4)) or
+        (jecVar == "FlavorPureBottom" and not (abs(ev.j_flav[k]) == 5)))
+      continue;
+    
     TLorentzVector jp4;
     jp4.SetPtEtaPhiM(ev.j_pt[k],ev.j_eta[k],ev.j_phi[k],ev.j_mass[k]);
 

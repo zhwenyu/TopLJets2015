@@ -276,7 +276,7 @@ void RunTopJetShape(TString filename,
       if(!ev.isData) {
         //jec
         if (vSystVar[0] == "jec") {
-          ev = applyJetCorrectionUncertainty(ev, jecUnc, vSystVar[2]);
+          ev = applyJetCorrectionUncertainty(ev, jecUnc, jecVar, vSystVar[2]);
         }
         //jer
         if (vSystVar[0] == "jer") {
