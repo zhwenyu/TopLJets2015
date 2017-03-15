@@ -272,7 +272,21 @@ void RunTopJetShape(TString filename,
       // CORRECTIONS //
       ////////////////
       
-      ev = addBTagDecisions(ev);
+      double csvm = 0.8484;
+      if (vSystVar[0] == "csv") {
+          if (vSystVar[1] == "heavy") {
+              //heavy flavor uncertainty +/-3.5%
+              if (vSystVar[2] == "up")   ev = addBTagDecisions(ev, 0.8726, csvm);
+              if (vSystVar[2] == "down") ev = addBTagDecisions(ev, 0.8190, csvm);
+          }
+          if (vSystVar[1] == "light") {
+              //light flavor uncertainty +/-10%
+              if (vSystVar[2] == "up")   ev = addBTagDecisions(ev, csvm, 0.8557);
+              if (vSystVar[2] == "down") ev = addBTagDecisions(ev, csvm, 0.8415);
+          }
+      }
+      else ev = addBTagDecisions(ev);
+      
       if(!ev.isData) {
         //jec
         if (vSystVar[0] == "jec") {
@@ -285,7 +299,7 @@ void RunTopJetShape(TString filename,
         else ev = smearJetEnergies(ev);
         //b tagging
         if (vSystVar[0] == "btag") {
-          if (vSystVar[1] == "bc") {
+          if (vSystVar[1] == "heavy") {
             ev = updateBTagDecisions(ev, btvsfReaders[period],expBtagEff,expBtagEffPy8,myBTagSFUtil,vSystVar[2],"central");
           }
           if (vSystVar[1] == "light") {

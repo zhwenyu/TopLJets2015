@@ -148,9 +148,10 @@ MiniEvent_t smearJetEnergies(MiniEvent_t ev, std::string option) {
 }
 
 //see working points in https://twiki.cern.ch/twiki/bin/view/CMS/BtagRecommendation80XReReco
-MiniEvent_t addBTagDecisions(MiniEvent_t ev,float wp) {
+MiniEvent_t addBTagDecisions(MiniEvent_t ev,float wp,float wpl) {
   for (int k = 0; k < ev.nj; k++) {
-    ev.j_btag[k] = (ev.j_csv[k] > wp);
+    if (ev.j_hadflav[k] >= 4) ev.j_btag[k] = (ev.j_csv[k] > wp);
+    else                      ev.j_btag[k] = (ev.j_csv[k] > wpl);
   }
   
   return ev;
