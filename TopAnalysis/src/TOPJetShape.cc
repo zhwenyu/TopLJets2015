@@ -237,6 +237,7 @@ void RunTopJetShape(TString filename,
   for (auto& it : allPlots)   { it.second->Sumw2(); it.second->SetDirectory(0); }
   for (auto& it : all2dPlots) { it.second->Sumw2(); it.second->SetDirectory(0); }
 
+  std::cout << "init done" << std::endl;
 
   ///////////////////////
   // LOOP OVER EVENTS //
@@ -249,7 +250,7 @@ void RunTopJetShape(TString filename,
     {
       t->GetEntry(iev);
       resetTopJetShapeEvent(tjsev);
-      if(iev%100==0) printf ("\r [%3.0f/100] done",100.*(float)(iev)/(float)(nentries));
+      printf ("\r %i/%i [%3.0f%%] done", 100.*(float)iev/(float)nentries);
       
       //assign randomly a run period
       TString period = assignRunPeriod(runPeriods,random);
@@ -328,7 +329,9 @@ void RunTopJetShape(TString filename,
         
         // lhe weights
         wgt *= (ev.g_nw>0 ? ev.g_w[0] : 1.0);
-        //TODO: add all variations (divided by default weight?)
+        for (int i = 1; i < ev.g_nw; ++i) {
+          varweights.push_back(ev.g_w[i]/ev.g_w[0]);
+        }
         
         tjsev.nw = 1 + varweights.size();
         tjsev.weight[0]=wgt;
