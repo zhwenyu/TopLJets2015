@@ -163,7 +163,7 @@ MiniEvent_t updateBTagDecisions(MiniEvent_t ev,
 				std::map<BTagEntry::JetFlavor, TGraphAsymmErrors*> &expBtagEff, 
 				std::map<BTagEntry::JetFlavor, TGraphAsymmErrors*> &expBtagEffPy8, 
 				BTagSFUtil *myBTagSFUtil, 
-				std::string option) {
+				std::string optionbc, std::string optionlight) {
   for (int k = 0; k < ev.nj; k++) {
     TLorentzVector jp4;
     jp4.SetPtEtaPhiM(ev.j_pt[k],ev.j_eta[k],ev.j_phi[k],ev.j_mass[k]);
@@ -174,8 +174,9 @@ MiniEvent_t updateBTagDecisions(MiniEvent_t ev,
       float expEff(1.0), jetBtagSF(1.0);
       
       BTagEntry::JetFlavor hadFlav=BTagEntry::FLAV_UDSG;
-      if(abs(ev.j_hadflav[k])==4) hadFlav=BTagEntry::FLAV_C;
-      if(abs(ev.j_hadflav[k])==5) hadFlav=BTagEntry::FLAV_B;
+      std::string option = optionlight;
+      if(abs(ev.j_hadflav[k])==4) { hadFlav=BTagEntry::FLAV_C; option = optionbc; }
+      if(abs(ev.j_hadflav[k])==5) { hadFlav=BTagEntry::FLAV_B; option = optionbc; }
 
       expEff    = expBtagEff[hadFlav]->Eval(jptForBtag); 
       jetBtagSF = btvsfReaders[hadFlav]->eval_auto_bounds( option, hadFlav, jetaForBtag, jptForBtag);

@@ -40,7 +40,7 @@ MiniEvent_t updateBTagDecisions(MiniEvent_t ev,
 				std::map<BTagEntry::JetFlavor, TGraphAsymmErrors*> &expBtagEff, 
 				std::map<BTagEntry::JetFlavor, TGraphAsymmErrors*> &expBtagEffPy8, 
 				BTagSFUtil *myBTagSFUtil, 
-				std::string option = "central");
+				std::string optionbc = "central", std::string optionlight = "central");
 
 //details in https://twiki.cern.ch/twiki/bin/view/CMS/BTagCalibration
 std::map<BTagEntry::JetFlavor,BTagCalibrationReader *> getBTVcalibrationReaders(TString era,

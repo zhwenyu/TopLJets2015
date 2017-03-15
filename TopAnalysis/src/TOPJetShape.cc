@@ -284,7 +284,15 @@ void RunTopJetShape(TString filename,
         }
         else ev = smearJetEnergies(ev);
         //b tagging
-        ev = updateBTagDecisions(ev, btvsfReaders[period],expBtagEff,expBtagEffPy8,myBTagSFUtil);
+        if (vSystVar[0] == "btag") {
+          if (vSystVar[1] == "bc") {
+            ev = updateBTagDecisions(ev, btvsfReaders[period],expBtagEff,expBtagEffPy8,myBTagSFUtil,vSystVar[2],"central");
+          }
+          if (vSystVar[1] == "light") {
+            ev = updateBTagDecisions(ev, btvsfReaders[period],expBtagEff,expBtagEffPy8,myBTagSFUtil,"central",vSystVar[2]);
+          }
+        }
+        else ev = updateBTagDecisions(ev, btvsfReaders[period],expBtagEff,expBtagEffPy8,myBTagSFUtil);
       }
       
       ///////////////////////////
