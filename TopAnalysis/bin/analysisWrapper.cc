@@ -33,7 +33,8 @@ void printHelp()
 int main(int argc, char* argv[])
 {
   //get input arguments
-  TString in(""),out(""),era(""),normTag(""),method(""),systVar("");
+  TString in(""),out(""),era(""),normTag(""),method("");
+  std::string systVar("");
   bool runSysts(false),debug(false);
   int channel(0),charge(0),flav(0);
   for(int i=1;i<argc;i++){

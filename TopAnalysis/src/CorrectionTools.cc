@@ -248,3 +248,27 @@ std::map<BTagEntry::JetFlavor, TGraphAsymmErrors *> readExpectedBtagEff(TString 
   return expBtagEff;
 }
 
+
+// See https://twiki.cern.ch/twiki/bin/viewauth/CMS/JECUncertaintySources#Main_uncertainties_2016_80X
+MiniEvent_t applyJetCorrectionUncertainty(MiniEvent_t ev, JetCorrectionUncertainty *jecUnc, TString direction) {
+  for (int k = 0; k < ev.nj; k++) {
+    TLorentzVector jp4;
+    jp4.SetPtEtaPhiM(ev.j_pt[k],ev.j_eta[k],ev.j_phi[k],ev.j_mass[k]);
+
+    jecUnc->setJetPt(jp4.Pt());
+    jecUnc->setJetEta(jp4.Eta());
+    double scale = 1.;
+    if (direction == "up")
+      scale += jecUnc->getUncertainty(true);
+    else if (direction == "down")
+      scale -= jecUnc->getUncertainty(false);
+    
+    jp4 *= scale;
+    ev.j_pt[k]   = jp4.Pt(); 
+    ev.j_eta[k]  = jp4.Eta();
+    ev.j_phi[k]  = jp4.Phi();
+    ev.j_mass[k] = jp4.M();
+  }
+  
+  return ev;
+}

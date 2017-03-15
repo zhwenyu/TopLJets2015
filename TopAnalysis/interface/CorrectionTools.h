@@ -25,6 +25,9 @@ std::map<Int_t,Float_t> lumiPerRun(TString era="era2016");
 std::vector<TGraph *> getPileupWeights(TString era, TH1 *genPU, TString period = "");
 std::map<TString, std::vector<TGraph *> > getPileupWeightsMap(TString era, TH1 *genPU);
 
+//apply jec uncertainty
+MiniEvent_t applyJetCorrectionUncertainty(MiniEvent_t ev, JetCorrectionUncertainty *jecUnc, TString direction);
+
 //apply jet energy resolutions
 MiniEvent_t smearJetEnergies(MiniEvent_t ev, std::string option = "central");
 

@@ -68,10 +68,19 @@ def main():
         pass
     #parse list of systematic variations
     varList=[]
-    try:
-        varList=opt.systVar.split(',')
-    except:
-        pass
+    if opt.systVar == 'all':
+        allSystVars = ['jec_CorrelationGroupMPFInSitu', 'jec_CorrelationGroupInterCalibration',
+                       'jec_CorrelationGroupUncorrelated', 'jec_FlavorPureGluon', 'jec_FlavorPureQuark',
+                       'jec_FlavorPureCharm', 'jec_FlavorPureBottom', 'jer']
+        for var in allSystVars:
+            varList.append(var+'_up')
+            varList.append(var+'_down')
+    else:
+        try:
+            varList=opt.systVar.split(',')
+        except:
+            pass
+    print 'Running following variations: ', varList
 
     #prepare output if a directory
     if not '.root' in opt.output :
