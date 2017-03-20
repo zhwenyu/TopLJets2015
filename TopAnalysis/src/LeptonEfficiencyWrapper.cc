@@ -117,31 +117,31 @@ void LeptonEfficiencyWrapper::init(TString era)
 }
 
 //
-EffCorrection_t LeptonEfficiencyWrapper::getTriggerCorrection(std::vector<int> pdgId,std::vector<TLorentzVector> leptons,TString period)
+EffCorrection_t LeptonEfficiencyWrapper::getTriggerCorrection(std::vector<Particle> &leptons,TString period)
 {
   EffCorrection_t corr(1.0,0.0);
-  if(pdgId.size()<1 || leptons.size()<1) return corr;
+  if(leptons.size()<1) return corr;
   if(era_==2015)
     {
       if(leptons.size()>=2)
         {
-          int cat=abs(pdgId[0]*pdgId[1]);
+          int cat=abs(leptons[0].id()*leptons[1].id());
           if(cat==13*13)      { corr.first=0.894; corr.second=0.894; }
           else if(cat==11*13) { corr.first=0.931; corr.second=0.931; }
           else if(cat==11*11) { corr.first=0.930; corr.second=0.930; }
         }
       else
         {
-          TString hname(abs(pdgId[0])==11 ? "e" : "m");
+          TString hname(abs(leptons[0].id())==11 ? "e" : "m");
           hname += "_singleleptrig"+period;
 
           TH2 *h=lepEffH_[hname];
           float minEtaForEff( h->GetXaxis()->GetXmin() ), maxEtaForEff( h->GetXaxis()->GetXmax()-0.01 );
-          float etaForEff=TMath::Max(TMath::Min(float(fabs(leptons[0].Eta())),maxEtaForEff),minEtaForEff);
+          float etaForEff=TMath::Max(TMath::Min(float(fabs(leptons[0].eta())),maxEtaForEff),minEtaForEff);
           Int_t etaBinForEff=h->GetXaxis()->FindBin(etaForEff);
           
           float minPtForEff( h->GetYaxis()->GetXmin() ), maxPtForEff( h->GetYaxis()->GetXmax()-0.01 );
-          float ptForEff=TMath::Max(TMath::Min(float(leptons[0].Pt()),maxPtForEff),minPtForEff);
+          float ptForEff=TMath::Max(TMath::Min(float(leptons[0].pt()),maxPtForEff),minPtForEff);
           Int_t ptBinForEff=h->GetYaxis()->FindBin(ptForEff);
           
           corr.first=h->GetBinContent(etaBinForEff,ptBinForEff);
@@ -150,68 +150,68 @@ EffCorrection_t LeptonEfficiencyWrapper::getTriggerCorrection(std::vector<int> p
     }
   else if(era_==2016)
     {
-      //cf .https://indico.cern.ch/event/532751/contributions/2170250/subcontributions/196785/attachments/1287403/1915605/Talk_TSG_0806.pdf
+      //cf AN 2016/392 v2 Figs 3(ee) 6(mm) 23 (em)
       if(leptons.size()>=2)
         {
-          float leadPt(TMath::Max(leptons[0].Pt(),leptons[1].Pt())), trailPt(TMath::Min(leptons[0].Pt(),leptons[1].Pt()));
-          int cat=abs(pdgId[0]*pdgId[1]);
+          float leadPt(TMath::Max(leptons[0].pt(),leptons[1].pt())), trailPt(TMath::Min(leptons[0].pt(),leptons[1].pt()));
+          int cat=abs(leptons[0].id()*leptons[1].id());
           if(cat==13*13)      
             { 
               if(leadPt<40)
           {
-            if(trailPt<40)      { corr.first=0.908; corr.second=0.039; }
+            if(trailPt<40)      { corr.first=0.995; corr.second=0.006; }
           }
               else if(leadPt<70)
           {
-            if(trailPt<40)      { corr.first=0.897; corr.second=0.033; }
-            else if(trailPt<70) { corr.first=0.859; corr.second=0.054; }
+            if(trailPt<40)      { corr.first=1.001; corr.second=0.004; }
+            else if(trailPt<70) { corr.first=0.998; corr.second=0.003; }
           }
               else 
           {
-            if(trailPt<40)      { corr.first=0.851; corr.second=0.057; }
-            else if(trailPt<70) { corr.first=0.870; corr.second=0.050; }
-            else                { corr.first=0.769; corr.second=0.174; }
+            if(trailPt<40)      { corr.first=0.983; corr.second=0.006; }
+            else if(trailPt<70) { corr.first=0.997; corr.second=0.004; }
+            else                { corr.first=0.999; corr.second=0.007; }
           }
             }
           else if(cat==11*13)
             { 
-              if(abs(pdgId[0])==11) { leadPt=leptons[0].Pt(); trailPt=leptons[1].Pt(); }
-              else                  { leadPt=leptons[1].Pt(); trailPt=leptons[0].Pt(); }
+              if(abs(leptons[0].id())==11) { leadPt=leptons[0].pt(); trailPt=leptons[1].pt(); }
+              else                         { leadPt=leptons[1].pt(); trailPt=leptons[0].pt(); }
               if(leadPt<40)
                       {
-                        if(trailPt<40)      { corr.first=0.868; corr.second=0.032; }
-                        else if(trailPt<70) { corr.first=0.874; corr.second=0.036; }
-                        else                { corr.first=0.933; corr.second=0.060; }
+                        if(trailPt<40)      { corr.first=0.980; corr.second=0.009; }
+                        else if(trailPt<70) { corr.first=0.979; corr.second=0.010; }
+                        else                { corr.first=0.960; corr.second=0.017; }
           }
               else if(leadPt<70)
           {
-                        if(trailPt<40)      { corr.first=0.863; corr.second=0.032; }
-                        else if(trailPt<70) { corr.first=0.902; corr.second=0.034; }
-                        else                { corr.first=0.768; corr.second=0.070; }
+                        if(trailPt<40)      { corr.first=0.988; corr.second=0.008; }
+                        else if(trailPt<70) { corr.first=0.985; corr.second=0.009; }
+                        else                { corr.first=0.953; corr.second=0.015; }
                       }
               else
           {
-                        if(trailPt<40)      { corr.first=0.901; corr.second=0.042; }
-                        else if(trailPt<70) { corr.first=0.838; corr.second=0.052; }
-                        else                { corr.first=0.950; corr.second=0.05; }
+                        if(trailPt<40)      { corr.first=0.991; corr.second=0.017; }
+                        else if(trailPt<70) { corr.first=0.988; corr.second=0.011; }
+                        else                { corr.first=1.006; corr.second=0.017; }
           }
             }
           else if(cat==11*11) 
             {
               if(leadPt<40)
                       {
-                        if(trailPt<40)      { corr.first=0.853; corr.second=0.056; }
+                        if(trailPt<40)      { corr.first=0.980; corr.second=0.010; }
           }
               else if(leadPt<70)
           {
-                        if(trailPt<40)      { corr.first=0.954; corr.second=0.026; }
-                        else if(trailPt<70) { corr.first=0.944; corr.second=0.042; }
+                        if(trailPt<40)      { corr.first=0.988; corr.second=0.004; }
+                        else if(trailPt<70) { corr.first=1.002; corr.second=0.004; }
                       }
               else
           {
-                        if(trailPt<40)      { corr.first=0.918; corr.second=0.046; }
-                        else if(trailPt<70) { corr.first=0.984; corr.second=0.037; }
-                        else                { corr.first=0.941; corr.second=0.122; }
+                        if(trailPt<40)      { corr.first=0.989; corr.second=0.005; }
+                        else if(trailPt<70) { corr.first=0.990; corr.second=0.005; }
+                        else                { corr.first=0.989; corr.second=0.010; }
           }
             }
 
@@ -220,33 +220,33 @@ EffCorrection_t LeptonEfficiencyWrapper::getTriggerCorrection(std::vector<int> p
         }
       else 
         {
-          TString hname(abs(pdgId[0])==11 ? "e" : "m");
+          TString hname(abs(leptons[0].id())==11 ? "e" : "m");
           hname += "_singleleptrig"+period;
 
-          if( abs(pdgId[0])==13 and lepEffH_.find(hname)!=lepEffH_.end() )
+          if( abs(leptons[0].id())==13 and lepEffH_.find(hname)!=lepEffH_.end() )
             {
               TH1 *h=lepEffH_[hname];
               float minEtaForEff( h->GetXaxis()->GetXmin() ), maxEtaForEff( h->GetXaxis()->GetXmax()-0.01 );
-              float etaForEff=TMath::Max(TMath::Min(float(fabs(leptons[0].Eta())),maxEtaForEff),minEtaForEff);
+              float etaForEff=TMath::Max(TMath::Min(float(fabs(leptons[0].eta())),maxEtaForEff),minEtaForEff);
               Int_t etaBinForEff=h->GetXaxis()->FindBin(etaForEff);
 
               float minPtForEff( h->GetYaxis()->GetXmin() ), maxPtForEff( h->GetYaxis()->GetXmax()-0.01 );
-              float ptForEff=TMath::Max(TMath::Min(float(leptons[0].Pt()),maxPtForEff),minPtForEff);
+              float ptForEff=TMath::Max(TMath::Min(float(leptons[0].pt()),maxPtForEff),minPtForEff);
               Int_t ptBinForEff=h->GetYaxis()->FindBin(ptForEff);
 
               corr.first=h->GetBinContent(etaBinForEff,ptBinForEff);
               corr.second=h->GetBinError(etaBinForEff,ptBinForEff);
             }
           //electron histogram has inverted axes and uses eta, not abs(eta)
-          else if( abs(pdgId[0])==11 and lepEffH_.find(hname)!=lepEffH_.end() )
+          else if( abs(leptons[0].id())==11 and lepEffH_.find(hname)!=lepEffH_.end() )
             {
               TH1 *h=lepEffH_[hname];
               float minEtaForEff( h->GetYaxis()->GetXmin() ), maxEtaForEff( h->GetYaxis()->GetXmax()-0.01 );
-              float etaForEff=TMath::Max(TMath::Min(float(leptons[0].Eta()),maxEtaForEff),minEtaForEff);
+              float etaForEff=TMath::Max(TMath::Min(float(leptons[0].eta()),maxEtaForEff),minEtaForEff);
               Int_t etaBinForEff=h->GetYaxis()->FindBin(etaForEff);
 
               float minPtForEff( 30. ), maxPtForEff( h->GetXaxis()->GetXmax()-0.01 );
-              float ptForEff=TMath::Max(TMath::Min(float(leptons[0].Pt()),maxPtForEff),minPtForEff);
+              float ptForEff=TMath::Max(TMath::Min(float(leptons[0].pt()),maxPtForEff),minPtForEff);
               Int_t ptBinForEff=h->GetXaxis()->FindBin(ptForEff);
 
               corr.first=h->GetBinContent(ptBinForEff,etaBinForEff);
@@ -256,19 +256,6 @@ EffCorrection_t LeptonEfficiencyWrapper::getTriggerCorrection(std::vector<int> p
     }
 
   return corr;
-}
-
-//
-EffCorrection_t LeptonEfficiencyWrapper::getTriggerCorrection(std::vector<Particle> leptons,TString period)
-{
-  std::vector<int> pdgId;
-  std::vector<TLorentzVector> leptonp4;
-  for (auto& lepton : leptons)
-    {
-      pdgId.push_back(lepton.id());
-      leptonp4.push_back(lepton.p4());
-    }
-  return getTriggerCorrection(pdgId, leptonp4, period);
 }
 
 //
@@ -326,6 +313,15 @@ EffCorrection_t LeptonEfficiencyWrapper::getOfflineCorrection(int pdgId,float pt
 EffCorrection_t LeptonEfficiencyWrapper::getOfflineCorrection(Particle lepton,TString period)
 {
   return getOfflineCorrection(lepton.id(),lepton.pt(),lepton.eta(), period);
+}
+
+//
+EffCorrection_t LeptonEfficiencyWrapper::getTriggerCorrection(std::vector<int> &pdgId, std::vector<TLorentzVector> &leptons,TString period)
+{
+  std::vector<Particle> lepParts;
+  for(size_t i=0; i<pdgId.size(); i++)
+    lepParts.push_back( Particle(leptons[i],0,pdgId[i],0,0,1) );
+  return getTriggerCorrection(lepParts, period);
 }
 
 LeptonEfficiencyWrapper::~LeptonEfficiencyWrapper()

@@ -13,7 +13,7 @@ export LSB_JOB_REPORT_MAIL=N
 
 
 queue=2nw
-githash=f016290
+githash=b32c02e
 lumi=36460
 lumiSpecs="" #--lumiSpecs EE:11391"
 lumiUnc=0.027
@@ -30,7 +30,7 @@ NC='\e[0m'
 case $WHAT in
 
     TESTSEL )
-	analysisWrapper --in MC13TeV_TTJets.root \
+	analysisWrapper --in root://eoscms//eos/cms/store/cmst3/group/top/ReReco2016/b32c02e/MC13TeV_TTJets/MergedMiniEvents_0.root \
 	    --out ue_test.root \
 	    --era ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/era2016 \
 	    --method TOP-UE::RunTopUE \

@@ -17,8 +17,8 @@ class LeptonEfficiencyWrapper
 {
  public:
   LeptonEfficiencyWrapper(bool isData,TString era);
-  EffCorrection_t getTriggerCorrection(std::vector<int> pdgId,std::vector<TLorentzVector> leptons,TString period = "");
-  EffCorrection_t getTriggerCorrection(std::vector<Particle> leptons,TString period = "");
+  EffCorrection_t getTriggerCorrection(std::vector<int> &pdgId, std::vector<TLorentzVector> &leptons,TString period = "");
+  EffCorrection_t getTriggerCorrection(std::vector<Particle> &leptons,TString period = "");
   EffCorrection_t getOfflineCorrection(int pdgId,float pt,float eta,TString period = "");
   EffCorrection_t getOfflineCorrection(Particle lepton,TString period = "");
   ~LeptonEfficiencyWrapper();  

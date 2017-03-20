@@ -9,6 +9,7 @@
 
 #include "TopLJets2015/TopAnalysis/interface/TOP-UE.h"
 #include "TopLJets2015/TopAnalysis/interface/CorrectionTools.h"
+#include "TopLJets2015/TopAnalysis/interface/LeptonEfficiencyWrapper.h"
 #include "TopLJets2015/TopAnalysis/interface/SelectionTools.h"
 #include "TopLJets2015/TopAnalysis/interface/CommonTools.h"
 
@@ -33,8 +34,10 @@ void RunTopUE(TString filename,
 	      Bool_t runSysts,
 	      TString era)
 {
+  bool isDataFile(filename.Contains("Data"));
+
   //check file type from name
-  if(filename.Contains("Data")) runSysts=false;
+  if(isDataFile) runSysts=false;
   runSysts=false;
   //  bool isTTbar( filename.Contains("_TTJets") );
 
@@ -56,7 +59,7 @@ void RunTopUE(TString filename,
   //lumi
   TH1F *ratevsrunH=0;
   std::map<Int_t,Float_t> lumiMap;
-  if( filename.Contains("Data") )  
+  if( isDataFile )  
     {
       std::pair<std::map<Int_t,Float_t>, TH1F *> result=parseLumiInfo(era);
       lumiMap   = result.first;
@@ -65,7 +68,10 @@ void RunTopUE(TString filename,
 
   //pileup
   std::map<TString, std::vector<TGraph *> > puWgtGr;
-  if( !filename.Contains("Data") ) puWgtGr=getPileupWeightsMap(era,genPU);
+  if( !isDataFile ) puWgtGr=getPileupWeightsMap(era,genPU);
+
+  //lepton efficiencies
+  LeptonEfficiencyWrapper lepEffH(isDataFile,era);
 
   //b-tagging
   BTagSFUtil myBTagSFUtil;
@@ -89,17 +95,18 @@ void RunTopUE(TString filename,
       TString tag(lfsVec[ilfs]);
       if(ratevsrunH) allPlots["ratevsrun_"+tag] = (TH1 *)ratevsrunH->Clone("ratevsrun_"+tag);
       allPlots["nvtx_"+tag]   = new TH1F("nvtx_"+tag,";Vertex multiplicity;Events",40,0,40);
-      allPlots["rho_"+tag]   = new TH1F("rho_"+tag,";#rho;Events",40,0,20);
+      allPlots["rho_"+tag]   = new TH1F("rho_"+tag,";#rho;Events",40,0,40);
       allPlots["mll_"+tag]    = new TH1F("mll_"+tag,";Dilepton invariant mass [GeV];Events",50,0,400);
       allPlots["ptpos_"+tag]   = new TH1F("ptpos_"+tag,";Lepton transverse momentum [GeV];Events",50,20,200);
       allPlots["ptll_"+tag]    = new TH1F("ptll_"+tag,";Dilepton transverse momentum [GeV];Events",50,0,200);
+      allPlots["ptttbar_"+tag] = new TH1F("ptttbar_"+tag,";p_{T}(t#bar{t}) [GeV];Events",50,0,200);
       allPlots["sumpt_"+tag]   = new TH1F("sumpt_"+tag,";Transverse momentum sum [GeV];Events",50,40,300);
       allPlots["met_"+tag]   = new TH1F("met_"+tag,";Missing transverse momentum [GeV];Events",50,0,300);
       allPlots["njets_"+tag]  = new TH1F("njets_"+tag,";Jet multiplicity;Events",4,2,6);
       allPlots["nbtags_"+tag] = new TH1F("nbtags_"+tag,";b-tag multiplicity;Events",5,0,5);
-      allPlots["nch_"+tag]  = new TH1F("nch_"+tag,";Charged particle multiplicity;Events",200,0,200);      
-      allPlots["chavgpt_"+tag]  = new TH1F("chavgpt_"+tag,";Charged particle average p_{T} [GeV];Events",100,0,20);      
-      allPlots["chsumpt_"+tag]  = new TH1F("chsumpt_"+tag,";Charged particle sum p_{T} [GeV];Events",100,0,200);
+      allPlots["nch_"+tag]  = new TH1F("nch_"+tag,";Charged particle multiplicity;Events",50,0,200);      
+      allPlots["chavgpt_"+tag]  = new TH1F("chavgpt_"+tag,";Charged particle average p_{T} [GeV];Events",50,0,15);      
+      allPlots["chsumpt_"+tag]  = new TH1F("chsumpt_"+tag,";Charged particle sum p_{T} [GeV];Events",50,0,400);
     }
   for (auto& it : allPlots)   { it.second->Sumw2(); it.second->SetDirectory(0); }
 
@@ -107,16 +114,17 @@ void RunTopUE(TString filename,
   //LOOP OVER EVENTS
   for (Int_t iev=0;iev<nentries;iev++)
     {
+      TString period("");
       t->GetEntry(iev);
       resetTopUE(tue);
-      if(iev%10000==0) printf("\r [%3.0f/100] done",100.*(float)(iev)/(float)(nentries));
+      if(iev%1000==0) printf("\r [%3.0f/100] done",100.*(float)(iev)/(float)(nentries));
       
       //assign a run period and correct the event accordingly
       float puWgt(1.0);
       ev = addBTagDecisions(ev);
       if(!ev.isData)
 	{
-	  TString period=assignRunPeriod(runPeriods);
+	  period=assignRunPeriod(runPeriods);
 	  puWgt = puWgtGr[period][0]->Eval(ev.g_pu);
 	  ev = smearJetEnergies(ev);
 	  ev = updateBTagDecisions(ev, btvsfReaders[period],expBtagEff,expBtagEff,&myBTagSFUtil);
@@ -223,11 +231,22 @@ void RunTopUE(TString filename,
 	  //event weight
 	  float wgt(1.0);
 	  allPlots["puwgtctr"]->Fill(0.,1.0);
+	  EffCorrection_t lepselSF(1.0,0.0),trigSF(1.0,0.0);
 	  if(!ev.isData) 
 	    {
 	      allPlots["puwgtctr"]->Fill(1,puWgt);	      
+	      for(size_t il=0; il<2; il++)
+		{
+                  EffCorrection_t sf=lepEffH.getOfflineCorrection(leptons[il].id(),leptons[il].pt(),leptons[il].eta(),period);
+                  lepselSF.second = sqrt( pow(lepselSF.first*sf.second,2)+pow(lepselSF.second*sf.first,2));
+                  lepselSF.first *= sf.first;
+                }
+	      trigSF=lepEffH.getTriggerCorrection(leptons,period);
+
 	      wgt  = (normH? normH->GetBinContent(1) : 1.0);
 	      wgt *= puWgt;
+	      wgt *= trigSF.first;
+	      wgt *= lepselSF.first;
 	      wgt *= (ev.g_nw>0 ? ev.g_w[0] : 1.0);
 	    }
 
@@ -249,6 +268,7 @@ void RunTopUE(TString filename,
 	      if(rIt!=lumiMap.end() && ratevsrunH) allPlots["ratevsrun_"+chTag]->Fill(std::distance(lumiMap.begin(),rIt),1./rIt->second);
 	      allPlots["ptpos_"+chTag]->Fill(tue.ptpos[0],wgt);
 	      allPlots["ptll_"+chTag]->Fill(tue.ptll[0],wgt);
+	      allPlots["ptttbar_"+chTag]->Fill(tue.ptttbar[0],wgt);
 	      allPlots["sumpt_"+chTag]->Fill(tue.sumpt[0],wgt);	     
 	      allPlots["met_"+chTag]->Fill(evsel.getMET().Pt(),wgt);
 	      allPlots["njets_"+chTag]->Fill(tue.nj[0],wgt);
@@ -343,15 +363,20 @@ void RunTopUE(TString filename,
           tue.gen_dphill = TMath::Abs(leptons[0].p4().DeltaPhi(leptons[1].p4()));
 
 	  //save ttbar and pseudo-ttbar kinematics
-	  if(ev.ngtop==2)
+	  if(ev.ngtop>0)
 	    {
 	      TLorentzVector ttbar(0,0,0,0);
-	      for(size_t it=0; it<2; it++)
+	      Int_t nfs(0);
+	      for(Int_t it=0; it<ev.ngtop; it++)
 		{
+		  int absid(abs(ev.gtop_id[it]));
+		  if(absid!=5000 && absid!=11000 && absid!=13000 && absid!=0) continue;
+		  nfs++;
 		  TLorentzVector p4(0,0,0,0);
-		  p4.SetPtEtaPhiM(ev.gtop_pt[0],ev.gtop_eta[0],ev.gtop_phi[0],ev.gtop_m[0]);
+		  p4.SetPtEtaPhiM(ev.gtop_pt[it],ev.gtop_eta[it],ev.gtop_phi[it],ev.gtop_m[it]);
 		  ttbar += p4;
 		}
+	      if(nfs!=5) ttbar.SetPtEtaPhiM(0,0,0,0);
 	      tue.gen_ptttbar=ttbar.Pt();
 	      tue.gen_phittbar=ttbar.Phi();
 	    }
