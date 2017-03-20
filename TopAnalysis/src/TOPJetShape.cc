@@ -20,6 +20,9 @@
 
 #include "TMath.h"
 
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/split.hpp>
+
 #include "fastjet/tools/Recluster.hh"
 #include "fastjet/contrib/Nsubjettiness.hh"
 #include "fastjet/contrib/EnergyCorrelator.hh"
@@ -42,6 +45,7 @@ void RunTopJetShape(TString filename,
 		    SelectionTool::FlavourSplitting flavourSplitting,
 		    TH1F *normH, 
 		    Bool_t runSysts,
+		    std::string systVar,
 		    TString era,
 		    Bool_t debug)
 {
@@ -53,7 +57,9 @@ void RunTopJetShape(TString filename,
   std::vector<RunPeriod_t> runPeriods=getRunPeriods(era);
 
   bool isTTbar( filename.Contains("_TTJets") or (normH and TString(normH->GetTitle()).Contains("_TTJets")));
-
+  
+  std::vector<std::string> vSystVar;
+  boost::split(vSystVar, systVar, boost::is_any_of("_"));
 
   //PREPARE OUTPUT
   TopJetShapeEvent_t tjsev;
@@ -117,44 +123,51 @@ void RunTopJetShape(TString filename,
   
   
   //JET ENERGY UNCERTAINTIES
-  TString jecUncUrl(era+"/jecUncertaintySources_AK4PFchs.txt");
+  std::string jecVar = "Total";
+  if (vSystVar[0] == "jec") {
+    if (vSystVar.size() != 3) {
+      std::cout << "Wrong format of JEC uncertainty, expected jec_Source_up/down. Exiting..." << std::endl;
+      return;
+    }
+    jecVar = vSystVar[1];
+  }
+  TString jecUncUrl(era+"/Summer16_23Sep2016V4_MC_UncertaintySources_AK4PFchs.txt");
   gSystem->ExpandPathName(jecUncUrl);
-  //JetCorrectorParameters *jecParam = new JetCorrectorParameters(jecUncUrl.Data(),"Total");
-  //JetCorrectionUncertainty *jecUnc = new JetCorrectionUncertainty( *jecParam );
-
+  JetCorrectorParameters *jecParam = new JetCorrectorParameters(jecUncUrl.Data(), jecVar);
+  JetCorrectionUncertainty *jecUnc = new JetCorrectionUncertainty( *jecParam );
 
   //BOOK HISTOGRAMS
   std::map<TString, TH1 *> allPlots;
   std::map<TString, TH2 *> all2dPlots;
   allPlots["puwgtctr"] = new TH1F("puwgtctr","Weight sums",2,0,2);
 
-  std::vector<TString> stageVec = { "s1", "s2", "s3", "s4" };
-  std::vector<TString> chTags = { "", "E", "M" };
+  std::vector<TString> stageVec = { "0_pre", "1_1l", "2_1l4j", "3_1l4j2b", "4_1l4j2b2w" };
+  std::vector<TString> chTags = { "L", "E", "M" };
   for(auto& stage : stageVec) {
     for(auto& channel : chTags) {  
-      TString tag(stage+channel);
+      TString tag(channel+stage+"_");
       
       if(ratevsrunH)
-        allPlots["ratevsrun_"+tag] = (TH1 *)ratevsrunH->Clone("ratevsrun_"+tag);
-      allPlots["nvtx_"+tag]   = new TH1F("nvtx_"+tag,";Vertex multiplicity;Events",30,0,30);
-      allPlots["nleps_"+tag]  = new TH1F("nleps_"+tag,";Lepton multiplicity;Events",5,-0.5,4.5);
-      allPlots["njets_"+tag]  = new TH1F("njets_"+tag,";Jet multiplicity;Events",10,-0.5,9.5);
-      allPlots["nbjets_"+tag] = new TH1F("nbjets_"+tag,";b jet multiplicity;Events",5,-0.5,4.5);
-      allPlots["nwjets_"+tag] = new TH1F("nwjets_"+tag,";W jet multiplicity;Events",10,-0.5,9.5);
-      allPlots["wcandm_"+tag] = new TH1F("wcandm_"+tag,";W candidate mass;W candidates",60,0,300);
-      allPlots["tcandm_"+tag] = new TH1F("tcandm_"+tag,";top candidate mass;top candidates",70,50,400);
-      allPlots["tcandwcutm_"+tag] = new TH1F("tcandwcutm_"+tag,";top candidate mass;top candidates (W cut)",70,50,400);
+        allPlots[tag+"ratevsrun"] = (TH1 *)ratevsrunH->Clone("ratevsrun_"+tag);
+      allPlots[tag+"nvtx"]   = new TH1F(tag+"nvtx",";Vertex multiplicity;Events",30,0,30);
+      allPlots[tag+"nleps"]  = new TH1F(tag+"nleps",";Lepton multiplicity;Events",5,-0.5,4.5);
+      allPlots[tag+"njets"]  = new TH1F(tag+"njets",";Jet multiplicity;Events",10,-0.5,9.5);
+      allPlots[tag+"nbjets"] = new TH1F(tag+"nbjets",";b jet multiplicity;Events",5,-0.5,4.5);
+      allPlots[tag+"nwjets"] = new TH1F(tag+"nwjets",";W jet multiplicity;Events",10,-0.5,9.5);
+      allPlots[tag+"wcandm"] = new TH1F(tag+"wcandm",";W candidate mass;W candidates",60,0,300);
+      allPlots[tag+"tcandm"] = new TH1F(tag+"tcandm",";top candidate mass;top candidates",70,50,400);
+      allPlots[tag+"tcandwcutm"] = new TH1F(tag+"tcandwcutm",";top candidate mass;top candidates (W cut)",70,50,400);
       for(int i=0; i<2; i++) {
         TString pf(Form("l%d",i));          
-        allPlots[pf+"pt_"+tag]  = new TH1F(pf+"pt_"+tag,";Lepton p_{t} [GeV];Events",50,0,250);
-        allPlots[pf+"eta_"+tag]  = new TH1F(pf+"eta_"+tag,";Lepton pseudo-rapidity;Events",50,-2.5,2.5);
+        allPlots[tag+pf+"pt"]   = new TH1F(tag+pf+"pt",";Lepton p_{t} [GeV];Events",50,0,250);
+        allPlots[tag+pf+"eta"]  = new TH1F(tag+pf+"eta",";Lepton pseudo-rapidity;Events",50,-2.5,2.5);
       }
       for(int i=0; i<6; i++) {
         TString pf(Form("j%d",i));
-        allPlots[pf+"pt_"+tag]  = new TH1F(pf+"pt_"+tag,";Jet transverse momentum [GeV];Events",50,0,250);
-        allPlots[pf+"eta_"+tag] = new TH1F(pf+"eta_"+tag,";Jet pseudo-rapidity;Events",50,-5,5);
+        allPlots[tag+pf+"pt"]  = new TH1F(tag+pf+"pt",";Jet transverse momentum [GeV];Events",50,0,250);
+        allPlots[tag+pf+"eta"] = new TH1F(tag+pf+"eta",";Jet pseudo-rapidity;Events",50,-5,5);
       }
-      allPlots["met_"+tag] = new TH1F("met_"+tag,";MET [GeV];Events",50,0,250);
+      allPlots[tag+"met"] = new TH1F(tag+"met",";MET [GeV];Events",50,0,250);
     }
   }
   
@@ -237,6 +250,7 @@ void RunTopJetShape(TString filename,
   for (auto& it : allPlots)   { it.second->Sumw2(); it.second->SetDirectory(0); }
   for (auto& it : all2dPlots) { it.second->Sumw2(); it.second->SetDirectory(0); }
 
+  std::cout << "init done" << std::endl;
 
   ///////////////////////
   // LOOP OVER EVENTS //
@@ -249,7 +263,7 @@ void RunTopJetShape(TString filename,
     {
       t->GetEntry(iev);
       resetTopJetShapeEvent(tjsev);
-      if(iev%100==0) printf ("\r [%3.0f/100] done",100.*(float)(iev)/(float)(nentries));
+      if(iev%10==0) printf ("\r [%3.0f%%] done", 100.*(float)iev/(float)nentries);
       
       //assign randomly a run period
       TString period = assignRunPeriod(runPeriods,random);
@@ -258,10 +272,41 @@ void RunTopJetShape(TString filename,
       // CORRECTIONS //
       ////////////////
       
-      ev = addBTagDecisions(ev);
+      double csvm = 0.8484;
+      if (vSystVar[0] == "csv") {
+          if (vSystVar[1] == "heavy") {
+              //heavy flavor uncertainty +/-3.5%
+              if (vSystVar[2] == "up")   ev = addBTagDecisions(ev, 0.8726, csvm);
+              if (vSystVar[2] == "down") ev = addBTagDecisions(ev, 0.8190, csvm);
+          }
+          if (vSystVar[1] == "light") {
+              //light flavor uncertainty +/-10%
+              if (vSystVar[2] == "up")   ev = addBTagDecisions(ev, csvm, 0.8557);
+              if (vSystVar[2] == "down") ev = addBTagDecisions(ev, csvm, 0.8415);
+          }
+      }
+      else ev = addBTagDecisions(ev);
+      
       if(!ev.isData) {
-        ev = smearJetEnergies(ev);
-        ev = updateBTagDecisions(ev, btvsfReaders[period],expBtagEff,expBtagEffPy8,myBTagSFUtil);
+        //jec
+        if (vSystVar[0] == "jec") {
+          ev = applyJetCorrectionUncertainty(ev, jecUnc, jecVar, vSystVar[2]);
+        }
+        //jer
+        if (vSystVar[0] == "jer") {
+          ev = smearJetEnergies(ev, vSystVar[1]);
+        }
+        else ev = smearJetEnergies(ev);
+        //b tagging
+        if (vSystVar[0] == "btag") {
+          if (vSystVar[1] == "heavy") {
+            ev = updateBTagDecisions(ev, btvsfReaders[period],expBtagEff,expBtagEffPy8,myBTagSFUtil,vSystVar[2],"central");
+          }
+          if (vSystVar[1] == "light") {
+            ev = updateBTagDecisions(ev, btvsfReaders[period],expBtagEff,expBtagEffPy8,myBTagSFUtil,"central",vSystVar[2]);
+          }
+        }
+        else ev = updateBTagDecisions(ev, btvsfReaders[period],expBtagEff,expBtagEffPy8,myBTagSFUtil);
       }
       
       ///////////////////////////
@@ -283,13 +328,14 @@ void RunTopJetShape(TString filename,
       }
       
       //event selected on reco level?
+      bool preselected          (true);
       bool singleLepton         ((chTag=="E" or chTag=="M") and
                                  (selector.getVetoLeptons().size() == 0));
       bool singleLepton4Jets    (singleLepton and jets.size()>=4);
       bool singleLepton4Jets2b  (singleLepton4Jets and sel_nbjets==2);
       bool singleLepton4Jets2b2W(singleLepton4Jets2b and sel_nwjets>0);
       
-      std::vector<bool> recoPass; recoPass.push_back(singleLepton); recoPass.push_back(singleLepton4Jets); recoPass.push_back(singleLepton4Jets2b); recoPass.push_back(singleLepton4Jets2b2W); 
+      std::vector<bool> recoPass; recoPass.push_back(preselected); recoPass.push_back(singleLepton); recoPass.push_back(singleLepton4Jets); recoPass.push_back(singleLepton4Jets2b); recoPass.push_back(singleLepton4Jets2b2W); 
       
       if (singleLepton4Jets2b2W) tjsev.reco_sel = 1;
       
@@ -300,20 +346,51 @@ void RunTopJetShape(TString filename,
       //////////////////
       
       float wgt(1.0);
+      std::vector<double> varweights;
       allPlots["puwgtctr"]->Fill(0.,1.0);
-      if(!ev.isData) 
-        {
-          float puWgt(puWgtGr[period][0]->Eval(ev.g_pu));
-          allPlots["puwgtctr"]->Fill(1,puWgt);
-
-          wgt  = (normH? normH->GetBinContent(1) : 1.0);
-          wgt *= puWgt;
-          wgt *= (ev.g_nw>0 ? ev.g_w[0] : 1.0);
+      if (!ev.isData) {
+        // norm weight
+        wgt  = (normH? normH->GetBinContent(1) : 1.0);
+        
+        // pu weight
+        double puWgt(puWgtGr[period][0]->Eval(ev.g_pu));
+        allPlots["puwgtctr"]->Fill(1,puWgt);
+        wgt *= puWgt;
+        varweights.push_back(puWgtGr[period][1]->Eval(ev.g_pu));
+        varweights.push_back(puWgtGr[period][2]->Eval(ev.g_pu));
+        
+        // lepton trigger*selection weights
+        if (singleLepton) {
+          EffCorrection_t trigSF = lepEffH.getTriggerCorrection(leptons, period);
+          varweights.push_back(1.+trigSF.second);
+          varweights.push_back(1.-trigSF.second);
+          EffCorrection_t selSF = lepEffH.getOfflineCorrection(leptons[0], period);
+          varweights.push_back(1.+selSF.second);
+          varweights.push_back(1.-selSF.second);
+          wgt *= trigSF.first*selSF.first;
         }
+        else varweights.insert(varweights.end(), 4, 1.);
+        
+        // lhe weights
+        wgt *= (ev.g_nw>0 ? ev.g_w[0] : 1.0);
+        for (int i = 1; i < ev.g_nw; ++i) {
+          varweights.push_back(ev.g_w[i]/ev.g_w[0]);
+        }
+        
+        tjsev.nw = 1 + varweights.size();
+        tjsev.weight[0]=wgt;
+        for (unsigned int i = 0; i < varweights.size(); ++i) {
+          tjsev.weight[i+1] = varweights[i];
+        }
+      }
+      else {
+        tjsev.nw=1;
+        tjsev.weight[0]=wgt;
+      }
       
-      ////////////////////
-      // CONTROL PLOTS //
-      //////////////////
+      //////////////////////////
+      // RECO LEVEL ANALYSIS //
+      ////////////////////////
       
       //W and top masses
       std::vector<TLorentzVector> wCands;
@@ -348,38 +425,34 @@ void RunTopJetShape(TString filename,
           if (not recoPass[istage]) continue;
           if (channel == "E" and chTag != "E") continue;
           if (channel == "M" and chTag != "M") continue;
-          TString tag(stageVec[istage]+channel);
+          TString tag(channel+stageVec[istage]+"_");
           
           std::map<Int_t,Float_t>::iterator rIt=lumiMap.find(ev.run);
-          if(rIt!=lumiMap.end() && ratevsrunH) allPlots["ratevsrun_"+tag]->Fill(std::distance(lumiMap.begin(),rIt),1./rIt->second);
+          if(rIt!=lumiMap.end() && ratevsrunH) allPlots[tag+"ratevsrun"]->Fill(std::distance(lumiMap.begin(),rIt),1./rIt->second);
           
-          allPlots["nvtx_"+tag]->Fill(ev.nvtx, wgt);
-          allPlots["nleps_"+tag]->Fill(leptons.size(), wgt);
-          allPlots["njets_"+tag]->Fill(jets.size(), wgt);
-          allPlots["nbjets_"+tag]->Fill(sel_nbjets, wgt);
-          allPlots["nwjets_"+tag]->Fill(sel_nwjets, wgt);
-          for (auto& wCand : wCands) allPlots["wcandm_"+tag]->Fill(wCand.M(), wgt);
-          for (auto& tCand : tCands) allPlots["tcandm_"+tag]->Fill(tCand.M(), wgt);
-          for (auto& tCand : tCandsWcut) allPlots["tcandwcutm_"+tag]->Fill(tCand.M(), wgt);
+          allPlots[tag+"nvtx"]->Fill(ev.nvtx, wgt);
+          allPlots[tag+"nleps"]->Fill(leptons.size(), wgt);
+          allPlots[tag+"njets"]->Fill(jets.size(), wgt);
+          allPlots[tag+"nbjets"]->Fill(sel_nbjets, wgt);
+          allPlots[tag+"nwjets"]->Fill(sel_nwjets, wgt);
+          for (auto& wCand : wCands) allPlots[tag+"wcandm"]->Fill(wCand.M(), wgt);
+          for (auto& tCand : tCands) allPlots[tag+"tcandm"]->Fill(tCand.M(), wgt);
+          for (auto& tCand : tCandsWcut) allPlots[tag+"tcandwcutm"]->Fill(tCand.M(), wgt);
           for(unsigned int i=0; i<leptons.size(); i++) {
             if (i>1) break;
             TString pf(Form("l%d",i));          
-            allPlots[pf+"pt_"+tag] ->Fill(leptons[i].pt(),wgt);
-            allPlots[pf+"eta_"+tag]->Fill(leptons[i].eta(),wgt);
+            allPlots[tag+pf+"pt"] ->Fill(leptons[i].pt(),wgt);
+            allPlots[tag+pf+"eta"]->Fill(leptons[i].eta(),wgt);
           }
           for(unsigned int i=0; i<jets.size(); i++) {
             if (i>5) break;
             TString pf(Form("j%d",i));
-            allPlots[pf+"pt_"+tag] ->Fill(jets[i].pt(),wgt);
-            allPlots[pf+"eta_"+tag]->Fill(jets[i].eta(),wgt);
+            allPlots[tag+pf+"pt"] ->Fill(jets[i].pt(),wgt);
+            allPlots[tag+pf+"eta"]->Fill(jets[i].eta(),wgt);
           }
-          allPlots["met_"+tag]->Fill(ev.met_pt[0], wgt);
+          allPlots[tag+"met"]->Fill(ev.met_pt[0], wgt);
         }
       }
-
-      //////////////////////////
-      // RECO LEVEL ANALYSIS //
-      ////////////////////////
 
       //fill leptons
       tjsev.nl=leptons.size();
@@ -392,6 +465,10 @@ void RunTopJetShape(TString filename,
         tjsev.l_id[il]  = lepton.id();
         il++;
       }
+      
+      //fill MET
+      tjsev.met_pt=ev.met_pt[0];
+      tjsev.met_phi=ev.met_phi[0];
       
       //fill jets (with jet shapes)
       for(int ij=0; ij<(int)jets.size(); ij++) {
@@ -574,11 +651,6 @@ void RunTopJetShape(TString filename,
         allPlots["js_c3_20_puppi"]->Fill(tjsev.j_c3_20_puppi[ij], wgt);
         allPlots["js_c3_20_all"]->Fill(tjsev.j_c3_20_all[ij], wgt);
       }
-
-      tjsev.nw=1;
-      tjsev.weight[0]=wgt;
-      tjsev.met_pt=ev.met_pt[0];
-      tjsev.met_phi=ev.met_phi[0];
       
       
       ///////////////////////
@@ -1188,7 +1260,7 @@ void createTopJetShapeEventTree(TTree *t,TopJetShapeEvent_t &tjsev)
 void resetTopJetShapeEvent(TopJetShapeEvent_t &tjsev)
 {
   tjsev.nw=0;   tjsev.nl=0;   tjsev.nj=0;   tjsev.ngj=0;   tjsev.ngl=0;   tjsev.met_pt=0; tjsev.met_phi=0;
-  for(int i=0; i<10; i++) tjsev.weight[i]=0;
+  for(int i=0; i<1000; i++) tjsev.weight[i]=0;
   for(int i=0; i<5; i++) { tjsev.l_pt[i]=0;   tjsev.l_eta[i]=0;   tjsev.l_phi[i]=0;   tjsev.l_m[i]=0; tjsev.l_id[i]=0; tjsev.gl_pt[i]=0;   tjsev.gl_eta[i]=0;   tjsev.gl_phi[i]=0;   tjsev.gl_m[i]=0; tjsev.gl_id[i]=0; }
   for(int i=0; i<50; i++) {
     tjsev.j_pt[i]=0;   tjsev.j_eta[i]=0;   tjsev.j_phi[i]=0;   tjsev.j_m[i]=0; tjsev.j_flavor[i]=0; tjsev.j_overlap[i]=0; tjsev.j_gj[i]=-1;

@@ -148,9 +148,10 @@ MiniEvent_t smearJetEnergies(MiniEvent_t ev, std::string option) {
 }
 
 //see working points in https://twiki.cern.ch/twiki/bin/view/CMS/BtagRecommendation80XReReco
-MiniEvent_t addBTagDecisions(MiniEvent_t ev,float wp) {
+MiniEvent_t addBTagDecisions(MiniEvent_t ev,float wp,float wpl) {
   for (int k = 0; k < ev.nj; k++) {
-    ev.j_btag[k] = (ev.j_csv[k] > wp);
+    if (ev.j_hadflav[k] >= 4) ev.j_btag[k] = (ev.j_csv[k] > wp);
+    else                      ev.j_btag[k] = (ev.j_csv[k] > wpl);
   }
   
   return ev;
@@ -163,7 +164,7 @@ MiniEvent_t updateBTagDecisions(MiniEvent_t ev,
 				std::map<BTagEntry::JetFlavor, TGraphAsymmErrors*> &expBtagEff, 
 				std::map<BTagEntry::JetFlavor, TGraphAsymmErrors*> &expBtagEffPy8, 
 				BTagSFUtil *myBTagSFUtil, 
-				std::string option) {
+				std::string optionbc, std::string optionlight) {
   for (int k = 0; k < ev.nj; k++) {
     TLorentzVector jp4;
     jp4.SetPtEtaPhiM(ev.j_pt[k],ev.j_eta[k],ev.j_phi[k],ev.j_mass[k]);
@@ -174,8 +175,9 @@ MiniEvent_t updateBTagDecisions(MiniEvent_t ev,
       float expEff(1.0), jetBtagSF(1.0);
       
       BTagEntry::JetFlavor hadFlav=BTagEntry::FLAV_UDSG;
-      if(abs(ev.j_hadflav[k])==4) hadFlav=BTagEntry::FLAV_C;
-      if(abs(ev.j_hadflav[k])==5) hadFlav=BTagEntry::FLAV_B;
+      std::string option = optionlight;
+      if(abs(ev.j_hadflav[k])==4) { hadFlav=BTagEntry::FLAV_C; option = optionbc; }
+      if(abs(ev.j_hadflav[k])==5) { hadFlav=BTagEntry::FLAV_B; option = optionbc; }
 
       expEff    = expBtagEff[hadFlav]->Eval(jptForBtag); 
       jetBtagSF = btvsfReaders[hadFlav]->eval_auto_bounds( option, hadFlav, jetaForBtag, jptForBtag);
@@ -248,3 +250,33 @@ std::map<BTagEntry::JetFlavor, TGraphAsymmErrors *> readExpectedBtagEff(TString 
   return expBtagEff;
 }
 
+
+// See https://twiki.cern.ch/twiki/bin/viewauth/CMS/JECUncertaintySources#Main_uncertainties_2016_80X
+MiniEvent_t applyJetCorrectionUncertainty(MiniEvent_t ev, JetCorrectionUncertainty *jecUnc, TString jecVar, TString direction) {
+  for (int k = 0; k < ev.nj; k++) {
+    if ((jecVar == "FlavorPureGluon"  and not (ev.j_flav[k] == 21 or ev.j_flav[k] == 0)) or
+        (jecVar == "FlavorPureQuark"  and not (abs(ev.j_flav[k]) <= 3 and abs(ev.j_flav[k]) != 0)) or
+        (jecVar == "FlavorPureCharm"  and not (abs(ev.j_flav[k]) == 4)) or
+        (jecVar == "FlavorPureBottom" and not (abs(ev.j_flav[k]) == 5)))
+      continue;
+    
+    TLorentzVector jp4;
+    jp4.SetPtEtaPhiM(ev.j_pt[k],ev.j_eta[k],ev.j_phi[k],ev.j_mass[k]);
+
+    jecUnc->setJetPt(jp4.Pt());
+    jecUnc->setJetEta(jp4.Eta());
+    double scale = 1.;
+    if (direction == "up")
+      scale += jecUnc->getUncertainty(true);
+    else if (direction == "down")
+      scale -= jecUnc->getUncertainty(false);
+    
+    jp4 *= scale;
+    ev.j_pt[k]   = jp4.Pt(); 
+    ev.j_eta[k]  = jp4.Eta();
+    ev.j_phi[k]  = jp4.Phi();
+    ev.j_mass[k] = jp4.M();
+  }
+  
+  return ev;
+}
