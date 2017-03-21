@@ -130,8 +130,8 @@ def show2DLikelihoodScan(resultsSet,parameters,output,label):
     c.SetRightMargin(0.05)
     
     #see Table 33.2 @ http://pdg.lbl.gov/2011/reviews/rpp2011-rev-statistics.pdf
-    #contours = array('d',[2.30,4.61,5.99,6.18,9.21,11.83])
-    contours = array('d',[1.0,2.71,3.84,4.00,6.63,9.00])
+    contours = array('d',[2.30,4.61,5.99,6.18,9.21,11.83])
+    #contours = array('d',[1.0,2.71,3.84,4.00,6.63,9.00])
 
     #likelihood scans
     nllGrs={}
@@ -192,8 +192,7 @@ def show2DLikelihoodScan(resultsSet,parameters,output,label):
             hcont.Draw('contz list')
             c.Update()
             contGrs = ROOT.gROOT.GetListOfSpecials().FindObject("contours")
-            for name,title,idx in [ (f+'68cl','68%CL',0),
-                                    (f+'95cl','95%CL',2)]:                
+            for name,title,idx in [ (f+'68cl','68%CL',0) ] : # (f+'95cl','95%CL',2)]:                
                 nllGrs[ftitle].append( contGrs.At(idx).At(0).Clone() )
                 nllGrs[ftitle][-1].SetName(name)
                 nllGrs[ftitle][-1].SetTitle(title)
@@ -239,6 +238,7 @@ def show2DLikelihoodScan(resultsSet,parameters,output,label):
     c.Modified()
     c.Update()
     for ext in ['png','pdf','C']:
+        print '%s/nll1dscan_%s.%s'%(output,parameter,ext)
         c.SaveAs('%s/nll2d_%svs%s.%s'%(output,parameters[0],parameters[1],ext))
    
 
@@ -443,15 +443,15 @@ def main():
 
     ROOT.gStyle.SetOptStat(0)
     ROOT.gStyle.SetOptTitle(0)
-    ROOT.gROOT.SetBatch(False) #True) #False)
+    ROOT.gROOT.SetBatch(True) #False)
        
     resultsSet=[]
     for newCat in args:
         cat,datacard=newCat.split('=')
         resultsSet.append( (cat,datacard) )
             
-    for parameter in POIs:
-        show1DLikelihoodScan(resultsSet=resultsSet,parameter=parameter,label=opt.label,output=opt.output)
+    #for parameter in POIs:
+    #    show1DLikelihoodScan(resultsSet=resultsSet,parameter=parameter,label=opt.label,output=opt.output)
 
     for i in xrange(0,len(POIs)):
         for j in xrange(i+1,len(POIs)):

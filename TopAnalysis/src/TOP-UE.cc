@@ -23,7 +23,6 @@
 
 using namespace std;
 
-
 //
 void RunTopUE(TString filename,
 	      TString outname,
@@ -39,7 +38,7 @@ void RunTopUE(TString filename,
   //check file type from name
   if(isDataFile) runSysts=false;
   runSysts=false;
-  //  bool isTTbar( filename.Contains("_TTJets") );
+  bool isTTbar( filename.Contains("_TTJets") );
 
   //READ TREE FROM FILE
   MiniEvent_t ev;
@@ -96,17 +95,27 @@ void RunTopUE(TString filename,
       if(ratevsrunH) allPlots["ratevsrun_"+tag] = (TH1 *)ratevsrunH->Clone("ratevsrun_"+tag);
       allPlots["nvtx_"+tag]   = new TH1F("nvtx_"+tag,";Vertex multiplicity;Events",40,0,40);
       allPlots["rho_"+tag]   = new TH1F("rho_"+tag,";#rho;Events",40,0,40);
-      allPlots["mll_"+tag]    = new TH1F("mll_"+tag,";Dilepton invariant mass [GeV];Events",50,0,400);
+      for(size_t i=0; i<=2; i++)
+	{
+	  TString subtag(tag);
+	  subtag += i;
+	  subtag += "t";
+	  allPlots["mll_"+subtag]    = new TH1F("mll_"+subtag,";Dilepton invariant mass [GeV];Events",50,0,400);
+	}
       allPlots["ptpos_"+tag]   = new TH1F("ptpos_"+tag,";Lepton transverse momentum [GeV];Events",50,20,200);
       allPlots["ptll_"+tag]    = new TH1F("ptll_"+tag,";Dilepton transverse momentum [GeV];Events",50,0,200);
       allPlots["ptttbar_"+tag] = new TH1F("ptttbar_"+tag,";p_{T}(t#bar{t}) [GeV];Events",50,0,200);
       allPlots["sumpt_"+tag]   = new TH1F("sumpt_"+tag,";Transverse momentum sum [GeV];Events",50,40,300);
       allPlots["met_"+tag]   = new TH1F("met_"+tag,";Missing transverse momentum [GeV];Events",50,0,300);
-      allPlots["njets_"+tag]  = new TH1F("njets_"+tag,";Jet multiplicity;Events",4,2,6);
+      allPlots["njets_"+tag]  = new TH1F("njets_"+tag,";Jet multiplicity;Events",7,2,9);
       allPlots["nbtags_"+tag] = new TH1F("nbtags_"+tag,";b-tag multiplicity;Events",5,0,5);
+      allPlots["nchvsnvtx_"+tag]  = new TH2F("nchvsnvtx_"+tag,";Vertex multiplicity;Charged particle multiplicity;Events",10,0,40,50,0,100);
+      allPlots["nchvsrho_"+tag]  = new TH2F("nchvsrho_"+tag,";#rho;Charged particle multiplicity;Events",10,0,40,50,0,100);
       allPlots["nch_"+tag]  = new TH1F("nch_"+tag,";Charged particle multiplicity;Events",50,0,200);      
       allPlots["chavgpt_"+tag]  = new TH1F("chavgpt_"+tag,";Charged particle average p_{T} [GeV];Events",50,0,15);      
       allPlots["chsumpt_"+tag]  = new TH1F("chsumpt_"+tag,";Charged particle sum p_{T} [GeV];Events",50,0,400);
+      allPlots["chavgpz_"+tag]  = new TH1F("chavgpz_"+tag,";Charged particle average p_{z} [GeV];Events",50,0,15);      
+      allPlots["chsumpz_"+tag]  = new TH1F("chsumpz_"+tag,";Charged particle sum p_{z} [GeV];Events",50,0,400);
     }
   for (auto& it : allPlots)   { it.second->Sumw2(); it.second->SetDirectory(0); }
 
@@ -120,14 +129,26 @@ void RunTopUE(TString filename,
       if(iev%1000==0) printf("\r [%3.0f/100] done",100.*(float)(iev)/(float)(nentries));
       
       //assign a run period and correct the event accordingly
-      float puWgt(1.0);
+      float puWgt(1.0),puWgtUp(1.0),puWgtDn(1.0),topptsf(1.0);
       ev = addBTagDecisions(ev);
       if(!ev.isData)
 	{
 	  period=assignRunPeriod(runPeriods);
-	  puWgt = puWgtGr[period][0]->Eval(ev.g_pu);
+	  puWgt   = puWgtGr[period][0]->Eval(ev.g_pu);
+	  puWgtUp = puWgtGr[period][1]->Eval(ev.g_pu);
+	  puWgtDn = puWgtGr[period][2]->Eval(ev.g_pu);
 	  ev = smearJetEnergies(ev);
 	  ev = updateBTagDecisions(ev, btvsfReaders[period],expBtagEff,expBtagEff,&myBTagSFUtil);
+
+	  //top pt weighting
+	  if(isTTbar)
+	    {
+	      for(Int_t igen=0; igen<ev.ngtop; igen++)
+		{
+		  if(abs(ev.gtop_id[igen])!=6) continue;
+		  topptsf *= TMath::Exp(0.156-0.00137*ev.gtop_pt[igen]);
+		}
+	    }
 	}
 
       //
@@ -147,6 +168,7 @@ void RunTopUE(TString filename,
 
 	  //divide jets
 	  std::vector<Jet>      &jets=evsel.getJets() ;
+	  sort(jets.begin(),jets.end(),Jet::sortJetsByCSV);
 	  std::vector<size_t> lightJetsIdx, bJetsIdx;
 	  for(size_t ij=0; ij<jets.size(); ij++)
 	    {
@@ -195,7 +217,7 @@ void RunTopUE(TString filename,
 
 	  //save PF cands
 	  tue.n=selTracks.size();
-	  float nch(0.),chSumPt(0.);
+	  float nch(0.),chSumPt(0.),chSumPz(0.);
 	  for(size_t ipf=0; ipf<selTracks.size(); ipf++)
 	    {
 	      tue.pt[ipf]  = selTracks[ipf].second.Pt();
@@ -205,6 +227,7 @@ void RunTopUE(TString filename,
 	      tue.isInBFlags[ipf] = 0;
 	      nch++;
 	      chSumPt+=tue.pt[ipf];
+	      chSumPz+=selTracks[ipf].second.Pz();
 	    }
 	  
 	  //flag if passes selection
@@ -235,6 +258,8 @@ void RunTopUE(TString filename,
 	  if(!ev.isData) 
 	    {
 	      allPlots["puwgtctr"]->Fill(1,puWgt);	      
+	      allPlots["puwgtctr"]->Fill(2,puWgtUp);	      
+	      allPlots["puwgtctr"]->Fill(3,puWgtDn);	      
 	      for(size_t il=0; il<2; il++)
 		{
                   EffCorrection_t sf=lepEffH.getOfflineCorrection(leptons[il].id(),leptons[il].pt(),leptons[il].eta(),period);
@@ -253,14 +278,55 @@ void RunTopUE(TString filename,
 	  //weights
 	  tue.nw=1;
 	  tue.weight[0]=wgt;
-	  
+
+	  if(isTTbar && ev.g_nw>1)
+	    {
+	      //pu{up,down}
+	      tue.weight[1]=puWgt!=0 ? wgt*puWgtUp/puWgt : wgt;
+	      tue.weight[2]=puWgt!=0 ? wgt*puWgtDn/puWgt : wgt;
+
+	      //eff{up,down}
+	      float effCen=trigSF.first*lepselSF.first;
+	      float effUp=(trigSF.first+trigSF.second)*(lepselSF.first+lepselSF.second);
+	      tue.weight[3]=wgt*effUp/effCen;
+	      float effDn=(trigSF.first-trigSF.second)*(lepselSF.first-lepselSF.second);
+	      tue.weight[4]=wgt*effDn/effCen;
+
+	      //b-tag{up,down}
+	      tue.weight[5]=wgt;
+	      tue.weight[6]=wgt;
+
+	      //jes{up,down}
+	      tue.weight[7]=wgt;
+	      tue.weight[8]=wgt;
+
+	      //jer{up,down}
+	      tue.weight[9]=wgt;
+	      tue.weight[10]=wgt;
+
+	      //top pt
+	      tue.weight[11]=wgt*topptsf;
+
+	      //generator level weights
+	      for(size_t iw=1; iw<=20; iw++)
+		tue.weight[11+iw]= ev.g_w[0]!=0 ? wgt* ev.g_w[iw]/ev.g_w[0] : wgt;     
+
+	      tue.nw=31;
+	    }
+
+
+
 	  //nominal selection control histograms
 	  if(passLepPresel)
 	    {
 	      allPlots["nvtx_"+chTag]->Fill(ev.nvtx,wgt);
 	      allPlots["rho_"+chTag]->Fill(ev.rho,wgt);
-	      allPlots["mll_"+chTag]->Fill(tue.mll[0],wgt);
 	      allPlots["nbtags_"+chTag]->Fill(tue.nb[0],wgt);
+	      TString subTag(chTag);
+	      if(bJetsIdx.size()==0) subTag += "0t";
+	      if(bJetsIdx.size()==1) subTag += "1t";
+	      if(bJetsIdx.size()>=2) subTag += "2t";
+	      allPlots["mll_"+subTag]->Fill(tue.mll[0],wgt);
 	    }
 	  if(passPresel)
 	    {
@@ -273,8 +339,12 @@ void RunTopUE(TString filename,
 	      allPlots["met_"+chTag]->Fill(evsel.getMET().Pt(),wgt);
 	      allPlots["njets_"+chTag]->Fill(tue.nj[0],wgt);
 	      allPlots["nch_"+chTag]->Fill(nch,wgt);	  
+	      ((TH2 *)allPlots["nchvsnvtx_"+chTag])->Fill(nch,ev.nvtx,wgt);
+	      ((TH2 *)allPlots["nchvsrho_"+chTag])->Fill(nch,ev.rho,wgt);
 	      allPlots["chavgpt_"+chTag]->Fill(nch>0 ? chSumPt/nch : -1,wgt);
 	      allPlots["chsumpt_"+chTag]->Fill(chSumPt,wgt);
+	      allPlots["chavgpz_"+chTag]->Fill(nch>0 ? chSumPz/nch : -1,wgt);
+	      allPlots["chsumpz_"+chTag]->Fill(chSumPz,wgt);
 	    }
 	}
 
@@ -303,7 +373,7 @@ void RunTopUE(TString filename,
           if(genChTag=="EE" || genChTag=="MM") passPresel &= fabs(mll-91)>15;
 
 	  //track selection
-	  std::vector<std::pair<int,TLorentzVector> > selTracks,hpTracks;
+	  std::vector<Particle> selTracks;
 	  for(int ipf = 0; ipf < ev.ngpf; ipf++) 
 	    {
 
@@ -333,19 +403,36 @@ void RunTopUE(TString filename,
 		      break;
 		    }
 		}
-	  
-	      if(!isHP) selTracks.push_back(std::pair<int,TLorentzVector>(ipf,tkP4) );
-	      else      hpTracks.push_back(std::pair<int,TLorentzVector>(ipf,tkP4) );
+
+	      //match to reco
+	      float minDRtoRec(9999.);
+	      int matchedRecPF(-1);
+	      for(int irecpf = 0; irecpf < ev.npf; irecpf++) 
+		{
+		  if(ev.pf_c[irecpf]==0) continue;
+		  if(ev.pf_pt[irecpf]<0.9) continue;
+		  if(fabs(ev.pf_eta[irecpf])>2.5) continue;
+		  float dR=sqrt(pow(ev.pf_eta[irecpf]-ev.gpf_eta[ipf],2)+pow(TVector2::Phi_mpi_pi(ev.pf_phi[irecpf]-ev.gpf_phi[ipf]),2));
+		  if(dR>minDRtoRec) continue;
+		  minDRtoRec=dR;
+		  matchedRecPF=irecpf;
+		}
+	      if(minDRtoRec>0.01) matchedRecPF=-1;
+
+	      selTracks.push_back( Particle(tkP4,ev.gpf_c[ipf],ev.gpf_id[ipf],isHP,matchedRecPF,1) );
 	    }
 	  
 	  //save gen candidates
-	  tue.gen_n=selTracks.size();
+	  tue.gen_n=0;
 	  for(size_t ipf=0; ipf<selTracks.size(); ipf++)
 	    {
-	      tue.gen_pt[ipf]  = selTracks[ipf].second.Pt();
-	      tue.gen_eta[ipf] = selTracks[ipf].second.Eta();
-	      tue.gen_phi[ipf] = selTracks[ipf].second.Phi();
-	      tue.gen_id[ipf]  = ev.gpf_id[ selTracks[ipf].first ];
+	      if(selTracks[ipf].qualityFlags()!=0) continue; //do not store hard process tracks
+	      tue.gen_pt[ipf]  = selTracks[ipf].pt();
+	      tue.gen_eta[ipf] = selTracks[ipf].eta();
+	      tue.gen_phi[ipf] = selTracks[ipf].phi();
+	      tue.gen_id[ipf]  = selTracks[ipf].id();
+	      tue.gen_rec[ipf] = selTracks[ipf].originalReference();
+	      tue.gen_n++;
 	    }
 	  
 	  //flag if passes selection  
@@ -396,7 +483,7 @@ void RunTopUE(TString filename,
       tue.nvtx=ev.nvtx;
    
       //all done
-      outT->Fill();
+      if(tue.cat==11*13) outT->Fill();
     }
   
   //save histos to file  
@@ -463,6 +550,7 @@ void createTopUETree(TTree *t,TopUE_t &tue)
   //gen charged particles
   t->Branch("gen_n",   &tue.gen_n,     "gen_n/I");
   t->Branch("gen_id",   tue.gen_id ,   "gen_id[gen_n]/I");
+  t->Branch("gen_rec",  tue.gen_rec ,  "gen_rec[gen_n]/I");
   t->Branch("gen_pt",   tue.gen_pt ,   "gen_pt[gen_n]/F");
   t->Branch("gen_eta",  tue.gen_eta ,  "gen_eta[gen_n]/F");
   t->Branch("gen_phi",  tue.gen_phi ,  "gen_phi[gen_n]/F");

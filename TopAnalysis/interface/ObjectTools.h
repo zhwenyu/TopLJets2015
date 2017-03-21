@@ -10,7 +10,7 @@ class Particle {
   
   public:
     Particle(TLorentzVector p4, int charge, int id, int qualityFlags, int origRef, double puppi = 1)
-      : p4_(p4), charge_(charge), id_(id), qualityFlags_(qualityFlags), puppi_(puppi) {}
+      : p4_(p4), charge_(charge), id_(id), qualityFlags_(qualityFlags), origRef_(origRef), puppi_(puppi) {}
    
     Particle( const Particle &p) 
       : p4_(p.p4_), charge_(p.charge_), id_(p.id_), qualityFlags_(p.qualityFlags_), origRef_(p.origRef_), puppi_(p.puppi_) {}
@@ -71,6 +71,7 @@ class Jet {
     void addTrack(TLorentzVector p4, int pfid) { trks_.push_back( IdTrack(p4,pfid) ); }
     TLorentzVector &getVec() { return p4_; }
     float &getCSV() { return csv_; }
+    void setCSV(float csv) { csv_=csv; }
     int &getJetIndex() { return idx_; }
     std::vector<IdTrack> &getTracks() { return trks_; }
     void sortTracksByPt() { sort(trks_.begin(),trks_.end(), sortIdTracksByPt); }

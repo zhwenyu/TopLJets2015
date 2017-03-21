@@ -24,7 +24,7 @@ struct TopUE_t
   Float_t gen_ptttbar,    gen_phittbar;  
   Int_t n,gen_n,isInBFlags[1000],id[1000];
   Float_t pt[1000],     eta[1000],     phi[1000]; 
-  Int_t gen_id[1000]; 
+  Int_t gen_id[1000],gen_rec[1000]; 
   Float_t gen_pt[1000], gen_eta[1000], gen_phi[1000]; 
 };
 

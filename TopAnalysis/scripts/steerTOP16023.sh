@@ -234,7 +234,7 @@ case $WHAT in
 	echo -e "[ ${RED} Fit plots will be made available in ${wwwdir}/fits_${FITTAG} ${NC}]";
 
 	for ch in e mu l; do
-	    cardsDir=${outdir}/analysis_${ch}/datacard_${FITTAG}/;
+	    cardsDir=${outdir}/analysis_${ch}/datacard_${FITTAG};
 	    python scripts/fitSummaryPlots.py ${ch}=${cardsDir}/datacard.dat --POIs r,btagRate --label "27.4 pb^{-1} (5.02 TeV)" -o ${cardsDir};
 	    mkdir -p ${wwwdir}/fits_${ch}_${FITTAG};
 	    mv ${cardsDir}/*.{png,pdf,C} ${wwwdir}/fits_${ch}_${FITTAG}/;
