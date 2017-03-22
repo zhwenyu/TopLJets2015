@@ -15,8 +15,6 @@ git cms-init
 git cms-merge-topic cms-egamma:EGM_gain_v1
 cd EgammaAnalysis/ElectronTools/data
 git clone -b Moriond17_gainSwitch_unc https://github.com/ECALELFS/ScalesSmearings.git
-cd $CMSSW_BASE/src
-scram b
 
 #MET
 git cms-merge-topic cms-met:METRecipe_8020 -u
@@ -24,6 +22,9 @@ git cms-merge-topic cms-met:METRecipe_80X_part2 -u
 
 #pseudo-top rivet based
 git cms-merge-topic -u intrepid42:pseudotoprivet_80x
+
+#muon calibration
+git clone -o Analysis https://github.com/bachtis/analysis.git -b KaMuCa_V4 KaMuCa
 
 #ntuplizer
 git clone -b 80x_rereco_rev git@github.com:pfs/TopLJets2015.git
