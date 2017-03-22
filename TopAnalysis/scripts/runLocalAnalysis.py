@@ -101,8 +101,8 @@ def main():
         inF=opt.input
         if '/store/' in inF and not 'root:' in inF : inF='root://eoscms//eos/cms'+opt.input        
         for systVar in varList:
-            if systVar == 'nominal': outF=opt.output
-            else: outF=opt.output[:-5]+'_'+systVar+'.root'
+            outF=opt.output
+            if systVar != 'nominal': outF=opt.output[:-5]+'_'+systVar+'.root'
             task_list.append( (opt.method,inF,outF,opt.channel,opt.charge,opt.flav,opt.runSysts,systVar,opt.era,opt.tag,opt.debug) )
     else:
 
@@ -134,8 +134,8 @@ def main():
             for ifile in xrange(0,len(input_list)):
                 inF=input_list[ifile]
                 for systVar in varList:
-                    if systVar == 'nominal': os.path.join(opt.output,'Chunks','%s_%d.root' %(tag,ifile))
-                    else: outF=os.path.join(opt.output,'Chunks','%s_%s_%d.root' %(tag,systVar,ifile))
+                    outF=os.path.join(opt.output,'Chunks','%s_%d.root' %(tag,ifile))
+                    if systVar != 'nominal': outF=os.path.join(opt.output,'Chunks','%s_%s_%d.root' %(tag,systVar,ifile))
                     if (opt.skipexisting and os.path.isfile(outF)):
                         nexisting += 1
                         continue
@@ -159,7 +159,7 @@ def main():
         os.system('mkdir -p %s'%FarmDirectory)
 
         jobNb=0
-        for method,inF,outF,channel,charge,flav,runSysts,era,tag,debug in task_list:
+        for method,inF,outF,channel,charge,flav,runSysts,systVar,era,tag,debug in task_list:
             jobNb+=1
             cfgfile='%s/job_%d.sh'%(FarmDirectory,jobNb)
             cfg=open(cfgfile,'w')

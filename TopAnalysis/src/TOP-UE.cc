@@ -156,6 +156,7 @@ void RunTopUE(TString filename,
       //
 
       //selection
+      //evsel.setDebug(true);
       TString chTag = evsel.flagFinalState(ev);
       if(chTag=="EM" || chTag=="EE" || chTag=="MM")
 	{

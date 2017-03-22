@@ -90,7 +90,7 @@ if options.lumiJson:
     process.source.lumisToProcess.extend(myLumis)
 
 process.options   = cms.untracked.PSet(
-    wantSummary = cms.untracked.bool(True),
+   # wantSummary = cms.untracked.bool(True),
     allowUnscheduled = cms.untracked.bool(True)
 )
 
