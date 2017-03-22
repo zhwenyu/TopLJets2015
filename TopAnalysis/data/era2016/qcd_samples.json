@@ -27,5 +27,4 @@
 "MC13TeV_QCDEMEnriched120to170_ext" : [68592.0,    0, "/QCD_Pt-120to170_EMEnriched_TuneCUETP8M1_13TeV_pythia8/RunIISummer16MiniAODv2-PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/MINIAODSIM", "QCD e.m. enriched", "#91bfdb", false, false, 1],
 "MC13TeV_QCDEMEnriched170to300"     : [18810.0,    0, "/QCD_Pt-170to300_EMEnriched_TuneCUETP8M1_13TeV_pythia8/RunIISummer16MiniAODv2-PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/MINIAODSIM", "QCD e.m. enriched", "#91bfdb", false, false, 1],
 "MC13TeV_QCDEMEnriched300toInf"     : [1350.0,     0, "/QCD_Pt-300toInf_EMEnriched_TuneCUETP8M1_13TeV_pythia8/RunIISummer16MiniAODv2-PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/MINIAODSIM", "QCD e.m. enriched", "#91bfdb", false, false, 1]
-  
 }
