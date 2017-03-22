@@ -20,8 +20,11 @@ git clone -b Moriond17_gainSwitch_unc https://github.com/ECALELFS/ScalesSmearing
 git cms-merge-topic cms-met:METRecipe_8020 -u
 git cms-merge-topic cms-met:METRecipe_80X_part2 -u
 
-#pseudo-top rivet based
+#pseudo-top rivet based and b-frag utils
 git cms-merge-topic -u intrepid42:pseudotoprivet_80x
+cd TopQuarkAnalysis
+git clone ssh://git@gitlab.cern.ch:7999/CMS-TOPPAG/BFragmentationAnalyzer.git
+cd -
 
 #muon calibration
 git clone -o Analysis https://github.com/bachtis/analysis.git -b KaMuCa_V4 KaMuCa

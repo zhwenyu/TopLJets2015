@@ -10,6 +10,7 @@
 <use name="CommonTools/UtilAlgos"/>
 <use name="EgammaAnalysis/ElectronTools"/>
 <use name="SimDataFormats/PileupSummaryInfo"/>
+<use name="KaMuCa/Calibration"/>
 <use name="TopLJets2015/TopAnalysis"/>
 <use name="clhep"/>
 <use name="root"/>

@@ -61,6 +61,10 @@
 
 #include "DataFormats/EgammaCandidates/interface/GsfElectron.h"
 
+#include "TopQuarkAnalysis/BFragmentationAnalyzer/interface/BFragmentationAnalyzerUtils.h"
+
+#include "KaMuCa/Calibration/interface/KalmanMuonCalibrator.h"
+
 #include "TLorentzVector.h"
 #include "TH1.h"
 #include "TH1F.h"
@@ -78,10 +82,6 @@ using namespace edm;
 using namespace std;
 using namespace reco;
 using namespace pat; 
-
-#define IS_BHADRON_PDGID(id) ( ((abs(id)/100)%10 == 5) || (abs(id) >= 5000 && abs(id) <= 5999) )
-#define IS_CHADRON_PDGID(id) ( ((abs(id)/100)%10 == 4) || (abs(id) >= 4000 && abs(id) <= 4999) )
-#define IS_NEUTRINO_PDGID(id) ( (abs(id) == 12) || (abs(id) == 14) || (abs(id) == 16) )
 
 //
 // class declaration
@@ -145,6 +145,8 @@ private:
   bool saveTree_,savePF_;
   TTree *tree_;
   MiniEvent_t ev_;
+  
+  KalmanMuonCalibrator *muonCor_;
 
   edm::Service<TFileService> fs;
 };
@@ -197,7 +199,8 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig) :
   BadPFMuonFilterToken_(consumes<bool>(iConfig.getParameter<edm::InputTag>("badPFMuonFilter"))),
   pfjetIDLoose_( PFJetIDSelectionFunctor::FIRSTDATA, PFJetIDSelectionFunctor::LOOSE ),  
   saveTree_( iConfig.getParameter<bool>("saveTree") ),
-  savePF_( iConfig.getParameter<bool>("savePF") )
+  savePF_( iConfig.getParameter<bool>("savePF") ),
+  muonCor_(0)
 {
   //now do what ever initialization is needed
   electronToken_      = mayConsume<edm::View<pat::Electron> >(iConfig.getParameter<edm::InputTag>("electrons"));
@@ -290,54 +293,28 @@ int MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
   iEvent.getByToken(genJetsToken_,genJets);  
   std::map<const reco::Candidate *,int> jetConstsMap;
   int ngjets(0),ngbjets(0);
-  for(auto genJet = genJets->begin();  genJet != genJets->end(); ++genJet)
+  for(auto genJet : *genJets)
     {
       //map the gen particles which are clustered in this jet
-      std::vector< const reco::Candidate * > jconst=genJet->getJetConstituentsQuick ();
-      int nbtags(0),nctags(0),ntautags(0);
-      
-      reco::Candidate::LorentzVector nup4(0,0,0,0);
-      const reco::Candidate *leadTagConst=0;
-      ev_.g_isSemiLepBhad[ev_.ng] = false;
-      for(size_t ijc=0; ijc <jconst.size(); ijc++) 
-	{
-	  const reco::Candidate *par=jconst[ijc];
-	  jetConstsMap[ par ] = ev_.ng;
+      JetFragInfo_t jinfo=analyzeJet(genJet);
 
-	  int absid=abs(par->pdgId());
-	  if(par->status()==1 && IS_NEUTRINO_PDGID(absid)) 
-	    {
-	      nup4 += par->p4()*1e20;
-	      int motherid( abs(par->mother()->pdgId()) );
-	      if(IS_BHADRON_PDGID(motherid)) ev_.g_isSemiLepBhad[ev_.ng] = true;
-	    }
-	  if(par->status()!=2) continue;
-	  
-	  if(absid==15)               ntautags++;
-	  if(IS_BHADRON_PDGID(absid)) nbtags++;
-	  if(IS_CHADRON_PDGID(absid)) nctags++;
-	  if(leadTagConst && leadTagConst->pt()>par->pt()) continue;
-	  leadTagConst=par;
-	}
-      
-      reco::Candidate::LorentzVector totalP4(genJet->p4()+nup4);
+      ev_.g_tagCtrs[ev_.ng]       = (jinfo.nbtags&0xf) | ((jinfo.nctags&0xf)<<4) | ((jinfo.ntautags&0xf)<<8);
+      ev_.g_xb[ev_.ng]            = jinfo.xb;
+      ev_.g_bid[ev_.ng]           = jinfo.leadTagId;
+      ev_.g_isSemiLepBhad[ev_.ng] = jinfo.hasSemiLepDecay;
 
-      ev_.g_tagCtrs[ev_.ng]       = (nbtags&0xf) | ((nctags&0xf)<<4) | ((ntautags&0xf)<<8);
-      ev_.g_xb[ev_.ng]            = leadTagConst ? (leadTagConst->pt()/1.0e-20)/totalP4.pt() : -1;
-      ev_.g_bid[ev_.ng]           = leadTagConst ? leadTagConst->pdgId() : 0.;	  
-
-      ev_.g_id[ev_.ng]   = genJet->pdgId();
-      ev_.g_pt[ev_.ng]   = genJet->pt();
-      ev_.g_eta[ev_.ng]  = genJet->eta();
-      ev_.g_phi[ev_.ng]  = genJet->phi();
-      ev_.g_m[ev_.ng]    = genJet->mass();       
+      ev_.g_id[ev_.ng]   = genJet.pdgId();
+      ev_.g_pt[ev_.ng]   = genJet.pt();
+      ev_.g_eta[ev_.ng]  = genJet.eta();
+      ev_.g_phi[ev_.ng]  = genJet.phi();
+      ev_.g_m[ev_.ng]    = genJet.mass();       
       ev_.ng++;
       
       //gen level selection
-      if(genJet->pt()>25 && fabs(genJet->eta())<2.5)
+      if(genJet.pt()>25 && fabs(genJet.eta())<2.5)
 	{
 	  ngjets++;	
-	  if(abs(genJet->pdgId())==5) ngbjets++;
+	  if(abs(genJet.pdgId())==5) ngbjets++;
 	}
     }
 
@@ -515,12 +492,56 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
   //MUON SELECTION: cf. https://twiki.cern.ch/twiki/bin/viewauth/CMS/SWGuideMuonIdRun2
   edm::Handle<pat::MuonCollection> muons;
   iEvent.getByToken(muonToken_, muons);
+  float maxMuPtForCor(200.);
+  if(muonCor_) muonCor_=new KalmanMuonCalibrator( ev_.isData? "DATA_80X_13TeV" : "MC_80X_13TeV");
   for (const pat::Muon &mu : *muons) 
     { 
 
       //correct the 4-momentum
       TLorentzVector p4;
-      p4.SetPtEtaPhiM(mu.pt(),mu.eta(),mu.phi(),mu.mass());
+
+      //apply correction
+      float pt=mu.pt();
+      float eta = mu.eta();
+      float phi = mu.phi();
+      float ptUnc = mu.bestTrack()->ptError();
+      if(muonCor_ && mu.muonBestTrackType() == 1 && pt < maxMuPtForCor)
+        {
+	  bool corrApplied(true);
+          if( !ev_.isData )
+	    {
+	      pt = muonCor_->getCorrectedPt(pt, eta, phi, mu.charge());
+	      pt = muonCor_->smear(pt, eta);
+	    }
+	  else if (pt > 2. && fabs(eta) < 2.4)
+	    {
+	      pt = muonCor_->getCorrectedPt(pt, eta, phi, mu.charge());
+	    }
+	  else
+	    {
+	      corrApplied=false;
+	    }
+	  
+	  if(corrApplied)
+	    {
+	      int n=muonCor_->getN();
+	      float uncUp(0),uncDn(0);
+	      for(int i=0; i<n; i++)
+		{
+		  muonCor_->vary(i,+1);
+		  uncUp += pow(muonCor_->getCorrectedPt(40,0.0,0.0,1)-pt,2);
+		  muonCor_->vary(i,-1);
+		  uncDn += pow(muonCor_->getCorrectedPt(40,0.0,0.0,1)-pt,2);
+		}
+	      muonCor_->reset();
+	      muonCor_->varyClosure(+1);
+	      float vClose=muonCor_->getCorrectedPt(40,0.0,0.0,1);
+	      uncUp += pow(vClose-pt,2);
+	      uncDn += pow(vClose-pt,2);
+	      ptUnc = 0.5*(TMath::Sqrt(uncUp)+TMath::Sqrt(uncDn));
+	    }
+        }
+      p4.SetPtEtaPhiM(pt,eta,phi,mu.mass());
 
       //kinematics
       bool passPt(p4.Pt() > 10);
@@ -553,7 +574,7 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       ev_.l_eta[ev_.nl]      = p4.Eta();
       ev_.l_phi[ev_.nl]      = p4.Phi();
       ev_.l_mass[ev_.nl]     = p4.M();
-      ev_.l_scaleUnc[ev_.nl] = 0;
+      ev_.l_scaleUnc[ev_.nl] = ptUnc;
       ev_.l_mva[ev_.nl]      = 0;
       ev_.l_pid[ev_.nl]      = (isSoft | (isLoose<<1) | (isMedium<<2) | (isMedium2016ReReco<<3) | (isTight<<4));
       ev_.l_chargedHadronIso[ev_.nl] = mu.pfIsolationR04().sumChargedHadronPt;
