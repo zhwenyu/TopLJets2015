@@ -659,7 +659,6 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
             }
 	  if(icut!=etightIsoBit_ && !tightCutBits.getCutResultByIndex(icut)) passTightId=false;
 	}
-      cout << e->pt() << " " << e->eta() << " " << passVetoId << " " << passLooseId << " " << passMediumId << " " << passTightId << endl;
       if(!passVetoId) continue;
 
       //for(size_t icut = 0; icut<vetoCutBits.cutFlowSize(); icut++)
