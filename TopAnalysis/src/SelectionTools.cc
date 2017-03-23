@@ -141,7 +141,8 @@ std::vector<Jet> SelectionTool::getGoodJets(MiniEvent_t &ev, double minPt, doubl
     }
     
     Jet jet(jp4, flavor, k);
-    
+    jet.setCSV(ev.j_csv[k]);
+
     //fill jet constituents
     for (int p = 0; p < ev.npf; p++) {
       if (ev.pf_j[p] == k) {

@@ -30,7 +30,10 @@ NC='\e[0m'
 case $WHAT in
 
     TESTSEL )
-	analysisWrapper --in root://eoscms//eos/cms/store/cmst3/group/top/ReReco2016/b32c02e/MC13TeV_TTJets/MergedMiniEvents_0.root \
+	#file=root://eoscms//eos/cms/store/cmst3/group/top/ReReco2016/b32c02e/MC13TeV_TTJets/MergedMiniEvents_0.root
+	file=root://eoscms//eos/cms/store/cmst3/group/top/ReReco2016/b32c02e/Data13TeV_MuonEG_2016D/MergedMiniEvents_0.root
+	analysisWrapper \
+	    --in ${file} \
 	    --out ue_test.root \
 	    --era ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/era2016 \
 	    --method TOP-UE::RunTopUE \
@@ -42,6 +45,7 @@ case $WHAT in
 	;;
 
     MERGE )
+	mkdir -p ${outdir}
 	/afs/cern.ch/project/eos/installation/0.3.84-aquamarine/bin/eos.select -b fuse mount eos;
 	./scripts/mergeOutputs.py eos/cms${summaryeosdir} True ${outdir};
 	/afs/cern.ch/project/eos/installation/0.3.84-aquamarine/bin/eos.select -b fuse umount eos;
@@ -49,8 +53,8 @@ case $WHAT in
     PLOTSEL )
 	commonOpts="-i ${outdir} --puNormSF puwgtctr  -j data/era2016/samples.json -l ${lumi}  --saveLog --mcUnc ${lumiUnc}"
 	python scripts/plotter.py ${commonOpts} --only mll --outName mll_plotter.root;	
-     	python scripts/runDYRinRout.py --in ${outdir}/plots/mll_plotter.root --categs ""  --out ${outdir}/plots/;
-	python scripts/plotter.py ${commonOpts} --procSF DY:${outdir}/plots/.dyscalefactors.pck --only njets --rebin 4 --saveTeX --outName count_plotter.root;
+     	python scripts/runDYRinRout.py --in ${outdir}/plots/mll_plotter.root --categs "0t,1t,2t"  --out ${outdir}/plots/;
+	#python scripts/plotter.py ${commonOpts} --procSF DY:${outdir}/plots/.dyscalefactors.pck --only njets --rebin 4 --saveTeX --outName count_plotter.root;
 	python scripts/plotter.py ${commonOpts} --procSF DY:${outdir}/plots/.dyscalefactors.pck;
 	;;
     WWWSEL )

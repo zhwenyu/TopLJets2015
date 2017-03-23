@@ -13,7 +13,6 @@
 
 #include "TGraphAsymmErrors.h"
 
-
 typedef std::pair<TString,float> RunPeriod_t;
 std::vector<RunPeriod_t> getRunPeriods(TString era);
 TString assignRunPeriod(std::vector<RunPeriod_t> &runPeriods,TRandom *rand=0);
