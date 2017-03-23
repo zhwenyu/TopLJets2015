@@ -148,10 +148,10 @@ void RunTopJetShape(TString filename,
       TString tag(channel+stage+"_");
       
       if(ratevsrunH)
-        allPlots[tag+"ratevsrun"] = (TH1 *)ratevsrunH->Clone("ratevsrun_"+tag);
-      allPlots[tag+"nvtx"]   = new TH1F(tag+"nvtx",";Vertex multiplicity;Events",30,0,30);
+        allPlots[tag+"ratevsrun"] = (TH1 *)ratevsrunH->Clone(tag+"ratevsrun");
+      allPlots[tag+"nvtx"]   = new TH1F(tag+"nvtx",";Vertex multiplicity;Events",55,0,55);
       allPlots[tag+"nleps"]  = new TH1F(tag+"nleps",";Lepton multiplicity;Events",5,-0.5,4.5);
-      allPlots[tag+"njets"]  = new TH1F(tag+"njets",";Jet multiplicity;Events",10,-0.5,9.5);
+      allPlots[tag+"njets"]  = new TH1F(tag+"njets",";Jet multiplicity;Events",15,-0.5,14.5);
       allPlots[tag+"nbjets"] = new TH1F(tag+"nbjets",";b jet multiplicity;Events",5,-0.5,4.5);
       allPlots[tag+"nwjets"] = new TH1F(tag+"nwjets",";W jet multiplicity;Events",10,-0.5,9.5);
       allPlots[tag+"wcandm"] = new TH1F(tag+"wcandm",";W candidate mass;W candidates",60,0,300);
