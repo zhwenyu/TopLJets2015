@@ -134,7 +134,7 @@ def main():
             for ifile in xrange(0,len(input_list)):
                 inF=input_list[ifile]
                 for systVar in varList:
-                    if systVar == 'nominal': os.path.join(opt.output,'Chunks','%s_%d.root' %(tag,ifile))
+                    if systVar == 'nominal': outF=os.path.join(opt.output,'Chunks','%s_%d.root' %(tag,ifile))
                     else: outF=os.path.join(opt.output,'Chunks','%s_%s_%d.root' %(tag,systVar,ifile))
                     if (opt.skipexisting and os.path.isfile(outF)):
                         nexisting += 1
@@ -159,9 +159,10 @@ def main():
         os.system('mkdir -p %s'%FarmDirectory)
 
         jobNb=0
-        for method,inF,outF,channel,charge,flav,runSysts,era,tag,debug in task_list:
+        for method,inF,outF,channel,charge,flav,runSysts,systVar,era,tag,debug in task_list:
             jobNb+=1
             cfgfile='%s/job_%d.sh'%(FarmDirectory,jobNb)
+            logfile='%s/job_%d.log'%(FarmDirectory,jobNb)
             cfg=open(cfgfile,'w')
             cfg.write('WORKDIR=`pwd`\n')
             cfg.write('echo "Working directory is ${WORKDIR}"\n')
@@ -173,14 +174,16 @@ def main():
                     %(inF, localOutF, charge, channel, era, tag, flav, method, systVar)
             if runSysts : runOpts += ' --runSysts'
             if debug :    runOpts += ' --debug'
-            cfg.write('python %s/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py %s\n'%(cmsswBase,runOpts))
+            cfg.write('python %s/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py %s &> run.log\n'%(cmsswBase,runOpts))
             if '/store' in outF:
                 cfg.write('xrdcp ${WORKDIR}/%s root://eoscms//eos/cms/%s\n'%(localOutF,outF))
                 cfg.write('rm ${WORKDIR}/%s'%localOutF)
             elif outF!=localOutF:
                 cfg.write('mv -v ${WORKDIR}/%s %s\n'%(localOutF,outF))
+                cfg.write('mv -v ${WORKDIR}/run.log %s\n'%(logfile))
             cfg.close()
             os.system('chmod u+x %s'%cfgfile)
+            print 'Submitting job %d/%d'%(jobNb, len(task_list))
             os.system('bsub -q %s %s -R "pool>30000"'%(opt.queue,
                                                        os.path.abspath(cfgfile)) )
         
