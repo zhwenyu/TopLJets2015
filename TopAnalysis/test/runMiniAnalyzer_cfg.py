@@ -110,6 +110,8 @@ if not options.runOnData:
     process.pseudoTop.leptonMaxEta=cms.double(2.5)
     process.pseudoTop.jetMaxEta=cms.double(5.0)
 
+    process.load('TopQuarkAnalysis.BFragmentationAnalyzer.bfragWgtProducer_cfi')
+
 #EGM
 from TopLJets2015.TopAnalysis.customizeEGM_cff import *
 customizeEGM(process=process,runOnData=options.runOnData)
@@ -154,5 +156,5 @@ if options.runOnData:
     process.p = cms.Path(process.analysis)
     #process.p = cms.Path(process.egmSeq*process.jetmetSeq*process.analysis)
 else:
-    process.p = cms.Path(process.pseudoTop*process.analysis)
+    process.p = cms.Path(process.pseudoTop*process.bfragWgtProducer*process.analysis)
     #process.p = cms.Path(process.egmSeq*process.jetmetSeq*process.pseudoTop*process.analysis)
