@@ -18,19 +18,15 @@ def main():
     parser.add_option('-o', '--output',      dest='cache',       help='output file',                  default='data/era2016/genweights.root',                      type='string')
     (opt, args) = parser.parse_args()
 
-    #mount locally EOS
-    eos_cmd = '/afs/cern.ch/project/eos/installation/0.3.15/bin/eos.select'
-    Popen([eos_cmd, ' -b fuse mount', 'eos'],stdout=PIPE).communicate()
-
     #loop over samples available
     genweights={}
-    for sample in os.listdir('eos/cms/%s' % opt.inDir):
+    for sample in os.listdir('/eos/cms/%s' % opt.inDir):
 
         #sum weight generator level weights
         wgtCounter=None
         labelH=None
-        for f in os.listdir('eos/cms/%s/%s' % (opt.inDir,sample ) ):
-            fIn=ROOT.TFile.Open('eos/cms/%s/%s/%s' % (opt.inDir,sample,f ) )
+        for f in os.listdir('/eos/cms/%s/%s' % (opt.inDir,sample ) ):
+            fIn=ROOT.TFile.Open('/eos/cms/%s/%s/%s' % (opt.inDir,sample,f ) )
             if not opt.HiForest:
                 if wgtCounter is None:
                     try:
@@ -81,9 +77,6 @@ def main():
             wgtCounter.SetBinError(xbin,0.)
        
         genweights[sample]=wgtCounter
-
-    #unmount locally EOS
-    Popen([eos_cmd, ' -b fuse umount', 'eos'],stdout=PIPE).communicate()
 
     #dump to ROOT file    
     cachefile=ROOT.TFile.Open(opt.cache,'RECREATE')
