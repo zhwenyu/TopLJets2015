@@ -5,8 +5,6 @@ from collections import OrderedDict
 
 from TopLJets2015.TopAnalysis.rounding import *
 
-fillLineColorDict = { 633:ROOT.kRed+3, 0:ROOT.kGray+2, 413:ROOT.kGreen+3, 616:ROOT.kMagenta+3, 858:ROOT.kAzure-1, 400:ROOT.kYellow+2 }
-
 """
 increments the first and the last bin to show the under- and over-flows
 """
@@ -93,7 +91,10 @@ class Plot(object):
                     h.SetLineColor(color)
                     h.SetLineWidth(2)
                 else : 
-                    h.SetLineColor(fillLineColorDict.get(color, 0))
+                    if color == ROOT.kWhite:
+                        h.SetLineColor(ROOT.kGray+3)
+                    else:
+                        h.SetLineColor(ROOT.TColor.GetColorDark(color))
                     h.SetLineWidth(1)
                     h.SetFillColor(color)
                     h.SetFillStyle(1001)
