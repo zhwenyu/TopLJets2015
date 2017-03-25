@@ -102,14 +102,14 @@ void LeptonEfficiencyWrapper::init(TString era)
         gSystem->ExpandPathName(lepEffUrl);
         fIn=TFile::Open(lepEffUrl);      
         TH2 *idH=(TH2 *)fIn->Get("EGamma_SF2D");
-        for(Int_t xbin=1; xbin<=(lepEffH_["m_sel"+period])->GetNbinsX(); xbin++)
-          for(Int_t ybin=1; ybin<=(lepEffH_["m_sel"+period])->GetNbinsY(); ybin++)
+        for(Int_t xbin=1; xbin<=(lepEffH_["e_sel"+period])->GetNbinsX(); xbin++)
+          for(Int_t ybin=1; ybin<=(lepEffH_["e_sel"+period])->GetNbinsY(); ybin++)
             {
-              float sfreco(lepEffH_["m_sel"+period]->GetBinContent(xbin,ybin)), sfid(idH->GetBinContent(xbin,ybin));
-              float sfrecoUnc(lepEffH_["m_sel"+period]->GetBinError(xbin,ybin)), sfidUnc(idH->GetBinError(xbin,ybin));
+              float sfreco(lepEffH_["e_sel"+period]->GetBinContent(xbin,ybin)), sfid(idH->GetBinContent(xbin,ybin));
+              float sfrecoUnc(lepEffH_["e_sel"+period]->GetBinError(xbin,ybin)), sfidUnc(idH->GetBinError(xbin,ybin));
               float sf(sfreco*sfid), sfUnc(sqrt(pow(sfreco*sfrecoUnc,2)+pow(sfidUnc*sfid,2)));
-              lepEffH_["m_sel"+period]->SetBinContent(xbin,ybin,sf);
-              lepEffH_["m_sel"+period]->SetBinError(xbin,ybin,sfUnc);
+              lepEffH_["e_sel"+period]->SetBinContent(xbin,ybin,sf);
+              lepEffH_["e_sel"+period]->SetBinError(xbin,ybin,sfUnc);
             }
         fIn->Close();
       }
