@@ -13,7 +13,7 @@ export LSB_JOB_REPORT_MAIL=N
 
 
 queue=2nw
-githash=b32c02e
+githash=b312177
 lumi=36460
 lumiSpecs="" #--lumiSpecs EE:11391"
 lumiUnc=0.027

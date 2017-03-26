@@ -15,24 +15,32 @@ def main():
     parser = optparse.OptionParser(usage)
     parser.add_option('-i', '--inDir',       dest='inDir',       help='input directory with files',   default='/store/cmst3/user/psilva/LJets2015/5736a2c',        type='string')
     parser.add_option(      '--HiForest',    dest='HiForest',    help='flag if these are HiForest',   default=False, action='store_true')
+    parser.add_option(      '--update',      dest='update',      help='update current weight cache',   default=False, action='store_true')
+    parser.add_option(      '--mount',       dest='mount',       help='mount eos locally',   default=False, action='store_true')
     parser.add_option('-o', '--output',      dest='cache',       help='output file',                  default='data/era2016/genweights.root',                      type='string')
     (opt, args) = parser.parse_args()
 
+    baseEOS='/eos/cms/'
+    eos_cmd = '/afs/cern.ch/project/eos/installation/0.3.15/bin/eos.select'
+    if opt.mount:
+        baseEOS='eos/cms'
+        Popen([eos_cmd, ' -b fuse mount', 'eos'],stdout=PIPE).communicate()
+
     #loop over samples available
     genweights={}
-    for sample in os.listdir('/eos/cms/%s' % opt.inDir):
+    for sample in os.listdir('%s/%s' % (baseEOS,opt.inDir)):
 
         #sum weight generator level weights
         wgtCounter=None
         labelH=None
-        for f in os.listdir('/eos/cms/%s/%s' % (opt.inDir,sample ) ):
-            fIn=ROOT.TFile.Open('/eos/cms/%s/%s/%s' % (opt.inDir,sample,f ) )
+        for f in os.listdir('%s/%s/%s' % (baseEOS,opt.inDir,sample ) ):
+            fIn=ROOT.TFile.Open('%s/%s/%s/%s' % (baseEOS,opt.inDir,sample,f ) )
             if not opt.HiForest:
                 if wgtCounter is None:
                     try:
                         wgtCounter=fIn.Get('analysis/fidcounter').ProjectionX('genwgts',1,1)
                     except:
-                        print 'Check eos/cms/%s/%s/%s probably corrupted?' % (opt.inDir,sample,f )
+                        print 'Check %s/%s/%s/%s probably corrupted?' % (baseEOS,opt.inDir,sample,f )
                         continue
                     wgtCounter.SetDirectory(0)
                     wgtCounter.Reset('ICE')
@@ -79,12 +87,15 @@ def main():
         genweights[sample]=wgtCounter
 
     #dump to ROOT file    
-    cachefile=ROOT.TFile.Open(opt.cache,'RECREATE')
+    cachefile=ROOT.TFile.Open(opt.cache,'UPDATE' if opt.update else 'RECREATE')
     for sample in genweights:
         genweights[sample].SetDirectory(cachefile)
         genweights[sample].Write(sample)
     cachefile.Close()
     print 'Produced normalization cache @ %s'%opt.cache
+
+    if opt.mount:
+        Popen([eos_cmd, ' -b fuse umount', 'eos'],stdout=PIPE).communicate()
 
     #all done here
     exit(0)

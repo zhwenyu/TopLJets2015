@@ -9,8 +9,7 @@ steer the script
 """
 def main():
 
-    cmsswBase=os.environ['CMSSW_BASE']
-    eos_cmd = '/afs/cern.ch/project/eos/installation/0.3.15/bin/eos.select'
+    eos_cmd = '/afs/cern.ch/project/eos/installation/cms/bin/eos.select'
 
     #configuration
     usage = 'usage: %prog [options]'
@@ -20,17 +19,16 @@ def main():
     parser.add_option('-q', '--queue',      dest='queue',       help='batch queue',                              default='2nd',  type='string')
     (opt, args) = parser.parse_args()
 
-    Popen([eos_cmd, ' -b fuse mount', 'eos'],stdout=PIPE).communicate()
-
     #prepare output directory
     if opt.outDir is None: opt.outDir=opt.inDir
-    Popen([eos_cmd, 'mkdir', '/eos/cms/'+opt.outDir],stdout=PIPE).communicate()
+
+    cmsswBase=os.environ['CMSSW_BASE']
+    FARMDIR='%s/src/TopLJets2015/TopAnalysis/FARM'%cmsswBase
+    os.system('mkdir -p %s'%FARMDIR)
 
     dset_list=getEOSlslist(directory=opt.inDir,prepend='')
     for dset in dset_list:
         dsetname=dset.split('/')[-1]
-
-        #if not 'pp_TuneCUETP8M1_Hydjet_Min_Bias' : continue
 
         pub_list=getEOSlslist(directory=dset,prepend='')
         for pubDir in pub_list:
@@ -39,13 +37,23 @@ def main():
                 print 'Ambiguity found @ <publication-name> for <primary-dataset>=%s , bailing out'%dsetname
                 continue
             pub=pubDir.split('/crab_')[-1]
-            #if not 'V4' in pub : continue
-
-            localMerge='python scripts/checkProductionIntegrity.py -i %s -o %s --nocheck --only %s'%(opt.inDir,opt.outDir,pub)
-            cmd='bsub -q %s %s/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh \"%s\"' % (opt.queue,cmsswBase,localMerge)
+            
+            cfgfile='%s/mergejob_%s.sh'%(FARMDIR,pub)
+            with open(cfgfile,'w') as cfg:
+                cfg.write('WORKDIR=`pwd`\n')
+                cfg.write('echo "Working directory is ${WORKDIR}"\n')
+                cfg.write('cd %s\n'%cmsswBase)
+                cfg.write('eval `scram r -sh`\n')
+                cfg.write('cd ${WORKDIR}\n')
+                cfg.write('echo "Preparing output directory"\n')
+                cfg.write('%s mkdir %s\n'%(eos_cmd,opt.outDir))
+                cfg.write('echo "Running integrity checker"\n')
+                cfg.write('python ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/checkProductionIntegrity.py -i %s -o %s --nocheck --mount --only %s'%(opt.inDir,opt.outDir,pub))
+                
+            os.system('chmod u+x %s'%cfgfile)
+            cmd='bsub -q %s %s' % (opt.queue,cfgfile)
             os.system(cmd)
 
-    Popen([eos_cmd, ' -b fuse umount', 'eos'],stdout=PIPE).communicate()
 
 """
 for execution from another script
