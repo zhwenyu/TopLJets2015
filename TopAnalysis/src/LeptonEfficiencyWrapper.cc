@@ -285,14 +285,15 @@ EffCorrection_t LeptonEfficiencyWrapper::getOfflineCorrection(int pdgId,float pt
 	  float etaForEff( minEtaForEff >= 0. ?
 			   TMath::Max(TMath::Min(float(fabs(eta)),maxEtaForEff),minEtaForEff) :
 			   TMath::Max(TMath::Min(float(eta),maxEtaForEff),minEtaForEff) );
-	  Int_t etaBinForEff=h->GetXaxis()->FindBin(etaForEff);
+	  Int_t etaBinForEff=lepEffH_[hname]->GetXaxis()->FindBin(etaForEff);
 
-	  float minPtForEff( h->GetYaxis()->GetXmin() ), maxPtForEff( h->GetYaxis()->GetXmax()-0.01 );
+	  float minPtForEff( lepEffH_[hname]->GetYaxis()->GetXmin() ), maxPtForEff( lepEffH_[hname]->GetYaxis()->GetXmax()-0.01 );
 	  float ptForEff=TMath::Max(TMath::Min(pt,maxPtForEff),minPtForEff);
-	  Int_t ptBinForEff=h->GetYaxis()->FindBin(ptForEff);
+	  Int_t ptBinForEff=lepEffH_[hname]->GetYaxis()->FindBin(ptForEff);
 	  
 	  float recEff=lepEffH_[hname]->GetBinContent(etaBinForEff,ptBinForEff);
 	  float recEffUnc=lepEffH_[hname]->GetBinError(etaBinForEff,ptBinForEff);
+
 	  corr.second=sqrt(pow(recEff*corr.second,2)+pow(recEffUnc*corr.first,2));
 	  corr.first*=recEff;
 	}

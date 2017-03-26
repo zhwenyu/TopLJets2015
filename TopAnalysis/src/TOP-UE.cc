@@ -98,24 +98,23 @@ void RunTopUE(TString filename,
       for(size_t i=0; i<=2; i++)
 	{
 	  TString subtag(tag);
-	  subtag += i;
-	  subtag += "t";
+	  if(i<2) { subtag += i; subtag += "t"; }
 	  allPlots["mll_"+subtag]    = new TH1F("mll_"+subtag,";Dilepton invariant mass [GeV];Events",50,0,400);
 	}
-      allPlots["ptpos_"+tag]   = new TH1F("ptpos_"+tag,";Lepton transverse momentum [GeV];Events",50,20,200);
-      allPlots["ptll_"+tag]    = new TH1F("ptll_"+tag,";Dilepton transverse momentum [GeV];Events",50,0,200);
-      allPlots["ptttbar_"+tag] = new TH1F("ptttbar_"+tag,";p_{T}(t#bar{t}) [GeV];Events",50,0,200);
-      allPlots["sumpt_"+tag]   = new TH1F("sumpt_"+tag,";Transverse momentum sum [GeV];Events",50,40,300);
-      allPlots["met_"+tag]   = new TH1F("met_"+tag,";Missing transverse momentum [GeV];Events",50,0,300);
-      allPlots["njets_"+tag]  = new TH1F("njets_"+tag,";Jet multiplicity;Events",7,2,9);
-      allPlots["nbtags_"+tag] = new TH1F("nbtags_"+tag,";b-tag multiplicity;Events",5,0,5);
-      allPlots["nchvsnvtx_"+tag]  = new TH2F("nchvsnvtx_"+tag,";Vertex multiplicity;Charged particle multiplicity;Events",10,0,40,50,0,100);
+      allPlots["ptpos_"+tag]     = new TH1F("ptpos_"+tag,";Lepton transverse momentum [GeV];Events",50,20,200);
+      allPlots["ptll_"+tag]      = new TH1F("ptll_"+tag,";Dilepton transverse momentum [GeV];Events",50,0,200);
+      allPlots["ptttbar_"+tag]   = new TH1F("ptttbar_"+tag,";p_{T}(t#bar{t}) [GeV];Events",50,0,200);
+      allPlots["sumpt_"+tag]     = new TH1F("sumpt_"+tag,";Transverse momentum sum [GeV];Events",50,40,300);
+      allPlots["met_"+tag]       = new TH1F("met_"+tag,";Missing transverse momentum [GeV];Events",50,0,300);
+      allPlots["njets_"+tag]     = new TH1F("njets_"+tag,";Jet multiplicity;Events",7,2,9);
+      allPlots["nbtags_"+tag]    = new TH1F("nbtags_"+tag,";b-tag multiplicity;Events",5,0,5);
+      allPlots["nchvsnvtx_"+tag] = new TH2F("nchvsnvtx_"+tag,";Vertex multiplicity;Charged particle multiplicity;Events",10,0,40,50,0,100);
       allPlots["nchvsrho_"+tag]  = new TH2F("nchvsrho_"+tag,";#rho;Charged particle multiplicity;Events",10,0,40,50,0,100);
-      allPlots["nch_"+tag]  = new TH1F("nch_"+tag,";Charged particle multiplicity;Events",50,0,200);      
-      allPlots["chavgpt_"+tag]  = new TH1F("chavgpt_"+tag,";Charged particle average p_{T} [GeV];Events",50,0,15);      
-      allPlots["chsumpt_"+tag]  = new TH1F("chsumpt_"+tag,";Charged particle sum p_{T} [GeV];Events",50,0,400);
-      allPlots["chavgpz_"+tag]  = new TH1F("chavgpz_"+tag,";Charged particle average p_{z} [GeV];Events",50,0,15);      
-      allPlots["chsumpz_"+tag]  = new TH1F("chsumpz_"+tag,";Charged particle sum p_{z} [GeV];Events",50,0,400);
+      allPlots["nch_"+tag]       = new TH1F("nch_"+tag,";Charged particle multiplicity;Events",50,0,200);      
+      allPlots["chavgpt_"+tag]   = new TH1F("chavgpt_"+tag,";Charged particle average p_{T} [GeV];Events",50,0,15);      
+      allPlots["chsumpt_"+tag]   = new TH1F("chsumpt_"+tag,";Charged particle sum p_{T} [GeV];Events",50,0,400);
+      allPlots["chavgpz_"+tag]   = new TH1F("chavgpz_"+tag,";Charged particle average p_{z} [GeV];Events",50,0,15);      
+      allPlots["chsumpz_"+tag]   = new TH1F("chsumpz_"+tag,";Charged particle sum p_{z} [GeV];Events",50,0,400);
     }
   for (auto& it : allPlots)   { it.second->Sumw2(); it.second->SetDirectory(0); }
 
@@ -228,7 +227,7 @@ void RunTopUE(TString filename,
 	      tue.isInBFlags[ipf] = 0;
 	      nch++;
 	      chSumPt+=tue.pt[ipf];
-	      chSumPz+=selTracks[ipf].second.Pz();
+	      chSumPz+=fabs(selTracks[ipf].second.Pz());
 	    }
 	  
 	  //flag if passes selection
@@ -326,7 +325,7 @@ void RunTopUE(TString filename,
 	      TString subTag(chTag);
 	      if(bJetsIdx.size()==0) subTag += "0t";
 	      if(bJetsIdx.size()==1) subTag += "1t";
-	      if(bJetsIdx.size()>=2) subTag += "2t";
+	      if(bJetsIdx.size()>=2) subTag += "";
 	      allPlots["mll_"+subTag]->Fill(tue.mll[0],wgt);
 	    }
 	  if(passPresel)

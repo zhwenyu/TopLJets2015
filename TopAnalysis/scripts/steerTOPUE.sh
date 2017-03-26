@@ -20,7 +20,7 @@ lumiUnc=0.027
 whoami=`whoami`
 myletter=${whoami:0:1}
 eosdir=/store/cmst3/group/top/ReReco2016/${githash}
-summaryeosdir=/store/cmst3/group/top/winter2017/TopUE
+summaryeosdir=/store/cmst3/group/top/TopUE
 outdir=./UEanalysis/
 wwwdir=~/www/TopUE_ReReco2016/
 
@@ -30,8 +30,8 @@ NC='\e[0m'
 case $WHAT in
 
     TESTSEL )
-	#file=root://eoscms//eos/cms/store/cmst3/group/top/ReReco2016/b32c02e/MC13TeV_TTJets/MergedMiniEvents_0.root
-	file=root://eoscms//eos/cms/store/cmst3/group/top/ReReco2016/b32c02e/Data13TeV_MuonEG_2016D/MergedMiniEvents_0.root
+	file=root://eoscms//eos/cms/store/cmst3/group/top/ReReco2016/b312177/MC13TeV_TTJets/MergedMiniEvents_0.root
+	#file=root://eoscms//eos/cms/store/cmst3/group/top/ReReco2016/b312177/Data13TeV_MuonEG_2016D/MergedMiniEvents_0.root
 	analysisWrapper \
 	    --in ${file} \
 	    --out ue_test.root \
@@ -41,7 +41,7 @@ case $WHAT in
 	;;
 
     FULLSEL ) 
-	#python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} -o ${summaryeosdir} --era era2016 -m TOP-UE::RunTopUE --ch 0;
+	python scripts/runLocalAnalysis.py -i ${eosdir}      -q ${queue} -o ${summaryeosdir}      --era era2016 -m TOP-UE::RunTopUE --ch 0;
 	python scripts/runLocalAnalysis.py -i ${eosdir}_syst -q ${queue} -o ${summaryeosdir}_syst --era era2016 -m TOP-UE::RunTopUE --ch 0;
 	;;
 
@@ -54,10 +54,10 @@ case $WHAT in
 	;;
     PLOTSEL )
 	commonOpts="-i ${outdir} --puNormSF puwgtctr  -j data/era2016/samples.json -l ${lumi}  --saveLog --mcUnc ${lumiUnc}"
-	python scripts/plotter.py ${commonOpts} --only mll --outName mll_plotter.root;	
-     	python scripts/runDYRinRout.py --in ${outdir}/plots/mll_plotter.root --categs "0t,1t,2t"  --out ${outdir}/plots/;
-	python scripts/plotter.py ${commonOpts} --procSF DY:${outdir}/plots/.dyscalefactors.pck --only njets --rebin 4 --saveTeX --outName count_plotter.root;
-	python scripts/plotter.py ${commonOpts} --procSF DY:${outdir}/plots/.dyscalefactors.pck;
+	#python scripts/plotter.py ${commonOpts} --only mll --outName mll_plotter.root;	
+     	#python scripts/runDYRinRout.py --in ${outdir}/plots/mll_plotter.root --categs "0t,1t,2t"  --out ${outdir}/plots/;
+	#python scripts/plotter.py ${commonOpts} --procSF DY:${outdir}/plots/.dyscalefactors.pck --only njets --rebin 4 --saveTeX --outName count_plotter.root;
+	python scripts/plotter.py ${commonOpts}; # --procSF DY:${outdir}/plots/.dyscalefactors.pck;
 	;;
     WWWSEL )
 	mkdir -p ${wwwdir}/sel
