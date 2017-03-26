@@ -37,7 +37,6 @@ void RunTopUE(TString filename,
 
   //check file type from name
   if(isDataFile) runSysts=false;
-  runSysts=false;
   bool isTTbar( filename.Contains("_TTJets") );
 
   //READ TREE FROM FILE
@@ -279,7 +278,7 @@ void RunTopUE(TString filename,
 	  tue.nw=1;
 	  tue.weight[0]=wgt;
 
-	  if(isTTbar && ev.g_nw>1)
+	  if(runSysts && isTTbar && ev.g_nw>1)
 	    {
 	      //pu{up,down}
 	      tue.weight[1]=puWgt!=0 ? wgt*puWgtUp/puWgt : wgt;
@@ -313,8 +312,6 @@ void RunTopUE(TString filename,
 
 	      tue.nw=31;
 	    }
-
-
 
 	  //nominal selection control histograms
 	  if(passLepPresel)
@@ -407,17 +404,20 @@ void RunTopUE(TString filename,
 	      //match to reco
 	      float minDRtoRec(9999.);
 	      int matchedRecPF(-1);
-	      for(int irecpf = 0; irecpf < ev.npf; irecpf++) 
+	      if(runSysts)
 		{
-		  if(ev.pf_c[irecpf]==0) continue;
-		  if(ev.pf_pt[irecpf]<0.9) continue;
-		  if(fabs(ev.pf_eta[irecpf])>2.5) continue;
-		  float dR=sqrt(pow(ev.pf_eta[irecpf]-ev.gpf_eta[ipf],2)+pow(TVector2::Phi_mpi_pi(ev.pf_phi[irecpf]-ev.gpf_phi[ipf]),2));
-		  if(dR>minDRtoRec) continue;
-		  minDRtoRec=dR;
-		  matchedRecPF=irecpf;
+		  for(int irecpf = 0; irecpf < ev.npf; irecpf++) 
+		    {
+		      if(ev.pf_c[irecpf]==0) continue;
+		      if(ev.pf_pt[irecpf]<0.9) continue;
+		      if(fabs(ev.pf_eta[irecpf])>2.5) continue;
+		      float dR=sqrt(pow(ev.pf_eta[irecpf]-ev.gpf_eta[ipf],2)+pow(TVector2::Phi_mpi_pi(ev.pf_phi[irecpf]-ev.gpf_phi[ipf]),2));
+		      if(dR>minDRtoRec) continue;
+		      minDRtoRec=dR;
+		      matchedRecPF=irecpf;
+		    }
+		  if(minDRtoRec>0.01) matchedRecPF=-1;
 		}
-	      if(minDRtoRec>0.01) matchedRecPF=-1;
 
 	      selTracks.push_back( Particle(tkP4,ev.gpf_c[ipf],ev.gpf_id[ipf],isHP,matchedRecPF,1) );
 	    }

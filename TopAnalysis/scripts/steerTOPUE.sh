@@ -37,11 +37,12 @@ case $WHAT in
 	    --out ue_test.root \
 	    --era ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/era2016 \
 	    --method TOP-UE::RunTopUE \
+	    --runSysts \
 	    --ch 0;
 	;;
 
     FULLSEL ) 
-	python scripts/runLocalAnalysis.py -i ${eosdir}      -q ${queue} -o ${summaryeosdir}      --era era2016 -m TOP-UE::RunTopUE --ch 0;
+	python scripts/runLocalAnalysis.py -i ${eosdir}      -q ${queue} -o ${summaryeosdir}      --era era2016 -m TOP-UE::RunTopUE --ch 0 --runSysts;
 	python scripts/runLocalAnalysis.py -i ${eosdir}_syst -q ${queue} -o ${summaryeosdir}_syst --era era2016 -m TOP-UE::RunTopUE --ch 0;
 	;;
 
