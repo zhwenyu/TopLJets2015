@@ -53,7 +53,7 @@ def main():
             pubExt=None
             try:
                 extSplit=pub.split('_ext')
-                pubExt='ext'+extSplit[1]
+                pubExt='ext%d'%(len(extSplit)-1)
                 pub=extSplit[0]
                 print 'Extension will be postfixed with ',pubExt
             except:
@@ -122,7 +122,6 @@ def main():
                 #if still needed copy individual files
                 if moveIndividualFiles:
                     for f in file_list : 
-                        
                         newF=f
                         if pubExt:
                             newF=f.replace('.root','_%s.root'%pubExt)
