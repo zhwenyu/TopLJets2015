@@ -11,6 +11,7 @@
 #include "TSystem.h"
 #include "TFile.h"
 #include "TH1.h"
+#include "TH2.h"
 #include "TString.h"
 #include "TRandom.h"
 
@@ -27,5 +28,23 @@ struct JetPullInfo_t
   TVector2 pull,chPull;
 };
 JetPullInfo_t getPullVector( MiniEvent_t &ev, int ijet);
+
+class HistTool {
+
+ public:
+  HistTool(int nsyst = 20);
+  ~HistTool() {}
+
+  void registerHistogram(TString title, TH1* hist);
+  void fill(TString title, double value, std::vector<double> weights);
+  std::map<TString, TH1 *> getPlots() { return allPlots_; }
+  std::map<TString, TH2 *> get2dPlots() { return all2dPlots_; }
+  
+ private:
+  int nsyst_;
+  std::map<TString, TH1 *> allPlots_;
+  std::map<TString, TH2 *> all2dPlots_;
+
+};
 
 #endif

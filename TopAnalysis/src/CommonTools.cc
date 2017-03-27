@@ -144,3 +144,30 @@ std::vector<float> getJetResolutionScales(float pt, float eta, float genjpt)
   
   return res;
 }
+
+// Histogram tool for automatic creation of 2D uncertainty histograms
+HistTool::HistTool(int nsyst) :
+  nsyst_(nsyst)
+{}
+
+//
+void HistTool::registerHistogram(TString title, TH1* hist) {
+  allPlots_[title] = hist;
+  all2dPlots_[title+"_syst"] = new TH2F(title+"_syst", hist->GetTitle(), hist->GetNbinsX(), hist->GetXaxis()->GetXmin(), hist->GetXaxis()->GetXmax(), nsyst_, -0.5, nsyst_-0.5);
+  all2dPlots_[title+"_syst"]->SetXTitle(hist->GetXaxis()->GetTitle());
+}
+
+//
+void HistTool::fill(TString title, double value, std::vector<double> weights) {
+  if (not allPlots_.count(title)) {
+    std::cout << "Histogram " << title << " not registered, not filling." << std::endl;
+    return;
+  }
+  allPlots_[title]->Fill(value, weights[0]);
+  all2dPlots_[title+"_syst"]->Fill(value, 0., weights[0]);
+  for (unsigned int i = 1; i < weights.size(); ++i) {
+    all2dPlots_[title+"_syst"]->Fill(value, i, weights[0]*weights[i]);
+  }
+}
+
+

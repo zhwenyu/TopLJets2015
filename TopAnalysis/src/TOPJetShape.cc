@@ -15,6 +15,7 @@
 #include "TopLJets2015/TopAnalysis/interface/BtagUncertaintyComputer.h"
 
 #include <vector>
+#include <set>
 #include <iostream>
 #include <algorithm>
 
@@ -58,6 +59,7 @@ void RunTopJetShape(TString filename,
 
   bool isTTbar( filename.Contains("_TTJets") or (normH and TString(normH->GetTitle()).Contains("_TTJets")));
   
+  // explicit systematics
   std::vector<std::string> vSystVar;
   boost::split(vSystVar, systVar, boost::is_any_of("_"));
 
@@ -137,6 +139,7 @@ void RunTopJetShape(TString filename,
   JetCorrectionUncertainty *jecUnc = new JetCorrectionUncertainty( *jecParam );
 
   //BOOK HISTOGRAMS
+  HistTool ht;
   std::map<TString, TH1 *> allPlots;
   std::map<TString, TH2 *> all2dPlots;
   allPlots["puwgtctr"] = new TH1F("puwgtctr","Weight sums",2,0,2);
@@ -149,7 +152,7 @@ void RunTopJetShape(TString filename,
       
       if(ratevsrunH)
         allPlots[tag+"ratevsrun"] = (TH1 *)ratevsrunH->Clone(tag+"ratevsrun");
-      allPlots[tag+"nvtx"]   = new TH1F(tag+"nvtx",";Vertex multiplicity;Events",55,0,55);
+      ht.registerHistogram(tag+"nvtx", new TH1F(tag+"nvtx",";Vertex multiplicity;Events",55,0,55));
       allPlots[tag+"nleps"]  = new TH1F(tag+"nleps",";Lepton multiplicity;Events",5,-0.5,4.5);
       allPlots[tag+"njets"]  = new TH1F(tag+"njets",";Jet multiplicity;Events",15,-0.5,14.5);
       allPlots[tag+"nbjets"] = new TH1F(tag+"nbjets",";b jet multiplicity;Events",5,-0.5,4.5);
@@ -276,16 +279,16 @@ void RunTopJetShape(TString filename,
       if (vSystVar[0] == "csv") {
           if (vSystVar[1] == "heavy") {
               //heavy flavor uncertainty +/-3.5%
-              if (vSystVar[2] == "up")   ev = addBTagDecisions(ev, 0.8726, csvm);
-              if (vSystVar[2] == "down") ev = addBTagDecisions(ev, 0.8190, csvm);
+              if (vSystVar[2] == "up")   addBTagDecisions(ev, 0.8726, csvm);
+              if (vSystVar[2] == "down") addBTagDecisions(ev, 0.8190, csvm);
           }
           if (vSystVar[1] == "light") {
               //light flavor uncertainty +/-10%
-              if (vSystVar[2] == "up")   ev = addBTagDecisions(ev, csvm, 0.8557);
-              if (vSystVar[2] == "down") ev = addBTagDecisions(ev, csvm, 0.8415);
+              if (vSystVar[2] == "up")   addBTagDecisions(ev, csvm, 0.8557);
+              if (vSystVar[2] == "down") addBTagDecisions(ev, csvm, 0.8415);
           }
       }
-      else ev = addBTagDecisions(ev);
+      else addBTagDecisions(ev, csvm, csvm);
       
       if(!ev.isData) {
         //jec
@@ -346,7 +349,12 @@ void RunTopJetShape(TString filename,
       //////////////////
       
       float wgt(1.0);
-      std::vector<double> varweights;
+      // Pairs for systematic uncertainty weights
+      // double: weight value (divided by central weight)
+      // bool: use weight for plotting, otherwise just save to tree
+      std::vector<std::pair<double, bool> > varweights;
+      std::vector<double> plotwgt;
+      
       allPlots["puwgtctr"]->Fill(0.,1.0);
       if (!ev.isData) {
         // norm weight
@@ -356,32 +364,46 @@ void RunTopJetShape(TString filename,
         double puWgt(puWgtGr[period][0]->Eval(ev.g_pu));
         allPlots["puwgtctr"]->Fill(1,puWgt);
         wgt *= puWgt;
-        varweights.push_back(puWgtGr[period][1]->Eval(ev.g_pu));
-        varweights.push_back(puWgtGr[period][2]->Eval(ev.g_pu));
+        varweights.push_back(std::make_pair(puWgtGr[period][1]->Eval(ev.g_pu), true));
+        varweights.push_back(std::make_pair(puWgtGr[period][2]->Eval(ev.g_pu), true));
         
         // lepton trigger*selection weights
         if (singleLepton) {
           EffCorrection_t trigSF = lepEffH.getTriggerCorrection(leptons, period);
-          varweights.push_back(1.+trigSF.second);
-          varweights.push_back(1.-trigSF.second);
+          varweights.push_back(std::make_pair(1.+trigSF.second, true));
+          varweights.push_back(std::make_pair(1.-trigSF.second, true));
           EffCorrection_t selSF = lepEffH.getOfflineCorrection(leptons[0], period);
-          varweights.push_back(1.+selSF.second);
-          varweights.push_back(1.-selSF.second);
+          varweights.push_back(std::make_pair(1.+selSF.second, true));
+          varweights.push_back(std::make_pair(1.-selSF.second, true));
           wgt *= trigSF.first*selSF.first;
         }
-        else varweights.insert(varweights.end(), 4, 1.);
+        else varweights.insert(varweights.end(), 4, std::make_pair(1., true));
         
         // lhe weights
         wgt *= (ev.g_nw>0 ? ev.g_w[0] : 1.0);
+        
+        std::set<std::string> scalesForPlotter = {
+          "id1002muR1muF2hdampmt272.7225",
+          "id1003muR1muF0.5hdampmt272.7225",
+          "id1004muR2muF1hdampmt272.7225",
+          "id1005muR2muF2hdampmt272.7225",
+          "id1007muR0.5muF1hdampmt272.7225",
+          "id1009muR0.5muF0.5hdampmt272.7225"
+        };
         for (int i = 1; i < ev.g_nw; ++i) {
-          varweights.push_back(ev.g_w[i]/ev.g_w[0]);
+          bool forPlotter = (normH and scalesForPlotter.count(normH->GetXaxis()->GetBinLabel(i)) != 0);
+          varweights.push_back(std::make_pair(ev.g_w[i]/ev.g_w[0], forPlotter));
         }
         
         tjsev.nw = 1 + varweights.size();
         tjsev.weight[0]=wgt;
         for (unsigned int i = 0; i < varweights.size(); ++i) {
-          tjsev.weight[i+1] = varweights[i];
+          tjsev.weight[i+1] = varweights[i].first;
         }
+        plotwgt.push_back(wgt);
+        for (auto vw : varweights)
+          if (vw.second)
+            plotwgt.push_back(vw.first);
       }
       else {
         tjsev.nw=1;
@@ -430,7 +452,7 @@ void RunTopJetShape(TString filename,
           std::map<Int_t,Float_t>::iterator rIt=lumiMap.find(ev.run);
           if(rIt!=lumiMap.end() && ratevsrunH) allPlots[tag+"ratevsrun"]->Fill(std::distance(lumiMap.begin(),rIt),1./rIt->second);
           
-          allPlots[tag+"nvtx"]->Fill(ev.nvtx, wgt);
+          ht.fill(tag+"nvtx", ev.nvtx, plotwgt);
           allPlots[tag+"nleps"]->Fill(leptons.size(), wgt);
           allPlots[tag+"njets"]->Fill(jets.size(), wgt);
           allPlots[tag+"nbjets"]->Fill(sel_nbjets, wgt);
@@ -818,6 +840,12 @@ void RunTopJetShape(TString filename,
   //save histos to file  
   fOut->cd();
   outT->Write();
+  for (auto& it : ht.getPlots())  { 
+    it.second->SetDirectory(fOut); it.second->Write(); 
+  }
+  for (auto& it : ht.get2dPlots())  { 
+    it.second->SetDirectory(fOut); it.second->Write(); 
+  }
   for (auto& it : allPlots)  { 
     it.second->SetDirectory(fOut); it.second->Write(); 
   }
