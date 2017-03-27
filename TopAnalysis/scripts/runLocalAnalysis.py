@@ -89,6 +89,7 @@ def main():
         if not '/store/' in opt.output:
             os.system('mkdir -p %s/Chunks'%opt.output)
         else:
+            os.system('eos mkdir %s'%opt.output)
             os.system('eos mkdir %s/Chunks'%opt.output)
     #correct location of corrections to be used using cmsswBase, if needed
     cmsswBase=os.environ['CMSSW_BASE']
@@ -155,7 +156,7 @@ def main():
         print 'launching %d tasks to submit to the %s queue'%(len(task_list),opt.queue)        
 
         FarmDirectory                      = opt.output+"/FARM"
-        if '/store' in FarmDirectory : FarmDirectory = './FARM'
+        if '/store' in FarmDirectory : FarmDirectory = './FARM%s'%os.path.basename(opt.output)
         os.system('mkdir -p %s'%FarmDirectory)
 
         jobNb=0

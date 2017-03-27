@@ -94,23 +94,15 @@ void LeptonEfficiencyWrapper::init(TString era)
         lepEffUrl=era+"/ElectronReco_egammaEffi.txt_EGM2D.root";
         gSystem->ExpandPathName(lepEffUrl);
         fIn=TFile::Open(lepEffUrl);
-        lepEffH_["e_sel"+period]=(TH2 *)fIn->Get("EGamma_SF2D")->Clone();
-        lepEffH_["e_sel"+period]->SetDirectory(0);     
+        lepEffH_["e_rec"+period]=(TH2 *)fIn->Get("EGamma_SF2D")->Clone();
+        lepEffH_["e_rec"+period]->SetDirectory(0);     
         fIn->Close();
         
         lepEffUrl=era+"/ElectronIdTight_egammaEffi.txt_EGM2D.root";
         gSystem->ExpandPathName(lepEffUrl);
         fIn=TFile::Open(lepEffUrl);      
-        TH2 *idH=(TH2 *)fIn->Get("EGamma_SF2D");
-        for(Int_t xbin=1; xbin<=(lepEffH_["m_sel"+period])->GetNbinsX(); xbin++)
-          for(Int_t ybin=1; ybin<=(lepEffH_["m_sel"+period])->GetNbinsY(); ybin++)
-            {
-              float sfreco(lepEffH_["m_sel"+period]->GetBinContent(xbin,ybin)), sfid(idH->GetBinContent(xbin,ybin));
-              float sfrecoUnc(lepEffH_["m_sel"+period]->GetBinError(xbin,ybin)), sfidUnc(idH->GetBinError(xbin,ybin));
-              float sf(sfreco*sfid), sfUnc(sqrt(pow(sfreco*sfrecoUnc,2)+pow(sfidUnc*sfid,2)));
-              lepEffH_["m_sel"+period]->SetBinContent(xbin,ybin,sf);
-              lepEffH_["m_sel"+period]->SetBinError(xbin,ybin,sfUnc);
-            }
+	lepEffH_["e_sel"+period]=(TH2 *)fIn->Get("EGamma_SF2D")->Clone();
+        lepEffH_["e_sel"+period]->SetDirectory(0);
         fIn->Close();
       }
     }
@@ -285,6 +277,27 @@ EffCorrection_t LeptonEfficiencyWrapper::getOfflineCorrection(int pdgId,float pt
       corr.first=h->GetBinContent(etaBinForEff,ptBinForEff);
       corr.second=h->GetBinError(etaBinForEff,ptBinForEff);
       
+      //reco efficiency (if available)
+      hname=idstr+"_rec"+period;
+      if(lepEffH_.find(hname)!=lepEffH_.end())
+        {
+	  float minEtaForEff( lepEffH_[hname]->GetXaxis()->GetXmin() ), maxEtaForEff( lepEffH_[hname]->GetXaxis()->GetXmax()-0.01 );
+	  float etaForEff( minEtaForEff >= 0. ?
+			   TMath::Max(TMath::Min(float(fabs(eta)),maxEtaForEff),minEtaForEff) :
+			   TMath::Max(TMath::Min(float(eta),maxEtaForEff),minEtaForEff) );
+	  Int_t etaBinForEff=lepEffH_[hname]->GetXaxis()->FindBin(etaForEff);
+
+	  float minPtForEff( lepEffH_[hname]->GetYaxis()->GetXmin() ), maxPtForEff( lepEffH_[hname]->GetYaxis()->GetXmax()-0.01 );
+	  float ptForEff=TMath::Max(TMath::Min(pt,maxPtForEff),minPtForEff);
+	  Int_t ptBinForEff=lepEffH_[hname]->GetYaxis()->FindBin(ptForEff);
+	  
+	  float recEff=lepEffH_[hname]->GetBinContent(etaBinForEff,ptBinForEff);
+	  float recEffUnc=lepEffH_[hname]->GetBinError(etaBinForEff,ptBinForEff);
+
+	  corr.second=sqrt(pow(recEff*corr.second,2)+pow(recEffUnc*corr.first,2));
+	  corr.first*=recEff;
+	}
+
       //tracking efficiency (if available)
       //TODO: add nvtx-dependency? divide by average sf(aeta) then
       hname=idstr+"_tk_aeta"+period;

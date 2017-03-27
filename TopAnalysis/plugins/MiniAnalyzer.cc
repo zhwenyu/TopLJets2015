@@ -136,6 +136,8 @@ private:
   unsigned int evetoIsoBit_, elooseIsoBit_, emediumIsoBit_, etightIsoBit_;
   edm::EDGetTokenT<bool> BadChCandFilterToken_,BadPFMuonFilterToken_;
 
+  //  edm::EDGetTokenT<edm::ValueMap<float> > petersonFragToken_;
+
   std::unordered_map<std::string,TH1*> histContainer_;
 
   PFJetIDSelectionFunctor pfjetIDLoose_;
@@ -197,6 +199,7 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig) :
   evetoIsoBit_(999), elooseIsoBit_(999), emediumIsoBit_(999), etightIsoBit_(999),
   BadChCandFilterToken_(consumes<bool>(iConfig.getParameter<edm::InputTag>("badChCandFilter"))),
   BadPFMuonFilterToken_(consumes<bool>(iConfig.getParameter<edm::InputTag>("badPFMuonFilter"))),
+  //petersonFragToken_(consumes<edm::ValueMap<float> >(edm::InputTag("bfragWgtProducer:PetersonFrag"))),
   pfjetIDLoose_( PFJetIDSelectionFunctor::FIRSTDATA, PFJetIDSelectionFunctor::LOOSE ),  
   saveTree_( iConfig.getParameter<bool>("saveTree") ),
   savePF_( iConfig.getParameter<bool>("savePF") ),
@@ -292,29 +295,34 @@ int MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
   edm::Handle<std::vector<reco::GenJet> > genJets;
   iEvent.getByToken(genJetsToken_,genJets);  
   std::map<const reco::Candidate *,int> jetConstsMap;
+  //edm::Handle<edm::ValueMap<float> > petersonFrag;
+  //iEvent.getByToken(petersonFragToken_,petersonFrag);
   int ngjets(0),ngbjets(0);
-  for(auto genJet : *genJets)
+  for(auto genJet=genJets->begin(); genJet!=genJets->end(); ++genJet)
     {
+
+      edm::Ref<std::vector<reco::GenJet> > genJetRef(genJets,genJet-genJets->begin());
+
       //map the gen particles which are clustered in this jet
-      JetFragInfo_t jinfo=analyzeJet(genJet);
+      JetFragInfo_t jinfo=analyzeJet(*genJet);
 
       ev_.g_tagCtrs[ev_.ng]       = (jinfo.nbtags&0xf) | ((jinfo.nctags&0xf)<<4) | ((jinfo.ntautags&0xf)<<8);
       ev_.g_xb[ev_.ng]            = jinfo.xb;
       ev_.g_bid[ev_.ng]           = jinfo.leadTagId;
       ev_.g_isSemiLepBhad[ev_.ng] = jinfo.hasSemiLepDecay;
-
-      ev_.g_id[ev_.ng]   = genJet.pdgId();
-      ev_.g_pt[ev_.ng]   = genJet.pt();
-      ev_.g_eta[ev_.ng]  = genJet.eta();
-      ev_.g_phi[ev_.ng]  = genJet.phi();
-      ev_.g_m[ev_.ng]    = genJet.mass();       
+      //cout << "xb=" << jinfo.xb << " petersonFrag=" << (*petersonFrag)[genJetRef] << endl;
+      ev_.g_id[ev_.ng]   = genJet->pdgId();
+      ev_.g_pt[ev_.ng]   = genJet->pt();
+      ev_.g_eta[ev_.ng]  = genJet->eta();
+      ev_.g_phi[ev_.ng]  = genJet->phi();
+      ev_.g_m[ev_.ng]    = genJet->mass();       
       ev_.ng++;
       
       //gen level selection
-      if(genJet.pt()>25 && fabs(genJet.eta())<2.5)
+      if(genJet->pt()>25 && fabs(genJet->eta())<2.5)
 	{
 	  ngjets++;	
-	  if(abs(genJet.pdgId())==5) ngbjets++;
+	  if(abs(genJet->pdgId())==5) ngbjets++;
 	}
     }
 
