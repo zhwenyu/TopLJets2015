@@ -73,7 +73,7 @@ def main():
         if labelH:
             for xbin in range(1,labelH.GetNbinsX()):
                 label=labelH.GetXaxis().GetBinLabel(xbin)
-                for tkn in ['<','>',' ','\"','/','weight','=']: label=label.replace(tkn,'')
+                for tkn in ['<','>',' ','\"','/','weight','=','\n']: label=label.replace(tkn,'')
                 wgtCounter.GetXaxis().SetBinLabel(xbin,label)
 
         #invert to set normalization

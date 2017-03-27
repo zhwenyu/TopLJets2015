@@ -5,8 +5,6 @@ from collections import OrderedDict
 
 from TopLJets2015.TopAnalysis.rounding import *
 
-fillLineColorDict = { 633:ROOT.kRed+3, 0:ROOT.kGray+2, 413:ROOT.kGreen+3, 616:ROOT.kMagenta+3, 858:ROOT.kAzure-1, 400:ROOT.kYellow+2 }
-
 """
 increments the first and the last bin to show the under- and over-flows
 """
@@ -71,7 +69,7 @@ class Plot(object):
                 self.dataH=h
                 self.dataH.SetDirectory(0)
                 self.dataH.SetMarkerStyle(20)
-                self.dataH.SetMarkerSize(1.4)
+                self.dataH.SetMarkerSize(1.)
                 self.dataH.SetMarkerColor(color)
                 self.dataH.SetLineColor(ROOT.kBlack)
                 self.dataH.SetLineWidth(2)
@@ -93,7 +91,10 @@ class Plot(object):
                     h.SetLineColor(color)
                     h.SetLineWidth(2)
                 else : 
-                    h.SetLineColor(fillLineColorDict.get(color, 0))
+                    if color == ROOT.kWhite:
+                        h.SetLineColor(ROOT.kGray+3)
+                    else:
+                        h.SetLineColor(ROOT.TColor.GetColorDark(color))
                     h.SetLineWidth(1)
                     h.SetFillColor(color)
                     h.SetFillStyle(1001)
@@ -149,7 +150,7 @@ class Plot(object):
             p1=ROOT.TPad('p1','p1',0.0,0.2,1.0,1.0) if cwid!=1000 else ROOT.TPad('p1','p1',0.0,0.0,1.0,1.0)
             p1.SetRightMargin(0.05)
             p1.SetLeftMargin(0.12)
-            p1.SetTopMargin(0.04)
+            p1.SetTopMargin(0.06)
             p1.SetBottomMargin(0.01)
             if self.wideCanvas and len(self.mc)==0 : p1.SetBottomMargin(0.12)
         else:
@@ -169,8 +170,8 @@ class Plot(object):
 
         # legend
         iniy=0.9 if self.wideCanvas else 0.85
-        dy=0.2
-        ndy= 0.25*max(len(self.mc)-2,1)
+        dy=0.05
+        ndy= max(len(self.mc),1)
         inix,dx =0.65,0.4
         if noRatio: inix=0.6
         if noStack:
@@ -255,10 +256,10 @@ class Plot(object):
         frame.SetDirectory(0)
         frame.Reset('ICE')
         self._garbageList.append(frame)
-        frame.GetYaxis().SetTitleSize(0.045)
-        frame.GetYaxis().SetLabelSize(0.04)
-        frame.GetYaxis().SetNoExponent()
-        frame.GetYaxis().SetTitleOffset(1.3)
+        frame.GetYaxis().SetTitleSize(0.05)
+        frame.GetYaxis().SetLabelSize(0.045)
+        ROOT.TGaxis.SetMaxDigits(4)
+        frame.GetYaxis().SetTitleOffset(1.2)
         if noRatio:
             frame.GetYaxis().SetTitleOffset(1.4)
         if self.dataH:
@@ -289,13 +290,13 @@ class Plot(object):
         txt.SetTextFont(42)
         txt.SetTextSize(0.05)
         txt.SetTextAlign(12)
-        iniy=0.90 if self.wideCanvas else 0.90
+        iniy=0.88 if self.wideCanvas else 0.88
         inix=0.12 if noStack else 0.18
         txt.DrawLatex(inix,iniy,self.cmsLabel)
         if lumi<100:
-            txt.DrawLatex(0.63,0.98,'#scale[0.8]{%3.1f pb^{-1} (%s)}' % (lumi,self.com) )
+            txt.DrawLatex(0.66,0.97,'#scale[0.8]{%3.1f pb^{-1} (%s)}' % (lumi,self.com) )
         else:
-            txt.DrawLatex(0.63,0.98,'#scale[0.8]{%3.1f fb^{-1} (%s)}' % (lumi/1000.,self.com) )
+            txt.DrawLatex(0.66,0.97,'#scale[0.8]{%3.1f fb^{-1} (%s)}' % (lumi/1000.,self.com) )
         try:
             extraCtr=1
             for extra in extraText.split('\\'):
@@ -319,14 +320,14 @@ class Plot(object):
             self._garbageList.append(p2)
             p2.cd()
             ratioframe=frame.Clone('ratioframe')
-            ratioframe.GetYaxis().SetTitle('Ratio')
+            ratioframe.GetYaxis().SetTitle('Ratio ')
             ratioframe.GetYaxis().SetRangeUser(self.ratiorange[0], self.ratiorange[1])
             self._garbageList.append(ratioframe)
             ratioframe.GetYaxis().SetNdivisions(503)
             ratioframe.GetYaxis().SetLabelSize(0.18)        
             ratioframe.GetYaxis().SetTitleSize(0.2)
-            ratioframe.GetYaxis().SetTitleOffset(0.25)
-            ratioframe.GetXaxis().SetLabelSize(0.15)
+            ratioframe.GetYaxis().SetTitleOffset(0.3)
+            ratioframe.GetXaxis().SetLabelSize(0.18)
             ratioframe.GetXaxis().SetTitleSize(0.2)
             ratioframe.GetXaxis().SetTitleOffset(0.8)
             ratioframe.SetFillStyle(1001)

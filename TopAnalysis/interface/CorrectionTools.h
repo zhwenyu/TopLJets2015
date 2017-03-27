@@ -25,16 +25,16 @@ std::vector<TGraph *> getPileupWeights(TString era, TH1 *genPU, TString period =
 std::map<TString, std::vector<TGraph *> > getPileupWeightsMap(TString era, TH1 *genPU);
 
 //apply jec uncertainty
-MiniEvent_t applyJetCorrectionUncertainty(MiniEvent_t ev, JetCorrectionUncertainty *jecUnc, TString jecVar, TString direction);
+MiniEvent_t applyJetCorrectionUncertainty(MiniEvent_t &ev, JetCorrectionUncertainty *jecUnc, TString jecVar, TString direction);
 
 //apply jet energy resolutions
-MiniEvent_t smearJetEnergies(MiniEvent_t ev, std::string option = "central");
+MiniEvent_t smearJetEnergies(MiniEvent_t &ev, std::string option = "central");
 
 //see working points in https://twiki.cern.ch/twiki/bin/view/CMS/BtagRecommendation80XReReco
-MiniEvent_t addBTagDecisions(MiniEvent_t ev,float wp=0.8484,float wpl=0.8484);
+MiniEvent_t addBTagDecisions(MiniEvent_t &ev,float wp=0.8484,float wpl=0.8484);
 
 //details in https://twiki.cern.ch/twiki/bin/view/CMS/BTagCalibration
-MiniEvent_t updateBTagDecisions(MiniEvent_t ev, 
+MiniEvent_t updateBTagDecisions(MiniEvent_t &ev, 
 				std::map<BTagEntry::JetFlavor,BTagCalibrationReader *> &btvsfReaders,
 				std::map<BTagEntry::JetFlavor, TGraphAsymmErrors*> &expBtagEff, 
 				std::map<BTagEntry::JetFlavor, TGraphAsymmErrors*> &expBtagEffPy8, 

@@ -15,6 +15,7 @@
 #include "TopLJets2015/TopAnalysis/interface/BtagUncertaintyComputer.h"
 
 #include <vector>
+#include <set>
 #include <iostream>
 #include <algorithm>
 
@@ -57,7 +58,9 @@ void RunTopJetShape(TString filename,
   std::vector<RunPeriod_t> runPeriods=getRunPeriods(era);
 
   bool isTTbar( filename.Contains("_TTJets") or (normH and TString(normH->GetTitle()).Contains("_TTJets")));
+  bool isData( filename.Contains("Data") );
   
+  // explicit systematics
   std::vector<std::string> vSystVar;
   boost::split(vSystVar, systVar, boost::is_any_of("_"));
 
@@ -88,7 +91,7 @@ void RunTopJetShape(TString filename,
   //lumi
   TH1F *ratevsrunH=0;
   std::map<Int_t,Float_t> lumiMap;
-  if( filename.Contains("Data") )  
+  if( isData )  
     {
       std::pair<std::map<Int_t,Float_t>, TH1F *> result=parseLumiInfo(era);
       lumiMap   = result.first;
@@ -97,7 +100,7 @@ void RunTopJetShape(TString filename,
   
   //PILEUP WEIGHTING
   std::map<TString, std::vector<TGraph *> > puWgtGr;
-  if( !filename.Contains("Data") ) puWgtGr=getPileupWeightsMap(era,genPU);
+  if( !isData ) puWgtGr=getPileupWeightsMap(era,genPU);
   
   
   //LEPTON EFFICIENCIES
@@ -137,6 +140,8 @@ void RunTopJetShape(TString filename,
   JetCorrectionUncertainty *jecUnc = new JetCorrectionUncertainty( *jecParam );
 
   //BOOK HISTOGRAMS
+  HistTool ht;
+  if (isData) ht.setNsyst(0);
   std::map<TString, TH1 *> allPlots;
   std::map<TString, TH2 *> all2dPlots;
   allPlots["puwgtctr"] = new TH1F("puwgtctr","Weight sums",2,0,2);
@@ -148,104 +153,104 @@ void RunTopJetShape(TString filename,
       TString tag(channel+stage+"_");
       
       if(ratevsrunH)
-        allPlots[tag+"ratevsrun"] = (TH1 *)ratevsrunH->Clone("ratevsrun_"+tag);
-      allPlots[tag+"nvtx"]   = new TH1F(tag+"nvtx",";Vertex multiplicity;Events",30,0,30);
-      allPlots[tag+"nleps"]  = new TH1F(tag+"nleps",";Lepton multiplicity;Events",5,-0.5,4.5);
-      allPlots[tag+"njets"]  = new TH1F(tag+"njets",";Jet multiplicity;Events",10,-0.5,9.5);
-      allPlots[tag+"nbjets"] = new TH1F(tag+"nbjets",";b jet multiplicity;Events",5,-0.5,4.5);
-      allPlots[tag+"nwjets"] = new TH1F(tag+"nwjets",";W jet multiplicity;Events",10,-0.5,9.5);
-      allPlots[tag+"wcandm"] = new TH1F(tag+"wcandm",";W candidate mass;W candidates",60,0,300);
-      allPlots[tag+"tcandm"] = new TH1F(tag+"tcandm",";top candidate mass;top candidates",70,50,400);
-      allPlots[tag+"tcandwcutm"] = new TH1F(tag+"tcandwcutm",";top candidate mass;top candidates (W cut)",70,50,400);
+        allPlots[tag+"ratevsrun"] = (TH1 *)ratevsrunH->Clone(tag+"ratevsrun");
+      ht.addHist(tag+"nvtx", new TH1F(tag+"nvtx",";Vertex multiplicity;Events",55,0,55));
+      ht.addHist(tag+"nleps", new TH1F(tag+"nleps",";Lepton multiplicity;Events",5,-0.5,4.5));
+      ht.addHist(tag+"njets", new TH1F(tag+"njets",";Jet multiplicity;Events",15,-0.5,14.5));
+      ht.addHist(tag+"nbjets", new TH1F(tag+"nbjets",";b jet multiplicity;Events",5,-0.5,4.5));
+      ht.addHist(tag+"nwjets", new TH1F(tag+"nwjets",";W jet multiplicity;Events",10,-0.5,9.5));
+      ht.addHist(tag+"wcandm", new TH1F(tag+"wcandm",";W candidate mass;W candidates",60,0,300));
+      ht.addHist(tag+"tcandm", new TH1F(tag+"tcandm",";top candidate mass;top candidates",70,50,400));
+      ht.addHist(tag+"tcandwcutm", new TH1F(tag+"tcandwcutm",";top candidate mass;top candidates (W cut)",70,50,400));
       for(int i=0; i<2; i++) {
         TString pf(Form("l%d",i));          
-        allPlots[tag+pf+"pt"]   = new TH1F(tag+pf+"pt",";Lepton p_{t} [GeV];Events",50,0,250);
-        allPlots[tag+pf+"eta"]  = new TH1F(tag+pf+"eta",";Lepton pseudo-rapidity;Events",50,-2.5,2.5);
+        ht.addHist(tag+pf+"pt", new TH1F(tag+pf+"pt",";Lepton p_{t} [GeV];Events",50,0,250));
+        ht.addHist(tag+pf+"eta", new TH1F(tag+pf+"eta",";Lepton pseudo-rapidity;Events",50,-2.5,2.5));
       }
       for(int i=0; i<6; i++) {
         TString pf(Form("j%d",i));
-        allPlots[tag+pf+"pt"]  = new TH1F(tag+pf+"pt",";Jet transverse momentum [GeV];Events",50,0,250);
-        allPlots[tag+pf+"eta"] = new TH1F(tag+pf+"eta",";Jet pseudo-rapidity;Events",50,-5,5);
+        ht.addHist(tag+pf+"pt", new TH1F(tag+pf+"pt",";Jet transverse momentum [GeV];Events",50,0,250));
+        ht.addHist(tag+pf+"eta", new TH1F(tag+pf+"eta",";Jet pseudo-rapidity;Events",50,-5,5));
       }
-      allPlots[tag+"met"] = new TH1F(tag+"met",";MET [GeV];Events",50,0,250);
+      ht.addHist(tag+"met", new TH1F(tag+"met",";MET [GeV];Events",50,0,250));
     }
   }
   
-  allPlots["js_mult_charged"] = new TH1F("js_mult_charged",";N (charged);Jets",30,0,30);
-  allPlots["js_mult_puppi"] = new TH1F("js_mult_puppi",";N (puppi);Jets",30,0,30);
-  allPlots["js_mult_all"] = new TH1F("js_mult_all",";N (all);Jets",30,0,30);
-  allPlots["js_width_charged"] = new TH1F("js_width_charged",";width (charged);Jets",50,0,0.25);
-  allPlots["js_width_puppi"] = new TH1F("js_width_puppi",";width (puppi);Jets",50,0,0.25);
-  allPlots["js_width_all"] = new TH1F("js_width_all",";width (all);Jets",50,0,0.25);
-  allPlots["js_ptd_charged"] = new TH1F("js_ptd_charged",";p_{T}D (charged);Jets",50,0,1);
-  allPlots["js_ptd_puppi"] = new TH1F("js_ptd_puppi",";p_{T}D (puppi);Jets",50,0,1);
-  allPlots["js_ptd_all"] = new TH1F("js_ptd_all",";p_{T}D (all);Jets",50,0,1);
-  allPlots["js_ecc_charged"] = new TH1F("js_ecc_charged",";eccentricity (charged);Jets",50,0,1);
-  allPlots["js_ecc_puppi"] = new TH1F("js_ecc_puppi",";eccentricity (puppi);Jets",50,0,1);
-  allPlots["js_ecc_all"] = new TH1F("js_ecc_all",";eccentricity (all);Jets",50,0,1);
-  allPlots["js_tau21_charged"] = new TH1F("js_tau21_charged",";#tau_{21} (charged);Jets",50,0,1);
-  allPlots["js_tau21_puppi"] = new TH1F("js_tau21_puppi",";#tau_{21} (puppi);Jets",50,0,1);
-  allPlots["js_tau21_all"] = new TH1F("js_tau21_all",";#tau_{21} (all);Jets",50,0,1);
-  allPlots["js_tau32_charged"] = new TH1F("js_tau32_charged",";#tau_{32} (charged);Jets",50,0,1);
-  allPlots["js_tau32_puppi"] = new TH1F("js_tau32_puppi",";#tau_{32} (puppi);Jets",50,0,1);
-  allPlots["js_tau32_all"] = new TH1F("js_tau32_all",";#tau_{32} (all);Jets",50,0,1);
-  allPlots["js_tau43_charged"] = new TH1F("js_tau43_charged",";#tau_{43} (charged);Jets",50,0,1);
-  allPlots["js_tau43_puppi"] = new TH1F("js_tau43_puppi",";#tau_{43} (puppi);Jets",50,0,1);
-  allPlots["js_tau43_all"] = new TH1F("js_tau43_all",";#tau_{43} (all);Jets",50,0,1);
-  allPlots["js_zg_charged"] = new TH1F("js_zg_charged",";z_{g} (charged);Jets",40,0.1,0.5);
-  allPlots["js_zg_puppi"] = new TH1F("js_zg_puppi",";z_{g} (puppi);Jets",40,0.1,0.5);
-  allPlots["js_zg_all"] = new TH1F("js_zg_all",";z_{g} (all);Jets",40,0.1,0.5);
-  allPlots["js_zgxdr_charged"] = new TH1F("js_zgxdr_charged",";z_{g} #times #DeltaR (charged);Jets",50,0,0.25);
-  allPlots["js_zgxdr_puppi"] = new TH1F("js_zgxdr_puppi",";z_{g} #times #DeltaR (puppi);Jets",50,0,0.25);
-  allPlots["js_zgxdr_all"] = new TH1F("js_zgxdr_all",";z_{g} #times #DeltaR (all);Jets",50,0,0.25);
-  allPlots["js_zgdr_charged"] = new TH1F("js_zgdr_charged",";z_{g} #DeltaR (charged);Jets",50,0,0.5);
-  allPlots["js_zgdr_puppi"] = new TH1F("js_zgdr_puppi",";z_{g} #DeltaR (puppi);Jets",50,0,0.5);
-  allPlots["js_zgdr_all"] = new TH1F("js_zgdr_all",";z_{g} #DeltaR (all);Jets",50,0,0.5);
-  allPlots["js_ga_width_charged"] = new TH1F("js_ga_width_charged",";#lambda_{ 1}^{1} (width) (charged);Jets",50,0,1);
-  allPlots["js_ga_width_puppi"] = new TH1F("js_ga_width_puppi",";#lambda_{ 1}^{1} (width) (puppi);Jets",50,0,1);
-  allPlots["js_ga_width_all"] = new TH1F("js_ga_width_all",";#lambda_{ 1}^{1} (width) (all);Jets",50,0,1);
-  allPlots["js_ga_lha_charged"] = new TH1F("js_ga_lha_charged",";#lambda_{ 0.5}^{1} (LHA) (charged);Jets",50,0,1);
-  allPlots["js_ga_lha_puppi"] = new TH1F("js_ga_lha_puppi",";#lambda_{ 0.5}^{1} (LHA) (puppi);Jets",50,0,1);
-  allPlots["js_ga_lha_all"] = new TH1F("js_ga_lha_all",";#lambda_{ 0.5}^{1} (LHA) (all);Jets",50,0,1);
-  allPlots["js_ga_thrust_charged"] = new TH1F("js_ga_thrust_charged",";#lambda_{ 2}^{1} (thrust) (charged);Jets",50,0,0.5);
-  allPlots["js_ga_thrust_puppi"] = new TH1F("js_ga_thrust_puppi",";#lambda_{ 2}^{1} (thrust) (puppi);Jets",50,0,0.5);
-  allPlots["js_ga_thrust_all"] = new TH1F("js_ga_thrust_all",";#lambda_{ 2}^{1} (thrust) (all);Jets",50,0,0.5);
-  allPlots["js_c1_02_charged"] = new TH1F("js_c1_02_charged",";C_{ 1}^{ (0.2)} (charged);Jets",50,0,0.5);
-  allPlots["js_c1_02_puppi"] = new TH1F("js_c1_02_puppi",";C_{ 1}^{ (0.2)} (puppi);Jets",50,0,0.5);
-  allPlots["js_c1_02_all"] = new TH1F("js_c1_02_all",";C_{ 1}^{ (0.2)} (all);Jets",50,0,0.5);
-  allPlots["js_c1_05_charged"] = new TH1F("js_c1_05_charged",";C_{ 1}^{ (0.5)} (charged);Jets",60,0,0.3);
-  allPlots["js_c1_05_puppi"] = new TH1F("js_c1_05_puppi",";C_{ 1}^{ (0.5)} (puppi);Jets",60,0,0.3);
-  allPlots["js_c1_05_all"] = new TH1F("js_c1_05_all",";C_{ 1}^{ (0.5)} (all);Jets",60,0,0.3);
-  allPlots["js_c1_10_charged"] = new TH1F("js_c1_10_charged",";C_{ 1}^{ (1.0)} (charged);Jets",40,0,0.2);
-  allPlots["js_c1_10_puppi"] = new TH1F("js_c1_10_puppi",";C_{ 1}^{ (1.0)} (puppi);Jets",40,0,0.2);
-  allPlots["js_c1_10_all"] = new TH1F("js_c1_10_all",";C_{ 1}^{ (1.0)} (all);Jets",40,0,0.2);
-  allPlots["js_c1_20_charged"] = new TH1F("js_c1_20_charged",";C_{ 1}^{ (2.0)} (charged);Jets",50,0,0.1);
-  allPlots["js_c1_20_puppi"] = new TH1F("js_c1_20_puppi",";C_{ 1}^{ (2.0)} (puppi);Jets",50,0,0.1);
-  allPlots["js_c1_20_all"] = new TH1F("js_c1_20_all",";C_{ 1}^{ (2.0)} (all);Jets",50,0,0.1);
-  allPlots["js_c2_02_charged"] = new TH1F("js_c2_02_charged",";C_{ 2}^{ (0.2)} (charged);Jets",35,0,0.7);
-  allPlots["js_c2_02_puppi"] = new TH1F("js_c2_02_puppi",";C_{ 2}^{ (0.2)} (puppi);Jets",35,0,0.7);
-  allPlots["js_c2_02_all"] = new TH1F("js_c2_02_all",";C_{ 2}^{ (0.2)} (all);Jets",35,0,0.7);
-  allPlots["js_c2_05_charged"] = new TH1F("js_c2_05_charged",";C_{ 2}^{ (0.5)} (charged);Jets",40,0,0.4);
-  allPlots["js_c2_05_puppi"] = new TH1F("js_c2_05_puppi",";C_{ 2}^{ (0.5)} (puppi);Jets",40,0,0.4);
-  allPlots["js_c2_05_all"] = new TH1F("js_c2_05_all",";C_{ 2}^{ (0.5)} (all);Jets",40,0,0.4);
-  allPlots["js_c2_10_charged"] = new TH1F("js_c2_10_charged",";C_{ 2}^{ (1.0)} (charged);Jets",50,0,0.25);
-  allPlots["js_c2_10_puppi"] = new TH1F("js_c2_10_puppi",";C_{ 2}^{ (1.0)} (puppi);Jets",50,0,0.25);
-  allPlots["js_c2_10_all"] = new TH1F("js_c2_10_all",";C_{ 2}^{ (1.0)} (all);Jets",50,0,0.25);
-  allPlots["js_c2_20_charged"] = new TH1F("js_c2_20_charged",";C_{ 2}^{ (2.0)} (charged);Jets",30,0,0.15);
-  allPlots["js_c2_20_puppi"] = new TH1F("js_c2_20_puppi",";C_{ 2}^{ (2.0)} (puppi);Jets",30,0,0.15);
-  allPlots["js_c2_20_all"] = new TH1F("js_c2_20_all",";C_{ 2}^{ (2.0)} (all);Jets",30,0,0.15);
-  allPlots["js_c3_02_charged"] = new TH1F("js_c3_02_charged",";C_{ 3}^{ (0.2)} (charged);Jets",35,0,0.7);
-  allPlots["js_c3_02_puppi"] = new TH1F("js_c3_02_puppi",";C_{ 3}^{ (0.2)} (puppi);Jets",35,0,0.7);
-  allPlots["js_c3_02_all"] = new TH1F("js_c3_02_all",";C_{ 3}^{ (0.2)} (all);Jets",35,0,0.7);
-  allPlots["js_c3_05_charged"] = new TH1F("js_c3_05_charged",";C_{ 3}^{ (0.5)} (charged);Jets",40,0,0.4);
-  allPlots["js_c3_05_puppi"] = new TH1F("js_c3_05_puppi",";C_{ 3}^{ (0.5)} (puppi);Jets",40,0,0.4);
-  allPlots["js_c3_05_all"] = new TH1F("js_c3_05_all",";C_{ 3}^{ (0.5)} (all);Jets",40,0,0.4);
-  allPlots["js_c3_10_charged"] = new TH1F("js_c3_10_charged",";C_{ 3}^{ (1.0)} (charged);Jets",50,0,0.25);
-  allPlots["js_c3_10_puppi"] = new TH1F("js_c3_10_puppi",";C_{ 3}^{ (1.0)} (puppi);Jets",50,0,0.25);
-  allPlots["js_c3_10_all"] = new TH1F("js_c3_10_all",";C_{ 3}^{ (1.0)} (all);Jets",50,0,0.25);
-  allPlots["js_c3_20_charged"] = new TH1F("js_c3_20_charged",";C_{ 3}^{ (2.0)} (charged);Jets",30,0,0.15);
-  allPlots["js_c3_20_puppi"] = new TH1F("js_c3_20_puppi",";C_{ 3}^{ (2.0)} (puppi);Jets",30,0,0.15);
-  allPlots["js_c3_20_all"] = new TH1F("js_c3_20_all",";C_{ 3}^{ (2.0)} (all);Jets",30,0,0.15);
+  ht.addHist("js_mult_charged", new TH1F("js_mult_charged",";N (charged);Jets",30,0,30));
+  ht.addHist("js_mult_puppi", new TH1F("js_mult_puppi",";N (puppi);Jets",30,0,30));
+  ht.addHist("js_mult_all", new TH1F("js_mult_all",";N (all);Jets",30,0,30));
+  ht.addHist("js_width_charged", new TH1F("js_width_charged",";width (charged);Jets",50,0,0.25));
+  ht.addHist("js_width_puppi", new TH1F("js_width_puppi",";width (puppi);Jets",50,0,0.25));
+  ht.addHist("js_width_all", new TH1F("js_width_all",";width (all);Jets",50,0,0.25));
+  ht.addHist("js_ptd_charged", new TH1F("js_ptd_charged",";p_{T}D (charged);Jets",50,0,1));
+  ht.addHist("js_ptd_puppi", new TH1F("js_ptd_puppi",";p_{T}D (puppi);Jets",50,0,1));
+  ht.addHist("js_ptd_all", new TH1F("js_ptd_all",";p_{T}D (all);Jets",50,0,1));
+  ht.addHist("js_ecc_charged", new TH1F("js_ecc_charged",";eccentricity (charged);Jets",50,0,1));
+  ht.addHist("js_ecc_puppi", new TH1F("js_ecc_puppi",";eccentricity (puppi);Jets",50,0,1));
+  ht.addHist("js_ecc_all", new TH1F("js_ecc_all",";eccentricity (all);Jets",50,0,1));
+  ht.addHist("js_tau21_charged", new TH1F("js_tau21_charged",";#tau_{21} (charged);Jets",50,0,1));
+  ht.addHist("js_tau21_puppi", new TH1F("js_tau21_puppi",";#tau_{21} (puppi);Jets",50,0,1));
+  ht.addHist("js_tau21_all", new TH1F("js_tau21_all",";#tau_{21} (all);Jets",50,0,1));
+  ht.addHist("js_tau32_charged", new TH1F("js_tau32_charged",";#tau_{32} (charged);Jets",50,0,1));
+  ht.addHist("js_tau32_puppi", new TH1F("js_tau32_puppi",";#tau_{32} (puppi);Jets",50,0,1));
+  ht.addHist("js_tau32_all", new TH1F("js_tau32_all",";#tau_{32} (all);Jets",50,0,1));
+  ht.addHist("js_tau43_charged", new TH1F("js_tau43_charged",";#tau_{43} (charged);Jets",50,0,1));
+  ht.addHist("js_tau43_puppi", new TH1F("js_tau43_puppi",";#tau_{43} (puppi);Jets",50,0,1));
+  ht.addHist("js_tau43_all", new TH1F("js_tau43_all",";#tau_{43} (all);Jets",50,0,1));
+  ht.addHist("js_zg_charged", new TH1F("js_zg_charged",";z_{g} (charged);Jets",40,0.1,0.5));
+  ht.addHist("js_zg_puppi", new TH1F("js_zg_puppi",";z_{g} (puppi);Jets",40,0.1,0.5));
+  ht.addHist("js_zg_all", new TH1F("js_zg_all",";z_{g} (all);Jets",40,0.1,0.5));
+  ht.addHist("js_zgxdr_charged", new TH1F("js_zgxdr_charged",";z_{g} #times #DeltaR (charged);Jets",50,0,0.25));
+  ht.addHist("js_zgxdr_puppi", new TH1F("js_zgxdr_puppi",";z_{g} #times #DeltaR (puppi);Jets",50,0,0.25));
+  ht.addHist("js_zgxdr_all", new TH1F("js_zgxdr_all",";z_{g} #times #DeltaR (all);Jets",50,0,0.25));
+  ht.addHist("js_zgdr_charged", new TH1F("js_zgdr_charged",";z_{g} #DeltaR (charged);Jets",50,0,0.5));
+  ht.addHist("js_zgdr_puppi", new TH1F("js_zgdr_puppi",";z_{g} #DeltaR (puppi);Jets",50,0,0.5));
+  ht.addHist("js_zgdr_all", new TH1F("js_zgdr_all",";z_{g} #DeltaR (all);Jets",50,0,0.5));
+  ht.addHist("js_ga_width_charged", new TH1F("js_ga_width_charged",";#lambda_{ 1}^{1} (width) (charged);Jets",50,0,1));
+  ht.addHist("js_ga_width_puppi", new TH1F("js_ga_width_puppi",";#lambda_{ 1}^{1} (width) (puppi);Jets",50,0,1));
+  ht.addHist("js_ga_width_all", new TH1F("js_ga_width_all",";#lambda_{ 1}^{1} (width) (all);Jets",50,0,1));
+  ht.addHist("js_ga_lha_charged", new TH1F("js_ga_lha_charged",";#lambda_{ 0.5}^{1} (LHA) (charged);Jets",50,0,1));
+  ht.addHist("js_ga_lha_puppi", new TH1F("js_ga_lha_puppi",";#lambda_{ 0.5}^{1} (LHA) (puppi);Jets",50,0,1));
+  ht.addHist("js_ga_lha_all", new TH1F("js_ga_lha_all",";#lambda_{ 0.5}^{1} (LHA) (all);Jets",50,0,1));
+  ht.addHist("js_ga_thrust_charged", new TH1F("js_ga_thrust_charged",";#lambda_{ 2}^{1} (thrust) (charged);Jets",50,0,0.5));
+  ht.addHist("js_ga_thrust_puppi", new TH1F("js_ga_thrust_puppi",";#lambda_{ 2}^{1} (thrust) (puppi);Jets",50,0,0.5));
+  ht.addHist("js_ga_thrust_all", new TH1F("js_ga_thrust_all",";#lambda_{ 2}^{1} (thrust) (all);Jets",50,0,0.5));
+  ht.addHist("js_c1_02_charged", new TH1F("js_c1_02_charged",";C_{ 1}^{ (0.2)} (charged);Jets",50,0,0.5));
+  ht.addHist("js_c1_02_puppi", new TH1F("js_c1_02_puppi",";C_{ 1}^{ (0.2)} (puppi);Jets",50,0,0.5));
+  ht.addHist("js_c1_02_all", new TH1F("js_c1_02_all",";C_{ 1}^{ (0.2)} (all);Jets",50,0,0.5));
+  ht.addHist("js_c1_05_charged", new TH1F("js_c1_05_charged",";C_{ 1}^{ (0.5)} (charged);Jets",60,0,0.3));
+  ht.addHist("js_c1_05_puppi", new TH1F("js_c1_05_puppi",";C_{ 1}^{ (0.5)} (puppi);Jets",60,0,0.3));
+  ht.addHist("js_c1_05_all", new TH1F("js_c1_05_all",";C_{ 1}^{ (0.5)} (all);Jets",60,0,0.3));
+  ht.addHist("js_c1_10_charged", new TH1F("js_c1_10_charged",";C_{ 1}^{ (1.0)} (charged);Jets",40,0,0.2));
+  ht.addHist("js_c1_10_puppi", new TH1F("js_c1_10_puppi",";C_{ 1}^{ (1.0)} (puppi);Jets",40,0,0.2));
+  ht.addHist("js_c1_10_all", new TH1F("js_c1_10_all",";C_{ 1}^{ (1.0)} (all);Jets",40,0,0.2));
+  ht.addHist("js_c1_20_charged", new TH1F("js_c1_20_charged",";C_{ 1}^{ (2.0)} (charged);Jets",50,0,0.1));
+  ht.addHist("js_c1_20_puppi", new TH1F("js_c1_20_puppi",";C_{ 1}^{ (2.0)} (puppi);Jets",50,0,0.1));
+  ht.addHist("js_c1_20_all", new TH1F("js_c1_20_all",";C_{ 1}^{ (2.0)} (all);Jets",50,0,0.1));
+  ht.addHist("js_c2_02_charged", new TH1F("js_c2_02_charged",";C_{ 2}^{ (0.2)} (charged);Jets",35,0,0.7));
+  ht.addHist("js_c2_02_puppi", new TH1F("js_c2_02_puppi",";C_{ 2}^{ (0.2)} (puppi);Jets",35,0,0.7));
+  ht.addHist("js_c2_02_all", new TH1F("js_c2_02_all",";C_{ 2}^{ (0.2)} (all);Jets",35,0,0.7));
+  ht.addHist("js_c2_05_charged", new TH1F("js_c2_05_charged",";C_{ 2}^{ (0.5)} (charged);Jets",40,0,0.4));
+  ht.addHist("js_c2_05_puppi", new TH1F("js_c2_05_puppi",";C_{ 2}^{ (0.5)} (puppi);Jets",40,0,0.4));
+  ht.addHist("js_c2_05_all", new TH1F("js_c2_05_all",";C_{ 2}^{ (0.5)} (all);Jets",40,0,0.4));
+  ht.addHist("js_c2_10_charged", new TH1F("js_c2_10_charged",";C_{ 2}^{ (1.0)} (charged);Jets",50,0,0.25));
+  ht.addHist("js_c2_10_puppi", new TH1F("js_c2_10_puppi",";C_{ 2}^{ (1.0)} (puppi);Jets",50,0,0.25));
+  ht.addHist("js_c2_10_all", new TH1F("js_c2_10_all",";C_{ 2}^{ (1.0)} (all);Jets",50,0,0.25));
+  ht.addHist("js_c2_20_charged", new TH1F("js_c2_20_charged",";C_{ 2}^{ (2.0)} (charged);Jets",30,0,0.15));
+  ht.addHist("js_c2_20_puppi", new TH1F("js_c2_20_puppi",";C_{ 2}^{ (2.0)} (puppi);Jets",30,0,0.15));
+  ht.addHist("js_c2_20_all", new TH1F("js_c2_20_all",";C_{ 2}^{ (2.0)} (all);Jets",30,0,0.15));
+  ht.addHist("js_c3_02_charged", new TH1F("js_c3_02_charged",";C_{ 3}^{ (0.2)} (charged);Jets",35,0,0.7));
+  ht.addHist("js_c3_02_puppi", new TH1F("js_c3_02_puppi",";C_{ 3}^{ (0.2)} (puppi);Jets",35,0,0.7));
+  ht.addHist("js_c3_02_all", new TH1F("js_c3_02_all",";C_{ 3}^{ (0.2)} (all);Jets",35,0,0.7));
+  ht.addHist("js_c3_05_charged", new TH1F("js_c3_05_charged",";C_{ 3}^{ (0.5)} (charged);Jets",40,0,0.4));
+  ht.addHist("js_c3_05_puppi", new TH1F("js_c3_05_puppi",";C_{ 3}^{ (0.5)} (puppi);Jets",40,0,0.4));
+  ht.addHist("js_c3_05_all", new TH1F("js_c3_05_all",";C_{ 3}^{ (0.5)} (all);Jets",40,0,0.4));
+  ht.addHist("js_c3_10_charged", new TH1F("js_c3_10_charged",";C_{ 3}^{ (1.0)} (charged);Jets",50,0,0.25));
+  ht.addHist("js_c3_10_puppi", new TH1F("js_c3_10_puppi",";C_{ 3}^{ (1.0)} (puppi);Jets",50,0,0.25));
+  ht.addHist("js_c3_10_all", new TH1F("js_c3_10_all",";C_{ 3}^{ (1.0)} (all);Jets",50,0,0.25));
+  ht.addHist("js_c3_20_charged", new TH1F("js_c3_20_charged",";C_{ 3}^{ (2.0)} (charged);Jets",30,0,0.15));
+  ht.addHist("js_c3_20_puppi", new TH1F("js_c3_20_puppi",";C_{ 3}^{ (2.0)} (puppi);Jets",30,0,0.15));
+  ht.addHist("js_c3_20_all", new TH1F("js_c3_20_all",";C_{ 3}^{ (2.0)} (all);Jets",30,0,0.15));
   
   for (auto& it : allPlots)   { it.second->Sumw2(); it.second->SetDirectory(0); }
   for (auto& it : all2dPlots) { it.second->Sumw2(); it.second->SetDirectory(0); }
@@ -276,16 +281,16 @@ void RunTopJetShape(TString filename,
       if (vSystVar[0] == "csv") {
           if (vSystVar[1] == "heavy") {
               //heavy flavor uncertainty +/-3.5%
-              if (vSystVar[2] == "up")   ev = addBTagDecisions(ev, 0.8726, csvm);
-              if (vSystVar[2] == "down") ev = addBTagDecisions(ev, 0.8190, csvm);
+              if (vSystVar[2] == "up")   addBTagDecisions(ev, 0.8726, csvm);
+              if (vSystVar[2] == "down") addBTagDecisions(ev, 0.8190, csvm);
           }
           if (vSystVar[1] == "light") {
               //light flavor uncertainty +/-10%
-              if (vSystVar[2] == "up")   ev = addBTagDecisions(ev, csvm, 0.8557);
-              if (vSystVar[2] == "down") ev = addBTagDecisions(ev, csvm, 0.8415);
+              if (vSystVar[2] == "up")   addBTagDecisions(ev, csvm, 0.8557);
+              if (vSystVar[2] == "down") addBTagDecisions(ev, csvm, 0.8415);
           }
       }
-      else ev = addBTagDecisions(ev);
+      else addBTagDecisions(ev, csvm, csvm);
       
       if(!ev.isData) {
         //jec
@@ -346,7 +351,12 @@ void RunTopJetShape(TString filename,
       //////////////////
       
       float wgt(1.0);
-      std::vector<double> varweights;
+      // Pairs for systematic uncertainty weights
+      // double: weight value (divided by central weight)
+      // bool: use weight for plotting, otherwise just save to tree
+      std::vector<std::pair<double, bool> > varweights;
+      std::vector<double> plotwgts;
+      
       allPlots["puwgtctr"]->Fill(0.,1.0);
       if (!ev.isData) {
         // norm weight
@@ -356,36 +366,51 @@ void RunTopJetShape(TString filename,
         double puWgt(puWgtGr[period][0]->Eval(ev.g_pu));
         allPlots["puwgtctr"]->Fill(1,puWgt);
         wgt *= puWgt;
-        varweights.push_back(puWgtGr[period][1]->Eval(ev.g_pu));
-        varweights.push_back(puWgtGr[period][2]->Eval(ev.g_pu));
+        varweights.push_back(std::make_pair(puWgtGr[period][1]->Eval(ev.g_pu), true));
+        varweights.push_back(std::make_pair(puWgtGr[period][2]->Eval(ev.g_pu), true));
         
         // lepton trigger*selection weights
         if (singleLepton) {
           EffCorrection_t trigSF = lepEffH.getTriggerCorrection(leptons, period);
-          varweights.push_back(1.+trigSF.second);
-          varweights.push_back(1.-trigSF.second);
+          varweights.push_back(std::make_pair(1.+trigSF.second, true));
+          varweights.push_back(std::make_pair(1.-trigSF.second, true));
           EffCorrection_t selSF = lepEffH.getOfflineCorrection(leptons[0], period);
-          varweights.push_back(1.+selSF.second);
-          varweights.push_back(1.-selSF.second);
+          varweights.push_back(std::make_pair(1.+selSF.second, true));
+          varweights.push_back(std::make_pair(1.-selSF.second, true));
           wgt *= trigSF.first*selSF.first;
         }
-        else varweights.insert(varweights.end(), 4, 1.);
+        else varweights.insert(varweights.end(), 4, std::make_pair(1., true));
         
         // lhe weights
         wgt *= (ev.g_nw>0 ? ev.g_w[0] : 1.0);
+        
+        std::set<std::string> scalesForPlotter = {
+          "id1002muR1muF2hdampmt272.7225",
+          "id1003muR1muF0.5hdampmt272.7225",
+          "id1004muR2muF1hdampmt272.7225",
+          "id1005muR2muF2hdampmt272.7225",
+          "id1007muR0.5muF1hdampmt272.7225",
+          "id1009muR0.5muF0.5hdampmt272.7225"
+        };
         for (int i = 1; i < ev.g_nw; ++i) {
-          varweights.push_back(ev.g_w[i]/ev.g_w[0]);
+          bool forPlotter = (normH and scalesForPlotter.count(normH->GetXaxis()->GetBinLabel(i)) != 0);
+          varweights.push_back(std::make_pair(ev.g_w[i]/ev.g_w[0], forPlotter));
         }
         
         tjsev.nw = 1 + varweights.size();
         tjsev.weight[0]=wgt;
         for (unsigned int i = 0; i < varweights.size(); ++i) {
-          tjsev.weight[i+1] = varweights[i];
+          tjsev.weight[i+1] = varweights[i].first;
         }
+        plotwgts.push_back(wgt);
+        for (auto vw : varweights)
+          if (vw.second)
+            plotwgts.push_back(vw.first);
       }
       else {
         tjsev.nw=1;
         tjsev.weight[0]=wgt;
+        plotwgts.push_back(wgt);
       }
       
       //////////////////////////
@@ -430,27 +455,27 @@ void RunTopJetShape(TString filename,
           std::map<Int_t,Float_t>::iterator rIt=lumiMap.find(ev.run);
           if(rIt!=lumiMap.end() && ratevsrunH) allPlots[tag+"ratevsrun"]->Fill(std::distance(lumiMap.begin(),rIt),1./rIt->second);
           
-          allPlots[tag+"nvtx"]->Fill(ev.nvtx, wgt);
-          allPlots[tag+"nleps"]->Fill(leptons.size(), wgt);
-          allPlots[tag+"njets"]->Fill(jets.size(), wgt);
-          allPlots[tag+"nbjets"]->Fill(sel_nbjets, wgt);
-          allPlots[tag+"nwjets"]->Fill(sel_nwjets, wgt);
-          for (auto& wCand : wCands) allPlots[tag+"wcandm"]->Fill(wCand.M(), wgt);
-          for (auto& tCand : tCands) allPlots[tag+"tcandm"]->Fill(tCand.M(), wgt);
-          for (auto& tCand : tCandsWcut) allPlots[tag+"tcandwcutm"]->Fill(tCand.M(), wgt);
+          ht.fill(tag+"nvtx", ev.nvtx, plotwgts);
+          ht.fill(tag+"nleps", leptons.size(), plotwgts);
+          ht.fill(tag+"njets", jets.size(), plotwgts);
+          ht.fill(tag+"nbjets", sel_nbjets, plotwgts);
+          ht.fill(tag+"nwjets", sel_nwjets, plotwgts);
+          for (auto& wCand : wCands) ht.fill(tag+"wcandm", wCand.M(), plotwgts);
+          for (auto& tCand : tCands) ht.fill(tag+"tcandm", tCand.M(), plotwgts);
+          for (auto& tCand : tCandsWcut) ht.fill(tag+"tcandwcutm", tCand.M(), plotwgts);
           for(unsigned int i=0; i<leptons.size(); i++) {
             if (i>1) break;
             TString pf(Form("l%d",i));          
-            allPlots[tag+pf+"pt"] ->Fill(leptons[i].pt(),wgt);
-            allPlots[tag+pf+"eta"]->Fill(leptons[i].eta(),wgt);
+            ht.fill(tag+pf+"pt", leptons[i].pt(), plotwgts);
+            ht.fill(tag+pf+"eta", leptons[i].eta(), plotwgts);
           }
           for(unsigned int i=0; i<jets.size(); i++) {
             if (i>5) break;
             TString pf(Form("j%d",i));
-            allPlots[tag+pf+"pt"] ->Fill(jets[i].pt(),wgt);
-            allPlots[tag+pf+"eta"]->Fill(jets[i].eta(),wgt);
+            ht.fill(tag+pf+"pt", jets[i].pt(), plotwgts);
+            ht.fill(tag+pf+"eta", jets[i].eta(), plotwgts);
           }
-          allPlots[tag+"met"]->Fill(ev.met_pt[0], wgt);
+          ht.fill(tag+"met", ev.met_pt[0], plotwgts);
         }
       }
 
@@ -575,81 +600,81 @@ void RunTopJetShape(TString filename,
         tjsev.j_c3_20_all[ij]     = getC(3, 2.0, jets[ij], true);
         tjsev.j_c3_20_puppi[ij]   = getC(3, 2.0, jets[ij], true, true);
         
-        allPlots["js_mult_charged"]->Fill(tjsev.j_mult_charged[ij], wgt);
-        allPlots["js_mult_puppi"]->Fill(tjsev.j_mult_puppi[ij], wgt);
-        allPlots["js_mult_all"]->Fill(tjsev.j_mult_all[ij], wgt);
-        allPlots["js_width_charged"]->Fill(tjsev.j_width_charged[ij], wgt);
-        allPlots["js_width_puppi"]->Fill(tjsev.j_width_puppi[ij], wgt);
-        allPlots["js_width_all"]->Fill(tjsev.j_width_all[ij], wgt);
-        allPlots["js_ptd_charged"]->Fill(tjsev.j_ptd_charged[ij], wgt);
-        allPlots["js_ptd_puppi"]->Fill(tjsev.j_ptd_puppi[ij], wgt);
-        allPlots["js_ptd_all"]->Fill(tjsev.j_ptd_all[ij], wgt);
-        allPlots["js_ecc_charged"]->Fill(tjsev.j_ecc_charged[ij], wgt);
-        allPlots["js_ecc_puppi"]->Fill(tjsev.j_ecc_puppi[ij], wgt);
-        allPlots["js_ecc_all"]->Fill(tjsev.j_ecc_all[ij], wgt);
-        allPlots["js_tau21_charged"]->Fill(tjsev.j_tau21_charged[ij], wgt);
-        allPlots["js_tau21_puppi"]->Fill(tjsev.j_tau21_puppi[ij], wgt);
-        allPlots["js_tau21_all"]->Fill(tjsev.j_tau21_all[ij], wgt);
-        allPlots["js_tau32_charged"]->Fill(tjsev.j_tau32_charged[ij], wgt);
-        allPlots["js_tau32_puppi"]->Fill(tjsev.j_tau32_puppi[ij], wgt);
-        allPlots["js_tau32_all"]->Fill(tjsev.j_tau32_all[ij], wgt);
-        allPlots["js_tau43_charged"]->Fill(tjsev.j_tau43_charged[ij], wgt);
-        allPlots["js_tau43_puppi"]->Fill(tjsev.j_tau43_puppi[ij], wgt);
-        allPlots["js_tau43_all"]->Fill(tjsev.j_tau43_all[ij], wgt);
-        allPlots["js_zg_charged"]->Fill(tjsev.j_zg_charged[ij], wgt);
-        allPlots["js_zg_puppi"]->Fill(tjsev.j_zg_puppi[ij], wgt);
-        allPlots["js_zg_all"]->Fill(tjsev.j_zg_all[ij], wgt);
-        allPlots["js_zgxdr_charged"]->Fill(tjsev.j_zgxdr_charged[ij], wgt);
-        allPlots["js_zgxdr_puppi"]->Fill(tjsev.j_zgxdr_puppi[ij], wgt);
-        allPlots["js_zgxdr_all"]->Fill(tjsev.j_zgxdr_all[ij], wgt);
-        allPlots["js_zgdr_charged"]->Fill(tjsev.j_zgdr_charged[ij], wgt);
-        allPlots["js_zgdr_puppi"]->Fill(tjsev.j_zgdr_puppi[ij], wgt);
-        allPlots["js_zgdr_all"]->Fill(tjsev.j_zgdr_all[ij], wgt);
-        allPlots["js_ga_width_charged"]->Fill(tjsev.j_ga_width_charged[ij], wgt);
-        allPlots["js_ga_width_puppi"]->Fill(tjsev.j_ga_width_puppi[ij], wgt);
-        allPlots["js_ga_width_all"]->Fill(tjsev.j_ga_width_all[ij], wgt);
-        allPlots["js_ga_lha_charged"]->Fill(tjsev.j_ga_lha_charged[ij], wgt);
-        allPlots["js_ga_lha_puppi"]->Fill(tjsev.j_ga_lha_puppi[ij], wgt);
-        allPlots["js_ga_lha_all"]->Fill(tjsev.j_ga_lha_all[ij], wgt);
-        allPlots["js_ga_thrust_charged"]->Fill(tjsev.j_ga_thrust_charged[ij], wgt);
-        allPlots["js_ga_thrust_puppi"]->Fill(tjsev.j_ga_thrust_puppi[ij], wgt);
-        allPlots["js_ga_thrust_all"]->Fill(tjsev.j_ga_thrust_all[ij], wgt);
-        allPlots["js_c1_02_charged"]->Fill(tjsev.j_c1_02_charged[ij], wgt);
-        allPlots["js_c1_02_puppi"]->Fill(tjsev.j_c1_02_puppi[ij], wgt);
-        allPlots["js_c1_02_all"]->Fill(tjsev.j_c1_02_all[ij], wgt);
-        allPlots["js_c1_05_charged"]->Fill(tjsev.j_c1_05_charged[ij], wgt);
-        allPlots["js_c1_05_puppi"]->Fill(tjsev.j_c1_05_puppi[ij], wgt);
-        allPlots["js_c1_05_all"]->Fill(tjsev.j_c1_05_all[ij], wgt);
-        allPlots["js_c1_10_charged"]->Fill(tjsev.j_c1_10_charged[ij], wgt);
-        allPlots["js_c1_10_puppi"]->Fill(tjsev.j_c1_10_puppi[ij], wgt);
-        allPlots["js_c1_10_all"]->Fill(tjsev.j_c1_10_all[ij], wgt);
-        allPlots["js_c1_20_charged"]->Fill(tjsev.j_c1_20_charged[ij], wgt);
-        allPlots["js_c1_20_puppi"]->Fill(tjsev.j_c1_20_puppi[ij], wgt);
-        allPlots["js_c1_20_all"]->Fill(tjsev.j_c1_20_all[ij], wgt);
-        allPlots["js_c2_02_charged"]->Fill(tjsev.j_c2_02_charged[ij], wgt);
-        allPlots["js_c2_02_puppi"]->Fill(tjsev.j_c2_02_puppi[ij], wgt);
-        allPlots["js_c2_02_all"]->Fill(tjsev.j_c2_02_all[ij], wgt);
-        allPlots["js_c2_05_charged"]->Fill(tjsev.j_c2_05_charged[ij], wgt);
-        allPlots["js_c2_05_puppi"]->Fill(tjsev.j_c2_05_puppi[ij], wgt);
-        allPlots["js_c2_05_all"]->Fill(tjsev.j_c2_05_all[ij], wgt);
-        allPlots["js_c2_10_charged"]->Fill(tjsev.j_c2_10_charged[ij], wgt);
-        allPlots["js_c2_10_puppi"]->Fill(tjsev.j_c2_10_puppi[ij], wgt);
-        allPlots["js_c2_10_all"]->Fill(tjsev.j_c2_10_all[ij], wgt);
-        allPlots["js_c2_20_charged"]->Fill(tjsev.j_c2_20_charged[ij], wgt);
-        allPlots["js_c2_20_puppi"]->Fill(tjsev.j_c2_20_puppi[ij], wgt);
-        allPlots["js_c2_20_all"]->Fill(tjsev.j_c2_20_all[ij], wgt);
-        allPlots["js_c3_02_charged"]->Fill(tjsev.j_c3_02_charged[ij], wgt);
-        allPlots["js_c3_02_puppi"]->Fill(tjsev.j_c3_02_puppi[ij], wgt);
-        allPlots["js_c3_02_all"]->Fill(tjsev.j_c3_02_all[ij], wgt);
-        allPlots["js_c3_05_charged"]->Fill(tjsev.j_c3_05_charged[ij], wgt);
-        allPlots["js_c3_05_puppi"]->Fill(tjsev.j_c3_05_puppi[ij], wgt);
-        allPlots["js_c3_05_all"]->Fill(tjsev.j_c3_05_all[ij], wgt);
-        allPlots["js_c3_10_charged"]->Fill(tjsev.j_c3_10_charged[ij], wgt);
-        allPlots["js_c3_10_puppi"]->Fill(tjsev.j_c3_10_puppi[ij], wgt);
-        allPlots["js_c3_10_all"]->Fill(tjsev.j_c3_10_all[ij], wgt);
-        allPlots["js_c3_20_charged"]->Fill(tjsev.j_c3_20_charged[ij], wgt);
-        allPlots["js_c3_20_puppi"]->Fill(tjsev.j_c3_20_puppi[ij], wgt);
-        allPlots["js_c3_20_all"]->Fill(tjsev.j_c3_20_all[ij], wgt);
+        ht.fill("js_mult_charged", tjsev.j_mult_charged[ij], plotwgts);
+        ht.fill("js_mult_puppi", tjsev.j_mult_puppi[ij], plotwgts);
+        ht.fill("js_mult_all", tjsev.j_mult_all[ij], plotwgts);
+        ht.fill("js_width_charged", tjsev.j_width_charged[ij], plotwgts);
+        ht.fill("js_width_puppi", tjsev.j_width_puppi[ij], plotwgts);
+        ht.fill("js_width_all", tjsev.j_width_all[ij], plotwgts);
+        ht.fill("js_ptd_charged", tjsev.j_ptd_charged[ij], plotwgts);
+        ht.fill("js_ptd_puppi", tjsev.j_ptd_puppi[ij], plotwgts);
+        ht.fill("js_ptd_all", tjsev.j_ptd_all[ij], plotwgts);
+        ht.fill("js_ecc_charged", tjsev.j_ecc_charged[ij], plotwgts);
+        ht.fill("js_ecc_puppi", tjsev.j_ecc_puppi[ij], plotwgts);
+        ht.fill("js_ecc_all", tjsev.j_ecc_all[ij], plotwgts);
+        ht.fill("js_tau21_charged", tjsev.j_tau21_charged[ij], plotwgts);
+        ht.fill("js_tau21_puppi", tjsev.j_tau21_puppi[ij], plotwgts);
+        ht.fill("js_tau21_all", tjsev.j_tau21_all[ij], plotwgts);
+        ht.fill("js_tau32_charged", tjsev.j_tau32_charged[ij], plotwgts);
+        ht.fill("js_tau32_puppi", tjsev.j_tau32_puppi[ij], plotwgts);
+        ht.fill("js_tau32_all", tjsev.j_tau32_all[ij], plotwgts);
+        ht.fill("js_tau43_charged", tjsev.j_tau43_charged[ij], plotwgts);
+        ht.fill("js_tau43_puppi", tjsev.j_tau43_puppi[ij], plotwgts);
+        ht.fill("js_tau43_all", tjsev.j_tau43_all[ij], plotwgts);
+        ht.fill("js_zg_charged", tjsev.j_zg_charged[ij], plotwgts);
+        ht.fill("js_zg_puppi", tjsev.j_zg_puppi[ij], plotwgts);
+        ht.fill("js_zg_all", tjsev.j_zg_all[ij], plotwgts);
+        ht.fill("js_zgxdr_charged", tjsev.j_zgxdr_charged[ij], plotwgts);
+        ht.fill("js_zgxdr_puppi", tjsev.j_zgxdr_puppi[ij], plotwgts);
+        ht.fill("js_zgxdr_all", tjsev.j_zgxdr_all[ij], plotwgts);
+        ht.fill("js_zgdr_charged", tjsev.j_zgdr_charged[ij], plotwgts);
+        ht.fill("js_zgdr_puppi", tjsev.j_zgdr_puppi[ij], plotwgts);
+        ht.fill("js_zgdr_all", tjsev.j_zgdr_all[ij], plotwgts);
+        ht.fill("js_ga_width_charged", tjsev.j_ga_width_charged[ij], plotwgts);
+        ht.fill("js_ga_width_puppi", tjsev.j_ga_width_puppi[ij], plotwgts);
+        ht.fill("js_ga_width_all", tjsev.j_ga_width_all[ij], plotwgts);
+        ht.fill("js_ga_lha_charged", tjsev.j_ga_lha_charged[ij], plotwgts);
+        ht.fill("js_ga_lha_puppi", tjsev.j_ga_lha_puppi[ij], plotwgts);
+        ht.fill("js_ga_lha_all", tjsev.j_ga_lha_all[ij], plotwgts);
+        ht.fill("js_ga_thrust_charged", tjsev.j_ga_thrust_charged[ij], plotwgts);
+        ht.fill("js_ga_thrust_puppi", tjsev.j_ga_thrust_puppi[ij], plotwgts);
+        ht.fill("js_ga_thrust_all", tjsev.j_ga_thrust_all[ij], plotwgts);
+        ht.fill("js_c1_02_charged", tjsev.j_c1_02_charged[ij], plotwgts);
+        ht.fill("js_c1_02_puppi", tjsev.j_c1_02_puppi[ij], plotwgts);
+        ht.fill("js_c1_02_all", tjsev.j_c1_02_all[ij], plotwgts);
+        ht.fill("js_c1_05_charged", tjsev.j_c1_05_charged[ij], plotwgts);
+        ht.fill("js_c1_05_puppi", tjsev.j_c1_05_puppi[ij], plotwgts);
+        ht.fill("js_c1_05_all", tjsev.j_c1_05_all[ij], plotwgts);
+        ht.fill("js_c1_10_charged", tjsev.j_c1_10_charged[ij], plotwgts);
+        ht.fill("js_c1_10_puppi", tjsev.j_c1_10_puppi[ij], plotwgts);
+        ht.fill("js_c1_10_all", tjsev.j_c1_10_all[ij], plotwgts);
+        ht.fill("js_c1_20_charged", tjsev.j_c1_20_charged[ij], plotwgts);
+        ht.fill("js_c1_20_puppi", tjsev.j_c1_20_puppi[ij], plotwgts);
+        ht.fill("js_c1_20_all", tjsev.j_c1_20_all[ij], plotwgts);
+        ht.fill("js_c2_02_charged", tjsev.j_c2_02_charged[ij], plotwgts);
+        ht.fill("js_c2_02_puppi", tjsev.j_c2_02_puppi[ij], plotwgts);
+        ht.fill("js_c2_02_all", tjsev.j_c2_02_all[ij], plotwgts);
+        ht.fill("js_c2_05_charged", tjsev.j_c2_05_charged[ij], plotwgts);
+        ht.fill("js_c2_05_puppi", tjsev.j_c2_05_puppi[ij], plotwgts);
+        ht.fill("js_c2_05_all", tjsev.j_c2_05_all[ij], plotwgts);
+        ht.fill("js_c2_10_charged", tjsev.j_c2_10_charged[ij], plotwgts);
+        ht.fill("js_c2_10_puppi", tjsev.j_c2_10_puppi[ij], plotwgts);
+        ht.fill("js_c2_10_all", tjsev.j_c2_10_all[ij], plotwgts);
+        ht.fill("js_c2_20_charged", tjsev.j_c2_20_charged[ij], plotwgts);
+        ht.fill("js_c2_20_puppi", tjsev.j_c2_20_puppi[ij], plotwgts);
+        ht.fill("js_c2_20_all", tjsev.j_c2_20_all[ij], plotwgts);
+        ht.fill("js_c3_02_charged", tjsev.j_c3_02_charged[ij], plotwgts);
+        ht.fill("js_c3_02_puppi", tjsev.j_c3_02_puppi[ij], plotwgts);
+        ht.fill("js_c3_02_all", tjsev.j_c3_02_all[ij], plotwgts);
+        ht.fill("js_c3_05_charged", tjsev.j_c3_05_charged[ij], plotwgts);
+        ht.fill("js_c3_05_puppi", tjsev.j_c3_05_puppi[ij], plotwgts);
+        ht.fill("js_c3_05_all", tjsev.j_c3_05_all[ij], plotwgts);
+        ht.fill("js_c3_10_charged", tjsev.j_c3_10_charged[ij], plotwgts);
+        ht.fill("js_c3_10_puppi", tjsev.j_c3_10_puppi[ij], plotwgts);
+        ht.fill("js_c3_10_all", tjsev.j_c3_10_all[ij], plotwgts);
+        ht.fill("js_c3_20_charged", tjsev.j_c3_20_charged[ij], plotwgts);
+        ht.fill("js_c3_20_puppi", tjsev.j_c3_20_puppi[ij], plotwgts);
+        ht.fill("js_c3_20_all", tjsev.j_c3_20_all[ij], plotwgts);
       }
       
       
@@ -818,6 +843,12 @@ void RunTopJetShape(TString filename,
   //save histos to file  
   fOut->cd();
   outT->Write();
+  for (auto& it : ht.getPlots())  { 
+    it.second->SetDirectory(fOut); it.second->Write(); 
+  }
+  for (auto& it : ht.get2dPlots())  { 
+    it.second->SetDirectory(fOut); it.second->Write(); 
+  }
   for (auto& it : allPlots)  { 
     it.second->SetDirectory(fOut); it.second->Write(); 
   }
