@@ -151,10 +151,13 @@ HistTool::HistTool(int nsyst) :
 {}
 
 //
-void HistTool::registerHistogram(TString title, TH1* hist) {
+void HistTool::addHist(TString title, TH1* hist) {
   allPlots_[title] = hist;
-  all2dPlots_[title+"_syst"] = new TH2F(title+"_syst", hist->GetTitle(), hist->GetNbinsX(), hist->GetXaxis()->GetXmin(), hist->GetXaxis()->GetXmax(), nsyst_, -0.5, nsyst_-0.5);
-  all2dPlots_[title+"_syst"]->SetXTitle(hist->GetXaxis()->GetTitle());
+  if (nsyst_ > 0) {
+    all2dPlots_[title+"_syst"] = new TH2F(title+"_syst", hist->GetTitle(), hist->GetNbinsX(), hist->GetXaxis()->GetXmin(), hist->GetXaxis()->GetXmax(), nsyst_, -0.5, nsyst_-0.5);
+    all2dPlots_[title+"_syst"]->SetXTitle(hist->GetXaxis()->GetTitle());
+    all2dPlots_[title+"_syst"]->SetYTitle("Variation (0=default)");
+  }
 }
 
 //
@@ -164,9 +167,11 @@ void HistTool::fill(TString title, double value, std::vector<double> weights) {
     return;
   }
   allPlots_[title]->Fill(value, weights[0]);
-  all2dPlots_[title+"_syst"]->Fill(value, 0., weights[0]);
-  for (unsigned int i = 1; i < weights.size(); ++i) {
-    all2dPlots_[title+"_syst"]->Fill(value, i, weights[0]*weights[i]);
+  if (nsyst_ > 0) {
+    all2dPlots_[title+"_syst"]->Fill(value, 0., weights[0]);
+    for (unsigned int i = 1; i < weights.size(); ++i) {
+      all2dPlots_[title+"_syst"]->Fill(value, i, weights[0]*weights[i]);
+    }
   }
 }
 
