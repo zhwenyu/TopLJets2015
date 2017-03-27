@@ -410,6 +410,7 @@ void RunTopJetShape(TString filename,
       else {
         tjsev.nw=1;
         tjsev.weight[0]=wgt;
+        plotwgts.push_back(wgt);
       }
       
       //////////////////////////
