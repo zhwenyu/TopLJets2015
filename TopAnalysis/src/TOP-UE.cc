@@ -336,8 +336,8 @@ void RunTopUE(TString filename,
 	      allPlots["met_"+chTag]->Fill(evsel.getMET().Pt(),wgt);
 	      allPlots["njets_"+chTag]->Fill(tue.nj[0],wgt);
 	      allPlots["nch_"+chTag]->Fill(nch,wgt);	  
-	      ((TH2 *)allPlots["nchvsnvtx_"+chTag])->Fill(nch,ev.nvtx,wgt);
-	      ((TH2 *)allPlots["nchvsrho_"+chTag])->Fill(nch,ev.rho,wgt);
+	      ((TH2 *)allPlots["nchvsnvtx_"+chTag])->Fill(ev.nvtx,nch,wgt);
+	      ((TH2 *)allPlots["nchvsrho_"+chTag])->Fill(ev.rho,nch,wgt);
 	      allPlots["chavgpt_"+chTag]->Fill(nch>0 ? chSumPt/nch : -1,wgt);
 	      allPlots["chsumpt_"+chTag]->Fill(chSumPt,wgt);
 	      allPlots["chavgpz_"+chTag]->Fill(nch>0 ? chSumPz/nch : -1,wgt);
