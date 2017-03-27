@@ -49,15 +49,14 @@ case $WHAT in
     MERGE )
 	mkdir -p ${outdir}
 	/afs/cern.ch/project/eos/installation/0.3.84-aquamarine/bin/eos.select -b fuse mount eos;
-	./scripts/mergeOutputs.py eos/cms${summaryeosdir} True ${outdir};
-	./scripts/mergeOutputs.py eos/cms${summaryeosdir}_syst True ${outdir}_syst;
+	./scripts/mergeOutputs.py eos/cms${summaryeosdir} True ${outdir};	
 	/afs/cern.ch/project/eos/installation/0.3.84-aquamarine/bin/eos.select -b fuse umount eos;
 	;;
     PLOTSEL )
 	commonOpts="-i ${outdir} --puNormSF puwgtctr  -j data/era2016/samples.json -l ${lumi}  --saveLog --mcUnc ${lumiUnc}"
 	#python scripts/plotter.py ${commonOpts} --only mll --outName mll_plotter.root;	
-     	#python scripts/runDYRinRout.py --in ${outdir}/plots/mll_plotter.root --categs "0t,1t,2t"  --out ${outdir}/plots/;
-	#python scripts/plotter.py ${commonOpts} --procSF DY:${outdir}/plots/.dyscalefactors.pck --only njets --rebin 4 --saveTeX --outName count_plotter.root;
+     	#python scripts/runDYRinRout.py --in ${outdir}/plots/mll_plotter.root --categs "0t,1t,"  --out ${outdir}/plots/ > ${outdir}/plots/dy.dat;
+	#python scripts/plotter.py ${commonOpts} --procSF DY:${outdir}/plots/.dyscalefactors.pck --only njets --rebin 7 --saveTeX --outName count_plotter.root;
 	python scripts/plotter.py ${commonOpts}; # --procSF DY:${outdir}/plots/.dyscalefactors.pck;
 	;;
     WWWSEL )

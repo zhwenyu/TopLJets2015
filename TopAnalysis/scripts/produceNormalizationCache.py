@@ -74,7 +74,7 @@ def main():
             for xbin in range(1,labelH.GetNbinsX()):
                 label=labelH.GetXaxis().GetBinLabel(xbin)
                 for tkn in ['<','>',' ','\"','/','weight','=']: label=label.replace(tkn,'')
-                wgtCounter.GetXaxis().SetBinLabel(xbin+1,label)
+                wgtCounter.GetXaxis().SetBinLabel(xbin,label)
 
         #invert to set normalization
         print sample,' initial sum of weights=',wgtCounter.GetBinContent(1)
