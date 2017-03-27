@@ -123,7 +123,7 @@ std::map<TString, std::vector<TGraph *> > getPileupWeightsMap(TString era, TH1 *
 
 
 //apply jet energy resolutions
-MiniEvent_t smearJetEnergies(MiniEvent_t ev, std::string option) {
+MiniEvent_t smearJetEnergies(MiniEvent_t &ev, std::string option) {
   for (int k = 0; k < ev.nj; k++) {
     TLorentzVector jp4;
     jp4.SetPtEtaPhiM(ev.j_pt[k],ev.j_eta[k],ev.j_phi[k],ev.j_mass[k]);
@@ -148,7 +148,7 @@ MiniEvent_t smearJetEnergies(MiniEvent_t ev, std::string option) {
 }
 
 //see working points in https://twiki.cern.ch/twiki/bin/view/CMS/BtagRecommendation80XReReco
-MiniEvent_t addBTagDecisions(MiniEvent_t ev,float wp,float wpl) {
+MiniEvent_t addBTagDecisions(MiniEvent_t &ev,float wp,float wpl) {
   for (int k = 0; k < ev.nj; k++) {
     if (ev.j_hadflav[k] >= 4) ev.j_btag[k] = (ev.j_csv[k] > wp);
     else                      ev.j_btag[k] = (ev.j_csv[k] > wpl);
@@ -159,7 +159,7 @@ MiniEvent_t addBTagDecisions(MiniEvent_t ev,float wp,float wpl) {
 
 
 //details in https://twiki.cern.ch/twiki/bin/view/CMS/BTagCalibration
-MiniEvent_t updateBTagDecisions(MiniEvent_t ev, 
+MiniEvent_t updateBTagDecisions(MiniEvent_t &ev, 
 				std::map<BTagEntry::JetFlavor,BTagCalibrationReader *> &btvsfReaders,
 				std::map<BTagEntry::JetFlavor, TGraphAsymmErrors*> &expBtagEff, 
 				std::map<BTagEntry::JetFlavor, TGraphAsymmErrors*> &expBtagEffPy8, 
@@ -252,7 +252,7 @@ std::map<BTagEntry::JetFlavor, TGraphAsymmErrors *> readExpectedBtagEff(TString 
 
 
 // See https://twiki.cern.ch/twiki/bin/viewauth/CMS/JECUncertaintySources#Main_uncertainties_2016_80X
-MiniEvent_t applyJetCorrectionUncertainty(MiniEvent_t ev, JetCorrectionUncertainty *jecUnc, TString jecVar, TString direction) {
+MiniEvent_t applyJetCorrectionUncertainty(MiniEvent_t &ev, JetCorrectionUncertainty *jecUnc, TString jecVar, TString direction) {
   for (int k = 0; k < ev.nj; k++) {
     if ((jecVar == "FlavorPureGluon"  and not (ev.j_flav[k] == 21 or ev.j_flav[k] == 0)) or
         (jecVar == "FlavorPureQuark"  and not (abs(ev.j_flav[k]) <= 3 and abs(ev.j_flav[k]) != 0)) or
