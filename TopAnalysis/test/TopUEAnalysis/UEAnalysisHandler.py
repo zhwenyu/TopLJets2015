@@ -22,7 +22,6 @@ VARS={
     'chfluxz'        : ('#Sigma p_{z}(ch)', False, True,  False, False),
     'chavgpz'        : ('#bar{p}_{z}(ch)',  False, True,  False, False),
     'sphericity'     : ('Spericity',        False, True,  False, False),
-    'sphericityPerp' : ('Spericity#perp',   False, True,  False, False),
     'aplanarity'     : ('Aplanarity',       False, True,  False, False),
     'C'              : ('C',                False, True,  False, False),
     'D'              : ('D',                False, True,  False, False)

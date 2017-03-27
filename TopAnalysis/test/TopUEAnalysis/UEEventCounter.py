@@ -23,12 +23,10 @@ class UEEventCounter:
     """
     def reset(self,axes=None):        
         self.rec_sphericity     = 0           #event shapes
-        self.rec_sphericityPerp = 0
         self.rec_aplanarity     = 0
         self.rec_C              = 0
         self.rec_D              = 0
         self.gen_sphericity     = 0
-        self.gen_sphericityPerp = 0
         self.gen_aplanarity     = 0
         self.gen_C              = 0
         self.gen_D              = 0
@@ -146,7 +144,6 @@ class UEEventCounter:
             #event shapes
             evshapes.analyseNewEvent(selP4)
             self.rec_sphericity     = evshapes.sphericity
-            self.rec_sphericityPerp = evshapes.sphericityPerp
             self.rec_aplanarity     = evshapes.aplanarity
             self.rec_C              = evshapes.C
             self.rec_D              = evshapes.D
@@ -191,7 +188,6 @@ class UEEventCounter:
             #event shapes
             evshapes.analyseNewEvent(selP4)
             self.gen_sphericity     = evshapes.sphericity
-            self.gen_sphericityPerp = evshapes.sphericityPerp
             self.gen_aplanarity     = evshapes.aplanarity
             self.gen_C              = evshapes.C
             self.gen_D              = evshapes.D
