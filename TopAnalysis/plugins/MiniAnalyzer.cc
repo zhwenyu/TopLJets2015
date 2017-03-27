@@ -306,6 +306,9 @@ int MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       //map the gen particles which are clustered in this jet
       JetFragInfo_t jinfo=analyzeJet(*genJet);
 
+      std::vector< const reco::Candidate * > jconst=genJet->getJetConstituentsQuick();
+      for(size_t ijc=0; ijc <jconst.size(); ijc++) jetConstsMap[ jconst[ijc] ] = ev_.ng;
+
       ev_.g_tagCtrs[ev_.ng]       = (jinfo.nbtags&0xf) | ((jinfo.nctags&0xf)<<4) | ((jinfo.ntautags&0xf)<<8);
       ev_.g_xb[ev_.ng]            = jinfo.xb;
       ev_.g_bid[ev_.ng]           = jinfo.leadTagId;
