@@ -22,8 +22,15 @@ c.SetRightMargin(0.02)
 
 profttbar.Draw('e1')
 profData.Draw('e1same')
-if 'vsnvtx' in plot : profttbar.GetXaxis().SetRangeUser(10,40)
-if 'vsrho' in plot : profttbar.GetXaxis().SetRangeUser(10,35)
+if 'vsnvtx' in plot : 
+    profttbar.GetXaxis().SetRangeUser(10,40)
+    profttbar.Fit('pol1','RQ+','same',10,40)
+    profData.Fit('pol1','RQ+','same',10,40)
+if 'vsrho' in plot : 
+    profttbar.GetXaxis().SetRangeUser(10,35)
+    profttbar.Fit('pol1','RQ+','same',10,35)
+    profData.Fit('pol1','RQ+','same',10,35)
+
 profttbar.GetYaxis().SetRangeUser(18,28)
 profttbar.GetXaxis().SetTitle('Vertex multiplicity' if 'vsnvtx' in plot else '#rho')
 profttbar.GetYaxis().SetTitle('Charged particle multiplicity')
@@ -38,13 +45,14 @@ txt.DrawLatex(0.15,0.9,'#bf{CMS} #it{preliminary}')
 txt.DrawLatex(0.15,0.85,'#it{reconstruction level}')
 txt.DrawLatex(0.75,0.97,'#scale[0.8]{36.5 fb^{-1} (13 TeV)}')
 
-leg = ROOT.TLegend(0.7,0.9,0.95,0.8)
+leg = ROOT.TLegend(0.55,0.4,0.95,0.3)
 leg.SetBorderSize(0)
 leg.SetFillStyle(0)
 leg.SetTextFont(42)
 leg.SetTextSize(0.035)
-leg.AddEntry(profData,'data','pe')
-leg.AddEntry(profttbar,'t#bar{t}','p')
+varT='N_{vtx}' if 'vsnvtx' in plot else '#rho'
+leg.AddEntry(profData,'data N_{ch}/%s=%3.2f#pm%3.2f'%(varT,profData.GetFunction('pol1').GetParameter(1),profData.GetFunction('pol1').GetParError(1)),'pe')
+leg.AddEntry(profttbar,'t#bar{t} N_{ch}/%s=%3.2f#pm%3.2f'%(varT,profttbar.GetFunction('pol1').GetParameter(1),profttbar.GetFunction('pol1').GetParError(1)),'p')
 leg.Draw()
 
 c.Modified()

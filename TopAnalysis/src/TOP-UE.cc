@@ -208,6 +208,7 @@ void RunTopUE(TString filename,
 		      isHP=true;
 		      break;
 		    }
+		  if(isHP) break;
 		}
 	  
 	      if(!isHP) selTracks.push_back(std::pair<int,TLorentzVector>(ipf,tkP4) );
@@ -399,6 +400,7 @@ void RunTopUE(TString filename,
 		      isHP=true;
 		      break;
 		    }
+		  if(isHP) break;
 		}
 
 	      //match to reco
@@ -434,7 +436,7 @@ void RunTopUE(TString filename,
 	      tue.gen_rec[ipf] = selTracks[ipf].originalReference();
 	      tue.gen_n++;
 	    }
-	  
+
 	  //flag if passes selection  
 	  tue.gen_passSel=passPresel;
 	  tue.gen_nj=jets.size();

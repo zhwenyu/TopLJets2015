@@ -7,19 +7,25 @@ import array as array
 
 #var name, var title, use to slice phase space, use as observable, use as event axis, is angle
 VARS={
-    'ptttbar'  : ('p_{T}(t#bar{t})',  True,  False, False, False),
-    'phittbar' : ('#phi(t#bar{t})',   True,  False, True,  True),
-    'ptpos'    : ('p_{T}(l^{+})',     True,  False, False, False),
-    'phipos'   : ('#phi(l^{+})',      True,  False, True,  True),
-    'ptll'     : ('p_{T}(l,l)',       True,  False, False, False),
-    'phill'    : ('#phi(ll)',         True,  False, True,  True),
-    'sumpt'    : ('#Sigma p_{T}(l)',  True,  False, False, False),
-    'mll'      : ('M(l,l)',           True,  False, False, False),
-    'dphill'   : ('#Delta#phi(l,l)',  True,  False, False, True),
-    'nj'       : ('N(jets)',          True,  False, False, False),
-    'chmult'   : ('N(ch)',            True,  True,  False, False),
-    'chflux'   : ('#Sigma p_{T}(ch)', False, True,  False, False),
-    'chavgpt'  : ('#bar{p}_{T}(ch)',  False, True,  False, False),
+    'ptttbar'        : ('p_{T}(t#bar{t})',  True,  False, False, False),
+    'phittbar'       : ('#phi(t#bar{t})',   True,  False, True,  True),
+    'ptpos'          : ('p_{T}(l^{+})',     True,  False, False, False),
+    'phipos'         : ('#phi(l^{+})',      True,  False, True,  True),
+    'ptll'           : ('p_{T}(l,l)',       True,  False, False, False),
+    'phill'          : ('#phi(ll)',         True,  False, True,  True),
+    'sumpt'          : ('#Sigma p_{T}(l)',  True,  False, False, False),    
+    'dphill'         : ('#Delta#phi(l,l)',  True,  False, False, True),
+    'nj'             : ('N(jets)',          True,  False, False, False),
+    'chmult'         : ('N(ch)',            True,  True,  False, False),
+    'chflux'         : ('#Sigma p_{T}(ch)', False, True,  False, False),
+    'chavgpt'        : ('#bar{p}_{T}(ch)',  False, True,  False, False),
+    'chfluxz'        : ('#Sigma p_{z}(ch)', False, True,  False, False),
+    'chavgpz'        : ('#bar{p}_{z}(ch)',  False, True,  False, False),
+    'sphericity'     : ('Spericity',        False, True,  False, False),
+    'sphericityPerp' : ('Spericity#perp',   False, True,  False, False),
+    'aplanarity'     : ('Aplanarity',       False, True,  False, False),
+    'C'              : ('C',                False, True,  False, False),
+    'D'              : ('D',                False, True,  False, False)
     }
 
 OBSVARS   = filter(lambda var: VARS[var][2], VARS)
@@ -37,7 +43,7 @@ class UEAnalysisHandler:
         with open(analysisCfg,'r') as cachefile:
             self.axes=pickle.load(cachefile)
             self.histos=pickle.load(cachefile)
-        print self.histos.keys()
+        #print self.histos.keys()
 
     """
     inclusive histogram filling
@@ -70,10 +76,11 @@ class UEAnalysisHandler:
         #GEN level counting
         genCts=getattr(ue,'gen_chmult')
         genVal=getattr(ue,'gen_'+obs)
-        genBin=self.getBinForVariable(genVal, self.axes[(obs,False)])-1
-        genBin += genSliceShift*(self.axes[(obs,False)].GetNbins())
         if not gen_passSel : genBin=-1        
-        if genCts>0: 
+        if genCts>0:
+            
+            genBin=self.getBinForVariable(genVal, self.axes[(obs,False)])-1
+            genBin += genSliceShift*(self.axes[(obs,False)].GetNbins())            
             if sliceVar:
                 self.histos[(obs,False,sliceVar)].Fill(genBin,weight)
             else:
