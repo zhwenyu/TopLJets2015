@@ -168,8 +168,8 @@ def main():
         jobNb=0
         for method,inF,outF,channel,charge,flav,runSysts,systVar,era,tag,debug in task_list:
             jobNb+=1
-            cfgfile='%s/job_%d.sh'%(FarmDirectory,os.path.splitext(os.path.basename(outF))[0])
-            logfile='%s/job_%d.log'%(FarmDirectory,os.path.splitext(os.path.basename(outF))[0])
+            cfgfile='%s/job_%s.sh'%(FarmDirectory,os.path.splitext(os.path.basename(outF))[0])
+            logfile='%s/job_%s.log'%(FarmDirectory,os.path.splitext(os.path.basename(outF))[0])
             cfg=open(cfgfile,'w')
             cfg.write('WORKDIR=`pwd`\n')
             cfg.write('echo "Working directory is ${WORKDIR}"\n')
