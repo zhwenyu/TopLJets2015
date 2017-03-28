@@ -47,6 +47,7 @@ def main():
     parser.add_option('-i', '--in',          dest='input',       help='input directory with files or single file [%default]',  default=None,       type='string')
     parser.add_option('-o', '--out',         dest='output',      help='output directory (or file if single file to process)  [%default]',  default='analysis', type='string')
     parser.add_option(      '--only',        dest='only',        help='csv list of samples to process  [%default]',             default=None,       type='string')
+    parser.add_option(      '--skip',        dest='skip',        help='csv list of samples to skip  [%default]',             default=None,       type='string')
     parser.add_option(      '--runSysts',    dest='runSysts',    help='run systematics  [%default]',                            default=False,      action='store_true')
     parser.add_option(      '--systVar',     dest='systVar',     help='single systematic variation  [%default]',   default='nominal',       type='string')
     parser.add_option(      '--debug',       dest='debug',      help='debug mode  [%default]',                            default=False,      action='store_true')
@@ -60,10 +61,15 @@ def main():
     parser.add_option(      '--skipexisting',dest='skipexisting',help='skip jobs with existing output files  [%default]',                            default=False,      action='store_true')
     (opt, args) = parser.parse_args()
 
-    #parse selection list
+    #parse selection lists
     onlyList=[]
     try:
         onlyList=opt.only.split(',')
+    except:
+        pass
+    skipList=[]
+    try:
+        skipList=opt.skip.split(',')
     except:
         pass
     #parse list of systematic variations
@@ -117,15 +123,15 @@ def main():
             if len(onlyList)>0:
                 processThisTag=False
                 for itag in onlyList:
-                    if itag[0]=='^': 
-                        itag=itag[1:]
-                        if itag in tag : 
-                            processThisTag=False
-                            break
-                        else : 
-                            processThisTag=True
-                    elif itag in tag:
+                    if itag in tag:
                         processThisTag=True
+                        break
+                if not processThisTag : continue
+            if len(skipList)>0:
+                processThisTag=True
+                for itag in skipList:
+                    if itag in tag:
+                        processThisTag=False
                         break
                 if not processThisTag : continue
 
