@@ -116,6 +116,7 @@ def main():
                             report += '%s was scaled by %3.3f for pileup normalization\n' % (sp[0],puNormSF)
 
                 for tkey in fIn.GetListOfKeys():
+                    keyIsSyst=False
 
                     try:
                         key=tkey.GetName()
@@ -128,38 +129,51 @@ def main():
                                 break
                         if not keep: continue
 
+                        histos = []
                         obj=fIn.Get(key)
-                        if not obj.InheritsFrom('TH1') : continue
-                        if not obj.InheritsFrom('TH2') : fixExtremities(obj, False, False)
+                        if (obj.InheritsFrom('TH2') and key[-5:]=='_syst' and sample[3]=='t#bar{t}'):
+                            keyIsSyst=True
+                            key = key[:-5]
+                            for ybin in xrange(1,obj.GetNbinsY()):
+                                weighthist = obj.ProjectionX('_px'+str(ybin), ybin, ybin)
+                                weighthist.SetTitle(sp[1]+' weight '+str(ybin))
+                                if (weighthist.Integral() > 0): histos.append(weighthist)
+                        elif not obj.InheritsFrom('TH1') : continue
+                        if not obj.InheritsFrom('TH2') :
+                            fixExtremities(obj, False, False)
+                            histos.append(obj)
+                            histos[-1].SetTitle(sp[1])
 
-                        if not isData and not '(data)' in sp[1]: 
+                        for hist in histos:
+                            if not isData and not '(data)' in sp[1]: 
 
-                            #check if a special scale factor needs to be applied
-                            sfVal=1.0                            
-                            for procToScale in procSF:
-                                if sp[1]==procToScale:
-                                    for pcat in procSF[procToScale]:                                    
-                                        if pcat not in key: continue
-                                        sfVal=procSF[procToScale][pcat][0]
-                                        break
+                                #check if a special scale factor needs to be applied
+                                sfVal=1.0                            
+                                for procToScale in procSF:
+                                    if sp[1]==procToScale:
+                                        for pcat in procSF[procToScale]:                                    
+                                            if pcat not in key: continue
+                                            sfVal=procSF[procToScale][pcat][0]
+                                            break
 
-                            #scale by lumi
-                            lumi=opt.lumi
-                            for tag in lumiSpecs:
-                                if not tag in key: continue
-                                lumi=lumiSpecs[tag]
-                                break
-                                        
-                            obj.Scale(xsec*lumi*puNormSF*sfVal)                    
-                        
-                        #rebin if needed
-                        if opt.rebin>1:  obj.Rebin(opt.rebin)
+                                #scale by lumi
+                                lumi=opt.lumi
+                                for tag in lumiSpecs:
+                                    if not tag in key: continue
+                                    lumi=lumiSpecs[tag]
+                                    break
+                                            
+                                hist.Scale(xsec*lumi*puNormSF*sfVal)                    
+                            
+                            #rebin if needed
+                            if opt.rebin>1:  hist.Rebin(opt.rebin)
 
-                        #create new plot if needed
-                        if not key in plots : plots[key]=Plot(key,com=opt.com)
+                            #create new plot if needed
+                            if not key in plots : plots[key]=Plot(key,com=opt.com)
 
-                        #add process to plot
-                        plots[key].add(h=obj,title=sp[1],color=sp[2],isData=sample[1],spImpose=isSignal,isSyst=isSyst)
+                            #add process to plot
+                            plots[key].add(h=hist,title=hist.GetTitle(),color=sp[2],isData=sample[1],spImpose=isSignal,isSyst=(isSyst or keyIsSyst))
+                            
                     except:
                         pass
 

@@ -266,7 +266,7 @@ class Plot(object):
             self._garbageList.append(totalMCUnc)
             totalMCUnc.SetDirectory(0)
             totalMCUnc.SetFillColor(ROOT.TColor.GetColor('#99d8c9'))
-            ROOT.gStyle.SetHatchesLineWidth(2)
+            ROOT.gStyle.SetHatchesLineWidth(1)
             totalMCUnc.SetFillStyle(3254)
             for xbin in xrange(1,nominalTTbar.GetNbinsX()+1):
                 totalMCUnc.SetBinContent(xbin, totalMCUnc.GetBinContent(xbin) + (systUp[xbin]-systDown[xbin])/2.)
