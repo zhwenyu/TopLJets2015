@@ -17,6 +17,7 @@ def main():
     parser.add_option(     '--mcUnc',        dest='mcUnc'  ,      help='common MC related uncertainty (e.g. lumi)',        default=0,              type=float)
     parser.add_option(     '--com',          dest='com'  ,        help='center of mass energy',                            default='13 TeV',       type='string')
     parser.add_option('-j', '--json',        dest='json'  ,      help='json with list of files',        default=None,              type='string')
+    parser.add_option( '--systJson', dest='systJson', help='json with list of systematics', default=None, type='string')
     parser.add_option(      '--signalJson',  dest='signalJson',  help='signal json list',               default=None,              type='string')
     parser.add_option('-i', '--inDir',       dest='inDir' ,      help='input directory',                default=None,              type='string')
     parser.add_option('-O', '--outDir',      dest='outDir' ,     help='output directory',                default=None,              type='string')
@@ -34,12 +35,19 @@ def main():
     parser.add_option(      '--procSF',      dest='procSF',      help='Use this to scale a given process component e.g. "W":.wjetscalefactors.pck,"DY":dyscalefactors.pck', default=None, type='string')
     (opt, args) = parser.parse_args()
 
-    #read list of samples
+    #read lists of samples
     samplesList=[]
     jsonList = opt.json.split(',')
     for jsonPath in jsonList:
         jsonFile = open(jsonPath,'r')
         samplesList += json.load(jsonFile, encoding='utf-8', object_pairs_hook=OrderedDict).items()
+        jsonFile.close()
+    
+    #read lists of syst samples
+    systSamplesList=None
+    if opt.systJson:
+        jsonFile = open(opt.systJson,'r')
+        systSamplesList=json.load(jsonFile,encoding='utf-8').items()
         jsonFile.close()
 
     #read list of signal samples
@@ -76,9 +84,10 @@ def main():
     plots=OrderedDict()
 
     report=''
-    for slist,isSignal in [ (samplesList,False),(signalSamplesList,True) ]:
+    for slist,isSignal,isSyst in [ (samplesList,False,False),(signalSamplesList,True,False),(systSamplesList,False,True) ]:
         if slist is None: continue
         for tag,sample in slist: 
+            if isSyst and not 't#bar{t}' in sample[3] : continue
             xsec=sample[0]
             isData=sample[1]
             doFlavourSplitting=sample[6]
@@ -150,7 +159,7 @@ def main():
                         if not key in plots : plots[key]=Plot(key,com=opt.com)
 
                         #add process to plot
-                        plots[key].add(h=obj,title=sp[1],color=sp[2],isData=sample[1],spImpose=isSignal)
+                        plots[key].add(h=obj,title=sp[1],color=sp[2],isData=sample[1],spImpose=isSignal,isSyst=isSyst)
                     except:
                         pass
 
