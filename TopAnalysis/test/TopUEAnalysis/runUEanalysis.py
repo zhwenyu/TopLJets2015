@@ -45,8 +45,8 @@ def determineSliceResolutions(opt):
         if not passSel or not gen_passSel: continue
 
         #count particles in the event
-        ue.count(t,debug=True)
-        raw_input()
+        ue.count(t,debug=False)
+        #raw_input()
 
         #fill resolution arrays
         for var in VARS.keys():
@@ -106,11 +106,16 @@ def determineSliceResolutions(opt):
 
             #require minimum stats for resolution fit
             if total>10 :
-                tmp.Fit('gaus','MQ+')
-                gaus=tmp.GetFunction('gaus')
+                
+                mean,sigma=tmp.GetMean(),tmp.GetRMS()
+                if not var in ['C','D','aplanarity','sphericity']:
+                    tmp.Fit('gaus','MQ+')
+                    gaus=tmp.GetFunction('gaus')
+                    mean=gaus.GetParameter(1)
+                    sigma=gaus.GetParameter(2)
                 npts=resGr.GetN()
-                resGr.SetPoint(npts,h2d.GetXaxis().GetBinCenter(xbin),gaus.GetParameter(1))
-                resGr.SetPointError(npts,0,gaus.GetParameter(2))
+                resGr.SetPoint(npts,h2d.GetXaxis().GetBinCenter(xbin),mean)
+                resGr.SetPointError(npts,0,sigma)
 
             #normalize entries in quantile
             for ybin in xrange(1,h2d.GetNbinsY()+1):

@@ -75,11 +75,10 @@ class UEAnalysisHandler:
         #GEN level counting
         genCts=getattr(ue,'gen_chmult')
         genVal=getattr(ue,'gen_'+obs)
+        genBin=self.getBinForVariable(genVal, self.axes[(obs,False)])-1
+        genBin += genSliceShift*(self.axes[(obs,False)].GetNbins())            
         if not gen_passSel : genBin=-1        
         if genCts>0:
-            
-            genBin=self.getBinForVariable(genVal, self.axes[(obs,False)])-1
-            genBin += genSliceShift*(self.axes[(obs,False)].GetNbins())            
             if sliceVar:
                 self.histos[(obs,False,sliceVar)].Fill(genBin,weight)
             else:

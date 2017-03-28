@@ -46,7 +46,7 @@ class VarPlot:
         nbins=self.realAxes[(xvar,True)].GetNbins()
         hreal=ROOT.TH1F(name,h.GetTitle(),nbins,self.realAxes[(xvar,True)].GetXbins().GetArray())
         hreal.SetDirectory(0)
-        for xbin in xrange(1,nbins):
+        for xbin in xrange(1,nbins+1):
             xwid=self.realAxes[(xvar,True)].GetBinWidth(xbin)
             val=h.GetBinContent(xbin)
             unc=h.GetBinError(xbin)
@@ -92,7 +92,7 @@ class VarPlot:
                 hdiff.Add(irelVars[1],-1)
                 hdiff.Scale(0.5)
 
-                for xbin in xrange(1,hmean.GetNbinsX()):
+                for xbin in xrange(1,hmean.GetNbinsX()+1):
                     x,dx=hmean.GetXaxis().GetBinCenter(xbin),0.5*hmean.GetXaxis().GetBinWidth(xbin)
                     y,dy=hmean.GetBinContent(xbin),ROOT.TMath.Abs(hdiff.GetBinContent(xbin))
                     nomy=self.nomH.GetBinContent(xbin)
@@ -103,7 +103,7 @@ class VarPlot:
                 hdiff.Delete()
             elif len(irelVars)==1:
                 relVars[-1].SetLineWidth(2)
-                for xbin in xrange(1,irelVars[0].GetNbinsX()):
+                for xbin in xrange(1,irelVars[0].GetNbinsX()+1):
                     x,dx=irelVars[0].GetXaxis().GetBinCenter(xbin),0.5*irelVars[0].GetXaxis().GetBinWidth(xbin)
                     y=irelVars[0].GetBinContent(xbin)
                     nomy=self.nomH.GetBinContent(xbin)
@@ -125,6 +125,7 @@ class VarPlot:
 
         ROOT.gStyle.SetOptStat(0)
         ROOT.gStyle.SetOptTitle(0)
+        ROOT.gROOT.SetBatch(True)
 
         garbageList=[]
 
@@ -148,6 +149,7 @@ class VarPlot:
 
         subPads,allLegs=[],[]
 
+        logx=True if ('chavg' in self.var or 'chflux' in self.var) else False
 
         #main plot
         p1=ROOT.TPad('p1','p1',0.0,1.0-paddy,1.0,1.0)
@@ -159,6 +161,7 @@ class VarPlot:
         p1.SetGridx(False)
         p1.SetGridy(False)
         p1.cd()
+        p1.SetLogx(logx)
         garbageList.append(p1)
 
         #frame
@@ -222,6 +225,7 @@ class VarPlot:
         ratioframe.GetYaxis().SetNoExponent()
         ratioframe.SetFillStyle(3001)
         ratioframe.SetFillColor(ROOT.kGray+2)
+        if logx : ratioframe.GetXaxis().SetMoreLogLabels(True)
         garbageList.append(ratioframe)
 
         relVars=self.getRelativeVariations()
@@ -233,7 +237,7 @@ class VarPlot:
                 subPads.append( ROOT.TPad('p2%d'%ivarSet,'p2%d'%ivarSet,0.0,0.0,1.0,1.0-paddy*(ivarSet+1)) )
             else:
                 subPads.append( ROOT.TPad('p2%d'%ivarSet,'p2%d'%ivarSet,0.0,1.0-paddy*(ivarSet+2),1.0,1.0-paddy*(ivarSet+1)) )
-
+            subPads[-1].SetLogx(logx)
             subPads[-1].Draw()
             subPads[-1].SetRightMargin(0.05)
             subPads[-1].SetLeftMargin(0.12)
@@ -369,7 +373,7 @@ def main():
     parser.add_option('--vars',
                       dest='vars',
                       help='variations to outsource from other files [%default]',
-                      default='#deltaCUET8P2MT4:UEup,UEdn;FSR:fsr up,fsr dn;ISR:isr up,isr dn;HW++EE5C:Herwig++;m_{t}:m=166.5,m=178.5',
+                      default='#deltaCUET8P2MT4:UEup,UEdn;FSR:fsr up,fsr dn;ISR:isr up,isr dn;HW++EE5C:Herwig++;hdamp:hdamp up,hdamp dn',
                       type='string')
     (opt, args) = parser.parse_args()
 

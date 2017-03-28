@@ -171,7 +171,7 @@ class UEEventCounter:
 
                 if t.gen_pt[n] < self.ptthreshold[0] : continue
                 if abs(t.gen_eta[n])>self.etathreshold : continue
-                print n,t.gen_pt[n],t.gen_id[n],t.gen_rec[n]
+                #print n,t.gen_pt[n],t.gen_id[n],t.gen_rec[n]
                 p4.SetPtEtaPhiM(t.gen_pt[n],t.gen_eta[n],t.gen_phi[n],self.piMass)
                 selP4.append(ROOT.TLorentzVector(p4))
 
