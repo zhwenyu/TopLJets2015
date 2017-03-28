@@ -35,9 +35,12 @@ def main():
     (opt, args) = parser.parse_args()
 
     #read list of samples
-    jsonFile = open(opt.json,'r')
-    samplesList=json.load(jsonFile, encoding='utf-8', object_pairs_hook=OrderedDict).items()
-    jsonFile.close()
+    samplesList=[]
+    jsonList = opt.json.split(',')
+    for jsonPath in jsonList:
+        jsonFile = open(jsonPath,'r')
+        samplesList += json.load(jsonFile, encoding='utf-8', object_pairs_hook=OrderedDict).items()
+        jsonFile.close()
 
     #read list of signal samples
     signalSamplesList=None
