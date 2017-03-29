@@ -138,6 +138,12 @@ void RunTopJetShape(TString filename,
   gSystem->ExpandPathName(jecUncUrl);
   JetCorrectorParameters *jecParam = new JetCorrectorParameters(jecUncUrl.Data(), jecVar);
   JetCorrectionUncertainty *jecUnc = new JetCorrectionUncertainty( *jecParam );
+  
+  
+  //BFRAG UNCERTAINTIES
+  std::map<TString, TGraph*> bfrag = getBFragmentationWeights(era);
+  std::map<TString, std::map<int, double> > semilepbr = getSemilepBRWeights(era);
+  
 
   //BOOK HISTOGRAMS
   HistTool ht;
@@ -380,6 +386,16 @@ void RunTopJetShape(TString filename,
           wgt *= trigSF.first*selSF.first;
         }
         else varweights.insert(varweights.end(), 4, std::make_pair(1., true));
+        
+        // bfrag weights
+        varweights.push_back(std::make_pair(computeBFragmentationWeight(ev, bfrag["upFrag"]), true));
+        varweights.push_back(std::make_pair(computeBFragmentationWeight(ev, bfrag["downFrag"]), true));
+        varweights.push_back(std::make_pair(computeBFragmentationWeight(ev, bfrag["PetersonFrag"]), true));
+        // weights for semilep BR
+        // simultaneous variation for all hadrons, average over particle and antiparticle
+        // divide by mean weight from 100k events to avoid change in cross section
+        varweights.push_back(std::make_pair(computeSemilepBRWeight(ev, semilepbr["semilepbrUp"], 0, true)/1.00480, true));
+        varweights.push_back(std::make_pair(computeSemilepBRWeight(ev, semilepbr["semilepbrDown"], 0, true)/0.992632, true));
         
         // lhe weights
         wgt *= (ev.g_nw>0 ? ev.g_w[0] : 1.0);

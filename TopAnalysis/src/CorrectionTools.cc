@@ -280,3 +280,59 @@ MiniEvent_t applyJetCorrectionUncertainty(MiniEvent_t &ev, JetCorrectionUncertai
   
   return ev;
 }
+
+//b fragmentation
+std::map<TString, TGraph*> getBFragmentationWeights(TString era) {
+  std::map<TString, TGraph*> bfragMap;
+
+  TString bfragWgtUrl(era+"/bfragweights.root");
+  gSystem->ExpandPathName(bfragWgtUrl);
+  TFile *fIn=TFile::Open(bfragWgtUrl);
+  bfragMap["upFrag"] = (TGraph *)fIn->Get("upFrag");
+  bfragMap["centralFrag"] = (TGraph *)fIn->Get("centralFrag");
+  bfragMap["downFrag"] = (TGraph *)fIn->Get("downFrag");
+  bfragMap["PetersonFrag"] = (TGraph *)fIn->Get("PetersonFrag");
+  return bfragMap;
+}
+
+double computeBFragmentationWeight(MiniEvent_t &ev, TGraph* wgtGr) {
+  double weight = 1.;
+  for (int i = 0; i < ev.ng; i++) {
+    if (abs(ev.g_id[i])==5) weight *= wgtGr->Eval(ev.g_xb[i]);
+  }
+  return weight;
+}
+
+std::map<TString, std::map<int, double> > getSemilepBRWeights(TString era) {
+  std::map<TString, TGraph*> bfragMap;
+  std::map<TString, std::map<int, double> > brMap;
+
+  TString bfragWgtUrl(era+"/bfragweights.root");
+  gSystem->ExpandPathName(bfragWgtUrl);
+  TFile *fIn=TFile::Open(bfragWgtUrl);
+  bfragMap["semilepbrUp"] = (TGraph *)fIn->Get("semilepbrUp");
+  bfragMap["semilepbrDown"] = (TGraph *)fIn->Get("semilepbrDown");
+  
+  for (auto const& gr : bfragMap) {
+    for (int i = 0; i < gr.second->GetN(); ++i) {
+      double x,y;
+      gr.second->GetPoint(i,x,y);
+      brMap[gr.first][x] = y;
+    }
+  }
+  
+  return brMap;
+}
+
+double computeSemilepBRWeight(MiniEvent_t &ev, std::map<int, double> corr, int pid, bool useabs) {
+  double weight = 1.;
+  for (int i = 0; i < ev.ng; i++) {
+    if (!ev.g_isSemiLepBhad[i]) continue;
+    if (corr.count(ev.g_bid[i]) == 0) continue;
+    if (!useabs and (pid == 0 or pid == ev.g_bid[i])) weight *= corr[ev.g_bid[i]];
+    else if (useabs and (pid == 0 or pid == abs(ev.g_bid[i]))) {
+      weight *= (corr[ev.g_bid[i]]+corr[-ev.g_bid[i]])/2.;
+    }
+  }
+  return weight;
+}
