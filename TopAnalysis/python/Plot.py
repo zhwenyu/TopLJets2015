@@ -251,6 +251,7 @@ class Plot(object):
 
         #systematics
         if (totalMC and nominalTTbar and len(self.mcsyst)>0):
+            # complete
             systUp=[0.]
             systDown=[0.]
             for xbin in xrange(1,nominalTTbar.GetNbinsX()+1):
@@ -271,6 +272,29 @@ class Plot(object):
             for xbin in xrange(1,nominalTTbar.GetNbinsX()+1):
                 totalMCUnc.SetBinContent(xbin, totalMCUnc.GetBinContent(xbin) + (systUp[xbin]-systDown[xbin])/2.)
                 totalMCUnc.SetBinError(xbin, math.sqrt(totalMCUnc.GetBinError(xbin)**2 + ((systUp[xbin]+systDown[xbin])/2.)**2))
+            # shape
+            nominalIntegral = nominalTTbar.Integral()
+            for hname,h in self.mcsyst.iteritems():
+                if (h.Integral()>0.): h.Scale(nominalIntegral/h.Integral())
+            systUpShape=[0.]
+            systDownShape=[0.]
+            for xbin in xrange(1,nominalTTbar.GetNbinsX()+1):
+                systUpShape.append(0.)
+                systDownShape.append(0.)
+                for hname in self.mcsyst:
+                    diff = self.mcsyst[hname].GetBinContent(xbin) - nominalTTbar.GetBinContent(xbin)
+                    if (diff > 0):
+                        systUpShape[xbin] = math.sqrt(systUpShape[xbin]**2 + diff**2)
+                    else:
+                        systDownShape[xbin] = math.sqrt(systDownShape[xbin]**2 + diff**2)
+            totalMCUncShape = totalMC.Clone('totalmcuncshape')
+            self._garbageList.append(totalMCUncShape)
+            totalMCUncShape.SetDirectory(0)
+            totalMCUncShape.SetFillColor(ROOT.TColor.GetColor('#d73027'))
+            totalMCUncShape.SetFillStyle(3254)
+            for xbin in xrange(1,nominalTTbar.GetNbinsX()+1):
+                totalMCUncShape.SetBinContent(xbin, totalMCUncShape.GetBinContent(xbin) + (systUpShape[xbin]-systDownShape[xbin])/2.)
+                totalMCUncShape.SetBinError(xbin, math.sqrt(totalMCUncShape.GetBinError(xbin)**2 + ((systUpShape[xbin]+systDownShape[xbin])/2.)**2))
 
         #test for null plots
         if totalMC :
@@ -321,13 +345,19 @@ class Plot(object):
             if noStack: stack.Draw('nostack same')
             else:
                 stack.Draw('hist same')
-                if (len(self.mcsyst)>0): totalMCUnc.Draw('e2 same')
+                if (len(self.mcsyst)>0):
+                    totalMCUnc.Draw('e2 same')
+                    totalMCUncShape.Draw('e2 same')
         for m in self.spimpose:
             self.spimpose[m].Draw('histsame')
             leg.AddEntry(self.spimpose[m],self.spimpose[m].GetTitle(),'l')
         if self.data is not None : self.data.Draw('p')
 
 
+        if (totalMC is not None and totalMC.GetMaximumBin() > totalMC.GetNbinsX()/2.):
+            inix = 0.15
+            leg.SetX1(inix)
+            leg.SetX2(inix+dx)
         leg.Draw()
         txt=ROOT.TLatex()
         txt.SetNDC(True)
@@ -336,6 +366,8 @@ class Plot(object):
         txt.SetTextAlign(12)
         iniy=0.88 if self.wideCanvas else 0.88
         inix=0.12 if noStack else 0.18
+        if (totalMC is not None and totalMC.GetMaximumBin() > totalMC.GetNbinsX()/2.):
+            inix = 0.64
         txt.DrawLatex(inix,iniy,self.cmsLabel)
         if lumi<100:
             txt.DrawLatex(0.66,0.97,'#scale[0.8]{%3.1f pb^{-1} (%s)}' % (lumi,self.com) )
@@ -376,6 +408,10 @@ class Plot(object):
             ratioframe.GetXaxis().SetTitleOffset(0.8)
             ratioframe.SetFillStyle(3254)
             ratioframe.SetFillColor(ROOT.TColor.GetColor('#99d8c9'))
+            if (len(self.mcsyst)>0):
+                ratioframeshape=ratioframe.Clone('ratioframeshape')
+                self._garbageList.append(ratioframeshape)
+                ratioframeshape.SetFillColor(ROOT.TColor.GetColor('#d73027'))
             totalMCnoUnc=totalMC.Clone('totalMCnounc')
             self._garbageList.append(totalMCnoUnc)
             for xbin in xrange(1,totalMC.GetNbinsX()+1):
@@ -383,10 +419,15 @@ class Plot(object):
                 val=totalMC.GetBinContent(xbin)
                 totalMCnoUnc.SetBinError(xbin,0.)
                 if val==0 : continue
-                if (len(self.mcsyst)>0): totalUnc=ROOT.TMath.Sqrt((totalMCUnc.GetBinError(xbin)/val)**2+self.mcUnc**2)
+                if (len(self.mcsyst)>0):
+                    totalUnc=ROOT.TMath.Sqrt((totalMCUnc.GetBinError(xbin)/val)**2+self.mcUnc**2)
+                    ratioframeshape.SetBinContent(xbin,1)
+                    totalUncShape=ROOT.TMath.Sqrt((totalMCUncShape.GetBinError(xbin)/val)**2+self.mcUnc**2)
+                    ratioframeshape.SetBinError(xbin,totalUncShape)
                 else: totalUnc=ROOT.TMath.Sqrt((totalMC.GetBinError(xbin)/val)**2+self.mcUnc**2)
                 ratioframe.SetBinError(xbin,totalUnc)
             ratioframe.Draw('e2')
+            if (len(self.mcsyst)>0): ratioframeshape.Draw('e2 same')
             try:
                 ratio=self.dataH.Clone('ratio')
                 ratio.SetDirectory(0)
