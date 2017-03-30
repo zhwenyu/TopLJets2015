@@ -109,7 +109,7 @@ def main():
         if '/store/' in inF and not 'root:' in inF : inF='root://eoscms//eos/cms'+opt.input        
         for systVar in varList:
             outF=opt.output
-            if systVar != 'nominal': outF=opt.output[:-5]+'_'+systVar+'.root'
+            if systVar != 'nominal' and not systVar in opt.output: outF=opt.output[:-5]+'_'+systVar+'.root'
             task_list.append( (opt.method,inF,outF,opt.channel,opt.charge,opt.flav,opt.runSysts,systVar,opt.era,opt.tag,opt.debug) )
     else:
 
@@ -142,7 +142,7 @@ def main():
                 inF=input_list[ifile]
                 for systVar in varList:
                     outF=os.path.join(opt.output,'Chunks','%s_%d.root' %(tag,ifile))
-                    if systVar != 'nominal': outF=os.path.join(opt.output,'Chunks','%s_%s_%d.root' %(tag,systVar,ifile))
+                    if systVar != 'nominal' and not systVar in tag: outF=os.path.join(opt.output,'Chunks','%s_%s_%d.root' %(tag,systVar,ifile))
                     if (opt.skipexisting and os.path.isfile(outF)):
                         nexisting += 1
                         continue
