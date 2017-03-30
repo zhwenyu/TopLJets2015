@@ -32,6 +32,7 @@ class Particle {
     int qualityFlags() { return qualityFlags_; }
     bool hasQualityFlag(int bit) { return ((qualityFlags_>>bit)&0x1); }
     int originalReference() { return origRef_; }
+    void setOriginalReference(int origRef) { origRef_=origRef; }
     double puppi()  { return puppi_; }
 
   private:

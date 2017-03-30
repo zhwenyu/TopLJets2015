@@ -226,7 +226,7 @@ def defineAnalysisBinning(opt):
                 dBin=genBin[i]-genBin[i-1]
                 if i>1 : recBin.append( genBin[i-1]+0.25*dBin )
                 recBin.append( genBin[i-1]+0.75*dBin )
-            recBin.append( genBin[-1]+0.5*(genBin[-1]+genBin[-2]) )
+            recBin.append( genBin[-1]+0.25*(genBin[-1]+genBin[-2]) )
 
 
             #special case for angular variables: override previous definition
@@ -389,6 +389,8 @@ def runUEAnalysisPacked(args):
 
 
 def main():
+
+    ROOT.gROOT.SetBatch(True)
 
     #configuration
     usage = 'usage: %prog [options]'

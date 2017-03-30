@@ -149,6 +149,9 @@ void RunTopUE(TString filename,
 	    }
 	}
 
+      //the main objects of the analysis
+      std::vector<Particle> recoTracks, genTracks;
+
       //
       //RECO LEVEL analysis
       //
@@ -183,21 +186,28 @@ void RunTopUE(TString filename,
 	  std::vector<std::pair<int,TLorentzVector> > selTracks,hpTracks;
 	  for(int ipf = 0; ipf < ev.npf; ipf++) 
 	    {
-	      if(ev.pf_c[ipf]==0) continue;
-	      if(ev.pf_pt[ipf]<0.9) continue;
-	      if(fabs(ev.pf_eta[ipf])>2.5) continue;
-	
+	      //if(ev.pf_c[ipf]==0) continue;
+
 	      TLorentzVector tkP4(0,0,0,0);
 	      tkP4.SetPtEtaPhiM(ev.pf_pt[ipf],ev.pf_eta[ipf],ev.pf_phi[ipf],0.);
-	      
-	      bool isHP(false);
-	      
-	      //check if matching the leptons
-	      Double_t minDR2lep(999.);
-	      for(int ilep=0; ilep<2; ilep++)
-		minDR2lep=TMath::Min(minDR2lep,tkP4.DeltaR(leptons[ilep].p4()));
-	      if(minDR2lep<0.02) isHP=true;
 
+	      //fiducial cuts
+	      bool passKin(ev.pf_pt[ipf]>0.9 && fabs(ev.pf_eta[ipf])<2.5);
+	   
+	      //matching to leptons
+	      Double_t relDpt2lep(9999.);
+	      for(int ilep=0; ilep<2; ilep++)
+		{
+		  float dR=tkP4.DeltaR(leptons[ilep].p4());
+		  if(dR>0.05) continue;
+		  float relDpt=fabs(leptons[ilep].pt()-tkP4.Pt())/leptons[ilep].pt();
+		  if(relDpt>relDpt2lep) continue;
+		  relDpt2lep=relDpt;
+		}
+	      bool matchedToLepton(relDpt2lep<0.05);
+
+	      //matching to b-jet candidates
+	      bool clusteredInBjet(false);
 	      for(size_t ibj=0; ibj<min(bJetsIdx.size(),size_t(2)); ibj++)
 		{
 		  std::vector<Particle> &pinJet=jets[ bJetsIdx[ibj] ].particles();
@@ -205,29 +215,39 @@ void RunTopUE(TString filename,
 		    {
 		      if(pinJet[ipinj].charge()==0) continue;
 		      if(pinJet[ipinj].originalReference()!=ipf) continue;
-		      isHP=true;
+		      clusteredInBjet=true;
 		      break;
 		    }
-		  if(isHP) break;
+		  if(clusteredInBjet) break;
 		}
-	  
-	      if(!isHP) selTracks.push_back(std::pair<int,TLorentzVector>(ipf,tkP4) );
-	      else      hpTracks.push_back(std::pair<int,TLorentzVector>(ipf,tkP4) );
+
+	      recoTracks.push_back( Particle(tkP4, ev.pf_c[ipf], ev.pf_id[ipf],
+					     (passKin | matchedToLepton <<1 | clusteredInBjet <<2),
+					     ipf,
+					     1) 
+				    );
 	    }
 
 	  //save PF cands
-	  tue.n=selTracks.size();
+	  tue.n=0;
 	  float nch(0.),chSumPt(0.),chSumPz(0.);
-	  for(size_t ipf=0; ipf<selTracks.size(); ipf++)
+	  for(auto p : recoTracks)
 	    {
-	      tue.pt[ipf]  = selTracks[ipf].second.Pt();
-	      tue.eta[ipf] = selTracks[ipf].second.Eta();
-	      tue.phi[ipf] = selTracks[ipf].second.Phi();
-	      tue.id[ipf]  = ev.pf_id[ selTracks[ipf].first ];	      
-	      tue.isInBFlags[ipf] = 0;
+	      //check if it's not matched to hard process and charge is non-null
+	      if(p.qualityFlags()!=1 || p.charge()==0)
+		{
+		  p.setOriginalReference(-1);
+		  continue;
+		}
+	      p.setOriginalReference(tue.n); //set to the reference in the ntuple
+	      tue.pt[tue.n]  = p.pt();
+	      tue.eta[tue.n] = p.eta();
+	      tue.phi[tue.n] = p.phi();
+	      tue.id[tue.n]  = p.id();
+	      tue.n++;
 	      nch++;
-	      chSumPt+=tue.pt[ipf];
-	      chSumPz+=fabs(selTracks[ipf].second.Pz());
+	      chSumPt+=p.pt();
+	      chSumPz+=fabs(p.pz());
 	    }
 	  
 	  //flag if passes selection
@@ -304,14 +324,18 @@ void RunTopUE(TString filename,
 	      tue.weight[9]=wgt;
 	      tue.weight[10]=wgt;
 
+	      //les{up,down}
+	      tue.weight[11]=wgt;
+	      tue.weight[12]=wgt;
+
 	      //top pt
-	      tue.weight[11]=wgt*topptsf;
+	      tue.weight[13]=wgt*topptsf;
 
 	      //generator level weights
 	      for(size_t iw=1; iw<=20; iw++)
-		tue.weight[11+iw]= ev.g_w[0]!=0 ? wgt* ev.g_w[iw]/ev.g_w[0] : wgt;     
+		tue.weight[13+iw]= ev.g_w[0]!=0 ? wgt* ev.g_w[iw]/ev.g_w[0] : wgt;     
 
-	      tue.nw=31;
+	      tue.nw=33;
 	    }
 
 	  //nominal selection control histograms
@@ -371,25 +395,26 @@ void RunTopUE(TString filename,
           if(genChTag=="EE" || genChTag=="MM") passPresel &= fabs(mll-91)>15;
 
 	  //track selection
-	  std::vector<Particle> selTracks;
 	  for(int ipf = 0; ipf < ev.ngpf; ipf++) 
 	    {
-
 	      if(ev.gpf_c[ipf]==0) continue;
-	      if(ev.gpf_pt[ipf]<0.9) continue;
-	      if(fabs(ev.gpf_eta[ipf])>2.5) continue;
-	      
+
 	      TLorentzVector tkP4(0,0,0,0);
 	      tkP4.SetPtEtaPhiM(ev.gpf_pt[ipf],ev.gpf_eta[ipf],ev.gpf_phi[ipf],0.);
 	      
-	      bool isHP(false);
+	      //fiducial cuts
+              bool passKin(ev.gpf_pt[ipf]>0.9 && fabs(ev.gpf_eta[ipf])<2.5);
 	      
 	      //check if matching the leptons
-	      Double_t minDR2lep(999.);
+	      bool matchedToLepton(false);
 	      for(int ilep=0; ilep<2; ilep++)
-		minDR2lep=TMath::Min(minDR2lep,tkP4.DeltaR(leptons[ilep].p4()));
-	      if(minDR2lep<0.02) isHP=true;
+		{
+		  float dR=tkP4.DeltaR(leptons[ilep].p4());
+		  if(dR<0.1 && leptons[ilep].id()==ev.gpf_id[ipf]) matchedToLepton=true;
+		}
 
+	      //matching to b-jet candidates
+              bool clusteredInBjet(false);
 	      for(size_t ibj=0; ibj<min(bJetsIdx.size(),size_t(2)); ibj++)
 		{
 		  std::vector<Particle> &pinJet=jets[ bJetsIdx[ibj] ].particles();
@@ -397,45 +422,61 @@ void RunTopUE(TString filename,
 		    {
 		      if(pinJet[ipinj].charge()==0) continue;
 		      if(pinJet[ipinj].originalReference()!=ipf) continue;
-		      isHP=true;
-		      break;
+		      clusteredInBjet=true;
 		    }
-		  if(isHP) break;
 		}
-
-	      //match to reco
-	      float minDRtoRec(9999.);
-	      int matchedRecPF(-1);
-	      if(runSysts)
-		{
-		  for(int irecpf = 0; irecpf < ev.npf; irecpf++) 
-		    {
-		      if(ev.pf_c[irecpf]==0) continue;
-		      if(ev.pf_pt[irecpf]<0.9) continue;
-		      if(fabs(ev.pf_eta[irecpf])>2.5) continue;
-		      float dR=sqrt(pow(ev.pf_eta[irecpf]-ev.gpf_eta[ipf],2)+pow(TVector2::Phi_mpi_pi(ev.pf_phi[irecpf]-ev.gpf_phi[ipf]),2));
-		      if(dR>minDRtoRec) continue;
-		      minDRtoRec=dR;
-		      matchedRecPF=irecpf;
-		    }
-		  if(minDRtoRec>0.01) matchedRecPF=-1;
-		}
-
-	      selTracks.push_back( Particle(tkP4,ev.gpf_c[ipf],ev.gpf_id[ipf],isHP,matchedRecPF,1) );
+		
+	      genTracks.push_back( Particle(tkP4,ev.gpf_c[ipf],ev.gpf_id[ipf],
+					    (passKin | matchedToLepton <<1 | clusteredInBjet <<2),
+					    ipf,
+					    1)
+				   );
 	    }
 	  
 	  //save gen candidates
 	  tue.gen_n=0;
-	  for(size_t ipf=0; ipf<selTracks.size(); ipf++)
+	  for(auto p : genTracks)
 	    {
-	      if(selTracks[ipf].qualityFlags()!=0) continue; //do not store hard process tracks
-	      tue.gen_pt[ipf]  = selTracks[ipf].pt();
-	      tue.gen_eta[ipf] = selTracks[ipf].eta();
-	      tue.gen_phi[ipf] = selTracks[ipf].phi();
-	      tue.gen_id[ipf]  = selTracks[ipf].id();
-	      tue.gen_rec[ipf] = selTracks[ipf].originalReference();
+	      if(p.qualityFlags()!=1) continue;
+	      tue.gen_pt[tue.gen_n]  = p.pt();
+	      tue.gen_eta[tue.gen_n] = p.eta();
+	      tue.gen_phi[tue.gen_n] = p.phi();
+	      tue.gen_id[tue.gen_n]  = p.id();
+
+	      //match to reco level
+	      Particle *recoMatch=0;
+	      for(auto r : recoTracks)
+		{
+		  float dR=p.p4().DeltaR(r.p4());
+		  if(dR>0.1) continue;
+		  if(recoMatch==0) recoMatch=&p;
+		  else
+		    {
+		      float dpt=fabs(p.pt()-r.pt());
+		      float prev_dpt=fabs(p.pt()-recoMatch->pt());
+		      if(dpt>prev_dpt) continue;
+		      recoMatch=&p;
+		    }	      
+		}
+	      tue.gen_rec[tue.gen_n] = recoMatch!=0 ? recoMatch->originalReference() : -1;
+
+	      //check the unmatched, high pT
+	      // if(passPresel && tue.passSel && p.pt()>10)
+	      // 	{
+	      // 	  if(recoMatch!=0 && recoMatch->charge()==0)
+	      // 	    {
+	      // 	      cout << p.pt() << " " << p.id() << " " << p.qualityFlags() << " " << p.eta() << " | "
+	      // 		   << "\t" << recoMatch->pt() << " " << recoMatch->id() << " " << recoMatch->qualityFlags() << endl;
+	      // 	    }
+	      // 	  else if(recoMatch==0)
+	      // 	    {
+	      // 	      cout << p.pt() << " " << p.id() << " " << p.qualityFlags() << " " << p.eta() << endl;
+	      // 	    }
+	      // 	}
+
 	      tue.gen_n++;
 	    }
+
 
 	  //flag if passes selection  
 	  tue.gen_passSel=passPresel;

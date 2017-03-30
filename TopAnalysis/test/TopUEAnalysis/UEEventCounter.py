@@ -11,7 +11,7 @@ class UEEventCounter:
     """
     start variables
     """
-    def __init__(self,axes=[],ptthreshold=[1.0,0.9],etathreshold=2.4):
+    def __init__(self,axes=[],ptthreshold=[1.0,0.9],etathreshold=2.1):
  
         self.ptthreshold  = ptthreshold  #pt threshold at reco levels
         self.etathreshold = etathreshold #eta threshold 
@@ -118,9 +118,9 @@ class UEEventCounter:
 
                 if t.pt[n]<self.ptthreshold[1] : continue
                 if abs(t.eta[n])>self.etathreshold : continue
-                isInB=(t.isInBFlags[n] & 0x1)
+                isInB=(t.isInBFlags[n] & 0x1)               
+                #print 'rec',n,'(%3.1f,%3.2f,%3.2f)'%(t.pt[n],t.eta[n],t.phi[n])
                 if isInB : continue
-                
                 p4.SetPtEtaPhiM(t.pt[n],t.eta[n],t.phi[n],self.piMass)
                 selP4.append(ROOT.TLorentzVector(p4))
 
@@ -171,7 +171,7 @@ class UEEventCounter:
 
                 if t.gen_pt[n] < self.ptthreshold[0] : continue
                 if abs(t.gen_eta[n])>self.etathreshold : continue
-                #print n,t.gen_pt[n],t.gen_id[n],t.gen_rec[n]
+                #print 'gen',n,'(%3.1f,%3.2f,%3.2f)'%(t.gen_pt[n],t.gen_eta[n],t.gen_phi[n]),t.gen_id[n]
                 p4.SetPtEtaPhiM(t.gen_pt[n],t.gen_eta[n],t.gen_phi[n],self.piMass)
                 selP4.append(ROOT.TLorentzVector(p4))
 
@@ -200,6 +200,7 @@ class UEEventCounter:
                     ncounted=self.gen_chmult_wrtTo[a][k]
                     if ncounted==0 : continue
                     self.gen_chavgpt_wrtTo[a][k]=self.gen_chflux_wrtTo[a][k]/ncounted
-        
+
+        #print t.ptpos[0],t.sumpt[0]-t.ptpos[0]
         if debug : self.show()
 
