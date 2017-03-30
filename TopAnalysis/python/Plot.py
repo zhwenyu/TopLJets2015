@@ -38,6 +38,7 @@ class Plot(object):
         self.com=com
         self.wideCanvas = True if 'ratevsrun' in self.name else False
         self.mc = OrderedDict()
+        self.mcsyst = {}
         self.spimpose={}
         self.dataH = None
         self.data = None
@@ -50,7 +51,7 @@ class Plot(object):
         self.frameMax=1.45
         self.mcUnc=0
 
-    def add(self, h, title, color, isData,spImpose):
+    def add(self, h, title, color, isData, spImpose, isSyst):
 
         if 'ratevsrun' in self.name and not isData: return
 
@@ -76,6 +77,20 @@ class Plot(object):
                 self.dataH.SetFillColor(0)
                 self.dataH.SetFillStyle(0)
                 self._garbageList.append(h)
+        elif isSyst:
+            try:
+                self.mcsyst[title].Add(h)
+            except:
+                self.mcsyst[title]=h
+                self.mcsyst[title].SetName('%s_%s' % (h.GetName(), title ) )
+                self.mcsyst[title].SetDirectory(0)
+                self.mcsyst[title].SetMarkerStyle(1)
+                self.mcsyst[title].SetMarkerColor(color)
+                self.mcsyst[title].SetLineColor(ROOT.kBlack)
+                self.mcsyst[title].SetLineWidth(1)
+                self.mcsyst[title].SetFillColor(color)
+                self.mcsyst[title].SetFillStyle(1001)
+                self._garbageList.append(h)
         else:
             try:
                 if spImpose : self.spimpose[title].Add(h)
@@ -85,12 +100,12 @@ class Plot(object):
                 h.SetDirectory(0)
                 h.SetMarkerStyle(1)
                 h.SetMarkerColor(color)
-                if spImpose : 
+                if spImpose :
                     self.spimpose[title]=h
                     h.SetFillStyle(0)
                     h.SetLineColor(color)
                     h.SetLineWidth(2)
-                else : 
+                else :
                     if color == ROOT.kWhite:
                         h.SetLineColor(ROOT.kGray+3)
                     else:
@@ -142,7 +157,7 @@ class Plot(object):
         c.SetLeftMargin(0.0)
         c.SetTopMargin(0)
         c.SetRightMargin(0.00)
-        
+
         #holds the main plot
         c.cd()
         p1 = None
@@ -158,7 +173,7 @@ class Plot(object):
             p1.SetRightMargin(0.05)
             p1.SetLeftMargin(0.12)
             p1.SetTopMargin(0.1)
-            if noRatio: 
+            if noRatio:
                 p1.SetTopMargin(0.05)
             p1.SetBottomMargin(0.12)
         p1.Draw()
@@ -181,7 +196,7 @@ class Plot(object):
         leg = ROOT.TLegend(inix, iniy-dy*ndy, inix+dx, iniy+0.06)
 
         leg.SetBorderSize(0)
-        leg.SetFillStyle(0)        
+        leg.SetFillStyle(0)
         leg.SetTextFont(42)
         leg.SetTextSize(0.045 if self.wideCanvas else 0.04)
         if noRatio : leg.SetTextSize(0.035)
@@ -192,13 +207,13 @@ class Plot(object):
             leg.AddEntry( self.data, self.data.GetTitle(),'p')
             nlegCols += 1
         for h in self.mc:
-            
+
             #compare
             if noStack:
                 refH=self.mc.values()[0]
                 if refH!=self.mc[h] and self.doChi2:
                     chi2=refH.Chi2Test( self.mc[h], 'WW CHI2')
-                    pval=refH.Chi2Test( self.mc[h], 'WW')     
+                    pval=refH.Chi2Test( self.mc[h], 'WW')
                     self.mc[h].SetTitle('#splitline{%s}{#chi^{2}=%3.1f (p-val: %3.3f)}'%(self.mc[h].GetTitle(),chi2,pval))
                 else:
                     refH.SetLineWidth(2)
@@ -220,15 +235,66 @@ class Plot(object):
             if noStack:
                 self.mc[h].SetFillStyle(0)
                 self.mc[h].SetLineColor(self.mc[h].GetFillColor())
-                
+
             stack.Add(self.mc[h],'hist')
-            
+
             try:
                 totalMC.Add(self.mc[h])
             except:
                 totalMC = self.mc[h].Clone('totalmc')
                 self._garbageList.append(totalMC)
                 totalMC.SetDirectory(0)
+            if h=='t#bar{t}':
+                nominalTTbar = self.mc[h].Clone('nomttbar')
+                self._garbageList.append(nominalTTbar)
+                nominalTTbar.SetDirectory(0)
+
+        #systematics
+        if (totalMC and nominalTTbar and len(self.mcsyst)>0):
+            # complete
+            systUp=[0.]
+            systDown=[0.]
+            for xbin in xrange(1,nominalTTbar.GetNbinsX()+1):
+                systUp.append(0.)
+                systDown.append(0.)
+                for hname in self.mcsyst:
+                    diff = self.mcsyst[hname].GetBinContent(xbin) - nominalTTbar.GetBinContent(xbin)
+                    if (diff > 0):
+                        systUp[xbin] = math.sqrt(systUp[xbin]**2 + diff**2)
+                    else:
+                        systDown[xbin] = math.sqrt(systDown[xbin]**2 + diff**2)
+            totalMCUnc = totalMC.Clone('totalmcunc')
+            self._garbageList.append(totalMCUnc)
+            totalMCUnc.SetDirectory(0)
+            totalMCUnc.SetFillColor(ROOT.TColor.GetColor('#99d8c9'))
+            ROOT.gStyle.SetHatchesLineWidth(1)
+            totalMCUnc.SetFillStyle(3254)
+            for xbin in xrange(1,nominalTTbar.GetNbinsX()+1):
+                totalMCUnc.SetBinContent(xbin, totalMCUnc.GetBinContent(xbin) + (systUp[xbin]-systDown[xbin])/2.)
+                totalMCUnc.SetBinError(xbin, math.sqrt(totalMCUnc.GetBinError(xbin)**2 + ((systUp[xbin]+systDown[xbin])/2.)**2))
+            # shape
+            nominalIntegral = nominalTTbar.Integral()
+            for hname,h in self.mcsyst.iteritems():
+                if (h.Integral()>0.): h.Scale(nominalIntegral/h.Integral())
+            systUpShape=[0.]
+            systDownShape=[0.]
+            for xbin in xrange(1,nominalTTbar.GetNbinsX()+1):
+                systUpShape.append(0.)
+                systDownShape.append(0.)
+                for hname in self.mcsyst:
+                    diff = self.mcsyst[hname].GetBinContent(xbin) - nominalTTbar.GetBinContent(xbin)
+                    if (diff > 0):
+                        systUpShape[xbin] = math.sqrt(systUpShape[xbin]**2 + diff**2)
+                    else:
+                        systDownShape[xbin] = math.sqrt(systDownShape[xbin]**2 + diff**2)
+            totalMCUncShape = totalMC.Clone('totalmcuncshape')
+            self._garbageList.append(totalMCUncShape)
+            totalMCUncShape.SetDirectory(0)
+            totalMCUncShape.SetFillColor(ROOT.TColor.GetColor('#d73027'))
+            totalMCUncShape.SetFillStyle(3254)
+            for xbin in xrange(1,nominalTTbar.GetNbinsX()+1):
+                totalMCUncShape.SetBinContent(xbin, totalMCUncShape.GetBinContent(xbin) + (systUpShape[xbin]-systDownShape[xbin])/2.)
+                totalMCUncShape.SetBinError(xbin, math.sqrt(totalMCUncShape.GetBinError(xbin)**2 + ((systUpShape[xbin]+systDownShape[xbin])/2.)**2))
 
         #test for null plots
         if totalMC :
@@ -236,7 +302,7 @@ class Plot(object):
                 if self.dataH is None : return
                 if self.dataH.Integral()==0: return
         elif self.dataH is None : return
-        elif self.dataH.Integral()==0 : return 
+        elif self.dataH.Integral()==0 : return
 
 
         frame = totalMC.Clone('frame') if totalMC is not None else self.dataH.Clone('frame')
@@ -244,7 +310,7 @@ class Plot(object):
         if noStack:
             maxY=stack.GetStack().At(0).GetMaximum()/1.25
         elif totalMC:
-            maxY = totalMC.GetMaximum() 
+            maxY = totalMC.GetMaximum()
             if self.dataH:
                 if maxY<self.dataH.GetMaximum():
                     maxY=self.dataH.GetMaximum()
@@ -271,19 +337,27 @@ class Plot(object):
         if noRatio:
             frame.GetXaxis().SetTitleSize(0.045)
             frame.GetXaxis().SetLabelSize(0.04)
-        if self.wideCanvas and totalMC is None : 
+        if self.wideCanvas and totalMC is None :
             frame.GetXaxis().SetLabelSize(0.03)
             frame.GetXaxis().SetTitleSize(0.035)
         frame.Draw()
-        if totalMC is not None   : 
+        if totalMC is not None   :
             if noStack: stack.Draw('nostack same')
-            else      : stack.Draw('hist same')
+            else:
+                stack.Draw('hist same')
+                if (len(self.mcsyst)>0):
+                    totalMCUnc.Draw('e2 same')
+                    totalMCUncShape.Draw('e2 same')
         for m in self.spimpose:
             self.spimpose[m].Draw('histsame')
             leg.AddEntry(self.spimpose[m],self.spimpose[m].GetTitle(),'l')
         if self.data is not None : self.data.Draw('p')
 
 
+        if (totalMC is not None and totalMC.GetMaximumBin() > totalMC.GetNbinsX()/2.):
+            inix = 0.15
+            leg.SetX1(inix)
+            leg.SetX2(inix+dx)
         leg.Draw()
         txt=ROOT.TLatex()
         txt.SetNDC(True)
@@ -292,6 +366,8 @@ class Plot(object):
         txt.SetTextAlign(12)
         iniy=0.88 if self.wideCanvas else 0.88
         inix=0.12 if noStack else 0.18
+        if (totalMC is not None and totalMC.GetMaximumBin() > totalMC.GetNbinsX()/2.):
+            inix = 0.64
         txt.DrawLatex(inix,iniy,self.cmsLabel)
         if lumi<100:
             txt.DrawLatex(0.66,0.97,'#scale[0.8]{%3.1f pb^{-1} (%s)}' % (lumi,self.com) )
@@ -308,7 +384,7 @@ class Plot(object):
 
         #holds the ratio
         c.cd()
-        if len(self.mc)>0 and self.dataH and not noRatio:        
+        if len(self.mc)>0 and self.dataH and not noRatio:
             p2 = ROOT.TPad('p2','p2',0.0,0.0,1.0,0.2)
             p2.Draw()
             p2.SetBottomMargin(0.4)
@@ -324,14 +400,18 @@ class Plot(object):
             ratioframe.GetYaxis().SetRangeUser(self.ratiorange[0], self.ratiorange[1])
             self._garbageList.append(ratioframe)
             ratioframe.GetYaxis().SetNdivisions(503)
-            ratioframe.GetYaxis().SetLabelSize(0.18)        
+            ratioframe.GetYaxis().SetLabelSize(0.18)
             ratioframe.GetYaxis().SetTitleSize(0.2)
             ratioframe.GetYaxis().SetTitleOffset(0.3)
             ratioframe.GetXaxis().SetLabelSize(0.18)
             ratioframe.GetXaxis().SetTitleSize(0.2)
             ratioframe.GetXaxis().SetTitleOffset(0.8)
-            ratioframe.SetFillStyle(1001)
+            ratioframe.SetFillStyle(3254)
             ratioframe.SetFillColor(ROOT.TColor.GetColor('#99d8c9'))
+            if (len(self.mcsyst)>0):
+                ratioframeshape=ratioframe.Clone('ratioframeshape')
+                self._garbageList.append(ratioframeshape)
+                ratioframeshape.SetFillColor(ROOT.TColor.GetColor('#d73027'))
             totalMCnoUnc=totalMC.Clone('totalMCnounc')
             self._garbageList.append(totalMCnoUnc)
             for xbin in xrange(1,totalMC.GetNbinsX()+1):
@@ -339,9 +419,15 @@ class Plot(object):
                 val=totalMC.GetBinContent(xbin)
                 totalMCnoUnc.SetBinError(xbin,0.)
                 if val==0 : continue
-                totalUnc=ROOT.TMath.Sqrt((totalMC.GetBinError(xbin)/val)**2+self.mcUnc**2)
+                if (len(self.mcsyst)>0):
+                    totalUnc=ROOT.TMath.Sqrt((totalMCUnc.GetBinError(xbin)/val)**2+self.mcUnc**2)
+                    ratioframeshape.SetBinContent(xbin,1)
+                    totalUncShape=ROOT.TMath.Sqrt((totalMCUncShape.GetBinError(xbin)/val)**2+self.mcUnc**2)
+                    ratioframeshape.SetBinError(xbin,totalUncShape)
+                else: totalUnc=ROOT.TMath.Sqrt((totalMC.GetBinError(xbin)/val)**2+self.mcUnc**2)
                 ratioframe.SetBinError(xbin,totalUnc)
             ratioframe.Draw('e2')
+            if (len(self.mcsyst)>0): ratioframeshape.Draw('e2 same')
             try:
                 ratio=self.dataH.Clone('ratio')
                 ratio.SetDirectory(0)

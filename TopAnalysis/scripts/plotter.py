@@ -17,6 +17,7 @@ def main():
     parser.add_option(     '--mcUnc',        dest='mcUnc'  ,      help='common MC related uncertainty (e.g. lumi)',        default=0,              type=float)
     parser.add_option(     '--com',          dest='com'  ,        help='center of mass energy',                            default='13 TeV',       type='string')
     parser.add_option('-j', '--json',        dest='json'  ,      help='json with list of files',        default=None,              type='string')
+    parser.add_option( '--systJson', dest='systJson', help='json with list of systematics', default=None, type='string')
     parser.add_option(      '--signalJson',  dest='signalJson',  help='signal json list',               default=None,              type='string')
     parser.add_option('-i', '--inDir',       dest='inDir' ,      help='input directory',                default=None,              type='string')
     parser.add_option('-O', '--outDir',      dest='outDir' ,     help='output directory',                default=None,              type='string')
@@ -34,10 +35,20 @@ def main():
     parser.add_option(      '--procSF',      dest='procSF',      help='Use this to scale a given process component e.g. "W":.wjetscalefactors.pck,"DY":dyscalefactors.pck', default=None, type='string')
     (opt, args) = parser.parse_args()
 
-    #read list of samples
-    jsonFile = open(opt.json,'r')
-    samplesList=json.load(jsonFile, encoding='utf-8', object_pairs_hook=OrderedDict).items()
-    jsonFile.close()
+    #read lists of samples
+    samplesList=[]
+    jsonList = opt.json.split(',')
+    for jsonPath in jsonList:
+        jsonFile = open(jsonPath,'r')
+        samplesList += json.load(jsonFile, encoding='utf-8', object_pairs_hook=OrderedDict).items()
+        jsonFile.close()
+    
+    #read lists of syst samples
+    systSamplesList=None
+    if opt.systJson:
+        jsonFile = open(opt.systJson,'r')
+        systSamplesList=json.load(jsonFile,encoding='utf-8').items()
+        jsonFile.close()
 
     #read list of signal samples
     signalSamplesList=None
@@ -73,9 +84,10 @@ def main():
     plots=OrderedDict()
 
     report=''
-    for slist,isSignal in [ (samplesList,False),(signalSamplesList,True) ]:
+    for slist,isSignal,isSyst in [ (samplesList,False,False),(signalSamplesList,True,False),(systSamplesList,False,True) ]:
         if slist is None: continue
         for tag,sample in slist: 
+            if isSyst and not 't#bar{t}' in sample[3] : continue
             xsec=sample[0]
             isData=sample[1]
             doFlavourSplitting=sample[6]
@@ -104,6 +116,7 @@ def main():
                             report += '%s was scaled by %3.3f for pileup normalization\n' % (sp[0],puNormSF)
 
                 for tkey in fIn.GetListOfKeys():
+                    keyIsSyst=False
 
                     try:
                         key=tkey.GetName()
@@ -116,38 +129,51 @@ def main():
                                 break
                         if not keep: continue
 
+                        histos = []
                         obj=fIn.Get(key)
-                        if not obj.InheritsFrom('TH1') : continue
-                        if not obj.InheritsFrom('TH2') : fixExtremities(obj, False, False)
+                        if (obj.InheritsFrom('TH2') and key[-5:]=='_syst' and sample[3]=='t#bar{t}'):
+                            keyIsSyst=True
+                            key = key[:-5]
+                            for ybin in xrange(1,obj.GetNbinsY()):
+                                weighthist = obj.ProjectionX('_px'+str(ybin), ybin, ybin)
+                                weighthist.SetTitle(sp[1]+' weight '+str(ybin))
+                                if (weighthist.Integral() > 0): histos.append(weighthist)
+                        elif not obj.InheritsFrom('TH1') : continue
+                        if not obj.InheritsFrom('TH2') :
+                            fixExtremities(obj, False, False)
+                            histos.append(obj)
+                            histos[-1].SetTitle(sp[1])
 
-                        if not isData and not '(data)' in sp[1]: 
+                        for hist in histos:
+                            if not isData and not '(data)' in sp[1]: 
 
-                            #check if a special scale factor needs to be applied
-                            sfVal=1.0                            
-                            for procToScale in procSF:
-                                if sp[1]==procToScale:
-                                    for pcat in procSF[procToScale]:                                    
-                                        if pcat not in key: continue
-                                        sfVal=procSF[procToScale][pcat][0]
-                                        break
+                                #check if a special scale factor needs to be applied
+                                sfVal=1.0                            
+                                for procToScale in procSF:
+                                    if sp[1]==procToScale:
+                                        for pcat in procSF[procToScale]:                                    
+                                            if pcat not in key: continue
+                                            sfVal=procSF[procToScale][pcat][0]
+                                            break
 
-                            #scale by lumi
-                            lumi=opt.lumi
-                            for tag in lumiSpecs:
-                                if not tag in key: continue
-                                lumi=lumiSpecs[tag]
-                                break
-                                        
-                            obj.Scale(xsec*lumi*puNormSF*sfVal)                    
-                        
-                        #rebin if needed
-                        if opt.rebin>1:  obj.Rebin(opt.rebin)
+                                #scale by lumi
+                                lumi=opt.lumi
+                                for tag in lumiSpecs:
+                                    if not tag in key: continue
+                                    lumi=lumiSpecs[tag]
+                                    break
+                                            
+                                hist.Scale(xsec*lumi*puNormSF*sfVal)                    
+                            
+                            #rebin if needed
+                            if opt.rebin>1:  hist.Rebin(opt.rebin)
 
-                        #create new plot if needed
-                        if not key in plots : plots[key]=Plot(key,com=opt.com)
+                            #create new plot if needed
+                            if not key in plots : plots[key]=Plot(key,com=opt.com)
 
-                        #add process to plot
-                        plots[key].add(h=obj,title=sp[1],color=sp[2],isData=sample[1],spImpose=isSignal)
+                            #add process to plot
+                            plots[key].add(h=hist,title=hist.GetTitle(),color=sp[2],isData=sample[1],spImpose=isSignal,isSyst=(isSyst or keyIsSyst))
+                            
                     except:
                         pass
 
