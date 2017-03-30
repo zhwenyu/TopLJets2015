@@ -51,4 +51,10 @@ std::map<TString, std::map<BTagEntry::JetFlavor,BTagCalibrationReader *> > getBT
 //the expections are created with the script scripts/saveExpectedBtagEff.py (cf README)
 std::map<BTagEntry::JetFlavor, TGraphAsymmErrors *> readExpectedBtagEff(TString era,TString btagExpPostFix="");
 
+//b fragmentation, see https://gitlab.cern.ch/CMS-TOPPAG/BFragmentationAnalyzer
+std::map<TString, TGraph*> getBFragmentationWeights(TString era);
+double computeBFragmentationWeight(MiniEvent_t &ev, TGraph* wgtGr);
+std::map<TString, std::map<int, double> > getSemilepBRWeights(TString era);
+double computeSemilepBRWeight(MiniEvent_t &ev, std::map<int, double> corr, int pid = 0, bool useabs = true);
+
 #endif
