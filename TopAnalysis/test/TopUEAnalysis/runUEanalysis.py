@@ -46,6 +46,7 @@ def determineSliceResolutions(opt):
 
         #count particles in the event
         ue.count(t,debug=False)
+        #ue.show()
         #raw_input()
 
         #fill resolution arrays
@@ -136,6 +137,8 @@ def determineSliceResolutions(opt):
         tex.SetNDC()
         tex.DrawLatex(0.1,0.96,'#bf{CMS} #it{simulation preliminary} %s'%VARS[var][0])
         tex.DrawLatex(0.8,0.96,'#sqrt{s}=13 TeV')
+        logx=True if ('chavg' in var or 'chflux' in var or 'ptttbar' in var or 'sumpt' in var or 'ptpos' in var or 'ptll' in var) else False
+        c.SetLogx(logx)
         c.Modified()
         c.Update()
         for ext in ['png','pdf']: c.SaveAs('%s/%s_resol.%s'%(opt.out,var,ext))
@@ -201,25 +204,31 @@ def defineAnalysisBinning(opt):
         else:
              
             #get resolution map and quantiles       
-            recBin,genBin=[0],[0]
+            genBin=[0]
             resolGr=varResolutions[var][1]
-            nSigmaForBins=3.0
-            for n in xrange(1,resolGr.GetN()):
+            nSigmaForBins=2.0
+            lastAcceptResol=resolGr.GetErrorY(0)
+            for n in xrange(1,resolGr.GetN()-1):
 
                 #center value, bias and resolution (don't correct bias)
                 xgen_i,delta_i=ROOT.Double(0),ROOT.Double(0)        
                 resolGr.GetPoint(n,xgen_i,delta_i)
-                resol_i=resolGr.GetErrorY(n-1)
                 dx=xgen_i-genBin[-1]
                 if dx<0 : continue
-                if dx<nSigmaForBins*resol_i : continue
-
+                if dx<nSigmaForBins*lastAcceptResol : continue
                 genBin.append( xgen_i )
+                lastAcceptResol=resolGr.GetErrorY(n-1)
+            genBin.append( genBin[-1]+lastAcceptResol*2 )
 
-                xrec_i=genBin[-1]-0.5*nSigmaForBins*resol_i
-                recBin.append( xrec_i )
-                recBin.append( genBin[-1] )
             
+            recBin=[0]
+            for i in xrange(1,len(genBin)):
+                dBin=genBin[i]-genBin[i-1]
+                if i>1 : recBin.append( genBin[i-1]+0.25*dBin )
+                recBin.append( genBin[i-1]+0.75*dBin )
+            recBin.append( genBin[-1]+0.5*(genBin[-1]+genBin[-2]) )
+
+
             #special case for angular variables: override previous definition
             if VARS[var][4]:
                 nbins=10
@@ -227,25 +236,20 @@ def defineAnalysisBinning(opt):
                 delta=180./float(nbins)
                 genBin=[i*delta     for i in xrange(0,nbins+1)]
                 recBin=[i*delta*0.5 for i in xrange(0,2*nbins+1)]
-            print var
-            print genBin
-            print recBin
 
         #save binning in histos
         varAxes[(var,False)] = ROOT.TAxis(len(genBin)-1,array.array('d',genBin))
         varAxes[(var,False)].SetName('%s_genSlices'%var)
         varAxes[(var,True)]  = ROOT.TAxis(len(recBin)-1,array.array('d',recBin))
         varAxes[(var,True)].SetName('%s_recSlices'%var)
-        print '%30s'%('Bin definition for '+var),
+        print '%30s'%('Bin definition for '+var)
         for level in [False,True]:
             nbins=varAxes[(var,level)].GetNbins()
-            print '%30s'%('[%3.1f,%3.1f] / %d @ %s'%(varAxes[(var,level)].GetBinLowEdge(1),
-                                                     varAxes[(var,level)].GetBinUpEdge(nbins),
-                                                     nbins,
-                                                     'rec' if level else 'gen')),
-            print var,level
-            print genBin
-            print recBin
+            print '%30s'%'','[%3.1f,%3.1f] / %d @ %s'%(varAxes[(var,level)].GetBinLowEdge(1),
+                                                       varAxes[(var,level)].GetBinUpEdge(nbins),
+                                                       nbins,
+                                                       'rec' if level else 'gen')
+            print '%30s'%'',(recBin if level else genBin)
         print ''
 
     #

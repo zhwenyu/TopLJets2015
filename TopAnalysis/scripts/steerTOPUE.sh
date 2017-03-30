@@ -68,12 +68,13 @@ case $WHAT in
 	eosprefix=root://eoscms//eos/cms
 	echo "Computing resolutions"
 	base="${eosprefix}/${summaryeosdir}/Chunks/MC13TeV_TTJets"
-	python test/TopUEAnalysis/runUEanalysis.py -i ${base}_1.root,${base}_2.root,${base}_3.root,${base}_4.root,${base}_5.root, --step 0 --ptThr 1.0,0.9;
+	python test/TopUEAnalysis/runUEanalysis.py -i ${base}_0.root,${base}_1.root,${base}_2.root,${base}_3.root,${base}_4.root --step 0 --ptThr 1.0,0.9; #0.9,0.9;
 
-	echo "Defining analysis configuration"
+	#echo "Defining analysis configuration"
 	python test/TopUEAnalysis/runUEanalysis.py --step 1;
 	
-	echo "Filling the histograms"
+	#echo "Filling the histograms"
+	queue=1nh
 	python test/TopUEAnalysis/runUEanalysis.py -i ${summaryeosdir}/Chunks      --step 2 -q ${queue};
 	python test/TopUEAnalysis/runUEanalysis.py -i ${summaryeosdir}_syst/Chunks --step 2 -q ${queue};
 	;;
@@ -81,8 +82,8 @@ case $WHAT in
 	./scripts/mergeOutputs.py UEanalysis/analysis_0_0 True 
 	;;
     PLOTANA )
-	#python scripts/plotter.py -i UEanalysis/analysis_0_0 -j data/era2016/samples.json      -l ${lumi} --saveLog --mcUnc ${lumiUnc};	
-	#python scripts/plotter.py -i UEanalysis/analysis_0_0 -j data/era2016/syst_samples.json -l ${lumi} --saveLog --mcUnc ${lumiUnc} --silent --outName syst_plotter.root;	
+	python scripts/plotter.py -i UEanalysis/analysis_0_0 -j data/era2016/samples.json      -l ${lumi} --saveLog --mcUnc ${lumiUnc};	
+	python scripts/plotter.py -i UEanalysis/analysis_0_0 -j data/era2016/syst_samples.json -l ${lumi} --saveLog --mcUnc ${lumiUnc} --silent --outName syst_plotter.root;	
 	python test/TopUEAnalysis/compareAtRecoLevel.py UEanalysis/analysis_0_0/plots/plotter.root UEanalysis/analysis_0_0/plots/syst_plotter.root
 	python test/TopUEAnalysis/UETools.py -o UEanalysis/analysis_0_0/plots/
 	;;

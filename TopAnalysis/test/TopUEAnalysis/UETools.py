@@ -66,7 +66,10 @@ def showMatrices(opt):
     for key in ueHandler.histos:
         if len(key)!=2 : continue
         var,a=key
-        stit=VARS[a][0] if a!='inc' else 'inclusive'
+        try:
+            stit=VARS[a][0] if a!='inc' else 'inclusive'
+        except:
+            continue
         otit=VARS[var][0]
         if stit!='inclusive' : continue
 
