@@ -191,6 +191,9 @@ void RunTopJetShape(TString filename,
   ht.addHist("js_ptd_charged", new TH1F("js_ptd_charged",";p_{T}D (charged);Jets",50,0,1));
   ht.addHist("js_ptd_puppi", new TH1F("js_ptd_puppi",";p_{T}D (puppi);Jets",50,0,1));
   ht.addHist("js_ptd_all", new TH1F("js_ptd_all",";p_{T}D (all);Jets",50,0,1));
+  ht.addHist("js_ptds_charged", new TH1F("js_ptds_charged",";scaled p_{T}D (charged);Jets",50,0,1));
+  ht.addHist("js_ptds_puppi", new TH1F("js_ptds_puppi",";scaled p_{T}D (puppi);Jets",50,0,1));
+  ht.addHist("js_ptds_all", new TH1F("js_ptds_all",";scaled p_{T}D (all);Jets",50,0,1));
   ht.addHist("js_ecc_charged", new TH1F("js_ecc_charged",";eccentricity (charged);Jets",50,0,1));
   ht.addHist("js_ecc_puppi", new TH1F("js_ecc_puppi",";eccentricity (puppi);Jets",50,0,1));
   ht.addHist("js_ecc_all", new TH1F("js_ecc_all",";eccentricity (all);Jets",50,0,1));
@@ -530,6 +533,10 @@ void RunTopJetShape(TString filename,
         tjsev.j_ptd_all[ij]     = getPtD(jets[ij], true);
         tjsev.j_ptd_puppi[ij]   = getPtD(jets[ij], true, true);
         
+        tjsev.j_ptds_charged[ij] = getPtDs(jets[ij]);
+        tjsev.j_ptds_all[ij]     = getPtDs(jets[ij], true);
+        tjsev.j_ptds_puppi[ij]   = getPtDs(jets[ij], true, true);
+        
         tjsev.j_width_charged[ij] = getWidth(jets[ij]);
         tjsev.j_width_all[ij]     = getWidth(jets[ij], true);
         tjsev.j_width_puppi[ij]   = getWidth(jets[ij], true, true);
@@ -625,6 +632,9 @@ void RunTopJetShape(TString filename,
         ht.fill("js_ptd_charged", tjsev.j_ptd_charged[ij], plotwgts);
         ht.fill("js_ptd_puppi", tjsev.j_ptd_puppi[ij], plotwgts);
         ht.fill("js_ptd_all", tjsev.j_ptd_all[ij], plotwgts);
+        ht.fill("js_ptds_charged", tjsev.j_ptds_charged[ij], plotwgts);
+        ht.fill("js_ptds_puppi", tjsev.j_ptds_puppi[ij], plotwgts);
+        ht.fill("js_ptds_all", tjsev.j_ptds_all[ij], plotwgts);
         ht.fill("js_ecc_charged", tjsev.j_ecc_charged[ij], plotwgts);
         ht.fill("js_ecc_puppi", tjsev.j_ecc_puppi[ij], plotwgts);
         ht.fill("js_ecc_all", tjsev.j_ecc_all[ij], plotwgts);
@@ -758,6 +768,10 @@ void RunTopJetShape(TString filename,
           tjsev.gj_ptd_charged[i] = getPtD(genJets[i]);
           tjsev.gj_ptd_all[i]     = getPtD(genJets[i], true);
           tjsev.gj_ptd_puppi[i]   = getPtD(genJets[i], true, true);
+          
+          tjsev.gj_ptds_charged[i] = getPtDs(genJets[i]);
+          tjsev.gj_ptds_all[i]     = getPtDs(genJets[i], true);
+          tjsev.gj_ptds_puppi[i]   = getPtDs(genJets[i], true, true);
           
           tjsev.gj_width_charged[i] = getWidth(genJets[i]);
           tjsev.gj_width_all[i]     = getWidth(genJets[i], true);
@@ -950,11 +964,28 @@ double getPtD(Jet jet, bool includeNeutrals, bool usePuppi, double ptcut) {
     sumpt2 += pow(p.pt()*weight, 2);
   }
   if (mult < 2) return -1.;
-  double ptd = sqrt(sumpt2)/sumpt;
+  double ptd = sumpt2/pow(sumpt,2);
   return ptd;
 }
 
-//TODO: use version of jet with particle cuts applied, and recalculated 4vec?
+double getPtDs(Jet jet, bool includeNeutrals, bool usePuppi, double ptcut) {
+  //std::cout << "getPtDs()" << std::endl;
+  double mult   = 0.;
+  double sumpt  = 0.;
+  double sumpt2 = 0.;
+  for (auto p : jet.particles()) {
+    if (not includeNeutrals and p.charge() == 0) continue;
+    if (ptcut > p.pt()) continue;
+    double weight = usePuppi ? p.puppi() : 1.;
+    if (weight > 0.) mult+=1.;
+    sumpt  += p.pt()*weight;
+    sumpt2 += pow(p.pt()*weight, 2);
+  }
+  if (mult < 2.) return -1.;
+  double ptd = sumpt2/pow(sumpt,2);
+  return max(0., sqrt((ptd-1./mult) * mult/(mult-1.)));
+}
+
 double getWidth(Jet jet, bool includeNeutrals, bool usePuppi, double ptcut) {
   //std::cout << "getWidth()" << std::endl;
   int mult = 0;
@@ -1024,7 +1055,7 @@ double getTau(int N, int M, Jet jet, bool includeNeutrals, bool usePuppi, double
     if (weight > 0.) ++mult;
     particles.push_back( PseudoJet(p.px(), p.py(), p.pz(), p.e())*weight );
   }
-  if (mult < N+1) return -1.;
+  if (mult < N+2) return -1.;
   
   JetDefinition jet_def(fastjet::cambridge_algorithm, fastjet::JetDefinition::max_allowable_R);
   
@@ -1049,7 +1080,7 @@ double getC(int N, double beta, Jet jet, bool includeNeutrals, bool usePuppi, do
     if (weight > 0.) ++mult;
     particles.push_back( PseudoJet(p.px(), p.py(), p.pz(), p.e())*weight );
   }
-  if (mult < N+1) return -1.;
+  if (mult < N+2) return -1.;
   
   JetDefinition jet_def(fastjet::cambridge_algorithm, fastjet::JetDefinition::max_allowable_R);
   
@@ -1075,7 +1106,7 @@ std::vector<double> getZg(Jet jet, bool includeNeutrals, bool usePuppi, double p
     if (weight > 0.) ++mult;
     particles.push_back( PseudoJet(p.px(), p.py(), p.pz(), p.e())*weight );
   }
-  if (mult < 2) return {-1., -1.};
+  if (mult < 2) return {-1., -1., -1.};
   
   JetDefinition jet_def(fastjet::cambridge_algorithm, fastjet::JetDefinition::max_allowable_R);
   
@@ -1089,6 +1120,7 @@ std::vector<double> getZg(Jet jet, bool includeNeutrals, bool usePuppi, double p
     zg    = cajetp2.pt()/cajet.pt();
     cajet = cajetp1;
   }
+  if (zg < 0.1) return {-1., -1., -1.};
   //std::cout << "zg = " << zg << std::endl;
   std::vector<double> results;
   results.push_back(zg);
@@ -1157,6 +1189,9 @@ void createTopJetShapeEventTree(TTree *t,TopJetShapeEvent_t &tjsev)
   t->Branch("j_ptd_charged",   tjsev.j_ptd_charged,   "j_ptd_charged[nj]/F");
   t->Branch("j_ptd_puppi",   tjsev.j_ptd_puppi,   "j_ptd_puppi[nj]/F");
   t->Branch("j_ptd_all",   tjsev.j_ptd_all,   "j_ptd_all[nj]/F");
+  t->Branch("j_ptds_charged",   tjsev.j_ptds_charged,   "j_ptds_charged[nj]/F");
+  t->Branch("j_ptds_puppi",   tjsev.j_ptds_puppi,   "j_ptds_puppi[nj]/F");
+  t->Branch("j_ptds_all",   tjsev.j_ptds_all,   "j_ptds_all[nj]/F");
   t->Branch("j_ecc_charged",   tjsev.j_ecc_charged,   "j_ecc_charged[nj]/F");
   t->Branch("j_ecc_puppi",   tjsev.j_ecc_puppi,   "j_ecc_puppi[nj]/F");
   t->Branch("j_ecc_all",   tjsev.j_ecc_all,   "j_ecc_all[nj]/F");
@@ -1234,6 +1269,9 @@ void createTopJetShapeEventTree(TTree *t,TopJetShapeEvent_t &tjsev)
   t->Branch("gj_ptd_charged",   tjsev.gj_ptd_charged,   "gj_ptd_charged[ngj]/F");
   t->Branch("gj_ptd_puppi",   tjsev.gj_ptd_puppi,   "gj_ptd_puppi[ngj]/F");
   t->Branch("gj_ptd_all",   tjsev.gj_ptd_all,   "gj_ptd_all[ngj]/F");
+  t->Branch("gj_ptds_charged",   tjsev.gj_ptds_charged,   "gj_ptds_charged[ngj]/F");
+  t->Branch("gj_ptds_puppi",   tjsev.gj_ptds_puppi,   "gj_ptds_puppi[ngj]/F");
+  t->Branch("gj_ptds_all",   tjsev.gj_ptds_all,   "gj_ptds_all[ngj]/F");
   t->Branch("gj_ecc_charged",   tjsev.gj_ecc_charged,   "gj_ecc_charged[ngj]/F");
   t->Branch("gj_ecc_puppi",   tjsev.gj_ecc_puppi,   "gj_ecc_puppi[ngj]/F");
   t->Branch("gj_ecc_all",   tjsev.gj_ecc_all,   "gj_ecc_all[ngj]/F");
@@ -1322,6 +1360,9 @@ void resetTopJetShapeEvent(TopJetShapeEvent_t &tjsev)
     tjsev.j_ptd_charged[i]=-99;
     tjsev.j_ptd_puppi[i]=-99;
     tjsev.j_ptd_all[i]=-99;
+    tjsev.j_ptds_charged[i]=-99;
+    tjsev.j_ptds_puppi[i]=-99;
+    tjsev.j_ptds_all[i]=-99;
     tjsev.j_ecc_charged[i]=-99;
     tjsev.j_ecc_puppi[i]=-99;
     tjsev.j_ecc_all[i]=-99;
@@ -1398,6 +1439,9 @@ void resetTopJetShapeEvent(TopJetShapeEvent_t &tjsev)
     tjsev.gj_ptd_charged[i]=-99;
     tjsev.gj_ptd_puppi[i]=-99;
     tjsev.gj_ptd_all[i]=-99;
+    tjsev.gj_ptds_charged[i]=-99;
+    tjsev.gj_ptds_puppi[i]=-99;
+    tjsev.gj_ptds_all[i]=-99;
     tjsev.gj_ecc_charged[i]=-99;
     tjsev.gj_ecc_puppi[i]=-99;
     tjsev.gj_ecc_all[i]=-99;

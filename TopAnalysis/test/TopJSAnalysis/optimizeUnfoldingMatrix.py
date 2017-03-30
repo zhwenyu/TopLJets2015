@@ -32,9 +32,21 @@ def optimize(inputfile, output, obs, reco, ptcut, rootoutput):
     #ROOT.gStyle.SetPalette(53)
     
     tree = ROOT.TChain('tjsev')
-    tree.AddFile(inputfile)
+    if inputfile == 'eos':
+        tree.Add('/eos/user/m/mseidel/analysis/TopJetShapes/b312177/Chunks/MC13TeV_TTJets_0.root')
+        tree.Add('/eos/user/m/mseidel/analysis/TopJetShapes/b312177/Chunks/MC13TeV_TTJets_1.root')
+        tree.Add('/eos/user/m/mseidel/analysis/TopJetShapes/b312177/Chunks/MC13TeV_TTJets_2.root')
+        tree.Add('/eos/user/m/mseidel/analysis/TopJetShapes/b312177/Chunks/MC13TeV_TTJets_3.root')
+        #tree.Add('/eos/user/m/mseidel/analysis/TopJetShapes/b312177/Chunks/MC13TeV_TTJets_4.root')
+        #tree.Add('/eos/user/m/mseidel/analysis/TopJetShapes/b312177/Chunks/MC13TeV_TTJets_5.root')
+        #tree.Add('/eos/user/m/mseidel/analysis/TopJetShapes/b312177/Chunks/MC13TeV_TTJets_6.root')
+        #tree.Add('/eos/user/m/mseidel/analysis/TopJetShapes/b312177/Chunks/MC13TeV_TTJets_7.root')
+        #tree.Add('/eos/user/m/mseidel/analysis/TopJetShapes/b312177/Chunks/MC13TeV_TTJets_8.root')
+        #tree.Add('/eos/user/m/mseidel/analysis/TopJetShapes/b312177/Chunks/MC13TeV_TTJets_9.root')
+    else: tree.Add(inputfile)
     totalEntries = tree.GetEntries()
     
+    print("Total entries: " + str(totalEntries))
     print("\nObservable: " + obs)
     print("Reco method: " + reco)
     
@@ -54,6 +66,8 @@ def optimize(inputfile, output, obs, reco, ptcut, rootoutput):
         highbin = 0.25
     if (obs == "ptd"):
         label = "p_{T}D"
+    if (obs == "ptds"):
+        label = "scaled p_{T}D"
     if (obs == "ecc"):
         label = "eccentricity"
         sigmaFactor = 0.25
@@ -137,7 +151,7 @@ def optimize(inputfile, output, obs, reco, ptcut, rootoutput):
     
     print("Starting with bin width " + str((highbin-lowbin)/float(nbins)))
     
-    f = ROOT.TFile(output + "/" + obs + "_" + reco +"_" + ptcut +".root", "RECREATE");
+    f = ROOT.TFile(output + "/" + obs + "_" + reco + ".root", "RECREATE");
     
     h = ROOT.TH2F("h", labels, nbins, lowbin, highbin, nbins, lowbin, highbin)
     
@@ -149,7 +163,10 @@ def optimize(inputfile, output, obs, reco, ptcut, rootoutput):
     h.SetMinimum(-1e-10)
     h.Draw("colz")
     #h.Fit("pol1")
-    c.Print(output + "/" + obs + "_" + reco +"_" + ptcut +"_h.eps")
+    
+    plotformats = ['.png', '.pdf']
+    plotbasename = output + "/" + obs + "_" + reco + "_"
+    for p in plotformats: c.Print(plotbasename + "h" + p)
     
     h_gen  = h.ProjectionX()
     h_reco = h.ProjectionY()
@@ -166,7 +183,7 @@ def optimize(inputfile, output, obs, reco, ptcut, rootoutput):
     leg.AddEntry(h_gen, "generated", "l")
     leg.AddEntry(h_reco, "reconstructed", "l")
     leg.Draw()
-    c.Print(output + "/" + obs + "_" + reco +"_" + ptcut +"_h1.eps")
+    for p in plotformats: c.Print(plotbasename + "h1" + p)
     del h_gen
     del h_reco
     
@@ -231,7 +248,7 @@ def optimize(inputfile, output, obs, reco, ptcut, rootoutput):
     #hnorm.SetMaximum(1)
     hnorm.Draw("colz")
     #hnorm.Fit("pol1")
-    c.Print(output + "/" + obs + "_" + reco +"_" + ptcut +"_hnorm.eps")
+    for p in plotformats: c.Print(plotbasename + "hnorm" + p)
     
     # reco bin splitting
     divisor = 2
@@ -261,7 +278,7 @@ def optimize(inputfile, output, obs, reco, ptcut, rootoutput):
     
     hopt.SetMinimum(-1e-10)
     hopt.Draw("colz")
-    c.Print(output + "/" + obs + "_" + reco +"_" + ptcut +"_hopt.eps")
+    for p in plotformats: c.Print(plotbasename + "hopt" + p)
     
     h_gen  = hopt.ProjectionX()
     h_reco = hopt.ProjectionY()
@@ -280,7 +297,7 @@ def optimize(inputfile, output, obs, reco, ptcut, rootoutput):
     leg.AddEntry(h_gen, "generated", "l")
     leg.AddEntry(h_reco, "reconstructed", "l")
     leg.Draw()
-    c.Print(output + "/" + obs + "_" + reco +"_" + ptcut +"_hopt1.eps")
+    for p in plotformats: c.Print(plotbasename + "hopt1" + p)
     del h_gen
     del h_reco
     
@@ -319,7 +336,7 @@ def optimize(inputfile, output, obs, reco, ptcut, rootoutput):
     hoptnorm.SetMarkerColor(ROOT.kWhite)
     hoptnorm.SetMarkerSize(1.5)
     hoptnorm.Draw("colz,text")
-    c.Print(output + "/" + obs + "_" + reco +"_" + ptcut +"_hoptnorm.eps")
+    for p in plotformats: c.Print(plotbasename + "hoptnorm" + p)
     
     hoptpur.GetYaxis().SetRangeUser(0., 1.)
     hoptpur.SetLineColor(ROOT.kRed+1)
@@ -332,7 +349,7 @@ def optimize(inputfile, output, obs, reco, ptcut, rootoutput):
     leg.AddEntry(hoptpur, "purity", "l")
     leg.AddEntry(hoptsta, "stability", "l")
     leg.Draw()
-    c.Print(output + "/" + obs + "_" + reco +"_" + ptcut +"_hoptpursta.eps")
+    for p in plotformats: c.Print(plotbasename + "hoptpursta" + p)
     
     responsematrix = ROOT.TH2F("responsematrix", labels, len(binArray)-1, binArray, len(bin2Array)-1, bin2Array)
     fillHist(responsematrix, tree, obs, reco, ptcut)
@@ -386,8 +403,41 @@ def fillHist(h, tree, obs, reco, ptcut):
                 #else :             h.Fill(event.gj_ga[i*81+o+c+p], event.j_ga[j*81+o+c+p])
                 
                 i = event.j_gj[j]
-                valReco = eval('event.j_'+obs+'_'+reco)[j]
-                valGen  = eval('event.gj_'+obs+'_'+reco)[i]
+                
+                if not 'ptds' in obs:
+                    valReco = eval('event.j_'+obs+'_'+reco)[j]
+                    valGen  = eval('event.gj_'+obs+'_'+reco)[i]
+                
+                # TODO: remove special recipes with next ntuples
+                # additional multiplicity cuts
+                multReco = eval('event.j_mult_'+reco)[j]
+                multGen  = eval('event.gj_mult_'+reco)[i]
+                minMult = 0
+                if 'c1' in obs: minMult = 3
+                if 'c2' in obs: minMult = 4
+                if 'c3' in obs: minMult = 5
+                if 'tau' in obs: minMult = int(obs[3]) + 2
+                if multReco < minMult: valReco = -1
+                if multGen  < minMult: valGen  = -1
+                if 'ptd' in obs and not 'ptds' in obs:
+                    valReco = valReco**2
+                    valGen  = valGen**2
+                if 'ptds' in obs:
+                    if multReco > 1:
+                        valReco = eval('event.j_ptd_'+reco)[j]
+                        valReco = (valReco**2 - 1./multReco) * multReco/(multReco-1)
+                        if valReco > 0: valReco = sqrt(valReco)
+                    else: valReco = -1
+                    if multGen > 1:
+                        valGen  = eval('event.gj_ptd_'+reco)[i]
+                        valGen = (valGen**2 - 1./multGen) * multGen/(multGen-1)
+                        if valGen > 0: valGen = sqrt(valGen)
+                    else: valGen = -1
+                if 'zgdr' in obs or 'zgxdr' in obs:
+                    zcut = 0.1
+                    if (eval('event.j_zg_'+reco)[j] < zcut): valReco = -1
+                    if (eval('event.gj_zg_'+reco)[i] < zcut): valGen = -1
+                
                 h.Fill(valGen, valReco)
 
 
@@ -429,19 +479,23 @@ def splitForMinSigma(h, output, obs, reco, ptcut, factor = 0.5):
     c2.cd()
     
     slices[0].Draw()
-    c2.Print(output + "/" + obs + "_" + reco +"_" + ptcut +"_slices_N.eps")
+    plotformats = ['.png', '.pdf']
+    plotbasename = output + "/" + obs + "_" + reco + "_"
+    for p in plotformats: c2.Print(plotbasename + "slices_N" + p)
     slices[1].GetYaxis().SetRangeUser(h.GetXaxis().GetXmin(), h.GetXaxis().GetXmax())
     slices[1].Draw()
-    c2.Print(output + "/" + obs + "_" + reco +"_" + ptcut +"_slices_mean.eps")
+    for p in plotformats: c2.Print(plotbasename + "slices_mean" + p)
     slices[2].GetYaxis().SetRangeUser(0., h.GetXaxis().GetXmax())
     slices[2].Draw()
-    c2.Print(output + "/" + obs + "_" + reco +"_" + ptcut +"_slices_sigma.eps")
+    for p in plotformats: c2.Print(plotbasename + "slices_sigma" + p)
     
     bins  = [h.GetXaxis().GetXmin()]
     exact = [h.GetXaxis().GetXmin()]
     
     for i in range(1, h.GetNbinsX()+1):
       mean  = slices[1].GetBinContent(i)
+      meanError = slices[1].GetBinError(i)
+      if (mean == 0 or meanError/mean > 0.1): continue
       sigma = slices[2].GetBinContent(i) * factor
       #print(bins)
       #print(exact)
@@ -539,10 +593,12 @@ def main():
     (opt, args) = parser.parse_args()
 
     os.system('mkdir -p %s' % opt.output)
+    
+    if opt.all: observables = ["mult", "width", "ptd", "ptds", "ecc", "tau21", "tau32", "tau43", "zg", "zgxdr", "zgdr", "ga_width", "ga_lha", "ga_thrust", "c1_02", "c1_05", "c1_10", "c1_20", "c2_02", "c2_05", "c2_10", "c2_20", "c3_02", "c3_05", "c3_10", "c3_20"]
+    else: observables = opt.obs.split(',')
 
-    if (not opt.all): optimize(opt.input, opt.output, opt.obs, opt.reco, opt.ptcut, opt.rootoutput)
+    if len(observables) == 1: optimize(opt.input, opt.output, opt.obs, opt.reco, opt.ptcut, opt.rootoutput)
     else:
-        observables = ["mult", "width", "ptd", "ecc", "tau21", "tau32", "tau43", "zg", "zgxdr", "zgdr", "ga_width", "ga_lha", "ga_thrust", "c1_02", "c1_05", "c1_10", "c1_20", "c2_02", "c2_05", "c2_10", "c2_20", "c3_02", "c3_05", "c3_10", "c3_20"]
         reco        = ["charged", "puppi", "all"]
         #ptcuts      = {"0.5", "1.0", "1.5"}
         
