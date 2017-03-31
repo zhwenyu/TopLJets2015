@@ -2,6 +2,7 @@
 #include <TROOT.h>
 #include <TH1.h>
 #include <TH2.h>
+#include <TH3.h>
 #include <TSystem.h>
 #include <TGraph.h>
 #include <TLorentzVector.h>
@@ -109,6 +110,7 @@ void RunTopUE(TString filename,
       allPlots["nbtags_"+tag]    = new TH1F("nbtags_"+tag,";b-tag multiplicity;Events",5,0,5);
       allPlots["nchvsnvtx_"+tag] = new TH2F("nchvsnvtx_"+tag,";Vertex multiplicity;Charged particle multiplicity;Events",10,0,40,50,0,100);
       allPlots["nchvsrho_"+tag]  = new TH2F("nchvsrho_"+tag,";#rho;Charged particle multiplicity;Events",10,0,40,50,0,100);
+      allPlots["nchvssumptvsrho_"+tag]  = new TH3F("nchvsrho_"+tag,";#rho;Charged particle multiplicity;Charged particle sum p_{T} [GeV];Events",10,0,40,25,0,100,25,0,400);
       allPlots["nch_"+tag]       = new TH1F("nch_"+tag,";Charged particle multiplicity;Events",50,0,200);      
       allPlots["chavgpt_"+tag]   = new TH1F("chavgpt_"+tag,";Charged particle average p_{T} [GeV];Events",50,0,15);      
       allPlots["chsumpt_"+tag]   = new TH1F("chsumpt_"+tag,";Charged particle sum p_{T} [GeV];Events",50,0,400);
@@ -363,6 +365,7 @@ void RunTopUE(TString filename,
 	      allPlots["nch_"+chTag]->Fill(nch,wgt);	  
 	      ((TH2 *)allPlots["nchvsnvtx_"+chTag])->Fill(ev.nvtx,nch,wgt);
 	      ((TH2 *)allPlots["nchvsrho_"+chTag])->Fill(ev.rho,nch,wgt);
+	      ((TH3 *)allPlots["nchvssumptvsrho_"+chTag])->Fill(ev.rho,nch,chSumPt,wgt); 
 	      allPlots["chavgpt_"+chTag]->Fill(nch>0 ? chSumPt/nch : -1,wgt);
 	      allPlots["chsumpt_"+chTag]->Fill(chSumPt,wgt);
 	      allPlots["chavgpz_"+chTag]->Fill(nch>0 ? chSumPz/nch : -1,wgt);

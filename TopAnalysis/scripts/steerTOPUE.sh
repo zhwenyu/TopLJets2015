@@ -32,22 +32,21 @@ case $WHAT in
     TESTSEL )
 	file=root://eoscms//eos/cms/store/cmst3/group/top/ReReco2016/b312177/MC13TeV_TTJets/MergedMiniEvents_0_ext0.root
 	#file=root://eoscms//eos/cms/store/cmst3/group/top/ReReco2016/b312177/Data13TeV_MuonEG_2016D/MergedMiniEvents_0.root
-	#analysisWrapper \
-	#    --in ${file} \
-	#    --out ue_test.root \
-	#    --era ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/era2016 \
-	#    --method TOP-UE::RunTopUE \
-	#    --runSysts \
-	#    --ch 0;
-	#python test/TopUEAnalysis/runUEanalysis.py -i ue_test.root --step 0 --ptThr 1.0,0.9 -o ./UEanalysis_test;
-	#python test/TopUEAnalysis/runUEanalysis.py --step 1 -o ./UEanalysis_test;
-	#python test/TopUEAnalysis/runUEanalysis.py -i ue_test.root      --step 2 -q local -o ./UEanalysis_test;
+	analysisWrapper \
+	    --in ${file} \
+	    --out ue_test.root \
+	    --era ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/era2016 \
+	    --method TOP-UE::RunTopUE \
+	    --runSysts \
+	    --ch 0;
+	python test/TopUEAnalysis/runUEanalysis.py -i ue_test.root --step 0 --ptThr 1.0,0.9 -o ./UEanalysis_test;
+	python test/TopUEAnalysis/runUEanalysis.py --step 1 -o ./UEanalysis_test;
+	python test/TopUEAnalysis/runUEanalysis.py -i ue_test.root      --step 2 -q local -o ./UEanalysis_test;
 	python test/TopUEAnalysis/UETools.py -i ./UEanalysis_test/analysiscfg.pck --in UEanalysis_test/analysis_0_0/Chunks/ue_test.root -o UEanalysis_test/
 	;;
 
     FULLSEL ) 
 	python scripts/runLocalAnalysis.py -i ${eosdir}      -q ${queue} -o ${summaryeosdir}      --era era2016 -m TOP-UE::RunTopUE --ch 0 --runSysts;
-	python scripts/runLocalAnalysis.py -i ${eosdir}_syst -q ${queue} -o ${summaryeosdir}_syst --era era2016 -m TOP-UE::RunTopUE --ch 0;
 	;;
 
     MERGE )
@@ -58,9 +57,9 @@ case $WHAT in
 	;;
     PLOTSEL )
 	commonOpts="-i ${outdir} --puNormSF puwgtctr  -j data/era2016/samples.json -l ${lumi}  --saveLog --mcUnc ${lumiUnc}"
-	#python scripts/plotter.py ${commonOpts} --only mll --outName mll_plotter.root;	
-     	#python scripts/runDYRinRout.py --in ${outdir}/plots/mll_plotter.root --categs "0t,1t,"  --out ${outdir}/plots/ > ${outdir}/plots/dy.dat;
-	#python scripts/plotter.py ${commonOpts} --procSF DY:${outdir}/plots/.dyscalefactors.pck --only njets --rebin 7 --saveTeX --outName count_plotter.root;
+	python scripts/plotter.py ${commonOpts} --only mll --outName mll_plotter.root;	
+     	python scripts/runDYRinRout.py --in ${outdir}/plots/mll_plotter.root --categs "0t,1t,"  --out ${outdir}/plots/ > ${outdir}/plots/dy.dat;
+	python scripts/plotter.py ${commonOpts} --procSF DY:${outdir}/plots/.dyscalefactors.pck --only njets --rebin 7 --saveTeX --outName count_plotter.root;
 	python scripts/plotter.py ${commonOpts}; # --procSF DY:${outdir}/plots/.dyscalefactors.pck;
 	;;
     WWWSEL )
@@ -75,12 +74,12 @@ case $WHAT in
 	python test/TopUEAnalysis/runUEanalysis.py -i ${base}_0.root,${base}_1.root,${base}_2.root,${base}_3.root,${base}_4.root --step 0 --ptThr 1.0,0.9; #0.9,0.9;
 
 	#echo "Defining analysis configuration"
-	#python test/TopUEAnalysis/runUEanalysis.py --step 1;
+	python test/TopUEAnalysis/runUEanalysis.py --step 1;
 	
 	#echo "Filling the histograms"
 	queue=1nh
-	#python test/TopUEAnalysis/runUEanalysis.py -i ${summaryeosdir}/Chunks      --step 2 -q ${queue};
-	#python test/TopUEAnalysis/runUEanalysis.py -i ${summaryeosdir}_syst/Chunks --step 2 -q ${queue};
+	python test/TopUEAnalysis/runUEanalysis.py -i ${summaryeosdir}/Chunks      --step 2 -q ${queue};
+	python test/TopUEAnalysis/runUEanalysis.py -i ${summaryeosdir}_syst/Chunks --step 2 -q ${queue};
 	;;
     MERGEANA )
 	./scripts/mergeOutputs.py UEanalysis/analysis_0_0 True 
