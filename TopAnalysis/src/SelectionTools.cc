@@ -209,13 +209,13 @@ std::vector<Jet> SelectionTool::getGenJets(MiniEvent_t &ev, double minPt, double
       
     //fill jet constituents
     for (int p = 0; p < ev.ngpf; p++) {
-      //if (ev.gpf_g[p] == i) {
+      if (ev.gpf_g[p] == i) {
 	TLorentzVector pp4;
 	pp4.SetPtEtaPhiM(ev.gpf_pt[p],ev.gpf_eta[p],ev.gpf_phi[p],ev.gpf_m[p]);
-	if(pp4.DeltaR(jp4)<0.4){
-	  jet.addParticle(Particle(pp4, ev.gpf_c[p], ev.gpf_id[p], 0, p, 1.));
-	  if (ev.gpf_c[p] != 0) jet.addTrack(pp4, ev.gpf_id[p]);
-	}
+	//if(pp4.DeltaR(jp4)<0.4){
+	jet.addParticle(Particle(pp4, ev.gpf_c[p], ev.gpf_id[p], 0, p, 1.));
+	if (ev.gpf_c[p] != 0) jet.addTrack(pp4, ev.gpf_id[p]);
+      }
     }
 
     jets.push_back(jet);
