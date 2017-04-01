@@ -2,12 +2,12 @@
 #include <TROOT.h>
 #include <TH1.h>
 #include <TH2.h>
-#include <TH3.h>
 #include <TSystem.h>
 #include <TGraph.h>
 #include <TLorentzVector.h>
 #include <TGraphAsymmErrors.h>
 
+#include "TopLJets2015/TopAnalysis/interface/CommonTools.h"
 #include "TopLJets2015/TopAnalysis/interface/TOP-UE.h"
 #include "TopLJets2015/TopAnalysis/interface/CorrectionTools.h"
 #include "TopLJets2015/TopAnalysis/interface/LeptonEfficiencyWrapper.h"
@@ -77,6 +77,12 @@ void RunTopUE(TString filename,
   std::map<TString, std::map<BTagEntry::JetFlavor, BTagCalibrationReader *> > btvsfReaders = getBTVcalibrationReadersMap(era, BTagEntry::OP_MEDIUM);
   std::map<BTagEntry::JetFlavor, TGraphAsymmErrors *> expBtagEff = readExpectedBtagEff(era);
 
+  //JET ENERGY UNCERTAINTIES    
+  //TString jecUncUrl(era+"/Summer16_23Sep2016V4_MC_UncertaintySources_AK4PFchs.txt");
+  //gSystem->ExpandPathName(jecUncUrl);
+  //JetCorrectorParameters *jecParam = new JetCorrectorParameters(jecUncUrl.Data(), "Total");
+  //JetCorrectionUncertainty *jecUnc = new JetCorrectionUncertainty( *jecParam );
+
   //PREPARE OUTPUT
   TopUE_t tue;
   TFile *fOut=TFile::Open(outname,"RECREATE");
@@ -86,38 +92,39 @@ void RunTopUE(TString filename,
   outT->SetDirectory(fOut);
 
   //BOOK CONTROL HISTOGRAMS
-  std::map<TString, TH1 *> allPlots;
-  allPlots["puwgtctr"] = new TH1F("puwgtctr","Weight sums",4,0,4);
+  HistTool ht; 
+  ht.setNsyst(isDataFile ? 0 : 3);
+  ht.addHist("puwgtctr", new TH1F("puwgtctr","Weight sums",4,0,4) );  
   std::vector<TString> lfsVec = { "EE", "EM", "MM" };
   for(size_t ilfs=0; ilfs<lfsVec.size(); ilfs++)   
     { 
       TString tag(lfsVec[ilfs]);
-      if(ratevsrunH) allPlots["ratevsrun_"+tag] = (TH1 *)ratevsrunH->Clone("ratevsrun_"+tag);
-      allPlots["nvtx_"+tag]   = new TH1F("nvtx_"+tag,";Vertex multiplicity;Events",40,0,40);
-      allPlots["rho_"+tag]   = new TH1F("rho_"+tag,";#rho;Events",40,0,40);
+      if(ratevsrunH) ht.addHist("ratevsrun_"+tag, (TH1 *)ratevsrunH->Clone("ratevsrun_"+tag) );
+      ht.addHist("nvtx_"+tag, new TH1F("nvtx_"+tag,";Vertex multiplicity;Events",40,0,40) );
+      ht.addHist("rho_"+tag, new TH1F("rho_"+tag,";#rho;Events",40,0,40));
       for(size_t i=0; i<=2; i++)
 	{
 	  TString subtag(tag);
 	  if(i<2) { subtag += i; subtag += "t"; }
-	  allPlots["mll_"+subtag]    = new TH1F("mll_"+subtag,";Dilepton invariant mass [GeV];Events",50,0,400);
+	  ht.addHist("mll_"+subtag,  new TH1F("mll_"+subtag,";Dilepton invariant mass [GeV];Events",50,0,400) );
 	}
-      allPlots["ptpos_"+tag]     = new TH1F("ptpos_"+tag,";Lepton transverse momentum [GeV];Events",50,20,200);
-      allPlots["ptll_"+tag]      = new TH1F("ptll_"+tag,";Dilepton transverse momentum [GeV];Events",50,0,200);
-      allPlots["ptttbar_"+tag]   = new TH1F("ptttbar_"+tag,";p_{T}(t#bar{t}) [GeV];Events",50,0,200);
-      allPlots["sumpt_"+tag]     = new TH1F("sumpt_"+tag,";Transverse momentum sum [GeV];Events",50,40,300);
-      allPlots["met_"+tag]       = new TH1F("met_"+tag,";Missing transverse momentum [GeV];Events",50,0,300);
-      allPlots["njets_"+tag]     = new TH1F("njets_"+tag,";Jet multiplicity;Events",7,2,9);
-      allPlots["nbtags_"+tag]    = new TH1F("nbtags_"+tag,";b-tag multiplicity;Events",5,0,5);
-      allPlots["nchvsnvtx_"+tag] = new TH2F("nchvsnvtx_"+tag,";Vertex multiplicity;Charged particle multiplicity;Events",10,0,40,50,0,100);
-      allPlots["nchvsrho_"+tag]  = new TH2F("nchvsrho_"+tag,";#rho;Charged particle multiplicity;Events",10,0,40,50,0,100);
-      allPlots["nchvssumptvsrho_"+tag]  = new TH3F("nchvsrho_"+tag,";#rho;Charged particle multiplicity;Charged particle sum p_{T} [GeV];Events",10,0,40,25,0,100,25,0,400);
-      allPlots["nch_"+tag]       = new TH1F("nch_"+tag,";Charged particle multiplicity;Events",50,0,200);      
-      allPlots["chavgpt_"+tag]   = new TH1F("chavgpt_"+tag,";Charged particle average p_{T} [GeV];Events",50,0,15);      
-      allPlots["chsumpt_"+tag]   = new TH1F("chsumpt_"+tag,";Charged particle sum p_{T} [GeV];Events",50,0,400);
-      allPlots["chavgpz_"+tag]   = new TH1F("chavgpz_"+tag,";Charged particle average p_{z} [GeV];Events",50,0,15);      
-      allPlots["chsumpz_"+tag]   = new TH1F("chsumpz_"+tag,";Charged particle sum p_{z} [GeV];Events",50,0,400);
+      ht.addHist("ptpos_"+tag     , new TH1F("ptpos_"+tag,";Lepton transverse momentum [GeV];Events",50,20,200) );
+      ht.addHist("ptll_"+tag      , new TH1F("ptll_"+tag,";Dilepton transverse momentum [GeV];Events",50,0,200) );
+      ht.addHist("ptttbar_"+tag   , new TH1F("ptttbar_"+tag,";p_{T}(t#bar{t}) [GeV];Events",50,0,200) );
+      ht.addHist("sumpt_"+tag     , new TH1F("sumpt_"+tag,";Transverse momentum sum [GeV];Events",50,40,300) );
+      ht.addHist("met_"+tag       , new TH1F("met_"+tag,";Missing transverse momentum [GeV];Events",50,0,300) );
+      ht.addHist("njets_"+tag     , new TH1F("njets_"+tag,";Jet multiplicity;Events",7,2,9) );
+      ht.addHist("nbtags_"+tag    , new TH1F("nbtags_"+tag,";b-tag multiplicity;Events",5,0,5) );
+      ht.addHist("nchvsnvtx_"+tag , new TH2F("nchvsnvtx_"+tag,";Vertex multiplicity;Charged particle multiplicity;Events",10,0,40,50,0,100) );
+      ht.addHist("nchvsrho_"+tag  , new TH2F("nchvsrho_"+tag,";#rho;Charged particle multiplicity;Events",10,0,40,50,0,100) );      
+      ht.addHist("nch_"+tag      , new TH1F("nch_"+tag,";Charged particle multiplicity;Events",50,0,200) );      
+      ht.addHist("chavgpt_"+tag  , new TH1F("chavgpt_"+tag,";Charged particle average p_{T} [GeV];Events",50,0,15) );      
+      ht.addHist("chsumpt_"+tag   , new TH1F("chsumpt_"+tag,";Charged particle sum p_{T} [GeV];Events",50,0,400) );
+      ht.addHist("chavgpz_"+tag   , new TH1F("chavgpz_"+tag,";Charged particle average p_{z} [GeV];Events",50,0,15) );      
+      ht.addHist("chsumpz_"+tag   , new TH1F("chsumpz_"+tag,";Charged particle sum p_{z} [GeV];Events",50,0,400) );
     }
-  for (auto& it : allPlots)   { it.second->Sumw2(); it.second->SetDirectory(0); }
+  for (auto& it : ht.getPlots() )     { it.second->Sumw2(); it.second->SetDirectory(0); }
+  for (auto& it : ht.get2dPlots() )   { it.second->Sumw2(); it.second->SetDirectory(0); }
 
 
   //LOOP OVER EVENTS
@@ -275,13 +282,13 @@ void RunTopUE(TString filename,
             
 	  //event weight
 	  float wgt(1.0);
-	  allPlots["puwgtctr"]->Fill(0.,1.0);
+	  ht.getPlots()["puwgtctr"]->Fill(0.,1.0);
 	  EffCorrection_t lepselSF(1.0,0.0),trigSF(1.0,0.0);
 	  if(!ev.isData) 
 	    {
-	      allPlots["puwgtctr"]->Fill(1,puWgt);	      
-	      allPlots["puwgtctr"]->Fill(2,puWgtUp);	      
-	      allPlots["puwgtctr"]->Fill(3,puWgtDn);	      
+	      ht.getPlots()["puwgtctr"]->Fill(1,puWgt);	      
+	      ht.getPlots()["puwgtctr"]->Fill(2,puWgtUp);	      
+	      ht.getPlots()["puwgtctr"]->Fill(3,puWgtDn);	      
 	      for(size_t il=0; il<2; il++)
 		{
                   EffCorrection_t sf=lepEffH.getOfflineCorrection(leptons[il].id(),leptons[il].pt(),leptons[il].eta(),period);
@@ -340,36 +347,42 @@ void RunTopUE(TString filename,
 	      tue.nw=33;
 	    }
 
+	  std::vector<double>plotwgts(1,wgt);
+	  if(!ev.isData)
+	    {
+	      plotwgts.push_back(puWgt!=0 ? puWgtUp/puWgt : 1.0);
+	      plotwgts.push_back(puWgt!=0 ? puWgtDn/puWgt : 1.0);
+	    }
+
 	  //nominal selection control histograms
 	  if(passLepPresel)
 	    {
-	      allPlots["nvtx_"+chTag]->Fill(ev.nvtx,wgt);
-	      allPlots["rho_"+chTag]->Fill(ev.rho,wgt);
-	      allPlots["nbtags_"+chTag]->Fill(tue.nb[0],wgt);
+	      ht.fill("nvtx_"+chTag,ev.nvtx,plotwgts);
+	      ht.fill("rho_"+chTag,ev.rho,plotwgts);
+	      ht.fill("nbtags_"+chTag,tue.nb[0],plotwgts);
 	      TString subTag(chTag);
 	      if(bJetsIdx.size()==0) subTag += "0t";
 	      if(bJetsIdx.size()==1) subTag += "1t";
 	      if(bJetsIdx.size()>=2) subTag += "";
-	      allPlots["mll_"+subTag]->Fill(tue.mll[0],wgt);
+	      ht.fill("mll_"+subTag,tue.mll[0],plotwgts);
 	    }
 	  if(passPresel)
 	    {
 	      std::map<Int_t,Float_t>::iterator rIt=lumiMap.find(ev.run);
-	      if(rIt!=lumiMap.end() && ratevsrunH) allPlots["ratevsrun_"+chTag]->Fill(std::distance(lumiMap.begin(),rIt),1./rIt->second);
-	      allPlots["ptpos_"+chTag]->Fill(tue.ptpos[0],wgt);
-	      allPlots["ptll_"+chTag]->Fill(tue.ptll[0],wgt);
-	      allPlots["ptttbar_"+chTag]->Fill(tue.ptttbar[0],wgt);
-	      allPlots["sumpt_"+chTag]->Fill(tue.sumpt[0],wgt);	     
-	      allPlots["met_"+chTag]->Fill(evsel.getMET().Pt(),wgt);
-	      allPlots["njets_"+chTag]->Fill(tue.nj[0],wgt);
-	      allPlots["nch_"+chTag]->Fill(nch,wgt);	  
-	      ((TH2 *)allPlots["nchvsnvtx_"+chTag])->Fill(ev.nvtx,nch,wgt);
-	      ((TH2 *)allPlots["nchvsrho_"+chTag])->Fill(ev.rho,nch,wgt);
-	      ((TH3 *)allPlots["nchvssumptvsrho_"+chTag])->Fill(ev.rho,nch,chSumPt,wgt); 
-	      allPlots["chavgpt_"+chTag]->Fill(nch>0 ? chSumPt/nch : -1,wgt);
-	      allPlots["chsumpt_"+chTag]->Fill(chSumPt,wgt);
-	      allPlots["chavgpz_"+chTag]->Fill(nch>0 ? chSumPz/nch : -1,wgt);
-	      allPlots["chsumpz_"+chTag]->Fill(chSumPz,wgt);
+	      if(rIt!=lumiMap.end() && ratevsrunH) ht.getPlots()["ratevsrun_"+chTag]->Fill(std::distance(lumiMap.begin(),rIt),1./rIt->second);
+	      ht.fill("ptpos_"+chTag,tue.ptpos[0],plotwgts);
+	      ht.fill("ptll_"+chTag,tue.ptll[0],plotwgts);
+	      ht.fill("ptttbar_"+chTag,tue.ptttbar[0],plotwgts);
+	      ht.fill("sumpt_"+chTag,tue.sumpt[0],plotwgts);	     
+	      ht.fill("met_"+chTag,evsel.getMET().Pt(),plotwgts);
+	      ht.fill("njets_"+chTag,tue.nj[0],plotwgts);
+	      ht.fill("nch_"+chTag,nch,plotwgts);	  
+	      ht.get2dPlots()["nchvsnvtx_"+chTag]->Fill(ev.nvtx,nch,wgt);
+	      ht.get2dPlots()["nchvsrho_"+chTag]->Fill(ev.rho,nch,wgt);
+	      ht.fill("chavgpt_"+chTag,nch>0 ? chSumPt/nch : -1,plotwgts);
+	      ht.fill("chsumpt_"+chTag,chSumPt,plotwgts);
+	      ht.fill("chavgpz_"+chTag,nch>0 ? chSumPz/nch : -1,plotwgts);
+	      ht.fill("chsumpz_"+chTag,chSumPz,plotwgts);
 	    }
 	}
 
@@ -534,10 +547,15 @@ void RunTopUE(TString filename,
   
   //save histos to file  
   fOut->cd();
+  cout << "Selected " << outT->GetEntriesFast() << " events, saving to output" << endl;
   outT->Write();
-  for (auto& it : allPlots)  { 
+  for (auto& it : ht.getPlots())  { 
     it.second->SetDirectory(fOut); it.second->Write(); 
   }
+  for (auto& it : ht.get2dPlots())  { 
+    it.second->SetDirectory(fOut); it.second->Write(); 
+  }
+  cout << "Histograms were saved" << endl;
   fOut->Close();
 }
 

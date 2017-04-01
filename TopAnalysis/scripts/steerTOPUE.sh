@@ -45,7 +45,7 @@ case $WHAT in
 	python test/TopUEAnalysis/UETools.py -i ./UEanalysis_test/analysiscfg.pck --in UEanalysis_test/analysis_0_0/Chunks/ue_test.root -o UEanalysis_test/
 	;;
 
-    FULLSEL ) 
+    FULLSEL )
 	python scripts/runLocalAnalysis.py -i ${eosdir}      -q ${queue} -o ${summaryeosdir}      --era era2016 -m TOP-UE::RunTopUE --ch 0 --runSysts;
 	;;
 
@@ -71,15 +71,15 @@ case $WHAT in
 	eosprefix=root://eoscms//eos/cms
 	echo "Computing resolutions"
 	base="${eosprefix}/${summaryeosdir}/Chunks/MC13TeV_TTJets"
-	python test/TopUEAnalysis/runUEanalysis.py -i ${base}_0.root,${base}_1.root,${base}_2.root,${base}_3.root,${base}_4.root --step 0 --ptThr 1.0,0.9; #0.9,0.9;
+	python test/TopUEAnalysis/runUEanalysis.py -i ${base}_0.root,${base}_1.root,${base}_2.root,${base}_3.root,${base}_4.root --step 0 --ptThr 0.9,0.9;
 
 	#echo "Defining analysis configuration"
-	python test/TopUEAnalysis/runUEanalysis.py --step 1;
+	#python test/TopUEAnalysis/runUEanalysis.py --step 1;
 	
 	#echo "Filling the histograms"
 	queue=1nh
-	python test/TopUEAnalysis/runUEanalysis.py -i ${summaryeosdir}/Chunks      --step 2 -q ${queue};
-	python test/TopUEAnalysis/runUEanalysis.py -i ${summaryeosdir}_syst/Chunks --step 2 -q ${queue};
+	#python test/TopUEAnalysis/runUEanalysis.py -i ${summaryeosdir}/Chunks      --step 2 -q ${queue};
+	#python test/TopUEAnalysis/runUEanalysis.py -i ${summaryeosdir}_syst/Chunks --step 2 -q ${queue};
 	;;
     MERGEANA )
 	./scripts/mergeOutputs.py UEanalysis/analysis_0_0 True 
