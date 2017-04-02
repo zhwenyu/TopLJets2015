@@ -12,7 +12,7 @@ fi
 export LSB_JOB_REPORT_MAIL=N
 
 
-queue=2nw
+queue=2nd
 githash=b312177
 lumi=36460
 lumiSpecs="" #--lumiSpecs EE:11391"
@@ -72,14 +72,14 @@ case $WHAT in
 	echo "Computing resolutions"
 	base="${eosprefix}/${summaryeosdir}/Chunks/MC13TeV_TTJets"
 	python test/TopUEAnalysis/runUEanalysis.py -i ${base}_0.root,${base}_1.root,${base}_2.root,${base}_3.root,${base}_4.root --step 0 --ptThr 0.9,0.9;
-
+	
 	#echo "Defining analysis configuration"
-	#python test/TopUEAnalysis/runUEanalysis.py --step 1;
+	python test/TopUEAnalysis/runUEanalysis.py --step 1;
 	
 	#echo "Filling the histograms"
 	queue=1nh
-	#python test/TopUEAnalysis/runUEanalysis.py -i ${summaryeosdir}/Chunks      --step 2 -q ${queue};
-	#python test/TopUEAnalysis/runUEanalysis.py -i ${summaryeosdir}_syst/Chunks --step 2 -q ${queue};
+	python test/TopUEAnalysis/runUEanalysis.py -i ${summaryeosdir}/Chunks      --step 2 -q ${queue};
+	python test/TopUEAnalysis/runUEanalysis.py -i ${summaryeosdir}_syst/Chunks --step 2 -q ${queue};
 	;;
     MERGEANA )
 	./scripts/mergeOutputs.py UEanalysis/analysis_0_0 True 
