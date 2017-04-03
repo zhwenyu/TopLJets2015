@@ -60,7 +60,8 @@ case $WHAT in
 	python scripts/plotter.py ${commonOpts} --only mll --outName mll_plotter.root;	
      	python scripts/runDYRinRout.py --in ${outdir}/plots/mll_plotter.root --categs "0t,1t,"  --out ${outdir}/plots/ > ${outdir}/plots/dy.dat;
 	python scripts/plotter.py ${commonOpts} --procSF DY:${outdir}/plots/.dyscalefactors.pck --only njets --rebin 7 --saveTeX --outName count_plotter.root;
-	python scripts/plotter.py ${commonOpts}; # --procSF DY:${outdir}/plots/.dyscalefactors.pck;
+	python scripts/plotter.py ${commonOpts} --procSF DY:${outdir}/plots/.dyscalefactors.pck;
+	python scripts/plotter.py ${commonOpts} --only nbtags,rho,nvtx,0t,1t
 	;;
     WWWSEL )
 	mkdir -p ${wwwdir}/sel
@@ -85,8 +86,9 @@ case $WHAT in
 	./scripts/mergeOutputs.py UEanalysis/analysis_0_0 True 
 	;;
     PLOTANA )
-	python scripts/plotter.py -i UEanalysis/analysis_0_0 -j data/era2016/samples.json      -l ${lumi} --saveLog --mcUnc ${lumiUnc};	
-	python scripts/plotter.py -i UEanalysis/analysis_0_0 -j data/era2016/syst_samples.json -l ${lumi} --saveLog --mcUnc ${lumiUnc} --silent --outName syst_plotter.root;	
+	commonOpts="-l ${lumi} --saveLog --mcUnc ${lumiUnc} --procSF DY:${outdir}/plots/.dyscalefactors.pck";
+	python scripts/plotter.py -i UEanalysis/analysis_0_0 -j data/era2016/samples.json      ${commonOpts}
+	python scripts/plotter.py -i UEanalysis/analysis_0_0 -j data/era2016/syst_samples.json ${commonOpts} --silent --outName syst_plotter.root;	
 	python test/TopUEAnalysis/compareAtRecoLevel.py UEanalysis/analysis_0_0/plots/plotter.root UEanalysis/analysis_0_0/plots/syst_plotter.root
 	python test/TopUEAnalysis/UETools.py -o UEanalysis/analysis_0_0/plots/
 	;;
