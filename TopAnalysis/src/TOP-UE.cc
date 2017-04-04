@@ -78,10 +78,10 @@ void RunTopUE(TString filename,
   std::map<BTagEntry::JetFlavor, TGraphAsymmErrors *> expBtagEff = readExpectedBtagEff(era);
 
   //JET ENERGY UNCERTAINTIES    
-  //TString jecUncUrl(era+"/Summer16_23Sep2016V4_MC_UncertaintySources_AK4PFchs.txt");
-  //gSystem->ExpandPathName(jecUncUrl);
-  //JetCorrectorParameters *jecParam = new JetCorrectorParameters(jecUncUrl.Data(), "Total");
-  //JetCorrectionUncertainty *jecUnc = new JetCorrectionUncertainty( *jecParam );
+  TString jecUncUrl(era+"/Summer16_23Sep2016V4_MC_UncertaintySources_AK4PFchs.txt");
+  gSystem->ExpandPathName(jecUncUrl);
+  JetCorrectorParameters *jecParam = new JetCorrectorParameters(jecUncUrl.Data(), "Total");
+  JetCorrectionUncertainty *jecUnc = new JetCorrectionUncertainty( *jecParam );
 
   //PREPARE OUTPUT
   TopUE_t tue;
@@ -114,7 +114,7 @@ void RunTopUE(TString filename,
       ht.addHist("sumpt_"+tag     , new TH1F("sumpt_"+tag,";Transverse momentum sum [GeV];Events",50,40,300) );
       ht.addHist("met_"+tag       , new TH1F("met_"+tag,";Missing transverse momentum [GeV];Events",50,0,300) );
       ht.addHist("njets_"+tag     , new TH1F("njets_"+tag,";Jet multiplicity;Events",7,2,9) );
-      ht.addHist("nbtags_"+tag    , new TH1F("nbtags_"+tag,";b-tag multiplicity;Events",5,0,5) );
+      ht.addHist("nbtags_"+tag    , new TH1F("nbtags_"+tag,";b-tag multiplicity;Events",3,0,3) );
       ht.addHist("nchvsnvtx_"+tag , new TH2F("nchvsnvtx_"+tag,";Vertex multiplicity;Charged particle multiplicity;Events",10,0,40,50,0,100) );
       ht.addHist("nchvsrho_"+tag  , new TH2F("nchvsrho_"+tag,";#rho;Charged particle multiplicity;Events",10,0,40,50,0,100) );      
       ht.addHist("nch_"+tag      , new TH1F("nch_"+tag,";Charged particle multiplicity;Events",50,0,200) );      
@@ -137,15 +137,12 @@ void RunTopUE(TString filename,
       
       //assign a run period and correct the event accordingly
       float puWgt(1.0),puWgtUp(1.0),puWgtDn(1.0),topptsf(1.0);
-      ev = addBTagDecisions(ev);
       if(!ev.isData)
 	{
 	  period=assignRunPeriod(runPeriods);
 	  puWgt   = puWgtGr[period][0]->Eval(ev.g_pu);
 	  puWgtUp = puWgtGr[period][1]->Eval(ev.g_pu);
 	  puWgtDn = puWgtGr[period][2]->Eval(ev.g_pu);
-	  ev = smearJetEnergies(ev);
-	  ev = updateBTagDecisions(ev, btvsfReaders[period],expBtagEff,expBtagEff,&myBTagSFUtil);
 
 	  //top pt weighting
 	  if(isTTbar)
@@ -170,25 +167,13 @@ void RunTopUE(TString filename,
       TString chTag = evsel.flagFinalState(ev);
       if(chTag=="EM" || chTag=="EE" || chTag=="MM")
 	{
+	  //leptons
 	  std::vector<Particle> &leptons=evsel.getSelLeptons();
-	  TLorentzVector dil(leptons[0].p4()+leptons[1].p4());
-	  float mll=dil.M();
-	  bool passLepPresel(mll>12
-			     && (leptons[0].pt()>25 || leptons[1].pt()<25)
-			     && (fabs(leptons[0].eta())<2.5 && fabs(leptons[1].eta())<2.5) );
 
 	  //divide jets
-	  std::vector<Jet>      &jets=evsel.getJets() ;
+	  std::vector<Jet> jets=evsel.getGoodJets(ev,25.,2.4,leptons);
 	  sort(jets.begin(),jets.end(),Jet::sortJetsByCSV);
-	  std::vector<size_t> lightJetsIdx, bJetsIdx;
-	  for(size_t ij=0; ij<jets.size(); ij++)
-	    {
-	      if(abs(jets[ij].flavor())==5) bJetsIdx.push_back(ij);
-	      else                          lightJetsIdx.push_back(ij);
-	    }
-	  bool passPresel = passLepPresel && (bJetsIdx.size()>=2);
-	  if(chTag=="EE" || chTag=="MM") passPresel &= fabs(mll-91)>15;
-	  
+
 	  //select the charged PF candidates 
 	  //veto neutrals
 	  //veto if associated to the two leading b-jets
@@ -215,11 +200,11 @@ void RunTopUE(TString filename,
 		}
 	      bool matchedToLepton(relDpt2lep<0.05);
 
-	      //matching to b-jet candidates
+	      //matching to leading CSV jet candidates
 	      bool clusteredInBjet(false);
-	      for(size_t ibj=0; ibj<min(bJetsIdx.size(),size_t(2)); ibj++)
+	      for(size_t ibj=0; ibj<min(jets.size(),size_t(2)); ibj++)
 		{
-		  std::vector<Particle> &pinJet=jets[ bJetsIdx[ibj] ].particles();
+		  std::vector<Particle> &pinJet=jets[ibj].particles();
 		  for(size_t ipinj=0; ipinj<pinJet.size(); ipinj++)
 		    {
 		      if(pinJet[ipinj].charge()==0) continue;
@@ -236,7 +221,7 @@ void RunTopUE(TString filename,
 					     1) 
 				    );
 	    }
-
+	  
 	  //save PF cands
 	  tue.n=0;
 	  float nch(0.),chSumPt(0.),chSumPz(0.);
@@ -258,28 +243,7 @@ void RunTopUE(TString filename,
 	      chSumPt+=p.pt();
 	      chSumPz+=fabs(p.pz());
 	    }
-	  
-	  //flag if passes selection
-	  tue.passSel |= passPresel;
-	  tue.nj[0]=jets.size();
-	  tue.nb[0]=bJetsIdx.size();
 
-	  TLorentzVector rec_tt(leptons[0].p4()+leptons[1].p4());
-	  if(bJetsIdx.size()>0) rec_tt += jets[ bJetsIdx[0] ].p4();
-	  if(bJetsIdx.size()>1) rec_tt += jets[ bJetsIdx[1] ].p4();
-	  rec_tt += evsel.getMET();
-	  tue.ptttbar[0]=rec_tt.Pt();
-	  tue.phittbar[0]=rec_tt.Phi();	  
-      
-	  int posLepton( leptons[0].charge()>0 ? 0 : 1 );
-	  tue.mll[0]    = mll;
-	  tue.ptpos[0]  = leptons[posLepton].pt();
-	  tue.phipos[0] = leptons[posLepton].phi();
-	  tue.ptll[0]   = dil.Pt();
-	  tue.phill[0]  = dil.Phi();
-	  tue.sumpt[0]  = leptons[0].pt()+leptons[1].pt();
-	  tue.dphill[0] = TMath::Abs(leptons[0].p4().DeltaPhi(leptons[1].p4()));
-            
 	  //event weight
 	  float wgt(1.0);
 	  ht.getPlots()["puwgtctr"]->Fill(0.,1.0);
@@ -321,30 +285,14 @@ void RunTopUE(TString filename,
 	      float effDn=(trigSF.first-trigSF.second)*(lepselSF.first-lepselSF.second);
 	      tue.weight[4]=wgt*effDn/effCen;
 
-	      //b-tag{up,down}
-	      tue.weight[5]=wgt;
-	      tue.weight[6]=wgt;
-
-	      //jes{up,down}
-	      tue.weight[7]=wgt;
-	      tue.weight[8]=wgt;
-
-	      //jer{up,down}
-	      tue.weight[9]=wgt;
-	      tue.weight[10]=wgt;
-
-	      //les{up,down}
-	      tue.weight[11]=wgt;
-	      tue.weight[12]=wgt;
-
 	      //top pt
-	      tue.weight[13]=wgt*topptsf;
+	      tue.weight[5]=wgt*topptsf;
 
 	      //generator level weights
-	      for(size_t iw=1; iw<=20; iw++)
-		tue.weight[13+iw]= ev.g_w[0]!=0 ? wgt* ev.g_w[iw]/ev.g_w[0] : wgt;     
+	      for(size_t iw=1; iw<=120; iw++)
+		tue.weight[5+iw]= ev.g_w[0]!=0 ? wgt* ev.g_w[iw]/ev.g_w[0] : wgt;     
 
-	      tue.nw=33;
+	      tue.nw=126;
 	    }
 
 	  std::vector<double>plotwgts(1,wgt);
@@ -353,21 +301,133 @@ void RunTopUE(TString filename,
 	      plotwgts.push_back(puWgt!=0 ? puWgtUp/puWgt : 1.0);
 	      plotwgts.push_back(puWgt!=0 ? puWgtDn/puWgt : 1.0);
 	    }
+	  
 
-	  //nominal selection control histograms
-	  if(passLepPresel)
+	  //check the selection for different experimental variations
+	  //nom,b-tag{up,down},jes{up,down},jer{up,down},ees{up,down},mes{up,down}
+	  tue.passSel=0;
+	  std::vector<Bool_t> nomBtag;
+	  for(size_t ivar=0; ivar<=(runSysts ? 10 : 0); ivar++)
 	    {
+	      //leptons
+	      TLorentzVector l1(leptons[0].p4()), l2(leptons[1].p4());
+	      float l1scaleUnc(ev.l_scaleUnc[leptons[0].originalReference()]/l1.E());
+	      float l2scaleUnc(ev.l_scaleUnc[leptons[1].originalReference()]/l2.E());
+	      if(ivar==7 || ivar==8 || ivar==9 || ivar==10)
+		{
+		  float sign((ivar==7||ivar==8) ? +1.0 : -1.0);
+		  if(ivar==7 || ivar==9)
+		    {
+		      if( abs(leptons[0].id())==13 ) l1 *= (1+sign*l1scaleUnc);
+		      else                           l2 *= (1+sign*l2scaleUnc);
+		    }
+		  if(ivar==8 || ivar==10)
+		    {
+		      if( abs(leptons[0].id())==11 ) l1 *= (1+sign*l1scaleUnc);
+		      else                           l2 *= (1+sign*l2scaleUnc);
+		    }
+		}
+	      TLorentzVector dil(l1+l2);
+	      float mll=dil.M();
+	      bool passLepPresel(mll>12
+				 && (l1.Pt()>25 || l2.Pt()>25)
+				 && (fabs(l1.Eta())<2.5 && fabs(l2.Eta())<2.5) );
+	      
+	      //jets
+	      std::vector< std::pair<TLorentzVector,int> > lightJets,bJets;
+	      for(size_t ij=0; ij<jets.size(); ij++)
+		{
+		  TLorentzVector jp4(jets[ij].p4());
+		  int k=jets[ij].getJetIndex();
+		  bool isBTagged( ev.j_csv[k]>0.8484);
+
+		  if(!ev.isData) 
+		    {
+		      //JER
+		      float genJet_pt(0);
+		      if(ev.j_g[k]>-1) genJet_pt = ev.g_pt[ ev.j_g[k] ];
+		      if(genJet_pt>0) {
+			std::string option("");
+			if(ivar==5) option="up";
+			if(ivar==6) option="down";
+			smearJetEnergy(jp4,genJet_pt,option);
+		      }
+
+		      //JES
+		      if(ivar==3 || ivar==4)
+			{
+			  std::string option( ivar==3 ? "up" : "down" );
+			  applyJetCorrectionUncertainty(jp4,jecUnc,option);
+			}
+
+		      //b-tagging
+		      if(ivar<3)
+			{
+			  float jptForBtag(jp4.Pt()>1000. ? 999. : jp4.Pt()), jetaForBtag(fabs(jp4.Eta()));
+			  BTagEntry::JetFlavor hadFlav=BTagEntry::FLAV_UDSG;
+			  std::string option("central");
+			  if(ivar==1) option="up";
+			  if(ivar==2) option="down";
+			  if(abs(ev.j_hadflav[k])==4) { hadFlav=BTagEntry::FLAV_C; option = "central"; }
+			  if(abs(ev.j_hadflav[k])==5) { hadFlav=BTagEntry::FLAV_B; option = "central"; }
+			  float expEff = expBtagEff[hadFlav]->Eval(jptForBtag);
+			  float jetBtagSF = btvsfReaders[period][hadFlav]->eval_auto_bounds( option, hadFlav, jetaForBtag, jptForBtag);
+			  myBTagSFUtil.modifyBTagsWithSF(isBTagged, jetBtagSF, expEff);
+			}
+		    }
+
+		  //select jet
+		  if(ivar==0) nomBtag.push_back(isBTagged);
+		  if(ivar>=3) isBTagged=nomBtag[ij];
+		  if(jp4.Pt()<30 || fabs(jp4.Eta())>2.5) continue;
+		  if(isBTagged) bJets.push_back( std::pair<TLorentzVector,bool>(jp4,ij) );
+		  else          lightJets.push_back( std::pair<TLorentzVector,bool>(jp4,ij) );
+		}
+	      
+	      //require that the two leading CSV are b-tagged
+	      int nb(0),nj(bJets.size()+lightJets.size());
+	      if(bJets.size()>0) 
+		{
+		  if(bJets[0].second==0) nb++;
+		  if(bJets.size()>1) if(bJets[1].second==1) nb++;
+		}
+	      nj-=nb;
+	      	      
+	      bool passPresel = passLepPresel && nb==2;
+	      if(chTag=="EE" || chTag=="MM") passPresel &= fabs(mll-91)>15;
+	      
+	      //flag if passes selection
+	      tue.passSel |= (passPresel << ivar);
+	      tue.nj[ivar]=nj;
+	      tue.nb[ivar]=nb;
+
+	      TLorentzVector rec_tt(dil);
+	      if(nb==2) rec_tt += bJets[0].first+bJets[1].first;
+	      rec_tt += evsel.getMET();
+	      tue.ptttbar[ivar]=rec_tt.Pt();
+	      tue.phittbar[ivar]=rec_tt.Phi();	  
+      
+	      tue.mll[ivar]    = mll;
+	      tue.ptpos[ivar]  = leptons[0].charge()>0 ? l1.Pt() : l2.Pt();
+	      tue.phipos[ivar] = leptons[0].charge()>0 ? l1.Phi() : l2.Phi();
+	      tue.ptll[ivar]   = dil.Pt();
+	      tue.phill[ivar]  = dil.Phi();
+	      tue.sumpt[ivar]  = l1.Pt()+l2.Pt();
+	      tue.dphill[ivar] = TMath::Abs(l1.DeltaPhi(l2));
+	      
+	      //histogram filling for the nominal selection
+	      if(ivar!=0) continue;
+	      if(!passLepPresel) continue;
+
 	      ht.fill("nvtx_"+chTag,ev.nvtx,plotwgts);
 	      ht.fill("rho_"+chTag,ev.rho,plotwgts);
-	      ht.fill("nbtags_"+chTag,tue.nb[0],plotwgts);
+	      ht.fill("nbtags_"+chTag,nb,plotwgts);
 	      TString subTag(chTag);
-	      if(bJetsIdx.size()==0) subTag += "0t";
-	      if(bJetsIdx.size()==1) subTag += "1t";
-	      if(bJetsIdx.size()>=2) subTag += "";
-	      ht.fill("mll_"+subTag,tue.mll[0],plotwgts);
-	    }
-	  if(passPresel)
-	    {
+	      if(nb==0) subTag += "0t";
+	      if(nb==1) subTag += "1t";	      
+	      ht.fill("mll_"+subTag,mll,plotwgts);
+
+	      if(!passPresel) continue;
 	      std::map<Int_t,Float_t>::iterator rIt=lumiMap.find(ev.run);
 	      if(rIt!=lumiMap.end() && ratevsrunH) ht.getPlots()["ratevsrun_"+chTag]->Fill(std::distance(lumiMap.begin(),rIt),1./rIt->second);
 	      ht.fill("ptpos_"+chTag,tue.ptpos[0],plotwgts);
@@ -375,7 +435,7 @@ void RunTopUE(TString filename,
 	      ht.fill("ptttbar_"+chTag,tue.ptttbar[0],plotwgts);
 	      ht.fill("sumpt_"+chTag,tue.sumpt[0],plotwgts);	     
 	      ht.fill("met_"+chTag,evsel.getMET().Pt(),plotwgts);
-	      ht.fill("njets_"+chTag,tue.nj[0],plotwgts);
+	      ht.fill("njets_"+chTag,nj,plotwgts);
 	      ht.fill("nch_"+chTag,nch,plotwgts);	  
 	      ht.get2dPlots()["nchvsnvtx_"+chTag]->Fill(ev.nvtx,nch,wgt);
 	      ht.get2dPlots()["nchvsrho_"+chTag]->Fill(ev.rho,nch,wgt);
@@ -528,7 +588,7 @@ void RunTopUE(TString filename,
 	    }
 	}
       
-      //check it if it passed at least one of the selections
+      //check it if it passed at least one of b-tagging selections
       if(tue.passSel==0 && tue.gen_passSel==0) continue;
 
       //finalize ntuple
@@ -573,8 +633,8 @@ void createTopUETree(TTree *t,TopUE_t &tue)
   t->Branch("passSel",     &tue.passSel,     "passSel/I");
   t->Branch("gen_nj",      &tue.gen_nj,      "gen_nj/I");
   t->Branch("gen_nb",      &tue.gen_nb,      "gen_nb/I");
-  t->Branch("nj",           tue.nj,          "nj[9]/I");
-  t->Branch("nb",           tue.nb,          "nb[9]/I");
+  t->Branch("nj",           tue.nj,          "nj[11]/I");
+  t->Branch("nb",           tue.nb,          "nb[11]/I");
   t->Branch("nvtx",        &tue.nvtx,        "nvtx/I");
 
   //event weights
@@ -584,17 +644,17 @@ void createTopUETree(TTree *t,TopUE_t &tue)
   //ptttbar
   t->Branch("gen_ptttbar",         &tue.gen_ptttbar,      "gen_pttbar/F");
   t->Branch("gen_phittbar",        &tue.gen_phittbar,     "gen_phittbar/F");
-  t->Branch("ptttbar",              tue.ptttbar,          "ptttbar[9]/F");
-  t->Branch("phittbar",             tue.phittbar,         "phittbar[9]/F");
+  t->Branch("ptttbar",              tue.ptttbar,          "ptttbar[11]/F");
+  t->Branch("phittbar",             tue.phittbar,         "phittbar[11]/F");
 
   //leptonic quantities
-  t->Branch("ptpos",      tue.ptpos ,       "ptpos[5]/F");
-  t->Branch("phipos",     tue.phipos ,      "phipos[5]/F");
-  t->Branch("ptll",       tue.ptll ,        "ptll[5]/F");
-  t->Branch("phill",      tue.phill ,       "phill[5]/F");
-  t->Branch("mll",        tue.mll ,         "mll[5]/F");
-  t->Branch("sumpt",      tue.sumpt ,       "sumpt[5]/F");
-  t->Branch("dphill",     tue.dphill ,      "dphill[5]/F");
+  t->Branch("ptpos",      tue.ptpos ,       "ptpos[11]/F");
+  t->Branch("phipos",     tue.phipos ,      "phipos[11]/F");
+  t->Branch("ptll",       tue.ptll ,        "ptll[11]/F");
+  t->Branch("phill",      tue.phill ,       "phill[11]/F");
+  t->Branch("mll",        tue.mll ,         "mll[11]/F");
+  t->Branch("sumpt",      tue.sumpt ,       "sumpt[11]/F");
+  t->Branch("dphill",     tue.dphill ,      "dphill[11]/F");
   t->Branch("gen_ptpos",  &tue.gen_ptpos ,  "gen_ptpos/F");
   t->Branch("gen_phipos", &tue.gen_phipos , "gen_phipos/F");
   t->Branch("gen_ptll",   &tue.gen_ptll ,   "gen_ptll/F");
@@ -609,7 +669,6 @@ void createTopUETree(TTree *t,TopUE_t &tue)
   t->Branch("pt",          tue.pt ,          "pt[n]/F");
   t->Branch("eta",         tue.eta ,         "eta[n]/F");
   t->Branch("phi",         tue.phi ,         "phi[n]/F");
-  t->Branch("isInBFlags",  tue.isInBFlags ,  "isInBFlags[n]/I");
 
   //gen charged particles
   t->Branch("gen_n",   &tue.gen_n,     "gen_n/I");

@@ -26,9 +26,11 @@ std::map<TString, std::vector<TGraph *> > getPileupWeightsMap(TString era, TH1 *
 
 //apply jec uncertainty
 MiniEvent_t applyJetCorrectionUncertainty(MiniEvent_t &ev, JetCorrectionUncertainty *jecUnc, TString jecVar, TString direction);
+void applyJetCorrectionUncertainty(TLorentzVector &jp4,JetCorrectionUncertainty *jecUnc,TString direction);
 
 //apply jet energy resolutions
 MiniEvent_t smearJetEnergies(MiniEvent_t &ev, std::string option = "central");
+void smearJetEnergy(TLorentzVector &jp4, float genJet_pt,std::string option = "central");
 
 //see working points in https://twiki.cern.ch/twiki/bin/view/CMS/BtagRecommendation80XReReco
 MiniEvent_t addBTagDecisions(MiniEvent_t &ev,float wp=0.8484,float wpl=0.8484);

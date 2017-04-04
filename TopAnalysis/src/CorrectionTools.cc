@@ -124,6 +124,8 @@ std::map<TString, std::vector<TGraph *> > getPileupWeightsMap(TString era, TH1 *
 
 //apply jet energy resolutions
 MiniEvent_t smearJetEnergies(MiniEvent_t &ev, std::string option) {
+  if(ev.isData) return ev;
+
   for (int k = 0; k < ev.nj; k++) {
     TLorentzVector jp4;
     jp4.SetPtEtaPhiM(ev.j_pt[k],ev.j_eta[k],ev.j_phi[k],ev.j_mass[k]);
@@ -131,12 +133,8 @@ MiniEvent_t smearJetEnergies(MiniEvent_t &ev, std::string option) {
     //smear jet energy resolution for MC
     float genJet_pt(0);
     if(ev.j_g[k]>-1) genJet_pt = ev.g_pt[ ev.j_g[k] ];
-    if(!ev.isData && genJet_pt>0) {
-      int smearIdx(0);
-      if(option=="up") smearIdx=1;
-      if(option=="down") smearIdx=2;
-      float jerSmear=getJetResolutionScales(jp4.Pt(),jp4.Eta(),genJet_pt)[smearIdx];
-      jp4 *= jerSmear;
+    if(genJet_pt>0) {
+      smearJetEnergy(jp4,genJet_pt,option);
       ev.j_pt[k]   = jp4.Pt();
       ev.j_eta[k]  = jp4.Eta();
       ev.j_phi[k]  = jp4.Phi();
@@ -145,6 +143,16 @@ MiniEvent_t smearJetEnergies(MiniEvent_t &ev, std::string option) {
   }
   
   return ev;
+}
+
+//
+void smearJetEnergy(TLorentzVector &jp4, float genJet_pt,std::string option)
+{
+  int smearIdx(0);
+  if(option=="up") smearIdx=1;
+  if(option=="down") smearIdx=2;
+  float jerSmear=getJetResolutionScales(jp4.Pt(),jp4.Eta(),genJet_pt)[smearIdx];
+  jp4 *= jerSmear;
 }
 
 //see working points in https://twiki.cern.ch/twiki/bin/view/CMS/BtagRecommendation80XReReco
@@ -262,7 +270,19 @@ MiniEvent_t applyJetCorrectionUncertainty(MiniEvent_t &ev, JetCorrectionUncertai
     
     TLorentzVector jp4;
     jp4.SetPtEtaPhiM(ev.j_pt[k],ev.j_eta[k],ev.j_phi[k],ev.j_mass[k]);
+    applyJetCorrectionUncertainty(jp4,jecUnc,direction);
+    ev.j_pt[k]   = jp4.Pt(); 
+    ev.j_eta[k]  = jp4.Eta();
+    ev.j_phi[k]  = jp4.Phi();
+    ev.j_mass[k] = jp4.M();
+  }
+  
+  return ev;
+}
 
+//
+void applyJetCorrectionUncertainty(TLorentzVector &jp4,JetCorrectionUncertainty *jecUnc,TString direction)
+{
     jecUnc->setJetPt(jp4.Pt());
     jecUnc->setJetEta(jp4.Eta());
     double scale = 1.;
@@ -272,13 +292,6 @@ MiniEvent_t applyJetCorrectionUncertainty(MiniEvent_t &ev, JetCorrectionUncertai
       scale -= jecUnc->getUncertainty(false);
     
     jp4 *= scale;
-    ev.j_pt[k]   = jp4.Pt(); 
-    ev.j_eta[k]  = jp4.Eta();
-    ev.j_phi[k]  = jp4.Phi();
-    ev.j_mass[k] = jp4.M();
-  }
-  
-  return ev;
 }
 
 //b fragmentation
