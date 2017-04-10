@@ -59,6 +59,8 @@ def main():
     parser.add_option('-q', '--queue',       dest='queue',       help='submit to this queue  [%default]',                       default='local',    type='string')
     parser.add_option('-n', '--njobs',       dest='njobs',       help='# jobs to run in parallel  [%default]',                                default=0,    type='int')
     parser.add_option(      '--skipexisting',dest='skipexisting',help='skip jobs with existing output files  [%default]',                            default=False,      action='store_true')
+    parser.add_option(      '--exactonly',   dest='exactonly',   help='match only exact sample tags to process  [%default]',                            default=False,      action='store_true')
+    parser.add_option(      '--outputonly',        dest='outputonly',        help='filter job submission for a csv list of output files  [%default]',             default=None,       type='string')
     (opt, args) = parser.parse_args()
 
     #parse selection lists
@@ -70,6 +72,11 @@ def main():
     skipList=[]
     try:
         skipList=opt.skip.split(',')
+    except:
+        pass
+    outputOnlyList=[]
+    try:
+        outputOnlyList=opt.outputonly.split(',')
     except:
         pass
     #parse list of systematic variations
@@ -123,7 +130,8 @@ def main():
             if len(onlyList)>0:
                 processThisTag=False
                 for itag in onlyList:
-                    if itag in tag:
+                    if ((opt.exactonly and itag == tag) or 
+                        (not opt.exactonly and itag in tag)):
                         processThisTag=True
                         break
                 if not processThisTag : continue
@@ -145,6 +153,8 @@ def main():
                     if systVar != 'nominal' and not systVar in tag: outF=os.path.join(opt.output,'Chunks','%s_%s_%d.root' %(tag,systVar,ifile))
                     if (opt.skipexisting and os.path.isfile(outF)):
                         nexisting += 1
+                        continue
+                    if (len(outputOnlyList) > 1 and not outF in outputOnlyList):
                         continue
                     task_list.append( (opt.method,inF,outF,opt.channel,opt.charge,opt.flav,opt.runSysts,systVar,opt.era,tag,opt.debug) )
             if (opt.skipexisting and nexisting): print '--skipexisting: skipping %d of %d tasks as files already exist'%(nexisting,len(input_list))

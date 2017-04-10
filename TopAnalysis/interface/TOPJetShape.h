@@ -46,6 +46,9 @@ struct TopJetShapeEvent_t
   Float_t j_ptd_charged[50];
   Float_t j_ptd_puppi[50];
   Float_t j_ptd_all[50];
+  Float_t j_ptds_charged[50];
+  Float_t j_ptds_puppi[50];
+  Float_t j_ptds_all[50];
   Float_t j_ecc_charged[50];
   Float_t j_ecc_puppi[50];
   Float_t j_ecc_all[50];
@@ -122,6 +125,9 @@ struct TopJetShapeEvent_t
   Float_t gj_ptd_charged[50];
   Float_t gj_ptd_puppi[50];
   Float_t gj_ptd_all[50];
+  Float_t gj_ptds_charged[50];
+  Float_t gj_ptds_puppi[50];
+  Float_t gj_ptds_all[50];
   Float_t gj_ecc_charged[50];
   Float_t gj_ecc_puppi[50];
   Float_t gj_ecc_all[50];
@@ -197,6 +203,7 @@ void resetTopJetShapeEvent(TopJetShapeEvent_t &tjsev);
 
 double getMult(Jet jet, bool includeNeutrals = false, bool usePuppi = false, double ptcut = 1.0);
 double getPtD(Jet jet, bool includeNeutrals = false, bool usePuppi = false, double ptcut = 1.0);
+double getPtDs(Jet jet, bool includeNeutrals = false, bool usePuppi = false, double ptcut = 1.0);
 double getWidth(Jet jet, bool includeNeutrals = false, bool usePuppi = false, double ptcut = 1.0);
 double getEcc(Jet jet, bool includeNeutrals = false, bool usePuppi = false, double ptcut = 1.0);
 double getTau(int N, int M, Jet jet, bool includeNeutrals = false, bool usePuppi = false, double ptcut = 1.0);

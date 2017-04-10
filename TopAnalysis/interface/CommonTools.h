@@ -32,17 +32,17 @@ JetPullInfo_t getPullVector( MiniEvent_t &ev, int ijet);
 class HistTool {
 
  public:
-  HistTool(int nsyst = 20);
+  HistTool(unsigned int nsyst = 20);
   ~HistTool() {}
   
-  void setNsyst(int nsyst) { nsyst_ = nsyst; }
+  void setNsyst(unsigned int nsyst) { nsyst_ = nsyst; }
   void addHist(TString title, TH1* hist);
   void fill(TString title, double value, std::vector<double> weights);
   std::map<TString, TH1 *> &getPlots()   { return allPlots_; }
   std::map<TString, TH2 *> &get2dPlots() { return all2dPlots_; }
   
  private:
-  int nsyst_;
+  unsigned int nsyst_;
   std::map<TString, TH1 *> allPlots_;
   std::map<TString, TH2 *> all2dPlots_;
 
