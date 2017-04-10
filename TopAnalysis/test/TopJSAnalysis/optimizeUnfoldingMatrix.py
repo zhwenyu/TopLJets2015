@@ -35,8 +35,8 @@ def optimize(inputfile, output, obs, reco, ptcut, rootoutput):
     if inputfile == 'eos':
         tree.Add('/eos/user/m/mseidel/analysis/TopJetShapes/b312177/Chunks/MC13TeV_TTJets_0.root')
         tree.Add('/eos/user/m/mseidel/analysis/TopJetShapes/b312177/Chunks/MC13TeV_TTJets_1.root')
-        tree.Add('/eos/user/m/mseidel/analysis/TopJetShapes/b312177/Chunks/MC13TeV_TTJets_2.root')
-        tree.Add('/eos/user/m/mseidel/analysis/TopJetShapes/b312177/Chunks/MC13TeV_TTJets_3.root')
+        #tree.Add('/eos/user/m/mseidel/analysis/TopJetShapes/b312177/Chunks/MC13TeV_TTJets_2.root')
+        #tree.Add('/eos/user/m/mseidel/analysis/TopJetShapes/b312177/Chunks/MC13TeV_TTJets_3.root')
         #tree.Add('/eos/user/m/mseidel/analysis/TopJetShapes/b312177/Chunks/MC13TeV_TTJets_4.root')
         #tree.Add('/eos/user/m/mseidel/analysis/TopJetShapes/b312177/Chunks/MC13TeV_TTJets_5.root')
         #tree.Add('/eos/user/m/mseidel/analysis/TopJetShapes/b312177/Chunks/MC13TeV_TTJets_6.root')
@@ -151,11 +151,13 @@ def optimize(inputfile, output, obs, reco, ptcut, rootoutput):
     
     print("Starting with bin width " + str((highbin-lowbin)/float(nbins)))
     
-    f = ROOT.TFile(output + "/" + obs + "_" + reco + ".root", "RECREATE");
+    basename = obs + "_" + reco + "_"
     
-    h = ROOT.TH2F("h", labels, nbins, lowbin, highbin, nbins, lowbin, highbin)
+    h = ROOT.TH2F(basename+"h", labels, nbins, lowbin, highbin, nbins, lowbin, highbin)
     
-    fillHist(h, tree, obs, reco, ptcut)
+    points = getPointsFromTree(tree, obs, reco, ptcut)
+    #fillHist(h, tree, obs, reco, ptcut)
+    fillHistFromPoints(h, points)
     
     c = ROOT.TCanvas('c', 'c', 500, 450)
     c.cd()
@@ -165,7 +167,7 @@ def optimize(inputfile, output, obs, reco, ptcut, rootoutput):
     #h.Fit("pol1")
     
     plotformats = ['.png', '.pdf']
-    plotbasename = output + "/" + obs + "_" + reco + "_"
+    plotbasename = output + "/" + basename
     for p in plotformats: c.Print(plotbasename + "h" + p)
     
     h_gen  = h.ProjectionX()
@@ -235,9 +237,9 @@ def optimize(inputfile, output, obs, reco, ptcut, rootoutput):
     c.cd()
     
     print(bins)
-    print("Number of bins = " + str(len(bins)-1))
+    print("Number of gen bins = " + str(len(bins)-1))
     
-    hnorm = ROOT.TH2F("hnorm", labels, nbins, lowbin, highbin, nbins, lowbin, highbin)
+    hnorm = ROOT.TH2F(basename+"hnorm", labels, nbins, lowbin, highbin, nbins, lowbin, highbin)
     for g in range(1, h.GetNbinsX()+1):
         for r in range(1, h.GetNbinsY()+1):
             if recosums[r-1] > 0:
@@ -252,16 +254,17 @@ def optimize(inputfile, output, obs, reco, ptcut, rootoutput):
     
     # reco bin splitting
     divisor = 2
-    minWidth = 0.
-    if (obs == "mult"): minWidth = 1.0
+    #if (obs == "mult"): minWidth = 1.0
     bins2 = []
     for i in range(len(bins)-1):
-        if (abs(bins[i]-bins[i+1]) >= minWidth*divisor):
-          for j in range(divisor):
-              bins2.append(bins[i] + abs(bins[i]-bins[i+1])/divisor*j)
+        for j in range(divisor):
+            step = abs(bins[i]-bins[i+1])/divisor*j
+            if (j != 0 and obs == 'mult' and step < 1): continue
+            bins2.append(bins[i] + step)
     bins2.append(bins[-1])
     
     print(bins2)
+    print("Number of reco bins = " + str(len(bins2)-1))
     
     # original reco bins
     bins3 = []
@@ -273,8 +276,9 @@ def optimize(inputfile, output, obs, reco, ptcut, rootoutput):
     binArray = array('d', bins)
     bin2Array = array('d', bins2) # put bins2 for reco bin split
     
-    hopt = ROOT.TH2F("hopt", labels, len(binArray)-1, binArray, len(binArray)-1, binArray)
-    fillHist(hopt, tree, obs, reco, ptcut)
+    hopt = ROOT.TH2F(basename+"hopt", labels, len(binArray)-1, binArray, len(binArray)-1, binArray)
+    #fillHist(hopt, tree, obs, reco, ptcut)
+    fillHistFromPoints(hopt, points)
     
     hopt.SetMinimum(-1e-10)
     hopt.Draw("colz")
@@ -315,9 +319,9 @@ def optimize(inputfile, output, obs, reco, ptcut, rootoutput):
             recosum += hopt.GetBinContent(g, r)
         optrecosums.append(recosum)
     
-    hoptpur  = ROOT.TH1F("hoptpur", label1, len(binArray)-1, binArray)
-    hoptsta  = ROOT.TH1F("hoptsta", label1, len(binArray)-1, binArray)
-    hoptnorm = ROOT.TH2F("hoptnorm", labels, len(binArray)-1, binArray, len(binArray)-1, binArray)
+    hoptpur  = ROOT.TH1F(basename+"hoptpur", label1, len(binArray)-1, binArray)
+    hoptsta  = ROOT.TH1F(basename+"hoptsta", label1, len(binArray)-1, binArray)
+    hoptnorm = ROOT.TH2F(basename+"hoptnorm", labels, len(binArray)-1, binArray, len(binArray)-1, binArray)
     for g in range(1, hopt.GetNbinsX()+1):
         for r in range(1, hopt.GetNbinsY()+1):
             purity    = 0
@@ -351,20 +355,114 @@ def optimize(inputfile, output, obs, reco, ptcut, rootoutput):
     leg.Draw()
     for p in plotformats: c.Print(plotbasename + "hoptpursta" + p)
     
-    responsematrix = ROOT.TH2F("responsematrix", labels, len(binArray)-1, binArray, len(bin2Array)-1, bin2Array)
-    fillHist(responsematrix, tree, obs, reco, ptcut)
+    responsematrix = ROOT.TH2F(basename+"responsematrix", labels, len(binArray)-1, binArray, len(bin2Array)-1, bin2Array)
+    #fillHist(responsematrix, tree, obs, reco, ptcut)
+    fillHistFromPoints(responsematrix, points)
+    responsematrix.SetMinimum(-1e-10)
+    responsematrix.Draw("colz")
+    for p in plotformats: c.Print(plotbasename + "responsematrix" + p)
+    
     responsematrix.ProjectionX()
     responsematrix.ProjectionY()
     
-    f.Write();
+    rootoutput.Write();
     
     del h
     del hopt
 
 
+def getPointsFromTree(tree, obs, reco, ptcut):
+    points = []
+    for event in tree:
+        if event.gen_sel*event.reco_sel != 1: continue
+        for j in range(event.nj):
+            if event.j_gj[j] >= 0:
+                #TODO jet criteria: no overlap, eta<2
+                
+                #j_p4 = ROOT.TLorentzVector()
+                #j_p4.SetPtEtaPhiM(event.j_pt[j], event.j_eta[j], event.j_phi[j], event.j_m[j])
+                #
+                #g = event.j_gj[j]
+                #gj_p4 = ROOT.TLorentzVector()
+                #gj_p4.SetPtEtaPhiM(event.gj_pt[g], event.gj_eta[g], event.gj_phi[g], event.gj_m[g])
+                #
+                ##h.Fill(event.gj_pt[event.j_gj[j]], event.j_pt[j]) # pt
+                ##h.Fill(event.gj_m[event.j_gj[j]], event.j_m[j]) # m
+                ##h.Fill(gj_p4.M(), j_p4.M()) # m
+                #h.Fill(gj_p4.M()/gj_p4.E(), j_p4.M()/j_p4.E()) # m/E
+                
+                #ga = []
+                #for i in range(len(event.gj_ga)): ga.append(event.gj_ga[i])
+                #print ga
+                
+                #o = 0 #mult
+                #if (obs == "width"): o = 36
+                #if (obs == "ptd"):   o = 18
+                #if (obs == "mass"):  o = 63
+                #
+                #c = 0 #charged
+                #if (reco == "all")   : c = 1
+                #if (reco == "puppi") : c = 2
+                #
+                #p = 0 #pt>0.5
+                #if (ptcut == "1.0") : p = 3
+                #if (ptcut == "1.5") : p = 6
+                #
+                #i = event.j_gj[j]
+                #if (obs == "ptd"): h.Fill(sqrt(event.gj_ga[i*81+o+c+p]), sqrt(event.j_ga[j*81+o+c+p]))
+                #else :             h.Fill(event.gj_ga[i*81+o+c+p], event.j_ga[j*81+o+c+p])
+                
+                i = event.j_gj[j]
+                
+                valReco = eval('event.j_'+obs+'_'+reco)[j]
+                valGen  = eval('event.gj_'+obs+'_'+reco)[i]
+                
+                '''
+                if not 'ptds' in obs:
+                    valReco = eval('event.j_'+obs+'_'+reco)[j]
+                    valGen  = eval('event.gj_'+obs+'_'+reco)[i]
+                
+                # TODO: remove special recipes with next ntuples
+                # additional multiplicity cuts
+                multReco = eval('event.j_mult_'+reco)[j]
+                multGen  = eval('event.gj_mult_'+reco)[i]
+                minMult = 0
+                if 'c1' in obs: minMult = 3
+                if 'c2' in obs: minMult = 4
+                if 'c3' in obs: minMult = 5
+                if 'tau' in obs: minMult = int(obs[3]) + 2
+                if multReco < minMult: valReco = -1
+                if multGen  < minMult: valGen  = -1
+                if 'ptd' in obs and not 'ptds' in obs:
+                    valReco = valReco**2
+                    valGen  = valGen**2
+                if 'ptds' in obs:
+                    if multReco > 1:
+                        valReco = eval('event.j_ptd_'+reco)[j]
+                        valReco = (valReco**2 - 1./multReco) * multReco/(multReco-1)
+                        if valReco > 0: valReco = sqrt(valReco)
+                    else: valReco = -1
+                    if multGen > 1:
+                        valGen  = eval('event.gj_ptd_'+reco)[i]
+                        valGen = (valGen**2 - 1./multGen) * multGen/(multGen-1)
+                        if valGen > 0: valGen = sqrt(valGen)
+                    else: valGen = -1
+                if 'zgdr' in obs or 'zgxdr' in obs:
+                    zcut = 0.1
+                    if (eval('event.j_zg_'+reco)[j] < zcut): valReco = -1
+                    if (eval('event.gj_zg_'+reco)[i] < zcut): valGen = -1
+                '''
+                #h.Fill(valGen, valReco)
+                points.append([valGen, valReco])
+    return points
+
+def fillHistFromPoints(h, points):
+    for point in points:
+        h.Fill(point[0], point[1])
+
 def fillHist(h, tree, obs, reco, ptcut):
     for event in tree:
-        if event.gen_sel*event.reco_sel == -1: continue
+        if event.gen_sel*event.reco_sel != 1: continue
         for j in range(event.nj):
             if event.j_gj[j] >= 0:
                 #TODO jet criteria: no overlap, eta<2
@@ -496,6 +594,8 @@ def splitForMinSigma(h, output, obs, reco, ptcut, factor = 0.5):
       mean  = slices[1].GetBinContent(i)
       meanError = slices[1].GetBinError(i)
       if (mean == 0 or meanError/mean > 0.1): continue
+      if (obs == 'tau21' and h.GetXaxis().GetBinCenter(i) < 0.1): continue
+      if (obs == 'tau32' and h.GetXaxis().GetBinCenter(i) < 0.2): continue
       sigma = slices[2].GetBinContent(i) * factor
       #print(bins)
       #print(exact)
@@ -572,7 +672,7 @@ def main():
                             help='observable [default: %default]')
     parser.add_option('-o', '--output',
                             dest='output', 
-                            default='unfolding',
+                            default='unfolding/optimize',
                             help='Output directory [default: %default]')
     parser.add_option('-r', '--reco',
                             dest='reco',
@@ -586,26 +686,28 @@ def main():
                             dest='all',
                             action="store_true",default=False,
                             help='Run all plots [default: %default]')
-    parser.add_option('-O', '--rootoutput',
+    parser.add_option('--ro', '--rootoutput',
                             dest='rootoutput',
-                            action="store_true",default=False,
-                            help='Run all plots [default: %default]')
+                            default='output.root',
+                            help='output root file [default: %default]')
     (opt, args) = parser.parse_args()
 
     os.system('mkdir -p %s' % opt.output)
+    rootoutfile = ROOT.TFile(opt.output + "/" + opt.rootoutput, "UPDATE");
     
-    if opt.all: observables = ["mult", "width", "ptd", "ptds", "ecc", "tau21", "tau32", "tau43", "zg", "zgxdr", "zgdr", "ga_width", "ga_lha", "ga_thrust", "c1_02", "c1_05", "c1_10", "c1_20", "c2_02", "c2_05", "c2_10", "c2_20", "c3_02", "c3_05", "c3_10", "c3_20"]
+    if opt.obs == 'all': observables = ["mult", "width", "ptd", "ptds", "ecc", "tau21", "tau32", "tau43", "zg", "zgxdr", "zgdr", "ga_width", "ga_lha", "ga_thrust", "c1_02", "c1_05", "c1_10", "c1_20", "c2_02", "c2_05", "c2_10", "c2_20", "c3_02", "c3_05", "c3_10", "c3_20"]
     else: observables = opt.obs.split(',')
 
-    if len(observables) == 1: optimize(opt.input, opt.output, opt.obs, opt.reco, opt.ptcut, opt.rootoutput)
+    if len(observables) == 1: optimize(opt.input, opt.output, opt.obs, opt.reco, opt.ptcut, rootoutfile)
     else:
-        reco        = ["charged", "puppi", "all"]
+        reco        = ["charged"]
+        #reco        = ["charged", "puppi", "all"]
         #ptcuts      = {"0.5", "1.0", "1.5"}
         
         for o in observables:
             for r in reco:
                 #for p in ptcuts:
-                optimize(opt.input, opt.output, o, r, opt.ptcut, opt.rootoutput)
+                optimize(opt.input, opt.output, o, r, opt.ptcut, rootoutfile)
         
 
 if __name__ == "__main__":
