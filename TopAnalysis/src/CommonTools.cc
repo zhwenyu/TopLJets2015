@@ -152,11 +152,16 @@ HistTool::HistTool(unsigned int nsyst) :
 
 //
 void HistTool::addHist(TString title, TH1* hist) {
-  allPlots_[title] = hist;
-  if (nsyst_ > 0) {
-    all2dPlots_[title+"_syst"] = new TH2F(title+"_syst", hist->GetTitle(), hist->GetNbinsX(), hist->GetXaxis()->GetXmin(), hist->GetXaxis()->GetXmax(), nsyst_+1, -0.5, nsyst_+0.5);
-    all2dPlots_[title+"_syst"]->SetXTitle(hist->GetXaxis()->GetTitle());
-    all2dPlots_[title+"_syst"]->SetYTitle("Variation (0=default)");
+  if(hist->InheritsFrom("TH2")) {
+    all2dPlots_[title]=(TH2 *)hist;
+  }
+  else {
+    allPlots_[title] = hist;
+    if (nsyst_ > 0) {
+      all2dPlots_[title+"_syst"] = new TH2F(title+"_syst", hist->GetTitle(), hist->GetNbinsX(), hist->GetXaxis()->GetXmin(), hist->GetXaxis()->GetXmax(), nsyst_+1, -0.5, nsyst_+0.5);
+      all2dPlots_[title+"_syst"]->SetXTitle(hist->GetXaxis()->GetTitle());
+      all2dPlots_[title+"_syst"]->SetYTitle("Variation (0=default)");
+    }
   }
 }
 
@@ -166,6 +171,7 @@ void HistTool::fill(TString title, double value, std::vector<double> weights) {
     std::cout << "Histogram " << title << " not registered, not filling." << std::endl;
     return;
   }
+  if(allPlots_[title]->InheritsFrom("TH2")) return;
   allPlots_[title]->Fill(value, weights[0]);
   if (nsyst_ > 0) {
     if (weights.size() > nsyst_)

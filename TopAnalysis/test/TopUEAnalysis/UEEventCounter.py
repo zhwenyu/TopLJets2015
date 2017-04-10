@@ -118,9 +118,7 @@ class UEEventCounter:
 
                 if t.pt[n]<self.ptthreshold[1] : continue
                 if abs(t.eta[n])>self.etathreshold : continue
-                isInB=(t.isInBFlags[n] & 0x1)               
                 #print 'rec',n,'(%3.1f,%3.2f,%3.2f)'%(t.pt[n],t.eta[n],t.phi[n])
-                if isInB : continue
                 p4.SetPtEtaPhiM(t.pt[n],t.eta[n],t.phi[n],self.piMass)
                 selP4.append(ROOT.TLorentzVector(p4))
 

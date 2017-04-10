@@ -131,15 +131,22 @@ def main():
 
                         histos = []
                         obj=fIn.Get(key)
-                        if (obj.InheritsFrom('TH2') and key[-5:]=='_syst' and sample[3]=='t#bar{t}'):
-                            keyIsSyst=True
-                            key = key[:-5]
-                            for ybin in xrange(1,obj.GetNbinsY()):
-                                weighthist = obj.ProjectionX('_px'+str(ybin), ybin, ybin)
-                                weighthist.SetTitle(sp[1]+' weight '+str(ybin))
-                                if (weighthist.Integral() > 0): histos.append(weighthist)
-                        elif not obj.InheritsFrom('TH1') : continue
-                        if not obj.InheritsFrom('TH2') :
+                        if obj.InheritsFrom('TH2') :
+                            if key[-5:]=='_syst' :
+                                if sample[3]=='t#bar{t}':
+                                    keyIsSyst=True
+                                    key = key[:-5]
+                                    for ybin in xrange(1,obj.GetNbinsY()):
+                                        weighthist = obj.ProjectionX('_px'+str(ybin), ybin, ybin)
+                                        weighthist.SetTitle(sp[1]+' weight '+str(ybin))
+                                        fixExtremities(weighthist, False, False)
+                                        if (weighthist.Integral() > 0): histos.append(weighthist)
+                                else:
+                                    continue
+                            else:
+                                histos.append(obj)
+                                histos[-1].SetTitle(sp[1])
+                        else:
                             fixExtremities(obj, False, False)
                             histos.append(obj)
                             histos[-1].SetTitle(sp[1])

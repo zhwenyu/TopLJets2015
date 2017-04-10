@@ -12,7 +12,7 @@ fi
 export LSB_JOB_REPORT_MAIL=N
 
 
-queue=2nw
+queue=2nd
 githash=b312177
 lumi=36460
 lumiSpecs="" #--lumiSpecs EE:11391"
@@ -45,7 +45,7 @@ case $WHAT in
 	python test/TopUEAnalysis/UETools.py -i ./UEanalysis_test/analysiscfg.pck --in UEanalysis_test/analysis_0_0/Chunks/ue_test.root -o UEanalysis_test/
 	;;
 
-    FULLSEL ) 
+    FULLSEL )
 	python scripts/runLocalAnalysis.py -i ${eosdir}      -q ${queue} -o ${summaryeosdir}      --era era2016 -m TOP-UE::RunTopUE --ch 0 --runSysts;
 	;;
 
@@ -60,7 +60,8 @@ case $WHAT in
 	python scripts/plotter.py ${commonOpts} --only mll --outName mll_plotter.root;	
      	python scripts/runDYRinRout.py --in ${outdir}/plots/mll_plotter.root --categs "0t,1t,"  --out ${outdir}/plots/ > ${outdir}/plots/dy.dat;
 	python scripts/plotter.py ${commonOpts} --procSF DY:${outdir}/plots/.dyscalefactors.pck --only njets --rebin 7 --saveTeX --outName count_plotter.root;
-	python scripts/plotter.py ${commonOpts}; # --procSF DY:${outdir}/plots/.dyscalefactors.pck;
+	python scripts/plotter.py ${commonOpts} --procSF DY:${outdir}/plots/.dyscalefactors.pck;
+	python scripts/plotter.py ${commonOpts} --only nbtags,rho,nvtx,0t,1t
 	;;
     WWWSEL )
 	mkdir -p ${wwwdir}/sel
@@ -71,8 +72,8 @@ case $WHAT in
 	eosprefix=root://eoscms//eos/cms
 	echo "Computing resolutions"
 	base="${eosprefix}/${summaryeosdir}/Chunks/MC13TeV_TTJets"
-	python test/TopUEAnalysis/runUEanalysis.py -i ${base}_0.root,${base}_1.root,${base}_2.root,${base}_3.root,${base}_4.root --step 0 --ptThr 1.0,0.9; #0.9,0.9;
-
+	python test/TopUEAnalysis/runUEanalysis.py -i ${base}_0.root,${base}_1.root,${base}_2.root,${base}_3.root,${base}_4.root --step 0 --ptThr 0.9,0.9;
+	
 	#echo "Defining analysis configuration"
 	python test/TopUEAnalysis/runUEanalysis.py --step 1;
 	
@@ -85,8 +86,9 @@ case $WHAT in
 	./scripts/mergeOutputs.py UEanalysis/analysis_0_0 True 
 	;;
     PLOTANA )
-	python scripts/plotter.py -i UEanalysis/analysis_0_0 -j data/era2016/samples.json      -l ${lumi} --saveLog --mcUnc ${lumiUnc};	
-	python scripts/plotter.py -i UEanalysis/analysis_0_0 -j data/era2016/syst_samples.json -l ${lumi} --saveLog --mcUnc ${lumiUnc} --silent --outName syst_plotter.root;	
+	commonOpts="-l ${lumi} --saveLog --mcUnc ${lumiUnc} --procSF DY:${outdir}/plots/.dyscalefactors.pck";
+	python scripts/plotter.py -i UEanalysis/analysis_0_0 -j data/era2016/samples.json      ${commonOpts}
+	python scripts/plotter.py -i UEanalysis/analysis_0_0 -j data/era2016/syst_samples.json ${commonOpts} --silent --outName syst_plotter.root;	
 	python test/TopUEAnalysis/compareAtRecoLevel.py UEanalysis/analysis_0_0/plots/plotter.root UEanalysis/analysis_0_0/plots/syst_plotter.root
 	python test/TopUEAnalysis/UETools.py -o UEanalysis/analysis_0_0/plots/
 	;;
