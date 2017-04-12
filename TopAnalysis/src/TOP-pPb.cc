@@ -40,9 +40,9 @@ void RunToppPb(TString inFileName,
     }
 
   bool isMC(false);
-  if(inFileName.Contains("/MC")) isMC=true;
+  if(inFileName.Contains("/MC") || inFileName.Contains("PYQUEN")) isMC=true;
   bool isTTJets(false);
-  if(inFileName.Contains("/MCTTNominal")) isTTJets=true;
+  if(inFileName.Contains("/MCTTNominal") || inFileName.Contains("TTBAR")) isTTJets=true;
 
   float totalEvtNorm(1.0);
   if(isMC && normH) totalEvtNorm=normH->GetBinContent(1);
@@ -201,7 +201,8 @@ void RunToppPb(TString inFileName,
     TTree* hiTree_p = (TTree*)inFile_p->Get("hiEvtAnalyzer/HiTree");
     TTree* hltTree_p = (TTree*)inFile_p->Get("hltanalysis/HltTree");
     TTree *pfCand_p  = (TTree *)inFile_p->Get("pfcandAnalyzer/pfTree");
-    
+    TTree *pseudotop_p = (TTree *)inFile_p->Get("topGenAnalyzer/t");
+
     //PF candidates
     std::vector<int> *pfId_p=0;
     std::vector<float> *pfPt_p=0,*pfEta_p=0,*pfPhi_p=0,*pfEnergy_p=0;
@@ -415,6 +416,19 @@ void RunToppPb(TString inFileName,
     
     hltTree_p->SetBranchStatus(triggerName.data(),1);
     hltTree_p->SetBranchAddress(triggerName.data(),&trig);
+
+    //pseudo-top (if available)
+    std::vector<int> *pt_id=0;
+    std::vector<double> *pt_pt=0,*pt_eta=0,*pt_phi=0, *pt_m=0;
+    if(pseudotop_p)
+      {
+	pseudotop_p->SetBranchStatus("*", 1);
+	pseudotop_p->SetBranchAddress("gtop_id", &pt_id);
+	pseudotop_p->SetBranchAddress("gtop_pt", &pt_pt);
+	pseudotop_p->SetBranchAddress("gtop_eta", &pt_eta);
+	pseudotop_p->SetBranchAddress("gtop_phi", &pt_phi);
+	pseudotop_p->SetBranchAddress("gtop_mass", &pt_m);
+      }
     
     Int_t nEntries = (Int_t)lepTree_p->GetEntries();
     
@@ -430,7 +444,7 @@ void RunToppPb(TString inFileName,
 	  }
 
 	//reset summary tree
-	ljev.nj=0; ljev.ngj=0; ljev.ngp=0; ljev.nb=0; ljev.l_id=0; ljev.w=0;
+	ljev.nj=0; ljev.ngj=0; ljev.ngp=0; ljev.nb=0; ljev.l_id=0; ljev.w=0;	ljev.npt=0;
 
 	//readout this event
 	lepTree_p->GetEntry(entry);
@@ -438,6 +452,22 @@ void RunToppPb(TString inFileName,
 	hiTree_p->GetEntry(entry);
 	hltTree_p->GetEntry(entry);
 	pfCand_p->GetEntry(entry);
+
+	//pseudo-top
+	if(pseudotop_p)
+	  {
+	    pseudotop_p->GetEntry(entry);
+	    ljev.npt=pt_id->size();
+	    for(size_t ipt=0; ipt<pt_id->size(); ipt++)
+	      {
+		ljev.pt_id[ipt]= (*pt_id)[ipt];
+		ljev.pt_pt[ipt]= (*pt_pt)[ipt];
+		ljev.pt_eta[ipt]= (*pt_eta)[ipt];
+		ljev.pt_phi[ipt]= (*pt_phi)[ipt];
+		ljev.pt_m[ipt]= (*pt_m)[ipt];
+	      }
+	  }
+
 
 	//assign an event weight
 	float evWeight(1.0);
@@ -741,6 +771,7 @@ void RunToppPb(TString inFileName,
 	  }
 	//electrons
 	EffCorrection_t eselSF(1.0,0.0);
+	/*
 	if(channelSelection==1100)
 	  {
 	    if(mediumElectronsFailId.size()==0) continue;
@@ -764,7 +795,8 @@ void RunToppPb(TString inFileName,
 	    eselSF.second=sqrt(pow(0.03,2)+pow(eselSF.second,2));
 	    evWeight*=eselSF.first;
 	  }
-	
+	*/
+
 	// combined leptons
 	std::vector<TLorentzVector> goodLeptons;
 	goodLeptons = (channelSelection==1300 || channelSelection==13) ?  tightMuons : mediumElectrons;  
@@ -818,14 +850,15 @@ void RunToppPb(TString inFileName,
 	    if(isMC)
 	      {
 		//jet energy resolution smearing	
-		if(refpt[jetIter]>0) jerSmear=getJetResolutionScales(jp4.Pt(),jp4.Eta(),refpt[jetIter]);
-		TLorentzVector rawjp4(jp4);
-		jp4 *= jerSmear[0];
+		//if(refpt[jetIter]>0) jerSmear=getJetResolutionScales(jp4.Pt(),jp4.Eta(),refpt[jetIter]);
+		//TLorentzVector rawjp4(jp4);
+		//jp4 *= jerSmear[0];
 
 		jesScaleUnc[1]=1.028;
 		jesScaleUnc[2]=0.972;
 
 		//b-tagging
+		/*
 		float jptforBtag(jp4.Pt()>1000. ? 999. : jp4.Pt());
 		if(jflav==5)
 		  {
@@ -844,7 +877,8 @@ void RunToppPb(TString inFileName,
 		    float expEff    = expBtagEff["udsg"]->Eval(jptforBtag); 
 		    myBTagSFUtil.modifyBTagsWithSF(passCSVMUp,1.3,expEff);	
 		    myBTagSFUtil.modifyBTagsWithSF(passCSVMDn,0.7,expEff);	
-		  }		
+		  }
+		*/
 	      }
 	    
 	    if(jp4.Pt()>JETPTTHRESHOLD)

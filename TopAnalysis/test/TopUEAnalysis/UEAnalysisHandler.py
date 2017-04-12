@@ -13,8 +13,6 @@ VARS={
     'phipos'         : ('#phi(l^{+})',      True,  False, True,  True),
     'ptll'           : ('p_{T}(l,l)',       True,  False, False, False),
     'phill'          : ('#phi(ll)',         True,  False, True,  True),
-#    'sumpt'          : ('#Sigma p_{T}(l)',  True,  False, False, False),    
-#    'dphill'         : ('#Delta#phi(l,l)',  True,  False, False, True),
     'nj'             : ('N(jets)',          True,  False, False, False),
     'chmult'         : ('N(ch)',            True,  True,  False, False),
     'chflux'         : ('#Sigma p_{T}(ch)', False, True,  False, False),
@@ -31,6 +29,30 @@ OBSVARS   = filter(lambda var: VARS[var][2], VARS)
 EVAXES    = filter(lambda var : VARS[var][3], VARS)
 SLICEVARS = filter(lambda var : VARS[var][1], VARS)
 
+SYSTS = [ ('',   0,0,False),
+          ('puup',  1,0,False),
+          ('pudn',  2,0,False),
+          ('effup', 3,0,False),
+          ('effdn', 4,0,False),
+          ('toppt', 5,0,False),
+          ('murup', 9,0,False),
+          ('murdn', 12,0,False),
+          ('mufup', 7,0,False),
+          ('mufdn', 8,0,False),
+          ('qup',   10,0,False),
+          ('qdn',   14,0,False),
+          ('btagup',0,1,False),
+          ('btagdn',0,2,False),
+          ('jesup', 0,3,False),
+          ('jesdn', 0,4,False),
+          ('jerup', 0,5,False),
+          ('jerdn', 0,6,False),
+          ('eesup', 0,7,False),
+          ('eesdn', 0,8,False),
+          ('mesup', 0,9,False),
+          ('mesdn', 0,10,False),
+          ('tkeff', 0,0,True) ]
+
 
 """
 parses the event and counts particles in each region at gen/rec levels
@@ -42,15 +64,12 @@ class UEAnalysisHandler:
         with open(analysisCfg,'r') as cachefile:
             self.axes=pickle.load(cachefile)
             self.histos=pickle.load(cachefile)
-        #print self.histos.keys()
 
     """
     inclusive histogram filling
     """
-    def fillInclusive(self,obs,ue,weight,gen_passSel,passSel,sliceVarVals=None):
-
-        if not passSel and not gen_passSel: return
-
+    def fillInclusive(self,obs,ue,sliceVarVals=None,ivar=0):
+            
         sliceVar=None
         recSliceShift,genSliceShift=0,0
         try:
@@ -59,37 +78,44 @@ class UEAnalysisHandler:
             recSliceShift=self.getBinForVariable(recSliceVal, self.axes[ (sliceVar,True) ])-1
         except:
             pass
-
-        #RECO level counting
-        recCts=getattr(ue,'rec_chmult')
-        recVal=getattr(ue,'rec_'+obs)
-        recBin=self.getBinForVariable( recVal,  self.axes[(obs,True)])-1
-        recBin += recSliceShift*(self.axes[(obs,True)].GetNbins())
-        if not passSel : recBin=-1
-        if recCts>0:
-            if sliceVar :
-                self.histos[(obs,True,sliceVar)].Fill(recBin,weight)
-            else:
-                self.histos[(obs,'inc',True)].Fill(recBin,weight)
+        
+        #event weight
+        weight=ue.w[ivar]
 
         #GEN level counting
         genCts=getattr(ue,'gen_chmult')
         genVal=getattr(ue,'gen_'+obs)
         genBin=self.getBinForVariable(genVal, self.axes[(obs,False)])-1
         genBin += genSliceShift*(self.axes[(obs,False)].GetNbins())            
-        if not gen_passSel : genBin=-1        
-        if genCts>0:
+        if not ue.gen_passSel : genBin=-1        
+        if ivar==0 and genCts>0 :
             if sliceVar:
                 self.histos[(obs,False,sliceVar)].Fill(genBin,weight)
             else:
                 self.histos[(obs,'inc',False)].Fill(genBin,weight)
+
+        #RECO level counting
+        recCts=getattr(ue,'rec_chmult')[ivar]
+        recVal=getattr(ue,'rec_'+obs)[ivar]
+        recBin=self.getBinForVariable( recVal,  self.axes[(obs,True)])-1
+        recBin += recSliceShift*(self.axes[(obs,True)].GetNbins())
+        if not ue.rec_passSel[ivar] : recBin=-1
+        if ue.rec_passSel[ivar] and recCts>0:
+            if sliceVar :
+                if ivar==0 : self.histos[(obs,True,sliceVar)].Fill(recBin,weight)
+                self.histos[(obs,True,sliceVar,'syst')].Fill(recBin,ivar,weight)
+            else:
+                if ivar==0 : self.histos[(obs,'inc',True)].Fill(recBin,weight)
+                self.histos[(obs,'inc', True,'syst')].Fill(recBin,ivar,weight)
                 
         #Migration matrix
         if genCts>0 or recCts>0 : 
             if sliceVar:
-                self.histos[(obs,sliceVar)].Fill(genBin,recBin,weight)
+                if ivar==0 : self.histos[(obs,sliceVar)].Fill(genBin,recBin,weight)
+                self.histos[(obs,sliceVar,ivar)].Fill(genBin,recBin,weight)
             else:
-                self.histos[(obs,'inc')].Fill(genBin,recBin,weight)
+                if ivar== 0 : self.histos[(obs,'inc')].Fill(genBin,recBin,weight)
+                self.histos[(obs,'inc',ivar)].Fill(genBin,recBin,weight)
 
     """
     differential histogram filling
