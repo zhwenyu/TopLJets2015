@@ -118,7 +118,7 @@ class UEEventCounter:
             _,wgtIdx,varIdx,varyTkEff = self.varList[ivar]
 
             #reco level
-            self.w                 = t.weight[wgtIdx]
+            self.w[ivar]           = t.weight[wgtIdx]
             self.rec_passSel[ivar] = ((t.passSel>>varIdx)&0x1)
             if self.rec_passSel[ivar]:
 

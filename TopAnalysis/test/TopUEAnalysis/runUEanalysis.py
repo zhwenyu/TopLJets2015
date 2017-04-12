@@ -342,8 +342,11 @@ def runUEAnalysis(inF,outF,cfgDir):
     #configure from pickle file
     ueHandler=UEAnalysisHandler(os.path.join(cfgDir,'analysiscfg.pck'))
 
+    varList=SYSTS
+    if not 'MC13TeV_TTJets' in inF : varList=[('',   0,0,False)]
+
     #loop over the tree to fill histos
-    ue=UEEventCounter(EVAXES,varList=SYSTS)
+    ue=UEEventCounter(EVAXES,varList=varList)
     t=ROOT.TChain('tue')
     t.AddFile(inF)
     totalEntries=t.GetEntries()
@@ -357,8 +360,8 @@ def runUEAnalysis(inF,outF,cfgDir):
         ue.count(t)
 
         #
-        for ivar in xrange(0,len(SYSTS)):
-            _,_,varIdx,_ = SYSTS[ivar]
+        for ivar in xrange(0,varList):
+            _,_,varIdx,_ = varList[ivar]
 
             #fill histos (if sliceVar is None, non-sliced histos are filled)
             for sliceVar in [None]+SLICEVARS:
