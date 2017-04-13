@@ -20,7 +20,7 @@ RED='\e[31m'
 NC='\e[0m'
 case $WHAT in
     MCSEL )
-	queue=local
+	#queue=local
 	for p in PbP pPb; do
 	    for ch in 11 13; do
 		python scripts/runLocalAnalysis.py \

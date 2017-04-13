@@ -25,7 +25,7 @@ VARS={
     'D'              : ('D',                False, True,  False, False)
     }
 
-OBSVARS   = filter(lambda var: VARS[var][2], VARS)
+OBSVARS   = filter(lambda var : VARS[var][2], VARS)
 EVAXES    = filter(lambda var : VARS[var][3], VARS)
 SLICEVARS = filter(lambda var : VARS[var][1], VARS)
 
@@ -78,6 +78,8 @@ class UEAnalysisHandler:
             recSliceShift=self.getBinForVariable(recSliceVal, self.axes[ (sliceVar,True) ])-1
         except:
             pass
+
+        if obs==sliceVar : return
         
         #event weight
         weight=ue.w[ivar]
@@ -89,10 +91,7 @@ class UEAnalysisHandler:
         genBin += genSliceShift*(self.axes[(obs,False)].GetNbins())            
         if not ue.gen_passSel : genBin=-1        
         if ivar==0 and genCts>0 :
-            if sliceVar:
-                self.histos[(obs,False,sliceVar)].Fill(genBin,weight)
-            else:
-                self.histos[(obs,'inc',False)].Fill(genBin,weight)
+            self.histos[(obs,sliceVar,'inc',None,False)].Fill(genBin,weight)
 
         #RECO level counting
         recCts=getattr(ue,'rec_chmult')[ivar]
@@ -101,21 +100,13 @@ class UEAnalysisHandler:
         recBin += recSliceShift*(self.axes[(obs,True)].GetNbins())
         if not ue.rec_passSel[ivar] : recBin=-1
         if ue.rec_passSel[ivar] and recCts>0:
-            if sliceVar :
-                if ivar==0 : self.histos[(obs,True,sliceVar)].Fill(recBin,weight)
-                self.histos[(obs,True,sliceVar,'syst')].Fill(recBin,ivar,weight)
-            else:
-                if ivar==0 : self.histos[(obs,'inc',True)].Fill(recBin,weight)
-                self.histos[(obs,'inc', True,'syst')].Fill(recBin,ivar,weight)
+            if ivar==0 : self.histos[(obs,sliceVar,'inc',None,True)].Fill(recBin,weight)
+            self.histos[(obs,sliceVar,'inc','syst',True)].Fill(recBin,ivar,weight)
                 
         #Migration matrix
         if genCts>0 or recCts>0 : 
-            if sliceVar:
-                if ivar==0 : self.histos[(obs,sliceVar)].Fill(genBin,recBin,weight)
-                self.histos[(obs,sliceVar,ivar)].Fill(genBin,recBin,weight)
-            else:
-                if ivar== 0 : self.histos[(obs,'inc')].Fill(genBin,recBin,weight)
-                self.histos[(obs,'inc',ivar)].Fill(genBin,recBin,weight)
+            key=(obs,sliceVar,'inc',ivar,'mig')
+            self.histos[key].Fill(genBin,recBin,weight)
 
     """
     differential histogram filling

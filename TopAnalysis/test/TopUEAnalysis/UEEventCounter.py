@@ -19,7 +19,7 @@ class UEEventCounter:
 
         self.varList=varList
         self.reset(axes)
-        self.tkEffVar=0.5
+        self.tkEffVar=1.0
 
         #tracking efficiency scale factor
         fIn=ROOT.TFile.Open('${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/era2016/MuonTracking_EfficienciesAndSF_BCDEFGH.root')
