@@ -17,6 +17,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <limits>
 
 using namespace std;
 
@@ -418,16 +419,19 @@ void RunToppPb(TString inFileName,
     hltTree_p->SetBranchAddress(triggerName.data(),&trig);
 
     //pseudo-top (if available)
-    std::vector<int> *pt_id=0;
+    std::vector<int> *pt_pdgid=0;
     std::vector<double> *pt_pt=0,*pt_eta=0,*pt_phi=0, *pt_m=0;
+    std::vector<std::vector<int> > *pt_daughterArr=0;
+
     if(pseudotop_p)
       {
 	pseudotop_p->SetBranchStatus("*", 1);
-	pseudotop_p->SetBranchAddress("gtop_id", &pt_id);
+	pseudotop_p->SetBranchAddress("gtop_id", &pt_pdgid);
 	pseudotop_p->SetBranchAddress("gtop_pt", &pt_pt);
 	pseudotop_p->SetBranchAddress("gtop_eta", &pt_eta);
 	pseudotop_p->SetBranchAddress("gtop_phi", &pt_phi);
 	pseudotop_p->SetBranchAddress("gtop_mass", &pt_m);
+	pseudotop_p->SetBranchAddress("gtop_daughterArr", &pt_daughterArr);
       }
     
     Int_t nEntries = (Int_t)lepTree_p->GetEntries();
@@ -457,10 +461,11 @@ void RunToppPb(TString inFileName,
 	if(pseudotop_p)
 	  {
 	    pseudotop_p->GetEntry(entry);
-	    ljev.npt=pt_id->size();
-	    for(size_t ipt=0; ipt<pt_id->size(); ipt++)
+	    ljev.npt=pt_pdgid->size();
+	    for(size_t ipt=0; ipt<pt_pdgid->size(); ipt++)
 	      {
-		ljev.pt_id[ipt]= (*pt_id)[ipt];
+		ljev.pt_id[ipt]= ipt;
+		ljev.pt_pdgid[ipt]= (*pt_pdgid)[ipt];
 		ljev.pt_pt[ipt]= (*pt_pt)[ipt];
 		ljev.pt_eta[ipt]= (*pt_eta)[ipt];
 		ljev.pt_phi[ipt]= (*pt_phi)[ipt];

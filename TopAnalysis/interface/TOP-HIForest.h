@@ -9,7 +9,7 @@ struct LJEvent_t
   ULong64_t run,lumi,event;
   Int_t nj,ngj,ngp,nb,npt;
   Int_t j_btag[20];  
-  Int_t pt_id[20];
+  Int_t pt_id[20],pt_pdgid[20];
   Float_t pt_pt[20],pt_eta[20],pt_phi[20],pt_m[20];
   Float_t gp_pt[20],gp_eta[20],gp_phi[20],gp_m[20];
   Float_t j_pt[20],j_eta[20],j_phi[20],j_m[20];
