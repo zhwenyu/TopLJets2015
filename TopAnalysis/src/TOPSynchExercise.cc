@@ -41,15 +41,6 @@ void RunTOPSynchExercise(TString filename, TString outname, Bool_t debug)
   for (Int_t iev=0;iev<nentries;iev++)
     {
       t->GetEntry(iev);
-            
-      //decide the lepton channel
-      if(ev.event==21702 || ev.event==21705 || ev.event==21927)
-       	{
-      	  cout << ev.run << " " << ev.lumi << " " << ev.event << " " << endl;
-      	  evsel.setDebug(true);
-	  cout << "MET: "<< ev.met_pt[0] << endl;
-	}
-      else evsel.setDebug(false);
       TString chTag = evsel.flagFinalState(ev);
       if(!evsel.passMETFilters(ev)) continue;
 
@@ -92,9 +83,12 @@ void RunTOPSynchExercise(TString filename, TString outname, Bool_t debug)
 	  float mll=(leptons[0].p4()+leptons[1].p4()).M();
 	  if(mll<20) continue;
 	  allPlots["cutflow_"+chTag]->Fill(2);
-	  
-	  //if(chTag=="MM")
-	    //  cout << ev.run << " " << ev.lumi << " " << ev.event << " " << chTag << " " << leptons.size() << " " <<jets.size() << " " << nbtags << endl;
+
+          if(chTag=="EE")
+            cout << ev.run << " " << ev.lumi << " " << ev.event << " | " 
+                 << leptons.size() << " " <<jets.size() << " " << nbtags << " | " 
+                 << mll << " " << ev.met_pt[0]
+                 << endl;
 
 	  if((chTag=="EE" || chTag=="MM"))
 	    {
@@ -113,6 +107,7 @@ void RunTOPSynchExercise(TString filename, TString outname, Bool_t debug)
 
 	  if(nbtags>=2)
 	    allPlots["cutflow_"+chTag]->Fill(8);
+
 	}
     }
   

@@ -19,11 +19,11 @@ class UEEventCounter:
 
         self.varList=varList
         self.reset(axes)
-        self.tkEffVar=1.0
 
         #tracking efficiency scale factor
         fIn=ROOT.TFile.Open('${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/era2016/MuonTracking_EfficienciesAndSF_BCDEFGH.root')
-        self.tkEffSF=fIn.Get('ratio_eff_eta3_tk0_dr030e030_corr')
+        self.tkEffSF={'abseta':fIn.Get('ratio_eff_aeta_tk0_dr030e030_corr'),
+                      'vtx':fIn.Get('ratio_eff_vtx_tk0_dr030e030_corr')}
         fIn.Close()
 
             
@@ -128,11 +128,16 @@ class UEEventCounter:
                     if t.pt[n]<self.ptthreshold[1] : continue
                     if abs(t.eta[n])>self.etathreshold : continue
 
+                    #apply some tracking efficiency scale factor
+                    sf=self.tkEffSF['vtx'].Eval(min(t.nvtx,40))
+                    rnd=ROOT.gRandom.Uniform(1.0)
+                    if rnd<(1-sf) : continue
+
                     #decide if track should still be accepted
                     if varyTkEff:
                         sf=self.tkEffSF.Eval(abs(t.eta[n]))
                         rnd=ROOT.gRandom.Uniform(1.0)
-                        if rnd>(sf-(1-sf)*self.tkEffVar) : continue
+                        if rnd<(1-sf)*0.5 : continue
                     
                         
                     p4.SetPtEtaPhiM(t.pt[n],t.eta[n],t.phi[n],self.piMass)
