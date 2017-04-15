@@ -273,6 +273,12 @@ def defineAnalysisBinning(opt):
                 histos[ key ].Sumw2()
 
                 if not level: continue
+                key=(obs,sliceVar,axis,'fakes',level)                
+                name='_'.join(map(str,key))
+                histos[ key ] = ROOT.TH1F(name,name,nbins[level],0,nbins[level])
+                histos[ key ].SetDirectory(0)
+                histos[ key ].Sumw2()
+
                 key=(obs,sliceVar,axis,'syst',level)
                 name='_'.join(map(str,key))
                 histos[ key ] = ROOT.TH2F(name,name,nbins[level],0,nbins[level],len(SYSTS),-0.5,len(SYSTS)-0.5)
@@ -313,6 +319,13 @@ def defineAnalysisBinning(opt):
 
                 #for reco do also the systematics
                 if not level: continue
+                key=(obs,sliceVar,'inc','fakes',level)
+                name='_'.join(map(str,key))
+                histos[ key ] = ROOT.TH1F(name,name,nbins[level],0,nbins[level])
+                histos[ key ].SetDirectory(0)
+                histos[ key ].Sumw2()
+
+
                 key=(obs,sliceVar,'inc','syst',level)
                 name='_'.join(map(str,key))
                 histos[ key ] = ROOT.TH2F(name,name,nbins[level],0,nbins[level],len(SYSTS),-0.5,len(SYSTS)-0.5)

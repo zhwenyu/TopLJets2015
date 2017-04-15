@@ -52,6 +52,7 @@ void defineTreeBranches(TTree *outT,LJEvent_t &ljev,bool isMC)
       outT->Branch("pt_m",    ljev.pt_m,    "pt_m[npt]/F");      
 
       outT->Branch("ngp",   &ljev.ngp,    "ngp/I");
+      outT->Branch("gp_pdgid",   ljev.gp_pdgid,   "gp_pdgid[ngp]/I");
       outT->Branch("gp_pt",   ljev.gp_pt,   "gp_pt[ngp]/F");
       outT->Branch("gp_eta",  ljev.gp_eta,  "gp_eta[ngp]/F");
       outT->Branch("gp_phi",  ljev.gp_phi,  "gp_phi[ngp]/F");

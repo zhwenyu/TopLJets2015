@@ -203,6 +203,7 @@ void RunToppPb(TString inFileName,
     TTree* hltTree_p = (TTree*)inFile_p->Get("hltanalysis/HltTree");
     TTree *pfCand_p  = (TTree *)inFile_p->Get("pfcandAnalyzer/pfTree");
     TTree *pseudotop_p = (TTree *)inFile_p->Get("topGenAnalyzer/t");
+    TTree *mc_p = (TTree *)inFile_p->Get("HiGenParticleAna/hi");
 
     //PF candidates
     std::vector<int> *pfId_p=0;
@@ -326,22 +327,23 @@ void RunToppPb(TString inFileName,
     lepTree_p->SetBranchAddress("eleCharge", &eleCharge_p);
 
     //gen-level variables
-    std::vector<int> *mcPID=0,*mcMomPID=0,*mcStatus=0;
+    std::vector<int> *mcPID=0,*mcStatus=0;
     std::vector<float> *mcPt=0,*mcEta=0,*mcPhi=0,*mcMass=0;
-    lepTree_p->SetBranchStatus("mcPID", 1);
-    lepTree_p->SetBranchStatus("mcPt", 1);
-    lepTree_p->SetBranchStatus("mcEta", 1);
-    lepTree_p->SetBranchStatus("mcPhi", 1);
-    lepTree_p->SetBranchStatus("mcMomPID", 1);
-    lepTree_p->SetBranchStatus("mcStatus", 1);
-    lepTree_p->SetBranchStatus("mcMass", 1);
-    lepTree_p->SetBranchAddress("mcMomPID", &mcMomPID);
-    lepTree_p->SetBranchAddress("mcStatus", &mcStatus);
-    lepTree_p->SetBranchAddress("mcPID", &mcPID);
-    lepTree_p->SetBranchAddress("mcPt", &mcPt);
-    lepTree_p->SetBranchAddress("mcEta", &mcEta);
-    lepTree_p->SetBranchAddress("mcPhi", &mcPhi);
-    lepTree_p->SetBranchAddress("mcMass", &mcMass);
+    if(mc_p)
+      {
+        mc_p->SetBranchStatus("pdg", 1);
+        mc_p->SetBranchStatus("sta", 1);
+        mc_p->SetBranchStatus("pt", 1);
+        mc_p->SetBranchStatus("eta", 1);
+        mc_p->SetBranchStatus("phi", 1);
+        mc_p->SetBranchStatus("mass", 1);
+        mc_p->SetBranchAddress("sta", &mcStatus);
+        mc_p->SetBranchAddress("pdg", &mcPID);
+        mc_p->SetBranchAddress("pt", &mcPt);
+        mc_p->SetBranchAddress("eta", &mcEta);
+        mc_p->SetBranchAddress("phi", &mcPhi);
+        mc_p->SetBranchAddress("mass", &mcMass);
+      }
 
     //jet variables
     const int maxJets = 5000;
@@ -425,13 +427,13 @@ void RunToppPb(TString inFileName,
 
     if(pseudotop_p)
       {
-	pseudotop_p->SetBranchStatus("*", 1);
-	pseudotop_p->SetBranchAddress("gtop_id", &pt_pdgid);
-	pseudotop_p->SetBranchAddress("gtop_pt", &pt_pt);
-	pseudotop_p->SetBranchAddress("gtop_eta", &pt_eta);
-	pseudotop_p->SetBranchAddress("gtop_phi", &pt_phi);
-	pseudotop_p->SetBranchAddress("gtop_mass", &pt_m);
-	pseudotop_p->SetBranchAddress("gtop_daughterArr", &pt_daughterArr);
+        pseudotop_p->SetBranchStatus("*", 1);
+        pseudotop_p->SetBranchAddress("gtop_id", &pt_pdgid);
+        pseudotop_p->SetBranchAddress("gtop_pt", &pt_pt);
+        pseudotop_p->SetBranchAddress("gtop_eta", &pt_eta);
+        pseudotop_p->SetBranchAddress("gtop_phi", &pt_phi);
+        pseudotop_p->SetBranchAddress("gtop_mass", &pt_m);
+        pseudotop_p->SetBranchAddress("gtop_daughterArr", &pt_daughterArr);
       }
     
     Int_t nEntries = (Int_t)lepTree_p->GetEntries();
@@ -456,6 +458,7 @@ void RunToppPb(TString inFileName,
 	hiTree_p->GetEntry(entry);
 	hltTree_p->GetEntry(entry);
 	pfCand_p->GetEntry(entry);
+        if(mc_p) mc_p->GetEntry(entry);
 
 	//pseudo-top
 	if(pseudotop_p)
@@ -487,22 +490,25 @@ void RunToppPb(TString inFileName,
 	      {
 		for(size_t imc=0; imc<mcPID->size(); imc++)
 		  {
-		    int abspid=abs(mcPID->at(imc));		
-		    int mompid=abs(mcMomPID->at(imc));
 		    int status=abs(mcStatus->at(imc));
-		    
+		    int abspid=abs(mcPID->at(imc));		
+
 		    TLorentzVector p4;
 		    p4.SetPtEtaPhiM(mcPt->at(imc),mcEta->at(imc),mcPhi->at(imc),mcMass->at(imc));
-
-		    if(mompid==6 && abspid==24 && status==22 && ljev.ngp<20)
-		      {
-			ljev.gp_pt[ljev.ngp]=p4.Pt();
-			ljev.gp_eta[ljev.ngp]=p4.Eta();
-			ljev.gp_phi[ljev.ngp]=p4.Phi();
-			ljev.gp_m[ljev.ngp]=p4.M();
-			ljev.ngp++;		    
-		      }
-
+                    
+                    //hardprocess
+		    if(status==3 && (abspid<=6 || abspid==24 || abspid==11 || abspid==13))
+                      {
+                        {
+                          ljev.gp_pdgid[ljev.ngp]=mcPID->at(imc);
+                          ljev.gp_pt[ljev.ngp]=p4.Pt();
+                          ljev.gp_eta[ljev.ngp]=p4.Eta();
+                          ljev.gp_phi[ljev.ngp]=p4.Phi();
+                          ljev.gp_m[ljev.ngp]=p4.M();
+                          ljev.ngp++;		    
+                        }
+                      }
+                    
 		    //final state leptons
 		    if(status!=1) continue;
 		    if(channelSelection==13 && abspid!=13) continue;
@@ -559,7 +565,7 @@ void RunToppPb(TString inFileName,
 
 	//require trigger for the event
 	histos["trig"]->Fill(trig,evWeight);
-	if(trig==0) continue;
+	if(!isMC && trig==0) continue;
 
 
 	//select good muons

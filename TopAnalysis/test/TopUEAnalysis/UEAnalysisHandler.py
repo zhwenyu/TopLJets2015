@@ -100,11 +100,13 @@ class UEAnalysisHandler:
         recBin += recSliceShift*(self.axes[(obs,True)].GetNbins())
         if not ue.rec_passSel[ivar] : recBin=-1
         if ue.rec_passSel[ivar] and recCts>0:
-            if ivar==0 : self.histos[(obs,sliceVar,'inc',None,True)].Fill(recBin,weight)
+            if ivar==0 : 
+                self.histos[(obs,sliceVar,'inc',None,True)].Fill(recBin,weight)
+                if genCts==0: self.histos[(obs,sliceVar,'inc','fakes',True)].Fill(recBin,weight)
             self.histos[(obs,sliceVar,'inc','syst',True)].Fill(recBin,ivar,weight)
                 
         #Migration matrix
-        if genCts>0 or recCts>0 : 
+        if genCts>0:
             key=(obs,sliceVar,'inc',ivar,'mig')
             self.histos[key].Fill(genBin,recBin,weight)
 
