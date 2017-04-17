@@ -389,6 +389,7 @@ void RunToppPb(TString inFileName,
     UInt_t run_, lumi_;
     ULong64_t evt_;
     Int_t hiBin_;
+    Float_t hiHFplus_, hiHFminus_, hiHFplusEta4_, hiHFminusEta4_;
     Float_t vz_;
     Float_t weight;
     std::vector<float> *ttbar_w_p=0;
@@ -397,6 +398,10 @@ void RunToppPb(TString inFileName,
     hiTree_p->SetBranchStatus("evt", 1);
     hiTree_p->SetBranchStatus("lumi", 1);
     hiTree_p->SetBranchStatus("hiBin", 1);
+    hiTree_p->SetBranchAddress("hiHFplus", &hiHFplus_);
+    hiTree_p->SetBranchAddress("hiHFminus", &hiHFminus_);
+    hiTree_p->SetBranchAddress("hiHFplusEta4", &hiHFplusEta4_);
+    hiTree_p->SetBranchAddress("hiHFminusEta4", &hiHFminusEta4_);
     hiTree_p->SetBranchStatus("vz", 1);
     hiTree_p->SetBranchStatus("weight", 1);
     hiTree_p->SetBranchStatus("ttbar_w",1);
