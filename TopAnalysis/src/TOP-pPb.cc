@@ -98,6 +98,10 @@ void RunToppPb(TString inFileName,
   std::map<TString,TH1 *> histos;
   histos["wgtcounter"] = new TH1F("wgtcounter",";Weight;Events;",200,0,200);
   histos["fidcounter"] = new TH1F("fidcounter",";Weight;Events;",200,0,200);
+  histos["recocounter"] = new TH1F("recocounter",";Step;Events;",8, 1,9);
+  TString  step[8] = {"Initial", "Trigger", "#req 1Lepton", "#equiv 1Lepton", "#req 4jets","#req 1 b-tags","#equiv 1 b-tag", "#equiv 2btag"};
+  for (int i=1; i < histos["recocounter"]->GetNbinsX()+1; i++)
+     histos["recocounter"]->GetXaxis()->SetBinLabel(i,step[i-1]);
   histos["trig"] = new TH1F("trig",";Trigger;Events",2,0,2);
   histos["lpt"]  = new TH1F("lpt",";Transverse momentum [GeV];Events",20.,0.,200.);
   histos["leta"] = new TH1F("leta",";Pseudo-rapidity;Events",20.,0.,2.1);
@@ -448,7 +452,7 @@ void RunToppPb(TString inFileName,
 	    printf("\r [%d/%d] done",entry,nEntries);
 	    cout << flush;
 	  }
-
+	histos["recocounter"]->Fill(1);
 	//reset summary tree
 	ljev.nj=0; ljev.ngj=0; ljev.ngp=0; ljev.nb=0; ljev.l_id=0; ljev.w=0;	ljev.npt=0;
 
@@ -567,6 +571,7 @@ void RunToppPb(TString inFileName,
 	histos["trig"]->Fill(trig,evWeight);
 	if(!isMC && trig==0) continue;
 
+	histos["recocounter"]->Fill(2);
 
 	//select good muons
 	//cf. details in https://twiki.cern.ch/twiki/bin/view/CMS/SWGuideMuonIdRun2
@@ -768,13 +773,17 @@ void RunToppPb(TString inFileName,
 	if(channelSelection==1300)
 	  {
 	    if(tightMuonsNonIso.size()==0) continue;
+	    histos["recocounter"]->Fill(3);
 	    if(tightMuons.size()+looseMuons.size()+mediumElectrons.size()+vetoElectrons.size()!=0) continue;
+	    histos["recocounter"]->Fill(4);
 	    tightMuons=tightMuonsNonIso;
 	  }
 	if(channelSelection==13)
 	  {
 	    if(tightMuons.size()!=1) continue; //=1 tight muon	
+	    histos["recocounter"]->Fill(3);
 	    if(looseMuons.size()+mediumElectrons.size()+vetoElectrons.size()!=0) continue; //no extra leptons
+	    histos["recocounter"]->Fill(4);
 	    if(chargeSelection!=0)
 	      {
 		if(muonCharge[0]!=chargeSelection) continue;
@@ -782,11 +791,12 @@ void RunToppPb(TString inFileName,
 	  }
 	//electrons
 	EffCorrection_t eselSF(1.0,0.0);
-	/*
 	if(channelSelection==1100)
 	  {
 	    if(mediumElectronsFailId.size()==0) continue;
+	     histos["recocounter"]->Fill(3);
 	    if(mediumElectrons.size()+vetoElectrons.size()+tightMuons.size()+looseMuons.size()!=0) continue;
+	    histos["recocounter"]->Fill(4);
 	    mediumElectrons=mediumElectronsFailId;
 
 	    //from Georgios studies, endcap electron fakes would still benefit from a ~15% extra weight
@@ -795,7 +805,9 @@ void RunToppPb(TString inFileName,
 	if(channelSelection==11)
 	  {
 	    if(mediumElectrons.size()!=1) continue; //=1 medium electron
+	    histos["recocounter"]->Fill(3);
 	    if(vetoElectrons.size()+tightMuons.size()+looseMuons.size()!=0) continue; //no extra leptons
+	    histos["recocounter"]->Fill(4);
 	    if(chargeSelection!=0)
 	      {
 		if(elCharge[0]!=chargeSelection) continue;
@@ -806,7 +818,7 @@ void RunToppPb(TString inFileName,
 	    eselSF.second=sqrt(pow(0.03,2)+pow(eselSF.second,2));
 	    evWeight*=eselSF.first;
 	  }
-	*/
+
 
 	// combined leptons
 	std::vector<TLorentzVector> goodLeptons;
@@ -1001,6 +1013,14 @@ void RunToppPb(TString inFileName,
 	    Int_t njets(nljets+nbtags);
 	    
 	    if(nljets<2) continue;
+	    if (njets>=4)
+	      histos["recocounter"]->Fill(5);
+	    if (njets>=4&&nbtags>=1)
+	      histos["recocounter"]->Fill(6);
+	    if (njets>=4&&nbtags==1)
+	      histos["recocounter"]->Fill(7);
+	    if (njets>=4&&nbtags==2)
+	      histos["recocounter"]->Fill(8);
 	    TString pf(Form("%db",TMath::Min(nbtags,2)));
 	    
 	    //jet-related quantities
