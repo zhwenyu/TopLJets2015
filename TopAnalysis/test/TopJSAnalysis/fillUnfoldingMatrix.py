@@ -10,75 +10,44 @@ from math import sqrt
 
 flavorMap = {'all': -1, 'light': 1, 'bottom': 5, 'gluon': 0}
 
-def fillHist(hmap, tree, weightindex = 0):
+def fillHist(hmap, tree, nweights):
     for event in tree:
+        weights = []
+        for i in range(nweights+1):
+            weights.append(event.weight[i])
         for obs,hmap_reco in hmap.iteritems():
             for reco,hmap_flavor in hmap_reco.iteritems():
-                for f,h in hmap_flavor.iteritems():
-                    flavor = flavorMap[f]
-                    #TODO: weights
-                    weight = event.weight[weightindex]
-                    #TODO: run updated selection in TOPJetShape.cc
-                    
+                for flavor,hmap_weight in hmap_flavor.iteritems():
+                    iflavor = flavorMap[flavor]
                     for j in range(event.nj):
                         if (event.reco_sel != 1
-                            or (flavor > -1 and event.j_flavor[j] != flavor)):
+                            or (iflavor > -1 and event.j_flavor[j] != iflavor)):
                             valReco = -1
                         else:
                             valReco = eval('event.j_'+obs+'_'+reco)[j]
                         g = event.j_gj[j]
                         if g >= 0: #match
                             if (event.gen_sel != 1
-                                or (flavor > -1 and event.gj_flavor[g] != flavor)):
+                                or (iflavor > -1 and event.gj_flavor[g] != iflavor)):
                                 valGen = -1
                             else:
                                 valGen = eval('event.gj_'+obs+'_'+reco)[g]
                         else: valGen = -1
-                        h.Fill(valGen, valReco, weight)
+                        for weightindex,h in hmap_weight.iteritems():
+                            weight = weights[0]
+                            if (weightindex > 0): weight *= weights[weightindex]
+                            h.Fill(valGen, valReco, weight)
                     for g in range(event.ngj):
                         if event.gj_j[g] < 0: #no match
                             if (event.gen_sel != 1
-                                or (flavor > -1 and event.gj_flavor[g] != flavor)):
+                                or (iflavor > -1 and event.gj_flavor[g] != iflavor)):
                                 valGen = -1
                             else:
                                 valGen = eval('event.gj_'+obs+'_'+reco)[g]
-                            h.Fill(valGen, -1, weight)
-                    
-                    '''
-                    reco = -1:
-                      - event.gen_sel == 1 and event.reco_sel == -1
-                        (all jets, do not throw any gen event based on reco inefficiency)
-                      - genjets without reco match
-                    gen = -1:
-                      - event.gen_sel != 1 and event.reco_sel == 1 (=misreco background)
-                      - reco jets without gen match
-                    -> loop reco->gen first, put matched into matrix, put unmatched with gen=-1
-                       afterwards loop gen->reco, ignore matched, put unmatched with reco=-1
-                    If event is not selected in gen fill all jets with gen=-1.
-                    If event is not selected in reco fill all jets with reco=-1.
-                    '''
-                    '''
-                    if event.gen_sel == 1 and event.reco_sel == 1:
-                        for j in range(event.nj):
-                            valReco = eval('event.j_'+obs+'_'+reco)[j]
-                            i = event.j_gj[j]
-                            if i >= 0: #match
-                                valGen = eval('event.gj_'+obs+'_'+reco)[i]
-                            else: valGen = -1
-                            h.Fill(valGen, valReco)
-                        for j in range(event.ngj):
-                            if event.gj_j[j] < 0: #no match
-                                valGen = eval('event.gj_'+obs+'_'+reco)[j]
-                                h.Fill(valGen, -1)
-                    if event.gen_sel == 1 and event.reco_sel == -1:
-                        for i in range(event.ngj):
-                            valGen = eval('event.gj_'+obs+'_'+reco)[i]
-                            h.Fill(valGen, -1)
-                    if event.gen_sel == -1 and event.reco_sel == 1:
-                        for i in range(event.nj):
-                            valReco = eval('event.j_'+obs+'_'+reco)[i]
-                            h.Fill(-1, valReco)            
-                    '''
+                            for weightindex,h in hmap_weight.iteritems():
+                                weight = weights[0]
+                                if (weightindex > 0): weight *= weights[weightindex]
+                                h.Fill(valGen, -1, weight)
 
 
 """
@@ -110,16 +79,14 @@ def main():
     parser.add_option('--skipexisting', 
                             dest='skipexisting',
                             help='skip jobs with existing output files  [%default]',
-                            default=True, action='store_true')
+                            default=False, action='store_true')
     parser.add_option('-q', '--queue', dest='queue',  help='Batch queue to use [default: %default]', default='8nh')
     parser.add_option(      '--only',  dest='only',   help='csv list of samples to process (exact name, applies only for batch mode) [%default]', default=None, type='string')
-    parser.add_option('-w', '--weightindex', dest='weightindex', help='weight index (single job) or number of weights to run (batch) [%default]', default=0, type='int')
+    parser.add_option('--nw', '--nweights', dest='nweights', help='number of weights to run [%default]', default=0, type='int')
     (opt, args) = parser.parse_args()
 
     if opt.input.endswith('.root'):
         rootoutfilepath = opt.output+'/'+os.path.basename(opt.input)
-        if (opt.weightindex > 0):
-            rootoutfilepath = rootoutfilepath.rsplit('_',1)[0] + "_wgt" + str(opt.weightindex) + "_" + rootoutfilepath.rsplit('_',1)[1]
         if (opt.skipexisting and os.path.isfile(rootoutfilepath)):
             print("skip existing file " + rootoutfilepath)
             return
@@ -143,10 +110,13 @@ def main():
             for r in reco:
                 if o+'_'+r+'_responsematrix' in keys:
                     hmap[o][r] = {}
+                    obj = rootinfile.Get(o+'_'+r+'_responsematrix')
+                    obj.Reset()
                     for f in flavors:
-                        obj = rootinfile.Get(o+'_'+r+'_responsematrix')
-                        obj.Reset()
-                        hmap[o][r][f] = obj.Clone(o+'_'+r+'_'+f+'_responsematrix')
+                        hmap[o][r][f] = {}
+                        hmap[o][r][f][0] = obj.Clone(o+'_'+r+'_'+f+'_responsematrix')
+                        for w in range(opt.nweights):
+                            hmap[o][r][f][w+1] = obj.Clone(o+'_'+r+'_'+f+'_wgt'+str(w+1)+'_responsematrix')
         
         tree = ROOT.TChain('tjsev')
         if opt.input == 'eos':
@@ -155,17 +125,18 @@ def main():
             opt.input = '/eos/user/m/mseidel/analysis/TopJetShapes/b312177/Chunks/Data13TeV_SingleMuon_2016G_27.root'
         if (tree.Add(opt.input) == 0): return
         
-        fillHist(hmap, tree, opt.weightindex)
+        fillHist(hmap, tree, opt.nweights)
 
         os.system('mkdir -p %s' % opt.output)
         rootoutfile = ROOT.TFile(rootoutfilepath, "RECREATE");    
         rootoutfile.cd()    
         for obs,hmap_reco in hmap.iteritems():
             for reco,hmap_flavor in hmap_reco.iteritems():
-                for flavor,h in hmap_flavor.iteritems():
-                    h.Write()
-                    h.ProjectionX().Write()
-                    h.ProjectionY().Write()
+                for flavor,hmap_weight in hmap_flavor.iteritems():
+                    for weight,h in hmap_weight.iteritems():
+                        h.Write()
+                        h.ProjectionX().Write()
+                        h.ProjectionY().Write()
     else: # got input directory, go to batch
         cmsswBase = os.environ['CMSSW_BASE']
         workdir   = cmsswBase+'/src/TopLJets2015/TopAnalysis/'
@@ -181,28 +152,22 @@ def main():
             for file_path in os.listdir(opt.input):
                 if file_path.endswith('.root'):
                     rootoutfilepath = workdir+opt.output+'/'+os.path.basename(file_path)
-                    if (opt.weightindex == 0 and opt.skipexisting and os.path.isfile(rootoutfilepath)): continue
+                    if (opt.skipexisting and os.path.isfile(rootoutfilepath)): continue
                     #filter tags
                     if len(onlyList)>0:
                         if (not os.path.basename(file_path).rsplit('_',1)[0] in onlyList): continue
                     inputlist.append(os.path.join(opt.input,file_path))
-        print(inputlist)
-        njobs = len(inputlist) * (opt.weightindex+1)
-        print 'Running %d jobs to %s'%(njobs,opt.queue)
-        njob = 0
+        #print(inputlist)
+        print 'Running %d jobs to %s'%(len(inputlist),opt.queue)
+        njob = 1
         for inputfile in inputlist:
-            for wgt in range(opt.weightindex+1):
-                njob+=1
-                if (wgt == 12): continue # weight for (mur=1,muf=1)=default
-                outputdir=workdir+opt.output
-                rootoutfilepath = workdir+opt.output+'/'+os.path.basename(inputfile)
-                if (wgt > 0):
-                    rootoutfilepath = rootoutfilepath.rsplit('_',1)[0] + "_wgt" + str(wgt) + "_" + rootoutfilepath.rsplit('_',1)[1]
-                if (opt.skipexisting and os.path.isfile(rootoutfilepath)): continue
-                localRun='python %s/src/TopLJets2015/TopAnalysis/test/TopJSAnalysis/fillUnfoldingMatrix.py --input %s --output %s --weightindex %d'%(cmsswBase,inputfile,outputdir,wgt)
-                cmd='bsub -q %s %s/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh \"%s\"' % (opt.queue,cmsswBase,localRun)
-                print 'Submitting job %d/%d: %s, weight %d -> %s'%(njob,njobs,os.path.basename(inputfile),wgt,os.path.basename(rootoutfilepath))
-        #    os.system(cmd)
+            outputdir=workdir+opt.output
+            localRun='python %s/src/TopLJets2015/TopAnalysis/test/TopJSAnalysis/fillUnfoldingMatrix.py --input %s --output %s --nweights %d'%(cmsswBase,inputfile,outputdir,opt.nweights)
+            if (opt.skipexisting): localRun += " --skipexisting"
+            cmd='bsub -q %s %s/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh \"%s\"' % (opt.queue,cmsswBase,localRun)
+            print 'Submitting job %d/%d: %s'%(njob,len(inputlist),os.path.basename(inputfile))
+            njob+=1
+            os.system(cmd)
 
 if __name__ == "__main__":
 	sys.exit(main())
