@@ -98,10 +98,14 @@ void RunToppPb(TString inFileName,
   std::map<TString,TH1 *> histos;
   histos["wgtcounter"] = new TH1F("wgtcounter",";Weight;Events;",200,0,200);
   histos["fidcounter"] = new TH1F("fidcounter",";Weight;Events;",200,0,200);
+  histos["gencounter"] = new TH1F("gencounter",";Step;Events;",4, 1,5);
+  TString  genstep[4] = {"Initial", "#req 1Lepton", "#req 1Lepton fiducial", "#req 2jets"};
+  for (int i=1; i < histos["gencounter"]->GetNbinsX()+1; i++)
+    histos["gencounter"]->GetXaxis()->SetBinLabel(i,genstep[i-1]);
   histos["recocounter"] = new TH1F("recocounter",";Step;Events;",8, 1,9);
-  TString  step[8] = {"Initial", "Trigger", "#req 1Lepton", "#equiv 1Lepton", "#req 4jets","#req 1 b-tags","#equiv 1 b-tag", "#equiv 2btag"};
+  TString  recostep[8] = {"Initial", "Trigger", "#req 1Lepton", "#equiv 1Lepton", "#req 4jets","#req 1 b-tags","#equiv 1 b-tag", "#equiv 2btag"};
   for (int i=1; i < histos["recocounter"]->GetNbinsX()+1; i++)
-     histos["recocounter"]->GetXaxis()->SetBinLabel(i,step[i-1]);
+     histos["recocounter"]->GetXaxis()->SetBinLabel(i,recostep[i-1]);
   histos["trig"] = new TH1F("trig",";Trigger;Events",2,0,2);
   histos["lpt"]  = new TH1F("lpt",";Transverse momentum [GeV];Events",20.,0.,200.);
   histos["leta"] = new TH1F("leta",";Pseudo-rapidity;Events",20.,0.,2.1);
@@ -490,6 +494,7 @@ void RunToppPb(TString inFileName,
 	float evWeight(1.0);
 	if(isMC)
 	  {
+	    histos["gencounter"]->Fill(1);
 	    if(ttbar_w_p->size()) evWeight = ttbar_w_p->at(0);
 	    evWeight *= totalEvtNorm;
 
@@ -533,9 +538,11 @@ void RunToppPb(TString inFileName,
 		      }
 		  }
 	      }
-	    
+
+	    if(selGenLeptons.size()>0 || otherLeptons.size()>0)histos["gencounter"]->Fill(2);
 	    if(selGenLeptons.size()>0)
 	      {
+		histos["gencounter"]->Fill(3);
 		ljev.gl_pt=selGenLeptons[0].Pt();
 		ljev.gl_eta=selGenLeptons[0].Eta();
 		ljev.gl_phi=selGenLeptons[0].Phi();
@@ -565,6 +572,7 @@ void RunToppPb(TString inFileName,
 
 	    //check if it passes the gen level acceptance
 	    bool passFid(nGenJets>=2 && selGenLeptons.size()==1);
+	    if(passFid) histos["gencounter"]->Fill(4);
 	    for(size_t iw=0; iw<ttbar_w_p->size(); iw++)
 	      {
 		histos["wgtcounter"]->Fill(iw,ttbar_w_p->at(iw));
