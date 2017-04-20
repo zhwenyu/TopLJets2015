@@ -94,7 +94,7 @@ def main():
     parser.add_option('-i', '--input',
                             dest='input',   
                             default='analysis.root',
-                            help='input file [default: %default]')
+                            help='input file, if directory the script will run in batch mode [default: %default]')
     parser.add_option('--obs',
                             dest='obs',   
                             default='mult',
@@ -112,10 +112,14 @@ def main():
                             help='skip jobs with existing output files  [%default]',
                             default=True, action='store_true')
     parser.add_option('-q', '--queue', dest='queue',  help='Batch queue to use [default: %default]', default='8nh')
+    parser.add_option(      '--only',  dest='only',   help='csv list of samples to process (exact name, applies only for batch mode) [%default]', default=None, type='string')
+    parser.add_option('-w', '--weightindex', dest='weightindex', help='weight index (single job) or number of weights to run (batch) [%default]', default=0, type='int')
     (opt, args) = parser.parse_args()
 
     if opt.input.endswith('.root'):
         rootoutfilepath = opt.output+'/'+os.path.basename(opt.input)
+        if (opt.weightindex > 0):
+            rootoutfilepath = rootoutfilepath.rsplit('_',1)[0] + "_wgt" + str(opt.weightindex) + "_" + rootoutfilepath.rsplit('_',1)[1]
         if (opt.skipexisting and os.path.isfile(rootoutfilepath)):
             print("skip existing file " + rootoutfilepath)
             return
@@ -151,7 +155,7 @@ def main():
             opt.input = '/eos/user/m/mseidel/analysis/TopJetShapes/b312177/Chunks/Data13TeV_SingleMuon_2016G_27.root'
         if (tree.Add(opt.input) == 0): return
         
-        fillHist(hmap, tree)
+        fillHist(hmap, tree, opt.weightindex)
 
         os.system('mkdir -p %s' % opt.output)
         rootoutfile = ROOT.TFile(rootoutfilepath, "RECREATE");    
@@ -165,24 +169,40 @@ def main():
     else: # got input directory, go to batch
         cmsswBase = os.environ['CMSSW_BASE']
         workdir   = cmsswBase+'/src/TopLJets2015/TopAnalysis/'
+        #parse selection lists
+        onlyList=[]
+        try:
+            onlyList=opt.only.split(',')
+        except:
+            pass
         #create the tasklist
         inputlist=[]
         if os.path.isdir(opt.input):
             for file_path in os.listdir(opt.input):
                 if file_path.endswith('.root'):
                     rootoutfilepath = workdir+opt.output+'/'+os.path.basename(file_path)
-                    if (opt.skipexisting and not os.path.isfile(rootoutfilepath)):
-                        inputlist.append(os.path.join(opt.input,file_path))
-        #print(inputlist)
-        print 'Running %d jobs to %s'%(len(inputlist),opt.queue)
-        njob = 1
+                    if (opt.weightindex == 0 and opt.skipexisting and os.path.isfile(rootoutfilepath)): continue
+                    #filter tags
+                    if len(onlyList)>0:
+                        if (not os.path.basename(file_path).rsplit('_',1)[0] in onlyList): continue
+                    inputlist.append(os.path.join(opt.input,file_path))
+        print(inputlist)
+        njobs = len(inputlist) * (opt.weightindex+1)
+        print 'Running %d jobs to %s'%(njobs,opt.queue)
+        njob = 0
         for inputfile in inputlist:
-            outputdir=workdir+opt.output
-            localRun='python %s/src/TopLJets2015/TopAnalysis/test/TopJSAnalysis/fillUnfoldingMatrix.py -i %s -o %s'%(cmsswBase,inputfile,outputdir)
-            cmd='bsub -q %s %s/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh \"%s\"' % (opt.queue,cmsswBase,localRun)
-            print 'Submitting job %d/%d: %s'%(njob,len(inputlist),os.path.basename(inputfile))
-            njob+=1
-            os.system(cmd)
+            for wgt in range(opt.weightindex+1):
+                njob+=1
+                if (wgt == 12): continue # weight for (mur=1,muf=1)=default
+                outputdir=workdir+opt.output
+                rootoutfilepath = workdir+opt.output+'/'+os.path.basename(inputfile)
+                if (wgt > 0):
+                    rootoutfilepath = rootoutfilepath.rsplit('_',1)[0] + "_wgt" + str(wgt) + "_" + rootoutfilepath.rsplit('_',1)[1]
+                if (opt.skipexisting and os.path.isfile(rootoutfilepath)): continue
+                localRun='python %s/src/TopLJets2015/TopAnalysis/test/TopJSAnalysis/fillUnfoldingMatrix.py --input %s --output %s --weightindex %d'%(cmsswBase,inputfile,outputdir,wgt)
+                cmd='bsub -q %s %s/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh \"%s\"' % (opt.queue,cmsswBase,localRun)
+                print 'Submitting job %d/%d: %s, weight %d -> %s'%(njob,njobs,os.path.basename(inputfile),wgt,os.path.basename(rootoutfilepath))
+        #    os.system(cmd)
 
 if __name__ == "__main__":
 	sys.exit(main())
