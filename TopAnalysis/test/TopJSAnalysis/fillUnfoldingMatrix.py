@@ -101,7 +101,7 @@ def main():
                             help='observable [default: %default]')
     parser.add_option('-o', '--output',
                             dest='output', 
-                            default='unfolding/fill',
+                            default='unfolding/fill/Chunks',
                             help='Output directory [default: %default]')
     parser.add_option('--ri', '--rootinput',
                             dest='rootinput',
