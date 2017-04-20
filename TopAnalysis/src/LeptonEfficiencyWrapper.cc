@@ -38,7 +38,53 @@ void LeptonEfficiencyWrapper::init(TString era)
       lepEffH_["e_sel"]->SetDirectory(0);
       fIn->Close();
     }
+  // 2016 pPb/Pbp dataset
+   else if(era.Contains("era2016pPb") || era.Contains("era2016Pbp"))
+    {
+      era_=2015;
+      TString lepEffUrl(era+"/muonEfficiencies.root");
+      gSystem->ExpandPathName(lepEffUrl);
+      TFile *fIn=TFile::Open(lepEffUrl);
+      lepEffH_["m_sel"]=(TH2 *)fIn->Get("m_sel");
+      lepEffH_["m_sel"]->SetDirectory(0);
+      lepEffH_["m_singleleptrig"]=(TH2 *)fIn->Get("m_trig");
+      lepEffH_["m_singleleptrig"]->SetDirectory(0);
+      fIn->Close();
 
+      lepEffUrl=era+"/muonIsoHFEffs.root";
+      gSystem->ExpandPathName(lepEffUrl);
+      fIn=TFile::Open(lepEffUrl);
+      lepEffGr_["m_isoHF"]=(TGraphAsymmErrors *)fIn->Get("Graph");
+      fIn->Close();
+
+      lepEffUrl=era+"/electronRECOEfficiencies.root";
+      gSystem->ExpandPathName(lepEffUrl);
+      fIn=TFile::Open(lepEffUrl);
+      lepEffH_["e_reco"]=(TH2 *)fIn->Get("EGamma_SF2D");
+      lepEffH_["e_reco"]->SetDirectory(0);
+      fIn->Close();
+
+      lepEffUrl=era+"/electronIDEfficiencies.root";
+      gSystem->ExpandPathName(lepEffUrl);
+      fIn=TFile::Open(lepEffUrl);
+      lepEffH_["e_sel"]=(TH2 *)fIn->Get("EGamma_SF2D");
+      lepEffH_["e_sel"]->SetDirectory(0);
+      fIn->Close();
+
+      lepEffUrl=era+"/electronHLTEfficiencies.root";
+      gSystem->ExpandPathName(lepEffUrl);
+      fIn=TFile::Open(lepEffUrl);
+      lepEffH_["e_singleleptrig"]=(TH2 *)fIn->Get("EGamma_SF2D")->Clone();
+      lepEffH_["e_singleleptrig"]->SetDirectory(0);     
+      fIn->Close();
+      
+      lepEffUrl=era+"/electronIsoHFEffs.root";
+      gSystem->ExpandPathName(lepEffUrl);
+      fIn=TFile::Open(lepEffUrl);
+      lepEffGr_["e_isoHF"]=(TGraphAsymmErrors *)fIn->Get("Graph");
+      fIn->Close();
+
+    }  
   //2016 dataset
   else if(era.Contains("era2016"))
     {
@@ -317,8 +363,26 @@ EffCorrection_t LeptonEfficiencyWrapper::getOfflineCorrection(int pdgId,float pt
           corr.second = sqrt(pow(tkEffSFUnc*corr.first,2)+pow(tkEffSF*corr.second,2));
           corr.first  = corr.first*tkEffSF;
         }
+      
+      //reco efficiency (if available)
+      hname=idstr+"_reco";
+      if(lepEffH_.find(hname)!=lepEffH_.end() )
+	{
+	  TH2 *h=lepEffH_[hname];
+	  float minEtaForEff( h->GetXaxis()->GetXmin() ), maxEtaForEff( h->GetXaxis()->GetXmax()-0.01 );
+	  float etaForEff=TMath::Max(TMath::Min(float(fabs(eta)),maxEtaForEff),minEtaForEff);
+	  Int_t etaBinForEff=h->GetXaxis()->FindBin(etaForEff);
+	  
+	  float minPtForEff( h->GetYaxis()->GetXmin() ), maxPtForEff( h->GetYaxis()->GetXmax()-0.01 );
+	  float ptForEff=TMath::Max(TMath::Min(pt,maxPtForEff),minPtForEff);
+	  Int_t ptBinForEff=h->GetYaxis()->FindBin(ptForEff);
+	  
+	  corr.second = sqrt(pow(h->GetBinError(etaBinForEff,ptBinForEff)*corr.first,2)+pow(h->GetBinError(etaBinForEff,ptBinForEff)*corr.second,2));
+	  corr.first  = corr.first*h->GetBinContent(etaBinForEff,ptBinForEff);
+	  
+	}
     }
-
+  
   return corr;
 }
 
@@ -335,6 +399,24 @@ EffCorrection_t LeptonEfficiencyWrapper::getTriggerCorrection(std::vector<int> &
   for(size_t i=0; i<pdgId.size(); i++)
     lepParts.push_back( Particle(leptons[i],0,pdgId[i],0,0,1) );
   return getTriggerCorrection(lepParts, period);
+}
+
+EffCorrection_t LeptonEfficiencyWrapper::getOfflineIsoHFCorrection(int pdgId,float hf)
+{
+  EffCorrection_t corr(1.0,0.0);
+
+  //update correction from graph, if found
+  TString idstr(abs(pdgId)==11 ? "e" : "m");
+  TString hname(idstr);
+  hname+="_isoHF";
+  if(lepEffGr_.find(hname)!=lepEffGr_.end())
+    {
+      corr.second = 0;
+      corr.first  = lepEffGr_[hname]->Eval(hf);
+    }
+
+    
+  return corr;
 }
 
 LeptonEfficiencyWrapper::~LeptonEfficiencyWrapper()

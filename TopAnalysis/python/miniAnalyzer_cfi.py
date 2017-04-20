@@ -3,6 +3,7 @@ import FWCore.ParameterSet.Config as cms
 analysis = cms.EDAnalyzer("MiniAnalyzer",
                           saveTree               = cms.bool(True),
                           savePF                 = cms.bool(True),
+                          useRawLeptons          = cms.bool(False),
                           triggerBits            = cms.InputTag("TriggerResults","","HLT"),
                           prescales              = cms.InputTag("patTrigger"),
                           triggersToUse          = cms.vstring('HLT_Ele32_eta2p1_WPTight_Gsf_v',

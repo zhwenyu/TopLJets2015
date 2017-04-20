@@ -20,7 +20,7 @@ lumiUnc=0.027
 whoami=`whoami`
 myletter=${whoami:0:1}
 eosdir=/store/cmst3/group/top/ReReco2016/${githash}
-summaryeosdir=/store/cmst3/group/top/TopUE
+summaryeosdir=/store/cmst3/group/top/TopUE-v2
 outdir=./UEanalysis/
 wwwdir=~/www/TopUE_ReReco2016/
 
@@ -74,28 +74,27 @@ case $WHAT in
 	base="${eosprefix}/${summaryeosdir}/Chunks/MC13TeV_TTJets"
 	python test/TopUEAnalysis/runUEanalysis.py -i ${base}_0.root,${base}_1.root,${base}_2.root,${base}_3.root,${base}_4.root --step 0 --ptThr 0.9,0.9;
 	
-	#echo "Defining analysis configuration"
+	echo "Defining analysis configuration"
 	python test/TopUEAnalysis/runUEanalysis.py --step 1;
 	
-	#echo "Filling the histograms"
-	queue=1nh
+	echo "Filling the histograms"
+	queue=2nw        
 	python test/TopUEAnalysis/runUEanalysis.py -i ${summaryeosdir}/Chunks      --step 2 -q ${queue};
-	python test/TopUEAnalysis/runUEanalysis.py -i ${summaryeosdir}_syst/Chunks --step 2 -q ${queue};
 	;;
     MERGEANA )
-	./scripts/mergeOutputs.py UEanalysis/analysis_0_0 True 
+	./scripts/mergeOutputs.py UEanalysis/analysis True 
 	;;
     PLOTANA )
 	commonOpts="-l ${lumi} --saveLog --mcUnc ${lumiUnc} --procSF DY:${outdir}/plots/.dyscalefactors.pck";
-	python scripts/plotter.py -i UEanalysis/analysis_0_0 -j data/era2016/samples.json      ${commonOpts}
-	python scripts/plotter.py -i UEanalysis/analysis_0_0 -j data/era2016/syst_samples.json ${commonOpts} --silent --outName syst_plotter.root;	
-	python test/TopUEAnalysis/compareAtRecoLevel.py UEanalysis/analysis_0_0/plots/plotter.root UEanalysis/analysis_0_0/plots/syst_plotter.root
-	python test/TopUEAnalysis/UETools.py -o UEanalysis/analysis_0_0/plots/
+	python scripts/plotter.py -i UEanalysis/analysis -j data/era2016/samples.json      ${commonOpts}
+	python scripts/plotter.py -i UEanalysis/analysis -j data/era2016/syst_samples.json ${commonOpts} --silent --outName syst_plotter.root;	
+	python test/TopUEAnalysis/compareAtRecoLevel.py UEanalysis/analysis/plots/plotter.root UEanalysis/analysis/plots/syst_plotter.root
+	python test/TopUEAnalysis/UETools.py -o UEanalysis/analysis/plots/
 	;;
     WWWANA )
 	mkdir -p ${wwwdir}/rawana
-        cp UEanalysis/analysis_0_0/plots/*.{png,pdf} ${wwwdir}/rawana
-	cp  UEanalysis/analysis_0_0/plots/plotter/*.{png,pdf} ${wwwdir}/rawana
+        cp UEanalysis/analysis/plots/*.{png,pdf} ${wwwdir}/rawana
+	cp  UEanalysis/analysis/plots/plotter/*.{png,pdf} ${wwwdir}/rawana
         cp test/index.php ${wwwdir}/rawana
 	;;
 

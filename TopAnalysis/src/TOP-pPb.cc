@@ -17,6 +17,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <limits>
 
 using namespace std;
 
@@ -40,9 +41,9 @@ void RunToppPb(TString inFileName,
     }
 
   bool isMC(false);
-  if(inFileName.Contains("/MC")) isMC=true;
+  if(inFileName.Contains("/MC") || inFileName.Contains("PYQUEN")) isMC=true;
   bool isTTJets(false);
-  if(inFileName.Contains("/MCTTNominal")) isTTJets=true;
+  if(inFileName.Contains("/MCTTNominal") || inFileName.Contains("TTBAR")) isTTJets=true;
 
   float totalEvtNorm(1.0);
   if(isMC && normH) totalEvtNorm=normH->GetBinContent(1);
@@ -97,6 +98,14 @@ void RunToppPb(TString inFileName,
   std::map<TString,TH1 *> histos;
   histos["wgtcounter"] = new TH1F("wgtcounter",";Weight;Events;",200,0,200);
   histos["fidcounter"] = new TH1F("fidcounter",";Weight;Events;",200,0,200);
+  histos["gencounter"] = new TH1F("gencounter",";Step;Events;",4, 1,5);
+  TString  genstep[4] = {"Initial", "#req 1Lepton", "#req 1Lepton fiducial", "#req 2jets"};
+  for (int i=1; i < histos["gencounter"]->GetNbinsX()+1; i++)
+    histos["gencounter"]->GetXaxis()->SetBinLabel(i,genstep[i-1]);
+  histos["recocounter"] = new TH1F("recocounter",";Step;Events;",8, 1,9);
+  TString  recostep[8] = {"Initial", "Trigger", "#req 1Lepton", "#equiv 1Lepton", "#req 4jets","#req 1 b-tags","#equiv 1 b-tag", "#equiv 2btag"};
+  for (int i=1; i < histos["recocounter"]->GetNbinsX()+1; i++)
+     histos["recocounter"]->GetXaxis()->SetBinLabel(i,recostep[i-1]);
   histos["trig"] = new TH1F("trig",";Trigger;Events",2,0,2);
   histos["lpt"]  = new TH1F("lpt",";Transverse momentum [GeV];Events",20.,0.,200.);
   histos["leta"] = new TH1F("leta",";Pseudo-rapidity;Events",20.,0.,2.1);
@@ -201,7 +210,9 @@ void RunToppPb(TString inFileName,
     TTree* hiTree_p = (TTree*)inFile_p->Get("hiEvtAnalyzer/HiTree");
     TTree* hltTree_p = (TTree*)inFile_p->Get("hltanalysis/HltTree");
     TTree *pfCand_p  = (TTree *)inFile_p->Get("pfcandAnalyzer/pfTree");
-    
+    TTree *pseudotop_p = (TTree *)inFile_p->Get("topGenAnalyzer/t");
+    TTree *mc_p = (TTree *)inFile_p->Get("HiGenParticleAna/hi");
+
     //PF candidates
     std::vector<int> *pfId_p=0;
     std::vector<float> *pfPt_p=0,*pfEta_p=0,*pfPhi_p=0,*pfEnergy_p=0;
@@ -324,22 +335,23 @@ void RunToppPb(TString inFileName,
     lepTree_p->SetBranchAddress("eleCharge", &eleCharge_p);
 
     //gen-level variables
-    std::vector<int> *mcPID=0,*mcMomPID=0,*mcStatus=0;
+    std::vector<int> *mcPID=0,*mcStatus=0;
     std::vector<float> *mcPt=0,*mcEta=0,*mcPhi=0,*mcMass=0;
-    lepTree_p->SetBranchStatus("mcPID", 1);
-    lepTree_p->SetBranchStatus("mcPt", 1);
-    lepTree_p->SetBranchStatus("mcEta", 1);
-    lepTree_p->SetBranchStatus("mcPhi", 1);
-    lepTree_p->SetBranchStatus("mcMomPID", 1);
-    lepTree_p->SetBranchStatus("mcStatus", 1);
-    lepTree_p->SetBranchStatus("mcMass", 1);
-    lepTree_p->SetBranchAddress("mcMomPID", &mcMomPID);
-    lepTree_p->SetBranchAddress("mcStatus", &mcStatus);
-    lepTree_p->SetBranchAddress("mcPID", &mcPID);
-    lepTree_p->SetBranchAddress("mcPt", &mcPt);
-    lepTree_p->SetBranchAddress("mcEta", &mcEta);
-    lepTree_p->SetBranchAddress("mcPhi", &mcPhi);
-    lepTree_p->SetBranchAddress("mcMass", &mcMass);
+    if(mc_p)
+      {
+        mc_p->SetBranchStatus("pdg", 1);
+        mc_p->SetBranchStatus("sta", 1);
+        mc_p->SetBranchStatus("pt", 1);
+        mc_p->SetBranchStatus("eta", 1);
+        mc_p->SetBranchStatus("phi", 1);
+        mc_p->SetBranchStatus("mass", 1);
+        mc_p->SetBranchAddress("sta", &mcStatus);
+        mc_p->SetBranchAddress("pdg", &mcPID);
+        mc_p->SetBranchAddress("pt", &mcPt);
+        mc_p->SetBranchAddress("eta", &mcEta);
+        mc_p->SetBranchAddress("phi", &mcPhi);
+        mc_p->SetBranchAddress("mass", &mcMass);
+      }
 
     //jet variables
     const int maxJets = 5000;
@@ -381,6 +393,7 @@ void RunToppPb(TString inFileName,
     UInt_t run_, lumi_;
     ULong64_t evt_;
     Int_t hiBin_;
+    Float_t hiHFplus_, hiHFminus_, hiHFplusEta4_, hiHFminusEta4_;
     Float_t vz_;
     Float_t weight;
     std::vector<float> *ttbar_w_p=0;
@@ -389,6 +402,10 @@ void RunToppPb(TString inFileName,
     hiTree_p->SetBranchStatus("evt", 1);
     hiTree_p->SetBranchStatus("lumi", 1);
     hiTree_p->SetBranchStatus("hiBin", 1);
+    hiTree_p->SetBranchAddress("hiHFplus", &hiHFplus_);
+    hiTree_p->SetBranchAddress("hiHFminus", &hiHFminus_);
+    hiTree_p->SetBranchAddress("hiHFplusEta4", &hiHFplusEta4_);
+    hiTree_p->SetBranchAddress("hiHFminusEta4", &hiHFminusEta4_);
     hiTree_p->SetBranchStatus("vz", 1);
     hiTree_p->SetBranchStatus("weight", 1);
     hiTree_p->SetBranchStatus("ttbar_w",1);
@@ -415,6 +432,22 @@ void RunToppPb(TString inFileName,
     
     hltTree_p->SetBranchStatus(triggerName.data(),1);
     hltTree_p->SetBranchAddress(triggerName.data(),&trig);
+
+    //pseudo-top (if available)
+    std::vector<int> *pt_pdgid=0;
+    std::vector<double> *pt_pt=0,*pt_eta=0,*pt_phi=0, *pt_m=0;
+    std::vector<std::vector<int> > *pt_daughterArr=0;
+
+    if(pseudotop_p)
+      {
+        pseudotop_p->SetBranchStatus("*", 1);
+        pseudotop_p->SetBranchAddress("gtop_id", &pt_pdgid);
+        pseudotop_p->SetBranchAddress("gtop_pt", &pt_pt);
+        pseudotop_p->SetBranchAddress("gtop_eta", &pt_eta);
+        pseudotop_p->SetBranchAddress("gtop_phi", &pt_phi);
+        pseudotop_p->SetBranchAddress("gtop_mass", &pt_m);
+        pseudotop_p->SetBranchAddress("gtop_daughterArr", &pt_daughterArr);
+      }
     
     Int_t nEntries = (Int_t)lepTree_p->GetEntries();
     
@@ -428,9 +461,9 @@ void RunToppPb(TString inFileName,
 	    printf("\r [%d/%d] done",entry,nEntries);
 	    cout << flush;
 	  }
-
+	histos["recocounter"]->Fill(1);
 	//reset summary tree
-	ljev.nj=0; ljev.ngj=0; ljev.ngp=0; ljev.nb=0; ljev.l_id=0; ljev.w=0;
+	ljev.nj=0; ljev.ngj=0; ljev.ngp=0; ljev.nb=0; ljev.l_id=0; ljev.w=0;	ljev.npt=0;
 
 	//readout this event
 	lepTree_p->GetEntry(entry);
@@ -438,11 +471,30 @@ void RunToppPb(TString inFileName,
 	hiTree_p->GetEntry(entry);
 	hltTree_p->GetEntry(entry);
 	pfCand_p->GetEntry(entry);
+        if(mc_p) mc_p->GetEntry(entry);
+
+	//pseudo-top
+	if(pseudotop_p)
+	  {
+	    pseudotop_p->GetEntry(entry);
+	    ljev.npt=pt_pdgid->size();
+	    for(size_t ipt=0; ipt<pt_pdgid->size(); ipt++)
+	      {
+		ljev.pt_id[ipt]= ipt;
+		ljev.pt_pdgid[ipt]= (*pt_pdgid)[ipt];
+		ljev.pt_pt[ipt]= (*pt_pt)[ipt];
+		ljev.pt_eta[ipt]= (*pt_eta)[ipt];
+		ljev.pt_phi[ipt]= (*pt_phi)[ipt];
+		ljev.pt_m[ipt]= (*pt_m)[ipt];
+	      }
+	  }
+
 
 	//assign an event weight
 	float evWeight(1.0);
 	if(isMC)
 	  {
+	    histos["gencounter"]->Fill(1);
 	    if(ttbar_w_p->size()) evWeight = ttbar_w_p->at(0);
 	    evWeight *= totalEvtNorm;
 
@@ -452,22 +504,25 @@ void RunToppPb(TString inFileName,
 	      {
 		for(size_t imc=0; imc<mcPID->size(); imc++)
 		  {
-		    int abspid=abs(mcPID->at(imc));		
-		    int mompid=abs(mcMomPID->at(imc));
 		    int status=abs(mcStatus->at(imc));
-		    
+		    int abspid=abs(mcPID->at(imc));		
+
 		    TLorentzVector p4;
 		    p4.SetPtEtaPhiM(mcPt->at(imc),mcEta->at(imc),mcPhi->at(imc),mcMass->at(imc));
-
-		    if(mompid==6 && abspid==24 && status==22 && ljev.ngp<20)
-		      {
-			ljev.gp_pt[ljev.ngp]=p4.Pt();
-			ljev.gp_eta[ljev.ngp]=p4.Eta();
-			ljev.gp_phi[ljev.ngp]=p4.Phi();
-			ljev.gp_m[ljev.ngp]=p4.M();
-			ljev.ngp++;		    
-		      }
-
+                    
+                    //hardprocess
+		    if(status==3 && (abspid<=6 || abspid==24 || abspid==11 || abspid==13))
+                      {
+                        {
+                          ljev.gp_pdgid[ljev.ngp]=mcPID->at(imc);
+                          ljev.gp_pt[ljev.ngp]=p4.Pt();
+                          ljev.gp_eta[ljev.ngp]=p4.Eta();
+                          ljev.gp_phi[ljev.ngp]=p4.Phi();
+                          ljev.gp_m[ljev.ngp]=p4.M();
+                          ljev.ngp++;		    
+                        }
+                      }
+                    
 		    //final state leptons
 		    if(status!=1) continue;
 		    if(channelSelection==13 && abspid!=13) continue;
@@ -483,9 +538,11 @@ void RunToppPb(TString inFileName,
 		      }
 		  }
 	      }
-	    
+
+	    if(selGenLeptons.size()>0 || otherLeptons.size()>0)histos["gencounter"]->Fill(2);
 	    if(selGenLeptons.size()>0)
 	      {
+		histos["gencounter"]->Fill(3);
 		ljev.gl_pt=selGenLeptons[0].Pt();
 		ljev.gl_eta=selGenLeptons[0].Eta();
 		ljev.gl_phi=selGenLeptons[0].Phi();
@@ -515,6 +572,7 @@ void RunToppPb(TString inFileName,
 
 	    //check if it passes the gen level acceptance
 	    bool passFid(nGenJets>=2 && selGenLeptons.size()==1);
+	    if(passFid) histos["gencounter"]->Fill(4);
 	    for(size_t iw=0; iw<ttbar_w_p->size(); iw++)
 	      {
 		histos["wgtcounter"]->Fill(iw,ttbar_w_p->at(iw));
@@ -524,8 +582,9 @@ void RunToppPb(TString inFileName,
 
 	//require trigger for the event
 	histos["trig"]->Fill(trig,evWeight);
-	if(trig==0) continue;
+	if(!isMC && trig==0) continue;
 
+	histos["recocounter"]->Fill(2);
 
 	//select good muons
 	//cf. details in https://twiki.cern.ch/twiki/bin/view/CMS/SWGuideMuonIdRun2
@@ -727,13 +786,17 @@ void RunToppPb(TString inFileName,
 	if(channelSelection==1300)
 	  {
 	    if(tightMuonsNonIso.size()==0) continue;
+	    histos["recocounter"]->Fill(3);
 	    if(tightMuons.size()+looseMuons.size()+mediumElectrons.size()+vetoElectrons.size()!=0) continue;
+	    histos["recocounter"]->Fill(4);
 	    tightMuons=tightMuonsNonIso;
 	  }
 	if(channelSelection==13)
 	  {
 	    if(tightMuons.size()!=1) continue; //=1 tight muon	
+	    histos["recocounter"]->Fill(3);
 	    if(looseMuons.size()+mediumElectrons.size()+vetoElectrons.size()!=0) continue; //no extra leptons
+	    histos["recocounter"]->Fill(4);
 	    if(chargeSelection!=0)
 	      {
 		if(muonCharge[0]!=chargeSelection) continue;
@@ -744,7 +807,9 @@ void RunToppPb(TString inFileName,
 	if(channelSelection==1100)
 	  {
 	    if(mediumElectronsFailId.size()==0) continue;
+	     histos["recocounter"]->Fill(3);
 	    if(mediumElectrons.size()+vetoElectrons.size()+tightMuons.size()+looseMuons.size()!=0) continue;
+	    histos["recocounter"]->Fill(4);
 	    mediumElectrons=mediumElectronsFailId;
 
 	    //from Georgios studies, endcap electron fakes would still benefit from a ~15% extra weight
@@ -753,7 +818,9 @@ void RunToppPb(TString inFileName,
 	if(channelSelection==11)
 	  {
 	    if(mediumElectrons.size()!=1) continue; //=1 medium electron
+	    histos["recocounter"]->Fill(3);
 	    if(vetoElectrons.size()+tightMuons.size()+looseMuons.size()!=0) continue; //no extra leptons
+	    histos["recocounter"]->Fill(4);
 	    if(chargeSelection!=0)
 	      {
 		if(elCharge[0]!=chargeSelection) continue;
@@ -764,7 +831,8 @@ void RunToppPb(TString inFileName,
 	    eselSF.second=sqrt(pow(0.03,2)+pow(eselSF.second,2));
 	    evWeight*=eselSF.first;
 	  }
-	
+
+
 	// combined leptons
 	std::vector<TLorentzVector> goodLeptons;
 	goodLeptons = (channelSelection==1300 || channelSelection==13) ?  tightMuons : mediumElectrons;  
@@ -818,14 +886,15 @@ void RunToppPb(TString inFileName,
 	    if(isMC)
 	      {
 		//jet energy resolution smearing	
-		if(refpt[jetIter]>0) jerSmear=getJetResolutionScales(jp4.Pt(),jp4.Eta(),refpt[jetIter]);
-		TLorentzVector rawjp4(jp4);
-		jp4 *= jerSmear[0];
+		//if(refpt[jetIter]>0) jerSmear=getJetResolutionScales(jp4.Pt(),jp4.Eta(),refpt[jetIter]);
+		//TLorentzVector rawjp4(jp4);
+		//jp4 *= jerSmear[0];
 
 		jesScaleUnc[1]=1.028;
 		jesScaleUnc[2]=0.972;
 
 		//b-tagging
+		/*
 		float jptforBtag(jp4.Pt()>1000. ? 999. : jp4.Pt());
 		if(jflav==5)
 		  {
@@ -844,7 +913,8 @@ void RunToppPb(TString inFileName,
 		    float expEff    = expBtagEff["udsg"]->Eval(jptforBtag); 
 		    myBTagSFUtil.modifyBTagsWithSF(passCSVMUp,1.3,expEff);	
 		    myBTagSFUtil.modifyBTagsWithSF(passCSVMDn,0.7,expEff);	
-		  }		
+		  }
+		*/
 	      }
 	    
 	    if(jp4.Pt()>JETPTTHRESHOLD)
@@ -956,6 +1026,14 @@ void RunToppPb(TString inFileName,
 	    Int_t njets(nljets+nbtags);
 	    
 	    if(nljets<2) continue;
+	    if (njets>=4)
+	      histos["recocounter"]->Fill(5);
+	    if (njets>=4&&nbtags>=1)
+	      histos["recocounter"]->Fill(6);
+	    if (njets>=4&&nbtags==1)
+	      histos["recocounter"]->Fill(7);
+	    if (njets>=4&&nbtags==2)
+	      histos["recocounter"]->Fill(8);
 	    TString pf(Form("%db",TMath::Min(nbtags,2)));
 	    
 	    //jet-related quantities

@@ -7,6 +7,11 @@ options.register('runOnData', False,
                  VarParsing.varType.bool,
                  "Run this on real data"
                  )
+options.register('useRawLeptons', False,
+                 VarParsing.multiplicity.singleton,
+                 VarParsing.varType.bool,
+                 "Do not correct electrons/muons with smearing/energy scales"
+                 )
 options.register('era', 'era2016',
                  VarParsing.multiplicity.singleton,
                  VarParsing.varType.string,
@@ -140,10 +145,14 @@ process.TFileService = cms.Service("TFileService",
 
 #analysis
 process.load('TopLJets2015.TopAnalysis.miniAnalyzer_cfi')
+print 'Ntuplizer configuration is as follows'
 process.analysis.saveTree=cms.bool(options.saveTree)
 process.analysis.savePF=cms.bool(options.savePF)
-process.analysis.egmscalecorr = process.calibratedPatElectrons.correctionFile
-print 'Ntuplizer configuration is as follows'
+if options.useRawLeptons:
+    process.selectedElectrons.src=cms.InputTag('slimmedElectrons')
+    process.analysis.electrons=cms.InputTag('selectedElectrons')
+    process.analysis.useRawLeptons=cms.bool(True)
+    print 'Switched off corrections for leptons'
 if not process.analysis.saveTree :
     print '\t Summary tree won\'t be saved'
 if not process.analysis.savePF :

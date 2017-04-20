@@ -19,6 +19,21 @@ lumi=27.4
 RED='\e[31m'
 NC='\e[0m'
 case $WHAT in
+    MCSEL )
+	queue=local
+	for p in PbP pPb; do
+	    for ch in 13; do #13; do #11 13; do
+		python scripts/runLocalAnalysis.py \
+		    -i /store/cmst3/group/hintt/mverweij/forest_PYQUEN_TTBAR/${p}/v1/merge/ \
+		    -o ${outdir}/analysis_${p}_${ch} \
+		    --ch ${ch} \
+		    --era era5TeV \
+		    -m TOP-HIForest::RunToppPb \
+		    -q ${queue};
+	    done
+	done
+	;;
+
     SEL )
 	echo -e "[ ${RED} Sending out jobs to batch ${NC} ]"
 

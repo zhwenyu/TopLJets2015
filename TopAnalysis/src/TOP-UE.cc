@@ -107,13 +107,13 @@ void RunTopUE(TString filename,
 	  TString subtag(tag);
 	  if(i<2) { subtag += i; subtag += "t"; }
 	  ht.addHist("mll_"+subtag,  new TH1F("mll_"+subtag,";Dilepton invariant mass [GeV];Events",50,0,400) );
+	  ht.addHist("njets_"+subtag, new TH1F("njets_"+subtag,";Jet multiplicity;Events",7,2,9) );
+	  ht.addHist("ptttbar_"+subtag   , new TH1F("ptttbar_"+subtag,";p_{T}(t#bar{t}) [GeV];Events",50,0,200) );
+	  ht.addHist("sumpt_"+subtag     , new TH1F("sumpt_"+subtag,";Transverse momentum sum [GeV];Events",50,40,300) );
+	  ht.addHist("met_"+subtag       , new TH1F("met_"+subtag,";Missing transverse momentum [GeV];Events",50,0,300) );
 	}
       ht.addHist("ptpos_"+tag     , new TH1F("ptpos_"+tag,";Lepton transverse momentum [GeV];Events",50,20,200) );
       ht.addHist("ptll_"+tag      , new TH1F("ptll_"+tag,";Dilepton transverse momentum [GeV];Events",50,0,200) );
-      ht.addHist("ptttbar_"+tag   , new TH1F("ptttbar_"+tag,";p_{T}(t#bar{t}) [GeV];Events",50,0,200) );
-      ht.addHist("sumpt_"+tag     , new TH1F("sumpt_"+tag,";Transverse momentum sum [GeV];Events",50,40,300) );
-      ht.addHist("met_"+tag       , new TH1F("met_"+tag,";Missing transverse momentum [GeV];Events",50,0,300) );
-      ht.addHist("njets_"+tag     , new TH1F("njets_"+tag,";Jet multiplicity;Events",7,2,9) );
       ht.addHist("nbtags_"+tag    , new TH1F("nbtags_"+tag,";b-tag multiplicity;Events",3,0,3) );
       ht.addHist("nchvsnvtx_"+tag , new TH2F("nchvsnvtx_"+tag,";Vertex multiplicity;Charged particle multiplicity;Events",10,0,40,50,0,100) );
       ht.addHist("nchvsrho_"+tag  , new TH2F("nchvsrho_"+tag,";#rho;Charged particle multiplicity;Events",10,0,40,50,0,100) );      
@@ -426,16 +426,16 @@ void RunTopUE(TString filename,
 	      if(nb==0) subTag += "0t";
 	      if(nb==1) subTag += "1t";	      
 	      ht.fill("mll_"+subTag,mll,plotwgts);
+	      ht.fill("ptttbar_"+subTag,tue.ptttbar[0],plotwgts);
+	      ht.fill("njets_"+subTag,nj,plotwgts);
+	      ht.fill("met_"+subTag,evsel.getMET().Pt(),plotwgts);	      
+	      ht.fill("sumpt_"+subTag,tue.sumpt[0],plotwgts);	     
 
 	      if(!passPresel) continue;
 	      std::map<Int_t,Float_t>::iterator rIt=lumiMap.find(ev.run);
 	      if(rIt!=lumiMap.end() && ratevsrunH) ht.getPlots()["ratevsrun_"+chTag]->Fill(std::distance(lumiMap.begin(),rIt),1./rIt->second);
 	      ht.fill("ptpos_"+chTag,tue.ptpos[0],plotwgts);
-	      ht.fill("ptll_"+chTag,tue.ptll[0],plotwgts);
-	      ht.fill("ptttbar_"+chTag,tue.ptttbar[0],plotwgts);
-	      ht.fill("sumpt_"+chTag,tue.sumpt[0],plotwgts);	     
-	      ht.fill("met_"+chTag,evsel.getMET().Pt(),plotwgts);
-	      ht.fill("njets_"+chTag,nj,plotwgts);
+	      ht.fill("ptll_"+chTag,tue.ptll[0],plotwgts);	      
 	      ht.fill("nch_"+chTag,nch,plotwgts);	  
 	      ht.get2dPlots()["nchvsnvtx_"+chTag]->Fill(ev.nvtx,nch,wgt);
 	      ht.get2dPlots()["nchvsrho_"+chTag]->Fill(ev.rho,nch,wgt);

@@ -2,7 +2,7 @@
 
 #from prepareWorkspace import EVENTCATEGORIES
 EVENTCATEGORIES=[
-    '1l4j2b','1l4j1b','1l4j1q','1f4j1q','1f4j1b'#,'1f4j2b',
+    '1l4j2b','1l4j1b','1l4j1q','1f4j1q','1f4j1b',#'1f4j2b',
     #'1l3j1b','1l3j1q','1f3j1q',#'1f3j1b'
     ]
     
@@ -144,79 +144,6 @@ def definePDF(w,fitVar):
         w.factory('sig_mu[0,300]')
         w.factory('sig_sigma[5,40]')
     else:
-        w.factory('sig_mu[160,180]')
-        w.factory('sig_sigma[10,40]')
-    w.factory('e4jtoe3j[0.5,0,1]')
-    w.factory('el[0.9,0.4,1]')
-    for j in ['3j','4j'] :
-        w.factory('eb_%s[0.5,0.4,1]'%j)
-        w.factory('sig_alpha_%s[1.2,0.1,5.]'%j)
-        w.factory('sig_n_%s[1.0,0.05,8.]'%j)
-        w.factory('RooCBShape::S_%s(%s,sig_mu,sig_sigma,sig_alpha_%s,sig_n_%s)'%(j,fitVar,j,j))
-
-        if fitVar=='m_wjj':
-            w.factory('qcd_peak%s[30,10,50]'%j)
-            w.factory('qcd_sigma%s[10,50]'%j)
-        else:
-            w.factory('qcd_peak%s[100,50,150]'%j)
-            w.factory('qcd_sigma%s[10,80]'%j)
-        w.factory('qcd_tail%s[-10,0]'%j)
-        w.factory("RooNovosibirsk::QCD_%s(%s,qcd_peak%s,qcd_sigma%s,qcd_tail%s)"%(j,fitVar,j,j,j))
-
-        if fitVar=='m_wjj':
-            w.factory('w_peak%s[30,10,50]'%j)
-            w.factory('w_sigma%s[10,50]'%j)
-        else:
-            w.factory('w_peak%s[100,50,150]'%j)
-            w.factory('w_sigma%s[10,80]'%j)
-        w.factory('w_tail%s[-10,0]'%j)
-        w.factory("RooNovosibirsk::W_%s(%s,w_peak%s,w_sigma%s,w_tail%s)"%(j,fitVar,j,j,j))
-        
-    #signal yields are parametrized as lepton isolation and b-finding efficiencies
-    #background yields are category-dependent like
-    w.factory("Nsig[0,1000]")
-    for cat in EVENTCATEGORIES:
-        j='3j' if '3j' in cat  else '4j'
-        expr='@0'
-        if '1f' in cat : expr += '*(1-@1)'
-        else           : expr += '*@1'
-        if j=='3j':
-            if '1q' in cat : expr += '*(1-@2)'
-            else           : expr += '*@2'
-            expr += '*(1-@3)'
-        else:
-            if '1q' in cat   : expr += '*pow(1-@2,2)'
-            elif '1b' in cat : expr += '*2*@2*(1-@2)'
-            else             : expr += '*pow(@2,2)'
-            expr += '*@3'
-        w.factory("RooFormulaVar::Nsig_%s('%s',{Nsig,el,eb_%s,e4jtoe3j})"%(cat,expr,j))
-        
-        w.factory('Nqcd_%s[0,10000]'%cat)
-        if '1f' in cat and '1q' in cat :
-            w.factory('Nw_%s[0]'%cat)
-        else:
-            w.factory('Nw_%s[0,10000]'%cat)
-        
-        pdf=w.factory('SUM:model_%s(Nsig_%s*S_%s,Nqcd_%s*QCD_%s,Nw_%s*W_%s)'%(cat,cat,j,cat,j,cat,j))
-        simPDF.addPdf(w.pdf('model_%s'%cat),cat)
-
-    #import simultaneous pdf to workspace
-    getattr(w,'import')(simPDF,ROOT.RooFit.RecycleConflictNodes())
-    return w.pdf(simPDF.GetName())
-
-"""
-"""
-def defineTemplatePDF(dataMC,w,bins,xmin,xmax,fitVar):
-
-    #global PDF
-    simPDF=ROOT.RooSimultaneous('pdf','pdf',w.cat('sample'))
-    
-    #signal model is a crystal ball with common mean and width accross categories
-    #background models are Novosibirks functions
-    if fitVar=='m_wjj':
-        w.factory('sig_mu[-0.0,-2.0,2.0]')
-        w.factory('sig_sigma[1,0.7,10.0]')
-    else:
         w.factory('sig_mu[172.5,120,220]')
         w.factory('sig_sigma[20,5,50]')
     w.factory('e4jtoe3j[0.5,0,1]')
@@ -225,6 +152,7 @@ def defineTemplatePDF(dataMC,w,bins,xmin,xmax,fitVar):
         w.factory('eb_%s[0.5,0.4,1]'%j)
         w.factory('sig_alpha_%s[1.2,0.1,5.]'%j)
         w.factory('sig_n_%s[1.0,0.05,8.]'%j)
+        w.factory('RooCBShape::S_%s(%s,sig_mu,sig_sigma,sig_alpha_%s,sig_n_%s)'%(j,fitVar,j,j))
 
         if fitVar=='m_wjj':
             w.factory('qcd_peak%s[30,10,50]'%j)
@@ -271,21 +199,7 @@ def defineTemplatePDF(dataMC,w,bins,xmin,xmax,fitVar):
         else:
             w.factory('Nw_%s[0,10000]'%cat)
         
-        redDataMC = ROOT.RooDataSet(dataMC.reduce(ROOT.RooFit.Cut("sample==sample::%s"%cat)))
-        redDataMC.SetTitle("%s_%s"%(dataMC.GetTitle(),cat))
-        redDataMC.SetName("%s_%s"%(dataMC.GetName(),cat))
-        
-        var = ROOT.RooRealVar(fitVar,fitVar, xmin,xmax);
-        var.setBins(bins)
-        template = ROOT.RooDataHist(redDataMC.GetName(),redDataMC.GetTitle(),ROOT.RooArgSet(var),redDataMC)
-        getattr(w,'import')(template)
-        
-                
-        w.factory("HistPdf::Sig_%s(%s,%s)"%(cat,fitVar,template.GetName()))
-        w.factory("Gaussian::SigRes(%s,sig_mu,sig_sigma)"%fitVar)
-        w.factory("FCONV::S_%s(%s, Sig_%s, SigRes)"%(cat,fitVar,cat));
-        
-        pdf=w.factory('SUM:model_%s(Nsig_%s*S_%s,Nqcd_%s*QCD_%s,Nw_%s*W_%s)'%(cat,cat,cat,cat,j,cat,j))
+        pdf=w.factory('SUM:model_%s(Nsig_%s*S_%s,Nqcd_%s*QCD_%s,Nw_%s*W_%s)'%(cat,cat,j,cat,j,cat,j))
         simPDF.addPdf(w.pdf('model_%s'%cat),cat)
 
     #import simultaneous pdf to workspace
@@ -315,7 +229,6 @@ def main():
     usage = 'usage: %prog [options]'
     parser = optparse.OptionParser(usage)
     parser.add_option('-v', '--verbose',   dest='verbose',   default=0, type=int,   help='Verbose mode [%default]')
-    parser.add_option('-f','--fit',   dest='fit',   default=True,   help='Enable template(binned) fit [%default]')
     (opt, args) = parser.parse_args()
 
     if opt.verbose<9 : shushRooFit()
@@ -323,7 +236,7 @@ def main():
     #hard-coded : move to option parser
     fitVar='m_wjj'
     #fitVar='m_bwjj'
-    xmin,xmax=0,500
+    xmin,xmax=0,400
 
     #read workspace
     fIn=ROOT.TFile('workspace.root')
@@ -331,20 +244,9 @@ def main():
 
     #data to fit
     data=w.data('data')
-
-    if opt.fit:
-        #read MC workspace
-        fInMC=ROOT.TFile('workspace_MC.root')
-        wMC=fInMC.Get('w')
-
-        dataMC=wMC.data('data_withWeights')
-
-        #define the PDFs
-        bins=50
-        pdf=defineTemplatePDF(dataMC,w,bins,xmin,xmax,fitVar=fitVar)
-    else:
-        #define the PDFs                                                                                                                                        
-        pdf=definePDF(w,fitVar=fitVar)
+    
+    #define the PDFs
+    pdf=definePDF(w,fitVar=fitVar)
     print 'Defined combined PDF'
 
     #perform simultaneous fit - profile all parameters except the POI
