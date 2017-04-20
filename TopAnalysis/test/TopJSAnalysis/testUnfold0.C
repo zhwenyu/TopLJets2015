@@ -171,7 +171,7 @@ int testUnfold0()
   //Set non-reco bins to 0
   //for (int i = 0; i < histMdetGenMCSig->GetNbinsX()+1; ++i) histMdetGenMCSig->SetBinContent(i, 0, 0.);
   //Set non-gen bins to 0
-  for (int i = 0; i < histMdetGenMCSig->GetNbinsY()+1; ++i) histMdetGenMCSig->SetBinContent(0, i, 0.);
+  for (int i = 0; i < histMdetGenMCSig->GetNbinsY()+2; ++i) histMdetGenMCSig->SetBinContent(0, i, 0.);
   //Set non-reco non-gen bin to 0
   //histMdetGenMC->SetBinContent(0, 0, 36500000.);
   
@@ -226,7 +226,7 @@ int testUnfold0()
     //histMdetData->Scale(100.);
     //histMdetData->SetBinContent(0, 0.);
     
-    for (int i = 0; i < histMdetData->GetNbinsX()+1; ++i) cout << histMdetData->GetBinContent(i) << " +/- " << histMdetData->GetBinError(i) << endl;
+    for (int i = 0; i < histMdetData->GetNbinsX()+2; ++i) cout << histMdetData->GetBinContent(i) << " +/- " << histMdetData->GetBinError(i) << endl;
     
     //for (int i = 0; i < histMdetNonGenMC->GetNbinsX()+1; ++i) cout << histMdetNonGenMC->GetBinContent(i)*dataMCSF << endl;
     
@@ -241,7 +241,7 @@ int testUnfold0()
     //std::cout << "SF=" << SF << std::endl;
     //histMdetDataBGSubtracted->Add(histMdetNonGenMCbkg, -SF*832.);
     //*
-    for (int i = 0; i < histMdetDataBGSubtracted->GetNbinsX()+1; ++i) {
+    for (int i = 0; i < histMdetDataBGSubtracted->GetNbinsX()+2; ++i) {
       double sf = histMdetNonGenMCbkg->GetBinContent(i) / histMdetNonGenMCall->GetBinContent(i);
       histMdetDataBGSubtracted->SetBinContent(i, (1.-sf)*histMdetDataBGSubtracted->GetBinContent(i));
       histMdetDataBGSubtracted->SetBinError(i, (1.-sf)*histMdetDataBGSubtracted->GetBinError(i));
@@ -260,7 +260,7 @@ int testUnfold0()
       histMdetDataBGSubtracted->Add(histMdetNonGenMCbkg, -36500.*background.second);
     }
     //*/
-    for (int i = 0; i < histMdetDataBGSubtracted->GetNbinsX()+1; ++i) {
+    for (int i = 0; i < histMdetDataBGSubtracted->GetNbinsX()+2; ++i) {
       std::cout << histMdetDataBGSubtracted->GetBinContent(i) << " +/- " << histMdetDataBGSubtracted->GetBinError(i) << std::endl;
     }
     
@@ -320,20 +320,26 @@ int testUnfold0()
     
     // Add systematic uncertainties
     std::vector<TString> uncertainties;
-    uncertainties.push_back("MC13TeV_TTJets_fsrup.root");
-    uncertainties.push_back("MC13TeV_TTJets_fsrdn.root");
-    uncertainties.push_back("MC13TeV_TTJets_hdampup.root");
-    uncertainties.push_back("MC13TeV_TTJets_hdampdn.root");
-    uncertainties.push_back("MC13TeV_TTJets_isrup.root");
-    uncertainties.push_back("MC13TeV_TTJets_isrdn.root");
-    uncertainties.push_back("MC13TeV_TTJets_ueup.root");
-    uncertainties.push_back("MC13TeV_TTJets_uedn.root");
-    uncertainties.push_back("MC13TeV_TTJets_herwig.root");
+    uncertainties.push_back("fsrup");
+    uncertainties.push_back("fsrdn");
+    uncertainties.push_back("hdampup");
+    uncertainties.push_back("hdampdn");
+    uncertainties.push_back("isrup");
+    uncertainties.push_back("isrdn");
+    uncertainties.push_back("ueup");
+    uncertainties.push_back("uedn");
+    uncertainties.push_back("herwig");
+    
+    double nominalNormalization = histMdetGenMCSig->Integral(1,-1,0,-1) / histMdetGenMCSig->Integral(1,-1,1,-1);
+    //std::cout << "nominalNormalization = " << nominalNormalization << std::endl;
     
     for (TString uncertainty : uncertainties) {
-      TFile uncfile(basepath+uncertainty, "READ");
+      TFile uncfile(basepath+"MC13TeV_TTJets_"+uncertainty+".root", "READ");
       TH2D *histMdetGenMCunc = (TH2D*) uncfile.Get(observable+"_"+flavor+"_responsematrix");
-      for (int i = 0; i<histMdetGenMCunc->GetNbinsY()+1; ++i) histMdetGenMCunc->SetBinContent(0, i, 0.);
+      for (int i = 0; i<histMdetGenMCunc->GetNbinsY()+2; ++i) histMdetGenMCunc->SetBinContent(0, i, 0.);
+      double normalization = histMdetGenMCunc->Integral(1,-1,0,-1) / histMdetGenMCunc->Integral(1,-1,1,-1);
+      //std::cout << "normalization = " << normalization << std::endl;
+      for (int i = 0; i<histMdetGenMCunc->GetNbinsX()+2; ++i) histMdetGenMCunc->SetBinContent(i, 0, histMdetGenMCunc->GetBinContent(i)*nominalNormalization/normalization);
       unfold.AddSysError(histMdetGenMCunc, uncertainty, TUnfold::kHistMapOutputHoriz, TUnfoldSys::kSysErrModeMatrix);
     }
 
@@ -484,26 +490,34 @@ int testUnfold0()
   
   //TH2* ematrix = unfold.GetEmatrixInput("ematrix");
   gStyle->SetOptStat(0);
-  //histEmatTotal->Draw("colz,text");
+  histEmatTotal->Draw("colz,text");
 
   // show uncertainties
   output.cd(4);
   //histMdetGenToy->Draw("colz");
   //std::cout << histMdetGenToy->GetBinContent(5,5) << std::endl;
   
-  //std::vector<TH1F*> hists;
-  //bool first = true;
-  //for (TString uncertainty : uncertainties) {
-  //  TH1* hist = unfold.GetDeltaSysSource(uncertainty, uncertainty);
-  //  hist->Divide(histMunfoldOrig);
-  //  if (first) {
-  //    hist->SetTitle("Systematic uncertainties");
-  //    hist->GetYaxis()->SetRangeUser(-0.5,0.5);
-  //    hist->Draw();
-  //    first = false;
-  //  }
-  //  else hist->Draw("same");
-  //}
+  std::vector<TH1F*> hists;
+  bool first = true;
+  int count = 0;
+  TLegend legsys(0.,0.,1.,1.);
+  for (TString uncertainty : uncertainties) {
+    TH1* hist = unfold.GetDeltaSysSource(uncertainty, uncertainty);
+    divideByBinWidth(hist);
+    hist->Divide(histMunfold);
+    hist->SetLineColor(++count);
+    legsys.AddEntry(hist, uncertainty, "l");
+    if (first) {
+      hist->SetTitle("Systematic uncertainties");
+      hist->GetYaxis()->SetRangeUser(-0.5,0.5);
+      hist->Draw();
+      first = false;
+    }
+    else hist->Draw("same");
+  }
+  
+  output.cd(5);
+  legsys.Draw();
 /*
   // show tau as a function of chi**2
   output.cd(5);
@@ -515,27 +529,7 @@ int testUnfold0()
   //bestLogTauLogChi2->SetMarkerColor(kRed);
   //bestLogTauLogChi2->Draw("*");
 */  
-  // show ratios
-  output.cd(4);
-  hPull->Draw("colz");
-  
-  hPull->FitSlicesY();
-  output.cd(5);
-  TH1D *pull_1 = (TH1D*) gDirectory->Get("pull_1");
-  pull_1->Fit("pol0");
-  output.cd(6);
-  //TH1D *pull_2 = (TH1D*) gDirectory->Get("pull_2");
-  //pull_2->Fit("pol0");
-  TH1F* histMgenRatio = (TH1F*) histMunfold->Clone();
-  histMgenRatio->SetTitle("Ratio Toy Data/MC");
-  histMgenRatio->Divide(histMgenMC);
-  //histMgenRatio->GetYaxis()->SetRangeUser(0.25,2);
-  histMgenRatio->Draw("e,x0");
-  TH1F* histMdetRatio = (TH1F*) histMdetDataBGSubtracted->Clone();
-  histMdetRatio->Divide(histMdetMCsig);
-  histMdetRatio->SetLineColor(kRed+1);
-  histMdetRatio->Draw("hist,e,same");
-  histMgenRatio->Draw("e,x0,same");
+
   
 
   

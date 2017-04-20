@@ -168,9 +168,9 @@ int testUnfold0Toys()
   //histMdetGenMC->Scale(1000000.);
   
   //Set non-reco bins to 0
-  //for (int i = 0; i < histMdetGenMCSig->GetNbinsX()+1; ++i) histMdetGenMCSig->SetBinContent(i, 0, 0.);
+  //for (int i = 0; i < histMdetGenMCSig->GetNbinsX()+2; ++i) histMdetGenMCSig->SetBinContent(i, 0, 0.);
   //Set non-gen bins to 0
-  for (int i = 0; i < histMdetGenMCSig->GetNbinsY()+1; ++i) histMdetGenMCSig->SetBinContent(0, i, 0.);
+  for (int i = 0; i < histMdetGenMCSig->GetNbinsY()+2; ++i) histMdetGenMCSig->SetBinContent(0, i, 0.);
   //Set non-reco non-gen bin to 0
   //histMdetGenMC->SetBinContent(0, 0, 36500000.);
   
@@ -178,7 +178,7 @@ int testUnfold0Toys()
   
   int nToys = 1000;
   
-  TH2F* hPull = new TH2F("pull", "pull", histMgenMC->GetNbinsX()+1, 0, histMgenMC->GetNbinsX()+1, 50, -5, 5);
+  TH2F* hPull = new TH2F("pull", "pull", histMgenMC->GetNbinsX()+2, 0, histMgenMC->GetNbinsX()+2, 50, -5, 5);
   
   for (int t = 0; t < nToys; ++t) {
     std::cout<<"toy number "<<t<<std::endl;
@@ -205,7 +205,7 @@ int testUnfold0Toys()
       histMdetGenToy->SetBinContent(position, histMdetGenToy->GetBinContent(position) + 1);
       ++drawn;
     }
-    for (int i = 0; i < histMdetGenToy->GetNcells()+1; ++i) {
+    for (int i = 0; i < histMdetGenToy->GetNcells()+2; ++i) {
       histMdetGenToy->SetBinError(i, sqrt(histMdetGenToy->GetBinContent(i)));
     }
     //histMdetGenToy->FillRandom(histMdetGenMC, nExpectedEvents);    
@@ -223,9 +223,9 @@ int testUnfold0Toys()
     //histMdetData->Scale(100.);
     //histMdetData->SetBinContent(0, 0.);
     
-    for (int i = 0; i < histMdetData->GetNbinsX()+1; ++i) cout << histMdetData->GetBinContent(i) << " +/- " << histMdetData->GetBinError(i) << endl;
+    for (int i = 0; i < histMdetData->GetNbinsX()+2; ++i) cout << histMdetData->GetBinContent(i) << " +/- " << histMdetData->GetBinError(i) << endl;
     
-    //for (int i = 0; i < histMdetNonGenMC->GetNbinsX()+1; ++i) cout << histMdetNonGenMC->GetBinContent(i)*dataMCSF << endl;
+    //for (int i = 0; i < histMdetNonGenMC->GetNbinsX()+2; ++i) cout << histMdetNonGenMC->GetBinContent(i)*dataMCSF << endl;
     
     // backgrounds
     std::map<TString, double> backgrounds;
@@ -240,7 +240,7 @@ int testUnfold0Toys()
     //std::cout << "SF=" << SF << std::endl;
     //histMdetDataBGSubtracted->Add(histMdetNonGenMCbkg, -SF*832.);
     //*
-    for (int i = 0; i < histMdetDataBGSubtracted->GetNbinsX()+1; ++i) {
+    for (int i = 0; i < histMdetDataBGSubtracted->GetNbinsX()+2; ++i) {
       double sf = histMdetNonGenMCbkg->GetBinContent(i) / histMdetNonGenMCall->GetBinContent(i);
       histMdetDataBGSubtracted->SetBinContent(i, (1.-sf)*histMdetDataBGSubtracted->GetBinContent(i));
       histMdetDataBGSubtracted->SetBinError(i, (1.-sf)*histMdetDataBGSubtracted->GetBinError(i));
@@ -254,7 +254,7 @@ int testUnfold0Toys()
       histMdetDataBGSubtracted->Add(histMdetNonGenMCbkg, -dataMCSF);
     }
     //*/
-    for (int i = 0; i < histMdetDataBGSubtracted->GetNbinsX()+1; ++i) {
+    for (int i = 0; i < histMdetDataBGSubtracted->GetNbinsX()+2; ++i) {
       std::cout << histMdetDataBGSubtracted->GetBinContent(i) << " +/- " << histMdetDataBGSubtracted->GetBinError(i) << std::endl;
     }
     
@@ -327,7 +327,7 @@ int testUnfold0Toys()
     //for (TString uncertainty : uncertainties) {
     //  TFile uncfile(basepath+uncertainty, "READ");
     //  TH2D *histMdetGenMCunc = (TH2D*) uncfile.Get(observable+"_"+flavor+"_responsematrix");
-    //  for (int i = 0; i<histMdetGenMCunc->GetNbinsY()+1; ++i) histMdetGenMCunc->SetBinContent(0, i, 0.);
+    //  for (int i = 0; i<histMdetGenMCunc->GetNbinsY()+2; ++i) histMdetGenMCunc->SetBinContent(0, i, 0.);
     //  unfold.AddSysError(histMdetGenMCunc, uncertainty, TUnfold::kHistMapOutputHoriz, TUnfoldSys::kSysErrModeMatrix);
     //}
 
@@ -340,7 +340,7 @@ int testUnfold0Toys()
     
     TH1 *histMunfold=unfold.GetOutput("Unfolded");
     
-    for (int i = 0; i < histMunfold->GetNbinsX()+1; ++i) {
+    for (int i = 0; i < histMunfold->GetNbinsX()+2; ++i) {
       double pull = (histMunfold->GetBinContent(i) - histMgenToy->GetBinContent(i)) / histMunfold->GetBinError(i); // sqrt(pow(histMunfold->GetBinError(i), 2) + pow(histMgenToy->GetBinError(i), 2));
       //std::cout << histMgenMC->GetBinContent(i) << std::endl;
       hPull->Fill(i, pull);
