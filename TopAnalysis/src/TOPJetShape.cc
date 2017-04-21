@@ -534,7 +534,7 @@ void RunTopJetShape(TString filename,
         tjsev.j_overlap[ij] = jets[ij].overlap();
         
         if (tjsev.reco_sel != 1) continue;
-        if (abs(tjsev.j_eta[ij]) < 2. or tjsev.j_overlap[ij]) continue;
+        if (abs(tjsev.j_eta[ij]) > 2. or tjsev.j_overlap[ij]) continue;
         
         tjsev.j_mult_charged[ij] = getMult(jets[ij]);
 //        tjsev.j_mult_all[ij]     = getMult(jets[ij], true);
@@ -770,7 +770,7 @@ void RunTopJetShape(TString filename,
           }
           
           if (tjsev.gen_sel != 1) continue;
-          if (abs(tjsev.gj_eta[i]) < 2. or tjsev.gj_overlap[i]) continue;
+          if (abs(tjsev.gj_eta[i]) > 2. or tjsev.gj_overlap[i]) continue;
           
           //calculate jet properties            
           tjsev.gj_mult_charged[i] = getMult(genJets[i]);
