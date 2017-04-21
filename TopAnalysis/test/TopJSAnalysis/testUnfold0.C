@@ -138,7 +138,7 @@ int testUnfold0()
   TFile file(basepath+"MC13TeV_TTJets.root", "READ");
   TFile datafile(basepath+"Data13TeV.root", "READ");
   
-  TString observable  = "width";
+  TString observable  = "mult";
           observable += "_charged";
   TString flavor      = "all";
   bool reg = false;
@@ -319,6 +319,8 @@ int testUnfold0()
     std::cout<<"chi**2(sys)="<<unfold.GetChi2Sys()<<"\n";
     
     // Add systematic uncertainties
+    double nominalNormalization = histMdetGenMCSig->Integral(1,-1,0,-1) / histMdetGenMCSig->Integral(1,-1,1,-1);
+    
     std::vector<TString> uncertainties;
     uncertainties.push_back("fsrup");
     uncertainties.push_back("fsrdn");
@@ -330,9 +332,6 @@ int testUnfold0()
     uncertainties.push_back("uedn");
     uncertainties.push_back("herwig");
     
-    double nominalNormalization = histMdetGenMCSig->Integral(1,-1,0,-1) / histMdetGenMCSig->Integral(1,-1,1,-1);
-    //std::cout << "nominalNormalization = " << nominalNormalization << std::endl;
-    
     for (TString uncertainty : uncertainties) {
       TFile uncfile(basepath+"MC13TeV_TTJets_"+uncertainty+".root", "READ");
       TH2D *histMdetGenMCunc = (TH2D*) uncfile.Get(observable+"_"+flavor+"_responsematrix");
@@ -341,6 +340,16 @@ int testUnfold0()
       //std::cout << "normalization = " << normalization << std::endl;
       for (int i = 0; i<histMdetGenMCunc->GetNbinsX()+2; ++i) histMdetGenMCunc->SetBinContent(i, 0, histMdetGenMCunc->GetBinContent(i)*nominalNormalization/normalization);
       unfold.AddSysError(histMdetGenMCunc, uncertainty, TUnfold::kHistMapOutputHoriz, TUnfoldSys::kSysErrModeMatrix);
+    }
+    
+    // uncertainties from weights
+    for (int w = 1; w <= 20; ++w) {
+      TH2D *histMdetGenMCunc = (TH2D*) file.Get(observable+"_"+flavor+"_wgt"+std::to_string(w)+"_responsematrix");
+      for (int i = 0; i<histMdetGenMCunc->GetNbinsY()+2; ++i) histMdetGenMCunc->SetBinContent(0, i, 0.);
+      double normalization = histMdetGenMCunc->Integral(1,-1,0,-1) / histMdetGenMCunc->Integral(1,-1,1,-1);
+      //std::cout << "normalization = " << normalization << std::endl;
+      for (int i = 0; i<histMdetGenMCunc->GetNbinsX()+2; ++i) histMdetGenMCunc->SetBinContent(i, 0, histMdetGenMCunc->GetBinContent(i)*nominalNormalization/normalization);
+      unfold.AddSysError(histMdetGenMCunc, TString(std::to_string(w)), TUnfold::kHistMapOutputHoriz, TUnfoldSys::kSysErrModeMatrix);
     }
 
 
@@ -514,6 +523,14 @@ int testUnfold0()
       first = false;
     }
     else hist->Draw("same");
+  }
+  for (int w = 1; w <= 20; ++w) {
+    TH1* hist = unfold.GetDeltaSysSource(TString(std::to_string(w)), TString(std::to_string(w)));
+    divideByBinWidth(hist);
+    hist->Divide(histMunfold);
+    hist->SetLineColor(++count);
+    legsys.AddEntry(hist, TString("weight"+std::to_string(w)), "l");
+    hist->Draw("same");
   }
   
   output.cd(5);
