@@ -122,7 +122,7 @@ void normalize(TH1* hist) {
   hist->Scale(1./hist->Integral());
 }
 
-int testUnfold0Toys()
+int testUnfold0Toys(TString observable = "mult", int nToys = 100)
 {
   // switch on histogram errors
   TH1::SetDefaultSumw2();
@@ -137,7 +137,7 @@ int testUnfold0Toys()
   //
   TFile file(basepath+"MC13TeV_TTJets.root", "READ");
   
-  TString observable  = "tau21";
+  //TString observable  = "tau21";
           observable += "_charged";
   TString flavor      = "all";
   bool reg = false;
@@ -156,7 +156,7 @@ int testUnfold0Toys()
   histMdetMCsig->Scale(dataMCSF);
   
   double integral = histMdetGenMC->Integral(0,-1,0,-1);
-  std::cout << "integral: " << integral << std::endl;
+  //std::cout << "integral: " << integral << std::endl;
   double nExpectedEvents = integral*36500*832.;
   std::vector<double> wheel = { 0. };
   for (int i = 0; i < histMdetGenMC->GetNcells()+1; ++i) {
@@ -176,9 +176,7 @@ int testUnfold0Toys()
   
   TRandom3 random(1);
   
-  int nToys = 1000;
-  
-  TH2F* hPull = new TH2F("pull", "pull", histMgenMC->GetNbinsX()+2, 0, histMgenMC->GetNbinsX()+2, 50, -5, 5);
+  TH2F* hPull = new TH2F("pull", "pull;bin;pull", histMgenMC->GetNbinsX()+2, 0, histMgenMC->GetNbinsX()+2, 50, -5, 5);
   
   for (int t = 0; t < nToys; ++t) {
     std::cout<<"toy number "<<t<<std::endl;
@@ -223,7 +221,7 @@ int testUnfold0Toys()
     //histMdetData->Scale(100.);
     //histMdetData->SetBinContent(0, 0.);
     
-    for (int i = 0; i < histMdetData->GetNbinsX()+2; ++i) cout << histMdetData->GetBinContent(i) << " +/- " << histMdetData->GetBinError(i) << endl;
+    //for (int i = 0; i < histMdetData->GetNbinsX()+2; ++i) cout << histMdetData->GetBinContent(i) << " +/- " << histMdetData->GetBinError(i) << endl;
     
     //for (int i = 0; i < histMdetNonGenMC->GetNbinsX()+2; ++i) cout << histMdetNonGenMC->GetBinContent(i)*dataMCSF << endl;
     
@@ -254,9 +252,9 @@ int testUnfold0Toys()
       histMdetDataBGSubtracted->Add(histMdetNonGenMCbkg, -dataMCSF);
     }
     //*/
-    for (int i = 0; i < histMdetDataBGSubtracted->GetNbinsX()+2; ++i) {
-      std::cout << histMdetDataBGSubtracted->GetBinContent(i) << " +/- " << histMdetDataBGSubtracted->GetBinError(i) << std::endl;
-    }
+    //for (int i = 0; i < histMdetDataBGSubtracted->GetNbinsX()+2; ++i) {
+    //  std::cout << histMdetDataBGSubtracted->GetBinContent(i) << " +/- " << histMdetDataBGSubtracted->GetBinError(i) << std::endl;
+    //}
     
 
     
@@ -286,31 +284,31 @@ int testUnfold0Toys()
     // the unfolding is done here
     //
     // scan L curve and find best point
-    Int_t nScan=100;
-    // use automatic L-curve scan: start with taumin=taumax=0.0
-    Double_t tauMin=1e-10;
-    Double_t tauMax=1e-2;
-    TSpline *rhoScan;
-    TUnfoldDensity::EScanTauMode tauflag = TUnfoldDensity::kEScanTauRhoAvg;
+    //Int_t nScan=100;
+    //// use automatic L-curve scan: start with taumin=taumax=0.0
+    //Double_t tauMin=1e-10;
+    //Double_t tauMax=1e-2;
+    //TSpline *rhoScan;
+    //TUnfoldDensity::EScanTauMode tauflag = TUnfoldDensity::kEScanTauRhoAvg;
 
-    int iBest = unfold.ScanTau(nScan,tauMin,tauMax,&rhoScan,tauflag);
+    //int iBest = unfold.ScanTau(nScan,tauMin,tauMax,&rhoScan,tauflag);
+    //
+    //// create graphs with one point to visualize best choice of tau
+    //double tau[1], rho[1];
     
-    // create graphs with one point to visualize best choice of tau
-    double tau[1], rho[1];
-    
-    rhoScan->GetKnot(iBest, tau[0], rho[0]);
-    TGraph *bestRho = new TGraph(1,tau,rho);
-    double opt_tau = unfold.GetTau();
-    cout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  TAU,iBest --> " << tau[0] << "  " << opt_tau << "  " << rho[0] << endl;
+    //rhoScan->GetKnot(iBest, tau[0], rho[0]);
+    //TGraph *bestRho = new TGraph(1,tau,rho);
+    //double opt_tau = unfold.GetTau();
+    //cout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  TAU,iBest --> " << tau[0] << "  " << opt_tau << "  " << rho[0] << endl;
 
     //==========================================================================
     // print some results
     //
     //std::cout<<"toy number "<<t<<std::endl;
-    std::cout<<"tau="<<unfold.GetTau()<<"\n";
-    std::cout<<"chi**2="<<unfold.GetChi2A()<<"+"<<unfold.GetChi2L()
-             <<" / "<<unfold.GetNdf()<<"\n";
-    std::cout<<"chi**2(sys)="<<unfold.GetChi2Sys()<<"\n";
+    //std::cout<<"tau="<<unfold.GetTau()<<"\n";
+    //std::cout<<"chi**2="<<unfold.GetChi2A()<<"+"<<unfold.GetChi2L()
+    //         <<" / "<<unfold.GetNdf()<<"\n";
+    //std::cout<<"chi**2(sys)="<<unfold.GetChi2Sys()<<"\n";
     
     // Add systematic uncertainties
     //std::vector<TString> uncertainties;
@@ -335,8 +333,8 @@ int testUnfold0Toys()
     //==========================================================================
     // retreive results into histograms
     
-    if (not reg) unfold.DoUnfold(0.);
-    else unfold.DoUnfold(opt_tau);
+    unfold.DoUnfold(0.);
+    //else unfold.DoUnfold(opt_tau);
     
     TH1 *histMunfold=unfold.GetOutput("Unfolded");
     
@@ -350,172 +348,31 @@ int testUnfold0Toys()
 
   //=====================================================================
   // plot some histograms
-  TCanvas output;
-  output.Divide(3,2);
-
-  // Show the matrix which connects input and output
-  // There are overflow bins at the bottom, not shown in the plot
-  // These contain the background shape.
-  // The overflow bins to the left and right contain
-  // events which are not reconstructed. These are necessary for proper MC
-  // normalisation
-  output.cd(1);
-  gStyle->SetPaintTextFormat("4.1g");
-  histMdetGenMC->Draw("colz,text");
-
-  // draw generator-level distribution:
-  //   data (red) [for real data this is not available]
-  //   MC input (black) [with completely wrong peak position and shape]
-  //   unfolded data (blue)
-  output.cd(2);
+  TCanvas output("output","output",500,500);
+  output.cd();
   
-  //normalize(histMgenMC);
-  //normalize(histMdetMC);
-  //normalize(histMdetData);
-  //normalize(histMdetDataBGSubtracted);
-  //normalize(histTotalError);
-  //normalize(histMunfold);
-  /*
-  divideByBinWidth(histMgenMC);
-  //histMgenMC->Scale(histMgenMC->Integral()/histMunfold->Integral());
-  //histMgenMC->Scale(histMunfold->Integral()/histMgenMC->Integral());
-  histMgenMC->GetYaxis()->SetRangeUser(0., 1.5*histMgenMC->GetMaximum());
-  histMgenMC->SetLineColor(kRed+1);
-  histMgenMC->SetLineColor(kRed+1);
-  histMgenMC->SetMarkerColor(kRed+1);
-  histMgenMC->SetMarkerStyle(5);
-  histMgenMC->SetMarkerSize(0.75);
-  histMgenMC->Draw("P X0 E1");
-  
-  divideByBinWidth(histMdetMC);
-  histMdetMC->SetLineColor(kRed+1);
-  histMdetMC->SetLineStyle(2);
-  histMdetMC->Draw("SAME,HIST");
-  
-  divideByBinWidth(histMdetMCsig);
-  histMdetMCsig->SetLineColor(kRed+1);
-  histMdetMCsig->SetLineStyle(0);
-  histMdetMCsig->Draw("SAME,HIST");
-  
-  divideByBinWidth(histMdetData);
-  histMdetData->SetLineColor(kBlack);
-  histMdetData->SetLineStyle(3);
-  histMdetData->Draw("SAME,HIST");
-  
-  divideByBinWidth(histMgenToy);
-  histMgenToy->SetLineColor(kMagenta+1);
-  histMgenToy->SetLineColor(kMagenta+1);
-  histMgenToy->SetMarkerColor(kMagenta+1);
-  histMgenToy->SetMarkerStyle(2);
-  histMgenToy->SetMarkerSize(0.75);
-  histMgenToy->Draw("SAME P X0 E1");
-  
-  divideByBinWidth(histMdetDataBGSubtracted);
-  histMdetDataBGSubtracted->SetLineColor(kBlack);
-  histMdetDataBGSubtracted->SetLineStyle(0);
-  histMdetDataBGSubtracted->Draw("SAME,HIST");
-  
-  //divideByBinWidth(histTotalError);
-  //histTotalError->SetLineColor(kBlack);
-  //histTotalError->SetMarkerColor(kBlack);
-  //histTotalError->SetMarkerStyle(20);
-  //histTotalError->SetMarkerSize(0.5);
-  //histTotalError->Draw("SAME P X0 E");
-  divideByBinWidth(histMunfold);
-  histMunfold->SetLineColor(kBlack);
-  histMunfold->SetMarkerColor(kBlack);
-  histMunfold->SetMarkerStyle(20);
-  histMunfold->SetMarkerSize(0.5);
-  histMunfold->Draw("SAME P X0 E1");
-  
-  TLegend leg(0.5,0.6,0.85,0.9);
-  leg.SetLineWidth(0);
-  leg.SetFillStyle(0);
-  leg.AddEntry(histMgenMC, "MC gen", "p");
-  leg.AddEntry(histMdetMC, "MC reco", "l");
-  leg.AddEntry(histMdetMCsig, "MC reco signal", "l");
-  leg.AddEntry(histMgenToy, "toy gen", "p");
-  leg.AddEntry(histMdetData, "data reco", "l");
-  leg.AddEntry(histMdetDataBGSubtracted, "data (bg-sub)", "l");
-  leg.AddEntry(histMunfold, "data unfolded", "ep");
-  leg.Draw();
-*/
-  // show detector level distributions
-  //    data (red)
-  //    MC (black) [with completely wrong peak position and shape]
-  //    unfolded data (blue)
-  output.cd(3);
-//  histMunfold->Draw("P X0 E1");
-  //histMdetFold->SetLineColor(kBlue);
-  //histMdetFold->Draw();
-  //histMdetMC->Draw("SAME HIST");
-  //
-  //TH1 *histInput=unfold.GetInput("Minput",";mass(det)");
-
-  //histInput->SetLineColor(kRed);
-  //histInput->Draw("SAME");
-  
-  //TH2* ematrix = unfold.GetEmatrixInput("ematrix");
-  gStyle->SetOptStat(0);
-  //histEmatTotal->Draw("colz,text");
-
-  // show uncertainties
-  output.cd(4);
-  //histMdetGenToy->Draw("colz");
-  //std::cout << histMdetGenToy->GetBinContent(5,5) << std::endl;
-  
-  //std::vector<TH1F*> hists;
-  //bool first = true;
-  //for (TString uncertainty : uncertainties) {
-  //  TH1* hist = unfold.GetDeltaSysSource(uncertainty, uncertainty);
-  //  hist->Divide(histMunfoldOrig);
-  //  if (first) {
-  //    hist->SetTitle("Systematic uncertainties");
-  //    hist->GetYaxis()->SetRangeUser(-0.5,0.5);
-  //    hist->Draw();
-  //    first = false;
-  //  }
-  //  else hist->Draw("same");
-  //}
-/*
-  // show tau as a function of chi**2
-  output.cd(5);
-  //logTauX->Draw();
-  rhoScan->Draw();
-  rhoScan->SetTitle(";log_{10}(#tau);average(#rho_{i})");
-  rhoScan->SetLineColor(kRed);
-  bestRho->Draw("*");
-  //bestLogTauLogChi2->SetMarkerColor(kRed);
-  //bestLogTauLogChi2->Draw("*");
-*/  
-  // show ratios
-  output.cd(4);
   hPull->Draw("colz");
   
+  output.SaveAs("unfolding/toys/"+observable+"_"+flavor+"_pull.pdf");
+  output.SaveAs("unfolding/toys/"+observable+"_"+flavor+"_pull.png");
+  output.SaveAs("unfolding/toys/"+observable+"_"+flavor+"_pull.root");
+  
   hPull->FitSlicesY();
-  output.cd(5);
   TH1D *pull_1 = (TH1D*) gDirectory->Get("pull_1");
+  pull_1->GetYaxis()->SetRangeUser(-1.,1.);
   pull_1->Fit("pol0");
-  output.cd(6);
+  
+  output.SaveAs("unfolding/toys/"+observable+"_"+flavor+"_pull_mean.pdf");
+  output.SaveAs("unfolding/toys/"+observable+"_"+flavor+"_pull_mean.png");
+  output.SaveAs("unfolding/toys/"+observable+"_"+flavor+"_pull_mean.root");
+  
   TH1D *pull_2 = (TH1D*) gDirectory->Get("pull_2");
+  pull_2->GetYaxis()->SetRangeUser(0.,2.);
   pull_2->Fit("pol0");
-  //TH1F* histMgenRatio = (TH1F*) histMunfold->Clone();
-  //histMgenRatio->SetTitle("Ratio Toy Data/MC");
-  //divideByBinWidth(histMgenToy);
-  //histMgenRatio->Add(histMgenToy,-1);
-  ////histMgenRatio->GetYaxis()->SetRangeUser(0.25,2);
-  //histMgenRatio->Draw("e,x0");
-  //TH1F* histMdetRatio = (TH1F*) histMdetDataBGSubtracted->Clone();
-  //histMdetRatio->Divide(histMdetMCsig);
-  //histMdetRatio->SetLineColor(kRed+1);
-  //histMdetRatio->Draw("hist,e,same");
-  //histMgenRatio->Draw("e,x0,same");
   
-
-  
-
-  output.SaveAs("testUnfold0Toys_"+observable+"_"+flavor+".pdf");
-  output.SaveAs("testUnfold0Toys_"+observable+"_"+flavor+".root");
+  output.SaveAs("unfolding/toys/"+observable+"_"+flavor+"_pull_width.pdf");
+  output.SaveAs("unfolding/toys/"+observable+"_"+flavor+"_pull_width.png");
+  output.SaveAs("unfolding/toys/"+observable+"_"+flavor+"_pull_width.root");
 
   return 0;
 }
