@@ -277,7 +277,7 @@ void RunTopJetShape(TString filename,
     {
       t->GetEntry(iev);
       resetTopJetShapeEvent(tjsev);
-      if(iev%10==0) printf ("\r [%3.0f%%] done", 100.*(float)iev/(float)nentries);
+      if(iev%int(nentries/100)==0) printf ("[%3.0f%%] done\n", 100.*(float)iev/(float)nentries);
       
       //assign randomly a run period
       TString period = assignRunPeriod(runPeriods,random);

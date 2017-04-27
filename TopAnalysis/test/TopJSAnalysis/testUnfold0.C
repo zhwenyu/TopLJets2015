@@ -547,8 +547,9 @@ int testUnfold0()
   //bestLogTauLogChi2->Draw("*");
 */  
 
-  
-
+  for (int i = 1; i < histMunfold->GetNbinsX()+1; ++i) {
+    std::cout << "dataUnfolded " << i << " " << histMunfold->GetBinContent(i) << " +/- " << histMunfold->GetBinError(i) << std::endl;
+  }
   
 
   output.SaveAs("testUnfold0_"+observable+"_"+flavor+".pdf");

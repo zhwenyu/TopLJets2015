@@ -54,7 +54,7 @@ case $WHAT in
     MERGE )
         python scripts/mergeOutputs.py ${summaryeosdir} True;
         #TODO Not needed if everything goes in one directory
-        #python scripts/mergeOutputs.py ${summaryeosdir}_syst True;
+        python scripts/mergeOutputs.py ${summaryeosdir}_expsyst True;
         #cp ${summaryeosdir}_syst/*.root ${summaryeosdir}
         #python scripts/mergeOutputs.py ${summaryeosdir}_qcd True;
         #cp ${summaryeosdir}_qcd/*.root ${summaryeosdir}
@@ -91,7 +91,8 @@ case $WHAT in
 
     FILL )
         cd batch;
-        python ../test/TopJSAnalysis/fillUnfoldingMatrix.py -i /eos/user/m/mseidel/analysis/TopJetShapes/b312177/Chunks/;
+        python ../test/TopJSAnalysis/fillUnfoldingMatrix.py -q 1nh -i /eos/user/m/mseidel/analysis/TopJetShapes/b312177/Chunks/; #TODO: exclude default sample (to be processed with weights)
+        python ../test/TopJSAnalysis/fillUnfoldingMatrix.py -q 1nh -i /eos/user/m/mseidel/analysis/TopJetShapes/b312177_expsyst/Chunks/;
         cd -;
         ;;
     
