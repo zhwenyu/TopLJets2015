@@ -17,11 +17,9 @@ SelectionTool::SelectionTool(TString dataset,bool debug,TH1 *triggerList) :
 }
 
 //
-bool SelectionTool::passMETFilters(MiniEvent_t &ev){
-  
+bool SelectionTool::passMETFilters(MiniEvent_t &ev){  
   if(ev.isData) return ev.met_filterBits==0xff;
-  else          return ((ev.met_filterBits>>2)&0x1) && ((ev.met_filterBits>>6) & 0x3);
-
+  else          return ((ev.met_filterBits&0xf)==0xf) && ((ev.met_filterBits>>5)==0x7);
 }
 
 //

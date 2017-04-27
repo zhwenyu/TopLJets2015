@@ -41,6 +41,11 @@ void RunTOPSynchExercise(TString filename, TString outname, Bool_t debug)
   for (Int_t iev=0;iev<nentries;iev++)
     {
       t->GetEntry(iev);
+
+      bool doDebug((ev.event==61999259 || ev.event==37057885 || ev.event==43980643 || ev.event==47711612 || ev.event==53617049 || ev.event==50339785));
+      evsel.setDebug(doDebug);
+      if(doDebug) cout << ev.event << endl;
+
       TString chTag = evsel.flagFinalState(ev);
       if(!evsel.passMETFilters(ev)) continue;
 
@@ -84,11 +89,11 @@ void RunTOPSynchExercise(TString filename, TString outname, Bool_t debug)
 	  if(mll<20) continue;
 	  allPlots["cutflow_"+chTag]->Fill(2);
 
-          if(chTag=="EE")
-            cout << ev.run << " " << ev.lumi << " " << ev.event << " | " 
-                 << leptons.size() << " " <<jets.size() << " " << nbtags << " | " 
-                 << mll << " " << ev.met_pt[0]
-                 << endl;
+          //if(chTag=="EE")
+          //  cout << ev.run << " " << ev.lumi << " " << ev.event << " | " 
+          //       << leptons.size() << " " <<jets.size() << " " << nbtags << " | " 
+          //       << mll << " " << ev.met_pt[0]
+          //      << endl;
 
 	  if((chTag=="EE" || chTag=="MM"))
 	    {

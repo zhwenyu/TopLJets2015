@@ -14,9 +14,9 @@ export LSB_JOB_REPORT_MAIL=N
 
 queue=2nd
 githash=b312177
-lumi=36460
+lumi=35922
 lumiSpecs="" #--lumiSpecs EE:11391"
-lumiUnc=0.027
+lumiUnc=0.025
 whoami=`whoami`
 myletter=${whoami:0:1}
 eosdir=/store/cmst3/group/top/ReReco2016/${githash}
@@ -72,24 +72,24 @@ case $WHAT in
 	eosprefix=root://eoscms//eos/cms
 	echo "Computing resolutions"
 	base="${eosprefix}/${summaryeosdir}/Chunks/MC13TeV_TTJets"
-	python test/TopUEAnalysis/runUEanalysis.py -i ${base}_0.root,${base}_1.root,${base}_2.root,${base}_3.root,${base}_4.root --step 0 --ptThr 0.9,0.9;
+	#python test/TopUEAnalysis/runUEanalysis.py -i ${base}_0.root,${base}_1.root,${base}_2.root,${base}_3.root,${base}_4.root --step 0 --ptThr 0.9,0.9;
 	
 	echo "Defining analysis configuration"
 	python test/TopUEAnalysis/runUEanalysis.py --step 1;
 	
 	echo "Filling the histograms"
-	queue=2nw        
-	python test/TopUEAnalysis/runUEanalysis.py -i ${summaryeosdir}/Chunks      --step 2 -q ${queue};
+	#python test/TopUEAnalysis/runUEanalysis.py -i ${summaryeosdir}/Chunks      --step 2 -q ${queue};
 	;;
     MERGEANA )
 	./scripts/mergeOutputs.py UEanalysis/analysis True 
 	;;
     PLOTANA )
 	commonOpts="-l ${lumi} --saveLog --mcUnc ${lumiUnc} --procSF DY:${outdir}/plots/.dyscalefactors.pck";
-	python scripts/plotter.py -i UEanalysis/analysis -j data/era2016/samples.json      ${commonOpts}
-	python scripts/plotter.py -i UEanalysis/analysis -j data/era2016/syst_samples.json ${commonOpts} --silent --outName syst_plotter.root;	
-	python test/TopUEAnalysis/compareAtRecoLevel.py UEanalysis/analysis/plots/plotter.root UEanalysis/analysis/plots/syst_plotter.root
-	python test/TopUEAnalysis/UETools.py -o UEanalysis/analysis/plots/
+        filter="--only None_inc,ptttbar_inc,nj_inc"
+	python scripts/plotter.py -i UEanalysis/analysis -j data/era2016/samples.json      ${commonOpts} ${filter}
+	python scripts/plotter.py -i UEanalysis/analysis -j data/era2016/syst_samples.json ${commonOpts} ${filter} --silent --outName syst_plotter.root;	
+	#python test/TopUEAnalysis/compareAtRecoLevel.py UEanalysis/analysis/plots/plotter.root UEanalysis/analysis/plots/syst_plotter.root
+	#python test/TopUEAnalysis/UETools.py -o UEanalysis/analysis/plots/
 	;;
     WWWANA )
 	mkdir -p ${wwwdir}/rawana

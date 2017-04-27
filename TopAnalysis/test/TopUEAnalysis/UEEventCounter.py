@@ -135,10 +135,9 @@ class UEEventCounter:
 
                     #decide if track should still be accepted
                     if varyTkEff:
-                        sf=self.tkEffSF.Eval(abs(t.eta[n]))
+                        relsf=self.tkEffSF['abseta'].Eval(abs(t.eta[n]))
                         rnd=ROOT.gRandom.Uniform(1.0)
-                        if rnd<(1-sf)*0.5 : continue
-                    
+                        if rnd<(1-relsf)*0.5 : continue
                         
                     p4.SetPtEtaPhiM(t.pt[n],t.eta[n],t.phi[n],self.piMass)
                     selP4.append(ROOT.TLorentzVector(p4))
