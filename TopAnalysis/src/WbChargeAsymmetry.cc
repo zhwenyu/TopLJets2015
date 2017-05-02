@@ -135,7 +135,7 @@ void RunWbChargeAsymmetry(TString filename,
   //EVENT SELECTION WRAPPER
   SelectionTool selector(filename, false, triggerList);
   
-  for (Int_t iev=0;iev<nentries;iev++)
+  for (Int_t iev=0;iev<1000+0*nentries;iev++)
     {
       t->GetEntry(iev);
       resetWbChargeAsymmetryEvent(tjsev);
@@ -247,13 +247,19 @@ void RunWbChargeAsymmetry(TString filename,
             }
         }
 
+      //FILL EVENT HEADER
+      tjsev.run=ev.run;
+      tjsev.event=ev.event;
+      tjsev.lumi=ev.lumi;
+
       //FILL RECO TREE
-      tjsev.reco_sel=singleLepton1b ? 1 : -1;
+      tjsev.reco_sel=singleLepton1b;
       tjsev.l_pt  = leptons[0].pt();
       tjsev.l_eta = leptons[0].eta();
       tjsev.l_phi = leptons[0].phi();
       tjsev.l_m   = leptons[0].m();
       tjsev.l_id  = leptons[0].id();
+      tjsev.l_c  = leptons[0].charge();
       tjsev.met_pt=ev.met_pt[0];
       tjsev.met_phi=ev.met_phi[0];
       if(seljetidx>=0)
@@ -263,15 +269,18 @@ void RunWbChargeAsymmetry(TString filename,
           tjsev.j_phi     = jets[seljetidx].p4().Phi();
           tjsev.j_m       = jets[seljetidx].p4().M(); 
           tjsev.j_csv     = jets[seljetidx].getCSV();
-          std::vector<IdTrack> &tks=jets[seljetidx].getTracks();
-          tjsev.ntk=tks.size();
+
+          std::vector<Particle> &tks=jets[seljetidx].particles();
+          tjsev.ntk=0;
           for(size_t itk=0; itk<tks.size(); itk++)
             {
-              tjsev.tk_pt[itk]=tks[itk].first.Pt();
-              tjsev.tk_eta[itk]=tks[itk].first.Eta();
-              tjsev.tk_phi[itk]=tks[itk].first.Phi();
-              tjsev.tk_c[itk]=ev.pf_c[ tks[itk].second ];
-              tjsev.tk_id[itk]=ev.pf_id[ tks[itk].second ];
+              if(tks[itk].charge()==0) continue;
+              tjsev.tk_pt[tjsev.ntk]=tks[itk].pt();
+              tjsev.tk_eta[tjsev.ntk]=tks[itk].eta();
+              tjsev.tk_phi[tjsev.ntk]=tks[itk].phi();
+              tjsev.tk_c[tjsev.ntk]=tks[itk].charge();
+              tjsev.tk_id[tjsev.ntk]=tks[itk].id();
+              tjsev.ntk++;
             }
         }
 
@@ -291,6 +300,7 @@ void RunWbChargeAsymmetry(TString filename,
               tjsev.gl_phi=genLeptons[0].phi();
               tjsev.gl_m=genLeptons[0].m();
               tjsev.gl_id=genLeptons[0].id();
+              tjsev.gl_c  = genLeptons[0].charge();
             }
    
           //count b candidates
@@ -306,31 +316,36 @@ void RunWbChargeAsymmetry(TString filename,
           tjsev.ngj = genJets.size();            
           if(selgjetidx>=0)
             {
+              int origgjetidx = genJets[selgjetidx].getJetIndex();
               tjsev.gj_pt     = genJets[selgjetidx].p4().Pt();
               tjsev.gj_eta    = genJets[selgjetidx].p4().Eta();
               tjsev.gj_phi    = genJets[selgjetidx].p4().Phi();
               tjsev.gj_m      = genJets[selgjetidx].p4().M();
               tjsev.gj_flavor = genJets[selgjetidx].flavor();
-              std::vector<IdTrack> &tks=genJets[selgjetidx].getTracks();
-              tjsev.ngtk=tks.size();
+              tjsev.gj_bid    = ev.g_bid[origgjetidx];
+              tjsev.gj_xb    = ev.g_xb[origgjetidx];
+              tjsev.gj_isSemiLepBhad = ev.g_isSemiLepBhad[origgjetidx];
+              std::vector<Particle> &tks=genJets[selgjetidx].particles();
+              tjsev.ngtk=0;
               for(size_t itk=0; itk<tks.size(); itk++)
                 {
-                  tjsev.gtk_pt[itk]=tks[itk].first.Pt();
-                  tjsev.gtk_eta[itk]=tks[itk].first.Eta();
-                  tjsev.gtk_phi[itk]=tks[itk].first.Phi();
-                  tjsev.gtk_c[itk]=ev.gpf_c[ tks[itk].second ];
-                  tjsev.gtk_id[itk]=ev.gpf_id[ tks[itk].second ];
+                  if(tks[itk].charge()==0) continue;
+                  tjsev.gtk_pt[tjsev.ngtk]=tks[itk].pt();
+                  tjsev.gtk_eta[tjsev.ngtk]=tks[itk].eta();
+                  tjsev.gtk_phi[tjsev.ngtk]=tks[itk].phi();
+                  tjsev.gtk_c[tjsev.ngtk]=tks[itk].charge();
+                  tjsev.gtk_id[tjsev.ngtk]=tks[itk].id();
                 }
             }
 
           //event selected on gen level?
           bool genSingleLepton((genChTag=="E" or genChTag=="M") and
                                (genVetoLeptons.size() == 1)); 
-          tjsev.gen_sel = (sel_ngbjets==1 && genSingleLepton) ? 1 : -1;          
+          tjsev.gen_sel = (sel_ngbjets==1 && genSingleLepton);
         }
       
       //proceed only if event is selected on gen or reco level
-      if (tjsev.gen_sel + tjsev.reco_sel == -2) continue;
+      if (!tjsev.gen_sel && !tjsev.reco_sel) continue;
       
       outT->Fill();
     }
@@ -378,27 +393,32 @@ void createWbChargeAsymmetryEventTree(TTree *t,WbChargeAsymmetryEvent_t &tjsev)
   t->Branch("l_phi",    &tjsev.l_phi ,  "l_phi/F");
   t->Branch("l_m",      &tjsev.l_m ,    "l_m/F");
   t->Branch("l_id",     &tjsev.l_id ,   "l_id/I");
+  t->Branch("l_c",      &tjsev.l_c ,    "l_c/I");
   t->Branch("gl_pt",    &tjsev.gl_pt ,  "gl_pt/F");
   t->Branch("gl_eta",   &tjsev.gl_eta , "gl_eta/F");
   t->Branch("gl_phi",   &tjsev.gl_phi , "gl_phi/F");
   t->Branch("gl_m",     &tjsev.gl_m ,   "gl_m/F");
   t->Branch("gl_id",    &tjsev.gl_id ,  "gl_id/I");
+  t->Branch("gl_c",     &tjsev.gl_c ,   "gl_c/I");
   
   //jets
   t->Branch("j_pt",  &tjsev.j_pt ,  "j_pt/F");
   t->Branch("j_eta", &tjsev.j_eta , "j_eta/F");
   t->Branch("j_phi", &tjsev.j_phi , "j_phi/F");
   t->Branch("j_m",   &tjsev.j_m ,   "j_m/F");
-  t->Branch("j_csv", &tjsev.j_csv,  "j_csv/I");
+  t->Branch("j_csv", &tjsev.j_csv,  "j_csv/F");
   t->Branch("gj_pt",  &tjsev.gj_pt ,  "gj_pt/F");
   t->Branch("gj_eta", &tjsev.gj_eta , "gj_eta/F");
   t->Branch("gj_phi", &tjsev.gj_phi , "gj_phi/F");
   t->Branch("gj_m",   &tjsev.gj_m ,   "gj_m/F");
   t->Branch("gj_flavor",  &tjsev.gj_flavor ,  "gj_flavor/I");
+  t->Branch("gj_bid",  &tjsev.gj_bid ,  "gj_bid/I");
+  t->Branch("gj_xb",   &tjsev.gj_xb ,  "gj_xb/F");
+  t->Branch("gj_isSemiLepBhad",   &tjsev.gj_isSemiLepBhad ,  "gj_isSemiLepBhad/O");
 
   //selection flags
-  t->Branch("gen_sel", &tjsev.gen_sel ,  "gen_sel/I");
-  t->Branch("reco_sel", &tjsev.reco_sel ,  "reco_sel/I");
+  t->Branch("gen_sel", &tjsev.gen_sel ,  "gen_sel/O");
+  t->Branch("reco_sel", &tjsev.reco_sel ,  "reco_sel/O");
   
   //tracks associated to jets
   t->Branch("ntk",   &tjsev.ntk ,    "ntk/I");
@@ -408,11 +428,11 @@ void createWbChargeAsymmetryEventTree(TTree *t,WbChargeAsymmetryEvent_t &tjsev)
   t->Branch("tk_eta", tjsev.tk_eta , "tk_eta[ntk]/F");
   t->Branch("tk_phi", tjsev.tk_phi , "tk_phi[ntk]/F");
   t->Branch("ngtk",   &tjsev.ngtk ,    "ngtk/I");
-  t->Branch("gtk_c",   tjsev.gtk_c ,   "gtk_c[ntk]/I");
-  t->Branch("gtk_id",  tjsev.gtk_id ,  "gtk_id[ntk]/I");
-  t->Branch("gtk_pt",  tjsev.gtk_pt ,  "gtk_pt[ntk]/F");
-  t->Branch("gtk_eta", tjsev.gtk_eta , "gtk_eta[ntk]/F");
-  t->Branch("gtk_phi", tjsev.gtk_phi , "gtk_phi[ntk]/F");
+  t->Branch("gtk_c",   tjsev.gtk_c ,   "gtk_c[ngtk]/I");
+  t->Branch("gtk_id",  tjsev.gtk_id ,  "gtk_id[ngtk]/I");
+  t->Branch("gtk_pt",  tjsev.gtk_pt ,  "gtk_pt[ngtk]/F");
+  t->Branch("gtk_eta", tjsev.gtk_eta , "gtk_eta[ngtk]/F");
+  t->Branch("gtk_phi", tjsev.gtk_phi , "gtk_phi[ngtk]/F");
 }
 
 //
@@ -421,6 +441,10 @@ void resetWbChargeAsymmetryEvent(WbChargeAsymmetryEvent_t &tjsev)
   tjsev.nw=0;  
   tjsev.ntk=0;
   tjsev.ngtk=0;
+  tjsev.j_pt=0;
+  tjsev.l_pt=0;
+  tjsev.gj_pt=0;
+  tjsev.gl_pt=0;
   tjsev.gen_sel=-1;
   tjsev.reco_sel=-1;
 }

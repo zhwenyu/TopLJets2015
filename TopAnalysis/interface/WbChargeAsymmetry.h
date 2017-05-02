@@ -22,7 +22,7 @@ struct WbChargeAsymmetryEvent_t
 
   Bool_t reco_sel, gen_sel;
 
-  Int_t l_id;  
+  Int_t l_id,l_c;  
   Float_t l_pt, l_eta, l_phi, l_m;
   Float_t j_pt, j_eta, j_phi, j_m, j_csv;
   Int_t ntk,tk_c[100], tk_id[100];
@@ -31,10 +31,11 @@ struct WbChargeAsymmetryEvent_t
 
   Int_t nj,ngj;
 
-  Int_t gl_id;
+  Int_t gl_id,gl_c;
   Float_t gl_pt, gl_eta, gl_phi, gl_m;  
-  Int_t gj_flavor;
-  Float_t gj_pt, gj_eta, gj_phi, gj_m;
+  Int_t gj_flavor,gj_bid;
+  Bool_t gj_isSemiLepBhad;
+  Float_t gj_pt, gj_eta, gj_phi, gj_m,gj_xb;
   Int_t ngtk,gtk_c[100],gtk_id[100];
   Float_t gtk_pt[100],gtk_eta[100],gtk_phi[100];
 
