@@ -12,7 +12,6 @@
 #include "TopLJets2015/TopAnalysis/interface/CorrectionTools.h"
 #include "TopLJets2015/TopAnalysis/interface/WbChargeAsymmetry.h"
 #include "TopLJets2015/TopAnalysis/interface/LeptonEfficiencyWrapper.h"
-#include "TopLJets2015/TopAnalysis/interface/BtagUncertaintyComputer.h"
 
 #include <vector>
 #include <set>
@@ -84,7 +83,6 @@ void RunWbChargeAsymmetry(TString filename,
 
 
   //B-TAG CALIBRATION
-  BTagSFUtil* myBTagSFUtil = new BTagSFUtil();
   std::map<TString, std::map<BTagEntry::JetFlavor, BTagCalibrationReader *> > btvsfReaders = getBTVcalibrationReadersMap(era, BTagEntry::OP_MEDIUM);
   std::map<BTagEntry::JetFlavor, TGraphAsymmErrors *>    expBtagEffPy8 = readExpectedBtagEff(era);
   
@@ -105,7 +103,7 @@ void RunWbChargeAsymmetry(TString filename,
   ht.setNsyst(0);
   std::map<TString, TH1 *> allPlots;
   std::map<TString, TH2 *> all2dPlots;
-  allPlots["puwgtctr"] = new TH1F("puwgtctr","Weight sums",2,0,2);
+  allPlots["puwgtctr"] = new TH1F("puwgtctr","Weight sums",4,0,4);
   std::vector<TString> stageVec = { "1l", "1l1j","1l1b"};
   std::vector<TString> chTags = { "E", "M" };
   for(auto& stage : stageVec) {
@@ -135,7 +133,7 @@ void RunWbChargeAsymmetry(TString filename,
   //EVENT SELECTION WRAPPER
   SelectionTool selector(filename, false, triggerList);
   
-  for (Int_t iev=0;iev<1000+0*nentries;iev++)
+  for (Int_t iev=0;iev<nentries;iev++)
     {
       t->GetEntry(iev);
       resetWbChargeAsymmetryEvent(tjsev);
@@ -149,11 +147,8 @@ void RunWbChargeAsymmetry(TString filename,
       ////////////////
       double csvm = 0.8484;
       addBTagDecisions(ev, csvm, csvm);
-      
-      if(!ev.isData) {
-        ev = smearJetEnergies(ev);
-        ev = updateBTagDecisions(ev, btvsfReaders[period],expBtagEffPy8,expBtagEffPy8,myBTagSFUtil);
-      }
+      if(!ev.isData) ev = smearJetEnergies(ev);
+     
       
       ///////////////////////////
       // RECO LEVEL SELECTION //
@@ -167,11 +162,24 @@ void RunWbChargeAsymmetry(TString filename,
       //count b and W candidates
       int sel_nbjets(0);
       int seljetidx(-1);
+      float btagSF[]={1,1,1};
       for(size_t ij=0; ij<jets.size(); ij++)
         {
           if (jets[ij].flavor() != 5) continue;
           ++sel_nbjets;
-          if(seljetidx<0) seljetidx=ij;
+          if(seljetidx<0) 
+            {
+              seljetidx=ij;
+              
+              int origidx      = jets[seljetidx].getJetIndex();
+              BTagEntry::JetFlavor hadFlav=BTagEntry::FLAV_UDSG;
+              if(abs(ev.j_hadflav[origidx])==4) hadFlav=BTagEntry::FLAV_C;
+              if(abs(ev.j_hadflav[origidx])==5) hadFlav=BTagEntry::FLAV_B;
+              float jptForBtag(jets[seljetidx].pt()>1000. ? 999. : jets[seljetidx].pt()), jetaForBtag(fabs(jets[seljetidx].eta()));              
+              btagSF[0] = btvsfReaders[period][hadFlav]->eval_auto_bounds( "central", hadFlav, jetaForBtag, jptForBtag);
+              btagSF[1] = btvsfReaders[period][hadFlav]->eval_auto_bounds( "up",      hadFlav, jetaForBtag, jptForBtag);
+              btagSF[2] = btvsfReaders[period][hadFlav]->eval_auto_bounds( "down",    hadFlav, jetaForBtag, jptForBtag);
+            }
         }
       
       //event selected on reco level?
@@ -194,7 +202,11 @@ void RunWbChargeAsymmetry(TString filename,
         
         // pu weight
         double puWgt(puWgtGr[period][0]->Eval(ev.g_pu));
+        double puWgtUp(puWgtGr[period][1]->Eval(ev.g_pu));
+        double puWgtDn(puWgtGr[period][2]->Eval(ev.g_pu));
         allPlots["puwgtctr"]->Fill(1,puWgt);
+        allPlots["puwgtctr"]->Fill(2,puWgtUp);
+        allPlots["puwgtctr"]->Fill(3,puWgtDn);
         wgt *= puWgt;
         
         // lepton trigger*selection weights
@@ -214,8 +226,26 @@ void RunWbChargeAsymmetry(TString filename,
         // lhe weights
         wgt *= (ev.g_nw>0 ? ev.g_w[0] : 1.0);
         
-        tjsev.nw = 1;
+        //b-tagging
+        wgt *= btagSF[0];
+
+        //save alternative weights
+        tjsev.nw = 10;
         tjsev.weight[0]=wgt;
+        tjsev.weight[1]=wgt*btagSF[1]/btagSF[0];
+        tjsev.weight[2]=wgt*btagSF[2]/btagSF[0];
+        tjsev.weight[3]=wgt*puWgtUp/puWgt;
+        tjsev.weight[4]=wgt*puWgtDn/puWgt;
+        tjsev.weight[5]=wgt*(1+trigSF.second/trigSF.first);
+        tjsev.weight[6]=wgt*(1-trigSF.second/trigSF.first);
+        tjsev.weight[7]=wgt*(1+selSF.second/selSF.first);
+        tjsev.weight[8]=wgt*(1-selSF.second/selSF.first);
+        tjsev.weight[9]=wgt*topptsf;
+        for(Int_t iw=1; iw<=ev.g_nw; iw++)
+          {
+            tjsev.weight[9+iw]=ev.g_w[0]!=0 ? wgt* ev.g_w[iw]/ev.g_w[0] : wgt;
+            tjsev.nw++;
+          }
 
         plotwgts[0]=wgt;
       }
@@ -260,17 +290,67 @@ void RunWbChargeAsymmetry(TString filename,
       tjsev.l_m   = leptons[0].m();
       tjsev.l_id  = leptons[0].id();
       tjsev.l_c  = leptons[0].charge();
+      int gidx=ev.l_g[leptons[0].originalReference()];
+      if(gidx>=0)
+        {
+          tjsev.gl_pt  = ev.g_pt[gidx];
+          tjsev.gl_eta = ev.g_eta[gidx];
+          tjsev.gl_phi = ev.g_phi[gidx];
+          tjsev.gl_m   = ev.g_m[gidx];          
+          tjsev.gl_id  = ev.g_id[gidx];
+          tjsev.gl_c   = tjsev.gl_id!=0 ? -tjsev.gl_id/abs(tjsev.gl_id) : 0;
+        }   
+
       tjsev.met_pt=ev.met_pt[0];
       tjsev.met_phi=ev.met_phi[0];
+
       if(seljetidx>=0)
         {
-          tjsev.j_pt      = jets[seljetidx].p4().Pt();
-          tjsev.j_eta     = jets[seljetidx].p4().Eta();
-          tjsev.j_phi     = jets[seljetidx].p4().Phi();
-          tjsev.j_m       = jets[seljetidx].p4().M(); 
-          tjsev.j_csv     = jets[seljetidx].getCSV();
+          tjsev.j_pt       = jets[seljetidx].p4().Pt();
+          tjsev.j_eta      = jets[seljetidx].p4().Eta();
+          tjsev.j_phi      = jets[seljetidx].p4().Phi();
+          tjsev.j_m        = jets[seljetidx].p4().M(); 
+          tjsev.j_csv      = jets[seljetidx].getCSV();
+          int origidx      = jets[seljetidx].getJetIndex();
+          tjsev.j_vtxmass  = ev.j_vtxmass[origidx];
+          tjsev.j_vtx3DVal = ev.j_vtx3DVal[origidx];
+          tjsev.j_vtx3DSig = ev.j_vtx3DSig[origidx];
+          tjsev.j_vtxpx    = ev.j_vtxpx[origidx];
+          tjsev.j_vtxpy    = ev.j_vtxpy[origidx];
+          tjsev.j_vtxpz    = ev.j_vtxpz[origidx];
+          tjsev.j_vtxntk   = ev.j_vtxNtracks[origidx];
+
+          int origgjetidx = ev.j_g[origidx];
+          if(origgjetidx>=0)
+            {
+              tjsev.gj_pt     = ev.g_pt[origgjetidx];
+              tjsev.gj_eta    = ev.g_eta[origgjetidx];
+              tjsev.gj_phi    = ev.g_phi[origgjetidx];
+              tjsev.gj_m      = ev.g_m[origgjetidx];
+              tjsev.gj_flavor = ev.g_id[origgjetidx];
+              tjsev.gj_bid    = ev.g_bid[origgjetidx];
+              tjsev.gj_xb     = ev.g_xb[origgjetidx];
+              tjsev.gj_isSemiLepBhad = ev.g_isSemiLepBhad[origgjetidx];
+              tjsev.ngtk=0;
+              for (int p = 0; p < ev.ngpf; p++) 
+                {
+                  if(ev.gpf_c[p]==0) continue;
+                  float deta(ev.g_eta[origgjetidx]-ev.gpf_eta[p]);
+                  float dphi(TVector2::Phi_mpi_pi(ev.g_phi[origgjetidx]-ev.gpf_phi[p]));
+                  float dR(sqrt(deta*deta+dphi*dphi));
+                  if(dR>0.4) continue;
+                  tjsev.gtk_pt[tjsev.ngtk]=ev.gpf_pt[p];
+                  tjsev.gtk_eta[tjsev.ngtk]=ev.gpf_eta[p];
+                  tjsev.gtk_phi[tjsev.ngtk]=ev.gpf_phi[p];
+                  tjsev.gtk_id[tjsev.ngtk]=ev.gpf_id[p];
+                  tjsev.gtk_c[tjsev.ngtk]=ev.gpf_c[p];
+                  tjsev.ngtk++;
+                }
+            }
+
 
           std::vector<Particle> &tks=jets[seljetidx].particles();
+          std::vector<Particle> seltks;
           tjsev.ntk=0;
           for(size_t itk=0; itk<tks.size(); itk++)
             {
@@ -281,7 +361,20 @@ void RunWbChargeAsymmetry(TString filename,
               tjsev.tk_c[tjsev.ntk]=tks[itk].charge();
               tjsev.tk_id[tjsev.ntk]=tks[itk].id();
               tjsev.ntk++;
+              seltks.push_back( tks[itk] );
             }
+          std::vector<DsCand_t> dsCands=searchForDsTag(seltks);
+          tjsev.nds=dsCands.size();
+          for(size_t ids=0; ids<dsCands.size(); ids++)
+            {
+              tjsev.ds_spc[ids]=dsCands[ids].softpicharge;
+              tjsev.ds_m12[ids]=dsCands[ids].mass12;
+              tjsev.ds_dm[ids]=dsCands[ids].dM;
+              TLorentzVector p4=dsCands[ids].pi+dsCands[ids].kaon+dsCands[ids].softpi;
+              tjsev.ds_pt[ids]=p4.Pt();
+              tjsev.ds_eta[ids]=p4.Eta();
+              tjsev.ds_phi[ids]=p4.Phi();
+            }          
         }
 
       //GEN LEVEL TREE
@@ -291,61 +384,17 @@ void RunWbChargeAsymmetry(TString filename,
           std::vector<Particle> genVetoLeptons = selector.getGenLeptons(ev,15.,2.5);
           std::vector<Particle> genLeptons     = selector.getGenLeptons(ev,30.,2.1);
           TString genChTag = selector.flagGenFinalState(ev, genLeptons);
-          std::vector<Jet> genJets = selector.getGenJets();
-     
-          if(genLeptons.size())
-            {
-              tjsev.gl_pt=genLeptons[0].pt();
-              tjsev.gl_eta=genLeptons[0].eta();
-              tjsev.gl_phi=genLeptons[0].phi();
-              tjsev.gl_m=genLeptons[0].m();
-              tjsev.gl_id=genLeptons[0].id();
-              tjsev.gl_c  = genLeptons[0].charge();
-            }
-   
-          //count b candidates
-          int sel_ngbjets(0);
-          int selgjetidx(-1);
-          for(size_t ij=0; ij<genJets.size(); ij++)
-            {
-              if(genJets[ij].flavor()!=5) continue;
-              ++sel_ngbjets;
-              if(selgjetidx<0) selgjetidx=ij;
-            } 
-         
+          std::vector<Jet> &genJets=selector.getGenJets();
           tjsev.ngj = genJets.size();            
-          if(selgjetidx>=0)
-            {
-              int origgjetidx = genJets[selgjetidx].getJetIndex();
-              tjsev.gj_pt     = genJets[selgjetidx].p4().Pt();
-              tjsev.gj_eta    = genJets[selgjetidx].p4().Eta();
-              tjsev.gj_phi    = genJets[selgjetidx].p4().Phi();
-              tjsev.gj_m      = genJets[selgjetidx].p4().M();
-              tjsev.gj_flavor = genJets[selgjetidx].flavor();
-              tjsev.gj_bid    = ev.g_bid[origgjetidx];
-              tjsev.gj_xb    = ev.g_xb[origgjetidx];
-              tjsev.gj_isSemiLepBhad = ev.g_isSemiLepBhad[origgjetidx];
-              std::vector<Particle> &tks=genJets[selgjetidx].particles();
-              tjsev.ngtk=0;
-              for(size_t itk=0; itk<tks.size(); itk++)
-                {
-                  if(tks[itk].charge()==0) continue;
-                  tjsev.gtk_pt[tjsev.ngtk]=tks[itk].pt();
-                  tjsev.gtk_eta[tjsev.ngtk]=tks[itk].eta();
-                  tjsev.gtk_phi[tjsev.ngtk]=tks[itk].phi();
-                  tjsev.gtk_c[tjsev.ngtk]=tks[itk].charge();
-                  tjsev.gtk_id[tjsev.ngtk]=tks[itk].id();
-                }
-            }
 
           //event selected on gen level?
           bool genSingleLepton((genChTag=="E" or genChTag=="M") and
                                (genVetoLeptons.size() == 1)); 
-          tjsev.gen_sel = (sel_ngbjets==1 && genSingleLepton);
+          tjsev.gen_sel = (genSingleLepton && tjsev.ngj>0);
         }
       
       //proceed only if event is selected on gen or reco level
-      if (!tjsev.gen_sel && !tjsev.reco_sel) continue;
+      if (!tjsev.reco_sel) continue;
       
       outT->Fill();
     }
@@ -407,6 +456,13 @@ void createWbChargeAsymmetryEventTree(TTree *t,WbChargeAsymmetryEvent_t &tjsev)
   t->Branch("j_phi", &tjsev.j_phi , "j_phi/F");
   t->Branch("j_m",   &tjsev.j_m ,   "j_m/F");
   t->Branch("j_csv", &tjsev.j_csv,  "j_csv/F");
+  t->Branch("j_vtxmass",  &tjsev.j_vtxmass,   "j_vtxmass/F");
+  t->Branch("j_vtx3DVal", &tjsev.j_vtx3DVal,  "j_vtx3DVal/F");
+  t->Branch("j_vtx3DSig", &tjsev.j_vtx3DSig,  "j_vtx3DSig/F");
+  t->Branch("j_vtxpx",    &tjsev.j_vtxpx,     "j_vtxpx/F");
+  t->Branch("j_vtxpy",    &tjsev.j_vtxpy,     "j_vtxpy/F");
+  t->Branch("j_vtxpz",    &tjsev.j_vtxpz,     "j_vtxpz/F");
+  t->Branch("j_vtxntk",   &tjsev.j_vtxntk,    "j_vtxntk/I");
   t->Branch("gj_pt",  &tjsev.gj_pt ,  "gj_pt/F");
   t->Branch("gj_eta", &tjsev.gj_eta , "gj_eta/F");
   t->Branch("gj_phi", &tjsev.gj_phi , "gj_phi/F");
@@ -433,6 +489,15 @@ void createWbChargeAsymmetryEventTree(TTree *t,WbChargeAsymmetryEvent_t &tjsev)
   t->Branch("gtk_pt",  tjsev.gtk_pt ,  "gtk_pt[ngtk]/F");
   t->Branch("gtk_eta", tjsev.gtk_eta , "gtk_eta[ngtk]/F");
   t->Branch("gtk_phi", tjsev.gtk_phi , "gtk_phi[ngtk]/F");
+  
+  //D* tags associated to jet
+  t->Branch("nds",     &tjsev.nds ,      "nds/I");
+  t->Branch("ds_spc",   tjsev.ds_spc ,   "ds_spc[nds]/I");
+  t->Branch("ds_m12",   tjsev.ds_m12 ,   "ds_m12[nds]/F");
+  t->Branch("ds_dm",    tjsev.ds_dm ,    "ds_dm[nds]/F");
+  t->Branch("ds_pt",    tjsev.ds_pt ,    "ds_pt[nds]/F");
+  t->Branch("ds_eta",   tjsev.ds_eta ,   "ds_eta[nds]/F");
+  t->Branch("ds_phi",   tjsev.ds_phi ,   "ds_phi[nds]/F");
 }
 
 //
@@ -440,6 +505,7 @@ void resetWbChargeAsymmetryEvent(WbChargeAsymmetryEvent_t &tjsev)
 {
   tjsev.nw=0;  
   tjsev.ntk=0;
+  tjsev.nds=0;
   tjsev.ngtk=0;
   tjsev.j_pt=0;
   tjsev.l_pt=0;
@@ -447,4 +513,65 @@ void resetWbChargeAsymmetryEvent(WbChargeAsymmetryEvent_t &tjsev)
   tjsev.gl_pt=0;
   tjsev.gen_sel=-1;
   tjsev.reco_sel=-1;
+}
+
+
+
+//
+std::vector<DsCand_t> searchForDsTag(std::vector<Particle> &pColl)
+{
+  float gMassPi(0.1396),gMassK(0.4937);
+  std::vector<DsCand_t> dsCands;
+
+  for (size_t i=0; i<pColl.size(); ++i)
+    {
+      Particle &p=pColl[i];
+      TLorentzVector p4=p.p4();
+      if(p.charge()==0) continue;
+      if (abs(p.id())==11 || abs(p.id())==13) continue;
+      
+      for (size_t j = 0; j < pColl.size(); ++j)
+        {
+          if(i==j) continue;
+          Particle &q=pColl[j];
+          TLorentzVector q4=q.p4();
+          if(q.charge()==0) continue;
+          if(abs(q.id())==11 || abs(q.id())==13) continue;
+
+          //kaon and pion from D0 have op. charges
+          if(q.charge()*p.charge()<0) continue;
+          
+          p4.SetPtEtaPhiM(p.pt(), p.eta(), p.phi(), gMassPi);
+          q4.SetPtEtaPhiM(q.pt(), q.eta(), q.phi(), gMassK);
+          float mass12 = (p4+q4).M();
+          if(fabs(mass12-1.864)>0.05) continue;
+
+          for(size_t k=0; k<pColl.size(); ++k)
+            {
+              
+              if(k==i || k==j) continue;
+              Particle &r=pColl[j];
+              TLorentzVector r4=r.p4();
+              if(r.charge()==0) continue;
+              if(abs(r.id())==11 || abs(r.id())==13) continue;
+              
+              //kaon and extra pion have op. charge
+              if(r.charge()*q.charge()<0) continue;
+              r4.SetPtEtaPhiM(r.pt(),r.eta(),r.phi(),gMassPi);
+              float dM=(r4+q4+p4).M()-mass12;
+              if(dM>0.17) continue;
+              
+              DsCand_t ds;
+              ds.pi=p4;
+              ds.kaon=q4;
+              ds.softpi=r4;
+              ds.softpicharge=r.charge();
+              ds.mass12=mass12;
+              ds.dM=dM;
+              dsCands.push_back( ds );
+            }
+        }
+    }
+
+  return dsCands;
 }

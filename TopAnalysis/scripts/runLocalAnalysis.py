@@ -3,6 +3,7 @@ import sys
 import optparse
 import ROOT
 import pickle
+from collections import OrderedDict
 import json
 import re
 import commands
@@ -66,7 +67,14 @@ def main():
     #parse selection lists
     onlyList=[]
     try:
-        onlyList=opt.only.split(',')
+        for t in opt.only.split(','):
+            if '.json' in t:
+                jsonFile = open(t,'r')
+                samplesList = json.load(jsonFile, encoding='utf-8', object_pairs_hook=OrderedDict).items()
+                for s,_ in samplesList: onlyList.append(s)
+                jsonFile.close()
+            else:
+                onlyList.append(t)
     except:
         pass
     skipList=[]

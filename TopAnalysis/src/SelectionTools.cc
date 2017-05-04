@@ -207,6 +207,7 @@ std::vector<Jet> SelectionTool::getGenJets(MiniEvent_t &ev, double minPt, double
       
     //fill jet constituents
     for (int p = 0; p < ev.ngpf; p++) {
+
       if (ev.gpf_g[p] == i) {
 	TLorentzVector pp4;
 	pp4.SetPtEtaPhiM(ev.gpf_pt[p],ev.gpf_eta[p],ev.gpf_phi[p],ev.gpf_m[p]);
