@@ -1195,6 +1195,12 @@ void RunToppPb(TString inFileName,
 		ljev.lumi=lumi_;
 		ljev.event=evt_;
 
+		//useful for UE dependecy
+		ljev.hiHFplus=hiHFplus_;
+		ljev.hiHFminus=hiHFminus_;
+		ljev.hiHFplusEta4=hiHFplusEta4_;
+		ljev.hiHFminusEta4=hiHFminusEta4_;
+
 		//number of tracks and tracks overlapping with hard process objects
 		ljev.ntracks=0;
 		ljev.ntracks_hp=0;

@@ -24,6 +24,10 @@ void defineTreeBranches(TTree *outT,LJEvent_t &ljev,bool isMC)
   outT->Branch("run",     &ljev.run,      "run/l");
   outT->Branch("lumi",    &ljev.lumi,     "lumi/l");
   outT->Branch("event",   &ljev.event,    "event/l");
+  outT->Branch("hiHFplus",&ljev.hiHFplus, "hiHFplus/F");
+  outT->Branch("hiHFminus",&ljev.hiHFminus, "hiHFminus/F");
+  outT->Branch("hiHFplusEta4",&ljev.hiHFplusEta4, "hiHFplusEta4/F");
+  outT->Branch("hiHFminusEta4",&ljev.hiHFminusEta4, "hiHFminusEta4/F");
   outT->Branch("w",    &ljev.w,       "w/F");
   outT->Branch("nj",   &ljev.nj,      "nj/I");
   outT->Branch("nb",   &ljev.nb,      "nb/I");
