@@ -7,6 +7,7 @@ struct LJEvent_t
 {
   Float_t w;
   ULong64_t run,lumi,event;
+  Float_t hiHFplus,hiHFminus,hiHFplusEta4,hiHFminusEta4;
   Int_t nj,ngj,ngp,nb,npt;
   Int_t j_btag[20];  
   Int_t pt_id[20],pt_pdgid[20];
