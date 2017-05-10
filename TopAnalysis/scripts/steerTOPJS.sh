@@ -47,14 +47,14 @@ case $WHAT in
 
     FULLSELSYST )
         cd batch;
-        python ../scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} -o ${summaryeosdir}_expsyst_2 --era era2016 -m TOPJetShape::RunTopJetShape --skipexisting --only MC13TeV_TTJets --systVar all --exactonly;
+        python ../scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} -o ${summaryeosdir}_expsyst --era era2016 -m TOPJetShape::RunTopJetShape --skipexisting --only MC13TeV_TTJets --systVar all --exactonly;
         cd -;
         ;;
 
     MERGE )
         python scripts/mergeOutputs.py ${summaryeosdir} True;
         #TODO Not needed if everything goes in one directory
-        #python scripts/mergeOutputs.py ${summaryeosdir}_syst True;
+        python scripts/mergeOutputs.py ${summaryeosdir}_expsyst True;
         #cp ${summaryeosdir}_syst/*.root ${summaryeosdir}
         #python scripts/mergeOutputs.py ${summaryeosdir}_qcd True;
         #cp ${summaryeosdir}_qcd/*.root ${summaryeosdir}
@@ -91,12 +91,30 @@ case $WHAT in
 
     FILL )
         cd batch;
-        python ../test/TopJSAnalysis/fillUnfoldingMatrix.py -i /eos/user/m/mseidel/analysis/TopJetShapes/b312177/Chunks/;
+        python ../test/TopJSAnalysis/fillUnfoldingMatrix.py -q 1nh -i /eos/user/m/mseidel/analysis/TopJetShapes/b312177/Chunks/; #TODO: exclude default sample (to be processed with weights)
+        python ../test/TopJSAnalysis/fillUnfoldingMatrix.py -q 1nh -i /eos/user/m/mseidel/analysis/TopJetShapes/b312177_expsyst/Chunks/;
         cd -;
+        ;;
+    
+    FILLWEIGHTS )
+        cd batch;
+        python ../test/TopJSAnalysis/fillUnfoldingMatrix.py -i /eos/user/m/mseidel/analysis/TopJetShapes/b312177/Chunks/ --only MC13TeV_TTJets --nweights 20 -q 8nh;
+        cd -
         ;;
     
     MERGEFILL )
         ./scripts/mergeOutputs.py unfolding/fill True
         ;;
+        
+    TOYUNFOLDING )
+        for OBS in mult width ptd ptds ecc tau21 tau32 tau43 zg zgxdr zgdr ga_width ga_lha ga_thrust c1_02 c1_05 c1_10 c1_20 c2_02 c2_05 c2_10 c2_20 c3_02 c3_05 c3_10 c3_20
+        do
+          mkdir -p unfolding/toys/farm/${OBS}
+          cp test/TopJSAnalysis/testUnfold0Toys.C unfolding/toys/farm/${OBS}
+          root -l -b -q "unfolding/toys/farm/${OBS}/testUnfold0Toys.C++(\"${OBS}\", 1000)"&
+        done
+        ;;
+        
+        
 
 esac

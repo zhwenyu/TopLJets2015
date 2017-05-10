@@ -277,7 +277,7 @@ void RunTopJetShape(TString filename,
     {
       t->GetEntry(iev);
       resetTopJetShapeEvent(tjsev);
-      if(iev%10==0) printf ("\r [%3.0f%%] done", 100.*(float)iev/(float)nentries);
+      if(iev%int(nentries/100)==0) printf ("[%3.0f%%] done\n", 100.*(float)iev/(float)nentries);
       
       //assign randomly a run period
       TString period = assignRunPeriod(runPeriods,random);
@@ -375,30 +375,30 @@ void RunTopJetShape(TString filename,
         double puWgt(puWgtGr[period][0]->Eval(ev.g_pu));
         allPlots["puwgtctr"]->Fill(1,puWgt);
         wgt *= puWgt;
-        varweights.push_back(std::make_pair(puWgtGr[period][1]->Eval(ev.g_pu), true));
-        varweights.push_back(std::make_pair(puWgtGr[period][2]->Eval(ev.g_pu), true));
+        varweights.push_back(std::make_pair(puWgtGr[period][1]->Eval(ev.g_pu), true)); // 1
+        varweights.push_back(std::make_pair(puWgtGr[period][2]->Eval(ev.g_pu), true)); // 2
         
         // lepton trigger*selection weights
         if (singleLepton) {
           EffCorrection_t trigSF = lepEffH.getTriggerCorrection(leptons, period);
-          varweights.push_back(std::make_pair(1.+trigSF.second, true));
-          varweights.push_back(std::make_pair(1.-trigSF.second, true));
+          varweights.push_back(std::make_pair(1.+trigSF.second, true)); // 3
+          varweights.push_back(std::make_pair(1.-trigSF.second, true)); // 4
           EffCorrection_t selSF = lepEffH.getOfflineCorrection(leptons[0], period);
-          varweights.push_back(std::make_pair(1.+selSF.second, true));
-          varweights.push_back(std::make_pair(1.-selSF.second, true));
+          varweights.push_back(std::make_pair(1.+selSF.second, true));  // 5
+          varweights.push_back(std::make_pair(1.-selSF.second, true));  // 6
           wgt *= trigSF.first*selSF.first;
         }
         else varweights.insert(varweights.end(), 4, std::make_pair(1., true));
         
         // bfrag weights
-        varweights.push_back(std::make_pair(computeBFragmentationWeight(ev, bfrag["upFrag"]), true));
-        varweights.push_back(std::make_pair(computeBFragmentationWeight(ev, bfrag["downFrag"]), true));
-        varweights.push_back(std::make_pair(computeBFragmentationWeight(ev, bfrag["PetersonFrag"]), true));
+        varweights.push_back(std::make_pair(computeBFragmentationWeight(ev, bfrag["upFrag"]), true));       // 7
+        varweights.push_back(std::make_pair(computeBFragmentationWeight(ev, bfrag["downFrag"]), true));     // 8
+        varweights.push_back(std::make_pair(computeBFragmentationWeight(ev, bfrag["PetersonFrag"]), true)); // 9
         // weights for semilep BR
         // simultaneous variation for all hadrons, average over particle and antiparticle
         // divide by mean weight from 100k events to avoid change in cross section
-        varweights.push_back(std::make_pair(computeSemilepBRWeight(ev, semilepbr["semilepbrUp"], 0, true)/1.00480, true));
-        varweights.push_back(std::make_pair(computeSemilepBRWeight(ev, semilepbr["semilepbrDown"], 0, true)/0.992632, true));
+        varweights.push_back(std::make_pair(computeSemilepBRWeight(ev, semilepbr["semilepbrUp"], 0, true)/1.00480, true)); // 10
+        varweights.push_back(std::make_pair(computeSemilepBRWeight(ev, semilepbr["semilepbrDown"], 0, true)/0.992632, true)); // 11
         
     	  //top pt weighting
         double topptsf = 1.0;
@@ -408,18 +408,18 @@ void RunTopJetShape(TString filename,
             topptsf *= TMath::Exp(0.0615-0.0005*ev.gtop_pt[igen]);
           }
         }
-        else varweights.push_back(std::make_pair(topptsf, true));
+        varweights.push_back(std::make_pair(topptsf, true)); // TODO: should have been 12 but prevented by false `else`
         
         // lhe weights
         wgt *= (ev.g_nw>0 ? ev.g_w[0] : 1.0);
         
         std::set<std::string> scalesForPlotter = {
-          "id1002muR1muF2hdampmt272.7225",
-          "id1003muR1muF0.5hdampmt272.7225",
-          "id1004muR2muF1hdampmt272.7225",
-          "id1005muR2muF2hdampmt272.7225",
-          "id1007muR0.5muF1hdampmt272.7225",
-          "id1009muR0.5muF0.5hdampmt272.7225"
+          "id1002muR1muF2hdampmt272.7225",    // 13 (12=1,1)
+          "id1003muR1muF0.5hdampmt272.7225",  // 14
+          "id1004muR2muF1hdampmt272.7225",    // 15
+          "id1005muR2muF2hdampmt272.7225",    // 16
+          "id1007muR0.5muF1hdampmt272.7225",  // 18
+          "id1009muR0.5muF0.5hdampmt272.7225" // 20
         };
         for (int i = 1; i < ev.g_nw; ++i) {
           bool forPlotter = (normH and scalesForPlotter.count(normH->GetXaxis()->GetBinLabel(i)) != 0);
@@ -534,7 +534,7 @@ void RunTopJetShape(TString filename,
         tjsev.j_overlap[ij] = jets[ij].overlap();
         
         if (tjsev.reco_sel != 1) continue;
-        if (abs(tjsev.j_eta[ij]) < 2. or tjsev.j_overlap[ij]) continue;
+        if (abs(tjsev.j_eta[ij]) > 2. or tjsev.j_overlap[ij]) continue;
         
         tjsev.j_mult_charged[ij] = getMult(jets[ij]);
 //        tjsev.j_mult_all[ij]     = getMult(jets[ij], true);
@@ -770,7 +770,7 @@ void RunTopJetShape(TString filename,
           }
           
           if (tjsev.gen_sel != 1) continue;
-          if (abs(tjsev.gj_eta[i]) < 2. or tjsev.gj_overlap[i]) continue;
+          if (abs(tjsev.gj_eta[i]) > 2. or tjsev.gj_overlap[i]) continue;
           
           //calculate jet properties            
           tjsev.gj_mult_charged[i] = getMult(genJets[i]);
