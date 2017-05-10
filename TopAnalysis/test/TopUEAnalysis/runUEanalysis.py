@@ -344,10 +344,13 @@ def defineAnalysisBinning(opt):
                 histos[ key ].Sumw2()
 
     #all done, save to pickle file
+    with open(os.path.join(opt.out,'analysisaxiscfg.pck'), 'w') as cachefile:
+        pickle.dump(varAxes,     cachefile, pickle.HIGHEST_PROTOCOL)
     with open(os.path.join(opt.out,'analysiscfg.pck'), 'w') as cachefile:
         pickle.dump(varAxes,     cachefile, pickle.HIGHEST_PROTOCOL)
         pickle.dump(histos,      cachefile, pickle.HIGHEST_PROTOCOL)
     print 'Analysis cfg saved in',os.path.join(opt.out,'analysiscfg.pck')
+    print 'Only axis definitions also available in',os.path.join(opt.out,'analysisaxiscfg.pck')
 
 
 """

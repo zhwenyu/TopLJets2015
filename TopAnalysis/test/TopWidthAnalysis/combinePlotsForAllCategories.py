@@ -42,15 +42,17 @@ def doPlot(plotName,chList,extraText,url):
     for key in  plotsPerProc:
         isData=True if 'Data' in plotsPerProc[key].GetTitle() else False
         color=1 if isData else plotsPerProc[key].GetFillColor()
+        print color
         plot.add(plotsPerProc[key],
                  plotsPerProc[key].GetTitle(),
                  color,
                  isData,
+                 False,
                  False)
     plot.finalize()
-    plot.mcUnc=0.062
+    plot.mcUnc=0.025
 
-    plot.show(outDir="plots/",lumi=12900,extraText=extraText)
+    plot.show(outDir="plots/",lumi=35922,extraText=extraText)
 
                      
 def main():

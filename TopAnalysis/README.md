@@ -107,7 +107,7 @@ You can then run the brilcalc tool to get the integrated luminosity in total and
 The following script runs brilcalc inclusively and per trigger path, and stores the results in a ROOT file with the total integrated lumi per run.
 It takes a bit to run, depending on the number of triggers configured to use in the analysis
 ```
-export PATH=$HOME/.local/bin:/afs/cern.ch/cms/lumi/brilconda-1.1.7/bin:$PATH
+export PATH=$HOME/.local/bin:/afs/cern.ch/cms/lumi/brilconda/bin:$PATH
 python scripts/convertLumiTable.py -o data/era2016/
 ```
 

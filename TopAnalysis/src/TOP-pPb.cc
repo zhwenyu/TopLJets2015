@@ -210,6 +210,7 @@ void RunToppPb(TString inFileName,
     TTree* hiTree_p = (TTree*)inFile_p->Get("hiEvtAnalyzer/HiTree");
     TTree* hltTree_p = (TTree*)inFile_p->Get("hltanalysis/HltTree");
     TTree *pfCand_p  = (TTree *)inFile_p->Get("pfcandAnalyzer/pfTree");
+    TTree *hiFJRho_p  = (TTree *)inFile_p->Get("hiFJRhoAnalyzer/t");
     TTree *pseudotop_p = (TTree *)inFile_p->Get("topGenAnalyzer/t");
     TTree *mc_p = (TTree *)inFile_p->Get("HiGenParticleAna/hi");
 
@@ -359,6 +360,7 @@ void RunToppPb(TString inFileName,
     Float_t jtpt[maxJets],genpt[maxJets];
     Float_t jteta[maxJets],geneta[maxJets];
     Float_t jtphi[maxJets],genphi[maxJets];
+    Float_t jtarea[maxJets]; 
     Float_t jtm[maxJets]; 
     Float_t discr_csvV2[maxJets];
     Float_t refpt[maxJets];
@@ -372,6 +374,7 @@ void RunToppPb(TString inFileName,
     jetTree_p->SetBranchStatus("jtpt", 1);
     jetTree_p->SetBranchStatus("jtphi", 1);
     jetTree_p->SetBranchStatus("jteta", 1);
+    jetTree_p->SetBranchStatus("jtarea", 1);
     jetTree_p->SetBranchStatus("jtm", 1);
     jetTree_p->SetBranchStatus("discr_csvV2", 1);
     jetTree_p->SetBranchStatus("refpt", 1);
@@ -380,6 +383,7 @@ void RunToppPb(TString inFileName,
     jetTree_p->SetBranchAddress("jtpt", jtpt);
     jetTree_p->SetBranchAddress("jtphi", jtphi);
     jetTree_p->SetBranchAddress("jteta", jteta);
+    jetTree_p->SetBranchAddress("jtarea", jtarea);
     jetTree_p->SetBranchAddress("jtm", jtm);
     jetTree_p->SetBranchAddress("discr_csvV2", discr_csvV2);
     jetTree_p->SetBranchAddress("refpt", refpt);
@@ -388,6 +392,37 @@ void RunToppPb(TString inFileName,
     jetTree_p->SetBranchAddress("genpt", genpt);
     jetTree_p->SetBranchAddress("genphi", genphi);
     jetTree_p->SetBranchAddress("geneta", geneta);
+
+    //jet related variables from the hiFJRho tree
+    std::vector<float>* etaMin_hiFJRho_p = 0;
+    std::vector<float>* etaMax_hiFJRho_p = 0;
+    std::vector<float>* rho_hiFJRho_p = 0;
+    std::vector<float>* rhom_hiFJRho_p = 0;
+    std::vector<float>* rhoCorr_hiFJRho_p = 0;
+    std::vector<float>* rhomCorr_hiFJRho_p = 0;
+    std::vector<float>* rhoCorr1Bin_hiFJRho_p = 0;
+    std::vector<float>* rhomCorr1Bin_hiFJRho_p = 0;
+    
+    hiFJRho_p->SetBranchStatus("*", 0);
+    hiFJRho_p->SetBranchStatus("etaMin", 1);
+    hiFJRho_p->SetBranchStatus("etaMax", 1);
+    hiFJRho_p->SetBranchStatus("rho", 1);
+    hiFJRho_p->SetBranchStatus("rhom", 1);
+    hiFJRho_p->SetBranchStatus("rhoCorr", 1);
+    hiFJRho_p->SetBranchStatus("rhomCorr", 1);
+    hiFJRho_p->SetBranchStatus("rhoCorr1Bin", 1);
+    hiFJRho_p->SetBranchStatus("rhomCorr1Bin", 1);
+    
+    hiFJRho_p->SetBranchAddress("etaMin", &etaMin_hiFJRho_p);
+    hiFJRho_p->SetBranchAddress("etaMax", &etaMax_hiFJRho_p);
+    hiFJRho_p->SetBranchAddress("rho", &rho_hiFJRho_p);
+    hiFJRho_p->SetBranchAddress("rhom", &rhom_hiFJRho_p);
+    hiFJRho_p->SetBranchAddress("rhoCorr", &rhoCorr_hiFJRho_p);
+    hiFJRho_p->SetBranchAddress("rhomCorr", &rhomCorr_hiFJRho_p);
+    hiFJRho_p->SetBranchAddress("rhoCorr1Bin", &rhoCorr1Bin_hiFJRho_p);
+    hiFJRho_p->SetBranchAddress("rhomCorr1Bin", &rhomCorr1Bin_hiFJRho_p);
+
+
 
     //event variables
     UInt_t run_, lumi_;
@@ -416,7 +451,7 @@ void RunToppPb(TString inFileName,
     hiTree_p->SetBranchAddress("vz", &vz_);
     hiTree_p->SetBranchAddress("weight", &weight);
     hiTree_p->SetBranchAddress("ttbar_w",&ttbar_w_p);
-  
+
     //trigger
     int trig = 0;
     std::string triggerName;
@@ -471,6 +506,7 @@ void RunToppPb(TString inFileName,
 	hiTree_p->GetEntry(entry);
 	hltTree_p->GetEntry(entry);
 	pfCand_p->GetEntry(entry);
+	hiFJRho_p->GetEntry(entry);
         if(mc_p) mc_p->GetEntry(entry);
 
 	//pseudo-top
@@ -869,11 +905,36 @@ void RunToppPb(TString inFileName,
 	//jet counting
 	typedef std::vector<TLorentzVector> JetColl_t;
 	std::vector<JetColl_t> bJets(9),lightJets(9);
-	for(Int_t jetIter = 0; jetIter < nref; jetIter++)
+	for (Int_t jetIter = 0; jetIter < nref; jetIter++)
 	  {
 	    //cross clean with trigger muon
 	    TLorentzVector jp4(0,0,0,0);
-	    jp4.SetPtEtaPhiM(jtpt[jetIter],jteta[jetIter],jtphi[jetIter],jtm[jetIter]);
+
+	    float UE_correction=0;
+	    if (jteta[jetIter]>etaMin_hiFJRho_p->at(0) && jteta[jetIter]<etaMax_hiFJRho_p->at(0))
+	      UE_correction= rhoCorr1Bin_hiFJRho_p->at(0);
+	    if (jteta[jetIter]>etaMin_hiFJRho_p->at(1) && jteta[jetIter]<etaMax_hiFJRho_p->at(1))
+	      UE_correction= rhoCorr1Bin_hiFJRho_p->at(1);
+	    if (jteta[jetIter]>etaMin_hiFJRho_p->at(2) && jteta[jetIter]<etaMax_hiFJRho_p->at(2))
+	      UE_correction= rhoCorr1Bin_hiFJRho_p->at(2);
+	    if (jteta[jetIter]>etaMin_hiFJRho_p->at(3) && jteta[jetIter]<etaMax_hiFJRho_p->at(3))
+	      UE_correction= rhoCorr1Bin_hiFJRho_p->at(3);
+	    if (jteta[jetIter]>etaMin_hiFJRho_p->at(4) && jteta[jetIter]<etaMax_hiFJRho_p->at(4))
+	      UE_correction= rhoCorr1Bin_hiFJRho_p->at(4);
+	    if (jteta[jetIter]>etaMin_hiFJRho_p->at(5) && jteta[jetIter]<etaMax_hiFJRho_p->at(5))
+	      UE_correction= rhoCorr1Bin_hiFJRho_p->at(5);
+	    if (jteta[jetIter]>etaMin_hiFJRho_p->at(6) && jteta[jetIter]<etaMax_hiFJRho_p->at(6))
+	      UE_correction= rhoCorr1Bin_hiFJRho_p->at(6);
+	    if (jteta[jetIter]>etaMin_hiFJRho_p->at(7) && jteta[jetIter]<etaMax_hiFJRho_p->at(7))
+	      UE_correction= rhoCorr1Bin_hiFJRho_p->at(7);
+	    if (jteta[jetIter]>etaMin_hiFJRho_p->at(8) && jteta[jetIter]<etaMax_hiFJRho_p->at(8))
+	      UE_correction= rhoCorr1Bin_hiFJRho_p->at(8);
+
+	    //apply UE event subtraction for jet pT
+	    if(!isMC)
+	      jp4.SetPtEtaPhiM(jtpt[jetIter]-UE_correction*jtarea[jetIter],jteta[jetIter],jtphi[jetIter],jtm[jetIter]);
+	    else
+	      jp4.SetPtEtaPhiM(jtpt[jetIter],jteta[jetIter],jtphi[jetIter],jtm[jetIter]);
 	    if(jp4.DeltaR(goodLeptons[0])<0.4) continue;
 	    
 	    //in tracker region
