@@ -3,6 +3,7 @@ import sys
 import optparse
 import ROOT
 import pickle
+from collections import OrderedDict
 import json
 import re
 import commands
@@ -66,7 +67,14 @@ def main():
     #parse selection lists
     onlyList=[]
     try:
-        onlyList=opt.only.split(',')
+        for t in opt.only.split(','):
+            if '.json' in t:
+                jsonFile = open(t,'r')
+                samplesList = json.load(jsonFile, encoding='utf-8', object_pairs_hook=OrderedDict).items()
+                for s,_ in samplesList: onlyList.append(s)
+                jsonFile.close()
+            else:
+                onlyList.append(t)
     except:
         pass
     skipList=[]
@@ -82,7 +90,7 @@ def main():
     #parse list of systematic variations
     varList=[]
     if opt.systVar == 'all':
-        allSystVars = ['jec_CorrelationGroupMPFInSitu', 'jec_CorrelationGroupInterCalibration',
+        allSystVars = ['jec_CorrelationGroupMPFInSitu', 'jec_RelativeFSR',
                        'jec_CorrelationGroupUncorrelated', 'jec_FlavorPureGluon', 'jec_FlavorPureQuark',
                        'jec_FlavorPureCharm', 'jec_FlavorPureBottom', 'jer',
                        'btag_heavy', 'btag_light', 'csv_heavy', 'csv_light']
@@ -180,6 +188,7 @@ def main():
             jobNb+=1
             cfgfile='%s/job_%s.sh'%(FarmDirectory,os.path.splitext(os.path.basename(outF))[0])
             logfile='%s/job_%s.log'%(FarmDirectory,os.path.splitext(os.path.basename(outF))[0])
+            crashfile='%s/job_%s.log'%(FarmDirectory,os.path.splitext(os.path.basename(outF))[0])
             cfg=open(cfgfile,'w')
             cfg.write('WORKDIR=`pwd`\n')
             cfg.write('echo "Working directory is ${WORKDIR}"\n')
@@ -196,8 +205,12 @@ def main():
                 cfg.write('xrdcp ${WORKDIR}/%s root://eoscms//eos/cms/%s\n'%(localOutF,outF))
                 cfg.write('rm ${WORKDIR}/%s'%localOutF)
             elif outF!=localOutF:
-                cfg.write('mv -v ${WORKDIR}/%s %s\n'%(localOutF,outF))
-                cfg.write('mv -v ${WORKDIR}/run.log %s\n'%(logfile))
+                cfg.write('if grep -q "There was a crash" ${WORKDIR}/run.log; then')
+                cfg.write('  mv -v ${WORKDIR}/run.log %s\n'%(logfile+'.crash'))
+                cfg.write('else')
+                cfg.write('  mv -v ${WORKDIR}/%s %s\n'%(localOutF,outF))
+                cfg.write('  mv -v ${WORKDIR}/run.log %s\n'%(logfile))
+                cfg.write('fi')
             cfg.close()
             os.system('chmod u+x %s'%cfgfile)
             print 'Submitting job %d/%d'%(jobNb, len(task_list))

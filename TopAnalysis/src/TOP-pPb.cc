@@ -41,7 +41,7 @@ void RunToppPb(TString inFileName,
     }
 
   bool isMC(false);
-  if(inFileName.Contains("/MC") || inFileName.Contains("PYQUEN")) isMC=true;
+  if(inFileName.Contains("/MC") || inFileName.Contains("PYQUEN") || inFileName.Contains("Pyquen")) isMC=true;
   bool isTTJets(false);
   if(inFileName.Contains("/MCTTNominal") || inFileName.Contains("TTBAR")) isTTJets=true;
 
@@ -213,6 +213,7 @@ void RunToppPb(TString inFileName,
     TTree* hiTree_p = (TTree*)inFile_p->Get("hiEvtAnalyzer/HiTree");
     TTree* hltTree_p = (TTree*)inFile_p->Get("hltanalysis/HltTree");
     TTree *pfCand_p  = (TTree *)inFile_p->Get("pfcandAnalyzer/pfTree");
+    TTree *hiFJRho_p  = (TTree *)inFile_p->Get("hiFJRhoAnalyzer/t");
     TTree *pseudotop_p = (TTree *)inFile_p->Get("topGenAnalyzer/t");
     TTree *mc_p = (TTree *)inFile_p->Get("HiGenParticleAna/hi");
 
@@ -362,35 +363,101 @@ void RunToppPb(TString inFileName,
     Float_t jtpt[maxJets],genpt[maxJets];
     Float_t jteta[maxJets],geneta[maxJets];
     Float_t jtphi[maxJets],genphi[maxJets];
+    Float_t jtarea[maxJets]; 
     Float_t jtm[maxJets]; 
     Float_t discr_csvV2[maxJets];
-    Float_t refpt[maxJets];
-    Int_t refparton_flavor[maxJets];
+    Float_t refpt[maxJets], refarea[maxJets], refdrjt[maxJets], gendrjt[maxJets];
+    Float_t jPfCHF[maxJets],jPfNHF[maxJets],jPfCEF[maxJets],jPfNEF[maxJets], jPfMUF[maxJets];//jet id
+    Int_t jPfCHM[maxJets],jPfNHM[maxJets], jPfCEM[maxJets],jPfNEM[maxJets], jPfMUM[maxJets]; //jet id
+    Int_t refparton_flavorForB[maxJets], refparton_flavor[maxJets], genmatchindex[maxJets];
     jetTree_p->SetBranchStatus("*", 0);
     jetTree_p->SetBranchStatus("ngen", 1);
     jetTree_p->SetBranchStatus("genpt", 1);
     jetTree_p->SetBranchStatus("genphi", 1);
     jetTree_p->SetBranchStatus("geneta", 1);
+    jetTree_p->SetBranchStatus("gendrjt", 1);
+    jetTree_p->SetBranchStatus("genmatchindex", 1);
     jetTree_p->SetBranchStatus("nref", 1);
     jetTree_p->SetBranchStatus("jtpt", 1);
     jetTree_p->SetBranchStatus("jtphi", 1);
     jetTree_p->SetBranchStatus("jteta", 1);
+    jetTree_p->SetBranchStatus("jtarea", 1);
     jetTree_p->SetBranchStatus("jtm", 1);
+    jetTree_p->SetBranchStatus("jtPfCHF", 1);
+    jetTree_p->SetBranchStatus("jtPfNHF", 1);
+    jetTree_p->SetBranchStatus("jtPfCEF", 1);
+    jetTree_p->SetBranchStatus("jtPfNEF", 1);
+    jetTree_p->SetBranchStatus("jtPfMUF", 1);
+    jetTree_p->SetBranchStatus("jtPfCHM", 1);
+    jetTree_p->SetBranchStatus("jtPfNHM", 1);
+    jetTree_p->SetBranchStatus("jtPfCEM", 1);
+    jetTree_p->SetBranchStatus("jtPfNEM", 1);
+    jetTree_p->SetBranchStatus("jtPfMUM", 1);
     jetTree_p->SetBranchStatus("discr_csvV2", 1);
     jetTree_p->SetBranchStatus("refpt", 1);
+    jetTree_p->SetBranchStatus("refarea", 1);
+    jetTree_p->SetBranchStatus("refdrjt", 1);
     jetTree_p->SetBranchStatus("refparton_flavorForB", 1);
+    jetTree_p->SetBranchStatus("refparton_flavor", 1);
     jetTree_p->SetBranchAddress("nref", &nref);
     jetTree_p->SetBranchAddress("jtpt", jtpt);
     jetTree_p->SetBranchAddress("jtphi", jtphi);
     jetTree_p->SetBranchAddress("jteta", jteta);
+    jetTree_p->SetBranchAddress("jtarea", jtarea);
     jetTree_p->SetBranchAddress("jtm", jtm);
+    jetTree_p->SetBranchAddress("jtPfCHF", jPfCHF);
+    jetTree_p->SetBranchAddress("jtPfNHF", jPfNHF);
+    jetTree_p->SetBranchAddress("jtPfCEF", jPfCEF);
+    jetTree_p->SetBranchAddress("jtPfNEF", jPfNEF);
+    jetTree_p->SetBranchAddress("jtPfMUF", jPfMUF);
+    jetTree_p->SetBranchAddress("jtPfCHM", jPfCHM);
+    jetTree_p->SetBranchAddress("jtPfNHM", jPfNHM);
+    jetTree_p->SetBranchAddress("jtPfCEM", jPfCEM);
+    jetTree_p->SetBranchAddress("jtPfNEM", jPfNEM);
+    jetTree_p->SetBranchAddress("jtPfMUM", jPfMUM);
     jetTree_p->SetBranchAddress("discr_csvV2", discr_csvV2);
     jetTree_p->SetBranchAddress("refpt", refpt);
-    jetTree_p->SetBranchAddress("refparton_flavorForB", refparton_flavor);
+    jetTree_p->SetBranchAddress("refarea", refarea);
+    jetTree_p->SetBranchAddress("refdrjt", refdrjt);
+    jetTree_p->SetBranchAddress("refparton_flavorForB", refparton_flavorForB);
+    jetTree_p->SetBranchAddress("refparton_flavor", refparton_flavor);
     jetTree_p->SetBranchAddress("ngen", &ngen);
     jetTree_p->SetBranchAddress("genpt", genpt);
     jetTree_p->SetBranchAddress("genphi", genphi);
     jetTree_p->SetBranchAddress("geneta", geneta);
+    jetTree_p->SetBranchAddress("gendrjt", gendrjt);
+    jetTree_p->SetBranchAddress("genmatchindex", genmatchindex);
+
+    //jet related variables from the hiFJRho tree
+    std::vector<float>* etaMin_hiFJRho_p = 0;
+    std::vector<float>* etaMax_hiFJRho_p = 0;
+    std::vector<float>* rho_hiFJRho_p = 0;
+    std::vector<float>* rhom_hiFJRho_p = 0;
+    std::vector<float>* rhoCorr_hiFJRho_p = 0;
+    std::vector<float>* rhomCorr_hiFJRho_p = 0;
+    std::vector<float>* rhoCorr1Bin_hiFJRho_p = 0;
+    std::vector<float>* rhomCorr1Bin_hiFJRho_p = 0;
+    
+    hiFJRho_p->SetBranchStatus("*", 0);
+    hiFJRho_p->SetBranchStatus("etaMin", 1);
+    hiFJRho_p->SetBranchStatus("etaMax", 1);
+    hiFJRho_p->SetBranchStatus("rho", 1);
+    hiFJRho_p->SetBranchStatus("rhom", 1);
+    hiFJRho_p->SetBranchStatus("rhoCorr", 1);
+    hiFJRho_p->SetBranchStatus("rhomCorr", 1);
+    hiFJRho_p->SetBranchStatus("rhoCorr1Bin", 1);
+    hiFJRho_p->SetBranchStatus("rhomCorr1Bin", 1);
+    
+    hiFJRho_p->SetBranchAddress("etaMin", &etaMin_hiFJRho_p);
+    hiFJRho_p->SetBranchAddress("etaMax", &etaMax_hiFJRho_p);
+    hiFJRho_p->SetBranchAddress("rho", &rho_hiFJRho_p);
+    hiFJRho_p->SetBranchAddress("rhom", &rhom_hiFJRho_p);
+    hiFJRho_p->SetBranchAddress("rhoCorr", &rhoCorr_hiFJRho_p);
+    hiFJRho_p->SetBranchAddress("rhomCorr", &rhomCorr_hiFJRho_p);
+    hiFJRho_p->SetBranchAddress("rhoCorr1Bin", &rhoCorr1Bin_hiFJRho_p);
+    hiFJRho_p->SetBranchAddress("rhomCorr1Bin", &rhomCorr1Bin_hiFJRho_p);
+
+
 
     //event variables
     UInt_t run_, lumi_;
@@ -419,7 +486,7 @@ void RunToppPb(TString inFileName,
     hiTree_p->SetBranchAddress("vz", &vz_);
     hiTree_p->SetBranchAddress("weight", &weight);
     hiTree_p->SetBranchAddress("ttbar_w",&ttbar_w_p);
-  
+
     //trigger
     int trig = 0;
     std::string triggerName;
@@ -474,6 +541,7 @@ void RunToppPb(TString inFileName,
 	hiTree_p->GetEntry(entry);
 	hltTree_p->GetEntry(entry);
 	pfCand_p->GetEntry(entry);
+	hiFJRho_p->GetEntry(entry);
         if(mc_p) mc_p->GetEntry(entry);
 
 	//pseudo-top
@@ -510,10 +578,8 @@ void RunToppPb(TString inFileName,
 		  {
 		    int status=abs(mcStatus->at(imc));
 		    int abspid=abs(mcPID->at(imc));		
-
 		    TLorentzVector p4;
 		    p4.SetPtEtaPhiM(mcPt->at(imc),mcEta->at(imc),mcPhi->at(imc),mcMass->at(imc));
-                    
                     //hardprocess
 		    if(status==3 && (abspid<=6 || abspid==24 || abspid==11 || abspid==13))
                       {
@@ -570,6 +636,8 @@ void RunToppPb(TString inFileName,
 		    ljev.gj_eta[ljev.ngj]=p4.Eta();
 		    ljev.gj_phi[ljev.ngj]=p4.Phi();
 		    ljev.gj_m[ljev.ngj]=p4.M();
+		    ljev.gj_dr[ljev.ngj]=gendrjt[imcj];
+		    ljev.gj_index[ljev.ngj]=genmatchindex[imcj];
 		    ljev.ngj++;
 		  }
 
@@ -890,14 +958,44 @@ void RunToppPb(TString inFileName,
 	//jet counting
 	typedef std::vector<TLorentzVector> JetColl_t;
 	std::vector<JetColl_t> bJets(9),lightJets(9);
-	for(Int_t jetIter = 0; jetIter < nref; jetIter++)
+	for (Int_t jetIter = 0; jetIter < nref; jetIter++)
 	  {
 	    //cross clean with trigger muon
 	    TLorentzVector jp4(0,0,0,0);
+<<<<<<< HEAD
 	    jp4.SetPtEtaPhiM(jtpt[jetIter],jteta[jetIter],jtphi[jetIter],jtm[jetIter]);
 
 	    Int_t jflav(abs(refparton_flavor[jetIter]));	    
 
+=======
+
+	    float UE_correction=0;
+	    if (jteta[jetIter]>etaMin_hiFJRho_p->at(0) && jteta[jetIter]<etaMax_hiFJRho_p->at(0))
+	      UE_correction= rhoCorr1Bin_hiFJRho_p->at(0);
+	    if (jteta[jetIter]>etaMin_hiFJRho_p->at(1) && jteta[jetIter]<etaMax_hiFJRho_p->at(1))
+	      UE_correction= rhoCorr1Bin_hiFJRho_p->at(1);
+	    if (jteta[jetIter]>etaMin_hiFJRho_p->at(2) && jteta[jetIter]<etaMax_hiFJRho_p->at(2))
+	      UE_correction= rhoCorr1Bin_hiFJRho_p->at(2);
+	    if (jteta[jetIter]>etaMin_hiFJRho_p->at(3) && jteta[jetIter]<etaMax_hiFJRho_p->at(3))
+	      UE_correction= rhoCorr1Bin_hiFJRho_p->at(3);
+	    if (jteta[jetIter]>etaMin_hiFJRho_p->at(4) && jteta[jetIter]<etaMax_hiFJRho_p->at(4))
+	      UE_correction= rhoCorr1Bin_hiFJRho_p->at(4);
+	    if (jteta[jetIter]>etaMin_hiFJRho_p->at(5) && jteta[jetIter]<etaMax_hiFJRho_p->at(5))
+	      UE_correction= rhoCorr1Bin_hiFJRho_p->at(5);
+	    if (jteta[jetIter]>etaMin_hiFJRho_p->at(6) && jteta[jetIter]<etaMax_hiFJRho_p->at(6))
+	      UE_correction= rhoCorr1Bin_hiFJRho_p->at(6);
+	    if (jteta[jetIter]>etaMin_hiFJRho_p->at(7) && jteta[jetIter]<etaMax_hiFJRho_p->at(7))
+	      UE_correction= rhoCorr1Bin_hiFJRho_p->at(7);
+	    if (jteta[jetIter]>etaMin_hiFJRho_p->at(8) && jteta[jetIter]<etaMax_hiFJRho_p->at(8))
+	      UE_correction= rhoCorr1Bin_hiFJRho_p->at(8);
+
+	    //apply UE event subtraction for jet pT
+	    if(!isMC)
+	      jp4.SetPtEtaPhiM(jtpt[jetIter]-UE_correction*jtarea[jetIter],jteta[jetIter],jtphi[jetIter],jtm[jetIter]);
+	    else
+	      jp4.SetPtEtaPhiM(jtpt[jetIter],jteta[jetIter],jtphi[jetIter],jtm[jetIter]);
+	    if(jp4.DeltaR(goodLeptons[0])<0.4) continue;
+	    
 	    //in tracker region
 	    if(TMath::Abs(jp4.Eta())>2.4) continue;
             float drlj(jp4.DeltaR(goodLeptons[0]));
@@ -909,6 +1007,7 @@ void RunToppPb(TString inFileName,
 	    if(drlj<0.4) continue;
 	    
 	    //systematic variations
+	    Int_t jflav(abs(refparton_flavorForB[jetIter]));	    
 	    bool passCSVL(discr_csvV2[jetIter]>0.460), passCSVM(discr_csvV2[jetIter]>0.8),passCSVMUp(passCSVM),passCSVMDn(passCSVM);	    
 	    std::vector<float> jerSmear(3,1.0),jesScaleUnc(3,1.0);
 	    if(isMC)
@@ -958,6 +1057,22 @@ void RunToppPb(TString inFileName,
 		    ljev.j_phi[ljev.nj] =jp4.Phi();
 		    ljev.j_m[ljev.nj]   =jp4.M();
 		    ljev.j_btag[ljev.nj]=passCSVL | (passCSVM<<1);
+		    ljev.j_area[ljev.nj]= jtarea[jetIter];
+		    ljev.j_refpt[ljev.nj]= refpt[jetIter];
+		    ljev.j_refarea[ljev.nj]= refarea[jetIter];
+		    ljev.j_refdr[ljev.nj]= refdrjt[jetIter]; 
+		    ljev.j_refparton_flavorForB[ljev.nj]= refparton_flavorForB[jetIter];
+		    ljev.j_refparton_flavor[ljev.nj]= refparton_flavor[jetIter];
+		    ljev.j_PfCHF[ljev.nj]=jPfCHF[jetIter];
+		    ljev.j_PfNHF[ljev.nj]=jPfNHF[jetIter];
+		    ljev.j_PfCEF[ljev.nj]=jPfCEF[jetIter];
+		    ljev.j_PfNEF[ljev.nj]=jPfNEF[jetIter];
+		    ljev.j_PfMUF[ljev.nj]=jPfMUF[jetIter];
+		    ljev.j_PfCHM[ljev.nj]=jPfCHM[jetIter];
+		    ljev.j_PfNHM[ljev.nj]=jPfNHM[jetIter];
+		    ljev.j_PfCEM[ljev.nj]=jPfCEM[jetIter];
+		    ljev.j_PfNEM[ljev.nj]=jPfNEM[jetIter];
+		    ljev.j_PfMUM[ljev.nj]=jPfMUM[jetIter];
 		    ljev.nj++;
 		  }
 
@@ -1113,6 +1228,12 @@ void RunToppPb(TString inFileName,
 		ljev.run=run_;
 		ljev.lumi=lumi_;
 		ljev.event=evt_;
+
+		//useful for UE dependecy
+		ljev.hiHFplus=hiHFplus_;
+		ljev.hiHFminus=hiHFminus_;
+		ljev.hiHFplusEta4=hiHFplusEta4_;
+		ljev.hiHFminusEta4=hiHFminusEta4_;
 
 		//number of tracks and tracks overlapping with hard process objects
 		ljev.ntracks=0;
