@@ -37,6 +37,7 @@ class Plot(object):
         self.cmsLabel='#bf{CMS} #it{preliminary}'
         self.com=com
         self.wideCanvas = True if 'ratevsrun' in self.name else False
+        self.doPoissonErrorBars=True
         self.mc = OrderedDict()
         self.mcsyst = {}
         self.spimpose={}
@@ -47,7 +48,7 @@ class Plot(object):
         self.savelog = False
         self.doChi2 = False
         self.ratiorange = (0.4,1.6)
-        self.frameMin=0.1
+        self.frameMin=0.01
         self.frameMax=1.45
         self.mcUnc=0
 
@@ -117,7 +118,10 @@ class Plot(object):
                 self._garbageList.append(h)
 
     def finalize(self):
-        self.data = convertToPoissonErrorGr(self.dataH)
+        if self.doPoissonErrorBars:
+            self.data = convertToPoissonErrorGr(self.dataH)
+        else:
+            self.data=ROOT.TGraphErrors(self.dataH)
 
     def appendTo(self,outUrl):
         outF = ROOT.TFile.Open(outUrl,'UPDATE')
@@ -191,7 +195,7 @@ class Plot(object):
         if noRatio: inix=0.6
         if noStack:
             inix,dx=0.6,0.35
-            iniy,dy,ndy=0.95,0.02,len(self.mc)
+            iniy,dy,ndy=0.85,0.03,len(self.mc)
 
         leg = ROOT.TLegend(inix, iniy-dy*ndy, inix+dx, iniy+0.06)
 
@@ -244,6 +248,7 @@ class Plot(object):
                 totalMC = self.mc[h].Clone('totalmc')
                 self._garbageList.append(totalMC)
                 totalMC.SetDirectory(0)
+            nominalTTbar=None
             if h=='t#bar{t}':
                 nominalTTbar = self.mc[h].Clone('nomttbar')
                 self._garbageList.append(nominalTTbar)
@@ -308,7 +313,7 @@ class Plot(object):
         frame = totalMC.Clone('frame') if totalMC is not None else self.dataH.Clone('frame')
         frame.Reset('ICE')
         if noStack:
-            maxY=stack.GetStack().At(0).GetMaximum()/1.25
+            maxY=self.dataH.GetMaximum()*1.25 #stack.GetStack().At(0).GetMaximum()/1.25
         elif totalMC:
             maxY = totalMC.GetMaximum()
             if self.dataH:

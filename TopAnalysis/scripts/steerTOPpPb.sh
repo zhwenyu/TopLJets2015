@@ -21,8 +21,8 @@ NC='\e[0m'
 case $WHAT in
     MCSEL )
 	queue=local
-	for p in PbP pPb; do
-	    for ch in 11; do #13; do #11 13; do
+	for ch in 11 13; do #13; do #11 13; do
+	    for p in PbP pPb; do
 		python scripts/runLocalAnalysis.py \
 		    -i /store/cmst3/group/hintt/mverweij/forest_PYQUEN_TTBAR/${p}/v1/merge/ \
 		    -o ${outdir}/analysis_${p}_${ch} \
