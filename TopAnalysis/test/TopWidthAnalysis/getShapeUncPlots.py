@@ -14,7 +14,7 @@ def main():
     parser.add_option("--cats", type="string", dest="cats",      default="highptEM2b",    help="a list of categories")
     parser.add_option("--altProc",  type="string",  dest="altProc",       default="alternative hypothesis",    help="overlay this alternative hypothesis")
     parser.add_option("--uncs", type="string", dest="uncList",   default="les_EM,jes,jer",   help="a list of uncertainties to look for")
-    parser.add_option("--proc", type="string", dest="proc",      default="tbart,tW",      help="a list of processes to plot")
+    parser.add_option("--proc", type="string", dest="proc",      default="tbart1p0w",         help="a list of processes to plot")
     parser.add_option("-o",     type="string", dest="outdir" ,   default="./plots",       help="the base filename for the plots")
     parser.add_option("--obs",
                       type="string",
@@ -27,27 +27,37 @@ def main():
     systNameMap= {
         "jes"           : "jet E scale",
         "jer"           : "jet E resolution",
-        "les_EE"        : "lepton E scale",
-        "les_EM"        : "lepton E scale",
-        "les_MM"        : "lepton E scale",
+        "les_EE"        : "lepton E scale EE",
+        "les_EM"        : "lepton E scale EM",
+        "les_MM"        : "lepton E scale MM",
+        "les"           : "lepton E scale",
         "btag"          : "b-tag efficiencies",
         "ltag"          : "light flavour mistag rate",
-        "trig_EE"       : "Trigger efficiencies",
-        "trig_EM"       : "Trigger efficiencies",
-        "trig_MM"       : "Trigger efficiencies",
-        "sel_EE"        : "Selection efficiencies",
-        "sel_EM"        : "Selection efficiencies",
-        "sel_MM"        : "Selection efficiencies",
-        "tttoppt"       : "t#bar{t} top p_{T}",
+        "trigEE"        : "Trigger efficiencies",
+        "trigEM"        : "Trigger efficiencies",
+        "trigMM"        : "Trigger efficiencies",
+        "sel_EE"        : "EE Selection efficiencies",
+        "sel_EM"        : "EM Selection efficiencies",
+        "sel_MM"        : "MM Selection efficiencies",
+        "sel"           : "Selection efficiency",
+        "toppt"         : "t#bar{t} top p_{T}",
         "pu"            : "Pileup",
         "ttPSScale"     : "t#bar{t} PS scale",
         "tWQCDScale"    : "tW QCD Scale",
         "tWttInterf"    : "tW/t#bar{t} interference",
-        "mtop"          : "m_{t}",
+        "Mtop"          : "m_{t}",
         "ttMEqcdscale"  : "t#bar{t} #mu_{R}/#mu_{F}",
         "ttPartonShower": "t#bar{t} hadronizer",
         "ttGenerator"   : "t#bar{t} ME generator",
-        "ttPDF"         : "NNLOPDF3.0 variation"
+        "ttPDF"         : "NNLOPDF3.0 variation",
+        "cflip"         : "Charge flip",
+        "ISR"           : "Initial state radiation",
+        "FSR"           : "Final state radiation",
+        "UE"            : "Underlying event",
+        "noSC"          : "No SC",
+        "hdamp"         : "HDAMP",
+        "Herwig"        : "Herwig",
+        "amcnlo"        : "aMC@NLO"
         }
 
     obsTitleMap={'incmlb':'Inclusive mass(l,b) [GeV]'}
@@ -57,7 +67,7 @@ def main():
             ROOT.kMagenta+2,ROOT.kBlue-9,
             ROOT.kMagenta,ROOT.kGreen+2]
 
-    ROOT.gROOT.SetBatch()    
+    ROOT.gROOT.SetBatch()
     ROOT.gStyle.SetOptTitle(0)
     ROOT.gStyle.SetOptStat(0)
     fIn=ROOT.TFile.Open(opt.input)
@@ -78,7 +88,7 @@ def main():
                 altH.Divide(nomH)
                 altH.GetXaxis().SetTitle(obsTitleMap[opt.obs])
                 altH.GetYaxis().SetTitle("Ratio to reference")
-                plot.add(altH,"Alt.",1, False,True)
+                plot.add(altH,"Alt.",1, False,True,False)
             except:
                 altH=None
 
@@ -89,15 +99,15 @@ def main():
             upH.Divide(nomH)
             upH.GetXaxis().SetTitle(obsTitleMap[opt.obs])
             upH.GetYaxis().SetTitle("Ratio to reference")
-            plot.add(upH,systNameMap[syst]+" (up)",colors[isyst], False,False)
+            plot.add(upH,systNameMap[syst]+" (up)",colors[isyst], False,False,False)
             isyst+=1
             dnH=fIn.Get('%s_%s_%sDown/%s'%(cat,opt.obs,syst,opt.proc))
             dnH.Divide(nomH)
             dnH.GetXaxis().SetTitle(obsTitleMap[opt.obs])
             dnH.GetYaxis().SetTitle("Ratio to reference")
-            plot.add(dnH,systNameMap[syst]+" (down)",colors[isyst], False,False)
+            plot.add(dnH,systNameMap[syst]+" (down)",colors[isyst], False,False,False)
         plot.finalize()
-        plot.show(outDir=opt.outdir,lumi=12900,noStack=True)
+        plot.show(outDir=opt.outdir,lumi=35900,noStack=True)
 
     fIn.Close()
 
