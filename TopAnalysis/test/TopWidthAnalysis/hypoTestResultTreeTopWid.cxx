@@ -61,7 +61,7 @@ void hypoTestResultTreeTopWid(TString fOutName,
     long int nS = 0, 
              nB = 0;
 
-    TCanvas *c = new TCanvas("","");
+    TCanvas *c = new TCanvas("","",500,500);
 
     for (int i = 0, n = gROOT->GetListOfFiles()->GetSize()-1;  i < n; ++i) {
         TDirectory *toyDir = ((TFile*) gROOT->GetListOfFiles()->At(i))->GetDirectory("toys");
@@ -122,6 +122,7 @@ void hypoTestResultTreeTopWid(TString fOutName,
     
     tree->Draw("-2*q>>hnullstat","type>0","goff");
     tree->Draw("-2*q>>haltstat" ,"type<0","goff");
+
 
     //
     // Get x position where toy histograms approximately intersect
@@ -262,7 +263,7 @@ void hypoTestResultTreeTopWid(TString fOutName,
 
     std::cout << "Creating plots" << std::endl;
 
-    Double_t plotMinMax = TMath::Max(TMath::Abs(gnull->GetParameter("Mean")-3*gnull->GetParameter(2)),
+    Double_t plotMinMax = 2*TMath::Max(TMath::Abs(gnull->GetParameter("Mean")-3*gnull->GetParameter(2)),
                                      TMath::Abs( galt->GetParameter("Mean")-3* galt->GetParameter(2)))*1.2;
 
     TH1D *hnull = new TH1D("hnull","Null Hypothesis",TMath::FloorNint(2*plotMinMax*100/40)/5,-plotMinMax,plotMinMax);
@@ -271,29 +272,41 @@ void hypoTestResultTreeTopWid(TString fOutName,
     tree->Draw("-2*q>>hnull","type>0","goff");
     tree->Draw("-2*q>>halt" ,"type<0","goff");
 
-    hnull->SetLineColor(kBlue);
+
+    hnull->SetLineColor(kBlue-7);
+    hnull->SetFillColor(kBlue-7);
     hnull->SetStats(false);
-    hnull->GetXaxis()->SetTitle("-2*ln(L_{alt}#/L_{null})");
+    hnull->GetXaxis()->SetTitle("-2 ln [ L(alt) #/ L(SM) ]");
     hnull->GetXaxis()->SetTitleSize(0.04);
     hnull->GetXaxis()->SetTitleOffset(1.2);
     hnull->GetYaxis()->SetTitle("Pseudoexperiments");
     hnull->GetYaxis()->SetTitle("Pseudoexperiments");
-    hnull->SetMaximum(hnull->GetMaximum()*1.4);
+    hnull->GetYaxis()->SetTitleSize(0.04);
+    hnull->GetYaxis()->SetTitleOffset(1.3);
+    hnull->GetYaxis()->SetLabelSize(0.03);
+    hnull->GetXaxis()->SetLabelSize(0.03);
+    hnull->SetMaximum(hnull->GetMaximum()*1.3);
     halt->SetLineColor(kOrange);
+    halt->SetFillColor(kOrange);
     halt->SetStats(false);
     hnull->Draw();
     halt->Draw("SAME");
 
-    TLegend *leg = new TLegend(0.65,0.75,0.88,0.88);
-    leg->AddEntry(hnull,TString("#Gamma_{SM} Hypothesis"),"L");
-    leg->AddEntry(halt,TString(wid).ReplaceAll("p",".").ReplaceAll("w","")+TString("#times#Gamma_{SM} Hypothesis"),"L");
+    TLegend *leg = new TLegend(0.60,0.70,0.88,0.88);
+    leg->AddEntry(hnull,TString("#Gamma_{SM} Hypothesis"),"F");
+    leg->AddEntry(halt,TString(wid).ReplaceAll("p",".").ReplaceAll("w","")+TString("#times#Gamma_{SM} Hypothesis"),"F");
+    leg->SetFillColor(kNone);
+    leg->SetLineColor(kNone);
+    leg->SetShadowColor(kNone);
     leg->Draw();
 
     TString plotName = TString(lfs)+"_"+TString(wid)+"_"+TString(dist);
     c->SetTitle(plotName+" Toys");
 
+    relPosX=0.225;
     CMS_lumi(c,4,0); 
-    c->SetLeftMargin(c->GetLeftMargin()*1.5);
+    c->SetLeftMargin(0.15);
+    c->SetRightMargin(0.05);
     c->SaveAs(prepost+plotName+".pdf");
     c->SaveAs(prepost+plotName+".png");
 
