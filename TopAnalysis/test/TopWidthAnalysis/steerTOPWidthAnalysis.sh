@@ -4,11 +4,13 @@ WHAT=$1;
 ERA=$2;
 if [ "$#" -ne 2 ]; then 
     echo "steerTOPWidthAnalysis.sh <SEL/MERGESEL/PLOTSEL/WWWSEL/ANA/MERGE/PLOT/WWW>";
+    echo "        SHAPES          - create shapes files from plotter files";
+    echo "        MERGE_SHAPES    - merge output of shapes generation";
+    echo "        MERGE_DATACARDS - merge all datacards for one LFS/WID into one WID datacard";
     echo "        WORKSPACE       - create a workspace with the TopHypoTest model";
     echo "        SCAN            - scans the likelihood";
     echo "        CLs             - calculates CLs using higgs_combine";
     echo "        TOYS            - plots toys and saves locally";
-    echo "        MERGE_DATACARDS - merge all datacards for one LFS/WID into one WID datacard";
     echo "        QUANTILES       - plots the quantiles chart for all distributions, by lepton final state";
     echo "        WWW             - moves the analysis plots to an afs-web-based area";
     echo " "
@@ -18,69 +20,49 @@ fi
 
 export LSB_JOB_REPORT_MAIL=N
 
-queue=2nd
-outdir=/afs/cern.ch/work/e/ecoleman/public/TopWidth/TopWidth_${ERA}/
+queue=2nw
+outdir=/afs/cern.ch/work/e/ecoleman/TopWidth/
 cardsdir=${outdir}/datacards
 wwwdir=~/www/TopWidth_${ERA}/
 CMSSW_7_4_7dir=~/CMSSW_7_4_7/src/
-CMSSW_7_6_3dir=~/CMSSW_8_0_11/src/
+CMSSW_7_6_3dir=~/CMSSW_8_0_26_patch1/src/
 
-unblind=true
+unblind=false
 nPseudo=1000
 
-lfs=(EE EM MM)
-wid=(0p2w 0p4w 0p6w 0p8w 1p0w 1p2w 1p4w 1p6w 1p8w 2p0w 2p2w 2p4w 2p6w 2p8w 3p0w 3p5w 4p0w)
-#wid=(0p5w 1p0w 1p5w 2p0w 2p5w 3p0w 3p5w 4p0w)
-#dists=(mdrmlb minmlb incmlb sncmlb mt2mlb)
-dists=(incmlb)
-cat=(1b 2b)
+wid=(0p2w 0p4w 0p6w 0p8w 
+    1p0w 1p2w 1p4w 1p6w 
+    1p8w 2p0w 2p2w 2p4w 
+    2p6w 2p8w 3p0w 3p5w 4p0w)
 lbCat=(highpt lowpt)
+lfs=(EE EM MM)
+cat=(1b 2b)
+dists=(incmlb)
 
-nuisances=(jes jesrate jer pu btag les ltag trigEE trigEM trigMM selEE selEM selMM toppt MEqcdscale PDF Herwig amcnloFxFx Mtop ttPartonShower tWttinterf tWQCDScale DYnorm_thEE DYnorm_thEM DYnorm_thMM) 
+nuisances=(jes 
+    jesrate jer pu btag les ltag 
+    trigEE trigEM trigMM 
+    selEE selEM selMM 
+    toppt MEqcdscale PDF Herwig amcnloFxFx 
+    Mtop ttPartonShower tWttinterf tWQCDScale 
+    DYnorm_thEE DYnorm_thEM DYnorm_thMM) 
 
 RED='\e[31m'
 NC='\e[0m'
 
+function join { local IFS=','; echo "$*"; }
+
 # Helpers: getting comma-separated lists of variables
-distStr=""
-lfsStr=""
-widStr=""
-for dist in ${dists[*]}
-do
-    if [[ "${distStr}" == "" ]];
-    then
-        distStr="${dist}"
-    else
-        distStr="${distStr},${dist}"
-    fi
-done
-
-for tlfs in ${lfs[*]} ; do
-    if [[ "${lfsStr}" == "" ]];
-    then
-        lfsStr="${tlfs}"
-    else
-        lfsStr="${lfsStr},${tlfs}"
-    fi
-done
-
-for twid in ${wid[*]} ; do
-    if [[ "${widStr}" == "" ]];
-    then
-        widStr="${twid}"
-    else
-        widStr="${widStr},${twid}"
-    fi
-done
-       
-
+distStr="$(join ${dists[@]})"
+lfsStr="$(join ${lfs[@]})"
+widStr="$(join ${wid[@]})"
 
 case $WHAT in
+############################### SHAPES ####################################
     SHAPES ) # to get the shapes file / datacards for the full analysis
         cd ${CMSSW_7_4_7dir}
         eval `scramv1 runtime -sh`
         cd ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/
-        export PYTHONPATH=$PYTHONPATH:/usr/lib64/python2.6/site-packages/
     
         rm ${cardsdir}/*.root
 
@@ -89,350 +71,20 @@ case $WHAT in
             max=$(($index+16))
 
             nohup python test/TopWidthAnalysis/createShapesFromPlotter.py \
-                    -s tbart,tW \
+                    -s tbart,Singletop \
                     --dists ${distStr} \
                     -o ${outdir}/datacards/ \
                     -n shapes$index \
                     -i ${outdir}/analysis/plots/plotter.root \
                     --systInput ${outdir}/analysis/plots/syst_plotter.root \
-                    --nomorph --min $min --max $max > shapes${index}.txt & 
+                    --min $min --max $max > shapes${index}.txt & 
         done
     ;;
-    X4VALIDATION ) # to get the shapes file / datacards for the full analysis
-        cd ${CMSSW_7_4_7dir}
-        eval `scramv1 runtime -sh`
-
-
-        export PYTHONPATH=$PYTHONPATH:/usr/lib64/python2.6/site-packages/
-        for twid in 4p0w ; do 
-            cd ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/
-            mkdir ${outdir}/widthx4validation_new
-            rm ${outdir}/widthx4validation_new/datacards/*
-        for index in `seq 0 17 204` ; do
-            min=$index
-            max=$(($index+16))
-
-            nohup python test/TopWidthAnalysis/createShapesFromPlotter.py \
-                    -s tbart,tW \
-                    --dists ${distStr} \
-                    -o ${outdir}/widthx4validation_new/datacards/ \
-                    -i ${outdir}/analysis/plots/plotter.root \
-                    --systInput ${outdir}/analysis/plots/syst_plotter.root \
-                    --truth 4p0w \
-                    --trx4 widthx4 \
-                    --trx4Width 1p0w \
-                    --trx4Input ${outdir}/prevAnalysis4/analysis/plots/syst_plotter.root \
-                    -n shapes${twid}$index \
-                    --min $min --max $max \
-                    --nomorph > shapes${twid}${index}.txt &
-        done
-            # so local jobs don't destroy lxplus (cheap but it works)
-            #sleep 900 
-        done
-    ;;
-    X4VALIDATION_SCANS )
-        cd ${CMSSW_7_4_7dir}
-        eval `scramv1 runtime -sh`
-
-        for swid in 4p0w; do
-        
-        base=${outdir}/widthx4validation_new/
-        # hadd shapes 
-        #hadd ${base}/datacards/shapes.root ${base}/datacards/shapes*.root 
-
-        # produce datacards
-        # for a given width, merge all
-        for dist in ${dists[*]} ; do
-        for twid in ${wid[*]} ; do
-            allcmd="python ${CMSSW_BASE}/src/HiggsAnalysis/CombinedLimit/scripts/combineCards.py "
-        for tlbCat in ${lbCat[*]} ; do
-        for tlfs in ${lfs[*]} ; do
-        for tCat in ${cat[*]} ; do
-            cardname="${tlbCat}${tlfs}${tCat}=${base}/datacards"
-            cardname="${cardname}/datacard__${twid}_${tlbCat}${tlfs}${tCat}_${dist}.dat"
-            allcmd="${allcmd} ${cardname} "
-        done
-        done
-        done
-            allcmd="${allcmd} > ${base}/datacards/datacard__${twid}_${dist}.dat"
-            eval $allcmd
-        done
-        done
-
-        # workspaces 
-        cd ${CMSSW_7_4_7dir}
-        eval `scramv1 runtime -sh`
-        cd ${base}/
-        for dist in ${dists[*]} ; do
-        for twid in ${wid[*]} ; do
-            
-            echo "Creating workspace for ${twid}${dist}" 
-            text2workspace.py ${base}/datacards/datacard__${twid}_${dist}.dat -P \
-                HiggsAnalysis.CombinedLimit.TopHypoTest:twoHypothesisTest \
-                -m 172.5 --PO verbose --PO altSignal=${twid} --PO muFloating \
-                -o ${base}/${twid}_${dist}.root 
-
-        done
-        done
-        
-        
-        # scans
-        cd ${CMSSW_7_4_7dir}
-        eval `scramv1 runtime -sh`
-        cd ${base}
-        for dist in ${dists[*]} ; do
-        for twid in ${wid[*]} ; do
-            if [[ "${twid}" == "${swid}" ]] ; then
-
-                # x = 0
-                cmd="combine ${base}/${twid}_${dist}.root -M MultiDimFit" 
-                cmd="${cmd} -m 172.5 --redefineSignalPOIs x --floatOtherPOI=1 --minimizerTolerance 0.0001 --algo=grid --points=50"
-                cmd="${cmd} -n x0_fit_exp --setPhysicsModelParameters x=0.0,r=1.0"
-                cmd="${cmd} --saveWorkspace --expectSignal=1 -t -1 --robustFit=1"
-                
-                bsub -q ${queue} \
-                    ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh \
-                    "${base}/" "${cmd}" 
-
-                # x = 1
-                cmd="combine ${base}/${twid}_${dist}.root -M MultiDimFit" 
-                cmd="${cmd} -m 172.5 --redefineSignalPOIs x --floatOtherPOI=1 --minimizerTolerance 0.0001 --algo=grid --points=50"
-                cmd="${cmd} -n x1_fit_exp --setPhysicsModelParameters x=1.0,r=1.0"
-                cmd="${cmd} --saveWorkspace --expectSignal=1 -t -1 --robustFit=1"
-                
-                bsub -q ${queue} \
-                    ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh \
-                    "${base}/" "${cmd}" 
-
-                # x from data 
-                cmd="combine ${base}/${twid}_${dist}.root -M MultiDimFit" 
-                cmd="${cmd} -m 172.5 -P x --minimizerTolerance 0.0001 --algo=grid --points=50"
-                cmd="${cmd} -n x_fit${twid}_obs --robustFit=1 --setPhysicsModelParameters x=1.0,r=1.0"
-                cmd="${cmd} --saveWorkspace"
-                
-                bsub -q ${queue} \
-                    sh ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh \
-                    "${base}/" "${cmd}" 
-
-            fi
-
-            # pre-fit 
-            echo "Making CLs for ${twid} ${dist}"
-            cmd="combine ${base}/${twid}_${dist}.root -M HybridNew --seed 8192 --saveHybridResult" 
-            cmd="${cmd} -m 172.5  --testStat=TEV --singlePoint 1 -T ${nPseudo} -i 2 --fork 6"
-            cmd="${cmd} --clsAcc 0 --fullBToys  --generateExt=1 --generateNuis=0"
-            cmd="${cmd} --expectedFromGrid 0.5 -n x_pre-fit_exp__${twid}_${dist}"
-
-            bsub -q ${queue} ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh "${base}/" "${cmd}" 
-            
-            # post-fit expected 
-            echo "Making CLs for ${twid} ${dist}"
-            cmd="combine ${base}/${twid}_${dist}.root -M HybridNew --seed 8192 --saveHybridResult" 
-            cmd="${cmd} -m 172.5  --testStat=TEV --singlePoint 1 -T ${nPseudo} -i 2 --fork 6"
-            cmd="${cmd} --clsAcc 0 --fullBToys  --frequentist"
-            cmd="${cmd} --expectedFromGrid 0.5 -n x_post-fit_exp__${twid}_${dist}"
-
-            bsub -q ${queue} ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh "${base}/" "${cmd}" 
-
-            # post-fit observed 
-            echo "Making CLs for ${twid} ${dist}"
-            cmd="combine ${base}/${twid}_${dist}.root -M HybridNew --seed 8192 --saveHybridResult" 
-            cmd="${cmd} -m 172.5  --testStat=TEV --singlePoint 1 -T ${nPseudo} -i 2 --fork 6"
-            cmd="${cmd} --clsAcc 0 --fullBToys  --frequentist"
-            cmd="${cmd} -n x_post-fit_obs__${twid}_${dist}"
-
-            bsub -q ${queue} ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh "${base}/" "${cmd}" 
-        done
-        done
-        done
-    ;;
-    X4VALIDATION_QUANTILES )
-        cd ${CMSSW_7_4_7dir}
-        eval `scramv1 runtime -sh` 
-
-        for swid in 4p0w ; do 
-
-        base=${outdir}/widthx4validation_new/
-
-        cd ${base}
-        rm statsPlots.root
-        for dist in ${dists[*]} ; do
-            #for twid in ${wid[*]} ; do
-            #    ## pre-fit expected 
-            #    rootcmds="${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis"
-            #    rootcmds="${rootcmds}/hypoTestResultTreeTopWid.cxx\(\\\"x_pre-fit_exp__${twid}_${dist}.qvals.root"
-            #    rootcmds="${rootcmds}\\\",172.5,1,\\\"x\\\",1000,\\\"\\\",\\\"${twid}\\\",\\\"${dist}\\\",${unblind},\\\"pre\\\"\)"
-
-            #    cmd="root -l -q -b"
-            #    cmd="${cmd} ${base}"
-            #    cmd="${cmd}/higgsCombinex_pre-fit_exp__${twid}_${dist}.HybridNew.mH172.5.8192.quant0.500.root"
-            #    cmd="${cmd} ${rootcmds}"
-
-            #    sh ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh \
-            #        "${base}" "${cmd}"
-
-            #    ## post-fit expected 
-            #    rootcmds="${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis"
-            #    rootcmds="${rootcmds}/hypoTestResultTreeTopWid.cxx\(\\\"x_post-fit_exp__${twid}_${dist}.qvals.root"
-            #    rootcmds="${rootcmds}\\\",172.5,1,\\\"x\\\",1000,\\\"\\\",\\\"${twid}\\\",\\\"${dist}\\\",${unblind},\\\"post\\\"\)"
-
-            #    cmd="root -l -q -b"
-            #    cmd="${cmd} ${base}"
-            #    cmd="${cmd}/higgsCombinex_post-fit_exp__${twid}_${dist}.HybridNew.mH172.5.8192.quant0.500.root"
-            #    cmd="${cmd} ${rootcmds}"
-
-            #    sh ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh \
-            #        "${base}" "${cmd}"
-
-            #    ## post-fit observed 
-            #    rootcmds="${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis"
-            #    rootcmds="${rootcmds}/hypoTestResultTreeTopWid.cxx\(\\\"x_post-fit_obs__${twid}_${dist}.qvals.root"
-            #    rootcmds="${rootcmds}\\\",172.5,1,\\\"x\\\",1000,\\\"\\\",\\\"${twid}\\\",\\\"${dist}\\\",${unblind},\\\"obs\\\"\)"
-
-            #    cmd="root -l -q -b"
-            #    cmd="${cmd} ${base}"
-            #    cmd="${cmd}/higgsCombinex_post-fit_obs__${twid}_${dist}.HybridNew.mH172.5.8192.root"
-            #    cmd="${cmd} ${rootcmds}"
-
-            #    sh ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh \
-            #        "${base}" "${cmd}"
-            #done
-            
-            # Quantiles plot with post-fit information 
-            python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getQuantilesPlot.py \
-                -i ${base}/ -o ${base}/ \
-                --wid ${widStr} \
-                --dist ${dist}  \
-                --prep post \
-                --unblind
-
-            # Get CLs plots for pre-fit expectations
-            #python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getSeparationTables.py\
-            #    -i ${base}/ -o ${base}/ \
-            #    --wid ${widStr} \
-            #    --prep pre \
-            #    --dist ${dist}
-            
-            # Get CLs plots for post-fit expectations 
-            python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getSeparationTables.py\
-                -i ${base}/ -o ${base}/ \
-                --wid ${widStr} \
-                --dist ${dist} \
-                --prep post \
-                --addPre \
-                --splineMin 0.4 --splineMax 7.0 \
-                --unblind
-            
-            # Get CLs plots for post-fit expectations 
-            #python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getSeparationTables.py\
-            #    -i ${base}/ -o ${base}/ \
-            #    --wid ${widStr} \
-            #    --dist ${dist} \
-            #    --prep obs \
-            #    --unblind
-        done
-        done
-    ;;
-    X4VALIDATION_FITS )
-        cd ${CMSSW_7_4_7dir}
-        eval `scramv1 runtime -sh` 
-
-        for swid in ${wid[*]} ; do 
-
-        base=${outdir}/width${swid}validation/
-
-        cd ${base}
-        rm statsPlots.root
-        for dist in ${dists[*]} ; do
-
-            echo "Limits for ${dist} ||| ${swid}"
-            python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getCLsFromFit.py \
-                -i ${base}/ \
-                --dist ${dist} \
-                --prep post \
-                --unblind
-        done
-        done
-
-    ;;
-    MORPH ) # to get the morphs for the full analysis
-        cd ${CMSSW_7_4_7dir}
-        eval `scramv1 runtime -sh`
-        cd ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/
-        export PYTHONPATH=$PYTHONPATH:/usr/lib64/python2.6/site-packages/
-        python test/TopWidthAnalysis/createShapesFromPlotter.py \
-                -s tbart,tW \
-                --dists ${distStr} \
-                -o ${outdir}/datacards/ \
-                -i ${outdir}/analysis/plots/plotter.root \
-                --systInput ${outdir}/analysis/plots/syst_plotter.root \
-                --noshapes 
-    ;;
-    MORPHALL ) # get shapes/morphs replacing data with a given width template 
-        cd ${CMSSW_7_4_7dir}
-        eval `scramv1 runtime -sh`
-        cd ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/
-        export PYTHONPATH=$PYTHONPATH:/usr/lib64/python2.6/site-packages/
-
-        # for each width, generate a truth dataset and produce the proper morph datacards for it
-        # --> output in datacards_<wid>/
-        for twid in ${wid[*]}; do
-           rm -rf ${outdir}/datacards_${twid}
-           nohup python test/TopWidthAnalysis/createShapesFromPlotter.py \
-                   -s tbart,tW \
-                   --dists ${distStr} \
-                   -o ${outdir}/datacards_${twid}/ \
-                   -i ${outdir}/analysis/plots/plotter.root \
-                   --systInput ${outdir}/analysis/plots/syst_plotter.root \
-                   --truth ${twid} &
-        done
-    ;;
-    2DBIAS ) # get the bias plot for the 2D scan
-        cd ${CMSSW_7_4_7dir}
-        eval `scramv1 runtime -sh`
-
-        # Merge datacards
-        for twid in ${wid[*]}; do
-        for dist in ${dist[*]}; do
-            cmd="python ${CMSSW_7_4_7dir}/HiggsAnalysis/CombinedLimit/scripts/combineCards.py "
-
-            for tlbCat in ${lbCat[*]} ; do
-            for tlfs in ${lfs[*]} ; do
-            for tCat in ${cat[*]} ; do
-                cardname="${tlbCat}${tlfs}${tCat}=${outdir}/datacards_${twid}"
-                cardname="${cardname}/datacard_widfit__${tlbCat}${tlfs}${tCat}_${dist}.dat"
-                cmd="${cmd} ${cardname} "
-            done
-            done
-            done
-        done
-        done
-            cmd="${cmd} > ${outdir}/datacards_${twid}/datacard_widfit__${twid}_${dist}.dat"
-            eval `${cmd}`
-
-        # Get workspaces 
-        for twid in ${wid[*]}; do 
-        for dist in ${dist[*]}; do
-            cd ${outdir}/datacards_${twid}
-            text2workspace.py ${outdir}/datacards_${twid}/datacard_widfit__${twid}_${dist}.dat \
-                -o ${outdir}/datacards_${twid}/workspace_biascheck_${twid}_${dist}.root
-        done
-        done
-       
-        # Run combine
-        for twid in ${wid[*]}; do 
-        for dist in ${dist[*]}; do
-            cd ${outdir}/datacards_${twid}
-            combine ${outdir}/datacards_${twid}/workspace_biascheck_${twid}_${dist}.root \
-                -M MultiDimFit --expectSignal=1 --poi r --poi alpha --poi beta \
-                --setPhysicsModelParameterLimits alpha=0,9:beta=0,2 \
-                --algo=grid --points=1000
-        done
-        done
-    ;;
+############################### MERGE_SHAPES ##############################
     MERGE_SHAPES ) # hadd the shapes files since they are split
         hadd ${outdir}/datacards/shapes.root ${outdir}/datacards/shapes*.root 
     ;;
+############################### MERGE_DATACARDS ###########################
     MERGE_DATACARDS ) # get all the datacards you could possibly desire for the analysis
         cd ${CMSSW_7_4_7dir}
         eval `scramv1 runtime -sh`
@@ -473,6 +125,7 @@ case $WHAT in
         done
         done
     ;;
+############################### WORKSPACE #################################
     WORKSPACE ) # generate combine workspaces
         cd ${CMSSW_7_4_7dir}
         eval `scramv1 runtime -sh`
@@ -489,6 +142,7 @@ case $WHAT in
         done
         done
     ;;
+############################### SCAN ######################################
     SCAN ) # perform likelihood scans on Asimov datasets 
         cd ${CMSSW_7_4_7dir}
         eval `scramv1 runtime -sh`
@@ -512,6 +166,7 @@ case $WHAT in
         done
         done
     ;;
+############################### CLs #######################################
     CLs ) # get CLs statistics from combine
         cd ${CMSSW_7_4_7dir}
         eval `scramv1 runtime -sh`
@@ -522,35 +177,38 @@ case $WHAT in
             # pre-fit 
             echo "Making CLs for ${twid} ${dist}"
             cmd="combine ${outdir}/${twid}_${dist}.root -M HybridNew --seed 8192 --saveHybridResult" 
-            cmd="${cmd} -m 172.5  --testStat=TEV --singlePoint 1 -T ${nPseudo} -i 2 --fork 6"
-            cmd="${cmd} --clsAcc 0 --fullBToys  --generateExt=1 --generateNuis=0"
+            cmd="${cmd} -m 172.5  --testStat=TEV --singlePoint 1 -T 2000 -i 2 --fork 8"
+            cmd="${cmd} --clsAcc 0 --fullBToys  --saveWorkspace --generateExt=1 --generateNuis=0"
             cmd="${cmd} --expectedFromGrid 0.5 -n x_pre-fit_exp__${twid}_${dist}"
             #cmd="${cmd} &> ${outdir}/x_pre-fit_exp__${twid}_${dist}.log"
 
             bsub -q ${queue} ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh "${outdir}/" "${cmd}" 
-            
+
             # post-fit expected 
             echo "Making CLs for ${twid} ${dist}"
             cmd="combine ${outdir}/${twid}_${dist}.root -M HybridNew --seed 8192 --saveHybridResult" 
-            cmd="${cmd} -m 172.5  --testStat=TEV --singlePoint 1 -T ${nPseudo} -i 2 --fork 6"
-            cmd="${cmd} --clsAcc 0 --fullBToys  --frequentist"
+            cmd="${cmd} -m 172.5  --testStat=TEV --singlePoint 1 -T ${nPseudo} -i 2 --fork 8"
+            cmd="${cmd} --clsAcc 0 --fullBToys  --saveWorkspace --saveToys --frequentist"
             cmd="${cmd} --expectedFromGrid 0.5 -n x_post-fit_exp__${twid}_${dist}"
-            #cmd="${cmd} &> ${outdir}/x_pre-fit_exp__${twid}_${dist}.log"
+            #cmd="${cmd} &> ${outdir}/x_post-fit_exp__${twid}_${dist}.log"
 
             bsub -q ${queue} ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh "${outdir}/" "${cmd}" 
 
-            # post-fit observed 
-            echo "Making CLs for ${twid} ${dist}"
-            cmd="combine ${outdir}/${twid}_${dist}.root -M HybridNew --seed 8192 --saveHybridResult" 
-            cmd="${cmd} -m 172.5  --testStat=TEV --singlePoint 1 -T ${nPseudo} -i 2 --fork 6"
-            cmd="${cmd} --clsAcc 0 --fullBToys  --frequentist"
-            cmd="${cmd} -n x_post-fit_obs__${twid}_${dist}"
-            #cmd="${cmd} &> ${outdir}/x_pre-fit_exp__${twid}_${dist}.log"
+            # post-fit observed
+            if [[ ${unblind} == true ]] ; then 
+                echo "Making CLs for ${twid} ${dist}"
+                cmd="combine ${outdir}/${twid}_${dist}.root -M HybridNew --seed 8192 --saveHybridResult" 
+                cmd="${cmd} -m 172.5  --testStat=TEV --singlePoint 1 -T ${nPseudo} -i 2 --fork 8"
+                cmd="${cmd} --clsAcc 0 --fullBToys --saveWorkspace --saveToys --frequentist"
+                cmd="${cmd} -n x_post-fit_obs__${twid}_${dist}"
+                #cmd="${cmd} &> ${outdir}/x_post-fit_obs__${twid}_${dist}.log"
 
-            bsub -q ${queue} ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh "${outdir}/" "${cmd}" 
+                bsub -q ${queue} ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh "${outdir}/" "${cmd}" 
+            fi
         done
         done
     ;;
+############################### TOYS ######################################
     TOYS ) # get toys distributions from the pseudoexperiments
         cd ${CMSSW_7_4_7dir}
         eval `scramv1 runtime -sh`
@@ -559,24 +217,24 @@ case $WHAT in
         for twid in ${wid[*]} ; do
 
             ## pre-fit expected 
-            rootcmds="${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis"
-            rootcmds="${rootcmds}/hypoTestResultTreeTopWid.cxx\(\\\"x_pre-fit_exp__${twid}_${dist}.qvals.root"
-            rootcmds="${rootcmds}\\\",172.5,1,\\\"x\\\",1000,\\\"\\\",\\\"${twid}\\\",\\\"${dist}\\\",${unblind},\\\"pre\\\"\)"
+            #rootcmds="${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis"
+            #rootcmds="${rootcmds}/hypoTestResultTreeTopWid.cxx\(\\\"x_pre-fit_exp__${twid}_${dist}.qvals.root"
+            #rootcmds="${rootcmds}\\\",172.5,1,\\\"x\\\",${nPseudo},\\\"\\\",\\\"${twid}\\\",\\\"${dist}\\\",${unblind},\\\"pre\\\"\)"
 
-            cmd=""
-            cmd="${cmd}root -l -q -b"
-            cmd="${cmd} ${outdir}"
-            cmd="${cmd}/higgsCombinex_pre-fit_exp__${twid}_${dist}.HybridNew.mH172.5.8192.quant0.500.root"
-            cmd="${cmd} ${rootcmds}"
+            #cmd=""
+            #cmd="${cmd}root -l -q -b"
+            #cmd="${cmd} ${outdir}"
+            #cmd="${cmd}/higgsCombinex_pre-fit_exp__${twid}_${dist}.HybridNew.mH172.5.8192.quant0.500.root"
+            #cmd="${cmd} ${rootcmds}"
 
-            #bsub -q ${queue} \
-            sh ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh \
-                "${outdir}/" "${cmd}"
+            ##bsub -q ${queue} \
+            #sh ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh \
+            #    "${outdir}/" "${cmd}"
 
             ## post-fit expected 
             rootcmds="${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis"
             rootcmds="${rootcmds}/hypoTestResultTreeTopWid.cxx\(\\\"x_post-fit_exp__${twid}_${dist}.qvals.root"
-            rootcmds="${rootcmds}\\\",172.5,1,\\\"x\\\",1000,\\\"\\\",\\\"${twid}\\\",\\\"${dist}\\\",${unblind},\\\"post\\\"\)"
+            rootcmds="${rootcmds}\\\",172.5,1,\\\"x\\\",${nPseudo},\\\"\\\",\\\"${twid}\\\",\\\"${dist}\\\",${unblind},\\\"post\\\"\)"
 
             cmd=""
             cmd="${cmd}root -l -q -b"
@@ -589,22 +247,32 @@ case $WHAT in
                 "${outdir}/" "${cmd}"
 
             ## post-fit observed 
-            rootcmds="${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis"
-            rootcmds="${rootcmds}/hypoTestResultTreeTopWid.cxx\(\\\"x_post-fit_obs__${twid}_${dist}.qvals.root"
-            rootcmds="${rootcmds}\\\",172.5,1,\\\"x\\\",1000,\\\"\\\",\\\"${twid}\\\",\\\"${dist}\\\",${unblind},\\\"obs\\\"\)"
+            if [[ ${unblind} == true ]] ; then 
+                rootcmds="${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis"
+                rootcmds="${rootcmds}/hypoTestResultTreeTopWid.cxx\(\\\"x_post-fit_obs__${twid}_${dist}.qvals.root"
+                rootcmds="${rootcmds}\\\",172.5,1,\\\"x\\\",${nPseudo},\\\"\\\",\\\"${twid}\\\",\\\"${dist}\\\",${unblind},\\\"obs\\\"\)"
 
-            cmd=""
-            cmd="${cmd}root -l -q -b"
-            cmd="${cmd} ${outdir}"
-            cmd="${cmd}/higgsCombinex_post-fit_obs__${twid}_${dist}.HybridNew.mH172.5.8192.root"
-            cmd="${cmd} ${rootcmds}"
+                cmd=""
+                cmd="${cmd}root -l -q -b"
+                cmd="${cmd} ${outdir}"
+                cmd="${cmd}/higgsCombinex_post-fit_obs__${twid}_${dist}.HybridNew.mH172.5.8192.root"
+                cmd="${cmd} ${rootcmds}"
 
-            #bsub -q ${queue} \
-            sh ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh \
-                "${outdir}/" "${cmd}"
+                bsub -q ${queue} \
+                    sh ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh \
+                        "${outdir}/" "${cmd}"
+            fi
         done
         done
     ;;
+############################### WWW #######################################
+    WWW )
+        mkdir -p ${wwwdir}/ana_${ERA}
+        cp ${outdir}/analysis/plots/*.{png,pdf} ${wwwdir}/ana_${ERA} 
+        cp ${outdir}/*.{png,pdf} ${wwwdir}/ana_${ERA} 
+        cp test/index.php ${wwwdir}/ana_${ERA}
+    ;;
+############################### QUANTILES #################################
     QUANTILES ) # plot quantiles distributions of all toys, get CLsPlot
             
         cd ${CMSSW_7_4_7dir}
@@ -626,16 +294,16 @@ case $WHAT in
                 -i ${outdir}/ -o ${outdir}/ \
                 --wid ${widStr} \
                 --dist ${dist}  \
-                --prep post \
-                --unblind
+                --prep post #\
+                #--unblind
 
             # Quantiles plot with post-fit information 
-            python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getQuantilesPlot.py \
-                -i ${outdir}/ -o ${outdir}/ \
-                --wid ${widStr} \
-                --dist ${dist}  \
-                --prep obs \
-                --unblind
+            #python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getQuantilesPlot.py \
+            #    -i ${outdir}/ -o ${outdir}/ \
+            #    --wid ${widStr} \
+            #    --dist ${dist}  \
+            #    --prep obs #\
+            #    #--unblind
             
             # Get CLs plots for pre-fit expectations
             python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getSeparationTables.py \
@@ -650,27 +318,27 @@ case $WHAT in
                 --wid ${widStr} \
                 --dist ${dist} \
                 --prep post \
-                --addPre \
-                --unblind
+                --addPre #\
+                #--unblind
             
             # Get CLs plots for post-fit expectations 
-            python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getSeparationTables.py \
-                -i ${outdir}/ -o ${outdir}/ \
-                --wid ${widStr} \
-                --dist ${dist} \
-                --prep obs \
-                --unblind
-
-            #python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getCLsFromFit.py \
-            #    -i ${outdir}/ \
+            #python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getSeparationTables.py \
+            #    -i ${outdir}/ -o ${outdir}/ \
+            #    --wid ${widStr} \
             #    --dist ${dist} \
-            #    --prep pre
+            #    --prep obs #\
+            #    #--unblind
 
             python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getCLsFromFit.py \
                 -i ${outdir}/ \
                 --dist ${dist} \
-                --prep post \
-                --unblind
+                --prep pre
+
+            python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getCLsFromFit.py \
+                -i ${outdir}/ \
+                --dist ${dist} \
+                --prep post #\
+                #--unblind
         done
         
        # # Get Separation plots for all dists 
@@ -680,6 +348,73 @@ case $WHAT in
        #     --doAll \
        #     --unblind
     ;;
+############################### PLOT_NUIS #################################
+    PLOT_NUIS )
+        cd ${CMSSW_7_4_7dir}
+        eval `scramv1 runtime -sh` 
+        cd - 
+
+        for dist in ${dists[*]} ; do
+        for twid in ${wid[*]} ; do
+            nwid=${twid/p/.}
+            nwid=${nwid/w/}
+
+            #python test/TopWidthAnalysis/getNuisances.py \
+            #    -i ${outdir}/higgsCombinex_pre-fit_exp__${twid}_${dist}.HybridNew.mH172.5.8192.quant0.500.root \
+            #    -o ${outdir}/ \
+            #    -n preNuisances_${twid}_${dist} \
+            #    --extraText "#Gamma_{Alt.} = ${nwid} #times #Gamma_{SM}"
+
+            python test/TopWidthAnalysis/getNuisances.py \
+                -i ${outdir}/higgsCombinex_post-fit_exp__${twid}_${dist}.HybridNew.mH172.5.8192.quant0.500.root \
+                -o ${outdir}/ \
+                -n postNuisances_${twid}_${dist} \
+                --extraText "#Gamma_{Alt.} = ${nwid} #times #Gamma_{SM}"
+        done
+        done
+    ;;
+############################### PLOT_SYSTS #################################
+    PLOT_SYSTS )
+        catList="highptEE1b,highptEE2b,lowptEE1b,lowptEE2b,"
+        catList="${catList}highptEM1b,highptEM2b,lowptEM1b,lowptEM2b,"
+        catList="${catList}highptMM1b,highptMM2b,lowptMM1b,lowptMM2b"
+
+        python test/TopWidthAnalysis/getShapeUncPlots.py \
+            -i ${outdir}/withSel/datacards/shapes.root \
+            -o ${outdir}/withSel/datacards/plots \
+            --uncs btag,ltag,pu \
+            --altProc tbart2p0w \
+            --cats ${catList} 
+
+        python test/TopWidthAnalysis/getShapeUncPlots.py \
+            -i ${outdir}/withSel/datacards/shapes.root \
+            -o ${outdir}/withSel/datacards/plots \
+            --uncs jes,les,jer \
+            --altProc tbart2p0w \
+            --cats ${catList} 
+
+        python test/TopWidthAnalysis/getShapeUncPlots.py \
+            -i ${outdir}/withSel/datacards/shapes.root \
+            -o ${outdir}/withSel/datacards/plots \
+            --uncs Mtop \
+            --altProc tbart2p0w \
+            --cats ${catList} 
+
+        python test/TopWidthAnalysis/getShapeUncPlots.py \
+            -i ${outdir}/withSel/datacards/shapes.root \
+            -o ${outdir}/withSel/datacards/plots \
+            --uncs hdamp,toppt \
+            --altProc tbart2p0w \
+            --cats ${catList} 
+
+        python test/TopWidthAnalysis/getShapeUncPlots.py \
+            -i ${outdir}/withSel/datacards/shapes.root \
+            -o ${outdir}/withSel/datacards/plots \
+            --uncs ISR,FSR,UE \
+            --altProc tbart2p0w \
+            --cats ${catList} 
+    ;;
+############################### NUISANCES #################################
     NUISANCES ) # run once for each nuisance, doing a full analysis to understand effects of systematics 
         for dist in ${dists[*]} ; do
             systList=""
@@ -768,6 +503,7 @@ case $WHAT in
         done    
         done
     ;;
+############################### NUISANCES_TOYS ############################
     NUISANCES_TOYS )
         for dist in ${dists[*]} ; do
             i=0
@@ -830,6 +566,7 @@ case $WHAT in
         done
         done
     ;;
+############################### NUISANCES_FITS ############################
     NUISANCE_FITS )
         cd ${CMSSW_7_4_7dir}/
         eval `scramv1 runtime -sh`
@@ -869,11 +606,5 @@ case $WHAT in
 
         done
         done
-    ;;
-    WWW )
-        mkdir -p ${wwwdir}/ana_${ERA}
-        cp ${outdir}/analysis/plots/*.{png,pdf} ${wwwdir}/ana_${ERA} 
-        cp ${outdir}/*.{png,pdf} ${wwwdir}/ana_${ERA} 
-        cp test/index.php ${wwwdir}/ana_${ERA}
     ;;
 esac

@@ -124,11 +124,12 @@ for wid,lfs in [(wid,lfs) for wid in rawWidList for lfs in rawLfsList]:
             eyu3A[i+1] = ROOT.TMath.Abs(tline[6]-tline[3])
         else : continue
 
-    statsFileName="%s/obsstats__%s_%s_%s.txt"%(options.indir,wid,lfs,options.dist)
-    for line in open(statsFileName,"r"):
-        if "qobs" in line :
-            qobsY[i/2] = float(line.replace("qobs;",""))
-        else : continue
+    if options.unblind :
+        statsFileName="%s/obsstats__%s_%s_%s.txt"%(options.indir,wid,lfs,options.dist)
+        for line in open(statsFileName,"r"):
+            if "qobs" in line :
+                qobsY[i/2] = float(line.replace("qobs;",""))
+            else : continue
     i+=2
 
 for i in xrange(0,nPoints) :
