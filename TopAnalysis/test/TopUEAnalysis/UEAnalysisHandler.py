@@ -51,7 +51,11 @@ SYSTS = [ ('',   0,0,False),
           ('eesdn', 0,8,False),
           ('mesup', 0,9,False),
           ('mesdn', 0,10,False),
-          ('tkeff', 0,0,True) ]
+          ('tkeff', 0,0,1),
+          ('tkeffbcdef', 0,0,2),
+          ('tkeffgh', 0,0,3),
+          ('tkeffeta', 0,0,4)
+          ]
 
 
 """

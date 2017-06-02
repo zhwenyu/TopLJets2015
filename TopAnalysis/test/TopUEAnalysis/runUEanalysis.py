@@ -40,7 +40,7 @@ def determineSliceResolutions(opt):
             sys.stdout.flush()
 
         #count particles in the event
-        ue.count(t,debug=False)
+        ue.count(t=t,debug=False,isMC=True)
 
         #require a pure event selected at reco and gen levels
         if not ue.rec_passSel[0] or not ue.gen_passSel: continue
@@ -365,7 +365,7 @@ def runUEAnalysis(inF,outF,cfgDir):
 
     varList=SYSTS
     if not 'MC13TeV_TTJets' in inF : varList=[('',   0,0,False)]
-
+    isMC=True if 'MC13TeV' in inF else False
     ALLSLICEVARS=[None]+SLICEVARS
 
     #loop over the tree to fill histos
@@ -380,7 +380,7 @@ def runUEAnalysis(inF,outF,cfgDir):
             sys.stdout.flush()
 
         #count particles
-        ue.count(t)
+        ue.count(t=t,isMC=isMC)
 
         #
         for ivar in xrange(0,len(varList)):

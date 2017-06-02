@@ -21,10 +21,12 @@ class UEEventCounter:
         self.reset(axes)
 
         #tracking efficiency scale factor
-        fIn=ROOT.TFile.Open('${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/era2016/MuonTracking_EfficienciesAndSF_BCDEFGH.root')
-        self.tkEffSF={'abseta':fIn.Get('ratio_eff_aeta_tk0_dr030e030_corr'),
-                      'vtx':fIn.Get('ratio_eff_vtx_tk0_dr030e030_corr')}
-        fIn.Close()
+        self.tkEffSF={}
+        for era in ['BCDEF','GH']:
+            fIn=ROOT.TFile.Open('${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/era2016/MuonTracking_EfficienciesAndSF_%s.root'%era)
+            self.tkEffSF[era]={'abseta':fIn.Get('ratio_eff_aeta_tk0_dr030e030_corr'),
+                               'vtx':fIn.Get('ratio_eff_vtx_tk0_dr030e030_corr')}
+            fIn.Close()
 
             
     """
@@ -108,8 +110,12 @@ class UEEventCounter:
     """
     count the particles in an event
     """
-    def count(self,t,debug=False):
-                
+    def count(self,t,isMC=False,debug=False):
+        
+        #assign an era randomly (only used for MC)
+        mceraLumi=ROOT.gRandom.Uniform(35874.8)
+        mcera='BCDEF' if mceraLumi < 19323.4 else 'GH'
+
         self.reset()
         evshapes=EventShapeTool()
         p4=ROOT.TLorentzVector(0,0,0,0)
@@ -128,16 +134,16 @@ class UEEventCounter:
                     if t.pt[n]<self.ptthreshold[1] : continue
                     if abs(t.eta[n])>self.etathreshold : continue
 
-                    #apply some tracking efficiency scale factor
-                    sf=self.tkEffSF['vtx'].Eval(min(t.nvtx,40))
-                    rnd=ROOT.gRandom.Uniform(1.0)
-                    if rnd<(1-sf) : continue
-
-                    #decide if track should still be accepted
-                    if varyTkEff:
-                        relsf=self.tkEffSF['abseta'].Eval(abs(t.eta[n]))
-                        rnd=ROOT.gRandom.Uniform(1.0)
-                        if rnd<(1-relsf)*0.5 : continue
+                    if isMC:
+                        #apply a tracking efficiency scale factor
+                        sf=self.tkEffSF[mcera]['vtx'].Eval(min(t.nvtx,40))                                            
+                        if varyTkEff>0:
+                            if varyTkEff==1 : sf=1.0
+                            if varyTkEff==2 : sf=self.tkEffSF['BCDEF']['vtx'].Eval(min(t.nvtx,40))
+                            if varyTkEff==3 : sf=self.tkEffSF['GH']['vtx'].Eval(min(t.nvtx,40))
+                            if varyTkEff==4 : sf=self.tkEffSF[mcera]['abseta'].Eval(abs(t.eta[n]))
+                        rnd=ROOT.gRandom.Uniform(1.0)                        
+                        if rnd<(1-sf) : continue
                         
                     p4.SetPtEtaPhiM(t.pt[n],t.eta[n],t.phi[n],self.piMass)
                     selP4.append(ROOT.TLorentzVector(p4))
