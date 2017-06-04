@@ -35,13 +35,10 @@ case $WHAT in
 	;;
 
     MERGE )
-	mkdir -p ${outdir};
-	/afs/cern.ch/project/eos/installation/0.3.84-aquamarine/bin/eos.select -b fuse mount eos;
-	./scripts/mergeOutputs.py eos/cms${summaryeosdir} True ${outdir};	
-	/afs/cern.ch/project/eos/installation/0.3.84-aquamarine/bin/eos.select -b fuse umount eos;
+	./scripts/mergeOutputs.py ${outdir};
 	;;
     PLOT )
-	commonOpts="-i ${outdir} --puNormSF puwgtctr -j test/summer2017/4tops_samples.json -l ${lumi}  --saveLog --mcUnc ${lumiUnc}"
+	commonOpts="-i ${outdir} --puNormSF puwgtctr -j test/summer2017/4tops_samples.json -l ${lumi}  --saveLog --mcUnc ${lumiUnc} --noStack"
 	python scripts/plotter.py ${commonOpts}; 
 	;;
     WWW )

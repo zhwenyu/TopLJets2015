@@ -313,7 +313,10 @@ class Plot(object):
         frame = totalMC.Clone('frame') if totalMC is not None else self.dataH.Clone('frame')
         frame.Reset('ICE')
         if noStack:
-            maxY=self.dataH.GetMaximum()*1.25 #stack.GetStack().At(0).GetMaximum()/1.25
+            try:
+                maxY=self.dataH.GetMaximum()*1.25 
+            except:
+                maxY=stack.GetStack().At(0).GetMaximum()/1.25
         elif totalMC:
             maxY = totalMC.GetMaximum()
             if self.dataH:
