@@ -962,12 +962,9 @@ void RunToppPb(TString inFileName,
 	  {
 	    //cross clean with trigger muon
 	    TLorentzVector jp4(0,0,0,0);
-<<<<<<< HEAD
 	    jp4.SetPtEtaPhiM(jtpt[jetIter],jteta[jetIter],jtphi[jetIter],jtm[jetIter]);
 
 	    Int_t jflav(abs(refparton_flavor[jetIter]));	    
-
-=======
 
 	    float UE_correction=0;
 	    if (jteta[jetIter]>etaMin_hiFJRho_p->at(0) && jteta[jetIter]<etaMax_hiFJRho_p->at(0))
@@ -1007,7 +1004,6 @@ void RunToppPb(TString inFileName,
 	    if(drlj<0.4) continue;
 	    
 	    //systematic variations
-	    Int_t jflav(abs(refparton_flavorForB[jetIter]));	    
 	    bool passCSVL(discr_csvV2[jetIter]>0.460), passCSVM(discr_csvV2[jetIter]>0.8),passCSVMUp(passCSVM),passCSVMDn(passCSVM);	    
 	    std::vector<float> jerSmear(3,1.0),jesScaleUnc(3,1.0);
 	    if(isMC)

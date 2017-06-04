@@ -7,6 +7,7 @@
 #include "TopLJets2015/TopAnalysis/interface/TOP-UE.h"
 #include "TopLJets2015/TopAnalysis/interface/TOPJetShape.h"
 #include "TopLJets2015/TopAnalysis/interface/WbChargeAsymmetry.h"
+#include "TopLJets2015/TopAnalysis/interface/FourTopsAnalyzer.h"
 #include "TopLJets2015/TopAnalysis/interface/TOPSynchExercise.h"
 
 #include "TH1F.h"
@@ -94,6 +95,7 @@ int main(int argc, char* argv[])
   else if(method=="TOPJetShape::RunTopJetShape")           RunTopJetShape(in,out,channel,charge,SelectionTool::FlavourSplitting(flav),normH,runSysts,systVar,era,debug);
   else if(method=="TOPSynchExercise::RunTOPSynchExercise") RunTOPSynchExercise(in,out,debug);
   else if(method=="WbChargeAsymmetry::RunWbChargeAsymmetry") RunWbChargeAsymmetry(in,out,channel,charge,normH,era,debug);
+  else if(method=="FourTopsAnalyzer::RunFourTopsAnalyzer") RunFourTopsAnalyzer(in,out,channel,charge,normH,era,debug);
   else
     {
       cout << "Check method=" << method <<endl;

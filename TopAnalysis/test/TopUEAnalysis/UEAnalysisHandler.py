@@ -8,11 +8,11 @@ import array as array
 #var name, var title, use to slice phase space, use as observable, use as event axis, is angle
 VARS={
     'ptttbar'        : ('p_{T}(t#bar{t})',  True,  False, False, False),
-    'phittbar'       : ('#phi(t#bar{t})',   True,  False, True,  True),
-    'ptpos'          : ('p_{T}(l^{+})',     True,  False, False, False),
-    'phipos'         : ('#phi(l^{+})',      True,  False, True,  True),
+#    'phittbar'       : ('#phi(t#bar{t})',   True,  False, True,  True),
+#    'ptpos'          : ('p_{T}(l^{+})',     True,  False, False, False),
+#    'phipos'         : ('#phi(l^{+})',      True,  False, True,  True),
     'ptll'           : ('p_{T}(l,l)',       True,  False, False, False),
-    'phill'          : ('#phi(ll)',         True,  False, True,  True),
+#    'phill'          : ('#phi(ll)',         True,  False, True,  True),
     'nj'             : ('N(jets)',          True,  False, False, False),
     'chmult'         : ('N(ch)',            True,  True,  False, False),
     'chflux'         : ('#Sigma p_{T}(ch)', False, True,  False, False),

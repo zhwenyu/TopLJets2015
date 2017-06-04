@@ -135,15 +135,16 @@ class UEEventCounter:
                     if abs(t.eta[n])>self.etathreshold : continue
 
                     if isMC:
-                        #apply a tracking efficiency scale factor
+                        #apply a tracking efficiency scale factor by removing tracks
                         sf=self.tkEffSF[mcera]['vtx'].Eval(min(t.nvtx,40))                                            
                         if varyTkEff>0:
-                            if varyTkEff==1 : sf=1.0
+                            if varyTkEff==1 : sf=sf**2
                             if varyTkEff==2 : sf=self.tkEffSF['BCDEF']['vtx'].Eval(min(t.nvtx,40))
                             if varyTkEff==3 : sf=self.tkEffSF['GH']['vtx'].Eval(min(t.nvtx,40))
                             if varyTkEff==4 : sf=self.tkEffSF[mcera]['abseta'].Eval(abs(t.eta[n]))
                         rnd=ROOT.gRandom.Uniform(1.0)                        
-                        if rnd<(1-sf) : continue
+                        if rnd>sf : continue
+
                         
                     p4.SetPtEtaPhiM(t.pt[n],t.eta[n],t.phi[n],self.piMass)
                     selP4.append(ROOT.TLorentzVector(p4))
