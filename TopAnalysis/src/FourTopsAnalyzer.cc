@@ -155,6 +155,9 @@ void RunFourTopsAnalyzer(TString filename,
         
         // lhe weights
         wgt *= (ev.g_nw>0 ? ev.g_w[0] : 1.0);
+
+        //update weight for plotter
+        plotwgts[0]=wgt;
       }
 
       //control histograms
