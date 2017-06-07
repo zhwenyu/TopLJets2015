@@ -32,6 +32,11 @@ SLICES=[None,'nj','ptttbar'] #,'ptll']
 
 """
 """
+def averageDistribution(gr):
+    FIXME
+
+"""
+"""
 def buildPlot(data,signal,expSysts,signalVars,obsAxis,sliceAxis,opt):
 
     obs=obsAxis.GetName().split('_')[0]
@@ -39,9 +44,9 @@ def buildPlot(data,signal,expSysts,signalVars,obsAxis,sliceAxis,opt):
     nslices=sliceAxis.GetNbins() if sliceAxis else 1
     frame=ROOT.TH1F('frame','frame',1,obsAxis.GetXmin(),obsAxis.GetXmax())
     frameratio=ROOT.TH1F('frameratio','frameratio',1,obsAxis.GetXmin(),obsAxis.GetXmax())
-
-
-
+    
+    dataAvg=None
+    mcAvg={}
     for islice in xrange(1,nslices+1):
 
         idataGr=ROOT.TGraphErrors();
@@ -115,6 +120,9 @@ def buildPlot(data,signal,expSysts,signalVars,obsAxis,sliceAxis,opt):
 
         ratiosGr.Add(isignalRatioGr,'2')
         ratiosLeg.AddEntry(isignalRatioGr,'PW+PY8 CUETP8M2T4','f')
+
+        dataAvg=averageDistribution(idataGr)
+        mcAvg['nominal']=averageDistribution(isignalGr)
 
         #variations to be compared
         ivar=0
