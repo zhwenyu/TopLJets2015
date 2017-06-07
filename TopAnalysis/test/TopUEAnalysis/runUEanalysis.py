@@ -203,6 +203,8 @@ def defineAnalysisBinning(opt):
             genBin=[0]
             resolGr=varResolutions[var][1]
             nSigmaForBins=2.0
+            if var=='chmult' : nSigmaForBins=2.5
+            print var,nSigmaForBins
             lastAcceptResol=resolGr.GetErrorY(0)
             for n in xrange(1,resolGr.GetN()-1):
 

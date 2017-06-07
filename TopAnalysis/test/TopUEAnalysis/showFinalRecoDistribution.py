@@ -6,9 +6,9 @@ import pickle
 from collections import OrderedDict
 from UEAnalysisHandler import VARS
 
-COLORS=[ROOT.kMagenta, ROOT.kMagenta+2, ROOT.kMagenta-9,ROOT.kRed+1,ROOT.kAzure+7, ROOT.kBlue-7,ROOT.kGray]
-MARKERS=[22,24,20,27,23,33,20,32]
-OBSERVABLES=['chmult','sphericity','C','D','aplanarity','chmult','chavgpt','chavgpz','chflux','chfluxz']
+COLORS=[ROOT.kMagenta, ROOT.kMagenta+2, ROOT.kMagenta-9,ROOT.kRed+1,ROOT.kAzure+7, ROOT.kBlue-7,ROOT.kGray,ROOT.kGray]
+MARKERS=[22,24,20,27,23,33,20,32,24]
+OBSERVABLES=['chmult','sphericity','C','D','aplanarity','chavgpt','chavgpz','chflux','chfluxz']
 OBSRANGES={'sphericity':(5e-3,5),
            'aplanarity':(5e-3,30),
            'C':(5e-3,5),
@@ -28,17 +28,19 @@ RATIORANGES={'sphericity':(0.8,1.27),
            'chflux':(0.5,1.97),
            'chfluxz':(0.5,1.87)}
 
-SLICES=['nj']
+SLICES=[None,'nj','ptttbar'] #,'ptll']
 
 """
 """
 def buildPlot(data,signal,expSysts,signalVars,obsAxis,sliceAxis,opt):
 
     obs=obsAxis.GetName().split('_')[0]
-    sliceVar=sliceAxis.GetName().split('_')[0]
+    sliceVar=sliceAxis.GetName().split('_')[0] if sliceAxis else ''
     nslices=sliceAxis.GetNbins() if sliceAxis else 1
     frame=ROOT.TH1F('frame','frame',1,obsAxis.GetXmin(),obsAxis.GetXmax())
     frameratio=ROOT.TH1F('frameratio','frameratio',1,obsAxis.GetXmin(),obsAxis.GetXmax())
+
+
 
     for islice in xrange(1,nslices+1):
 
@@ -103,11 +105,12 @@ def buildPlot(data,signal,expSysts,signalVars,obsAxis,sliceAxis,opt):
             isignalGr.SetPoint     (np,   cen,        signalCts/(2*hwid))
             isignalGr.SetPointError(np,   hwid, hwid, errLo/(2*hwid), errHi/(2*hwid))
 
-            iratioVal=signalCts/dataCts
-            iratioUncLo=iratioVal*ROOT.TMath.Sqrt(pow(errLo/signalCts,2)+pow(dataUnc/dataCts,2))
-            iratioUncHi=iratioVal*ROOT.TMath.Sqrt(pow(errHi/signalCts,2)+pow(dataUnc/dataCts,2))
-            isignalRatioGr.SetPoint     (np,   cen,        iratioVal)
-            isignalRatioGr.SetPointError(np,   hwid, hwid, iratioUncLo, iratioUncHi)
+            if dataCts>0 and signalCts>0:
+                iratioVal=signalCts/dataCts
+                iratioUncLo=iratioVal*ROOT.TMath.Sqrt(pow(errLo/signalCts,2)+pow(dataUnc/dataCts,2))
+                iratioUncHi=iratioVal*ROOT.TMath.Sqrt(pow(errHi/signalCts,2)+pow(dataUnc/dataCts,2))
+                isignalRatioGr.SetPoint     (np,   cen,        iratioVal)
+                isignalRatioGr.SetPointError(np,   hwid, hwid, iratioUncLo, iratioUncHi)
 
 
         ratiosGr.Add(isignalRatioGr,'2')
@@ -222,7 +225,7 @@ def buildPlot(data,signal,expSysts,signalVars,obsAxis,sliceAxis,opt):
         c.Modified()
         c.Update()
         outname=obs
-        if nslices>1: outname += '_%d'%islice
+        if nslices>1: outname += '%s_%d'%(sliceVar,islice)
         c.SaveAs('~/www/TopUE_ReReco2016/%s.png'%outname)
 
 
@@ -273,11 +276,12 @@ def readPlotsFrom(args,opt):
         
         for s in SLICES:
 
-            sliceAxis=analysisaxis[(s,True)] if s else None
+            sliceAxis=None if s is None else analysisaxis[(s,True)]
 
             #read the nominal expectations
             nomKey='%s_%s_inc_None_True'%(obs,s)
             t=fIn.Get(nomKey)
+            print t,nomKey
             data,signal,bkg=None,None,None
             for pkey in t.GetListOfKeys():
                 h=t.Get(pkey.GetName())
@@ -309,7 +313,7 @@ def readPlotsFrom(args,opt):
                 if systKey[-2:] in ['up','dn']  : systKey=systKey[:-2]
                 h=expSystsH.ProjectionX('px',ybin,ybin)
                 normalizePerSlice(h,obsAxis,sliceAxis)
-                if systKey in ['mur','muf','q'] :
+                if systKey in ['mur','muf','q'] :                    
                     h.Divide(data)
                     systKey='ME scale'
                     if not systKey in signalVars: signalVars[systKey]=[]
@@ -319,6 +323,12 @@ def readPlotsFrom(args,opt):
                     systKey='toppt'
                     if not systKey in signalVars: signalVars[systKey]=[]
                     signalVars[systKey].append( h.Clone(varName) )                    
+                elif systKey in ['tkeff','tkeffbcdef','tkeffgh','tkeffeta']:
+                    if systKey in ['tkeffbcdef','tkeffgh'] : continue
+                    h.Add(signal,-1)
+                    systKey='Trk. eff.'
+                    if not systKey in expSysts: expSysts[systKey]=[]
+                    expSysts[systKey].append( h.Clone(varName) )
                 else:
                     h.Add(signal,-1)
                     if not systKey in expSysts: expSysts[systKey]=[]
@@ -358,7 +368,7 @@ def main():
     parser.add_option('--vars',
                       dest='vars',
                       help='variations to outsource from other files [%default]',
-                      default='#deltaCUET8P2MT4:UEup,UEdn;FSR:fsr up,fsr dn;ISR:isr up,isr dn;hdamp:hdamp up,hdamp dn;HW++EE5C:Herwig++;aMC@NLO:aMC@NLO',
+                      default='#deltaCUET8P2MT4:UEup,UEdn;FSR:fsr up,fsr dn;ISR:isr up,isr dn;CR:QCDbased,ERDon;hdamp:hdamp up,hdamp dn;', #HW++EE5C:Herwig++;aMC@NLO:aMC@NLO',
                       type='string')
     parser.add_option('--cfg',
                       dest='analysisAxis',

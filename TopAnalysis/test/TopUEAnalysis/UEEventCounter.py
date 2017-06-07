@@ -139,9 +139,9 @@ class UEEventCounter:
                         sf=self.tkEffSF[mcera]['vtx'].Eval(min(t.nvtx,40))                                            
                         if varyTkEff>0:
                             if varyTkEff==1 : sf=sf**2
-                            if varyTkEff==2 : sf=self.tkEffSF['BCDEF']['vtx'].Eval(min(t.nvtx,40))
-                            if varyTkEff==3 : sf=self.tkEffSF['GH']['vtx'].Eval(min(t.nvtx,40))
-                            if varyTkEff==4 : sf=self.tkEffSF[mcera]['abseta'].Eval(abs(t.eta[n]))
+                            if varyTkEff==2 : sf=self.tkEffSF['BCDEF']['vtx'].Eval(min(t.nvtx,40))**2
+                            if varyTkEff==3 : sf=self.tkEffSF['GH']['vtx'].Eval(min(t.nvtx,40))**2
+                            if varyTkEff==4 : sf=self.tkEffSF[mcera]['abseta'].Eval(abs(t.eta[n]))**2
                         rnd=ROOT.gRandom.Uniform(1.0)                        
                         if rnd>sf : continue
 
