@@ -30,19 +30,20 @@ NC='\e[0m'
 case $WHAT in
 
     TESTSEL )
-	file=root://eoscms//eos/cms/store/cmst3/group/top/ReReco2016/b312177/MC13TeV_TTJets/MergedMiniEvents_0_ext0.root
+	#file=root://eoscms//eos/cms/store/cmst3/group/top/ReReco2016/b312177/MC13TeV_TTJets/MergedMiniEvents_0_ext0.root
+        file==root://eoscms//eos/cms/store/cmst3/group/top/ReReco2016/b312177/MC13TeV_TTJets2l2nu_amcatnlo/MergedMiniEvents_1_ext0.root
 	#file=root://eoscms//eos/cms/store/cmst3/group/top/ReReco2016/b312177/Data13TeV_MuonEG_2016D/MergedMiniEvents_0.root
-	analysisWrapper \
-	    --in ${file} \
-	    --out ue_test.root \
-	    --era ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/era2016 \
-	    --method TOP-UE::RunTopUE \
-	    --runSysts \
-	    --ch 0;
-	python test/TopUEAnalysis/runUEanalysis.py -i ue_test.root --step 0 --ptThr 1.0,0.9 -o ./UEanalysis_test;
+	#analysisWrapper \
+	#    --in ${file} \
+	#    --out ue_test.root \
+	#    --era ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/era2016 \
+	#    --method TOP-UE::RunTopUE \
+	#    --runSysts \
+	#    --ch 0;
+	#python test/TopUEAnalysis/runUEanalysis.py -i ue_test.root --step 0 --ptThr 1.0,0.9 -o ./UEanalysis_test;
 	python test/TopUEAnalysis/runUEanalysis.py --step 1 -o ./UEanalysis_test;
 	python test/TopUEAnalysis/runUEanalysis.py -i ue_test.root      --step 2 -q local -o ./UEanalysis_test;
-	python test/TopUEAnalysis/UETools.py -i ./UEanalysis_test/analysiscfg.pck --in UEanalysis_test/analysis_0_0/Chunks/ue_test.root -o UEanalysis_test/
+	python test/TopUEAnalysis/showFastFinalDistributions.py UEanalysis_test/analysis/Chunks/ue_test.root --cfg ./UEanalysis_test/analysisaxiscfg.pck
 	;;
 
     FULLSEL )

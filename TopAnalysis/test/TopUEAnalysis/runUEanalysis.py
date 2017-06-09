@@ -202,8 +202,9 @@ def defineAnalysisBinning(opt):
             #get resolution map and quantiles       
             genBin=[0]
             resolGr=varResolutions[var][1]
-            nSigmaForBins=2.0
-            if var=='chmult' : nSigmaForBins=2.5
+            nSigmaForBins=2.5
+            if var in ['C','D','aplanarity','sphericity'] : nSigmaForBins=2
+            if var in ['chavgpt','chavgpz'] : nSigmaForBins=3
             print var,nSigmaForBins
             lastAcceptResol=resolGr.GetErrorY(0)
             for n in xrange(1,resolGr.GetN()-1):
@@ -227,13 +228,16 @@ def defineAnalysisBinning(opt):
             recBin.append( genBin[-1]+0.25*(genBin[-1]+genBin[-2]) )
 
 
-            #special case for angular variables: override previous definition
-            if VARS[var][4]:
-                nbins=10
-                if var=='phittbar': nbins=4
-                delta=180./float(nbins)
-                genBin=[i*delta     for i in xrange(0,nbins+1)]
-                recBin=[i*delta*0.5 for i in xrange(0,2*nbins+1)]
+        #special case for angular variables: override previous definition
+        if VARS[var][4]:
+            nbins=10
+            if var=='phittbar': nbins=4
+            delta=180./float(nbins)
+            genBin=[i*delta     for i in xrange(0,nbins+1)]
+            recBin=[i*delta*0.5 for i in xrange(0,2*nbins+1)]
+
+        if var in ['C','D','sphericity']: genBin[-1],recBin[-1]=1,1
+        if var in ['aplanarity']: genBin[-1],recBin[-1]=0.5,0.5
 
         #save binning in histos
         varAxes[(var,False)] = ROOT.TAxis(len(genBin)-1,array.array('d',genBin))
@@ -376,7 +380,9 @@ def runUEAnalysis(inF,outF,cfgDir):
     t.AddFile(inF)
     totalEntries=t.GetEntries()
     for i in xrange(0,totalEntries):
+
         t.GetEntry(i)
+
         if i%100==0 :
             sys.stdout.write('\r [ %d/100 ] done' %(int(float(100.*i)/float(totalEntries))) )
             sys.stdout.flush()
@@ -419,7 +425,7 @@ def runUEAnalysis(inF,outF,cfgDir):
 
     #save histos to ROOT file
     fOut=ROOT.TFile.Open(outF,'RECREATE')
-    for h in ueHandler.histos:
+    for h in ueHandler.histos:        
         ueHandler.histos[h].SetDirectory(fOut)
         ueHandler.histos[h].Write()
     fOut.Close()
@@ -503,12 +509,13 @@ def main():
             else:
                 for fileName,outfile,cfgDir in tasklist:
                     runUEAnalysis(fileName,outfile,cfgDir)
+
         #submit jobs
         else:
             print ' Running %d jobs to %s'%(len(tasklist),opt.queue)
             cmsswBase=os.environ['CMSSW_BASE']
             for fileName,_,cfgDir in tasklist:
-                localRun='python %s/src/TopLJets2015/TopAnalysis/test/TopUEAnalysis/runUEanalysis.py -i %s -o %s -q local -s 2'%(cmsswBase,fileName,cfgDir)
+                localRun='python %s/src/TopLJets2015/TopAnalysis/test/TopUEAnalysis/runUEanalysis.py -i %s -o %s -q local -s 2 -v %s'%(cmsswBase,fileName,cfgDir)
                 cmd='bsub -q %s %s/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh \"%s\"' % (opt.queue,cmsswBase,localRun)
                 os.system(cmd)
 

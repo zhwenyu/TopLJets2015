@@ -9,17 +9,24 @@ from UEAnalysisHandler import *
 """
 """
 def getPurStab(h):
-    
-    for xbin in range(1, h.GetNbinsX()+1):
-        for ybin in range(1, h.GetNbinsY()+1,2):
+
+    indices  = []
+    diagonal = []
+    gensums  = []
+    recosums = []
+
+    for g in range(1, h.GetNbinsX()+1):
+        gensum = 0
+        indices.append(g)
+        diagonal.append(h.GetBinContent(g, g))
+        for r in range(1, h.GetNbinsY()+1):
             gensum += h.GetBinContent(g, r)
         gensums.append(gensum)
-    
-    for r in range(1, h.GetNbinsY()+1,2):
+
+    for r in range(1, h.GetNbinsY()+1):
         recosum = 0
         for g in range(0, h.GetNbinsX()+1):
             recosum += h.GetBinContent(g, r)
-            recosum += h.GetBinContent(g, r+1)
         recosums.append(recosum)
 
     
