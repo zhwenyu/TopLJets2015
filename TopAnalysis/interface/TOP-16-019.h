@@ -8,6 +8,7 @@
 #include "TopLJets2015/TopAnalysis/interface/SelectionTools.h"
 
 #include <map>
+#include <vector>
 
 struct TopWidthEvent_t
 {
@@ -17,7 +18,8 @@ struct TopWidthEvent_t
   Int_t l_id[2];
   Float_t gl_pt[2],gl_eta[2],gl_phi[2],gl_m[2];
   Int_t gl_id[2];
-  Float_t j_pt[50],j_eta[50],j_phi[50],j_m[50],j_jer[50],j_jes[50];
+  Float_t j_pt[50],j_eta[50],j_phi[50],j_m[50],j_jer[50];
+  std::vector< std::vector<Float_t> > j_jes;
   Int_t j_btag[50];
   Float_t gj_pt[50],gj_eta[50],gj_phi[50],gj_m[50];
   Int_t gj_flav[50],gj_hadflav[50];

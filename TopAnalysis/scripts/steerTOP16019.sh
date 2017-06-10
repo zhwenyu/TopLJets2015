@@ -33,10 +33,10 @@ lumiUnc=0.025
 whoami=`whoami`
 myletter=${whoami:0:1}
 eosdir=/store/cmst3/group/top/ReReco2016/${githash}
-summaryeosdir=/store/cmst3/group/top/TopWidth
+summaryeosdir=/store/cmst3/group/top/TOP-17-010/
 COMBINERELEASE=~/scratch0/CMSSW_7_4_7/src/
-outdir=/afs/cern.ch/work/${myletter}/${whoami}/TopWidth/
-wwwdir=~/www/TopWidth/
+outdir=/afs/cern.ch/work/${myletter}/${whoami}/TOP-17-010/
+wwwdir=~/www/TOP-17-010/
 
 
 RED='\e[31m'
@@ -67,13 +67,13 @@ case $WHAT in
 	python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${outdir}/analysis/Chunks -q ${queue};	
 	;;
     MERGE )
-		./scripts/mergeOutputs.py ${outdir}/analysis;
+	./scripts/mergeOutputs.py ${outdir}/analysis;
 	;;
     BKG )
-		python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json  -l ${lumi} ${lumiSpecs} --onlyData --only mll -o dy_plotter.root; 
+	python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json  -l ${lumi} ${lumiSpecs} --onlyData --only mll -o dy_plotter.root; 
 	;;
-	DY )
-		python scripts/runDYRinRout.py --in ${outdir}/analysis/plots/dy_plotter.root --categs 1b,2b --out ${outdir}/analysis/plots/;
+    DY )
+	python scripts/runDYRinRout.py --in ${outdir}/analysis/plots/dy_plotter.root --categs 1b,2b --out ${outdir}/analysis/plots/;
 	;;
     PLOT_P1 )
 		#python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --only count --saveTeX -o count_plotter2.root --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck > count2.out & 
