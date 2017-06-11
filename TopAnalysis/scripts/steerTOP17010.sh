@@ -2,7 +2,7 @@
 
 WHAT=$1; 
 if [ "$#" -ne 1 ]; then 
-    echo "steerTOPWidthAnalysis.sh <SEL/MERGESEL/PLOTSEL/WWWSEL/ANA/MERGE/BKG/PLOT/WWW/HYPOTEST> <ERA>";
+    echo "steerTOP17010.sh <SEL/MERGESEL/PLOTSEL/WWWSEL/ANA/MERGE/BKG/PLOT/WWW/HYPOTEST> <ERA>";
     echo "        SEL          - launches selection jobs to the batch, output will contain summary trees and control plots"; 
     echo "        MERGESEL     - merge the output of the jobs";
     echo "        PLOTSEL      - runs the plotter tool on the selection";
@@ -43,10 +43,10 @@ RED='\e[31m'
 NC='\e[0m'
 case $WHAT in
     TEST )
-	python scripts/runLocalAnalysis.py -i ${eosdir} -q local -o /tmp/`whoami` --era era2016 -m TOP-16-019::RunTop16019 --ch 0 --runSysts --only TTJets;
+	python scripts/runLocalAnalysis.py -i ${eosdir} -q local -o /tmp/`whoami` --era era2016 -m TOP-17-010::RunTop17010 --ch 0 --runSysts --only TTJets;
         ;;
     SEL )
-	python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} -o ${summaryeosdir} --era era2016 -m TOP-16-019::RunTop16019 --ch 0 --runSysts;
+	python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} -o ${summaryeosdir} --era era2016 -m TOP-17-010::RunTop17010 --ch 0 --runSysts;
 	;;
     MERGESEL )
 	mkdir -p ${outdir}

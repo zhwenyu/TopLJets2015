@@ -183,39 +183,49 @@ def main():
         if '/store' in FarmDirectory : FarmDirectory = './FARM%s'%os.path.basename(opt.output)
         os.system('mkdir -p %s'%FarmDirectory)
 
-        jobNb=0
-        for method,inF,outF,channel,charge,flav,runSysts,systVar,era,tag,debug in task_list:
-            jobNb+=1
-            cfgfile='%s/job_%s.sh'%(FarmDirectory,os.path.splitext(os.path.basename(outF))[0])
-            logfile='%s/job_%s.log'%(FarmDirectory,os.path.splitext(os.path.basename(outF))[0])
-            crashfile='%s/job_%s.log'%(FarmDirectory,os.path.splitext(os.path.basename(outF))[0])
-            cfg=open(cfgfile,'w')
-            cfg.write('WORKDIR=`pwd`\n')
-            cfg.write('echo "Working directory is ${WORKDIR}"\n')
-            cfg.write('cd %s\n'%cmsswBase)
-            cfg.write('eval `scram r -sh`\n')
-            cfg.write('cd ${WORKDIR}\n')
-            localOutF=os.path.basename(outF)
-            runOpts='-i %s -o ${WORKDIR}/%s --charge %d --ch %d --era %s --tag %s --flav %d --method %s --systVar %s'\
-                    %(inF, localOutF, charge, channel, era, tag, flav, method, systVar)
-            if runSysts : runOpts += ' --runSysts'
-            if debug :    runOpts += ' --debug'
-            cfg.write('python %s/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py %s &> run.log\n'%(cmsswBase,runOpts))
-            if '/store' in outF:
-                cfg.write('xrdcp ${WORKDIR}/%s root://eoscms//eos/cms/%s\n'%(localOutF,outF))
-                cfg.write('rm ${WORKDIR}/%s'%localOutF)
-            elif outF!=localOutF:
-                cfg.write('if grep -q "There was a crash" ${WORKDIR}/run.log; then')
-                cfg.write('  mv -v ${WORKDIR}/run.log %s\n'%(logfile+'.crash'))
-                cfg.write('else')
-                cfg.write('  mv -v ${WORKDIR}/%s %s\n'%(localOutF,outF))
-                cfg.write('  mv -v ${WORKDIR}/run.log %s\n'%(logfile))
-                cfg.write('fi')
-            cfg.close()
-            os.system('chmod u+x %s'%cfgfile)
-            print 'Submitting job %d/%d'%(jobNb, len(task_list))
-            os.system('bsub -q %s %s -R "pool>30000"'%(opt.queue,
-                                                       os.path.abspath(cfgfile)) )
+        with open ('%s/condor.sub'%FarmDirectory,'w') as condor:
+
+            condor.write('executable = {0}/$(cfgFile).sh\n'.format(FarmDirectory))
+            condor.write('output     = {0}/output_$(cfgFile).out\n'.format(FarmDirectory))
+            condor.write('error      = {0}/output_$(cfgFile).err\n'.format(FarmDirectory))
+
+            jobNb=0
+            for method,inF,outF,channel,charge,flav,runSysts,systVar,era,tag,debug in task_list:
+
+                jobNb+=1
+                cfgFile='%s.sh'%(os.path.splitext(os.path.basename(outF))[0])
+
+                condor.write('cfgFile=%s\n'%cfgFile)
+                condor.write('queue 1\n')
+                
+                with open('%s/%s'%(FarmDirectory,cfgFile),'w') as cfg:
+
+                    cfg.write('WORKDIR=`pwd`\n')
+                    cfg.write('echo "Working directory is ${WORKDIR}"\n')
+                    cfg.write('cd %s\n'%cmsswBase)
+                    cfg.write('eval `scram r -sh`\n')
+                    cfg.write('cd ${WORKDIR}\n')
+                    localOutF=os.path.basename(outF)
+                    runOpts='-i %s -o ${WORKDIR}/%s --charge %d --ch %d --era %s --tag %s --flav %d --method %s --systVar %s'\
+                        %(inF, localOutF, charge, channel, era, tag, flav, method, systVar)
+                    if runSysts : runOpts += ' --runSysts'
+                    if debug :    runOpts += ' --debug'
+                    cfg.write('python %s/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py %s\n'%(cmsswBase,runOpts))
+                    if '/store' in outF:
+                        cfg.write('xrdcp ${WORKDIR}/%s root://eoscms//eos/cms/%s\n'%(localOutF,outF))
+                        cfg.write('rm ${WORKDIR}/%s'%localOutF)
+                    elif outF!=localOutF:
+                        cfg.write('if grep -q "There was a crash" ${WORKDIR}/run.log; then')
+                        cfg.write('  mv -v ${WORKDIR}/run.log %s\n'%(logfile+'.crash'))
+                        cfg.write('else')
+                        cfg.write('  mv -v ${WORKDIR}/%s %s\n'%(localOutF,outF))
+                        cfg.write('  mv -v ${WORKDIR}/run.log %s\n'%(logfile))
+                        cfg.write('fi')
+
+                os.system('chmod u+x %s/%s'%(FarmDirectory,cfgFile))
+
+        print 'Submitting jobs to condor'
+        #os.system('condor_sub %s/condor.sub'%FarmDirectory)
         
 
 

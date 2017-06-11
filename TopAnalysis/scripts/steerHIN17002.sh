@@ -28,7 +28,7 @@ case $WHAT in
 		    -o ${outdir}/analysis_${p}_${ch} \
 		    --ch ${ch} \
 		    --era era5TeV \
-		    -m TOP-HIForest::RunToppPb \
+		    -m TOP-HIForest::RunHin17002 \
 		    -q ${queue};
 	    done
 	done
@@ -37,7 +37,7 @@ case $WHAT in
     SEL )
 	echo -e "[ ${RED} Sending out jobs to batch ${NC} ]"
 
-	commonOpts="--era era5TeV -m TOP-HIForest::RunToppPb"	
+	commonOpts="--era era5TeV -m TOP-HIForest::RunHin17002"	
 	inDir=/store/cmst3/group/top/mverweij/PA8TeV/data/PASingleMuon/crab_FilteredPASingleMuHighPt_PPb_v4/161219_092237/
 	a=(`eos ls ${inDir}`)
 	for i in ${a[@]}; do

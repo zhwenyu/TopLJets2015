@@ -22,13 +22,13 @@
 using namespace std;
 
 //
-void RunToppPb(TString inFileName,
-	       TString outFileName,
-	       Int_t channelSelection,
-	       Int_t chargeSelection,
-	       TH1F *normH,
-	       Bool_t runSysts,
-	       TString era)
+void RunHin17002(TString inFileName,
+                 TString outFileName,
+                 Int_t channelSelection,
+                 Int_t chargeSelection,
+                 TH1F *normH,
+                 Bool_t runSysts,
+                 TString era)
 {		 
   
   Float_t JETPTTHRESHOLD=25;

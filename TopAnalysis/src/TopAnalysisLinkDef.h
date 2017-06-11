@@ -1,12 +1,12 @@
 #include "TopLJets2015/TopAnalysis/interface/MiniEvent.h"
 #include "TopLJets2015/TopAnalysis/interface/TOP-16-006.h"
-#include "TopLJets2015/TopAnalysis/interface/TOP-16-019.h"
+#include "TopLJets2015/TopAnalysis/interface/TOP-17-010.h"
 
 #include "RVersion.h"
 
 #pragma link C++ defined_in "TopLJets2015/TopAnalysis/interface/MiniEvent.h";
 #pragma link C++ defined_in "TopLJets2015/TopAnalysis/interface/TOP-16-006.h";
-#pragma link C++ defined_in "TopLJets2015/TopAnalysis/interface/TOP-16-019.h";
+#pragma link C++ defined_in "TopLJets2015/TopAnalysis/interface/TOP-17-010.h";
 #pragma link C++ defined_in "TopLJets2015/TopAnalysis/interface/CommonTools.h";
 #pragma link C++ defined_in "TopLJets2015/TopAnalysis/interface/Davismt2.h";
 
