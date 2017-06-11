@@ -57,10 +57,10 @@ def main():
     parser.add_option(      '--charge',      dest='charge',      help='charge  [%default]',                                     default=0,          type=int)
     parser.add_option(      '--era',         dest='era',         help='era to use for corrections/uncertainties  [%default]',   default='era2016',       type='string')
     parser.add_option(      '--tag',         dest='tag',         help='normalize from this tag  [%default]',                    default=None,       type='string')
-    parser.add_option('-q', '--queue',       dest='queue',       help='submit to this queue  [%default]',                       default='local',    type='string')
-    parser.add_option('-n', '--njobs',       dest='njobs',       help='# jobs to run in parallel  [%default]',                                default=0,    type='int')
-    parser.add_option(      '--skipexisting',dest='skipexisting',help='skip jobs with existing output files  [%default]',                            default=False,      action='store_true')
-    parser.add_option(      '--exactonly',   dest='exactonly',   help='match only exact sample tags to process  [%default]',                            default=False,      action='store_true')
+    parser.add_option('-q', '--queue',       dest='queue',       help='if not local send to batch with condor  [%default]',     default='local',    type='string')    
+    parser.add_option('-n', '--njobs',       dest='njobs',       help='# jobs to run in parallel  [%default]',                  default=0,    type='int')
+    parser.add_option(      '--skipexisting',dest='skipexisting',help='skip jobs with existing output files  [%default]',       default=False,      action='store_true')
+    parser.add_option(      '--exactonly',   dest='exactonly',   help='match only exact sample tags to process  [%default]',    default=False,      action='store_true')
     parser.add_option(      '--outputonly',        dest='outputonly',        help='filter job submission for a csv list of output files  [%default]',             default=None,       type='string')
     (opt, args) = parser.parse_args()
 
@@ -177,11 +177,12 @@ def main():
             pool = Pool(opt.njobs)
             pool.map(RunMethodPacked, task_list)
     else:
-        print 'launching %d tasks to submit to the %s queue'%(len(task_list),opt.queue)        
-
-        FarmDirectory                      = opt.output+"/FARM"
-        if '/store' in FarmDirectory : FarmDirectory = './FARM%s'%os.path.basename(opt.output)
+        
+        FarmDirectory = '%s/FARM%s'%(cmsswBase,os.path.basename(opt.output))
         os.system('mkdir -p %s'%FarmDirectory)
+        
+        print 'Preparing %d tasks to submit to the batch'%len(task_list)
+        print 'Executables and condor wrapper are stored in %s'%FarmDirectory
 
         with open ('%s/condor.sub'%FarmDirectory,'w') as condor:
 
@@ -225,9 +226,8 @@ def main():
                 os.system('chmod u+x %s/%s'%(FarmDirectory,cfgFile))
 
         print 'Submitting jobs to condor'
-        #os.system('condor_sub %s/condor.sub'%FarmDirectory)
+        os.system('condor_submit %s/condor.sub'%FarmDirectory)
         
-
 
 """
 for execution from another script
