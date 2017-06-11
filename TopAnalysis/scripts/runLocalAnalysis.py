@@ -194,13 +194,14 @@ def main():
             for method,inF,outF,channel,charge,flav,runSysts,systVar,era,tag,debug in task_list:
 
                 jobNb+=1
-                cfgFile='%s.sh'%(os.path.splitext(os.path.basename(outF))[0])
+                cfgFile='%s'%(os.path.splitext(os.path.basename(outF))[0])
 
                 condor.write('cfgFile=%s\n'%cfgFile)
                 condor.write('queue 1\n')
                 
-                with open('%s/%s'%(FarmDirectory,cfgFile),'w') as cfg:
+                with open('%s/%s.sh'%(FarmDirectory,cfgFile),'w') as cfg:
 
+                    cfg.write('#!/bin/bash\n')
                     cfg.write('WORKDIR=`pwd`\n')
                     cfg.write('echo "Working directory is ${WORKDIR}"\n')
                     cfg.write('cd %s\n'%cmsswBase)
@@ -223,7 +224,7 @@ def main():
                         cfg.write('  mv -v ${WORKDIR}/run.log %s\n'%(logfile))
                         cfg.write('fi')
 
-                os.system('chmod u+x %s/%s'%(FarmDirectory,cfgFile))
+                os.system('chmod u+x %s/%s.sh'%(FarmDirectory,cfgFile))
 
         print 'Submitting jobs to condor'
         os.system('condor_submit %s/condor.sub'%FarmDirectory)
