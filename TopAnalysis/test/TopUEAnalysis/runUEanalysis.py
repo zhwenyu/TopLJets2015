@@ -512,12 +512,30 @@ def main():
 
         #submit jobs
         else:
-            print ' Running %d jobs to %s'%(len(tasklist),opt.queue)
+            print 'Running %d jobs to the batch'%len(tasklist)
             cmsswBase=os.environ['CMSSW_BASE']
-            for fileName,_,cfgDir in tasklist:
-                localRun='python %s/src/TopLJets2015/TopAnalysis/test/TopUEAnalysis/runUEanalysis.py -i %s -o %s -q local -s 2 -v %s'%(cmsswBase,fileName,cfgDir)
-                cmd='bsub -q %s %s/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh \"%s\"' % (opt.queue,cmsswBase,localRun)
-                os.system(cmd)
+            FarmDirectory='%s/FARM-UEANA'%cmsswBase
+            os.system('mkdir -p %s'%FarmDirectory)
+            print 'Scripts and logs will be available @ %s'%FarmDirectory
+
+            condorScript='%s/condor.sub'%FarmDirectory
+            with open (condorScript,'w') as condor:
+
+                _,_,cfgDir=tasklist[0]
+
+                condor.write('executable = {0}/src/TopLJets2015/TopAnalysis/test/TopUEAnalysis/runUEanalysis.py\n'.format(cmsswBase))
+                condor.write('arguments  = -o %s -q local -s 2 -i $(input)\n'%cfgDir)
+                condor.write('output     = {0}/output_$(ProcId).out\n'.format(FarmDirectory))
+                condor.write('error      = {0}/output_$(ProcId).err\n'.format(FarmDirectory))
+
+                for fileName,_,_ in tasklist:
+                    condor.write('input=%s\n'%fileName)
+                    condor.write('queue 1\n')
+
+                #localRun='python %s/src/TopLJets2015/TopAnalysis/test/TopUEAnalysis/runUEanalysis.py -i %s -o %s -q local -s 2'%(cmsswBase,fileName,cfgDir)
+                #cmd='bsub -q %s %s/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh \"%s\"' % (opt.queue,cmsswBase,localRun)
+                #os.system(cmd)
+            os.system('condor_submit %s'%condorScript)
 
 
 """
