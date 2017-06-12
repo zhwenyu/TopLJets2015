@@ -54,8 +54,6 @@ void RunTopJetShape(TString filename,
   /////////////////////
   // INITIALIZATION //
   ///////////////////
-  TRandom* random = new TRandom(0); // random seed for period selection
-  std::vector<RunPeriod_t> runPeriods=getRunPeriods(era);
 
   bool isTTbar( filename.Contains("_TTJets") or (normH and TString(normH->GetTitle()).Contains("_TTJets")));
   bool isData( filename.Contains("Data") );
@@ -104,7 +102,7 @@ void RunTopJetShape(TString filename,
   
   
   //LEPTON EFFICIENCIES
-  LeptonEfficiencyWrapper lepEffH(filename.Contains("Data13TeV"),era);
+  LeptonEfficiencyWrapper lepEffH(filename.Contains("Data13TeV"),era+"GH");
 
 
   //B-TAG CALIBRATION
@@ -112,8 +110,8 @@ void RunTopJetShape(TString filename,
   std::map<TString, std::map<BTagEntry::JetFlavor, BTagCalibrationReader *> > btvsfReaders = getBTVcalibrationReadersMap(era, BTagEntry::OP_MEDIUM);
 
   //dummy calls
-  btvsfReaders[runPeriods[0].first][BTagEntry::FLAV_B]->eval_auto_bounds("central", BTagEntry::FLAV_B,   0., 30.);
-  btvsfReaders[runPeriods[0].first][BTagEntry::FLAV_UDSG]->eval_auto_bounds("central", BTagEntry::FLAV_UDSG,   0., 30.);
+  btvsfReaders["GH"][BTagEntry::FLAV_B]->eval_auto_bounds("central", BTagEntry::FLAV_B,   0., 30.);
+  btvsfReaders["GH"][BTagEntry::FLAV_UDSG]->eval_auto_bounds("central", BTagEntry::FLAV_UDSG,   0., 30.);
 
   std::map<BTagEntry::JetFlavor, TGraphAsymmErrors *>    expBtagEffPy8 = readExpectedBtagEff(era);
   TString btagExpPostFix("");
@@ -279,8 +277,8 @@ void RunTopJetShape(TString filename,
       resetTopJetShapeEvent(tjsev);
       if(iev%int(nentries/100)==0) printf ("[%3.0f%%] done\n", 100.*(float)iev/(float)nentries);
       
-      //assign randomly a run period
-      TString period = assignRunPeriod(runPeriods,random);
+      //assign run period GH
+      TString period = "GH";
       
       //////////////////
       // CORRECTIONS //

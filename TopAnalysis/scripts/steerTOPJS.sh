@@ -14,7 +14,7 @@ export LSB_JOB_REPORT_MAIL=N
 
 queue=8nh
 githash=b312177
-lumi=36460
+lumi=16551
 lumiSpecs="" #--lumiSpecs EE:11391"
 lumiUnc=0.027
 whoami=`whoami`
@@ -30,7 +30,7 @@ NC='\e[0m'
 case $WHAT in
 
     TESTSEL )
-        scram b -j 8 && python scripts/runLocalAnalysis.py -i ${eosdir}/MC13TeV_TTJets/MergedMiniEvents_0.root --tag MC13TeV_TTJets -o analysis.root --era era2016 -m TOPJetShape::RunTopJetShape --debug;
+        scram b -j 8 && python scripts/runLocalAnalysis.py -i ${eosdir}/MC13TeV_TTJets/MergedMiniEvents_0_ext0.root --tag MC13TeV_TTJets -o analysis.root --era era2016 -m TOPJetShape::RunTopJetShape --debug;
         ;;
 
     NORMCACHE )
@@ -39,7 +39,7 @@ case $WHAT in
 
     FULLSEL ) #TODO -o ${summaryeosdir} for all
         cd batch;
-        python ../scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} -o ${summaryeosdir} --era era2016 -m TOPJetShape::RunTopJetShape --skipexisting --skip Data13TeV_Double,Data13TeV_MuonEG,MC13TeV_TTJets2l2nu,MC13TeV_TTJets_cflip,MC13TeV_TTJets_m,MC13TeV_TTJets_width;
+        python ../scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} -o ${summaryeosdir} --era era2016 -m TOPJetShape::RunTopJetShape --skipexisting --skip Data13TeV_Double,Data13TeV_MuonEG,TTJets2l2nu,m166,m169,m175,m178,widthx,2016B,2016C,2016D,2016E,2016F,TTTT;
         #python ../scripts/runLocalAnalysis.py -i ${eosdir}_syst -q ${queue} -o ${summaryeosdir}_syst --era era2016 -m TOPJetShape::RunTopJetShape --skipexisting --only MC13TeV_TTJets_isr,MC13TeV_TTJets_fsr,MC13TeV_TTJets_hdamp,MC13TeV_TTJets_herwig,MC13TeV_TTJets_ue;
         python ../scripts/runLocalAnalysis.py -i ${eosdir}_qcd -q ${queue} -o ${summaryeosdir} --era era2016 -m TOPJetShape::RunTopJetShape --skipexisting;
         cd -;
