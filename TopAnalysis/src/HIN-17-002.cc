@@ -22,13 +22,13 @@
 using namespace std;
 
 //
-void RunToppPb(TString inFileName,
-	       TString outFileName,
-	       Int_t channelSelection,
-	       Int_t chargeSelection,
-	       TH1F *normH,
-	       Bool_t runSysts,
-	       TString era)
+void RunHin17002(TString inFileName,
+                 TString outFileName,
+                 Int_t channelSelection,
+                 Int_t chargeSelection,
+                 TH1F *normH,
+                 Bool_t runSysts,
+                 TString era)
 {		 
   
   Float_t JETPTTHRESHOLD=25;
@@ -41,7 +41,7 @@ void RunToppPb(TString inFileName,
     }
 
   bool isMC(false);
-  if(inFileName.Contains("/MC") || inFileName.Contains("PYQUEN")) isMC=true;
+  if(inFileName.Contains("/MC") || inFileName.Contains("PYQUEN") || inFileName.Contains("Pyquen")) isMC=true;
   bool isTTJets(false);
   if(inFileName.Contains("/MCTTNominal") || inFileName.Contains("TTBAR")) isTTJets=true;
 
@@ -111,6 +111,9 @@ void RunToppPb(TString inFileName,
   histos["leta"] = new TH1F("leta",";Pseudo-rapidity;Events",20.,0.,2.1);
   histos["mt"]   = new TH1F("mt",";Transverse Mass [GeV];Events" ,20,0.,200.);
   histos["metpt"]= new TH1F("metpt",";Missing transverse energy [GeV];Events" ,20,0.,200.);
+  histos["drlj"] = new TH1F("drlj",";min#DeltaR(l,j) [GeV];Events" ,63,0.,6.3);
+  histos["drlb"] = new TH1F("drlb",";min#DeltaR(l,j) [GeV];Events" ,63,0.,6.3);
+  histos["ttevttype"] = new TH1F("ttevttype",";t#bar{t} event type;Events" ,9,0.,9.);
 
    //electron selection control plots
   for(int ireg=0; ireg<2; ireg++)
@@ -153,7 +156,7 @@ void RunToppPb(TString inFileName,
       histos["mjj_"+pf]    = new TH1F("mjj_"+pf,";Mass(j,j') [GeV];Events" ,20,0.,400.);
       histos["rankedmjj_"+pf]    = new TH1F("rankedmjj_"+pf,";Mass(j,j') [GeV];Events" ,20,0.,400.);
       histos["rankedq70mjj_"+pf]    = new TH1F("rankedq70mjj_"+pf,";Mass(j,j') [GeV];Events" ,20,0.,400.);
-      histos["drjj_"+pf]    = new TH1F("drjj_"+pf,";min#DeltaR(j,j') [GeV];Events" ,12,0.,6.3);
+      histos["drjj_"+pf]    = new TH1F("drjj_"+pf,";min#DeltaR(j,j') [GeV];Events" ,12,0.,6.3);      
       histos["ptjj_"+pf]    = new TH1F("ptjj_"+pf,";p_{T}(j,j') [GeV];Events" ,20,0.,300.);
       histos["etajj_"+pf]    = new TH1F("etajj_"+pf,";#eta(j,j');Events" ,10,-3.,3.);
       histos["mlb_"+pf]    = new TH1F("mlb_"+pf,";Mass(l,b) [GeV];Events" ,20,0.,300.);
@@ -363,35 +366,67 @@ void RunToppPb(TString inFileName,
     Float_t jtarea[maxJets]; 
     Float_t jtm[maxJets]; 
     Float_t discr_csvV2[maxJets];
-    Float_t refpt[maxJets];
-    Int_t refparton_flavor[maxJets];
+    Float_t refpt[maxJets], refarea[maxJets], refdrjt[maxJets], gendrjt[maxJets];
+    Float_t jPfCHF[maxJets],jPfNHF[maxJets],jPfCEF[maxJets],jPfNEF[maxJets], jPfMUF[maxJets];//jet id
+    Int_t jPfCHM[maxJets],jPfNHM[maxJets], jPfCEM[maxJets],jPfNEM[maxJets], jPfMUM[maxJets]; //jet id
+    Int_t refparton_flavorForB[maxJets], refparton_flavor[maxJets], genmatchindex[maxJets];
     jetTree_p->SetBranchStatus("*", 0);
     jetTree_p->SetBranchStatus("ngen", 1);
     jetTree_p->SetBranchStatus("genpt", 1);
     jetTree_p->SetBranchStatus("genphi", 1);
     jetTree_p->SetBranchStatus("geneta", 1);
+    jetTree_p->SetBranchStatus("gendrjt", 1);
+    jetTree_p->SetBranchStatus("genmatchindex", 1);
     jetTree_p->SetBranchStatus("nref", 1);
     jetTree_p->SetBranchStatus("jtpt", 1);
     jetTree_p->SetBranchStatus("jtphi", 1);
     jetTree_p->SetBranchStatus("jteta", 1);
     jetTree_p->SetBranchStatus("jtarea", 1);
     jetTree_p->SetBranchStatus("jtm", 1);
+    jetTree_p->SetBranchStatus("jtPfCHF", 1);
+    jetTree_p->SetBranchStatus("jtPfNHF", 1);
+    jetTree_p->SetBranchStatus("jtPfCEF", 1);
+    jetTree_p->SetBranchStatus("jtPfNEF", 1);
+    jetTree_p->SetBranchStatus("jtPfMUF", 1);
+    jetTree_p->SetBranchStatus("jtPfCHM", 1);
+    jetTree_p->SetBranchStatus("jtPfNHM", 1);
+    jetTree_p->SetBranchStatus("jtPfCEM", 1);
+    jetTree_p->SetBranchStatus("jtPfNEM", 1);
+    jetTree_p->SetBranchStatus("jtPfMUM", 1);
     jetTree_p->SetBranchStatus("discr_csvV2", 1);
     jetTree_p->SetBranchStatus("refpt", 1);
+    jetTree_p->SetBranchStatus("refarea", 1);
+    jetTree_p->SetBranchStatus("refdrjt", 1);
     jetTree_p->SetBranchStatus("refparton_flavorForB", 1);
+    jetTree_p->SetBranchStatus("refparton_flavor", 1);
     jetTree_p->SetBranchAddress("nref", &nref);
     jetTree_p->SetBranchAddress("jtpt", jtpt);
     jetTree_p->SetBranchAddress("jtphi", jtphi);
     jetTree_p->SetBranchAddress("jteta", jteta);
     jetTree_p->SetBranchAddress("jtarea", jtarea);
     jetTree_p->SetBranchAddress("jtm", jtm);
+    jetTree_p->SetBranchAddress("jtPfCHF", jPfCHF);
+    jetTree_p->SetBranchAddress("jtPfNHF", jPfNHF);
+    jetTree_p->SetBranchAddress("jtPfCEF", jPfCEF);
+    jetTree_p->SetBranchAddress("jtPfNEF", jPfNEF);
+    jetTree_p->SetBranchAddress("jtPfMUF", jPfMUF);
+    jetTree_p->SetBranchAddress("jtPfCHM", jPfCHM);
+    jetTree_p->SetBranchAddress("jtPfNHM", jPfNHM);
+    jetTree_p->SetBranchAddress("jtPfCEM", jPfCEM);
+    jetTree_p->SetBranchAddress("jtPfNEM", jPfNEM);
+    jetTree_p->SetBranchAddress("jtPfMUM", jPfMUM);
     jetTree_p->SetBranchAddress("discr_csvV2", discr_csvV2);
     jetTree_p->SetBranchAddress("refpt", refpt);
-    jetTree_p->SetBranchAddress("refparton_flavorForB", refparton_flavor);
+    jetTree_p->SetBranchAddress("refarea", refarea);
+    jetTree_p->SetBranchAddress("refdrjt", refdrjt);
+    jetTree_p->SetBranchAddress("refparton_flavorForB", refparton_flavorForB);
+    jetTree_p->SetBranchAddress("refparton_flavor", refparton_flavor);
     jetTree_p->SetBranchAddress("ngen", &ngen);
     jetTree_p->SetBranchAddress("genpt", genpt);
     jetTree_p->SetBranchAddress("genphi", genphi);
     jetTree_p->SetBranchAddress("geneta", geneta);
+    jetTree_p->SetBranchAddress("gendrjt", gendrjt);
+    jetTree_p->SetBranchAddress("genmatchindex", genmatchindex);
 
     //jet related variables from the hiFJRho tree
     std::vector<float>* etaMin_hiFJRho_p = 0;
@@ -528,6 +563,7 @@ void RunToppPb(TString inFileName,
 
 	//assign an event weight
 	float evWeight(1.0);
+        float ttevtype(0);
 	if(isMC)
 	  {
 	    histos["gencounter"]->Fill(1);
@@ -542,10 +578,8 @@ void RunToppPb(TString inFileName,
 		  {
 		    int status=abs(mcStatus->at(imc));
 		    int abspid=abs(mcPID->at(imc));		
-
 		    TLorentzVector p4;
 		    p4.SetPtEtaPhiM(mcPt->at(imc),mcEta->at(imc),mcPhi->at(imc),mcMass->at(imc));
-                    
                     //hardprocess
 		    if(status==3 && (abspid<=6 || abspid==24 || abspid==11 || abspid==13))
                       {
@@ -555,7 +589,8 @@ void RunToppPb(TString inFileName,
                           ljev.gp_eta[ljev.ngp]=p4.Eta();
                           ljev.gp_phi[ljev.ngp]=p4.Phi();
                           ljev.gp_m[ljev.ngp]=p4.M();
-                          ljev.ngp++;		    
+                          ljev.ngp++;
+                          if(abspid==11 || abspid==13) ttevtype+=1;
                         }
                       }
                     
@@ -601,6 +636,8 @@ void RunToppPb(TString inFileName,
 		    ljev.gj_eta[ljev.ngj]=p4.Eta();
 		    ljev.gj_phi[ljev.ngj]=p4.Phi();
 		    ljev.gj_m[ljev.ngj]=p4.M();
+		    ljev.gj_dr[ljev.ngj]=gendrjt[imcj];
+		    ljev.gj_index[ljev.ngj]=genmatchindex[imcj];
 		    ljev.ngj++;
 		  }
 
@@ -829,9 +866,17 @@ void RunToppPb(TString inFileName,
 	  }
 	if(channelSelection==13)
 	  {
-	    if(tightMuons.size()!=1) continue; //=1 tight muon	
-	    histos["recocounter"]->Fill(3);
-	    if(looseMuons.size()+mediumElectrons.size()+vetoElectrons.size()!=0) continue; //no extra leptons
+            histos["ttevttype"]->Fill(ttevtype);
+            bool fail2ndLepton(false);
+            if(tightMuons.size()) histos["ttevttype"]->Fill(ttevtype+3);
+	    if(tightMuons.size()!=1) fail2ndLepton=true;
+	    if(!fail2ndLepton) histos["recocounter"]->Fill(3);
+	    if(looseMuons.size()+mediumElectrons.size()+vetoElectrons.size()!=0) fail2ndLepton=true;
+            if(fail2ndLepton)
+              {
+                histos["ttevttype"]->Fill(ttevtype+6);
+                continue;
+              }
 	    histos["recocounter"]->Fill(4);
 	    if(chargeSelection!=0)
 	      {
@@ -841,7 +886,7 @@ void RunToppPb(TString inFileName,
 	//electrons
 	EffCorrection_t eselSF(1.0,0.0);
 	if(channelSelection==1100)
-	  {
+	  {            
 	    if(mediumElectronsFailId.size()==0) continue;
 	     histos["recocounter"]->Fill(3);
 	    if(mediumElectrons.size()+vetoElectrons.size()+tightMuons.size()+looseMuons.size()!=0) continue;
@@ -853,9 +898,17 @@ void RunToppPb(TString inFileName,
 	  }
 	if(channelSelection==11)
 	  {
-	    if(mediumElectrons.size()!=1) continue; //=1 medium electron
-	    histos["recocounter"]->Fill(3);
-	    if(vetoElectrons.size()+tightMuons.size()+looseMuons.size()!=0) continue; //no extra leptons
+            histos["ttevttype"]->Fill(ttevtype);
+            bool fail2ndLepton(false);
+            if(mediumElectrons.size()) histos["ttevttype"]->Fill(ttevtype+3);
+            if(mediumElectrons.size()!=1) fail2ndLepton=true;
+	    if(!fail2ndLepton) histos["recocounter"]->Fill(3);
+	    if(vetoElectrons.size()+tightMuons.size()+looseMuons.size()!=0)fail2ndLepton=true;
+            if(fail2ndLepton)
+              {
+                histos["ttevttype"]->Fill(ttevtype+6);
+                continue;
+              }
 	    histos["recocounter"]->Fill(4);
 	    if(chargeSelection!=0)
 	      {
@@ -909,6 +962,9 @@ void RunToppPb(TString inFileName,
 	  {
 	    //cross clean with trigger muon
 	    TLorentzVector jp4(0,0,0,0);
+	    jp4.SetPtEtaPhiM(jtpt[jetIter],jteta[jetIter],jtphi[jetIter],jtm[jetIter]);
+
+	    Int_t jflav(abs(refparton_flavor[jetIter]));	    
 
 	    float UE_correction=0;
 	    if (jteta[jetIter]>etaMin_hiFJRho_p->at(0) && jteta[jetIter]<etaMax_hiFJRho_p->at(0))
@@ -939,9 +995,15 @@ void RunToppPb(TString inFileName,
 	    
 	    //in tracker region
 	    if(TMath::Abs(jp4.Eta())>2.4) continue;
-
+            float drlj(jp4.DeltaR(goodLeptons[0]));
+	    if(jp4.Pt()>JETPTTHRESHOLD)
+              {
+                if(jflav==5) histos["drlb"]->Fill(drlj);
+                histos["drlj"]->Fill(drlj);
+              }
+	    if(drlj<0.4) continue;
+	    
 	    //systematic variations
-	    Int_t jflav(abs(refparton_flavor[jetIter]));	    
 	    bool passCSVL(discr_csvV2[jetIter]>0.460), passCSVM(discr_csvV2[jetIter]>0.8),passCSVMUp(passCSVM),passCSVMDn(passCSVM);	    
 	    std::vector<float> jerSmear(3,1.0),jesScaleUnc(3,1.0);
 	    if(isMC)
@@ -991,6 +1053,22 @@ void RunToppPb(TString inFileName,
 		    ljev.j_phi[ljev.nj] =jp4.Phi();
 		    ljev.j_m[ljev.nj]   =jp4.M();
 		    ljev.j_btag[ljev.nj]=passCSVL | (passCSVM<<1);
+		    ljev.j_area[ljev.nj]= jtarea[jetIter];
+		    ljev.j_refpt[ljev.nj]= refpt[jetIter];
+		    ljev.j_refarea[ljev.nj]= refarea[jetIter];
+		    ljev.j_refdr[ljev.nj]= refdrjt[jetIter]; 
+		    ljev.j_refparton_flavorForB[ljev.nj]= refparton_flavorForB[jetIter];
+		    ljev.j_refparton_flavor[ljev.nj]= refparton_flavor[jetIter];
+		    ljev.j_PfCHF[ljev.nj]=jPfCHF[jetIter];
+		    ljev.j_PfNHF[ljev.nj]=jPfNHF[jetIter];
+		    ljev.j_PfCEF[ljev.nj]=jPfCEF[jetIter];
+		    ljev.j_PfNEF[ljev.nj]=jPfNEF[jetIter];
+		    ljev.j_PfMUF[ljev.nj]=jPfMUF[jetIter];
+		    ljev.j_PfCHM[ljev.nj]=jPfCHM[jetIter];
+		    ljev.j_PfNHM[ljev.nj]=jPfNHM[jetIter];
+		    ljev.j_PfCEM[ljev.nj]=jPfCEM[jetIter];
+		    ljev.j_PfNEM[ljev.nj]=jPfNEM[jetIter];
+		    ljev.j_PfMUM[ljev.nj]=jPfMUM[jetIter];
 		    ljev.nj++;
 		  }
 
@@ -1146,6 +1224,12 @@ void RunToppPb(TString inFileName,
 		ljev.run=run_;
 		ljev.lumi=lumi_;
 		ljev.event=evt_;
+
+		//useful for UE dependecy
+		ljev.hiHFplus=hiHFplus_;
+		ljev.hiHFminus=hiHFminus_;
+		ljev.hiHFplusEta4=hiHFplusEta4_;
+		ljev.hiHFminusEta4=hiHFminusEta4_;
 
 		//number of tracks and tracks overlapping with hard process objects
 		ljev.ntracks=0;

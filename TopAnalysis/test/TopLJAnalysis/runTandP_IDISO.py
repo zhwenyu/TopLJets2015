@@ -52,7 +52,7 @@ process.TnP_Muon_IDISO = cms.EDAnalyzer("TagProbeFitTreeAnalyzer",
                                      
     ## Flags you want to use to define numerator and possibly denominator
     Categories = cms.PSet(
-        tag_hltL2fL1sSingleMu7BptxANDL1f0L2Filtered15 = cms.vstring("tag_hltL2fL1sSingleMu7BptxANDL1f0L2Filtered12", "dummy[pass=1,fail=0]"),
+        tag_hltL3fL1sSingleMu7BptxANDL1f0L2f0L3Filtered12 = cms.vstring("tag_hltL3fL1sSingleMu7BptxANDL1f0L2f0L3Filtered12", "dummy[pass=1,fail=0]"),
         Tight2012                                     = cms.vstring("Tight2012", "dummy[pass=1,fail=0]"),
     ),
 
@@ -72,7 +72,7 @@ process.TnP_Muon_IDISO = cms.EDAnalyzer("TagProbeFitTreeAnalyzer",
                 eta = cms.vdouble(-2.1, 2.1),
                 pt = cms.vdouble( 20, 30, 40, 50, 100 ),
                 ## flags and conditions required at the denominator, 
-                tag_hltL2fL1sSingleMu7BptxANDL1f0L2Filtered15 = cms.vstring("pass")
+                tag_hltL3fL1sSingleMu7BptxANDL1f0L2f0L3Filtered12 = cms.vstring("pass")
             ),
             BinToPDFmap = cms.vstring(FITFUNC), ## PDF to use, as defined below
         ),
@@ -83,7 +83,7 @@ process.TnP_Muon_IDISO = cms.EDAnalyzer("TagProbeFitTreeAnalyzer",
             BinnedVariables = cms.PSet(
                 abseta = cms.vdouble(0, 0.6, 1.1, 1.6, 2.1),
                 pt = cms.vdouble(30, 100),
-                tag_hltL2fL1sSingleMu7BptxANDL1f0L2Filtered15 = cms.vstring("pass"),
+                tag_hltL3fL1sSingleMu7BptxANDL1f0L2f0L3Filtered12 = cms.vstring("pass"),
             ),
             BinToPDFmap = cms.vstring(FITFUNC), ## PDF to use, as defined below
         ),

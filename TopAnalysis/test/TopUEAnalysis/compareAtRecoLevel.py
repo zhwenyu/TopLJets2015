@@ -373,7 +373,7 @@ def main():
     parser.add_option('--vars',
                       dest='vars',
                       help='variations to outsource from other files [%default]',
-                      default='#deltaCUET8P2MT4:UEup,UEdn;FSR:fsr up,fsr dn;ISR:isr up,isr dn;HW++EE5C:Herwig++;hdamp:hdamp up,hdamp dn',
+                      default='#deltaCUET8P2MT4:UEup,UEdn;FSR:fsr up,fsr dn;ISR:isr up,isr dn;CR:QCDbased,ERDon;hdamp:hdamp up,hdamp dn;HW++EE5C:Herwig++',
                       type='string')
     (opt, args) = parser.parse_args()
 

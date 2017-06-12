@@ -40,7 +40,7 @@ def determineSliceResolutions(opt):
             sys.stdout.flush()
 
         #count particles in the event
-        ue.count(t,debug=False)
+        ue.count(t=t,debug=False,isMC=True)
 
         #require a pure event selected at reco and gen levels
         if not ue.rec_passSel[0] or not ue.gen_passSel: continue
@@ -202,7 +202,10 @@ def defineAnalysisBinning(opt):
             #get resolution map and quantiles       
             genBin=[0]
             resolGr=varResolutions[var][1]
-            nSigmaForBins=2.0
+            nSigmaForBins=2.5
+            if var in ['C','D','aplanarity','sphericity'] : nSigmaForBins=2
+            if var in ['chavgpt','chavgpz'] : nSigmaForBins=3
+            print var,nSigmaForBins
             lastAcceptResol=resolGr.GetErrorY(0)
             for n in xrange(1,resolGr.GetN()-1):
 
@@ -225,13 +228,16 @@ def defineAnalysisBinning(opt):
             recBin.append( genBin[-1]+0.25*(genBin[-1]+genBin[-2]) )
 
 
-            #special case for angular variables: override previous definition
-            if VARS[var][4]:
-                nbins=10
-                if var=='phittbar': nbins=4
-                delta=180./float(nbins)
-                genBin=[i*delta     for i in xrange(0,nbins+1)]
-                recBin=[i*delta*0.5 for i in xrange(0,2*nbins+1)]
+        #special case for angular variables: override previous definition
+        if VARS[var][4]:
+            nbins=10
+            if var=='phittbar': nbins=4
+            delta=180./float(nbins)
+            genBin=[i*delta     for i in xrange(0,nbins+1)]
+            recBin=[i*delta*0.5 for i in xrange(0,2*nbins+1)]
+
+        if var in ['C','D','sphericity']: genBin[-1],recBin[-1]=1,1
+        if var in ['aplanarity']: genBin[-1],recBin[-1]=0.5,0.5
 
         #save binning in histos
         varAxes[(var,False)] = ROOT.TAxis(len(genBin)-1,array.array('d',genBin))
@@ -365,7 +371,7 @@ def runUEAnalysis(inF,outF,cfgDir):
 
     varList=SYSTS
     if not 'MC13TeV_TTJets' in inF : varList=[('',   0,0,False)]
-
+    isMC=True if 'MC13TeV' in inF else False
     ALLSLICEVARS=[None]+SLICEVARS
 
     #loop over the tree to fill histos
@@ -374,13 +380,15 @@ def runUEAnalysis(inF,outF,cfgDir):
     t.AddFile(inF)
     totalEntries=t.GetEntries()
     for i in xrange(0,totalEntries):
+
         t.GetEntry(i)
+
         if i%100==0 :
             sys.stdout.write('\r [ %d/100 ] done' %(int(float(100.*i)/float(totalEntries))) )
             sys.stdout.flush()
 
         #count particles
-        ue.count(t)
+        ue.count(t=t,isMC=isMC)
 
         #
         for ivar in xrange(0,len(varList)):
@@ -417,7 +425,7 @@ def runUEAnalysis(inF,outF,cfgDir):
 
     #save histos to ROOT file
     fOut=ROOT.TFile.Open(outF,'RECREATE')
-    for h in ueHandler.histos:
+    for h in ueHandler.histos:        
         ueHandler.histos[h].SetDirectory(fOut)
         ueHandler.histos[h].Write()
     fOut.Close()
@@ -501,14 +509,33 @@ def main():
             else:
                 for fileName,outfile,cfgDir in tasklist:
                     runUEAnalysis(fileName,outfile,cfgDir)
+
         #submit jobs
         else:
-            print ' Running %d jobs to %s'%(len(tasklist),opt.queue)
+            print 'Running %d jobs to the batch'%len(tasklist)
             cmsswBase=os.environ['CMSSW_BASE']
-            for fileName,_,cfgDir in tasklist:
-                localRun='python %s/src/TopLJets2015/TopAnalysis/test/TopUEAnalysis/runUEanalysis.py -i %s -o %s -q local -s 2'%(cmsswBase,fileName,cfgDir)
-                cmd='bsub -q %s %s/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh \"%s\"' % (opt.queue,cmsswBase,localRun)
-                os.system(cmd)
+            FarmDirectory='%s/FARM-UEANA'%cmsswBase
+            os.system('mkdir -p %s'%FarmDirectory)
+            print 'Scripts and logs will be available @ %s'%FarmDirectory
+
+            condorScript='%s/condor.sub'%FarmDirectory
+            with open (condorScript,'w') as condor:
+
+                _,_,cfgDir=tasklist[0]
+
+                condor.write('executable = {0}/src/TopLJets2015/TopAnalysis/test/TopUEAnalysis/runUEanalysis.py\n'.format(cmsswBase))
+                condor.write('arguments  = -o %s -q local -s 2 -i $(input)\n'%cfgDir)
+                condor.write('output     = {0}/output_$(ProcId).out\n'.format(FarmDirectory))
+                condor.write('error      = {0}/output_$(ProcId).err\n'.format(FarmDirectory))
+
+                for fileName,_,_ in tasklist:
+                    condor.write('input=%s\n'%fileName)
+                    condor.write('queue 1\n')
+
+                #localRun='python %s/src/TopLJets2015/TopAnalysis/test/TopUEAnalysis/runUEanalysis.py -i %s -o %s -q local -s 2'%(cmsswBase,fileName,cfgDir)
+                #cmd='bsub -q %s %s/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh \"%s\"' % (opt.queue,cmsswBase,localRun)
+                #os.system(cmd)
+            os.system('condor_submit %s'%condorScript)
 
 
 """
