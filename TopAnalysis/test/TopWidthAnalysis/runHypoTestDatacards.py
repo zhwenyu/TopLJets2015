@@ -76,7 +76,7 @@ def getDistsForHypoTest(cat,rawSignalList,opt,outDir=""):
             pass
 
     #delete the nominal expectations
-    for proc in rawSignalList: 
+    for proc in rawSignalList:
         try:
             exp[proc].Delete()
             del exp[proc]
@@ -146,9 +146,9 @@ def doDataCards(opt,args):
         if opt.mainHypo==opt.altHypo: ttScenarioList[1]+='a'
         mainSignalList += [ttScenarioList[0]]
         altSignalList  += [ttScenarioList[1]]
-    tWScenarioList=['tW']
-    if 'tW' in rawSignalList:
-        tWScenarioList = [('tW%3.1fw'%h).replace('.','p') for h in [opt.mainHypo,opt.altHypo]]
+    tWScenarioList=['Singletop']
+    if 'Singletop' in rawSignalList:
+        tWScenarioList = [('Singletop%3.1fw'%h).replace('.','p') for h in [opt.mainHypo,opt.altHypo]]
         if opt.mainHypo==opt.altHypo: tWScenarioList[1]+='a'
         mainSignalList += [tWScenarioList[0]]
         altSignalList  += [tWScenarioList[1]]
@@ -163,16 +163,16 @@ def doDataCards(opt,args):
           ('tnorm_th',         1.044,    'lnN',    ['tch'],             []),
           ('VVnorm_th',        1.20,     'lnN',    ['Multiboson'],      []),
           ('tbartVnorm_th',    1.30,     'lnN',    ['tbartV'],          []),
-          ('sel_*CH*',         1.02,     'lnN',    tWScenarioList+ttScenarioList+['W','tch','Multiboson','tbartV'], ['DY']),
+          #('sel_*CH*',         1.02,     'lnN',    tWScenarioList+ttScenarioList+['W','tch','Multiboson','tbartV'], ['DY']),
     ]
-    
+
     #define the SHAPE systematics from weighting, varying object scales, efficiencies, etc.
     # syst,weightList,whiteList,blackList,shapeTreatement=0 (none), 1 (shape only), 2 (factorizeRate),nsigma
-    weightingSysts=[ 
+    weightingSysts=[
         ('jes',            ['jes'],                                    [],             ['DY'], 2, 1.0),
         ('jer',            ['jer'],                                    [],             ['DY'], 2, 1.0),
         ('trig_*CH*',      ['trig'],                                   [],             ['DY'], 2, 1.0),
-        #('sel_*CH*',       ['sel'],                                    [],             ['DY'], 2, 1.0),
+        ('sel_*CH*',       ['sel'],                                    [],             ['DY'], 2, 1.0),
         ('les_*CH*',       ['les'],                                    [],             ['DY'], 2, 1.0),
         ('ltag',           ['ltag'],                                   [],             ['DY'], 2, 1.0),
         ('btag',           ['btag'],                                   [],             ['DY'], 2, 1.0),
@@ -184,13 +184,16 @@ def doDataCards(opt,args):
 
     #define the SHAPE systematics from dedicated samples : syst,{procs,samples}, shapeTreatment (see above) nsigma
     fileShapeSysts = [
-        ('mtop'      ,     {'tbart':['t#bar{t} m=169.5','t#bar{t} m=175.5'],
-                            'tW':   ['tW m=169.5','tW m=175.5']}                 , 0, 1./6.),
-        ('ttPSScale' ,     {'tbart':['t#bar{t} scale down','t#bar{t} scale up']} , 2, 1.0  ),
-        ('ttGenerator',    {'tbart':['t#bar{t} amc@nlo FxFx']},                    1, 1.0  ),
-        ('ttPartonShower', {'tbart':['t#bar{t} Herwig++']},                        1, 1.0  ),
-        ('tWttInterf',     {'tW':   ['tW DS']},                                    1, 1.0 ),
-        ('tWQCDScale',     {'tW':   ['tW scale down','tW scale up']},              1, 1.0 )
+        ('mtop',           {'tbart':['t#bar{t} m=171.5',  't#bar{t} m=173.5']}    , 0, 1./2.),
+        ('UE',             {'tbart':['t#bar{t} UEdn',     't#bar{t} UEup']}       , 2, 1.0 ),
+        ('hdamp',          {'tbart':['t#bar{t} hdamp dn', 't#bar{t} hdamp up']}   , 2, 1.0 ),
+        ('ISR',            {'tbart':['t#bar{t} isr dn',   't#bar{t} isr up']}     , 2, 1.0 ),
+        ('FSR',            {'tbart':['t#bar{t} fsr dn',   't#bar{t} fsr up']}     , 2, 1.0 ),
+        #('ttPSScale' ,     {'tbart':['t#bar{t} scale down','t#bar{t} scale up']} , 2, 1.0  ),
+        #('ttGenerator',    {'tbart':['t#bar{t} amc@nlo FxFx']},                    1, 1.0  ),
+        #('ttPartonShower', {'tbart':['t#bar{t} Herwig++']},                        1, 1.0  ),
+        #('tWttInterf',     {'tW':   ['tW DS']},                                    1, 1.0 ),
+        #('tWQCDScale',     {'tW':   ['tW scale down','tW scale up']},              1, 1.0 )
         ]
 
 
@@ -220,8 +223,8 @@ def doDataCards(opt,args):
 
         #data and nominal shapes
         obs,exp=getDistsForHypoTest(cat,rawSignalList,opt,outDir)
-              
-        #recreate data if requested        
+
+        #recreate data if requested
         if opt.pseudoData!=-1:
             pseudoSignal=None
             print '\t pseudo-data is being generated',
@@ -236,7 +239,7 @@ def doDataCards(opt,args):
                 _,pseudoSignal=getDistsFromDirIn(opt.input,'%s%s_%s_1.0w'%(opt.pseudoDataFromWgt,cat,opt.dist),'t#bar{t}')
                 print pseudoSignal,'%s%s_%s_1.0w'%(opt.pseudoDataFromWgt,cat,opt.dist)
             else:
-                print 'injecting signal from weighted',opt.pseudoData            
+                print 'injecting signal from weighted',opt.pseudoData
                 _,pseudoSignal=getDistsFromDirIn(opt.input,'%s_%s_%3.1fw'%(cat,opt.dist,opt.pseudoData))
             obs.Reset('ICE')
 
@@ -244,12 +247,12 @@ def doDataCards(opt,args):
             pseudoSignalAccept=[]
             for proc in pseudoSignal:
                 accept=False
-                for sig in rawSignalList: 
+                for sig in rawSignalList:
                     if sig==proc: accept=True
                 if not accept : continue
-                
+
                 newProc=('%s1.0w'%proc).replace('.','p')
-                pseudoSignalAccept.append(newProc)               
+                pseudoSignalAccept.append(newProc)
                 sf=exp[newProc].Integral()/pseudoSignal[proc].Integral()
                 pseudoSignal[proc].Scale(sf)
                 obs.Add( pseudoSignal[proc] )
@@ -262,7 +265,7 @@ def doDataCards(opt,args):
                     obs.Add( exp[proc] )
             print pseudoSignalAccept
             for xbin in xrange(0,obs.GetNbinsX()+2): obs.SetBinContent(xbin,int(obs.GetBinContent(xbin)))
-        
+
         #start the datacard header
         datacardname='%s/datacard_%s.dat'%(outDir,cat)
         dataCardList+='%s=%s '%(cat,os.path.basename(datacardname))
@@ -300,10 +303,10 @@ def doDataCards(opt,args):
         datacard.write('\n')
         datacard.write('\t\t\t %16s'%'process')
         procCtr=-len(mainSignalList)-len(altSignalList)+1
-        for sig in mainSignalList: 
+        for sig in mainSignalList:
             datacard.write('%15s'%str(procCtr))
             procCtr+=1
-        for sig in altSignalList:  
+        for sig in altSignalList:
             datacard.write('%15s'%str(procCtr))
             procCtr+=1
         for proc in exp:
@@ -348,20 +351,20 @@ def doDataCards(opt,args):
                     binShapes[proc]=finalNomShape.Clone('%sDown'%systVar)
                     binShapes[proc].SetBinContent(xbin,ROOT.TMath.Max(val-unc,1e-3))
                     saveToShapesFile(outFile,binShapes,binShapes[proc].GetName())
-                    
+
                     #write to datacard
-                    datacard.write('%32s shape'%systVar)        
+                    datacard.write('%32s shape'%systVar)
                     for sig in mainSignalList:
                         if proc==sig:
-                            datacard.write('%15s'%'1') 
+                            datacard.write('%15s'%'1')
                         else:
                             datacard.write('%15s'%'-')
                     for sig in altSignalList:
                         if proc==sig:
-                            datacard.write('%15s'%'1') 
+                            datacard.write('%15s'%'1')
                         else:
                             datacard.write('%15s'%'-')
-                    for iproc in exp: 
+                    for iproc in exp:
                         if iproc in mainSignalList+altSignalList : continue
                         if iproc==proc:
                             datacard.write('%15s'%'1')
@@ -387,7 +390,7 @@ def doDataCards(opt,args):
                     datacard.write(entryTxt)
                 else:
                     datacard.write('%15s'%'-')
-            for sig in altSignalList:  
+            for sig in altSignalList:
                 if (len(whiteList)==0 and not sig in blackList) or sig in whiteList:
                     datacard.write(entryTxt)
                 else:
@@ -407,14 +410,14 @@ def doDataCards(opt,args):
             if '*CH*' in syst : syst=syst.replace('*CH*',lfs)
 
             #get shapes and adapt them
-            iexpUp,iexpDn=None,None            
+            iexpUp,iexpDn=None,None
             if len(weightList)==1:
                 _,iexpUp=getDistsForHypoTest(weightList[0]+"up"+cat,rawSignalList,opt)
                 _,iexpDn=getDistsForHypoTest(weightList[0]+"dn"+cat,rawSignalList,opt)
             else:
 
                 #put all the shapes in a 2D histogram
-                iexp2D={}                
+                iexp2D={}
                 for iw in xrange(0,len(weightList)):
                     w=weightList[iw]
                     _,kexp=getDistsForHypoTest(w+cat,rawSignalList,opt)
@@ -434,7 +437,7 @@ def doDataCards(opt,args):
                 #create the up/down variations
                 iexpUp,iexpDn={},{}
                 for proc in iexp2D:
-                        
+
                     #create the base shape
                     if not proc in iexpUp:
                         tmp=iexp2D[proc].ProjectionX("tmp",1,1)
@@ -450,14 +453,14 @@ def doDataCards(opt,args):
 
                     #project each bin shape for the different variations
                     for xbin in xrange(0,iexp2D[proc].GetNbinsX()+2):
-                        tmp=iexp2D[proc].ProjectionY("tmp",xbin,xbin)                          
+                        tmp=iexp2D[proc].ProjectionY("tmp",xbin,xbin)
                         tvals=numpy.zeros(tmp.GetNbinsX())
                         for txbin in xrange(1,tmp.GetNbinsX()+1) : tvals[txbin-1]=tmp.GetBinContent(txbin)
-                        
+
                         #mean and RMS based
-                        if 'PDF' in syst:                   
+                        if 'PDF' in syst:
                             mean=numpy.mean(tvals)
-                            rms=numpy.std(tvals)                              
+                            rms=numpy.std(tvals)
                             iexpUp[proc].SetBinContent(xbin,mean+rms)
                             iexpDn[proc].SetBinContent(xbin,ROOT.TMath.Max(mean-rms,1.0e-4))
 
@@ -469,14 +472,14 @@ def doDataCards(opt,args):
 
                             imin=numpy.min(tvals)
                             if iexpDn[proc].GetBinContent(xbin)>0 : imin=ROOT.TMath.Min(iexpDn[proc].GetBinContent(xbin),imin)
-                            iexpDn[proc].SetBinContent(xbin,imin)                              
-                          
+                            iexpDn[proc].SetBinContent(xbin,imin)
+
                         tmp.Delete()
 
 
                     #all done, can remove the 2D histo from memory
                     iexp2D[proc].Delete()
-            
+
 
             #check the shapes
             iRateVars={}
@@ -493,12 +496,12 @@ def doDataCards(opt,args):
                     #save a rate systematic from the variation of the yields
                     if n==0 : continue
                     nvarUp=ROOT.TMath.Abs(1-nUp/n)
-                    nvarDn=ROOT.TMath.Abs(1-nDn/n )    
+                    nvarDn=ROOT.TMath.Abs(1-nDn/n )
                     iRateVars[proc]=1.0+0.5*(nvarUp+nvarDn)
                     if iRateVars[proc]<1.001 : del iRateVars[proc]
-                    
 
-            #write the shapes to the ROOT file                    
+
+            #write the shapes to the ROOT file
             saveToShapesFile(outFile,iexpUp,('%s_%s_%sUp'%(cat,opt.dist,syst)),opt.rebin)
             saveToShapesFile(outFile,iexpDn,('%s_%s_%sDown'%(cat,opt.dist,syst)),opt.rebin)
 
@@ -510,7 +513,7 @@ def doDataCards(opt,args):
                     datacard.write(entryTxt)
                 else:
                     datacard.write('%15s'%'-')
-            for sig in altSignalList:  
+            for sig in altSignalList:
                 if (len(whiteList)==0 and not sig in blackList) or sig in whiteList:
                     datacard.write(entryTxt)
                 else:
@@ -532,7 +535,7 @@ def doDataCards(opt,args):
                     datacard.write('%15s'%('%3.3f'%iRateVars[sig]))
                 else:
                     datacard.write('%15s'%'-')
-            for sig in altSignalList:  
+            for sig in altSignalList:
                 if sig in iRateVars and ((len(whiteList)==0 and not sig in blackList) or sig in whiteList):
                     datacard.write('%15s'%('%3.3f'%iRateVars[sig]))
                 else:
@@ -555,7 +558,7 @@ def doDataCards(opt,args):
             iexpUp,iexpDn={},{}
             for proc in procsAndSamples:
                 samples=procsAndSamples[proc]
-                
+
                 hyposToGet=[opt.mainHypo]
                 isSignal=False
                 if proc in rawSignalList:
@@ -569,7 +572,7 @@ def doDataCards(opt,args):
                         _,jexpUp=getDistsFromDirIn(opt.systInput,'%s_%s_%3.1fw'%(cat,opt.dist,hypo),samples[1])
                     else:
                         _,jexpUp=getDistsFromDirIn(opt.systInput,'%s_%s_%3.1fw'%(cat,opt.dist,hypo),samples[0])
-                        
+
                     newProc=proc
                     if isSignal:
                         newProc=('%s%3.1fw'%(proc,hypo)).replace('.','p')
@@ -609,11 +612,11 @@ def doDataCards(opt,args):
                     #save a rate systematic from the variation of the yields
                     if n==0 : continue
                     nvarUp=ROOT.TMath.Abs(1-nUp/n)
-                    nvarDn=ROOT.TMath.Abs(1-nDn/n )    
+                    nvarDn=ROOT.TMath.Abs(1-nDn/n )
                     iRateVars[proc]=1.0+0.5*(nvarUp+nvarDn)
                     if iRateVars[proc]<1.001 : del iRateVars[proc]
 
-            #write the shapes to the ROOT file                    
+            #write the shapes to the ROOT file
             saveToShapesFile(outFile,iexpUp,('%s_%s_%sUp'%(cat,opt.dist,syst)),opt.rebin)
             saveToShapesFile(outFile,iexpDn,('%s_%s_%sDown'%(cat,opt.dist,syst)),opt.rebin)
 
@@ -647,7 +650,7 @@ def doDataCards(opt,args):
                     datacard.write('%15s'%('%3.3f'%iRateVars[sig]))
                 else:
                     datacard.write('%15s'%'-')
-            for sig in altSignalList:  
+            for sig in altSignalList:
                 if sig in iRateVars :
                     datacard.write('%15s'%('%3.3f'%iRateVars[sig]))
                 else:
@@ -662,13 +665,13 @@ def doDataCards(opt,args):
 
         print '\t ended datacard generation'
         datacard.close()
-    
+
         if opt.doValidation:
-            print '\t running validation'    
+            print '\t running validation'
             for proc in rawSignalList:
                 newProc=('%s%3.1fw'%(proc,opt.mainHypo)).replace('.','p')
                 altProc=('%s%3.1fw'%(proc,opt.altHypo)).replace('.','p') if proc=='tbart' else ''
-                for uncList in [ 'jes,jer,les_*CH*', 
+                for uncList in [ 'jes,jer,les_*CH*',
                                  'btag,ltag,pu,trig_*CH*',
                                  'ttPSScale,ttMEqcdscale,ttPDF,tttoppt',
                                  'ttGenerator,ttPartonShower',
@@ -718,11 +721,11 @@ def main():
     parser.add_option(      '--pseudoDataFromSim',  dest='pseudoDataFromSim',  help='pseudo data from dedicated sample',           default='',          type='string')
     parser.add_option(      '--pseudoDataFromWgt',  dest='pseudoDataFromWgt',  help='pseudo data from weighting',                  default='',          type='string')
     parser.add_option(      '--mainHypo',           dest='mainHypo',  help='main hypothesis',                                      default=1.0,         type=float)
-    parser.add_option(      '--altHypo',            dest='altHypo',   help='alternative hypothesis',                               default=4.0,         type=float)  
+    parser.add_option(      '--altHypo',            dest='altHypo',   help='alternative hypothesis',                               default=4.0,         type=float)
     parser.add_option(      '--altHypoFromSim',     dest='altHypoFromSim',   help='alternative hypothesis from dedicated sample',  default='',          type='string')
     parser.add_option('-s', '--signal',             dest='signal',             help='signal (csv)',                                default='tbart,tW',  type='string')
-    parser.add_option('-c', '--cat',                dest='cat',                help='categories (csv)',                         
-                      default='lowptEE1b,lowptEE2b,highptEE1b,highptEE2b,lowptEM1b,lowptEM2b,highptEM1b,highptEM2b,lowptMM1b,lowptMM2b,highptMM1b,highptMM2b',    
+    parser.add_option('-c', '--cat',                dest='cat',                help='categories (csv)',
+                      default='lowptEE1b,lowptEE2b,highptEE1b,highptEE2b,lowptEM1b,lowptEM2b,highptEM1b,highptEM2b,lowptMM1b,lowptMM2b,highptMM1b,highptMM2b',
                       type='string')
     parser.add_option('-o', '--output',             dest='output',             help='output directory',                            default='datacards', type='string')
     (opt, args) = parser.parse_args()
