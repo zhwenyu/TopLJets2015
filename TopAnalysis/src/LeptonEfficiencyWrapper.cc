@@ -108,9 +108,14 @@ void LeptonEfficiencyWrapper::init(TString era)
         lepEffUrl=era+"/MuonTracking_EfficienciesAndSF_"+period+".root";
         gSystem->ExpandPathName(lepEffUrl);
         fIn=TFile::Open(lepEffUrl);
+        //global muon
         lepEffGr_["m_tk"+period]=(TGraphAsymmErrors *)fIn->Get("ratio_eff_eta3_dr030e030_corr");
         lepEffGr_["m_tk_aeta"+period]=(TGraphAsymmErrors *)fIn->Get("ratio_eff_aeta_dr030e030_corr");
         lepEffGr_["m_tk_nvtx"+period]=(TGraphAsymmErrors *)fIn->Get("ratio_eff_vtx_dr030e030_corr");
+        //tracker-only (used for charged tracks correction and ucnertainty)
+        lepEffGr_["m_tk0"+period]=(TGraphAsymmErrors *)fIn->Get("ratio_eff_eta3_tk0_dr030e030_corr");
+        lepEffGr_["m_tk0_aeta"+period]=(TGraphAsymmErrors *)fIn->Get("ratio_eff_aeta_tk0_dr030e030_corr");
+        lepEffGr_["m_tk0_nvtx"+period]=(TGraphAsymmErrors *)fIn->Get("ratio_eff_vtx_tk0_dr030e030_corr");
         fIn->Close();
 
         lepEffUrl=era+"/MuonIdEfficienciesAndSF_"+period+".root";
@@ -427,6 +432,21 @@ EffCorrection_t LeptonEfficiencyWrapper::getOfflineIsoHFCorrection(int pdgId,flo
     }
 
     
+  return corr;
+}
+
+//
+EffCorrection_t LeptonEfficiencyWrapper::getTrackingCorrection(int nvtx, TString period)
+{
+  EffCorrection_t corr(1.0,0.0);
+  
+  //nvtx-dependent tracking efficiency correction
+  TString hname = "m_tk0_nvtx"+period;
+  if(lepEffGr_.find(hname)!=lepEffGr_.end()) {
+    corr.first  = lepEffGr_[hname]->Eval(TMath::Min(nvtx,40));
+    corr.second = 1.-corr.first;
+  }
+  
   return corr;
 }
 

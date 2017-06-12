@@ -59,4 +59,7 @@ double computeBFragmentationWeight(MiniEvent_t &ev, TGraph* wgtGr);
 std::map<TString, std::map<int, double> > getSemilepBRWeights(TString era);
 double computeSemilepBRWeight(MiniEvent_t &ev, std::map<int, double> corr, int pid = 0, bool useabs = true);
 
+//apply tracking efficiency
+MiniEvent_t applyTrackingEfficiencySF(MiniEvent_t &ev, double sf);
+
 #endif

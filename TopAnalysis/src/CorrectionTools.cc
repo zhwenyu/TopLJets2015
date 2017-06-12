@@ -349,3 +349,22 @@ double computeSemilepBRWeight(MiniEvent_t &ev, std::map<int, double> corr, int p
   }
   return weight;
 }
+
+MiniEvent_t applyTrackingEfficiencySF(MiniEvent_t &ev, double sf) {
+  if(ev.isData) return ev;
+  
+  TRandom* random = new TRandom(0); // random seed
+
+  for (int k = 0; k < ev.npf; k++) {
+    if (random->Rndm() > sf) {
+      //make sure that particle does not pass any cuts
+      ev.pf_pt[k]  = 1e-20;
+      ev.pf_m[k]   = 1e-20;
+      ev.pf_eta[k] = 999.;
+      ev.pf_c[k]   = 0;
+    }
+  }
+  
+  return ev;
+}
+

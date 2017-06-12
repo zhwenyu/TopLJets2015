@@ -319,6 +319,13 @@ void RunTopJetShape(TString filename,
           }
         }
         else ev = updateBTagDecisions(ev, btvsfReaders[period],expBtagEff,expBtagEffPy8,myBTagSFUtil);
+        //tracking efficiency
+        if (vSystVar[0] == "tracking") {
+          // "up": no correction
+          // "down": apply twice
+          if (vSystVar[2] == "down") ev = applyTrackingEfficiencySF(ev, pow(lepEffH.getTrackingCorrection(ev.nvtx, period).first,2));
+        }
+        else ev = applyTrackingEfficiencySF(ev, lepEffH.getTrackingCorrection(ev.nvtx, period).first);
       }
       
       ///////////////////////////
