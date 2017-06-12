@@ -2,7 +2,7 @@
 
 WHAT=$1; 
 if [ "$#" -ne 1 ]; then 
-    echo "steerTOPWidthAnalysis.sh <SEL/MERGESEL/PLOTSEL/WWWSEL/ANA/MERGE/BKG/PLOT/WWW/HYPOTEST> <ERA>";
+    echo "steerTOP17010.sh <SEL/MERGESEL/PLOTSEL/WWWSEL/ANA/MERGE/BKG/PLOT/WWW/HYPOTEST> <ERA>";
     echo "        SEL          - launches selection jobs to the batch, output will contain summary trees and control plots"; 
     echo "        MERGESEL     - merge the output of the jobs";
     echo "        PLOTSEL      - runs the plotter tool on the selection";
@@ -33,20 +33,20 @@ lumiUnc=0.025
 whoami=`whoami`
 myletter=${whoami:0:1}
 eosdir=/store/cmst3/group/top/ReReco2016/${githash}
-summaryeosdir=/store/cmst3/group/top/TopWidth
+summaryeosdir=/store/cmst3/group/top/TOP-17-010/
 COMBINERELEASE=~/scratch0/CMSSW_7_4_7/src/
-outdir=/afs/cern.ch/work/${myletter}/${whoami}/TopWidth/
-wwwdir=~/www/TopWidth/
+outdir=/afs/cern.ch/work/${myletter}/${whoami}/TOP-17-010/
+wwwdir=~/www/TOP-17-010/
 
 
 RED='\e[31m'
 NC='\e[0m'
 case $WHAT in
     TEST )
-	python scripts/runLocalAnalysis.py -i ${eosdir} -q local -o /tmp/`whoami` --era era2016 -m TOP-16-019::RunTop16019 --ch 0 --runSysts --only TTJets;
+	python scripts/runLocalAnalysis.py -i ${eosdir} -q local -o /tmp/`whoami` --era era2016 -m TOP-17-010::RunTop17010 --ch 0 --runSysts --only TTJets;
         ;;
     SEL )
-	python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} -o ${summaryeosdir} --era era2016 -m TOP-16-019::RunTop16019 --ch 0 --runSysts;
+	python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} -o ${summaryeosdir} --era era2016 -m TOP-17-010::RunTop17010 --ch 0 --runSysts;
 	;;
     MERGESEL )
 	mkdir -p ${outdir}
@@ -67,13 +67,13 @@ case $WHAT in
 	python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${outdir}/analysis/Chunks -q ${queue};	
 	;;
     MERGE )
-		./scripts/mergeOutputs.py ${outdir}/analysis;
+	./scripts/mergeOutputs.py ${outdir}/analysis;
 	;;
     BKG )
-		python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json  -l ${lumi} ${lumiSpecs} --onlyData --only mll -o dy_plotter.root; 
+	python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json  -l ${lumi} ${lumiSpecs} --onlyData --only mll -o dy_plotter.root; 
 	;;
-	DY )
-		python scripts/runDYRinRout.py --in ${outdir}/analysis/plots/dy_plotter.root --categs 1b,2b --out ${outdir}/analysis/plots/;
+    DY )
+	python scripts/runDYRinRout.py --in ${outdir}/analysis/plots/dy_plotter.root --categs 1b,2b --out ${outdir}/analysis/plots/;
 	;;
     PLOT_P1 )
 		#python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --only count --saveTeX -o count_plotter2.root --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck > count2.out & 

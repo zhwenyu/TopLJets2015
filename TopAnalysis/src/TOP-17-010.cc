@@ -8,8 +8,7 @@
 #include <TGraphAsymmErrors.h>
 
 #include "TopLJets2015/TopAnalysis/interface/MiniEvent.h"
-#include "TopLJets2015/TopAnalysis/interface/TOP-16-006.h"
-#include "TopLJets2015/TopAnalysis/interface/TOP-16-019.h"
+#include "TopLJets2015/TopAnalysis/interface/TOP-17-010.h"
 #include "TopLJets2015/TopAnalysis/interface/LeptonEfficiencyWrapper.h"
 #include "TopLJets2015/TopAnalysis/interface/CorrectionTools.h"
 
@@ -24,7 +23,7 @@ using namespace std;
 
 
 //
-void RunTop16019(TString filename,
+void RunTop17010(TString filename,
 		 TString outname,
 		 Int_t channelSelection, 
 		 Int_t chargeSelection, 
@@ -89,9 +88,46 @@ void RunTop16019(TString filename,
   //JET ENERGY UNCERTAINTIES    
   TString jecUncUrl(era+"/Summer16_23Sep2016V4_MC_UncertaintySources_AK4PFchs.txt");
   gSystem->ExpandPathName(jecUncUrl);
-  JetCorrectorParameters *jecParam = new JetCorrectorParameters(jecUncUrl.Data(), "Total");
-  JetCorrectionUncertainty *jecUnc = new JetCorrectionUncertainty( *jecParam );
-
+  std::vector<TString> jecUncSrcs;
+  std::vector<JetCorrectionUncertainty*> jecUncs;
+  if(runSysts)
+    {
+      jecUncSrcs.push_back("AbsoluteStat");        
+      jecUncSrcs.push_back("AbsoluteScale");        
+      jecUncSrcs.push_back("AbsoluteMPFBias");        
+      jecUncSrcs.push_back("Fragmentation");        
+      jecUncSrcs.push_back("SinglePionECAL");  
+      jecUncSrcs.push_back("SinglePionHCAL"); 
+      jecUncSrcs.push_back("FlavorPureGluon"); 
+      jecUncSrcs.push_back("FlavorPureQuark");
+      jecUncSrcs.push_back("FlavorPureCharm"); 
+      jecUncSrcs.push_back("FlavorPureBottom");
+      jecUncSrcs.push_back("TimePtEta");
+      jecUncSrcs.push_back("RelativeJEREC1");  
+      jecUncSrcs.push_back("RelativeJEREC2"); 
+      jecUncSrcs.push_back("RelativeJERHF");
+      jecUncSrcs.push_back("RelativePtBB");    
+      jecUncSrcs.push_back("RelativePtEC1");  
+      jecUncSrcs.push_back("RelativePtEC2");   
+      jecUncSrcs.push_back("RelativePtHF");  
+      jecUncSrcs.push_back("RelativeBal");  
+      jecUncSrcs.push_back("RelativeFSR");
+      jecUncSrcs.push_back("RelativeStatFSR");
+      jecUncSrcs.push_back("RelativeStatEC"); 
+      jecUncSrcs.push_back("RelativeStatHF");
+      jecUncSrcs.push_back("PileUpDataMC");    
+      jecUncSrcs.push_back("PileUpPtRef");    
+      jecUncSrcs.push_back("PileUpPtBB");     
+      jecUncSrcs.push_back("PileUpPtEC1");      
+      jecUncSrcs.push_back("PileUpPtEC2");      
+      jecUncSrcs.push_back("PileUpPtHF");    
+    }
+  for(size_t i=0; i<jecUncSrcs.size(); i++)
+    {
+      JetCorrectorParameters *p = new JetCorrectorParameters(jecUncUrl.Data(), jecUncSrcs[i].Data());
+      jecUncs.push_back( new JetCorrectionUncertainty(*p) );
+    }
+    
   //BOOK HISTOGRAMS
   std::map<TString, TH1 *> allPlots;
   addGenScanCounters(allPlots,f);
@@ -252,7 +288,7 @@ void RunTop16019(TString filename,
       //event weight
       //
       float wgt(1.0);
-      EffCorrection_t lepSelCorrWgt(1.0,0.0), triggerCorrWgt(1.0,0.0);
+      EffCorrection_t eSelCorrWgt(1.0,0.0),mSelCorrWgt(1.0,0.0), triggerCorrWgt(1.0,0.0);
       if(!ev.isData)
 	{
 	  //MC normalization weight
@@ -269,12 +305,20 @@ void RunTop16019(TString filename,
           for(size_t il=0; il<2; il++)
             {
               EffCorrection_t selSF=lepEffH.getOfflineCorrection(leptons[il].id(),leptons[il].pt(),leptons[il].eta(),period);
-              lepSelCorrWgt.second = sqrt( pow(lepSelCorrWgt.first*selSF.second,2)+pow(lepSelCorrWgt.second*selSF.first,2));
-              lepSelCorrWgt.first *= selSF.first;
+              if(abs(leptons[il].id())==11)
+                {
+                  eSelCorrWgt.second = sqrt( pow(eSelCorrWgt.first*selSF.second,2)+pow(eSelCorrWgt.second*selSF.first,2));
+                  eSelCorrWgt.first *= selSF.first;
+                }
+              else
+                {
+                  mSelCorrWgt.second = sqrt( pow(mSelCorrWgt.first*selSF.second,2)+pow(mSelCorrWgt.second*selSF.first,2));
+                  mSelCorrWgt.first *= selSF.first;
+                }
             }
 	  
 	  //update nominal event weight
-	  wgt=triggerCorrWgt.first*lepSelCorrWgt.first*puWgt*norm;
+	  wgt=triggerCorrWgt.first*eSelCorrWgt.first*mSelCorrWgt.first*puWgt*norm;
 	  if(ev.g_nw>0) wgt*=ev.g_w[0];
 	}
       
@@ -362,14 +406,21 @@ void RunTop16019(TString filename,
 	      std::vector<float> jerSmear=getJetResolutionScales(twev.j_pt[ij],twev.j_eta[ij],twev.gj_pt[ij]);
 	      twev.j_jer[ij]=(jerSmear[0]>0 ? jerSmear[1]/jerSmear[0] : 1.0);
 	    }
-	  twev.j_jes[ij]=1.0;
-	  if(jecUnc)
+	  twev.j_jes.push_back( std::vector<Float_t>() ); //[ij].clear();
+	  if(jecUncs.size())
 	    {
-	      jecUnc->setJetEta(twev.j_eta[ij]);
-	      jecUnc->setJetPt(twev.j_pt[ij]);
-	      twev.j_jes[ij]=jecUnc->getUncertainty(true);
-	    }
-	  
+              for(size_t iju=0; iju<jecUncs.size(); iju++)
+                {
+                  jecUncs[iju]->setJetEta(twev.j_eta[ij]);
+                  jecUncs[iju]->setJetPt(twev.j_pt[ij]);
+                  Float_t unc=jecUncs[iju]->getUncertainty(true);
+                  if(jecUncSrcs[iju]=="FlavorPureGluon" && abs(twev.gj_flav[ij])!=21) unc=0;
+                  if(jecUncSrcs[iju]=="FlavorPureQuark" && (abs(twev.gj_flav[ij])>4 || abs(twev.gj_flav[ij])==0)) unc=0;
+                  if(jecUncSrcs[iju]=="FlavorPureCharm" && abs(twev.gj_flav[ij])!=4) unc=0;
+                  if(jecUncSrcs[iju]=="FlavorPureBottom"&& abs(twev.gj_flav[ij])!=5) unc=0;
+                  twev.j_jes[ij].push_back( unc );
+                }
+            }
 	}
 
       allPlots["nbtags_"+chTag]->Fill(nbtags,wgt);
@@ -377,19 +428,21 @@ void RunTop16019(TString filename,
       if(chTag=="MM") twev.cat=13*13;
       if(chTag=="EM") twev.cat=11*13;
       if(chTag=="EE") twev.cat=11*11;
-      twev.nw=9;
+      twev.nw=10;
       twev.weight[0]=wgt;
       twev.weight[1]=wgt*puWgtUp/puWgt;
       twev.weight[2]=wgt*puWgtDn/puWgt;
       twev.weight[3]=wgt*(triggerCorrWgt.first+triggerCorrWgt.second)/triggerCorrWgt.first;
       twev.weight[4]=wgt*(triggerCorrWgt.first-triggerCorrWgt.second)/triggerCorrWgt.first;
-      twev.weight[5]=wgt*(lepSelCorrWgt.first+lepSelCorrWgt.second)/lepSelCorrWgt.first;
-      twev.weight[6]=wgt*(lepSelCorrWgt.first-lepSelCorrWgt.second)/lepSelCorrWgt.first;
-      twev.weight[7]=wgt*topptsf;
+      twev.weight[5]=wgt*(eSelCorrWgt.first+eSelCorrWgt.second)/eSelCorrWgt.first;
+      twev.weight[6]=wgt*(eSelCorrWgt.first-eSelCorrWgt.second)/eSelCorrWgt.first;
+      twev.weight[7]=wgt*(mSelCorrWgt.first+mSelCorrWgt.second)/mSelCorrWgt.first;
+      twev.weight[8]=wgt*(mSelCorrWgt.first-mSelCorrWgt.second)/mSelCorrWgt.first;
+      twev.weight[9]=wgt*topptsf;
       if(ev.g_nw>0)
 	{
 	  twev.nw+=ev.g_nw;
-	  for(int iw=1; iw<=ev.g_nw; iw++) twev.weight[7+iw]=wgt*ev.g_w[iw]/ev.g_w[0];
+	  for(int iw=1; iw<=ev.g_nw; iw++) twev.weight[9+iw]=wgt*ev.g_w[iw]/ev.g_w[0];
 	}
       twev.nt=0;
       twev.met_pt=ev.met_pt[0];
@@ -477,7 +530,8 @@ void createTopWidthEventTree(TTree *t,TopWidthEvent_t &twev)
   t->Branch("j_phi", twev.j_phi , "j_phi[nj]/F");
   t->Branch("j_m",   twev.j_m ,   "j_m[nj]/F");
   t->Branch("j_jer",   twev.j_jer ,   "j_jer[nj]/F");
-  t->Branch("j_jes",   twev.j_jes ,   "j_jes[nj]/F");
+  //for(size_t i=0; i<50; i++) twev.j_jes.push_back( std::vector<Float_t>() );
+  t->Branch("j_jes",   &twev.j_jes);
   t->Branch("j_btag",   twev.j_btag ,   "j_btag[nj]/I");
   t->Branch("gj_pt",  twev.gj_pt ,  "gj_pt[nj]/F");
   t->Branch("gj_eta", twev.gj_eta , "gj_eta[nj]/F");
@@ -502,7 +556,7 @@ void resetTopWidthEvent(TopWidthEvent_t &twev)
   twev.met_pt=0; twev.met_phi=0;
   for(int i=0; i<10; i++) twev.weight[i]=0;
   for(int i=0; i<2; i++) { twev.l_pt[i]=0;   twev.l_eta[i]=0;   twev.l_phi[i]=0;   twev.l_m[i]=0; twev.l_id[i]=0; twev.l_les[i]=0; twev.gl_pt[i]=0;   twev.gl_eta[i]=0;   twev.gl_phi[i]=0;   twev.gl_m[i]=0; twev.gl_id[i]=0; }
-  for(int i=0; i<50; i++) { twev.j_pt[i]=0;   twev.j_eta[i]=0;   twev.j_phi[i]=0;   twev.j_m[i]=0; twev.j_btag[i]=0; twev.j_jer[i]=0; twev.j_jes[i]=0; twev.gj_pt[i]=0;   twev.gj_eta[i]=0;   twev.gj_phi[i]=0;   twev.gj_m[i]=0; twev.gj_flav[i]=0; twev.gj_hadflav[i]=0; } 
+  for(int i=0; i<50; i++) { twev.j_pt[i]=0;   twev.j_eta[i]=0;   twev.j_phi[i]=0;   twev.j_m[i]=0; twev.j_btag[i]=0; twev.j_jer[i]=0;  twev.gj_pt[i]=0;   twev.gj_eta[i]=0;   twev.gj_phi[i]=0;   twev.gj_m[i]=0; twev.gj_flav[i]=0; twev.gj_hadflav[i]=0; }  twev.j_jes.clear(); //[i].clear(); } 
   for(int i=0; i<10; i++) { twev.t_pt[i]=0;   twev.t_eta[i]=0;   twev.t_phi[i]=0;   twev.t_m[i]=0; twev.t_id[i]=0; }
 }
 

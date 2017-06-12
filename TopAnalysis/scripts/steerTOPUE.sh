@@ -21,7 +21,7 @@ whoami=`whoami`
 myletter=${whoami:0:1}
 eosdir=/store/cmst3/group/top/ReReco2016/${githash}
 summaryeosdir=/store/cmst3/group/top/TopUE-v2
-outdir=./UEanalysis/
+outdir=${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/UEanalysis/
 wwwdir=~/www/TopUE_ReReco2016/
 
 
@@ -30,19 +30,20 @@ NC='\e[0m'
 case $WHAT in
 
     TESTSEL )
-	file=root://eoscms//eos/cms/store/cmst3/group/top/ReReco2016/b312177/MC13TeV_TTJets/MergedMiniEvents_0_ext0.root
+	#file=root://eoscms//eos/cms/store/cmst3/group/top/ReReco2016/b312177/MC13TeV_TTJets/MergedMiniEvents_0_ext0.root
+        file==root://eoscms//eos/cms/store/cmst3/group/top/ReReco2016/b312177/MC13TeV_TTJets2l2nu_amcatnlo/MergedMiniEvents_1_ext0.root
 	#file=root://eoscms//eos/cms/store/cmst3/group/top/ReReco2016/b312177/Data13TeV_MuonEG_2016D/MergedMiniEvents_0.root
-	analysisWrapper \
-	    --in ${file} \
-	    --out ue_test.root \
-	    --era ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/era2016 \
-	    --method TOP-UE::RunTopUE \
-	    --runSysts \
-	    --ch 0;
-	python test/TopUEAnalysis/runUEanalysis.py -i ue_test.root --step 0 --ptThr 1.0,0.9 -o ./UEanalysis_test;
+	#analysisWrapper \
+	#    --in ${file} \
+	#    --out ue_test.root \
+	#    --era ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/era2016 \
+	#    --method TOP-UE::RunTopUE \
+	#    --runSysts \
+	#    --ch 0;
+	#python test/TopUEAnalysis/runUEanalysis.py -i ue_test.root --step 0 --ptThr 1.0,0.9 -o ./UEanalysis_test;
 	python test/TopUEAnalysis/runUEanalysis.py --step 1 -o ./UEanalysis_test;
 	python test/TopUEAnalysis/runUEanalysis.py -i ue_test.root      --step 2 -q local -o ./UEanalysis_test;
-	python test/TopUEAnalysis/UETools.py -i ./UEanalysis_test/analysiscfg.pck --in UEanalysis_test/analysis_0_0/Chunks/ue_test.root -o UEanalysis_test/
+	python test/TopUEAnalysis/showFastFinalDistributions.py UEanalysis_test/analysis/Chunks/ue_test.root --cfg ./UEanalysis_test/analysisaxiscfg.pck
 	;;
 
     FULLSEL )
@@ -72,13 +73,14 @@ case $WHAT in
 	eosprefix=root://eoscms//eos/cms
 	echo "Computing resolutions"
 	base="${eosprefix}/${summaryeosdir}/Chunks/MC13TeV_TTJets"
-	#python test/TopUEAnalysis/runUEanalysis.py -i ${base}_0.root,${base}_1.root,${base}_2.root,${base}_3.root,${base}_4.root --step 0 --ptThr 0.9,0.9;
+	#python test/TopUEAnalysis/runUEanalysis.py -i ${base}_0.root,${base}_1.root,${base}_2.root,${base}_3.root,${base}_4.root --step 0 --ptThr 0.9,0.9 -o ${outdir};
 	
 	echo "Defining analysis configuration"
-	python test/TopUEAnalysis/runUEanalysis.py --step 1;
+	#python test/TopUEAnalysis/runUEanalysis.py --step 1 -o ${outdir};
 	
 	echo "Filling the histograms"
-	#python test/TopUEAnalysis/runUEanalysis.py -i ${summaryeosdir}/Chunks      --step 2 -q ${queue};
+        #queue=local
+	python test/TopUEAnalysis/runUEanalysis.py -i ${summaryeosdir}/Chunks      --step 2 -q ${queue} -o ${outdir}; # --only TTJets;
 	;;
     MERGEANA )
 	./scripts/mergeOutputs.py UEanalysis/analysis True 
@@ -86,9 +88,10 @@ case $WHAT in
     PLOTANA )
 	commonOpts="-l ${lumi} --saveLog --mcUnc ${lumiUnc} --procSF DY:${outdir}/plots/.dyscalefactors.pck";
         filter="--only None_inc,ptttbar_inc,nj_inc"
-	python scripts/plotter.py -i UEanalysis/analysis -j data/era2016/samples.json      ${commonOpts} ${filter}
-	python scripts/plotter.py -i UEanalysis/analysis -j data/era2016/syst_samples.json ${commonOpts} ${filter} --silent --outName syst_plotter.root;	
-	#python test/TopUEAnalysis/compareAtRecoLevel.py UEanalysis/analysis/plots/plotter.root UEanalysis/analysis/plots/syst_plotter.root
+	#python scripts/plotter.py -i UEanalysis/analysis -j data/era2016/samples.json      ${commonOpts} ${filter}
+	#python scripts/plotter.py -i UEanalysis/analysis -j data/era2016/syst_samples.json ${commonOpts} ${filter} --silent --outName syst_plotter.root;	
+
+	python test/TopUEAnalysis/showFinalRecoDistribution.py UEanalysis/analysis/plots/plotter.root UEanalysis/analysis/plots/syst_plotter.root
 	#python test/TopUEAnalysis/UETools.py -o UEanalysis/analysis/plots/
 	;;
     WWWANA )

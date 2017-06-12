@@ -37,6 +37,7 @@ class Plot(object):
         self.cmsLabel='#bf{CMS} #it{preliminary}'
         self.com=com
         self.wideCanvas = True if 'ratevsrun' in self.name else False
+        self.doPoissonErrorBars=True
         self.mc = OrderedDict()
         self.mcsyst = {}
         self.spimpose={}
@@ -47,7 +48,7 @@ class Plot(object):
         self.savelog = False
         self.doChi2 = False
         self.ratiorange = (0.4,1.6)
-        self.frameMin=0.1
+        self.frameMin=0.01
         self.frameMax=1.45
         self.mcUnc=0
 
@@ -117,7 +118,10 @@ class Plot(object):
                 self._garbageList.append(h)
 
     def finalize(self):
-        self.data = convertToPoissonErrorGr(self.dataH)
+        if self.doPoissonErrorBars:
+            self.data = convertToPoissonErrorGr(self.dataH)
+        else:
+            self.data=ROOT.TGraphErrors(self.dataH)
 
     def appendTo(self,outUrl):
         outF = ROOT.TFile.Open(outUrl,'UPDATE')
@@ -191,7 +195,7 @@ class Plot(object):
         if noRatio: inix=0.6
         if noStack:
             inix,dx=0.6,0.35
-            iniy,dy,ndy=0.95,0.02,len(self.mc)
+            iniy,dy,ndy=0.85,0.03,len(self.mc)
 
         leg = ROOT.TLegend(inix, iniy-dy*ndy, inix+dx, iniy+0.06)
 
@@ -244,6 +248,7 @@ class Plot(object):
                 totalMC = self.mc[h].Clone('totalmc')
                 self._garbageList.append(totalMC)
                 totalMC.SetDirectory(0)
+            nominalTTbar=None
             if h=='t#bar{t}':
                 nominalTTbar = self.mc[h].Clone('nomttbar')
                 self._garbageList.append(nominalTTbar)
@@ -308,7 +313,10 @@ class Plot(object):
         frame = totalMC.Clone('frame') if totalMC is not None else self.dataH.Clone('frame')
         frame.Reset('ICE')
         if noStack:
-            maxY=stack.GetStack().At(0).GetMaximum()/1.25
+            try:
+                maxY=self.dataH.GetMaximum()*1.25 
+            except:
+                maxY=stack.GetStack().At(0).GetMaximum()/1.25
         elif totalMC:
             maxY = totalMC.GetMaximum()
             if self.dataH:
@@ -365,14 +373,14 @@ class Plot(object):
         txt.SetTextSize(0.05)
         txt.SetTextAlign(12)
         iniy=0.88 if self.wideCanvas else 0.88
-        inix=0.12 if noStack else 0.18
+        inix=0.15 if noStack else 0.18
         if (totalMC is not None and totalMC.GetMaximumBin() > totalMC.GetNbinsX()/2.):
             inix = 0.64
         txt.DrawLatex(inix,iniy,self.cmsLabel)
         if lumi<100:
-            txt.DrawLatex(0.66,0.97,'#scale[0.8]{%3.1f pb^{-1} (%s)}' % (lumi,self.com) )
+            txt.DrawLatex(0.7,0.97,'#scale[0.8]{%3.1f pb^{-1} (%s)}' % (lumi,self.com) )
         else:
-            txt.DrawLatex(0.66,0.97,'#scale[0.8]{%3.1f fb^{-1} (%s)}' % (lumi/1000.,self.com) )
+            txt.DrawLatex(0.7,0.97,'#scale[0.8]{%3.1f fb^{-1} (%s)}' % (lumi/1000.,self.com) )
         try:
             extraCtr=1
             for extra in extraText.split('\\'):
@@ -384,7 +392,7 @@ class Plot(object):
 
         #holds the ratio
         c.cd()
-        if len(self.mc)>0 and self.dataH and not noRatio:
+        if not noRatio and self.dataH and len(self.mc)>0 :
             p2 = ROOT.TPad('p2','p2',0.0,0.0,1.0,0.2)
             p2.Draw()
             p2.SetBottomMargin(0.4)
@@ -408,40 +416,65 @@ class Plot(object):
             ratioframe.GetXaxis().SetTitleOffset(0.8)
             ratioframe.SetFillStyle(3254)
             ratioframe.SetFillColor(ROOT.TColor.GetColor('#99d8c9'))
-            if (len(self.mcsyst)>0):
-                ratioframeshape=ratioframe.Clone('ratioframeshape')
-                self._garbageList.append(ratioframeshape)
-                ratioframeshape.SetFillColor(ROOT.TColor.GetColor('#d73027'))
-            totalMCnoUnc=totalMC.Clone('totalMCnounc')
-            self._garbageList.append(totalMCnoUnc)
-            for xbin in xrange(1,totalMC.GetNbinsX()+1):
-                ratioframe.SetBinContent(xbin,1)
-                val=totalMC.GetBinContent(xbin)
-                totalMCnoUnc.SetBinError(xbin,0.)
-                if val==0 : continue
+
+
+            #in case we didn't stack compare each distribution
+            ratioGrs=[]
+            if noStack:
+
+                ratioframe.Draw('e2')
+
+                for title in self.mc:
+                    ratio=self.dataH.Clone('ratio')
+                    ratio.SetDirectory(0)
+                    self._garbageList.append(ratio)
+                    ratio.Divide(self.mc[title])
+                    ratioGrs.append( ROOT.TGraphAsymmErrors(ratio) )
+                    ratioGrs[-1].SetMarkerStyle(self.data.GetMarkerStyle())
+                    ratioGrs[-1].SetMarkerSize(self.data.GetMarkerSize())
+                    ci=self.mc[title].GetLineColor()
+                    ratioGrs[-1].SetMarkerColor(ci)
+                    ratioGrs[-1].SetLineColor(ci)
+                    ratioGrs[-1].SetLineWidth(self.data.GetLineWidth())
+                    ratioGrs[-1].Draw('p')
+                    
+            #in case we stacked compare only the total
+            else:
                 if (len(self.mcsyst)>0):
-                    totalUnc=ROOT.TMath.Sqrt((totalMCUnc.GetBinError(xbin)/val)**2+self.mcUnc**2)
-                    ratioframeshape.SetBinContent(xbin,1)
-                    totalUncShape=ROOT.TMath.Sqrt((totalMCUncShape.GetBinError(xbin)/val)**2+self.mcUnc**2)
-                    ratioframeshape.SetBinError(xbin,totalUncShape)
-                else: totalUnc=ROOT.TMath.Sqrt((totalMC.GetBinError(xbin)/val)**2+self.mcUnc**2)
-                ratioframe.SetBinError(xbin,totalUnc)
-            ratioframe.Draw('e2')
-            if (len(self.mcsyst)>0): ratioframeshape.Draw('e2 same')
-            try:
-                ratio=self.dataH.Clone('ratio')
-                ratio.SetDirectory(0)
-                self._garbageList.append(ratio)
-                ratio.Divide(totalMCnoUnc)
-                gr=ROOT.TGraphAsymmErrors(ratio)
-                gr.SetMarkerStyle(self.data.GetMarkerStyle())
-                gr.SetMarkerSize(self.data.GetMarkerSize())
-                gr.SetMarkerColor(self.data.GetMarkerColor())
-                gr.SetLineColor(self.data.GetLineColor())
-                gr.SetLineWidth(self.data.GetLineWidth())
-                gr.Draw('p')
-            except:
-                pass
+                    ratioframeshape=ratioframe.Clone('ratioframeshape')
+                    self._garbageList.append(ratioframeshape)
+                    ratioframeshape.SetFillColor(ROOT.TColor.GetColor('#d73027'))            
+                
+                totalMCnoUnc=totalMC.Clone('totalMCnounc')
+                self._garbageList.append(totalMCnoUnc)
+                for xbin in xrange(1,totalMC.GetNbinsX()+1):
+                    ratioframe.SetBinContent(xbin,1)
+                    val=totalMC.GetBinContent(xbin)
+                    totalMCnoUnc.SetBinError(xbin,0.)
+                    if val==0 : continue
+                    if (len(self.mcsyst)>0):
+                        totalUnc=ROOT.TMath.Sqrt((totalMCUnc.GetBinError(xbin)/val)**2+self.mcUnc**2)
+                        ratioframeshape.SetBinContent(xbin,1)
+                        totalUncShape=ROOT.TMath.Sqrt((totalMCUncShape.GetBinError(xbin)/val)**2+self.mcUnc**2)
+                        ratioframeshape.SetBinError(xbin,totalUncShape)
+                    else: totalUnc=ROOT.TMath.Sqrt((totalMC.GetBinError(xbin)/val)**2+self.mcUnc**2)
+                    ratioframe.SetBinError(xbin,totalUnc)
+                ratioframe.Draw('e2')
+                if (len(self.mcsyst)>0): ratioframeshape.Draw('e2 same')
+                try:
+                    ratio=self.dataH.Clone('ratio')
+                    ratio.SetDirectory(0)
+                    self._garbageList.append(ratio)
+                    ratio.Divide(totalMCnoUnc)
+                    gr=ROOT.TGraphAsymmErrors(ratio)
+                    gr.SetMarkerStyle(self.data.GetMarkerStyle())
+                    gr.SetMarkerSize(self.data.GetMarkerSize())
+                    gr.SetMarkerColor(self.data.GetMarkerColor())
+                    gr.SetLineColor(self.data.GetLineColor())
+                    gr.SetLineWidth(self.data.GetLineWidth())
+                    gr.Draw('p')
+                except:
+                    pass
 
         #all done
         if p1: p1.RedrawAxis()

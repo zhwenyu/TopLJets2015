@@ -57,10 +57,10 @@ def main():
     parser.add_option(      '--charge',      dest='charge',      help='charge  [%default]',                                     default=0,          type=int)
     parser.add_option(      '--era',         dest='era',         help='era to use for corrections/uncertainties  [%default]',   default='era2016',       type='string')
     parser.add_option(      '--tag',         dest='tag',         help='normalize from this tag  [%default]',                    default=None,       type='string')
-    parser.add_option('-q', '--queue',       dest='queue',       help='submit to this queue  [%default]',                       default='local',    type='string')
-    parser.add_option('-n', '--njobs',       dest='njobs',       help='# jobs to run in parallel  [%default]',                                default=0,    type='int')
-    parser.add_option(      '--skipexisting',dest='skipexisting',help='skip jobs with existing output files  [%default]',                            default=False,      action='store_true')
-    parser.add_option(      '--exactonly',   dest='exactonly',   help='match only exact sample tags to process  [%default]',                            default=False,      action='store_true')
+    parser.add_option('-q', '--queue',       dest='queue',       help='if not local send to batch with condor  [%default]',     default='local',    type='string')    
+    parser.add_option('-n', '--njobs',       dest='njobs',       help='# jobs to run in parallel  [%default]',                  default=0,    type='int')
+    parser.add_option(      '--skipexisting',dest='skipexisting',help='skip jobs with existing output files  [%default]',       default=False,      action='store_true')
+    parser.add_option(      '--exactonly',   dest='exactonly',   help='match only exact sample tags to process  [%default]',    default=False,      action='store_true')
     parser.add_option(      '--outputonly',        dest='outputonly',        help='filter job submission for a csv list of output files  [%default]',             default=None,       type='string')
     (opt, args) = parser.parse_args()
 
@@ -177,47 +177,58 @@ def main():
             pool = Pool(opt.njobs)
             pool.map(RunMethodPacked, task_list)
     else:
-        print 'launching %d tasks to submit to the %s queue'%(len(task_list),opt.queue)        
-
-        FarmDirectory                      = opt.output+"/FARM"
-        if '/store' in FarmDirectory : FarmDirectory = './FARM%s'%os.path.basename(opt.output)
-        os.system('mkdir -p %s'%FarmDirectory)
-
-        jobNb=0
-        for method,inF,outF,channel,charge,flav,runSysts,systVar,era,tag,debug in task_list:
-            jobNb+=1
-            cfgfile='%s/job_%s.sh'%(FarmDirectory,os.path.splitext(os.path.basename(outF))[0])
-            logfile='%s/job_%s.log'%(FarmDirectory,os.path.splitext(os.path.basename(outF))[0])
-            crashfile='%s/job_%s.log'%(FarmDirectory,os.path.splitext(os.path.basename(outF))[0])
-            cfg=open(cfgfile,'w')
-            cfg.write('WORKDIR=`pwd`\n')
-            cfg.write('echo "Working directory is ${WORKDIR}"\n')
-            cfg.write('cd %s\n'%cmsswBase)
-            cfg.write('eval `scram r -sh`\n')
-            cfg.write('cd ${WORKDIR}\n')
-            localOutF=os.path.basename(outF)
-            runOpts='-i %s -o ${WORKDIR}/%s --charge %d --ch %d --era %s --tag %s --flav %d --method %s --systVar %s'\
-                    %(inF, localOutF, charge, channel, era, tag, flav, method, systVar)
-            if runSysts : runOpts += ' --runSysts'
-            if debug :    runOpts += ' --debug'
-            cfg.write('python %s/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py %s &> run.log\n'%(cmsswBase,runOpts))
-            if '/store' in outF:
-                cfg.write('xrdcp ${WORKDIR}/%s root://eoscms//eos/cms/%s\n'%(localOutF,outF))
-                cfg.write('rm ${WORKDIR}/%s'%localOutF)
-            elif outF!=localOutF:
-                cfg.write('if grep -q "There was a crash" ${WORKDIR}/run.log; then')
-                cfg.write('  mv -v ${WORKDIR}/run.log %s\n'%(logfile+'.crash'))
-                cfg.write('else')
-                cfg.write('  mv -v ${WORKDIR}/%s %s\n'%(localOutF,outF))
-                cfg.write('  mv -v ${WORKDIR}/run.log %s\n'%(logfile))
-                cfg.write('fi')
-            cfg.close()
-            os.system('chmod u+x %s'%cfgfile)
-            print 'Submitting job %d/%d'%(jobNb, len(task_list))
-            os.system('bsub -q %s %s -R "pool>30000"'%(opt.queue,
-                                                       os.path.abspath(cfgfile)) )
         
+        FarmDirectory = '%s/FARM%s'%(cmsswBase,os.path.basename(opt.output))
+        os.system('mkdir -p %s'%FarmDirectory)
+        
+        print 'Preparing %d tasks to submit to the batch'%len(task_list)
+        print 'Executables and condor wrapper are stored in %s'%FarmDirectory
 
+        with open ('%s/condor.sub'%FarmDirectory,'w') as condor:
+
+            condor.write('executable = {0}/$(cfgFile).sh\n'.format(FarmDirectory))
+            condor.write('output     = {0}/output_$(cfgFile).out\n'.format(FarmDirectory))
+            condor.write('error      = {0}/output_$(cfgFile).err\n'.format(FarmDirectory))
+
+            jobNb=0
+            for method,inF,outF,channel,charge,flav,runSysts,systVar,era,tag,debug in task_list:
+
+                jobNb+=1
+                cfgFile='%s'%(os.path.splitext(os.path.basename(outF))[0])
+
+                condor.write('cfgFile=%s\n'%cfgFile)
+                condor.write('queue 1\n')
+                
+                with open('%s/%s.sh'%(FarmDirectory,cfgFile),'w') as cfg:
+
+                    cfg.write('#!/bin/bash\n')
+                    cfg.write('WORKDIR=`pwd`\n')
+                    cfg.write('echo "Working directory is ${WORKDIR}"\n')
+                    cfg.write('cd %s\n'%cmsswBase)
+                    cfg.write('eval `scram r -sh`\n')
+                    cfg.write('cd ${WORKDIR}\n')
+                    localOutF=os.path.basename(outF)
+                    runOpts='-i %s -o ${WORKDIR}/%s --charge %d --ch %d --era %s --tag %s --flav %d --method %s --systVar %s'\
+                        %(inF, localOutF, charge, channel, era, tag, flav, method, systVar)
+                    if runSysts : runOpts += ' --runSysts'
+                    if debug :    runOpts += ' --debug'
+                    cfg.write('python %s/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py %s\n'%(cmsswBase,runOpts))
+                    if '/store' in outF:
+                        cfg.write('xrdcp ${WORKDIR}/%s root://eoscms//eos/cms/%s\n'%(localOutF,outF))
+                        cfg.write('rm ${WORKDIR}/%s'%localOutF)
+                    elif outF!=localOutF:
+                        cfg.write('if grep -q "There was a crash" ${WORKDIR}/run.log; then')
+                        cfg.write('  mv -v ${WORKDIR}/run.log %s\n'%(logfile+'.crash'))
+                        cfg.write('else')
+                        cfg.write('  mv -v ${WORKDIR}/%s %s\n'%(localOutF,outF))
+                        cfg.write('  mv -v ${WORKDIR}/run.log %s\n'%(logfile))
+                        cfg.write('fi')
+
+                os.system('chmod u+x %s/%s.sh'%(FarmDirectory,cfgFile))
+
+        print 'Submitting jobs to condor'
+        os.system('condor_submit %s/condor.sub'%FarmDirectory)
+        
 
 """
 for execution from another script

@@ -37,12 +37,12 @@ void RunTop16023(TString filename,
 		     TH1F *normH, 
 		     Bool_t runSysts,
 		     TString era);
-void RunToppPb(TString filename,
-	       TString outname,
-	       Int_t channelSelection, 
-	       Int_t chargeSelection, 
-	       TH1F *normH, 
-	       Bool_t runSysts,
-	       TString era);
+void RunHin17002(TString filename,
+                 TString outname,
+                 Int_t channelSelection, 
+                 Int_t chargeSelection, 
+                 TH1F *normH, 
+                 Bool_t runSysts,
+                 TString era);
 
 #endif

@@ -91,46 +91,67 @@ for urltag in files:
     effGrs[tag]=getEffPlotsFrom(url,tag,outDir)
 
 c=ROOT.TCanvas('c','c',500,500)
+c.SetTopMargin(0.05)
+c.SetRightMargin(0.05)
+
 for item in effGrs['Data']:
 
     grName=''.join(item)
 
     grData=effGrs['Data'][item]
-    grMC=effGrs['MC'][item]
-    sf,envGr,finalenvGr=getScaleFactor(grMC,grData)
-    sf.SetLineColor(ROOT.kRed)
-    sf.SetMarkerStyle(21)
-    sf.SetMarkerColor(ROOT.kRed)
-    sf.SetFillStyle(0)
-    sf.GetYaxis().SetTitle('Efficiency or scale factor')
-    if '_pt' in grName:
-        sf.GetXaxis().SetTitle('Transverse momentum [GeV]')
-    else:
-        sf.GetXaxis().SetTitle('Pseudo-rapidity')
-    envGr.SetFillStyle(3244)
-    envGr.SetFillColor(ROOT.kRed-9)
-    envGr.SetLineColor(ROOT.kRed-9)
-    finalenvGr.SetFillStyle(3004)
-    finalenvGr.SetFillColor(ROOT.kGray+3)
-    finalenvGr.SetLineColor(ROOT.kGray+3)
     grData.SetMarkerStyle(20)
     grData.SetFillStyle(0)
-    grMC.SetMarkerStyle(24)
-    grMC.SetMarkerColor(ROOT.kGray)
-    grMC.SetLineColor(ROOT.kGray)
-    grMC.SetFillStyle(0)
+
+    grMCs=[]
+    sf=[]
+    for tag in effGrs:
+        if tag=='Data': continue
+        icount=len(sf)
+
+        grMCs.append( effGrs[tag][item] )
+        grMCs[-1].SetMarkerStyle(21+icount)
+        grMCs[-1].SetMarkerColor(ROOT.kGray+1-icount)
+        grMCs[-1].SetLineColor(ROOT.kGray+1-icount)
+        grMCs[-1].SetFillStyle(0)
+        grMCs[-1].SetTitle(tag)
+        sf.append( getScaleFactor(grMCs[-1],grData) )
+        sf[-1][0].SetLineColor(ROOT.kRed+icount)
+        sf[-1][0].SetMarkerStyle(21+icount)
+        sf[-1][0].SetMarkerColor(ROOT.kRed+icount)
+        sf[-1][0].SetFillStyle(0)
+        sf[-1][0].GetYaxis().SetTitle('Efficiency or scale factor')
+        sf[-1][0].SetTitle('Data/%s'%tag)
+        if '_pt' in grName:
+            sf[-1][0].GetXaxis().SetTitle('Transverse momentum [GeV]')
+        else:
+            sf[-1][0].GetXaxis().SetTitle('Pseudo-rapidity')
+        sf[-1][1].SetFillStyle(3244+1-icount)
+        sf[-1][1].SetFillColor(ROOT.kRed-9+icount)
+        sf[-1][1].SetLineColor(ROOT.kRed-9+icount)
+        sf[-1][2].SetFillStyle(3004+1-icount)
+        sf[-1][2].SetFillColor(ROOT.kGray+2-icount)
+        sf[-1][2].SetLineColor(ROOT.kGray+2-icount)
+        sf[-1][2].SetTitle('Data/%s envelope'%tag)
+    
     
     c.SetGridx()
     c.SetGridy()
-
-    sf.Draw('ap')
-    sf.GetYaxis().SetRangeUser(0.7,1.2)
-    grMC.Draw('p')
+    drawOpt='ap'
+    for i in xrange(0,len(sf)):
+        sf[i][0].Draw(drawOpt)        
+        sf[i][0].GetYaxis().SetRangeUser(0.6,1.1)
+        sf[i][0].GetYaxis().SetTitleOffset(1.1)
+        drawOpt='p'
+        grMCs[i].Draw(drawOpt)
+        #if i==len(sf)-1: 
+        #    sf[i][2].Draw('f')
     grData.Draw('p')    
-    sf.SetTitle('Data/MC')
-    c.BuildLegend(0.4,0.2,0.8,0.4,'#bf{CMS} #it{preliminary} #sqrt{s_{NN}}=8.16 TeV')
-    finalenvGr.Draw('f')
-    envGr.Draw('f')
+
+    leg=c.BuildLegend(0.4,0.2,0.8,0.5,'#bf{CMS} #it{preliminary} #sqrt{s_{NN}}=8.16 TeV')
+    leg.SetBorderSize(0)
+    leg.SetFillStyle(0)
+    leg.SetTextFont(42)
+    leg.SetTextSize(0.04)
     c.Modified()
     c.Update()
     for ext in ['png','pdf']:

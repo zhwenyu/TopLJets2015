@@ -514,6 +514,8 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
 
       //apply correction
       float pt=mu.pt();
+      if(pt<2) continue; //no need to care about very low pt muons here... (corrections will tend to be meaningless)
+
       float eta = mu.eta();
       float phi = mu.phi();
       float ptUnc = mu.bestTrack()->ptError();
@@ -533,21 +535,29 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
 	    {
 	      corrApplied=false;
 	    }
-	  
-	  if(corrApplied)
+          
+          if(pt<0.1 || isnan(pt))
+            {
+              cout << "After correction this muon pt is " << pt << " !!" << endl
+                   << "Before correction this muon pt was " << mu.pt() << " !!" << endl
+                   << "...will be skipped" << endl;
+              continue;
+            }
+          
+          if(corrApplied)
 	    {
 	      int n=muonCor_->getN();
 	      float uncUp(0),uncDn(0);
 	      for(int i=0; i<n; i++)
 		{
 		  muonCor_->vary(i,+1);
-		  uncUp += pow(muonCor_->getCorrectedPt(40,0.0,0.0,1)-pt,2);
+		  uncUp += pow(muonCor_->getCorrectedPt(mu.pt(),eta,phi,mu.charge())-pt,2);
 		  muonCor_->vary(i,-1);
-		  uncDn += pow(muonCor_->getCorrectedPt(40,0.0,0.0,1)-pt,2);
+		  uncDn += pow(muonCor_->getCorrectedPt(mu.pt(),eta,phi,mu.charge())-pt,2);
 		}
 	      muonCor_->reset();
 	      muonCor_->varyClosure(+1);
-	      float vClose=muonCor_->getCorrectedPt(40,0.0,0.0,1);
+	      float vClose=muonCor_->getCorrectedPt(mu.pt(),eta,phi,mu.charge());
 	      uncUp += pow(vClose-pt,2);
 	      uncDn += pow(vClose-pt,2);
 	      ptUnc = 0.5*(TMath::Sqrt(uncUp)+TMath::Sqrt(uncDn));

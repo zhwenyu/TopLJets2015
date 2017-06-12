@@ -22,13 +22,13 @@
 using namespace std;
 
 //
-void RunToppPb(TString inFileName,
-	       TString outFileName,
-	       Int_t channelSelection,
-	       Int_t chargeSelection,
-	       TH1F *normH,
-	       Bool_t runSysts,
-	       TString era)
+void RunHin17002(TString inFileName,
+                 TString outFileName,
+                 Int_t channelSelection,
+                 Int_t chargeSelection,
+                 TH1F *normH,
+                 Bool_t runSysts,
+                 TString era)
 {		 
   
   Float_t JETPTTHRESHOLD=25;
@@ -111,6 +111,9 @@ void RunToppPb(TString inFileName,
   histos["leta"] = new TH1F("leta",";Pseudo-rapidity;Events",20.,0.,2.1);
   histos["mt"]   = new TH1F("mt",";Transverse Mass [GeV];Events" ,20,0.,200.);
   histos["metpt"]= new TH1F("metpt",";Missing transverse energy [GeV];Events" ,20,0.,200.);
+  histos["drlj"] = new TH1F("drlj",";min#DeltaR(l,j) [GeV];Events" ,63,0.,6.3);
+  histos["drlb"] = new TH1F("drlb",";min#DeltaR(l,j) [GeV];Events" ,63,0.,6.3);
+  histos["ttevttype"] = new TH1F("ttevttype",";t#bar{t} event type;Events" ,9,0.,9.);
 
    //electron selection control plots
   for(int ireg=0; ireg<2; ireg++)
@@ -153,7 +156,7 @@ void RunToppPb(TString inFileName,
       histos["mjj_"+pf]    = new TH1F("mjj_"+pf,";Mass(j,j') [GeV];Events" ,20,0.,400.);
       histos["rankedmjj_"+pf]    = new TH1F("rankedmjj_"+pf,";Mass(j,j') [GeV];Events" ,20,0.,400.);
       histos["rankedq70mjj_"+pf]    = new TH1F("rankedq70mjj_"+pf,";Mass(j,j') [GeV];Events" ,20,0.,400.);
-      histos["drjj_"+pf]    = new TH1F("drjj_"+pf,";min#DeltaR(j,j') [GeV];Events" ,12,0.,6.3);
+      histos["drjj_"+pf]    = new TH1F("drjj_"+pf,";min#DeltaR(j,j') [GeV];Events" ,12,0.,6.3);      
       histos["ptjj_"+pf]    = new TH1F("ptjj_"+pf,";p_{T}(j,j') [GeV];Events" ,20,0.,300.);
       histos["etajj_"+pf]    = new TH1F("etajj_"+pf,";#eta(j,j');Events" ,10,-3.,3.);
       histos["mlb_"+pf]    = new TH1F("mlb_"+pf,";Mass(l,b) [GeV];Events" ,20,0.,300.);
@@ -560,6 +563,7 @@ void RunToppPb(TString inFileName,
 
 	//assign an event weight
 	float evWeight(1.0);
+        float ttevtype(0);
 	if(isMC)
 	  {
 	    histos["gencounter"]->Fill(1);
@@ -585,7 +589,8 @@ void RunToppPb(TString inFileName,
                           ljev.gp_eta[ljev.ngp]=p4.Eta();
                           ljev.gp_phi[ljev.ngp]=p4.Phi();
                           ljev.gp_m[ljev.ngp]=p4.M();
-                          ljev.ngp++;		    
+                          ljev.ngp++;
+                          if(abspid==11 || abspid==13) ttevtype+=1;
                         }
                       }
                     
@@ -861,9 +866,17 @@ void RunToppPb(TString inFileName,
 	  }
 	if(channelSelection==13)
 	  {
-	    if(tightMuons.size()!=1) continue; //=1 tight muon	
-	    histos["recocounter"]->Fill(3);
-	    if(looseMuons.size()+mediumElectrons.size()+vetoElectrons.size()!=0) continue; //no extra leptons
+            histos["ttevttype"]->Fill(ttevtype);
+            bool fail2ndLepton(false);
+            if(tightMuons.size()) histos["ttevttype"]->Fill(ttevtype+3);
+	    if(tightMuons.size()!=1) fail2ndLepton=true;
+	    if(!fail2ndLepton) histos["recocounter"]->Fill(3);
+	    if(looseMuons.size()+mediumElectrons.size()+vetoElectrons.size()!=0) fail2ndLepton=true;
+            if(fail2ndLepton)
+              {
+                histos["ttevttype"]->Fill(ttevtype+6);
+                continue;
+              }
 	    histos["recocounter"]->Fill(4);
 	    if(chargeSelection!=0)
 	      {
@@ -873,7 +886,7 @@ void RunToppPb(TString inFileName,
 	//electrons
 	EffCorrection_t eselSF(1.0,0.0);
 	if(channelSelection==1100)
-	  {
+	  {            
 	    if(mediumElectronsFailId.size()==0) continue;
 	     histos["recocounter"]->Fill(3);
 	    if(mediumElectrons.size()+vetoElectrons.size()+tightMuons.size()+looseMuons.size()!=0) continue;
@@ -885,9 +898,17 @@ void RunToppPb(TString inFileName,
 	  }
 	if(channelSelection==11)
 	  {
-	    if(mediumElectrons.size()!=1) continue; //=1 medium electron
-	    histos["recocounter"]->Fill(3);
-	    if(vetoElectrons.size()+tightMuons.size()+looseMuons.size()!=0) continue; //no extra leptons
+            histos["ttevttype"]->Fill(ttevtype);
+            bool fail2ndLepton(false);
+            if(mediumElectrons.size()) histos["ttevttype"]->Fill(ttevtype+3);
+            if(mediumElectrons.size()!=1) fail2ndLepton=true;
+	    if(!fail2ndLepton) histos["recocounter"]->Fill(3);
+	    if(vetoElectrons.size()+tightMuons.size()+looseMuons.size()!=0)fail2ndLepton=true;
+            if(fail2ndLepton)
+              {
+                histos["ttevttype"]->Fill(ttevtype+6);
+                continue;
+              }
 	    histos["recocounter"]->Fill(4);
 	    if(chargeSelection!=0)
 	      {
@@ -941,6 +962,9 @@ void RunToppPb(TString inFileName,
 	  {
 	    //cross clean with trigger muon
 	    TLorentzVector jp4(0,0,0,0);
+	    jp4.SetPtEtaPhiM(jtpt[jetIter],jteta[jetIter],jtphi[jetIter],jtm[jetIter]);
+
+	    Int_t jflav(abs(refparton_flavor[jetIter]));	    
 
 	    float UE_correction=0;
 	    if (jteta[jetIter]>etaMin_hiFJRho_p->at(0) && jteta[jetIter]<etaMax_hiFJRho_p->at(0))
@@ -971,9 +995,15 @@ void RunToppPb(TString inFileName,
 	    
 	    //in tracker region
 	    if(TMath::Abs(jp4.Eta())>2.4) continue;
-
+            float drlj(jp4.DeltaR(goodLeptons[0]));
+	    if(jp4.Pt()>JETPTTHRESHOLD)
+              {
+                if(jflav==5) histos["drlb"]->Fill(drlj);
+                histos["drlj"]->Fill(drlj);
+              }
+	    if(drlj<0.4) continue;
+	    
 	    //systematic variations
-	    Int_t jflav(abs(refparton_flavorForB[jetIter]));	    
 	    bool passCSVL(discr_csvV2[jetIter]>0.460), passCSVM(discr_csvV2[jetIter]>0.8),passCSVMUp(passCSVM),passCSVMDn(passCSVM);	    
 	    std::vector<float> jerSmear(3,1.0),jesScaleUnc(3,1.0);
 	    if(isMC)
