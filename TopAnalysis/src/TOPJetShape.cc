@@ -726,7 +726,7 @@ void RunTopJetShape(TString filename,
        
         
         //decide the lepton channel at particle level
-        std::vector<Particle> genVetoLeptons = selector.getGenLeptons(ev,15.,2.5);
+        std::vector<Particle> genVetoLeptons = selector.getGenLeptons(ev,15.,2.4);
         std::vector<Particle> genLeptons     = selector.getGenLeptons(ev,30.,2.1);
         TString genChTag = selector.flagGenFinalState(ev, genLeptons);
         std::vector<Jet> genJets = selector.getGenJets();

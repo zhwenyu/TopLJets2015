@@ -84,13 +84,15 @@ def main():
             if not fIn : continue
             
             if isData:
+                #if not 'SingleMuon' in tag: continue
+                if not any(x in tag for x in ['2016G', '2016H']): continue
                 h=fIn.Get(opt.obs+'_charged_'+opt.flavor+'_responsematrix_py')
                 try:
                     data.Add(h)
                 except:
                     data=h
                     data.SetDirectory(0)
-                if debug: print(tag, data.GetEntries())
+                if debug: print(tag, data.GetEntries(), data.Integral())
             
             if isBkg:
                 #if not tag in ['MC13TeV_SingleTbar_tW', 'MC13TeV_SingleT_tW', 'MC13TeV_SingleTbar_t', 'MC13TeV_SingleT_t']: continue
@@ -149,7 +151,7 @@ def main():
                     systematics[tag].SetDirectory(0)
                 if debug: print(tag, systematics[tag].GetEntries())
 
-    # TODO: put this into def to call for each systematic
+    # call unfolding
     dataUnfolded, dataFoldedBack, dataBkgSub = unfold('MC13TeV_TTJets', nominal, backgrounds, data)
     systematicUnfolded = {}
     for tag,systematic in systematics.iteritems():
@@ -158,8 +160,8 @@ def main():
     systUp=[0.]
     systDown=[0.]
     for i in range(1, dataUnfolded.GetNbinsX()+1):
-        systUp.append(0.)
-        systDown.append(0.)
+        systUp.append(dataUnfolded.GetBinError(i))
+        systDown.append(dataUnfolded.GetBinError(i))
         for tag,systematic in systematicUnfolded.iteritems():
             diff = systematic.GetBinContent(i) - dataUnfolded.GetBinContent(i)
             if (diff > 0):
@@ -170,7 +172,7 @@ def main():
     dataUnfoldedSys = dataUnfolded.Clone('dataUnfoldedSys')    
     for i in range(1, dataUnfoldedSys.GetNbinsX()+1):
         dataUnfoldedSys.SetBinContent(i, dataUnfolded.GetBinContent(i) + (systUp[i]-systDown[i])/2.)
-        dataUnfoldedSys.SetBinError(i, sqrt(dataUnfolded.GetBinError(i)**2 + ((systUp[i]+systDown[i])/2.)**2))
+        dataUnfoldedSys.SetBinError(i, (systUp[i]+systDown[i])/2.)
     
     # Plot
     ROOT.gStyle.SetOptStat(0)
@@ -178,6 +180,9 @@ def main():
     c.cd()
     
     dataUnfolded.SetTitle('')
+    dataUnfolded.SetXTitle(dataUnfolded.GetXaxis().GetTitle()[9:]+' ('+opt.flavor+')')
+    if opt.flavor == 'gluon' or opt.flavor == 'light':
+        dataUnfolded.SetXTitle(dataUnfolded.GetXaxis().GetTitle()[:-1]+'-enriched)')
     dataUnfolded.GetYaxis().SetRangeUser(0., 1.5*dataUnfolded.GetMaximum())
     dataUnfolded.SetLineColor(ROOT.kBlack)
     dataUnfolded.SetMarkerColor(ROOT.kBlack)
@@ -194,8 +199,32 @@ def main():
     nominalGen.SetLineColor(ROOT.kRed+1)
     nominalGen.SetLineColor(ROOT.kRed+1)
     nominalGen.SetMarkerColor(ROOT.kRed+1)
-    nominalGen.SetMarkerStyle(5)
+    nominalGen.SetMarkerStyle(24)
     nominalGen.Draw('SAME P X0 E1')
+    
+    FSRUpGen = normalizeAndDivideByBinWidth(systematics['MC13TeV_TTJets_fsrup'].ProjectionX("FSRUpGen"))
+    FSRUpGen.GetYaxis().SetRangeUser(0., 1.5*nominalGen.GetMaximum())
+    FSRUpGen.SetLineColor(ROOT.kRed+1)
+    FSRUpGen.SetLineColor(ROOT.kRed+1)
+    FSRUpGen.SetMarkerColor(ROOT.kRed+1)
+    FSRUpGen.SetMarkerStyle(26)
+    FSRUpGen.Draw('SAME P X0 E1')
+    
+    FSRDownGen = normalizeAndDivideByBinWidth(systematics['MC13TeV_TTJets_fsrdn'].ProjectionX("FSRDownGen"))
+    FSRDownGen.GetYaxis().SetRangeUser(0., 1.5*nominalGen.GetMaximum())
+    FSRDownGen.SetLineColor(ROOT.kRed+1)
+    FSRDownGen.SetLineColor(ROOT.kRed+1)
+    FSRDownGen.SetMarkerColor(ROOT.kRed+1)
+    FSRDownGen.SetMarkerStyle(32)
+    FSRDownGen.Draw('SAME P X0 E1')
+    
+    herwigGen = normalizeAndDivideByBinWidth(systematics['MC13TeV_TTJets_herwig'].ProjectionX("herwigGen"))
+    herwigGen.GetYaxis().SetRangeUser(0., 1.5*nominalGen.GetMaximum())
+    herwigGen.SetLineColor(ROOT.kBlue+1)
+    herwigGen.SetLineColor(ROOT.kBlue+1)
+    herwigGen.SetMarkerColor(ROOT.kBlue+1)
+    herwigGen.SetMarkerStyle(25)
+    herwigGen.Draw('SAME P X0 E1')
     
     nominalReco = normalizeAndDivideByBinWidth(nominal.ProjectionY("nominalReco"))
     nominalReco.SetLineColor(ROOT.kRed+1)
@@ -214,7 +243,8 @@ def main():
     legend = ROOT.TLegend(0.5,0.6,0.85,0.9)
     legend.SetLineWidth(0)
     legend.SetFillStyle(0)
-    legend.AddEntry(nominalGen, "MC gen t#bar{t}", "p")
+    legend.AddEntry(nominalGen, "MC gen t#bar{t} (Pythia8)", "p")
+    legend.AddEntry(herwigGen, "MC gen t#bar{t} (Herwig++)", "p")
     legend.AddEntry(nominalReco, "MC reco t#bar{t}", "l")
     legend.AddEntry(dataBkgSub, "data (bg-sub)", "l")
     legend.AddEntry(dataUnfolded, "data unfolded", "ep")
@@ -241,7 +271,9 @@ def unfold(Mtag, M, backgrounds, data):
     sigReco       = M.ProjectionY("sigReco");
     
     for i in range(dataBkgSub.GetNbinsX()+2):
-        sf = sigRecoNonGen.GetBinContent(i) / sigReco.GetBinContent(i)
+        sf = 1.
+        if sigReco.GetBinContent(i) > 0:
+          sf = sigRecoNonGen.GetBinContent(i) / sigReco.GetBinContent(i)
         dataBkgSub.SetBinContent(i, (1.-sf)*dataBkgSub.GetBinContent(i))
         dataBkgSub.SetBinError  (i, (1.-sf)*dataBkgSub.GetBinError(i))
         M.SetBinContent(0, i, 0.)

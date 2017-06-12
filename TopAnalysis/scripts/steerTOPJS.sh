@@ -115,6 +115,15 @@ case $WHAT in
         done
         ;;
         
-        
+    UNFOLDING )
+        for OBS in mult width ptd ptds ecc tau21 tau32 tau43 zg zgxdr zgdr ga_width ga_lha ga_thrust c1_02 c1_05 c1_10 c1_20 c2_02 c2_05 c2_10 c2_20 c3_02 c3_05 c3_10 c3_20
+        do
+          for FLAVOR in all bottom light gluon
+          do
+            while [ $(jobs | wc -l) -ge 4 ] ; do sleep 1 ; done
+            python test/TopJSAnalysis/doUnfolding.py --obs ${OBS} --flavor ${FLAVOR} &
+          done
+        done
+        ;;
 
 esac
