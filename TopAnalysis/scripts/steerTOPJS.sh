@@ -12,7 +12,7 @@ fi
 export LSB_JOB_REPORT_MAIL=N
 
 
-queue=8nh
+queue=longlunch
 githash=b312177
 lumi=16551
 lumiSpecs="" #--lumiSpecs EE:11391"
@@ -37,11 +37,14 @@ case $WHAT in
         python scripts/produceNormalizationCache.py -i ${eosdir} -o data/era2016/genweights.root;
         ;;
 
-    FULLSEL ) #TODO -o ${summaryeosdir} for all
+    FULLSEL )
         cd batch;
-        python ../scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} -o ${summaryeosdir} --era era2016 -m TOPJetShape::RunTopJetShape --skipexisting --skip Data13TeV_Double,Data13TeV_MuonEG,TTJets2l2nu,m166,m169,m175,m178,widthx,2016B,2016C,2016D,2016E,2016F,TTTT;
-        #python ../scripts/runLocalAnalysis.py -i ${eosdir}_syst -q ${queue} -o ${summaryeosdir}_syst --era era2016 -m TOPJetShape::RunTopJetShape --skipexisting --only MC13TeV_TTJets_isr,MC13TeV_TTJets_fsr,MC13TeV_TTJets_hdamp,MC13TeV_TTJets_herwig,MC13TeV_TTJets_ue;
-        python ../scripts/runLocalAnalysis.py -i ${eosdir}_qcd -q ${queue} -o ${summaryeosdir} --era era2016 -m TOPJetShape::RunTopJetShape --skipexisting;
+        #ttbar, modeling systematics, background samples
+        python ../scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} -o ${summaryeosdir} --era era2016 -m TOPJetShape::RunTopJetShape --skipexisting --skip Data13TeV_Double,Data13TeV_MuonEG,TTJets2l2nu,m166,m169,m175,m178,widthx,2016B,2016C,2016D,2016E,2016F,TTTT --farmappendix samples;
+        #QCD samples
+        python ../scripts/runLocalAnalysis.py -i ${eosdir}_qcd -q ${queue} -o ${summaryeosdir} --era era2016 -m TOPJetShape::RunTopJetShape --skipexisting --farmappendix qcd;
+        #Experimental uncertainties
+        python ../scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} -o ${summaryeosdir} --era era2016 -m TOPJetShape::RunTopJetShape --skipexisting --only MC13TeV_TTJets --systVar all --exactonly --farmappendix expsyst;
         cd -;
         ;;
 
@@ -53,11 +56,6 @@ case $WHAT in
 
     MERGE )
         python scripts/mergeOutputs.py ${summaryeosdir} True;
-        #TODO Not needed if everything goes in one directory
-        python scripts/mergeOutputs.py ${summaryeosdir}_expsyst True;
-        #cp ${summaryeosdir}_syst/*.root ${summaryeosdir}
-        #python scripts/mergeOutputs.py ${summaryeosdir}_qcd True;
-        #cp ${summaryeosdir}_qcd/*.root ${summaryeosdir}
         ;;
 
     PLOTSEL )

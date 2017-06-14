@@ -302,30 +302,30 @@ void RunTopJetShape(TString filename,
       if(!ev.isData) {
         //jec
         if (vSystVar[0] == "jec") {
-          ev = applyJetCorrectionUncertainty(ev, jecUnc, jecVar, vSystVar[2]);
+          applyJetCorrectionUncertainty(ev, jecUnc, jecVar, vSystVar[2]);
         }
         //jer
         if (vSystVar[0] == "jer") {
-          ev = smearJetEnergies(ev, vSystVar[1]);
+          smearJetEnergies(ev, vSystVar[1]);
         }
-        else ev = smearJetEnergies(ev);
+        else smearJetEnergies(ev);
         //b tagging
         if (vSystVar[0] == "btag") {
           if (vSystVar[1] == "heavy") {
-            ev = updateBTagDecisions(ev, btvsfReaders[period],expBtagEff,expBtagEffPy8,myBTagSFUtil,vSystVar[2],"central");
+            updateBTagDecisions(ev, btvsfReaders[period],expBtagEff,expBtagEffPy8,myBTagSFUtil,vSystVar[2],"central");
           }
           if (vSystVar[1] == "light") {
-            ev = updateBTagDecisions(ev, btvsfReaders[period],expBtagEff,expBtagEffPy8,myBTagSFUtil,"central",vSystVar[2]);
+            updateBTagDecisions(ev, btvsfReaders[period],expBtagEff,expBtagEffPy8,myBTagSFUtil,"central",vSystVar[2]);
           }
         }
-        else ev = updateBTagDecisions(ev, btvsfReaders[period],expBtagEff,expBtagEffPy8,myBTagSFUtil);
+        else updateBTagDecisions(ev, btvsfReaders[period],expBtagEff,expBtagEffPy8,myBTagSFUtil);
         //tracking efficiency
         if (vSystVar[0] == "tracking") {
           // "up": no correction
           // "down": apply twice
-          if (vSystVar[2] == "down") ev = applyTrackingEfficiencySF(ev, pow(lepEffH.getTrackingCorrection(ev.nvtx, period).first,2));
+          if (vSystVar[1] == "down") applyTrackingEfficiencySF(ev, pow(lepEffH.getTrackingCorrection(ev.nvtx, period).first,2));
         }
-        else ev = applyTrackingEfficiencySF(ev, lepEffH.getTrackingCorrection(ev.nvtx, period).first);
+        else applyTrackingEfficiencySF(ev, lepEffH.getTrackingCorrection(ev.nvtx, period).first);
       }
       
       ///////////////////////////
@@ -917,14 +917,16 @@ void RunTopJetShape(TString filename,
 double calcGA(double beta, double kappa, Jet jet, bool includeNeutrals, bool usePuppi, double ptcut) {
   int mult = 0;
   double sumpt = 0.;
+  TLorentzVector axis(0., 0., 0., 0.);
   for (auto p : jet.particles()) {
     if (not includeNeutrals and p.charge() == 0) continue;
     if (ptcut > p.pt()) continue;
     double weight = usePuppi ? p.puppi() : 1.;
     if (weight > 0.) ++mult;
     sumpt  += p.pt()*weight;
+    axis += p.momentum()*weight;
   }
-  if (mult < 1) return -1.;
+  if (mult < 2) return -1.;
   //std::cout << "sumpt" << beta << kappa << iptcut << icharge << ": " << sumpt << std::endl;
   
   double ga = 0.;
@@ -932,7 +934,7 @@ double calcGA(double beta, double kappa, Jet jet, bool includeNeutrals, bool use
     if (not includeNeutrals and p.charge() == 0) continue;
     if (ptcut > p.pt()) continue;
     double weight = usePuppi ? p.puppi() : 1.;
-    ga += weight * pow(p.p4().Pt()/sumpt, kappa) * pow(jet.p4().DeltaR(p.p4())/0.4, beta);
+    ga += weight * pow(p.p4().Pt()/sumpt, kappa) * pow(deltaR(axis, p.momentum())/0.4, beta);
   }
   
   //std::cout << "ga" << beta << kappa << iptcut << icharge << ": " << ga << std::endl;
