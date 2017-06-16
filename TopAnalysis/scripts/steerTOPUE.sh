@@ -101,12 +101,16 @@ case $WHAT in
         cp test/index.php ${wwwdir}/rawana
 	;;
     UNFOLD )
-        for i in chmult chflux chfluxz chavgpt chavgpz sphericity aplanarity C D; do         
-            python test/TopUEAnalysis/runUEUnfolding.py -p UEanalysis/analysis/plots/plotter.root -s UEanalysis/analysis/plots/plotter.root --altSig "t#bar{t}" -d UEanalysis/analysis/Chunks/ --histo ${i}_None_inc;
-            python test/TopUEAnalysis/showUnfoldSummary.py -i UEanalysis/unfold/${i}_None_inc.root;            
-            break
+        commonOpts="--plotter UEanalysis/analysis/plots/plotter.root --syst UEanalysis/analysis/plots/syst_plotter.root -d UEanalysis/analysis/Chunks/"
+        #python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 0
+
+        for i in chmult chflux chfluxz chavgpt chavgpz sphericity aplanarity C D; do                  
+            python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 1 --histo ${i}_None_inc;            
+            python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 2 --histo ${i}_None_inc;
+            python test/TopUEAnalysis/showUnfoldSummary.py -i UEanalysis/unfold/${i}_None_inc.root;                                   
         done
-        #python test/TopUEAnalysis/showFinalUnfoldedDistribution.py UEanalysis/unfold UEanalysis/analysis/plots/plotter.root UEanalysis/analysis/plots/syst_plotter.root
+
+        python test/TopUEAnalysis/showFinalUnfoldedDistribution.py UEanalysis/unfold UEanalysis/analysis/plots/plotter.root UEanalysis/analysis/plots/syst_plotter.root
         ;;
     WWWUNFOLD )
         mkdir -p ${wwwdir}/unfold;

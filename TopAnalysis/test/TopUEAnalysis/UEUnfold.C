@@ -1,5 +1,6 @@
 #include "UEUnfold.h"
 
+#include "TROOT.h"
 #include "TFile.h"
 #include "TKey.h"
 #include "TH2.h"
@@ -9,22 +10,41 @@
 
 using namespace std;
 
-TCanvas *bottomLineTestCanvas(TH1 *foldedRatio);
-TCanvas *dataControlCanvas(TH1 *totalData,TH1 *totaData_sub,TH1 *totalRec,TString tag="",TString extraLeg="");
-TCanvas *showNormalizedMigrationMatrix(TH2 *migration);
-TCanvas *showTauScan(TGraph *rhoScanGr,TGraph *bestRhoGr, TGraph *rho2ScanGr,double opt_tau,double opt_rho);
-TObjArray *UEUnfold(char *dist,char *file_name,char *file_toy,char *sigName, float opt_tau,bool unfoldData,char *file_syst=0,char *syst_sample=0);
+class UEUnfold
+{
+public:
+  UEUnfold() : results_(0)
+  { 
+    initROOTStyle(); 
+    reset(); 
+  }
+  void unfoldData(char *dist,char *file_name,char *syst_file_name,char *sigName);
+  void unfoldToy(char *dist,char *file_toy,float opt_tau, TH2 *mig,float norm,TH1 *fakes);
+  float doUnfold(float opt_tau, TH2 *mig, TH1 *data,TH1 *gen,bool storeFull=true,TString pfix="");
+  TObjArray *getResults() { return results_; }
+  void reset() 
+  { 
+    if(results_) results_->Delete(); 
+    results_=new TObjArray; 
+  }
+  ~UEUnfold() { };
+
+private:
+  void initROOTStyle();
+  float performTauScan(TH2 *mig, TH1 *data,TUnfoldDensity &unfold);
+
+  TCanvas *ratioCanvas(TH1 *num,TH1 *den,TString name, TString xtitle,TString ytitle,Float_t ymin,Float_t ymax);
+  TCanvas *dataControlCanvas(TH1 *totalData,TH1 *totaData_sub,TH1 *totalRec,TString tag="",TString extraLeg="");
+  TCanvas *showNormalizedMigrationMatrix(TH2 *migration);
+  TCanvas *showTauScan(TGraph *rhoScanGr,TGraph *bestRhoGr, TGraph *rho2ScanGr,double opt_tau,double opt_rho);
+  TH1 * bottomLineTest(TH1 *totalDataSub,TH1 *toyRecSub, TH1*unfolded_data, TH1 *toyGen, TH2 *unfolded_ematTotal,bool doNorm=true);
+  TObjArray *results_;
+};
+
 
 //
-TObjArray *UEUnfold(char *dist,char *file_name,char *file_toy,char *sigName,float opt_tau,bool unfoldData,char *file_syst,char *syst_sample)
+void UEUnfold::unfoldData(char *dist,char *file_name,char *syst_file_name,char *sigName)
 {
-  TObjArray *results=new TObjArray();
-  
-  gStyle->SetOptStat(0);
-  gStyle->SetOptTitle(0);
-  gStyle->SetPalette(kTemperatureMap);
-  gStyle->SetPaintTextFormat("4.0f");
-
   //
   // READ FILE WITH SUMMED UP CONTRIBUTIONS
   //
@@ -69,41 +89,177 @@ TObjArray *UEUnfold(char *dist,char *file_name,char *file_toy,char *sigName,floa
   totalGen->SetTitle("Gen. level");
   totalGen->SetDirectory(0);
 
-  //migration matrix
-  TH2 *totalMig   = (TH2 *)inF->Get( Form("%s_0_mig/%s_0_mig_%s",dist,dist,sigName) )->Clone("migration");
-  totalMig->SetDirectory(0);
-  inF->Close();
-
-  results->Add( dataControlCanvas(totalData,totalDataSub,totalRec,"data") );
-  results->Add( showNormalizedMigrationMatrix(totalMig) );
-
-  //alternative model to test
-  TH1 *modelToTest=0;
-  TH1 *genModelToTest=0;
-  if(file_syst && syst_sample)
+  //migration matrices (0 is the nominal)
+  std::map<TString, TH2 *> migMatrices;
+  for(int i=0; i<=25; i++)
     {
-      TFile *gIn=TFile::Open(file_syst);
-      modelToTest=(TH1 *)gIn->Get( Form("%s_None_True/%s_None_True_%s",dist,dist,syst_sample) )->Clone("signal_alt");
-      modelToTest->Add( (TH1 *)gIn->Get( Form("%s_fakes_True/%s_fakes_True_%s",dist,dist,syst_sample) ), -1 );
-      genModelToTest=(TH1 *)gIn->Get( Form("%s_None_False/%s_None_False_%s",dist,dist,syst_sample) )->Clone("gen_alt");
+      TString pfix( i==0 ? "" : Form("_%d",i) );
+      migMatrices[pfix]=(TH2 *)inF->Get( Form("%s_%d_mig/%s_%d_mig_%s",dist,i,dist,i,sigName) )->Clone("migration"+pfix);
+      migMatrices[pfix]->SetDirectory(0);
+    }
+  inF->Close();
+  
+  //add simulated systematics
+  TFile *systF=TFile::Open(syst_file_name);
+  TList *keys=((TDirectory *)systF->Get(Form("%s_0_mig",dist)))->GetListOfKeys();
+  TIter nextKey(keys);
+  while ((key = (TKey*)nextKey()))
+    {
+      TH2 *h=(TH2 *)key->ReadObj();
+      if(h->Integral()==0) continue;
+      TString name=h->GetName();
+      if(!name.Contains(sigName) || name.Contains("t#bar{t}t#bar{t}")) continue;
+      TString pfix=h->GetTitle(); 
+      migMatrices[pfix]=(TH2 *)h->Clone("migration"+pfix);
+      migMatrices[pfix]->SetDirectory(0);
+    }
+  systF->Close();
+
+  //save results
+  results_->Add(totalDataSub);
+  results_->Add(migMatrices[""]);
+  results_->Add(totalFakes);
+  results_->Add( ratioCanvas(totalDataSub,totalData,"datasub","Reconstructed bin","(Data-Fakes-Background)/Data",0.8,1.0) );
+  results_->Add( dataControlCanvas(totalData,totalDataSub,totalRec,"data") );
+  results_->Add( showNormalizedMigrationMatrix(migMatrices[""]) );
+  float opt_tau=doUnfold(-1,migMatrices[""],totalDataSub,totalGen);
+  cout << "After unfolding with nominal matrix tau=" << opt_tau << endl;
+  for(std::map<TString, TH2 *>::iterator it=migMatrices.begin(); it!=migMatrices.end(); it++)
+    {
+      if(it->first=="") continue;
+      cout << "Unfolding variation" << it->first << endl;
+      doUnfold(opt_tau,it->second,totalDataSub,totalGen,false,it->first);
+    }
+}
+
+//
+float UEUnfold::doUnfold(float opt_tau, TH2 *mig, TH1 *data,TH1 *gen,bool storeFull,TString pfix)
+{
+  const double scaleBias(1.0);
+
+  TUnfold::ERegMode regMode = TUnfold::kRegModeCurvature;                            //regularization mode
+  //TUnfold::ERegMode regMode = TUnfold::kRegModeSize;
+
+  TUnfold::EConstraint constraint = TUnfold::kEConstraintNone;                       //area constraint  
+  //TUnfold::EConstraint constraint = TUnfold::kEConstraintArea;                    
+
+  TUnfoldDensity::EDensityMode densityFlags=TUnfoldDensity::kDensityModeeNone;       //bin definition  
+  //TUnfoldDensity::EDensityMode densityFlags=TUnfoldDensity::kDensityModeBinWidth;  
+
+  TUnfoldDensity unfold(mig,TUnfold::kHistMapOutputHoriz,regMode,constraint,densityFlags);  
+  unfold.SetInput(data,scaleBias);
+ 
+  // scan to determine optimal tau, if needed
+  if(opt_tau<0) opt_tau=performTauScan(mig,data,unfold);
+
+  //unfold with optimized tau  
+  unfold.DoUnfold(opt_tau);
+
+  //get results
+  TH1 *folded_unfolded_data = unfold.GetFoldedOutput("folded_data",0,0,"",kFALSE);
+  TH1 *unfolded_data_raw = unfold.GetOutput("unfolded_data",0,0,"",kFALSE);
+  TH1 *unfolded_data=(TH1 *) gen->Clone("corrected_data"+pfix);
+  unfolded_data->SetTitle("Data (corrected)");
+  unfolded_data->SetDirectory(0);
+  TH2 *unfolded_ematTotal = unfold.GetEmatrixTotal("EmatTotal");
+  for(int xbin=1; xbin<=unfolded_data->GetNbinsX(); xbin++)
+    {
+      unfolded_data->SetBinContent(xbin,unfolded_data_raw->GetBinContent(xbin));
+      unfolded_data->SetBinError(xbin,TMath::Sqrt(unfolded_ematTotal->GetBinContent(xbin,xbin)));
     }
 
+  //save summary
+  if(storeFull)
+    {
+      TVectorF *summary = new TVectorF(3);
+      (*summary)[0]=unfold.GetChi2A();
+      (*summary)[1]=unfold.GetChi2L();
+      (*summary)[2]=unfold.GetNdf();
+      results_->Add( summary );
+      results_->Add( unfolded_ematTotal );
+      results_->Add( folded_unfolded_data->Clone("data_particle_folded") );
+      results_->Add( dataControlCanvas(0,unfolded_data,gen,"unfolded",Form("#chi^{2}/ndf=(%3.1f+%3.1f)/%d",(*summary)[0],(*summary)[1],(int)(*summary)[2]) ) );
+      results_->Add( ratioCanvas(folded_unfolded_data,data,"datafold","Reconstructed bin","Folded/Reconstructed",0.8,1.2) );
+      results_->Add( unfolded_data_raw );
+    }
+  results_->Add( unfolded_data );
+
+  return opt_tau;
+} 
+ 
+
+
+
+
+//
+float UEUnfold::performTauScan(TH2 *mig, TH1 *data,TUnfoldDensity &unfold)
+{  
+  Int_t nScan=100;
+  double tauMin=1.e-4;
+  double tauMax=1.e-1;
+  TSpline *logTauX,*logTauY;
+  TSpline *rhoScanSpline=0;
+  
+  TUnfoldDensity::EScanTauMode tauflag = TUnfoldDensity::kEScanTauRhoAvg;          //scan mode
+  //TUnfoldDensity::EScanTauMode tauflag = TUnfoldDensity::kEScanTauRhoMax;
+  //TUnfoldDensity::EScanTauMode tauflag = TUnfoldDensity::kEScanTauRhoSquareAvg;
+  
+  int iBest = unfold.ScanTau(nScan,tauMin,tauMax,&rhoScanSpline,tauflag);	  
+  
+  // create graphs (rho scan and best tau)
+  Double_t x,y;
+  rhoScanSpline->GetKnot(iBest,x,y);
+  float opt_tau=unfold.GetTau();
+  Double_t opt_rho=y;
+  TGraph *bestRhoGr=new TGraph();
+  bestRhoGr->SetPoint(0,x,y);
+  TGraph *rhoScanGr=new TGraph();
+  for(Int_t i=0;i<nScan;i++)
+    {
+      rhoScanSpline->GetKnot(i,x,y);
+      rhoScanGr->SetPoint(i,x,y);
+    }
+  
+  //for reference display also the correlation squared based optimization
+  unfold.ScanTau(nScan,tauMin,tauMax,&rhoScanSpline,TUnfoldDensity::kEScanTauRhoSquareAvg);
+  TGraph *rho2ScanGr=new TGraph();
+  for(Int_t i=0;i<nScan;i++)
+    {
+      rhoScanSpline->GetKnot(i,x,y);
+      rho2ScanGr->SetPoint(i,x,sqrt(y));
+    }
+  
+  //save results
+  results_->Add( showTauScan(rhoScanGr,bestRhoGr, rho2ScanGr, opt_tau,opt_rho) );  
+  TVectorF *summary = new TVectorF(2);
+  (*summary)[0]=opt_tau;
+  (*summary)[1]=opt_rho;
+  results_->Add(summary);
+
+  return opt_tau;
+}
+
+                    
+
+//
+void UEUnfold::unfoldToy(char *dist,char *file_toy,float opt_tau,TH2 *mig,float norm,TH1 *fakes)
+{
   //
   // READ TOY FILE
   //
-  inF=TFile::Open(file_toy);
+  TFile *inF=TFile::Open(file_toy);
 
   //signal reconstructed
   TH1 *toyRec   = (TH1 *)inF->Get( Form("%s_None_True",dist) )->Clone("signal_toy");;
   toyRec->SetTitle("toy data");
   toyRec->SetDirectory(0);
-  float sf=totalData->Integral()/toyRec->Integral();
+  float sf=norm/toyRec->Integral();
   toyRec->Scale(sf);
 
   //subtract average contribution from fakes (use total fakes)
   TH1 *toyRecSub=(TH1 *)toyRec->Clone("signal_toy_sub");
   toyRecSub->SetTitle("toy data-fakes");
-  toyRecSub->Add(totalFakes,-1);
+  if(fakes) toyRecSub->Add(fakes,-1);
   toyRecSub->SetDirectory(0);
 
   //MC truth for this toy
@@ -113,414 +269,135 @@ TObjArray *UEUnfold(char *dist,char *file_name,char *file_toy,char *sigName,floa
   toyGen->Scale(sf); 
   inF->Close();
   
-  results->Add( dataControlCanvas(toyRec,toyRecSub,totalRec,"toy") );
+  doUnfold(opt_tau,mig,toyRecSub,toyGen);
 
-  //
-  // UNFOLDING
-  //
-
-  //init TUnfoldDensity
-
-  const double scaleBias(1.0);
-
-  TUnfold::ERegMode regMode = TUnfold::kRegModeCurvature;
-  //TUnfold::ERegMode regMode = TUnfold::kRegModeSize;
-  
-  //TUnfold::EConstraint constraint = TUnfold::kEConstraintArea;
-  TUnfold::EConstraint constraint = TUnfold::kEConstraintNone;   
-  
-  //TUnfoldDensity::EDensityMode densityFlags=TUnfoldDensity::kDensityModeBinWidth;
-  TUnfoldDensity::EDensityMode densityFlags=TUnfoldDensity::kDensityModeeNone;
-
-  TUnfoldDensity unfold(totalMig,TUnfold::kHistMapOutputHoriz,regMode,constraint,densityFlags);  
-
-  //
-  // scan to determine optimal tau, if needed, and unfold the data
-  //
-  if(opt_tau<0)
-    {       
-      //unfold.SetInput(data,scaleBias);//test
-      //   unfold.SetInput(totalRec,scaleBias);//WORKS EXACTLY
-      unfold.SetInput(totalDataSub,scaleBias);
-
-      Int_t nScan=100;
-      double tauMin=1.e-4;
-      double tauMax=1.e-1;
-      TSpline *logTauX,*logTauY;
-      TSpline *rhoScanSpline=0;
-
-      TUnfoldDensity::EScanTauMode tauflag = TUnfoldDensity::kEScanTauRhoAvg;
-      //TUnfoldDensity::EScanTauMode tauflag = TUnfoldDensity::kEScanTauRhoMax;//crazy large correlations
-      //TUnfoldDensity::EScanTauMode tauflag = TUnfoldDensity::kEScanTauRhoSquareAvg;//crazy large correlations
-      
-      //unfold.ScanTau(nScan,tauMin,tauMax,&rhoScan,tauflag);	  
-      int iBest = unfold.ScanTau(nScan,tauMin,tauMax,&rhoScanSpline,tauflag);	  
-
-      // create graphs (rho scan and best tau)
-      Double_t x,y;
-      rhoScanSpline->GetKnot(iBest,x,y);
-      opt_tau=unfold.GetTau();
-      Double_t opt_rho=y;
-      TGraph *bestRhoGr=new TGraph();
-      bestRhoGr->SetPoint(0,x,y);
-      TGraph *rhoScanGr=new TGraph();
-      for(Int_t i=0;i<nScan;i++)
-        {
-          rhoScanSpline->GetKnot(i,x,y);
-          rhoScanGr->SetPoint(i,x,y);
-        }
-
-      //for reference display also the max. correlation based optimization
-      unfold.ScanTau(nScan,tauMin,tauMax,&rhoScanSpline,TUnfoldDensity::kEScanTauRhoSquareAvg);
-      TGraph *rho2ScanGr=new TGraph();
-      for(Int_t i=0;i<nScan;i++)
-        {
-          rhoScanSpline->GetKnot(i,x,y);
-          rho2ScanGr->SetPoint(i,x,sqrt(y));
-        }
-
-      //save results
-      results->Add( showTauScan(rhoScanGr,bestRhoGr, rho2ScanGr, opt_tau,opt_rho) );
-
-      TVectorF *summary = new TVectorF(2);
-      (*summary)[0]=opt_tau;
-      (*summary)[1]=opt_rho;
-      results->Add(summary);
-    }
-
-  //
-  // unfold the data
-  //
-  if(unfoldData)
+  TH1 *unfolded_toy=0;
+  for(int i=0; i<results_->GetEntriesFast(); i++)
     {
-      //unfold.DoUnfold(opt_tau,totalDataSub,scaleBias);
-
-      TH1 *unfolded_data_raw = unfold.GetOutput("unfolded_data",0,0,"",kFALSE);
-      TH1 *unfolded_data=(TH1 *)totalGen->Clone("corrected_data");
-      unfolded_data->SetTitle("Data (corrected)");
-      unfolded_data->SetDirectory(0);
-      TH2 *ematTotal = unfold.GetEmatrixTotal("EmatTotal");
-      for(int xbin=1; xbin<=unfolded_data->GetNbinsX(); xbin++)
-        {
-          unfolded_data->SetBinContent(xbin,unfolded_data_raw->GetBinContent(xbin));
-          unfolded_data->SetBinError(xbin,TMath::Sqrt(ematTotal->GetBinContent(xbin,xbin))); //unfolded_data_raw->GetBinError(xbin));
-        }
-
-      TVectorF *summary = new TVectorF(3);
-      (*summary)[0]=unfold.GetChi2A();
-      (*summary)[1]=unfold.GetChi2L();
-      (*summary)[2]=unfold.GetNdf();
-      results->Add( summary );
-      results->Add( unfolded_data );
-      results->Add( dataControlCanvas(0,unfolded_data,totalGen,"unfolded",Form("#chi^{2}/ndf=(%3.1f+%3.1f)/%d",(*summary)[2],(*summary)[3],(int)(*summary)[4]) ) );
-
-      TH1 *folded_over_reco = unfold.GetFoldedOutput("folded_data",0,0,"",kFALSE);
-      results->Add( folded_over_reco->Clone("data_particle_folded") );
-      folded_over_reco->Divide(totalDataSub);
-      results->Add( bottomLineTestCanvas(folded_over_reco) );
+      TString rname=results_->At(i)->GetName();
+      if(rname!="corrected_data") continue;
+      unfolded_toy=(TH1 *)results_->At(i);
     }
 
   //
   // unfold toy
   //
-  TUnfoldDensity toy_unfold(totalMig,TUnfold::kHistMapOutputHoriz,regMode,constraint,densityFlags);  
-  toy_unfold.SetInput(toyRecSub,scaleBias);
-  toy_unfold.DoUnfold(opt_tau);//,toyRecSub,scaleBias);
-  TH1 *unfolded_toy_raw = toy_unfold.GetOutput("unfolded_signal_toy_sub",0,0,"",kFALSE);
-  TH2 *unfolded_ematrix=toy_unfold.GetEmatrixTotal("EmatTotalToy");
-  TH1 *unfolded_toy=(TH1 *)toyGen->Clone("corrected_toy");
-  unfolded_toy->SetTitle("toy data (corrected)");
-  unfolded_toy->SetDirectory(0);
   TH1 *bias=(TH1 *)toyGen->Clone("toy_bias");
   bias->SetTitle("bias");
   bias->Reset("ICE");
   TH1 *pull=(TH1 *)toyGen->Clone("toy_pull");
   pull->SetTitle("pull");
   pull->Reset("ICE");
-
-  for(int xbin=1; xbin<=unfolded_toy_raw->GetNbinsX(); xbin++)
+  for(int xbin=1; xbin<=unfolded_toy->GetNbinsX(); xbin++)
     {
-      float unfVal(unfolded_toy_raw->GetBinContent(xbin));
-      float unfUnc(TMath::Sqrt(unfolded_ematrix->GetBinContent(xbin,xbin))); //unfolded_toy_raw->GetBinError(xbin));
-      unfolded_toy->SetBinContent(xbin,unfVal);
-      unfolded_toy->SetBinError(xbin,unfUnc);
-
+      float unfVal(unfolded_toy->GetBinContent(xbin));
+      float unfUnc(unfolded_toy->GetBinError(xbin));
       float targetVal(toyGen->GetBinContent(xbin));
+      float targetUnc(toyGen->GetBinError(xbin));
       float delta(unfVal-targetVal);
       bias->SetBinContent(xbin,delta);
       if(unfUnc>0) pull->SetBinContent(xbin,delta/unfUnc);
     }
-  results->Add( dataControlCanvas(0,unfolded_toy,toyGen,"toyunfolded") );
-  results->Add(bias);
-  results->Add(pull);
-
-  //
-  // bottom line test using a model passed by the user
-  //
-  if(modelToTest!=0 && genModelToTest!=0)
-    {
-      //smeared level
-      int nbinsx(toyRecSub->GetNbinsX());
-      TVectorF smearedDiff(nbinsx);
-      TMatrixF smearedCov(nbinsx,nbinsx);
-      for(int xbin=1; xbin<=nbinsx; xbin++)
-        {
-          smearedDiff[xbin-1]=toyRecSub->GetBinContent(xbin)-modelToTest->GetBinContent(xbin);
-          smearedCov[xbin-1][xbin-1]=pow(toyRecSub->GetBinError(xbin),2)+pow(modelToTest->GetBinError(xbin),2);
-        }
-      TVectorF a=smearedDiff;
-      a *= smearedCov.Invert();
-      float smearedChi2=a*smearedDiff;
-      float pval=TMath::Prob(smearedChi2,nbinsx);
-
-      //unfolded level
-      int nbinsxpart=unfolded_toy->GetNbinsX();
-      TVectorF particleDiff(nbinsxpart);
-      TMatrixF particleCov(nbinsxpart,nbinsxpart);
-      for(int xbin=1; xbin<=nbinsxpart; xbin++)
-        {
-          particleDiff[xbin-1]=unfolded_toy->GetBinContent(xbin)-genModelToTest->GetBinContent(xbin);
-          for(int ybin=1; ybin<=unfolded_ematrix->GetNbinsY(); ybin++)
-            {
-              particleCov[xbin-1][ybin-1]=unfolded_ematrix->GetBinContent(xbin,ybin);
-            }
-        }
-      TVector b=particleDiff;
-      b *= particleCov.Invert();
-      float particleChi2=b*particleDiff;
-      float particlepval=TMath::Prob(particleChi2,nbinsxpart);
-
-      smearedCov.Print("v");
-      particleCov.Print("v");
-      cout << smearedChi2 << " " << pval << " | " << particleChi2 << " " << particlepval << endl;
-
-      TH1 *bottomLine=new TH1F("bottomline","",2,0,2);
-      bottomLine->SetBinContent(1,smearedChi2/nbinsx);
-      bottomLine->SetBinContent(2,pval);
-      bottomLine->SetBinContent(3,particleChi2/nbinsxpart);
-      bottomLine->SetBinContent(4,particlepval);
-      bottomLine->SetDirectory(0);
-      results->Add(bottomLine);
-    }
+  results_->Add( dataControlCanvas(0,unfolded_toy,toyGen,"toyunfolded") );
+  results_->Add(bias);
+  results_->Add(pull);
   
+  //  results_->Add(bottomLineTest(totalDataSub,toyRecSub,unfolded_data,toyGen,unfolded_ematTotal));
 
-  return results;
-
-  /*
-
-   
-   //data_bkg_sub->Scale(gen_incchmult->Integral()/data_bkg_sub->Integral());//gerekli diil gibi!
-   unfold_incchmult.SetInput(data_incchmult_bkg_sub,scaleBias);
-   unfold_incchavgpt.SetInput(data_incchavgpt_bkg_sub,scaleBias);
-   unfold_incchflux.SetInput(data_incchflux_bkg_sub,scaleBias);
-
-   unfold_incchmult.DoUnfold(opt_tau_incchmult);
-   unfold_incchavgpt.DoUnfold(opt_tau_incchavgpt);
-   unfold_incchflux.DoUnfold(opt_tau_incchflux);
-   //unfold.DoUnfold(0);
-   TH1 *unfolded_data_incchmult = unfold_incchmult.GetOutput("unfolded_data_incchmult",0,0,"",kFALSE);
-   TH1 *unfolded_data_incchavgpt = unfold_incchavgpt.GetOutput("unfolded_data_incchavgpt",0,0,"",kFALSE);
-   TH1 *unfolded_data_incchflux = unfold_incchflux.GetOutput("unfolded_data_incchflux",0,0,"",kFALSE);
-   TH1 *folded_data_incchmult = unfold_incchmult.GetFoldedOutput("folded_data_incchmult",0,0,"",kFALSE);
-   TH1 *folded_data_incchavgpt = unfold_incchavgpt.GetFoldedOutput("folded_data_incchavgpt",0,0,"",kFALSE);
-   TH1 *folded_data_incchflux = unfold_incchflux.GetFoldedOutput("folded_data_incchflux",0,0,"",kFALSE);
-
-   TH2 *EMatrixTotal_data_incchmult = unfold_incchmult.GetEmatrixTotal("unfolding total error matrix for incchmult");
-   TH2 *EMatrixTotal_data_incchavgpt = unfold_incchavgpt.GetEmatrixTotal("unfolding total error matrix for incchavgpt");
-   TH2 *EMatrixTotal_data_incchflux = unfold_incchflux.GetEmatrixTotal("unfolding total error matrix for incchflux");
-
-
-   //unfold.SetInput(rec_incchmult_toy,scaleBias);
-
-   // unfold.SetBias(gen_incchmult_real);
-
-   //unfold.DoUnfold(0);//orig loc. 
-
-   //unfold.SetInput(data_bkg_sub,scaleBias);//unfold data
-
-   
-   TCanvas *tcanv = new TCanvas();
-   tcanv->Divide(2,2);
-   tcanv->cd(1);
-   rhoScan_incchmult->Draw();
-   rhoScan_incchmult->SetTitle(";log_{10}(#tau);average(#rho_{i})");
-   rhoScan_incchmult->SetLineColor(kRed);
-   bestRho_incchmult->Draw("*");
-
-   tcanv->cd(2);
-   rhoScan_incchavgpt->Draw();
-   rhoScan_incchavgpt->SetTitle(";log_{10}(#tau);average(#rho_{i})");
-   rhoScan_incchavgpt->SetLineColor(kRed);
-   bestRho_incchavgpt->Draw("*");
-
-   tcanv->cd(3);
-   rhoScan_incchflux->Draw();
-   rhoScan_incchflux->SetTitle(";log_{10}(#tau);average(#rho_{i})");
-   rhoScan_incchflux->SetLineColor(kRed);
-   bestRho_incchflux->Draw("*");
-
-   tcanv->SaveAs("knots.C");
-   tcanv->SaveAs("knots.pdf");  
- 
-   TCanvas *c2 = new TCanvas();
-   c2->Divide(2,2);
-   //   float scale = rec_incchmult_real->GetSumOfWeights()/gen_incchmult_real->GetSumOfWeights();
-   c2->cd(1);
-   gen_incchmult->SetMarkerStyle(8);
-   gen_incchmult->SetMarkerColor(2);
-   gen_incchmult->SetLineColor(2);
-   gen_incchmult->SetLineWidth(2); 
-   gen_incchmult->Draw();
-
-   // unfolded_incchmult->SetMarkerColor(2);
-   // unfolded_incchmult->SetLineColor(2);
-   // unfolded_incchmult->SetLineStyle(2);
-   // unfolded_incchmult->SetMarkerStyle(8);
-   // unfolded_incchmult->Draw("sames");
-
-   unfolded_data_incchmult->SetMarkerStyle(21);
-   unfolded_data_incchmult->SetMarkerColor(4);
-   unfolded_data_incchmult->SetLineColor(4);
-   unfolded_data_incchmult->SetLineWidth(2);
-   unfolded_data_incchmult->Draw("sames");
-
-   c2->cd(2);
-   gen_incchavgpt->SetMarkerStyle(8);
-   gen_incchavgpt->SetMarkerColor(2);
-   gen_incchavgpt->SetLineColor(2);
-   gen_incchavgpt->SetLineWidth(2); 
-   gen_incchavgpt->Draw();
-
-   // unfolded_incchavgpt->SetMarkerColor(2);
-   // unfolded_incchavgpt->SetLineColor(2);
-   // unfolded_incchavgpt->SetLineStyle(2);
-   // unfolded_incchavgpt->SetMarkerStyle(8);
-   // unfolded_incchavgpt->Draw("sames");
-
-   unfolded_data_incchavgpt->SetMarkerStyle(21);
-   unfolded_data_incchavgpt->SetMarkerColor(4);
-   unfolded_data_incchavgpt->SetLineColor(4);
-   unfolded_data_incchavgpt->SetLineWidth(2);
-   unfolded_data_incchavgpt->Draw("sames");
-
-   c2->cd(3);
-   gen_incchflux->SetMarkerStyle(8);
-   gen_incchflux->SetMarkerColor(2);
-   gen_incchflux->SetLineColor(2);
-   gen_incchflux->SetLineWidth(2); 
-   gen_incchflux->Draw();
-
-   // unfolded_incchflux->SetMarkerColor(2);
-   // unfolded_incchflux->SetLineColor(2);
-   // unfolded_incchflux->SetLineStyle(2);
-   // unfolded_incchflux->SetMarkerStyle(8);
-   // unfolded_incchflux->Draw("sames");
-
-   unfolded_data_incchflux->SetMarkerStyle(21);
-   unfolded_data_incchflux->SetMarkerColor(4);
-   unfolded_data_incchflux->SetLineColor(4);
-   unfolded_data_incchflux->SetLineWidth(2);
-   unfolded_data_incchflux->Draw("sames");
-
-   c2->Update();
-   c2->SaveAs("unfolded.C");
-   
-   cout<<"before pulls"<<endl;
-   ofstream pulls_file,pulls_file_bin[5];
-   pulls_file.open("pulls_file.txt",ios::app);
-
-   char namepullbinfile[100];
-   for (int i =0;i<5;i++){ 
-     sprintf(namepullbinfile,"pulls_file_bin%i.txt",i);
-     pulls_file_bin[i].open(namepullbinfile,ios::app);
-   }
-   h_PULLS = new TH1D("h_PULLS","h_PULLS",100,-5,5);
-  
-   float pull = -99.;
-   float pull_b[5];
-   TCanvas *c_pull = new TCanvas();
-   c_pull->cd();
-   for (int i=0;i<5;i++){ 
-     //if (unfolded->GetBinError(i+1)) 
-     pull_b[i] = -999.;
-     pull = (unfolded_toy_incchmult->GetBinContent(i+1)-gen_incchmult->GetBinContent(i+1))/unfolded_toy_incchmult->GetBinError(i+1);
-     pull_b[i] = (unfolded_toy_incchmult->GetBinContent(i+1)-gen_incchmult->GetBinContent(i+1))/unfolded_toy_incchmult->GetBinError(i+1);
-     h_PULLS->Fill(pull);
-     cout<<"pull toy, gen toy, err:  "<<unfolded_toy_incchmult->GetBinContent(i+1)<<"  "<<gen_incchmult->GetBinContent(i+1)<<"  "<<unfolded_toy_incchmult->GetBinError(i+1)<<endl;
-     cout<<"pull:   "<<pull<<endl;
-     pulls_file<< pull <<"\n";
-     pulls_file_bin[i]<<pull_b[i]<<"\n";
-   }
-   pulls_file.close();
-   for (int i =0;i<5;i++) pulls_file_bin[i].close();
-   h_PULLS->Draw();
-   c_pull->SaveAs("pull.C");
-
-  
-   TCanvas *c4 = new TCanvas();
-   c4->Divide(2,2);
-   c4->cd(1);
-   data_incchmult_bkg_sub->Draw();
-   folded_data_incchmult->SetLineColor(4);
-   folded_data_incchmult->SetMarkerColor(4);
-   folded_data_incchmult->Draw("sames");
-
-   c4->cd(2);
-   data_incchavgpt_bkg_sub->Draw();
-   folded_data_incchavgpt->SetLineColor(4);
-   folded_data_incchavgpt->SetMarkerColor(4);
-   folded_data_incchavgpt->Draw("sames");
-
-   c4->cd(3);
-   data_incchflux_bkg_sub->Draw();
-   folded_data_incchflux->SetLineColor(4);
-   folded_data_incchflux->SetMarkerColor(4);
-   folded_data_incchflux->Draw("sames");
-   c4->SaveAs("folded.C");
-
-  TCanvas *c5 = new TCanvas();
-  c5->cd(1);
-  gen_incchmult->SetLineColor(1);
-  gen_incchmult->SetLineWidth(2);
-  gen_incchmult->Draw("e1");
-  unfolded_incchmult->SetMarkerColor(2);
-  unfolded_incchmult->SetLineColor(2);
-  unfolded_incchmult->SetLineStyle(2);
-  unfolded_incchmult->SetMarkerStyle(8);
-  unfolded_incchmult->Draw("sames");
-  unfolded_data_incchmult->SetMarkerColor(4);
-  unfolded_data_incchmult->SetLineColor(4);
-  unfolded_data_incchmult->SetLineStyle(3);
-  unfolded_data_incchmult->Draw("sames");
-  c5->SaveAs("unfolded_incmult_and_sqrtN.C");
-
-  TCanvas *c6 = new TCanvas();
-  c6->Divide(2,2);
-  c6->cd(1);
-  EMatrixTotal_data_incchmult->Draw("colz");
-  c6->cd(2);
-  EMatrixTotal_data_incchavgpt->Draw("colz");
-  c6->cd(3);
-  EMatrixTotal_data_incchflux->Draw("colz");
-  c6->SaveAs("error_matrices.C");
-  c6->SaveAs("error_matrices.pdf");
-
-*/
 }
 
-TCanvas *bottomLineTestCanvas(TH1 *foldedRatio)
+//
+TH1 *UEUnfold::bottomLineTest(TH1 *totalDataSub,TH1 *toyRecSub, TH1*unfolded_data, TH1 *toyGen, TH2 *unfolded_ematTotal,bool doNorm)
 {
-  TCanvas *c = new TCanvas("cbottomline","cbottomline",500,500);
+  /*
+  //
+  // bottom line test
+  //
+  
+  //smeared level
+  int nbinsx(totalDataSub->GetNbinsX());
+  TVectorF smearedDiff(nbinsx);
+  TMatrixF smearedCov(nbinsx,nbinsx);
+  float normData(totalDataSub->Integral()), normToy(toyRecSub->Integral());
+  for(int xbin=1; xbin<=nbinsx; xbin++)
+    {
+      if(doNorm)
+        {
+          smearedDiff[xbin-1]=totalDataSub->GetBinContent(xbin)/normData-toyRecSub->GetBinContent(xbin)/normToy;
+          smearedCov[xbin-1][xbin-1]=pow(totalDataSub->GetBinError(xbin)/normData,2)+pow(toyRecSub->GetBinError(xbin)/normToy,2);
+        }
+      else
+        {
+          smearedDiff[xbin-1]=totalDataSub->GetBinContent(xbin)-toyRecSub->GetBinContent(xbin);
+          smearedCov[xbin-1][xbin-1]=pow(totalDataSub->GetBinError(xbin),2)+pow(toyRecSub->GetBinError(xbin),2);
+        }
+    }
+  TVectorF a=smearedDiff;
+  a *= smearedCov.Invert();
+  float smearedChi2=a*smearedDiff;
+  float pval=TMath::Prob(smearedChi2,nbinsx);
+  
+  //unfolded level
+  int nbinsxpart=unfolded_data->GetNbinsX();
+  TVectorF particleDiff(nbinsxpart);
+  TMatrixF particleCov(nbinsxpart,nbinsxpart);
+  float normUnfData(unfolded_data->Integral()), normToyGen(toyGen->Integral());
+  for(int xbin=1; xbin<=nbinsxpart; xbin++)
+    {
+      if(doNorm)
+        {
+          particleDiff[xbin-1]=unfolded_data->GetBinContent(xbin)/normUnfData-toyGen->GetBinContent(xbin)/normToyGen;
+          for(int ybin=1; ybin<=unfolded_ematTotal->GetNbinsY(); ybin++)
+            {
+              particleCov[xbin-1][ybin-1]=unfolded_ematTotal->GetBinContent(xbin,ybin)/pow(normUnfData,2);
+              if(xbin==ybin) particleCov[xbin-1][ybin-1] += pow(toyGen->GetBinError(xbin)/normToyGen,2);
+            }
+        }
+      else
+        {
+          particleDiff[xbin-1]=unfolded_data->GetBinContent(xbin)-toyGen->GetBinContent(xbin);
+          for(int ybin=1; ybin<=unfolded_ematTotal->GetNbinsY(); ybin++)
+            {
+              particleCov[xbin-1][ybin-1]=unfolded_ematTotal->GetBinContent(xbin,ybin);
+              if(xbin==ybin) particleCov[xbin-1][ybin-1] += pow(toyGen->GetBinError(xbin),2);
+            }
+        }
+    }
+  TVector b=particleDiff;
+  b *= particleCov.Invert();
+  float particleChi2=b*particleDiff;
+  float particlepval=TMath::Prob(particleChi2,nbinsxpart);
+  
+  cout << "Smeared\t\tUnfolded" << endl;
+  cout << smearedChi2 << " " << pval << " | " << particleChi2 << " " << particlepval << endl;
+  cout << toyRecSub->Chi2Test(totalDataSub) << " " << toyGen->Chi2Test(unfolded_data) << endl;
+  */
+
+  TH1 *bottomLine=new TH1F("bottomline","",2,0,2);
+  //  bottomLine->SetBinContent(1,smearedChi2/nbinsx);
+  //bottomLine->SetBinContent(2,pval);
+  //bottomLine->SetBinContent(3,particleChi2/nbinsxpart);
+  // bottomLine->SetBinContent(4,particlepval);
+  bottomLine->SetDirectory(0);
+  return bottomLine;
+}
+
+//
+TCanvas *UEUnfold::ratioCanvas(TH1 *num,TH1 *den,TString name, TString xtitle,TString ytitle,Float_t ymin,Float_t ymax)
+{
+  TCanvas *c = new TCanvas("c"+name,"c"+name,500,500);
   c->SetTopMargin(0.05);
   c->SetRightMargin(0.02);
   c->SetLeftMargin(0.12);
   c->SetBottomMargin(0.1);
   c->SetGridy();
-  foldedRatio->SetMarkerStyle(20);
-  foldedRatio->Draw("ep");
-  foldedRatio->GetYaxis()->SetTitle("Folded/Reconstructed");
-  foldedRatio->GetXaxis()->SetTitle("Reconstructed bin");
-  foldedRatio->GetYaxis()->SetRangeUser(0.8,1.2);
+  TH1 *ratio=(TH1 *)num->Clone("ratio");
+  ratio->Divide(den);
+  ratio->SetMarkerStyle(20);
+  ratio->Draw("ep");
+  ratio->GetYaxis()->SetTitle(ytitle);
+  ratio->GetXaxis()->SetTitle(xtitle);
+  ratio->GetYaxis()->SetRangeUser(ymin,ymax); 
   TLatex *txt=new TLatex();
   txt->SetTextFont(42);
   txt->SetTextSize(0.04);
@@ -531,7 +408,7 @@ TCanvas *bottomLineTestCanvas(TH1 *foldedRatio)
 
 }
 
-TCanvas *dataControlCanvas(TH1 *totalData,TH1 *totalDataSub,TH1 *totalRec,TString tag,TString extraLeg)
+TCanvas *UEUnfold::dataControlCanvas(TH1 *totalData,TH1 *totalDataSub,TH1 *totalRec,TString tag,TString extraLeg)
 {
   TCanvas *c = new TCanvas("c"+tag,"c"+tag,500,500);
   c->SetTopMargin(0.05);
@@ -565,7 +442,7 @@ TCanvas *dataControlCanvas(TH1 *totalData,TH1 *totalDataSub,TH1 *totalRec,TStrin
 }
 
 //
-TCanvas *showNormalizedMigrationMatrix(TH2 *migration)
+TCanvas *UEUnfold::showNormalizedMigrationMatrix(TH2 *migration)
 {
   //normalize to 100% by columns
   TH2* normmig=(TH2 *)migration->Clone("migration_norm");
@@ -609,7 +486,7 @@ TCanvas *showNormalizedMigrationMatrix(TH2 *migration)
 }
 
 //
-TCanvas *showTauScan(TGraph *rhoScanGr,TGraph *bestRhoGr,TGraph *rho2ScanGr,double opt_tau,double opt_rho)
+TCanvas *UEUnfold::showTauScan(TGraph *rhoScanGr,TGraph *bestRhoGr,TGraph *rho2ScanGr,double opt_tau,double opt_rho)
 {
   TCanvas *c = new TCanvas("cscan","cscan",500,500);
   c->SetTopMargin(0.05);
@@ -637,4 +514,14 @@ TCanvas *showTauScan(TGraph *rhoScanGr,TGraph *bestRhoGr,TGraph *rho2ScanGr,doub
   txt->DrawLatex(0.12,0.9,Form("#tau=%3.4f #rho=%3.3f",opt_tau,opt_rho));
   return c;
 
+}
+
+//
+void UEUnfold::initROOTStyle()
+{
+  gROOT->SetBatch(true);
+  gStyle->SetOptStat(0);
+  gStyle->SetOptTitle(0);
+  gStyle->SetPalette(kTemperatureMap);
+  gStyle->SetPaintTextFormat("4.0f");
 }

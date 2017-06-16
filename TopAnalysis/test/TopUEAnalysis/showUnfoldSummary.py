@@ -22,9 +22,10 @@ def summarizeResultsFromToys(url,outDir='./'):
     ROOT.gStyle.SetOptStat(0)
     ROOT.gStyle.SetOptTitle(0)
 
-    cbl=fIn.Get('toy_0/cbottomline')
-    cbl.Draw()
-    saveCanvas(c=cbl,name='%s/bottomline_%s'%(outDir,tag))
+    for cname in ['cdatasub','cdata','cmig','cunfolded','cdatafold']:
+        c=fIn.Get(cname)
+        c.Draw()
+        saveCanvas(c=c,name='%s/%s_%s'%(outDir,cname,tag))
 
     cscan=fIn.Get('cscan')
     cscan.Draw()
