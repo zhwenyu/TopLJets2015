@@ -61,19 +61,29 @@ def main():
 
         if opt.step==2:
 
+            #get a stat indepedent migration and fakes estimate
+            fIn=ROOT.TFile.Open('%s/ChunkAForToys.root'%opt.out)
+            indmig=fIn.Get('%s_0_mig'%opt.histo)
+            indmig.SetDirectory(0)
+            indfakes=fIn.Get('%s_fakes_True'%opt.histo)
+            indfakes.SetDirectory(0)
+            fIn.Close()
+
             print 'Running %d toys'%len(chunkB)
             fOut=ROOT.TFile.Open('%s/%s.root'%(opt.out,opt.histo),'UPDATE')
             opt_tau=fOut.Get('TVectorT<float>;1')[0]
-            mig=fOut.Get('migration')
-            fakes=fOut.Get('fakes')
             datasub=fOut.Get('datasub')
+            fakes=fOut.Get('fakes')
+            mig=fOut.Get('migration')
             norm=fakes.Integral()+datasub.Integral()
+            indfakes.Scale(fakes.Integral()/indfakes.Integral())
+            indmig.Scale(mig.Integral()/indmig.Integral())
 
             globalBias,globalPulls=None,None
             binBias,binPulls=None,None
             for itoy in xrange(0,len(chunkB)):
                 unf.reset();
-                results=unf.unfoldToy(opt.histo,chunkB[itoy],opt_tau,mig,norm,fakes)
+                results=unf.unfoldToy(opt.histo,chunkB[itoy],opt_tau,indmig,norm,indfakes)
 
                 fOut.cd()
                 fOut.rmdir('toy_%d'%itoy)

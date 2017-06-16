@@ -36,7 +36,7 @@ def summarizeResultsFromToys(url,outDir='./'):
         cscan.Clear()
         h.Draw('e1')
         h.SetMarkerStyle(20)
-        h.GetYaxis().SetTitle('Toys')
+        h.GetYaxis().SetTitle('Toys x bins')
         h.Fit('gaus','MLQ+')
         f=h.GetFunction('gaus')
 
