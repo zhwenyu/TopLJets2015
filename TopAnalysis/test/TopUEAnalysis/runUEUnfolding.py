@@ -13,13 +13,15 @@ def main():
     #configuration
     usage = 'usage: %prog [options]'
     parser = optparse.OptionParser(usage)
-    parser.add_option('-p', '--plotter', dest='plotter',  help='plotter with total distributions',        default=None,                    type='string')
-    parser.add_option('-d', '--dir',     dest='dir',      help='chunk directory for pseudo-experiments',  default=None,                    type='string')
-    parser.add_option('-t', '--tag',     dest='tag',      help='process this tag',                        default='MC13TeV_TTJets',        type='string')
-    parser.add_option(      '--histo',   dest='histo',    help='histogram',                               default='chmult_None_inc',       type='string')
-    parser.add_option(      '--sigName', dest='sigName',  help='signal name',                             default='t#bar{t}',              type='string')
-    parser.add_option(      '--opt_tau', dest='opt_tau',  help='opt_tau',                                 default=-1,                      type=float)
-    parser.add_option('-o', '--out',     dest='out',      help='output',                                  default='./UEanalysis/unfold',   type='string')
+    parser.add_option('-p', '--plotter',     dest='plotter',      help='plotter with total distributions [%default]',        default=None,                    type='string')
+    parser.add_option('-s', '--systPlotter', dest='systPlotter',  help='plotter with syst distributions [%default]',         default=None,                    type='string')
+    parser.add_option('-d', '--dir',         dest='dir',          help='chunk directory for pseudo-experiments [%default]',  default=None,                    type='string')
+    parser.add_option('-t', '--tag',         dest='tag',          help='process this tag [%default]',                        default='MC13TeV_TTJets',        type='string')
+    parser.add_option(      '--histo',       dest='histo',        help='histogram [%default]',                               default='chmult_None_inc',       type='string')
+    parser.add_option(      '--sigName',     dest='sigName',      help='signal name [%default]',                             default='t#bar{t}',              type='string')
+    parser.add_option(      '--altSig',      dest='altSig',       help='alternative signal (b.l. test) [%default]',          default='t#bar{t} fsr dn',       type='string')
+    parser.add_option(      '--opt_tau',     dest='opt_tau',      help='opt_tau [%default]',                                 default=-1,                      type=float)
+    parser.add_option('-o', '--out',         dest='out',          help='output [%default]',                                  default='./UEanalysis/unfold',   type='string')
     (opt, args) = parser.parse_args()
 
     #prepare output
@@ -45,7 +47,7 @@ def main():
     binBias,binPulls=None,None
     for itoy in xrange(0,len(file_list)):
         f=file_list[itoy]
-        results=UEUnfold(opt.histo,opt.plotter,f,opt.sigName, opt_tau,True if itoy==0 else False)
+        results=UEUnfold(opt.histo,opt.plotter,f,opt.sigName, opt_tau,True if itoy==0 else False,opt.systPlotter,opt.altSig)
 
         fOutDir=fOut.mkdir('toy_%d'%itoy)
         for r in results: 
@@ -94,7 +96,9 @@ def main():
 
         #break
 
-    print globalPulls.GetMean(),globalPulls.GetRMS()
+    print 'global bias',globalBias.GetMean(),globalBias.GetRMS()
+    print 'global pull',globalPulls.GetMean(),globalPulls.GetRMS()
+
     #all done
     fOut.cd()
     for x in [globalBias,globalPulls,binBias,binPulls]: x.Write()

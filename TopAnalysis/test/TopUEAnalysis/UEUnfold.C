@@ -9,13 +9,14 @@
 
 using namespace std;
 
+TCanvas *bottomLineTestCanvas(TH1 *foldedRatio);
 TCanvas *dataControlCanvas(TH1 *totalData,TH1 *totaData_sub,TH1 *totalRec,TString tag="",TString extraLeg="");
 TCanvas *showNormalizedMigrationMatrix(TH2 *migration);
-TCanvas *showTauScan(TGraph *rhoScanGr,TGraph *bestRhoGr,double opt_tau,double opt_rho);
-TObjArray *UEUnfold(char *dist,char *file_name,char *file_toy,char *sigName, float opt_tau,bool unfoldData);
+TCanvas *showTauScan(TGraph *rhoScanGr,TGraph *bestRhoGr, TGraph *rho2ScanGr,double opt_tau,double opt_rho);
+TObjArray *UEUnfold(char *dist,char *file_name,char *file_toy,char *sigName, float opt_tau,bool unfoldData,char *file_syst=0,char *syst_sample=0);
 
 //
-TObjArray *UEUnfold(char *dist,char *file_name,char *file_toy,char *sigName,float opt_tau,bool unfoldData)
+TObjArray *UEUnfold(char *dist,char *file_name,char *file_toy,char *sigName,float opt_tau,bool unfoldData,char *file_syst,char *syst_sample)
 {
   TObjArray *results=new TObjArray();
   
@@ -76,6 +77,17 @@ TObjArray *UEUnfold(char *dist,char *file_name,char *file_toy,char *sigName,floa
   results->Add( dataControlCanvas(totalData,totalDataSub,totalRec,"data") );
   results->Add( showNormalizedMigrationMatrix(totalMig) );
 
+  //alternative model to test
+  TH1 *modelToTest=0;
+  TH1 *genModelToTest=0;
+  if(file_syst && syst_sample)
+    {
+      TFile *gIn=TFile::Open(file_syst);
+      modelToTest=(TH1 *)gIn->Get( Form("%s_None_True/%s_None_True_%s",dist,dist,syst_sample) )->Clone("signal_alt");
+      modelToTest->Add( (TH1 *)gIn->Get( Form("%s_fakes_True/%s_fakes_True_%s",dist,dist,syst_sample) ), -1 );
+      genModelToTest=(TH1 *)gIn->Get( Form("%s_None_False/%s_None_False_%s",dist,dist,syst_sample) )->Clone("gen_alt");
+    }
+
   //
   // READ TOY FILE
   //
@@ -111,13 +123,14 @@ TObjArray *UEUnfold(char *dist,char *file_name,char *file_toy,char *sigName,floa
 
   const double scaleBias(1.0);
 
-  //TUnfold::ERegMode regMode = TUnfold::kRegModeCurvature;
-  TUnfold::ERegMode regMode = TUnfold::kRegModeSize;
+  TUnfold::ERegMode regMode = TUnfold::kRegModeCurvature;
+  //TUnfold::ERegMode regMode = TUnfold::kRegModeSize;
   
   //TUnfold::EConstraint constraint = TUnfold::kEConstraintArea;
   TUnfold::EConstraint constraint = TUnfold::kEConstraintNone;   
   
-  TUnfoldDensity::EDensityMode densityFlags=TUnfoldDensity::kDensityModeBinWidth;
+  //TUnfoldDensity::EDensityMode densityFlags=TUnfoldDensity::kDensityModeBinWidth;
+  TUnfoldDensity::EDensityMode densityFlags=TUnfoldDensity::kDensityModeeNone;
 
   TUnfoldDensity unfold(totalMig,TUnfold::kHistMapOutputHoriz,regMode,constraint,densityFlags);  
 
@@ -136,9 +149,9 @@ TObjArray *UEUnfold(char *dist,char *file_name,char *file_toy,char *sigName,floa
       TSpline *logTauX,*logTauY;
       TSpline *rhoScanSpline=0;
 
-      //TUnfoldDensity::EScanTauMode tauflag = TUnfoldDensity::kEScanTauRhoAvg;
+      TUnfoldDensity::EScanTauMode tauflag = TUnfoldDensity::kEScanTauRhoAvg;
       //TUnfoldDensity::EScanTauMode tauflag = TUnfoldDensity::kEScanTauRhoMax;//crazy large correlations
-      TUnfoldDensity::EScanTauMode tauflag = TUnfoldDensity::kEScanTauRhoSquareAvg;//crazy large correlations
+      //TUnfoldDensity::EScanTauMode tauflag = TUnfoldDensity::kEScanTauRhoSquareAvg;//crazy large correlations
       
       //unfold.ScanTau(nScan,tauMin,tauMax,&rhoScan,tauflag);	  
       int iBest = unfold.ScanTau(nScan,tauMin,tauMax,&rhoScanSpline,tauflag);	  
@@ -157,7 +170,18 @@ TObjArray *UEUnfold(char *dist,char *file_name,char *file_toy,char *sigName,floa
           rhoScanGr->SetPoint(i,x,y);
         }
 
-      results->Add( showTauScan(rhoScanGr,bestRhoGr, opt_tau,opt_rho) );
+      //for reference display also the max. correlation based optimization
+      unfold.ScanTau(nScan,tauMin,tauMax,&rhoScanSpline,TUnfoldDensity::kEScanTauRhoSquareAvg);
+      TGraph *rho2ScanGr=new TGraph();
+      for(Int_t i=0;i<nScan;i++)
+        {
+          rhoScanSpline->GetKnot(i,x,y);
+          rho2ScanGr->SetPoint(i,x,sqrt(y));
+        }
+
+      //save results
+      results->Add( showTauScan(rhoScanGr,bestRhoGr, rho2ScanGr, opt_tau,opt_rho) );
+
       TVectorF *summary = new TVectorF(2);
       (*summary)[0]=opt_tau;
       (*summary)[1]=opt_rho;
@@ -175,10 +199,11 @@ TObjArray *UEUnfold(char *dist,char *file_name,char *file_toy,char *sigName,floa
       TH1 *unfolded_data=(TH1 *)totalGen->Clone("corrected_data");
       unfolded_data->SetTitle("Data (corrected)");
       unfolded_data->SetDirectory(0);
+      TH2 *ematTotal = unfold.GetEmatrixTotal("EmatTotal");
       for(int xbin=1; xbin<=unfolded_data->GetNbinsX(); xbin++)
         {
           unfolded_data->SetBinContent(xbin,unfolded_data_raw->GetBinContent(xbin));
-          unfolded_data->SetBinError(xbin,unfolded_data_raw->GetBinError(xbin));
+          unfolded_data->SetBinError(xbin,TMath::Sqrt(ematTotal->GetBinContent(xbin,xbin))); //unfolded_data_raw->GetBinError(xbin));
         }
 
       TVectorF *summary = new TVectorF(3);
@@ -188,6 +213,11 @@ TObjArray *UEUnfold(char *dist,char *file_name,char *file_toy,char *sigName,floa
       results->Add( summary );
       results->Add( unfolded_data );
       results->Add( dataControlCanvas(0,unfolded_data,totalGen,"unfolded",Form("#chi^{2}/ndf=(%3.1f+%3.1f)/%d",(*summary)[2],(*summary)[3],(int)(*summary)[4]) ) );
+
+      TH1 *folded_over_reco = unfold.GetFoldedOutput("folded_data",0,0,"",kFALSE);
+      results->Add( folded_over_reco->Clone("data_particle_folded") );
+      folded_over_reco->Divide(totalDataSub);
+      results->Add( bottomLineTestCanvas(folded_over_reco) );
     }
 
   //
@@ -197,6 +227,7 @@ TObjArray *UEUnfold(char *dist,char *file_name,char *file_toy,char *sigName,floa
   toy_unfold.SetInput(toyRecSub,scaleBias);
   toy_unfold.DoUnfold(opt_tau);//,toyRecSub,scaleBias);
   TH1 *unfolded_toy_raw = toy_unfold.GetOutput("unfolded_signal_toy_sub",0,0,"",kFALSE);
+  TH2 *unfolded_ematrix=toy_unfold.GetEmatrixTotal("EmatTotalToy");
   TH1 *unfolded_toy=(TH1 *)toyGen->Clone("corrected_toy");
   unfolded_toy->SetTitle("toy data (corrected)");
   unfolded_toy->SetDirectory(0);
@@ -209,7 +240,8 @@ TObjArray *UEUnfold(char *dist,char *file_name,char *file_toy,char *sigName,floa
 
   for(int xbin=1; xbin<=unfolded_toy_raw->GetNbinsX(); xbin++)
     {
-      float unfVal(unfolded_toy_raw->GetBinContent(xbin)),unfUnc(unfolded_toy_raw->GetBinError(xbin));
+      float unfVal(unfolded_toy_raw->GetBinContent(xbin));
+      float unfUnc(TMath::Sqrt(unfolded_ematrix->GetBinContent(xbin,xbin))); //unfolded_toy_raw->GetBinError(xbin));
       unfolded_toy->SetBinContent(xbin,unfVal);
       unfolded_toy->SetBinError(xbin,unfUnc);
 
@@ -221,6 +253,56 @@ TObjArray *UEUnfold(char *dist,char *file_name,char *file_toy,char *sigName,floa
   results->Add( dataControlCanvas(0,unfolded_toy,toyGen,"toyunfolded") );
   results->Add(bias);
   results->Add(pull);
+
+  //
+  // bottom line test using a model passed by the user
+  //
+  if(modelToTest!=0 && genModelToTest!=0)
+    {
+      //smeared level
+      int nbinsx(toyRecSub->GetNbinsX());
+      TVectorF smearedDiff(nbinsx);
+      TMatrixF smearedCov(nbinsx,nbinsx);
+      for(int xbin=1; xbin<=nbinsx; xbin++)
+        {
+          smearedDiff[xbin-1]=toyRecSub->GetBinContent(xbin)-modelToTest->GetBinContent(xbin);
+          smearedCov[xbin-1][xbin-1]=pow(toyRecSub->GetBinError(xbin),2)+pow(modelToTest->GetBinError(xbin),2);
+        }
+      TVectorF a=smearedDiff;
+      a *= smearedCov.Invert();
+      float smearedChi2=a*smearedDiff;
+      float pval=TMath::Prob(smearedChi2,nbinsx);
+
+      //unfolded level
+      int nbinsxpart=unfolded_toy->GetNbinsX();
+      TVectorF particleDiff(nbinsxpart);
+      TMatrixF particleCov(nbinsxpart,nbinsxpart);
+      for(int xbin=1; xbin<=nbinsxpart; xbin++)
+        {
+          particleDiff[xbin-1]=unfolded_toy->GetBinContent(xbin)-genModelToTest->GetBinContent(xbin);
+          for(int ybin=1; ybin<=unfolded_ematrix->GetNbinsY(); ybin++)
+            {
+              particleCov[xbin-1][ybin-1]=unfolded_ematrix->GetBinContent(xbin,ybin);
+            }
+        }
+      TVector b=particleDiff;
+      b *= particleCov.Invert();
+      float particleChi2=b*particleDiff;
+      float particlepval=TMath::Prob(particleChi2,nbinsxpart);
+
+      smearedCov.Print("v");
+      particleCov.Print("v");
+      cout << smearedChi2 << " " << pval << " | " << particleChi2 << " " << particlepval << endl;
+
+      TH1 *bottomLine=new TH1F("bottomline","",2,0,2);
+      bottomLine->SetBinContent(1,smearedChi2/nbinsx);
+      bottomLine->SetBinContent(2,pval);
+      bottomLine->SetBinContent(3,particleChi2/nbinsxpart);
+      bottomLine->SetBinContent(4,particlepval);
+      bottomLine->SetDirectory(0);
+      results->Add(bottomLine);
+    }
+  
 
   return results;
 
@@ -426,6 +508,29 @@ TObjArray *UEUnfold(char *dist,char *file_name,char *file_toy,char *sigName,floa
 */
 }
 
+TCanvas *bottomLineTestCanvas(TH1 *foldedRatio)
+{
+  TCanvas *c = new TCanvas("cbottomline","cbottomline",500,500);
+  c->SetTopMargin(0.05);
+  c->SetRightMargin(0.02);
+  c->SetLeftMargin(0.12);
+  c->SetBottomMargin(0.1);
+  c->SetGridy();
+  foldedRatio->SetMarkerStyle(20);
+  foldedRatio->Draw("ep");
+  foldedRatio->GetYaxis()->SetTitle("Folded/Reconstructed");
+  foldedRatio->GetXaxis()->SetTitle("Reconstructed bin");
+  foldedRatio->GetYaxis()->SetRangeUser(0.8,1.2);
+  TLatex *txt=new TLatex();
+  txt->SetTextFont(42);
+  txt->SetTextSize(0.04);
+  txt->SetNDC();
+  txt->DrawLatex(0.15,0.9,"#bf{CMS} #it{Preliminary}");
+  txt->DrawLatex(0.75,0.97,"#scale[0.8]{35.9 fb^{-1} (13 TeV)}");
+  return c;
+
+}
+
 TCanvas *dataControlCanvas(TH1 *totalData,TH1 *totalDataSub,TH1 *totalRec,TString tag,TString extraLeg)
 {
   TCanvas *c = new TCanvas("c"+tag,"c"+tag,500,500);
@@ -504,7 +609,7 @@ TCanvas *showNormalizedMigrationMatrix(TH2 *migration)
 }
 
 //
-TCanvas *showTauScan(TGraph *rhoScanGr,TGraph *bestRhoGr,double opt_tau,double opt_rho)
+TCanvas *showTauScan(TGraph *rhoScanGr,TGraph *bestRhoGr,TGraph *rho2ScanGr,double opt_tau,double opt_rho)
 {
   TCanvas *c = new TCanvas("cscan","cscan",500,500);
   c->SetTopMargin(0.05);
@@ -514,7 +619,9 @@ TCanvas *showTauScan(TGraph *rhoScanGr,TGraph *bestRhoGr,double opt_tau,double o
 
   rhoScanGr->Draw("ac");
   rhoScanGr->GetXaxis()->SetTitle("log_{10}(#tau)");
-  rhoScanGr->GetYaxis()->SetTitle("Global #rho");
+  rhoScanGr->GetYaxis()->SetTitle("<#rho> or #sqrt{<#rho^{2}>}");
+  rho2ScanGr->Draw("c");
+  rho2ScanGr->SetLineColor(kGray);
   bestRhoGr->SetMarkerStyle(29);
   bestRhoGr->SetMarkerColor(kRed);
   bestRhoGr->SetLineColor(kRed);
@@ -525,7 +632,7 @@ TCanvas *showTauScan(TGraph *rhoScanGr,TGraph *bestRhoGr,double opt_tau,double o
   txt->SetTextFont(42);
   txt->SetTextSize(0.04);
   txt->SetNDC();
-  txt->DrawLatex(0.12,0.96,"#bf{CMS} #it{Simulation Preliminary}");
+  txt->DrawLatex(0.12,0.96,"#bf{CMS} #it{preliminary}");
   txt->DrawLatex(0.7,0.97,"#scale[0.8]{35.9 fb^{-1} (13 TeV)}");
   txt->DrawLatex(0.12,0.9,Form("#tau=%3.4f #rho=%3.3f",opt_tau,opt_rho));
   return c;

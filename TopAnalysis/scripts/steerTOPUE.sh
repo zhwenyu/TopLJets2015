@@ -73,10 +73,10 @@ case $WHAT in
 	eosprefix=root://eoscms//eos/cms
 	echo "Computing resolutions"
 	base="${eosprefix}/${summaryeosdir}/Chunks/MC13TeV_TTJets"
-	#python test/TopUEAnalysis/runUEanalysis.py -i ${base}_0.root,${base}_1.root,${base}_2.root,${base}_3.root,${base}_4.root --step 0 --ptThr 0.9,0.9 -o ${outdir};
+	python test/TopUEAnalysis/runUEanalysis.py -i ${base}_0.root,${base}_1.root,${base}_2.root,${base}_3.root,${base}_4.root --step 0 --ptThr 0.9,0.9 -o ${outdir};
 	
 	echo "Defining analysis configuration"
-	#python test/TopUEAnalysis/runUEanalysis.py --step 1 -o ${outdir};
+	python test/TopUEAnalysis/runUEanalysis.py --step 1 -o ${outdir};
 	
 	echo "Filling the histograms"
         #queue=local
@@ -92,7 +92,7 @@ case $WHAT in
 	#python scripts/plotter.py -i UEanalysis/analysis -j data/era2016/syst_samples.json ${commonOpts} ${filter} --silent --outName syst_plotter.root;	
 
 	python test/TopUEAnalysis/showFinalRecoDistribution.py UEanalysis/analysis/plots/plotter.root UEanalysis/analysis/plots/syst_plotter.root
-	#python test/TopUEAnalysis/UETools.py -o UEanalysis/analysis/plots/
+	#python test/TopUEAnalysis/UETools.py -o UEanalysis/analysis/plots/ -i  UEanalysis/analysis/MC13TeV_TTJets.root
 	;;
     WWWANA )
 	mkdir -p ${wwwdir}/rawana
@@ -100,5 +100,18 @@ case $WHAT in
 	cp  UEanalysis/analysis/plots/plotter/*.{png,pdf} ${wwwdir}/rawana
         cp test/index.php ${wwwdir}/rawana
 	;;
+    UNFOLD )
+        for i in chmult chflux chfluxz chavgpt chavgpz sphericity aplanarity C D; do         
+            python test/TopUEAnalysis/runUEUnfolding.py -p UEanalysis/analysis/plots/plotter.root -s UEanalysis/analysis/plots/plotter.root --altSig "t#bar{t}" -d UEanalysis/analysis/Chunks/ --histo ${i}_None_inc;
+            python test/TopUEAnalysis/showUnfoldSummary.py -i UEanalysis/unfold/${i}_None_inc.root;            
+            break
+        done
+        #python test/TopUEAnalysis/showFinalUnfoldedDistribution.py UEanalysis/unfold UEanalysis/analysis/plots/plotter.root UEanalysis/analysis/plots/syst_plotter.root
+        ;;
+    WWWUNFOLD )
+        mkdir -p ${wwwdir}/unfold;
+        cp UEanalysis/unfold/*.{png,pdf} ${wwwdir}/unfold;
+        cp test/index.php ${wwwdir}/unfold;
+        ;;
 
 esac
