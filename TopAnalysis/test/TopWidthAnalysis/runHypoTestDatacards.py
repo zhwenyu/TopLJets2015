@@ -172,7 +172,8 @@ def doDataCards(opt,args):
         ('jes',            ['jes'],                                    [],             ['DY'], 2, 1.0),
         ('jer',            ['jer'],                                    [],             ['DY'], 2, 1.0),
         ('trig_*CH*',      ['trig'],                                   [],             ['DY'], 2, 1.0),
-        ('sel_*CH*',       ['sel'],                                    [],             ['DY'], 2, 1.0),
+        ('sel_E',          ['esel'],                                   [],             ['DY'], 2, 1.0),
+        ('sel_M',          ['msel'],                                   [],             ['DY'], 2, 1.0),
         ('les_*CH*',       ['les'],                                    [],             ['DY'], 2, 1.0),
         ('ltag',           ['ltag'],                                   [],             ['DY'], 2, 1.0),
         ('btag',           ['btag'],                                   [],             ['DY'], 2, 1.0),
@@ -187,12 +188,18 @@ def doDataCards(opt,args):
         ('mtop',           {'tbart':['t#bar{t} m=171.5',  't#bar{t} m=173.5']}    , 0, 1./2.),
         ('UE',             {'tbart':['t#bar{t} UEdn',     't#bar{t} UEup']}       , 2, 1.0 ),
         ('hdamp',          {'tbart':['t#bar{t} hdamp dn', 't#bar{t} hdamp up']}   , 2, 1.0 ),
-        ('ISR',            {'tbart':['t#bar{t} isr dn',   't#bar{t} isr up']}     , 2, 1.0 ),
-        ('FSR',            {'tbart':['t#bar{t} fsr dn',   't#bar{t} fsr up']}     , 2, 1.0 ),
+        ('ISR',            {'tbart':['t#bar{t} isr dn',   't#bar{t} isr up'],
+                            'Singletop':['Single top isr dn', 'Single top isr up']}
+                                                                                  , 2, 1.0 ),
+        ('FSR',            {'tbart':['t#bar{t} fsr dn',   't#bar{t} fsr up']
+                            'Singletop':['Single top fsr dn', 'Single top fsr up']}
+                                                                                  , 2, 1.0 ),
         #('ttPSScale' ,     {'tbart':['t#bar{t} scale down','t#bar{t} scale up']} , 2, 1.0  ),
         #('ttGenerator',    {'tbart':['t#bar{t} amc@nlo FxFx']},                    1, 1.0  ),
         #('ttPartonShower', {'tbart':['t#bar{t} Herwig++']},                        1, 1.0  ),
-        #('tWttInterf',     {'tW':   ['tW DS']},                                    1, 1.0 ),
+        ('tWttInterf',     {'Singletop':   ['Single top DS']},                      2, 1.0 ),
+        ('tWMEScale',      {'Singletop':   ['Single top me dn', 'Single top me up']},
+                                                                                    2, 1.0 ),
         #('tWQCDScale',     {'tW':   ['tW scale down','tW scale up']},              1, 1.0 )
         ]
 
@@ -678,7 +685,7 @@ def doDataCards(opt,args):
                                  'mtop',
                                  'tWttInterf,tWQCDScale'
                                  ]:
-                    if 'tW' in proc and ('ttPS' in uncList or 'ttGen' in uncList) : continue
+                    if 'Singletop' in proc and ('ttPS' in uncList or 'ttGen' in uncList) : continue
                     if 'tbart' in proc and 'tWttInterf' in uncList : continue
                     uncList=uncList.replace('*CH*',lfs)
                     plotter=Popen(['python',
@@ -723,7 +730,7 @@ def main():
     parser.add_option(      '--mainHypo',           dest='mainHypo',  help='main hypothesis',                                      default=1.0,         type=float)
     parser.add_option(      '--altHypo',            dest='altHypo',   help='alternative hypothesis',                               default=4.0,         type=float)
     parser.add_option(      '--altHypoFromSim',     dest='altHypoFromSim',   help='alternative hypothesis from dedicated sample',  default='',          type='string')
-    parser.add_option('-s', '--signal',             dest='signal',             help='signal (csv)',                                default='tbart,tW',  type='string')
+    parser.add_option('-s', '--signal',             dest='signal',             help='signal (csv)',                                default='tbart,Singletop',  type='string')
     parser.add_option('-c', '--cat',                dest='cat',                help='categories (csv)',
                       default='lowptEE1b,lowptEE2b,highptEE1b,highptEE2b,lowptEM1b,lowptEM2b,highptEM1b,highptEM2b,lowptMM1b,lowptMM2b,highptMM1b,highptMM2b',
                       type='string')

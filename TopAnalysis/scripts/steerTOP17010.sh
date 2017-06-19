@@ -1,8 +1,8 @@
 #!/bin/bash
 
 WHAT=$1; 
-if [ "$#" -ne 1 ]; then 
-    echo "steerTOP17010.sh <SEL/MERGESEL/PLOTSEL/WWWSEL/ANA/MERGE/BKG/PLOT/WWW/HYPOTEST> <ERA>";
+if [ "$#" -gt 2 ]; then 
+    echo "steerTOP17010.sh <SEL/MERGESEL/PLOTSEL/WWWSEL/ANA/MERGE/BKG/PLOT/WWW/HYPOTEST> <AnalysisName>";
     echo "        SEL          - launches selection jobs to the batch, output will contain summary trees and control plots"; 
     echo "        MERGESEL     - merge the output of the jobs";
     echo "        PLOTSEL      - runs the plotter tool on the selection";
@@ -18,14 +18,14 @@ if [ "$#" -ne 1 ]; then
     echo "        PLOTHYPOTEST - create summaries of the hypothesis tests";
     echo "        WWWHYPOTEST  - move summaries to afs-web-based area"
     echo " "
-    echo "        ERA          - era2015/era2016";
+    echo "        AnalysisName - name to give the fits (changes output dir for plots)";
     exit 1; 
 fi
 
 export LSB_JOB_REPORT_MAIL=N
 
 
-queue=2nd
+queue=2nw
 githash=b312177
 lumi=35922
 lumiSpecs="" #"--lumiSpecs EE:11391"
@@ -34,8 +34,9 @@ whoami=`whoami`
 myletter=${whoami:0:1}
 eosdir=/store/cmst3/group/top/ReReco2016/${githash}
 summaryeosdir=/store/cmst3/group/top/TOP-17-010/
-COMBINERELEASE=~/scratch0/CMSSW_7_4_7/src/
+COMBINERELEASE=~/CMSSW_7_4_7/src/
 outdir=/afs/cern.ch/work/${myletter}/${whoami}/TOP-17-010/
+anadir=${outdir}/$2
 wwwdir=~/www/TOP-17-010/
 
 
@@ -113,6 +114,7 @@ case $WHAT in
         cp test/index.php ${wwwdir}/comb
 	;;
     HYPOTEST ) 
+    mkdir $anadir
 	mainHypo=1.0
 	CATS=(
 	    "lowptEE1b,lowptEE2b,highptEE1b,highptEE2b,lowptEM1b,lowptEM2b,highptEM1b,highptEM2b,lowptMM1b,lowptMM2b,highptMM1b,highptMM2b"
@@ -148,15 +150,15 @@ case $WHAT in
 		    fi
 
 		    echo "Submitting ($mainHypo,$h,$d,$itag,$icat)"		
-		    stdcmd="${cmd} -o ${outdir}/datacards_${itag}/"
+		    stdcmd="${cmd} -o ${anadir}/datacards_${itag}/"
 		    bsub -q ${queue} ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${stdcmd};
 		    if [ "$itag" == "inc" ]; then
 			if [ "$d" == "1.0" ]; then
 			    echo "    injecting pseudo-data from nloproddec"
-			    nlocmd="${cmd} --pseudoDataFromWgt nloproddec -o ${outdir}/datacards_${itag}_nloproddec"
+			    nlocmd="${cmd} --pseudoDataFromWgt nloproddec -o ${anadir}/datacards_${itag}_nloproddec"
 			    bsub -q ${queue} ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${nlocmd};   
 			    echo "    injecting pseudo-data from widthx4"
-			    width4cmd="${cmd} --pseudoDataFromSim=t#bar{t}_widthx4 -o ${outdir}/datacards_${itag}_widthx4"
+			    width4cmd="${cmd} --pseudoDataFromSim=t#bar{t}_widthx4 -o ${anadir}/datacards_${itag}_widthx4"
 			    bsub -q ${queue} sh ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${width4cmd};
 			fi
 		    fi
@@ -172,7 +174,7 @@ case $WHAT in
 	TAGS=("inc" "ll" "em" "inc_nloproddec" "inc_widthx4")
 	for i in ${!TAGS[*]}; do
 	    itag=${TAGS[${i}]}
-	    python ${summaryScript} -i ${outdir}/datacards_${itag}/ --doCLs --recreateCLsSummary --doNuisances --doFitSummary	
+	    python ${summaryScript} -i ${anadir}/datacards_${itag}/ --doCLs --recreateCLsSummary --doNuisances --doFitSummary	
 	done	
 	;;
     WWWHYPOTEST )
@@ -180,8 +182,8 @@ case $WHAT in
         for i in ${!TAGS[@]}; do
 	    itag=${TAGS[${i}]}
             mkdir -p ${wwwdir}/hypo${itag}
-            cp ${outdir}/datacards${itag}/*.{png,pdf} ${wwwdir}/hypo${itag};
-            cp ${outdir}/datacards${itag}/hypotest_1.0vs2.2_data/*.{png,pdf} ${wwwdir}/hypo${itag};
+            cp ${anadir}/datacards${itag}/*.{png,pdf} ${wwwdir}/hypo${itag};
+            cp ${anadir}/datacards${itag}/hypotest_1.0vs2.2_data/*.{png,pdf} ${wwwdir}/hypo${itag};
             cp test/index.php ${wwwdir}/hypo${itag}
 	done
 	;;
