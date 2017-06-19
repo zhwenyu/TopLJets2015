@@ -50,7 +50,7 @@ def averageDistribution(gr,axis):
 
 """
 """
-def buildPlot(data,signal,expSysts,signalVars,obsAxis,sliceAxis,opt):
+def buildPlot(data,signal,signalVars,obsAxis,sliceAxis,opt):
 
     obs=obsAxis.GetName().split('_')[0]
     sliceVar=sliceAxis.GetName().split('_')[0] if sliceAxis else ''
@@ -93,24 +93,6 @@ def buildPlot(data,signal,expSysts,signalVars,obsAxis,sliceAxis,opt):
             
             rawBin=xbin
             if sliceAxis: rawBin+=nobsBins*(islice-1)
-            
-            #experimental systematics (add envelopes in quadrature)
-            errLo,errHi=0,0
-            for syst in expSysts:
-                minLo,maxHi=9999999999,-9999999999
-                for k in xrange(0,len(expSysts[syst])):
-                    dSignal=expSysts[syst][k].GetBinContent(rawBin)
-                    if dSignal<minLo : minLo=dSignal
-                    if dSignal>maxHi : maxHi=dSignal
-                if minLo<0 and maxHi>0:
-                    errLo += minLo**2
-                    errHi += maxHi**2
-                else:
-                    env=max(abs(minLo),abs(maxHi))
-                    errLo += env**2
-                    errHi += env**2
-            errLo=ROOT.TMath.Sqrt(errLo)
-            errHi=ROOT.TMath.Sqrt(errHi)
 
             np=idataGr.GetN()
 
@@ -118,22 +100,19 @@ def buildPlot(data,signal,expSysts,signalVars,obsAxis,sliceAxis,opt):
             idataGr.SetPoint       (np,   cen,        dataCts/(2*hwid))
             idataGr.SetPointError  (np,   0,          dataUnc/(2*hwid))
 
-            signalCts=signal.GetBinContent(rawBin)
+            signalCts,signalUnc=signal.GetBinContent(rawBin),signal.GetBinError(rawBin)
             isignalGr.SetPoint     (np,   cen,        signalCts/(2*hwid))
-            isignalGr.SetPointError(np,   hwid, hwid, errLo/(2*hwid), errHi/(2*hwid))
+            isignalGr.SetPointError(np,   hwid, hwid, signalUnc/(2*hwid), signalUnc/(2*hwid))
 
             if dataCts>0 and signalCts>0:
                 iratioVal=signalCts/dataCts
-                iratioUncLo=iratioVal*ROOT.TMath.Sqrt(pow(errLo/signalCts,2)+pow(dataUnc/dataCts,2))
-                iratioUncHi=iratioVal*ROOT.TMath.Sqrt(pow(errHi/signalCts,2)+pow(dataUnc/dataCts,2))
+                iratioUncLo=iratioVal*ROOT.TMath.Sqrt(pow(signalUnc/signalCts,2)+pow(dataUnc/dataCts,2))
+                iratioUncHi=iratioVal*ROOT.TMath.Sqrt(pow(signalUnc/signalCts,2)+pow(dataUnc/dataCts,2))
                 isignalRatioGr.SetPoint     (np,   cen,        iratioVal)
                 isignalRatioGr.SetPointError(np,   hwid, hwid, iratioUncLo, iratioUncHi)
 
         ratiosGr.Add(isignalRatioGr,'2')
         ratiosLeg.AddEntry(isignalRatioGr,'PW+PY8 CUETP8M2T4','f')
-
-        #dataAvg=averageDistribution(idataGr,obsAxis)
-        #mcAvg={'nominal':averageDistribution(isignalGr,obsAxis)}
 
         #variations to be compared
         ivar=0
@@ -167,7 +146,7 @@ def buildPlot(data,signal,expSysts,signalVars,obsAxis,sliceAxis,opt):
                             
                 np=isignalVarGr.GetN()
                 isignalVarGr.SetPoint(np,cen,y)
-                isignalVarGr.SetPointError(np,0,0,errLo,errHi)
+                isignalVarGr.SetPointError(np,0,0,signalUnc,signalUnc)
             
             ratiosGr.Add(isignalVarGr,'pZ')
             ratiosLeg.AddEntry(isignalVarGr,var,'ep')
@@ -246,7 +225,7 @@ def buildPlot(data,signal,expSysts,signalVars,obsAxis,sliceAxis,opt):
         outname=obs
         if nslices>1: outname += '%s_%d'%(sliceVar,islice)
         for ext in ['png','pdf']:
-            c.SaveAs('~/www/TopUE_ReReco2016/%s_smeared.%s'%(outname,ext))
+            c.SaveAs('~/www/TopUE_ReReco2016/%s_particle.%s'%(outname,ext))
 
 
 
@@ -288,84 +267,80 @@ def readPlotsFrom(args,opt):
         except:
             pass
 
-    fIn=ROOT.TFile.Open(args[0])
-    fSyst=ROOT.TFile.Open(args[1]) if len(args)>1 else None
+
     for obs in OBSERVABLES:
 
-        obsAxis=analysisaxis[(obs,True)]
+        obsAxis=analysisaxis[(obs,False)]
         
         for s in SLICES:
 
-            sliceAxis=None if s is None else analysisaxis[(s,True)]
+            sliceAxis=None if s is None else analysisaxis[(s,False)]
             if not sliceAxis is None: continue
 
-            #read the nominal expectations
-            nomKey='%s_%s_inc_None_True'%(obs,s)
-            t=fIn.Get(nomKey)
-            print t,nomKey
-            data,signal,bkg=None,None,None
-            for pkey in t.GetListOfKeys():
-                h=t.Get(pkey.GetName())
-                if not h.InheritsFrom('TH1') : continue
-                if 'Data' in h.GetTitle():
-                    data=h.Clone('data')
-                elif h.GetTitle() in opt.signal:
-                    signal=h.Clone('%s_nominal'%h.GetName())
-                else:
-                    if bkg is None: bkg=h.Clone('bkg')
-                    else : bkg.Add(h)
-
-            #normalize the signal
-            normalizePerSlice(signal,obsAxis,sliceAxis)
-
-            #subtract the background from the data 
-            data.Add(bkg,-1)            
+            #read unfolded data
+            fIn=ROOT.TFile('%s/%s_%s_inc.root'%(args[0],obs,s))
+            print fIn,fIn.GetName()
+            data=fIn.Get('corrected_data')
+            print data
+            data.SetDirectory(0)
+            fIn.Close()
             normalizePerSlice(data,obsAxis,sliceAxis)
 
-
-            #project experimental systematics and signal variations
+            #read the nominal expectations and variations
+            signal=None
             signalVars={}
-            expSysts={}
-            expSystsKey='%s_%s_inc_syst_True'%(obs,s)
-            expSystsH=fIn.Get('%s/%s_%s'%(expSystsKey,expSystsKey,opt.signal))
-            for ybin in xrange(2,expSystsH.GetNbinsY()):
-                varName=expSystsH.GetYaxis().GetBinLabel(ybin)
-                systKey=varName
-                if systKey[-2:] in ['up','dn']  : systKey=systKey[:-2]
-                h=expSystsH.ProjectionX('px',ybin,ybin)
-                normalizePerSlice(h,obsAxis,sliceAxis)
-                if systKey in ['mur','muf','q'] :                    
-                    h.Divide(data)
-                    systKey='ME scale'
-                    if not systKey in signalVars: signalVars[systKey]=[]
-                    signalVars[systKey].append( h.Clone(varName) )
-                elif systKey in ['p_{T}(t)']:
-                    h.Divide(data)
-                    systKey='toppt'
-                    if not systKey in signalVars: signalVars[systKey]=[]
-                    signalVars[systKey].append( h.Clone(varName) )                    
-                elif systKey in ['tkeff','tkeffbcdef','tkeffgh','tkeffeta']:
-                    if systKey in ['tkeffbcdef','tkeffgh'] : continue
-                    h.Add(signal,-1)
-                    systKey='Trk. eff.'
-                    if not systKey in expSysts: expSysts[systKey]=[]
-                    expSysts[systKey].append( h.Clone(varName) )
-                else:
-                    h.Add(signal,-1)
-                    if not systKey in expSysts: expSysts[systKey]=[]
-                    expSysts[systKey].append(  h.Clone(varName) )
+            if len(args)>1 :
+                fGen=ROOT.TFile.Open(args[1])
+                nomKey='%s_%s_inc_None_False'%(obs,s)
+                t=fGen.Get(nomKey)
+                for pkey in t.GetListOfKeys():
+                    h=t.Get(pkey.GetName())
+                    if not h.InheritsFrom('TH1') : continue
+                    if not h.GetTitle() in opt.signal: continue
+                    signal=h.Clone('%s_nominal'%h.GetName())
+                    signal.SetDirectory(0)
+                normalizePerSlice(signal,obsAxis,sliceAxis)
 
-            #variations to compare to
-            for varTitle in varTypes:
-                signalVars[varTitle]=[]
-                for varName in varTypes[varTitle]:
-                    hvar=fSyst.Get(nomKey).Get(signal.GetName().replace('_nominal',' '+varName))
-                    normalizePerSlice(hvar,obsAxis,sliceAxis)
-                    hvar.Divide(data)
-                    signalVars[varTitle].append(hvar)
+                #project signal variations (todo only available for RECO)
+                #expSystsKey='%s_%s_inc_syst_False'%(obs,s)
+                #expSystsH=fGen.Get('%s/%s_%s'%(expSystsKey,expSystsKey,opt.signal))
+                #print '%s/%s_%s'%(expSystsKey,expSystsKey,opt.signal)
+                #for ybin in xrange(2,expSystsH.GetNbinsY()):
+                #    varName=expSystsH.GetYaxis().GetBinLabel(ybin)
+                #    systKey=varName
+                #    if systKey[-2:] in ['up','dn']  : systKey=systKey[:-2]
+                #    h=expSystsH.ProjectionX('px',ybin,ybin)
+                #    normalizePerSlice(h,obsAxis,sliceAxis)
+                #    if systKey in ['mur','muf','q'] :                    
+                #        h.Divide(data)
+                #        systKey='ME scale'
+                #        if not systKey in signalVars: signalVars[systKey]=[]
+                #        signalVars[systKey].append( h.Clone(varName) )
+                #    elif systKey in ['p_{T}(t)']:
+                #        h.Divide(data)
+                #        systKey='toppt'
+                #        if not systKey in signalVars: signalVars[systKey]=[]
+                #        signalVars[systKey].append( h.Clone(varName) )                    
+                #fGen.Close()            
 
+            if len(args)>2:
+                fSyst=ROOT.TFile.Open(args[2])
+                nomKey='%s_%s_inc_None_False'%(obs,s)
+                for varTitle in varTypes:
+                    signalVars[varTitle]=[]
+                    for varName in varTypes[varTitle]:
+                        systName=signal.GetName().replace('_nominal',' '+varName)
+                        print systName
+                        hvar=fSyst.Get(nomKey).Get(systName)
+                        hvar.SetDirectory(0)
+                        print hvar
+                        normalizePerSlice(hvar,obsAxis,sliceAxis)
+                        hvar.Divide(data)
+                        signalVars[varTitle].append(hvar)
+                fSyst.Close()
+                
 
-            buildPlot(data,signal,expSysts,signalVars,obsAxis,sliceAxis,opt)
+            buildPlot(data,signal,signalVars,obsAxis,sliceAxis,opt)
 
 
 
