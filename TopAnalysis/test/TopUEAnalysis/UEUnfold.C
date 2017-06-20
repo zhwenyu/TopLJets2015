@@ -111,6 +111,7 @@ void UEUnfold::unfoldData(char *dist,char *file_name,char *syst_file_name,char *
       if(!name.Contains(sigName) || name.Contains("t#bar{t}t#bar{t}")) continue;
       TString pfix=h->GetTitle(); 
       migMatrices[pfix]=(TH2 *)h->Clone("migration"+pfix);
+      migMatrices[pfix]->Scale(migMatrices[pfix]->Integral()/migMatrices[""]->Integral());
       migMatrices[pfix]->SetDirectory(0);
     }
   systF->Close();
@@ -130,6 +131,7 @@ void UEUnfold::unfoldData(char *dist,char *file_name,char *syst_file_name,char *
       cout << "Unfolding variation" << it->first << endl;
       doUnfold(opt_tau,it->second,totalDataSub,totalGen,false,it->first);
     }
+  doUnfold(opt_tau,migMatrices[""],totalData,totalGen,false,"bckpfakes");
 }
 
 //

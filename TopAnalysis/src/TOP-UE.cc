@@ -470,7 +470,7 @@ void RunTopUE(TString filename,
 	  std::vector<size_t> lightJetsIdx, bJetsIdx;
           for(size_t ij=0; ij<jets.size(); ij++)
             {
-              if(abs(jets[ij].flavor())==5) bJetsIdx.push_back(ij);
+              if(abs(jets[ij].flavor())==5 && bJetsIdx.size()<2) bJetsIdx.push_back(ij);
               else                          lightJetsIdx.push_back(ij);
             }
           bool passPresel = passLepPresel && (bJetsIdx.size()>=2);
@@ -562,7 +562,7 @@ void RunTopUE(TString filename,
 
 	  //flag if passes selection  
 	  tue.gen_passSel=passPresel;
-	  tue.gen_nj=jets.size();
+	  tue.gen_nj=jets.size()-bJetsIdx.size();
           tue.gen_nb=bJetsIdx.size();
 	  
 	  int posLepton( leptons[0].charge()>0 ? 0 : 1 );

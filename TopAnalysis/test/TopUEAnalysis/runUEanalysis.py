@@ -203,9 +203,11 @@ def defineAnalysisBinning(opt):
             genBin=[0]
             resolGr=varResolutions[var][1]
             nSigmaForBins=2.5
-            if var in ['C','D','aplanarity','sphericity'] : nSigmaForBins=2
-            if var in ['chavgpt','chavgpz'] : nSigmaForBins=3
-            print var,nSigmaForBins
+            if var in ['C','D','aplanarity','sphericity'] : nSigmaForBins=1.5
+            #if var in ['chavgpt','chavgpz'] : nSigmaForBins=3
+            if VARS[var][1]    : nSigmaForBins=5
+            if var in ['ptll'] : nSigmaForBins=20
+
             lastAcceptResol=resolGr.GetErrorY(0)
             for n in xrange(1,resolGr.GetN()-1):
 
@@ -230,14 +232,18 @@ def defineAnalysisBinning(opt):
 
         #special case for angular variables: override previous definition
         if VARS[var][4]:
-            nbins=10
-            if var=='phittbar': nbins=4
+            nbins=6
             delta=180./float(nbins)
             genBin=[i*delta     for i in xrange(0,nbins+1)]
             recBin=[i*delta*0.5 for i in xrange(0,2*nbins+1)]
 
-        if var in ['C','D','sphericity']: genBin[-1],recBin[-1]=1,1
-        if var in ['aplanarity']: genBin[-1],recBin[-1]=0.5,0.5
+        if var in ['chavgpt','chavgpz']  : 
+            del genBin[1]
+            del recBin[1]
+        if var in ['C','D','sphericity'] : 
+            genBin[-1],recBin[-1]=1,1
+        if var in ['aplanarity']         : 
+            genBin[-1],recBin[-1]=0.5,0.5
 
         #save binning in histos
         varAxes[(var,False)] = ROOT.TAxis(len(genBin)-1,array.array('d',genBin))
@@ -406,21 +412,23 @@ def runUEAnalysis(inF,outF,cfgDir):
                         sliceVarVals = (sliceVar, getattr(ue,'gen_%s'%sliceVar), getattr(ue,'rec_%s'%sliceVar)[ivar] )
                     except:
                         pass
-
+                
                 #loop over UE observables
                 for obs in OBSVARS:
                     ueHandler.fillInclusive(sliceVarVals=sliceVarVals, obs=obs, ue=ue, ivar=ivar)
 
 
                 #loop over axes defining away/towards/transverse regions
-                #for a in EVAXES:
-                #        ueHandler.fillDifferential(sliceVarVals=sliceVarVals,
-                #                                   obs=obs,
-                #                                   a=a,
-                #                                   ue=ue,
-                #                                   weight=t.weight[wgtIdx],
-                #                                   gen_passSel=gen_passSel,
-                #                                   passSel=passSel)
+                for a in EVAXES:
+                    ueHandler.fillDifferential(sliceVarVals=sliceVarVals,
+                                               obs=obs,
+                                               a=a,
+                                               ue=ue,
+                                               ivar=ivar)
+
+                    #weight=t.weight[wgtIdx],
+                    #                               gen_passSel=gen_passSel,
+                    #                               passSel=passSel)
 
 
     #save histos to ROOT file

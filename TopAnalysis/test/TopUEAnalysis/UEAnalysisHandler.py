@@ -8,26 +8,27 @@ import array as array
 #var name, var title, use to slice phase space, use as observable, use as event axis, is angle
 VARS={
     'ptttbar'        : ('p_{T}(t#bar{t})',  True,  False, False, False),
-#    'phittbar'       : ('#phi(t#bar{t})',   True,  False, True,  True),
-#    'ptpos'          : ('p_{T}(l^{+})',     True,  False, False, False),
-#    'phipos'         : ('#phi(l^{+})',      True,  False, True,  True),
     'ptll'           : ('p_{T}(l,l)',       True,  False, False, False),
-#    'phill'          : ('#phi(ll)',         True,  False, True,  True),
+    #'phittbar'       : ('#phi(t#bar{t})',   True,  False, True,  True),
+    #    'ptpos'          : ('p_{T}(l^{+})',     True,  False, False, False),
+    #    'phipos'         : ('#phi(l^{+})',      True,  False, True,  True),
+    
+    #'phill'          : ('#phi(ll)',         True,  False, True,  True),
     'nj'             : ('N(jets)',          True,  False, False, False),
-    'chmult'         : ('N(ch)',            True,  True,  False, False),
+    'chmult'         : ('N(ch)',            False,  True,  False, False),
     'chflux'         : ('#Sigma p_{T}(ch)', False, True,  False, False),
     'chavgpt'        : ('#bar{p}_{T}(ch)',  False, True,  False, False),
     'chfluxz'        : ('#Sigma p_{z}(ch)', False, True,  False, False),
     'chavgpz'        : ('#bar{p}_{z}(ch)',  False, True,  False, False),
-    'sphericity'     : ('Spericity',        False, True,  False, False),
+    'sphericity'     : ('Sphericity',       False, True,  False, False),
     'aplanarity'     : ('Aplanarity',       False, True,  False, False),
     'C'              : ('C',                False, True,  False, False),
     'D'              : ('D',                False, True,  False, False)
     }
 
 OBSVARS   = filter(lambda var : VARS[var][2], VARS)
-EVAXES    = filter(lambda var : VARS[var][3], VARS)
 SLICEVARS = filter(lambda var : VARS[var][1], VARS)
+EVAXES    = ['ptttbar','ptll'] #filter(lambda var : VARS[var][3], VARS)
 
 SYSTS = [ ('',   0,0,False),
           ('puup',  1,0,False),
@@ -117,9 +118,9 @@ class UEAnalysisHandler:
     """
     differential histogram filling
     """
-    def fillDifferential(self,obs,a,ue,weight,gen_passSel,passSel,sliceVarVals=None):
+    def fillDifferential(self,sliceVarVals,obs,a,ue,ivar):
 
-        if not passSel and not gen_passSel: return
+        if not ue.gen_passSel and not ue.rec_passSel[ivar]: return
 
         sliceVar=None
         recSliceShift,genSliceShift=0,0
@@ -130,65 +131,56 @@ class UEAnalysisHandler:
         except:
             pass
 
-        recCts=getattr(ue,'rec_chmult_incWrtTo')[a]
-        recCtsMtrx=getattr(ue,'rec_chmult_wrtTo')[a]
-        recVal=getattr(ue,'rec_%s_incWrtTo'%obs)[a]
-        recValMtrx=getattr(ue,'rec_%s_wrtTo'%obs)[a]
+        if obs==sliceVar : return
 
+        #event weight   
+        weight=ue.w[ivar]
+        
+        #GEN level counting
         genCts=getattr(ue,'gen_chmult_wrtTo')[a]        
         genVal=getattr(ue,'gen_%s_wrtTo'%obs)[a]
-
-        #RECO level counting
-        recBinOffset=0
-        totalBinsRec=0
-        for idx_rec in xrange(0,3) : totalBinsRec += self.axes[(obs,a,idx_rec,True)].GetNbins()
-        for idx_rec in xrange(0,3):
+        genBinOffset=0
+        totalBinsGen=self.axes[(obs,False)].GetNbins()
+        for idx_gen in xrange(0,3):            
+            if genCts[idx_gen]==0 : continue
+            genBin  = idx_gen*totalBinsGen+self.getBinForVariable( genVal[idx_gen], self.axes[(obs,False)])-1
+            genBin += genSliceShift*(3*totalBinsGen)
+            if not ue.gen_passSel : genBin=-1
+            self.histos[(obs,sliceVar,a,None,False)].Fill(genBin,weight)
             
+        #RECO level counting
+        recCts=getattr(ue,'rec_chmult_incWrtTo')[a]
+        recVal=getattr(ue,'rec_%s_incWrtTo'%obs)[a]
+        recBinOffset=0
+        totalBinsRec=self.axes[(obs,True)].GetNbins()
+        for idx_rec in xrange(0,3):
+            if not ue.rec_passSel[ivar] : continue
             if recCts[idx_rec]==0: continue
-            recBin  = recBinOffset+self.getBinForVariable( recVal[idx_rec],  self.axes[(obs,a,idx_rec,True)])-1
-            recBin += recSliceShift*totalBinsRec
-            if not passSel : recBin=-1
-            if sliceVar:
-                self.histos[(obs,a,True,sliceVar)].Fill(recBin,weight)
-            else:
-                self.histos[(obs,a,True)].Fill(recBin,weight)
-            recBinOffset += self.axes[(obs,a,idx_rec,True)].GetNbins()
-
+            recBin  = idx_rec*totalBinsRec+self.getBinForVariable( recVal[idx_rec],  self.axes[(obs,True)])-1
+            recBin += recSliceShift*(3*totalBinsRec)
+            self.histos[(obs,sliceVar,a,None,True)].Fill(recBin,weight)
         
         #MC truth counting
-        genBinOffset=0
-        totalBinsGen=0
-        for idx_gen in xrange(0,3) : totalBinsGen += self.axes[(obs,a,idx_gen,False)].GetNbins()
-        for idx_gen in xrange(0,3):
-            
-            genBin=-1
-            if genCts[idx_gen]>0 :
-                genBin  = genBinOffset+self.getBinForVariable( genVal[idx_gen], self.axes[(obs,a,idx_gen,False)])-1
-                genBin += genSliceShift*totalBinsGen
-                if not gen_passSel : genBin=-1
-                if sliceVar:
-                    self.histos[(obs,a,False,sliceVar)].Fill(genBin,weight)
-                else:
-                    self.histos[(obs,a,False)].Fill(genBin,weight)
-                
-            recBinOffset=0
-            for idx_rec in xrange(0,3):
-            
-                recBin=-1
-                if recCtsMtrx[idx_gen][idx_rec]>0:
-                    recBin  = recBinOffset+self.getBinForVariable( recVal[idx_rec],  self.axes[(obs,a,idx_rec,True)])-1
-                    recBin += recSliceShift*totalBinsRec
-                    if not passSel : recBin=-1
-                if genCts[idx_gen]>0 or recCtsMtrx[idx_gen][idx_rec]>0: 
-                    if sliceVar:
-                        self.histos[(obs,a,sliceVar)].Fill(genBin,recBin,weight)
-                    else:
-                        self.histos[(obs,a)].Fill(genBin,recBin,weight)
-
-                recBinOffset += self.axes[(obs,a,idx_rec,True)].GetNbins()
-
-            genBinOffset += self.axes[(obs,a,idx_gen,False)].GetNbins()
-
+#            recCtsMtrx=getattr(ue,'rec_chmult_wrtTo')[a]
+#        recValMtrx=getattr(ue,'rec_%s_wrtTo'%obs)[a]
+#            recBinOffset=0
+#            for idx_rec in xrange(0,3):
+#            
+#                recBin=-1
+#                if recCtsMtrx[idx_gen][idx_rec]>0:
+#                    recBin  = recBinOffset+self.getBinForVariable( recVal[idx_rec],  self.axes[(obs,a,idx_rec,True)])-1
+#                    recBin += recSliceShift*totalBinsRec
+#                    if not passSel : recBin=-1
+#                if genCts[idx_gen]>0 or recCtsMtrx[idx_gen][idx_rec]>0: 
+#                    if sliceVar:
+#                        self.histos[(obs,a,sliceVar)].Fill(genBin,recBin,weight)
+#                    else:
+#                        self.histos[(obs,a)].Fill(genBin,recBin,weight)
+#
+#                recBinOffset += self.axes[(obs,a,idx_rec,True)].GetNbins()
+#
+#            genBinOffset += self.axes[(obs,a,idx_gen,False)].GetNbins()
+#
 
 
     """

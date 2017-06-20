@@ -147,7 +147,7 @@ class Plot(object):
 
     def show(self, outDir,lumi,noStack=False,saveTeX=False,extraText=None,noRatio=False):
 
-        if len(self.mc)<2 and self.dataH is None:
+        if len(self.mc)<1 and self.dataH is None:
             print '%s has 0 or 1 MC!' % self.name
             return
 
@@ -176,7 +176,7 @@ class Plot(object):
             p1=ROOT.TPad('p1','p1',0.0,0.0,1.0,1.0)
             p1.SetRightMargin(0.05)
             p1.SetLeftMargin(0.12)
-            p1.SetTopMargin(0.1)
+            p1.SetTopMargin(0.08)
             if noRatio:
                 p1.SetTopMargin(0.05)
             p1.SetBottomMargin(0.12)
@@ -376,11 +376,16 @@ class Plot(object):
         inix=0.15 if noStack else 0.18
         if (totalMC is not None and totalMC.GetMaximumBin() > totalMC.GetNbinsX()/2.):
             inix = 0.64
+        inixlumi=0.7
+        if not self.dataH or noRatio:
+            inix=0.56
+            inixlumi=0.65
+
         txt.DrawLatex(inix,iniy,self.cmsLabel)
         if lumi<100:
-            txt.DrawLatex(0.7,0.97,'#scale[0.8]{%3.1f pb^{-1} (%s)}' % (lumi,self.com) )
+            txt.DrawLatex(inixlumi,0.97,'#scale[0.8]{%3.1f pb^{-1} (%s)}' % (lumi,self.com) )
         else:
-            txt.DrawLatex(0.7,0.97,'#scale[0.8]{%3.1f fb^{-1} (%s)}' % (lumi/1000.,self.com) )
+            txt.DrawLatex(inixlumi,0.97,'#scale[0.8]{%3.1f fb^{-1} (%s)}' % (lumi/1000.,self.com) )
         try:
             extraCtr=1
             for extra in extraText.split('\\'):

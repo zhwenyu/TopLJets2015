@@ -5,47 +5,8 @@ import optparse
 import pickle
 from collections import OrderedDict
 from UEAnalysisHandler import VARS
+from showFinalUnfoldedDistribution import *
 
-COLORS=[ROOT.kMagenta, ROOT.kMagenta+2, ROOT.kMagenta-9,ROOT.kRed+1,ROOT.kAzure+7, ROOT.kBlue-7,ROOT.kGray,ROOT.kGray]
-MARKERS=[22,24,20,27,23,33,20,32,24]
-OBSERVABLES=['chmult','sphericity','C','D','aplanarity','chavgpt','chavgpz','chflux','chfluxz']
-OBSRANGES={'sphericity':(5e-3,5),
-           'aplanarity':(5e-3,30),
-           'C':(5e-3,5),
-           'D':(5e-3,10),
-           'chmult':(5e-4,0.1),
-           'chavgpt':(2e-3,2),
-           'chavgpz':(2e-3,2),
-           'chflux':(5e-5,5e-2),
-           'chfluxz':(5e-5,5e-2)}
-RATIORANGES={'sphericity':(0.8,1.27),
-           'aplanarity':(0.8,1.27),
-           'C':(0.8,1.27),
-           'D':(0.8,1.27),
-           'chmult':(0.5,2.17),
-           'chavgpt':(0.5,1.47),
-           'chavgpz':(0.5,1.47),
-           'chflux':(0.5,1.97),
-           'chfluxz':(0.5,1.87)}
-
-SLICES=[None,'nj','ptttbar'] #,'ptll']
-
-"""
-"""
-def averageDistribution(gr,axis):
-    x,y=ROOT.Double(0),ROOT.Double(0)
-    avgX,avgXhi,avgXlo=0
-    totaly=0
-    for ip in xrange(0,gr.GetN()):
-           gr.GetPoint(ip,x,y)       
-           x=axis.GetBinCenter(ip+1)
-           wid=axis.GetBinWidth(ip+1)
-           eyhi,eylo=gr.GetEYhigh(),gr.GetEYlow()
-           totaly += y*wid
-           avgX   += x*y*wid
-           avgXhi += x*(y+eyhi)*wid
-           avgXlo += x*(y-eylo)*wid
-    return avgX/totaly,avgXhi/totaly,avgXlo/totaly
     
 
 """
@@ -386,11 +347,6 @@ def main():
                       help='signal [%default]',
                       type='string',
                       default='t#bar{t}')
-    parser.add_option('--vars',
-                      dest='vars',
-                      help='variations to outsource from other files [%default]',
-                      default='#deltaCUET8P2MT4:UEup,UEdn;FSR:fsr up,fsr dn;ISR:isr up,isr dn;hdamp:hdamp up,hdamp dn;HW++EE5C:Herwig++;aMC@NLO:aMC@NLO', #CR:QCDbased,ERDon
-                      type='string')
     parser.add_option('--cfg',
                       dest='analysisAxis',
                       help='cfg with axis definitions [%default]',
@@ -398,8 +354,7 @@ def main():
                       default='%s/src/TopLJets2015/TopAnalysis/UEanalysis/analysisaxiscfg.pck'%os.environ['CMSSW_BASE'])
     (opt, args) = parser.parse_args()
 
-
-    readPlotsFrom(args,opt)
+    readRecoPlotsFrom(args,opt)
 
 
 
