@@ -6,7 +6,7 @@ import re
 
 fIn=ROOT.TFile.Open('UEanalysis/analysis/MC13TeV_TTJets.root')
 
-systs=['','tkeff','tkeffbcdef','tkeffgh','tkeffeta']
+systs=['','tkeff','tkeffeta','tkeffbcdef'] #,'tkeffgh']
 
 colors={'':ROOT.kOrange-8,
         'tkeff':ROOT.kOrange-6,

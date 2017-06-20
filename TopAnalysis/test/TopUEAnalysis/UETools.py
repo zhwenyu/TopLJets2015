@@ -228,7 +228,10 @@ def main():
     (opt, args) = parser.parse_args()
     conditionNumbers=showMatrices(opt)
 
-    for k in conditionNumbers: print k
+    with open('%s/conditionnumbers.dat'%opt.out,'w') as f:
+        for k in conditionNumbers: 
+            if k[3]<0: continue
+            f.write('%25s & %3.5f & %3.5f & %3.2f\n'%k)
 
 """
 for execution from another script

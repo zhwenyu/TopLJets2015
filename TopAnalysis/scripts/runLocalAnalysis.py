@@ -216,13 +216,13 @@ def main():
                     if '/store' in outF:
                         cfg.write('xrdcp ${WORKDIR}/%s root://eoscms//eos/cms/%s\n'%(localOutF,outF))
                         cfg.write('rm ${WORKDIR}/%s'%localOutF)
-                    elif outF!=localOutF:
-                        cfg.write('if grep -q "There was a crash" ${WORKDIR}/run.log; then')
-                        cfg.write('  mv -v ${WORKDIR}/run.log %s\n'%(logfile+'.crash'))
-                        cfg.write('else')
-                        cfg.write('  mv -v ${WORKDIR}/%s %s\n'%(localOutF,outF))
-                        cfg.write('  mv -v ${WORKDIR}/run.log %s\n'%(logfile))
-                        cfg.write('fi')
+                    #elif outF!=localOutF:
+                    #    cfg.write('if grep -q "There was a crash" ${WORKDIR}/run.log; then')
+                    #    cfg.write('  mv -v ${WORKDIR}/run.log %s\n'%(logfile+'.crash'))
+                    #    cfg.write('else')
+                    #    cfg.write('  mv -v ${WORKDIR}/%s %s\n'%(localOutF,outF))
+                    #    cfg.write('  mv -v ${WORKDIR}/run.log %s\n'%(logfile))
+                    #    cfg.write('fi')
 
                 os.system('chmod u+x %s/%s.sh'%(FarmDirectory,cfgFile))
 

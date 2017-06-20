@@ -61,7 +61,7 @@ def main():
 
         if opt.step==2:
 
-            #get a stat indepedent migration and fakes estimate
+            #get a stat independent migration and fakes estimate
             fIn=ROOT.TFile.Open('%s/ChunkAForToys.root'%opt.out)
             indmig=fIn.Get('%s_0_mig'%opt.histo)
             indmig.SetDirectory(0)
@@ -84,7 +84,7 @@ def main():
             for itoy in xrange(0,len(chunkB)):
                 unf.reset();
                 results=unf.unfoldToy(opt.histo,chunkB[itoy],opt_tau,indmig,norm,indfakes)
-
+                
                 fOut.cd()
                 fOut.rmdir('toy_%d'%itoy)
                 fOutDir=fOut.mkdir('toy_%d'%itoy)

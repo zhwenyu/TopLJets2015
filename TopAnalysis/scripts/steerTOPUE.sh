@@ -22,7 +22,7 @@ myletter=${whoami:0:1}
 eosdir=/store/cmst3/group/top/ReReco2016/${githash}
 summaryeosdir=/store/cmst3/group/top/TopUE-v2
 outdir=${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/UEanalysis/
-wwwdir=~/www/TopUE_ReReco2016/
+wwwdir=~/www/TOP-17-015
 
 
 RED='\e[31m'
@@ -30,8 +30,8 @@ NC='\e[0m'
 case $WHAT in
 
     TESTSEL )
-	#file=root://eoscms//eos/cms/store/cmst3/group/top/ReReco2016/b312177/MC13TeV_TTJets/MergedMiniEvents_0_ext0.root
-        file==root://eoscms//eos/cms/store/cmst3/group/top/ReReco2016/b312177/MC13TeV_TTJets2l2nu_amcatnlo/MergedMiniEvents_1_ext0.root
+	file=root://eoscms//eos/cms/store/cmst3/group/top/ReReco2016/b312177/MC13TeV_TTJets/MergedMiniEvents_0_ext0.root
+        #file==root://eoscms//eos/cms/store/cmst3/group/top/ReReco2016/b312177/MC13TeV_TTJets2l2nu_amcatnlo/MergedMiniEvents_1_ext0.root
 	#file=root://eoscms//eos/cms/store/cmst3/group/top/ReReco2016/b312177/Data13TeV_MuonEG_2016D/MergedMiniEvents_0.root
 	#analysisWrapper \
 	#    --in ${file} \
@@ -41,16 +41,16 @@ case $WHAT in
 	#    --runSysts \
 	#    --ch 0;
 	#python test/TopUEAnalysis/runUEanalysis.py -i ue_test.root --step 0 --ptThr 1.0,0.9 -o ./UEanalysis_test;
-	python test/TopUEAnalysis/runUEanalysis.py --step 1 -o ./UEanalysis_test;
+	#python test/TopUEAnalysis/runUEanalysis.py --step 1 -o ./UEanalysis_test;
 	python test/TopUEAnalysis/runUEanalysis.py -i ue_test.root      --step 2 -q local -o ./UEanalysis_test;
 	python test/TopUEAnalysis/showFastFinalDistributions.py UEanalysis_test/analysis/Chunks/ue_test.root --cfg ./UEanalysis_test/analysisaxiscfg.pck
 	;;
 
-    FULLSEL )
+    SEL )
 	python scripts/runLocalAnalysis.py -i ${eosdir}      -q ${queue} -o ${summaryeosdir}      --era era2016 -m TOP-UE::RunTopUE --ch 0 --runSysts;
 	;;
 
-    MERGE )
+    MERGESEL )
 	mkdir -p ${outdir}
 	/afs/cern.ch/project/eos/installation/0.3.84-aquamarine/bin/eos.select -b fuse mount eos;
 	./scripts/mergeOutputs.py eos/cms${summaryeosdir} True ${outdir};	
@@ -86,35 +86,46 @@ case $WHAT in
 	./scripts/mergeOutputs.py UEanalysis/analysis True 
 	;;
     PLOTANA )
+
+        mkdir -p UEanalysis/analysis/plots/rawana
 	commonOpts="-l ${lumi} --saveLog --mcUnc ${lumiUnc} --procSF DY:${outdir}/plots/.dyscalefactors.pck";
         filter="--only None_inc,ptttbar_inc,nj_inc"
-	#python scripts/plotter.py -i UEanalysis/analysis -j data/era2016/samples.json      ${commonOpts} ${filter}
-	#python scripts/plotter.py -i UEanalysis/analysis -j data/era2016/syst_samples.json ${commonOpts} ${filter} --silent --outName syst_plotter.root;	
-
+	python scripts/plotter.py -i UEanalysis/analysis -j data/era2016/samples.json      ${commonOpts} ${filter}
+	python scripts/plotter.py -i UEanalysis/analysis -j data/era2016/syst_samples.json ${commonOpts} ${filter} --silent --outName syst_plotter.root;	
 	python test/TopUEAnalysis/showFinalRecoDistribution.py UEanalysis/analysis/plots/plotter.root UEanalysis/analysis/plots/syst_plotter.root
-	#python test/TopUEAnalysis/UETools.py -o UEanalysis/analysis/plots/ -i  UEanalysis/analysis/MC13TeV_TTJets.root
+        python test/TopUEAnalysis/showFinalUnfoldedDistribution.py \
+            UEanalysis/analysis/plots/plotter.root \
+            UEanalysis/analysis/plots/syst_plotter.root \
+            --out UEanalysis/analysis/plots/rawana \
+            --reco;
+
+	python test/TopUEAnalysis/UETools.py -o UEanalysis/analysis/plots/ -i  UEanalysis/analysis/MC13TeV_TTJets.root
 	;;
     WWWANA )
 	mkdir -p ${wwwdir}/rawana
-        cp UEanalysis/analysis/plots/*.{png,pdf} ${wwwdir}/rawana
-	cp  UEanalysis/analysis/plots/plotter/*.{png,pdf} ${wwwdir}/rawana
+        cp UEanalysis/analysis/plots/*.{png,pdf,dat} ${wwwdir}/rawana
+	cp  UEanalysis/analysis/plots/rawana/*.{png,pdf,dat} ${wwwdir}/rawana
         cp test/index.php ${wwwdir}/rawana
 	;;
     UNFOLD )
         commonOpts="--plotter UEanalysis/analysis/plots/plotter.root --syst UEanalysis/analysis/plots/syst_plotter.root -d UEanalysis/analysis/Chunks/"
         #python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 0
 
-        for i in chmult chflux chfluxz chavgpt chavgpz sphericity aplanarity C D; do                  
-         #   python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 1 --histo ${i}_None_inc;            
-            python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 2 --histo ${i}_None_inc;
-            python test/TopUEAnalysis/showUnfoldSummary.py -i UEanalysis/unfold/${i}_None_inc.root;                                   
-        done
-
-        #python test/TopUEAnalysis/showFinalUnfoldedDistribution.py UEanalysis/unfold UEanalysis/analysis/plots/plotter.root UEanalysis/analysis/plots/syst_plotter.root
+        #for i in chmult chflux chfluxz chavgpt chavgpz sphericity aplanarity C D; do                  
+        #    for s in None nj; do # ptttbar ptll; do
+        #        python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 1 --histo ${i}_${s}_inc;            
+        #        python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 2 --histo ${i}_${s}_inc;
+        #        python test/TopUEAnalysis/showUnfoldSummary.py -i UEanalysis/unfold/${i}_${s}_inc.root;                                   
+        #    done
+        #done
+        python test/TopUEAnalysis/showFinalUnfoldedDistribution.py \
+            UEanalysis/unfold UEanalysis/analysis/plots/plotter.root \
+            UEanalysis/analysis/plots/syst_plotter.root \
+            --out UEanalysis/unfold/;
         ;;
     WWWUNFOLD )
         mkdir -p ${wwwdir}/unfold;
-        cp UEanalysis/unfold/*.{png,pdf} ${wwwdir}/unfold;
+        cp UEanalysis/unfold/*.{png,pdf,dat} ${wwwdir}/unfold;
         cp test/index.php ${wwwdir}/unfold;
         ;;
 
