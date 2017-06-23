@@ -173,7 +173,7 @@ def fillDataAndPlots(data,ws,args,tree,leptonSel,mcTruth=False,wjjOrder='drjj',t
         #lepton selection
         if len(leptonSel)!=0 and not tree.l_id in leptonSel : continue
         if tree.l_pt<30 or abs(tree.l_eta)>2.1: continue
-
+        if tree.pPAprimaryVertexFilter<1 or tree.HBHENoiseFilterResultRun2Loose<1 : continue
         #readout the event
         mcTruth=getMC(tree=tree) if mcTruth else None
         lepton=Particle(tree.l_id,tree.l_pt,tree.l_eta,tree.l_phi,tree.l_m)
