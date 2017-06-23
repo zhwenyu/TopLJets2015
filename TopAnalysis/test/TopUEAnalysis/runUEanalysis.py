@@ -47,18 +47,12 @@ def determineSliceResolutions(opt):
 
         #fill resolution arrays
         for var in VARS.keys():
-            isAngle=VARS[var][4]
             try:
                 val=getattr(t,'gen_%s'%var)
                 deltaVal=getattr(t,var)[0]-val
             except:
                 val=getattr(ue,'gen_%s'%var) 
                 deltaVal=getattr(ue,'rec_%s'%var)[0] - val
-
-            if isAngle : 
-                val      = val*180./ROOT.TMath.Pi()
-                deltaVal = ROOT.TVector2.Phi_mpi_pi(deltaVal)*180./ROOT.TMath.Pi()
-                val      = ROOT.TMath.Abs(val)
             varVals[var][0].append( val )
             varVals[var][1].append( deltaVal )
 
@@ -229,14 +223,6 @@ def defineAnalysisBinning(opt):
                 recBin.append( genBin[i-1]+0.75*dBin )
             recBin.append( genBin[-1]+0.25*(genBin[-1]+genBin[-2]) )
 
-
-        #special case for angular variables: override previous definition
-        if VARS[var][4]:
-            nbins=6
-            delta=180./float(nbins)
-            genBin=[i*delta     for i in xrange(0,nbins+1)]
-            recBin=[i*delta*0.5 for i in xrange(0,2*nbins+1)]
-
         if var in ['chavgpt','chavgpz']  : 
             del genBin[1]
             del recBin[1]
@@ -269,91 +255,63 @@ def defineAnalysisBinning(opt):
     print 'Event axes:',EVAXES
     print 'Slice vars:',SLICEVARS
 
-    #inclusive
+    #histograms to fill
     for obs in OBSVARS:
-        sliceVar=None
-        for axis in EVAXES+['inc']:
-            nbins={}
-            for level in [False,True]:
 
-                nbins[level]=varAxes[(obs,level)].GetNbins()
-                if axis != 'inc' : nbins[level]*=3
-                key=(obs,sliceVar,axis,None,level)                
-                name='_'.join(map(str,key))
-                histos[ key ] = ROOT.TH1F(name,name,nbins[level],0,nbins[level])
-                histos[ key ].SetDirectory(0)
-                histos[ key ].Sumw2()
+        for sliceVar in SLICEVARS+[None]:
 
-                if not level: continue
-                key=(obs,sliceVar,axis,'fakes',level)                
-                name='_'.join(map(str,key))
-                histos[ key ] = ROOT.TH1F(name,name,nbins[level],0,nbins[level])
-                histos[ key ].SetDirectory(0)
-                histos[ key ].Sumw2()
+            nsliceBins=1
+            if not sliceVar is None: nsliceBins=varAxes[(sliceVar,False)].GetNbins()+1
 
-                key=(obs,sliceVar,axis,'syst',level)
-                name='_'.join(map(str,key))
-                histos[ key ] = ROOT.TH2F(name,name,nbins[level],0,nbins[level],len(SYSTS),-0.5,len(SYSTS)-0.5)
-                histos[ key ].SetDirectory(0)
-                histos[ key ].Sumw2()
-                for ybin in xrange(0,len(SYSTS)):
-                    histos[ key ].GetYaxis().SetBinLabel(ybin+1,SYSTS[ybin][0])
+            #check if distributions can also be obtained in different regions
+            axes=['inc']
+            if sliceVar in EVAXES : 
+                if VARS[obs][3]:
+                    axes+=[0,1,2]
+                
+            #create as many histograms as bins in the gen level axis for the slicing variable
+            for islice in xrange(0,nsliceBins):
+                
+                #iterate over the axis
+                for axis in axes:
 
-            for i in xrange(0,len(SYSTS)):
-                key=(obs,sliceVar,axis,i,'mig')
-                name='_'.join(map(str,key))
-                histos[ key ] = ROOT.TH2F(name,name,nbins[False],0,nbins[False],nbins[True],0,nbins[True])
-                histos[ key ].SetTitle( SYSTS[i][0] )
-                histos[ key ].SetDirectory(0)
-                histos[ key ].Sumw2()
+                    nbins={}
+                    for level in [False,True]:
+                        nbins[level]=varAxes[(obs,level)].GetNbins()
 
-    #sliced
-    for sliceVar in SLICEVARS:
-        
-        nslicebins={
-            False:varAxes[(sliceVar,False)].GetNbins(),
-            True:varAxes[(sliceVar,True)].GetNbins()
-            }
+                        #distribution
+                        key=(obs,sliceVar,islice,axis,None,level)                
+                        name='_'.join(map(str,key))
+                        histos[ key ] = ROOT.TH1F(name,name,nbins[level],0,nbins[level])
+                        histos[ key ].SetDirectory(0)
+                        histos[ key ].Sumw2()
 
-        for obs in OBSVARS:
+                        if not level: continue
 
-            nbins={}
-            for level in [False,True]:
-                nbinsObs=varAxes[(obs,level)].GetNbins()
-                nbins[level]=nslicebins[level]*nbinsObs
+                        #fakes (only for reco)
+                        key=(obs,sliceVar,islice,axis,'fakes',level)                
+                        name='_'.join(map(str,key))
+                        histos[ key ] = ROOT.TH1F(name,name,nbins[level],0,nbins[level])
+                        histos[ key ].SetDirectory(0)
+                        histos[ key ].Sumw2()
 
-                #standard distribution
-                key=(obs,sliceVar,'inc',None,level)
-                name='_'.join(map(str,key))
-                histos[ key ] = ROOT.TH1F(name,name,nbins[level],0,nbins[level])
-                histos[ key ].SetDirectory(0)
-                histos[ key ].Sumw2()
+                        #experimental systs (only for reco)
+                        key=(obs,sliceVar,islice,axis,'syst',level)
+                        name='_'.join(map(str,key))
+                        histos[ key ] = ROOT.TH2F(name,name,nbins[level],0,nbins[level],len(SYSTS),-0.5,len(SYSTS)-0.5)
+                        histos[ key ].SetDirectory(0)
+                        histos[ key ].Sumw2()
+                        for ybin in xrange(0,len(SYSTS)):
+                            histos[ key ].GetYaxis().SetBinLabel(ybin+1,SYSTS[ybin][0])
 
-                #for reco do also the systematics
-                if not level: continue
-                key=(obs,sliceVar,'inc','fakes',level)
-                name='_'.join(map(str,key))
-                histos[ key ] = ROOT.TH1F(name,name,nbins[level],0,nbins[level])
-                histos[ key ].SetDirectory(0)
-                histos[ key ].Sumw2()
-
-
-                key=(obs,sliceVar,'inc','syst',level)
-                name='_'.join(map(str,key))
-                histos[ key ] = ROOT.TH2F(name,name,nbins[level],0,nbins[level],len(SYSTS),-0.5,len(SYSTS)-0.5)
-                histos[ key ].SetDirectory(0)
-                histos[ key ].Sumw2()
-                for ybin in xrange(0,len(SYSTS)):
-                    histos[ key ].GetYaxis().SetBinLabel(ybin+1,SYSTS[ybin][0])
-
-            #standard migration matrix and systs
-            for i in xrange(0,len(SYSTS)):
-                key=(obs,sliceVar,'inc',i,'mig')
-                name='_'.join(map(str,key))
-                histos[ key ] = ROOT.TH2F(name,name,nbins[False],0,nbins[False],nbins[True],0,nbins[True])
-                histos[ key ].SetDirectory(0)
-                histos[ key ].SetTitle( SYSTS[i][0] )
-                histos[ key ].Sumw2()
+                    #migration matrix (1 per syst variation)
+                    for i in xrange(0,len(SYSTS)):
+                        key=(obs,sliceVar,islice,axis,i,'mig')
+                        name='_'.join(map(str,key))
+                        histos[ key ] = ROOT.TH2F(name,name,nbins[False],0,nbins[False],nbins[True],0,nbins[True])
+                        histos[ key ].SetTitle( SYSTS[i][0] )
+                        histos[ key ].SetDirectory(0)
+                        histos[ key ].Sumw2()
 
     #all done, save to pickle file
     with open(os.path.join(opt.out,'analysisaxiscfg.pck'), 'w') as cachefile:
@@ -415,20 +373,7 @@ def runUEAnalysis(inF,outF,cfgDir):
                 
                 #loop over UE observables
                 for obs in OBSVARS:
-                    ueHandler.fillInclusive(sliceVarVals=sliceVarVals, obs=obs, ue=ue, ivar=ivar)
-
-
-                #loop over axes defining away/towards/transverse regions
-                for a in EVAXES:
-                    ueHandler.fillDifferential(sliceVarVals=sliceVarVals,
-                                               obs=obs,
-                                               a=a,
-                                               ue=ue,
-                                               ivar=ivar)
-
-                    #weight=t.weight[wgtIdx],
-                    #                               gen_passSel=gen_passSel,
-                    #                               passSel=passSel)
+                    ueHandler.fillHistos(sliceVarVals=sliceVarVals, obs=obs, ue=ue, ivar=ivar)
 
 
     #save histos to ROOT file

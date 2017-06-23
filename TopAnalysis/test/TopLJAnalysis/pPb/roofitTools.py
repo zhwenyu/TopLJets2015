@@ -38,9 +38,9 @@ def getEffSigma(var,pdf,wmin,wmax,step=0.1,epsilon=1e-4):
 """
 display the results of the fit
 """
-def showFitResult(fitVar,data,pdf,categs,w,showComponents=[],rangeX=(0,400),outDir='plots/',paramList=[],tagTitle='',pdfAux=None,pfix=''):
+def showFitResult(fitVar,data,pdf,categs,w,showComponents=[],rangeX=(0,400),outDir='plots/',paramList=[],tagTitle='',pdfAux=None,pfix='',extsToSave=['png','pdf','root']):
 
-    c=ROOT.TCanvas('c','c',500,500)
+    c=ROOT.TCanvas('c','c',800,800)
     c.SetTopMargin(0)
     c.SetLeftMargin(0)
     c.SetRightMargin(0)
@@ -49,7 +49,7 @@ def showFitResult(fitVar,data,pdf,categs,w,showComponents=[],rangeX=(0,400),outD
     p1.SetRightMargin(0.05)
     p1.SetLeftMargin(0.12)
     p1.SetTopMargin(0.008)
-    p1.SetBottomMargin(0.12)
+    p1.SetBottomMargin(0.15)
     p1.Draw()
     c.cd()
     p2 = ROOT.TPad('p2','p2',0.0,0.85,1.0,1.0)
@@ -70,10 +70,11 @@ def showFitResult(fitVar,data,pdf,categs,w,showComponents=[],rangeX=(0,400),outD
             w.cat('sample').setLabel(tag)
         else:
             redData=data
-        redData.plotOn(frame)
+        redData.plotOn(frame,ROOT.RooFit.Name('data'))
 
         if pdfAux:
             pdfAux.plotOn(frame,
+                          ROOT.RooFit.Name('pdfaux'),
                           ROOT.RooFit.ProjWData(redData),
                           ROOT.RooFit.LineColor(ROOT.kGray),
                           ROOT.RooFit.DrawOption('l'),
@@ -81,13 +82,14 @@ def showFitResult(fitVar,data,pdf,categs,w,showComponents=[],rangeX=(0,400),outD
                           )
         if pdf:
             for icomp in xrange(0,len(showComponents)):
-                comps=showComponents[icomp]
-                if comps=='S_cor*' or comps=='S_*' or comps=='S_cor*,S_wro*':
+                comps = showComponents[icomp] if isinstance(showComponents[icomp], basestring) else showComponents[icomp][0]
+                if comps=='S_cor*' or comps=='S_*' or comps=='S_cor*,S_wro*' or comps=='S_wro*':
                     color=ROOT.TColor.GetColor('#4575b4')
                     if comps=='S_cor*,S_wro*':color=ROOT.TColor.GetColor('#91bfdb')
                     if len(tag)!=0:
                         pdf.plotOn(frame,
                                    ROOT.RooFit.Components(comps),
+                                   ROOT.RooFit.Name('pdfcomp%d'%icomp),
                                    ROOT.RooFit.Slice(w.cat('sample'),tag),
                                    ROOT.RooFit.ProjWData(redData),
                                    ROOT.RooFit.LineColor(color),
@@ -127,53 +129,73 @@ def showFitResult(fitVar,data,pdf,categs,w,showComponents=[],rangeX=(0,400),outD
             if len(tag)!=0:
                 pdf.plotOn(frame,
                            ROOT.RooFit.Slice(w.cat('sample'),tag),
+                           ROOT.RooFit.Name('totalpdf'),
                            ROOT.RooFit.ProjWData(redData),
+                           ROOT.RooFit.FillStyle(0),
+                           ROOT.RooFit.FillColor(ROOT.kBlue),
                            ROOT.RooFit.LineColor(ROOT.kBlue),
                            ROOT.RooFit.LineWidth(2))
             else:
                 pdf.plotOn(frame,
                            ROOT.RooFit.ProjWData(redData),
                            ROOT.RooFit.LineColor(ROOT.kBlue),
+                           ROOT.RooFit.FillColor(ROOT.kBlue),
+                           ROOT.RooFit.Name('totalpdf'),
+                           ROOT.RooFit.FillStyle(0),
                            ROOT.RooFit.LineWidth(2))
 
         frame.Draw()
-        frame.GetYaxis().SetTitle("Entries")
+        frame.GetYaxis().SetTitle("Events")
         frame.GetYaxis().SetTitleOffset(1.0)
-        frame.GetYaxis().SetTitleSize(0.05)
-        frame.GetYaxis().SetLabelSize(0.04)
-        frame.GetXaxis().SetTitleSize(0.05)
-        frame.GetXaxis().SetLabelSize(0.04)
+        frame.GetYaxis().SetTitleSize(0.06)
+        frame.GetYaxis().SetLabelSize(0.05)
+        frame.GetXaxis().SetTitleSize(0.06)
+        frame.GetXaxis().SetLabelSize(0.05)
+        frame.GetXaxis().SetTitleOffset(0.9)
         frame.GetXaxis().SetTitle(w.var(fitVar).GetTitle())
 
         label = ROOT.TLatex()
         label.SetNDC()
         label.SetTextFont(42)
-        label.SetTextSize(0.04)
-        label.DrawLatex(0.6,0.92,'#bf{CMS} #it{preliminary}')
-        if tagTitle!='' : label.DrawLatex(0.6,0.88,tagTitle)
-        label.DrawLatex(0.6,0.84,'#chi^{2}=%3.2f'%frame.chiSquare())
+        label.SetTextSize(0.05)
+        label.DrawLatex(0.5,0.92,'#bf{CMS} #it{preliminary}')
+        label.DrawLatex(0.5,0.86,'180 nb^{-1} (#sqrt{s_{NN}}=8.16 TeV)')
+        label.DrawLatex(0.5,0.8,'#it{%s}'%(tagTitle if tagTitle!='' else 'inclusive'))
+        label.DrawLatex(0.5,0.74,'#chi^{2}/ndof=%3.2f'%frame.chiSquare())
 
         #print the PDF parameters on the canvas
         #paramList=[('Nsig','N_{cp}(t#bar{t})'),
         #                ('sig_mu_%s'%fitVar,'#mu'),
         #                ('sig_sigma_%s'%fitVar,'#sigma'),
         #               ('eb_%s'%j,'#epsilon_{b}')]
-        if len(paramList)==0:
-            iter = pdf.getParameters(redData).createIterator()
-            iparam = iter.Next()
-            while iparam :
-                if not iparam.getAttribute('Constant'):
-                    paramList.append( (iparam.GetName(),iparam.GetTitle() ) )
+        if paramList is None:
+            leg=ROOT.TLegend(0.6,0.7,0.95,0.5)
+            leg.SetFillStyle(0)
+            leg.SetBorderSize(0)
+            leg.SetTextFont(42)
+            leg.SetTextSize(0.04)
+            leg.AddEntry('data','Data','ep')
+            for icomp in xrange(0,len(showComponents)):
+                leg.AddEntry('pdfcomp%d'%icomp,showComponents[icomp][1],'lf')
+            leg.AddEntry('totalpdf','background','f')
+            leg.Draw()
+        else :
+            if len(paramList)==0:
+                iter = pdf.getParameters(redData).createIterator()
                 iparam = iter.Next()
+                while iparam :
+                    if not iparam.getAttribute('Constant'):
+                        paramList.append( (iparam.GetName(),iparam.GetTitle() ) )
+                    iparam = iter.Next()
 
-        ivar=0
-        for var,tit in paramList:
-            label.DrawLatex(0.6,
-                            0.80-0.04*ivar,
-                            '#scale[0.8]{%s=%3.2f#pm%3.2f}'%(tit,
-                                                             w.var(var).getVal(),
-                                                             w.var(var).getError()) )
-            ivar+=1
+                ivar=0
+                for var,tit in paramList:
+                    label.DrawLatex(0.5,
+                                0.80-0.04*ivar,
+                                '#scale[0.8]{%s=%3.2f#pm%3.2f}'%(tit,
+                                                                w.var(var).getVal(),
+                                                                w.var(var).getError()) )
+                    ivar+=1
 
         p2.cd()
         p2.Clear()
@@ -183,11 +205,11 @@ def showFitResult(fitVar,data,pdf,categs,w,showComponents=[],rangeX=(0,400),outD
             pullFrame.addPlotable(hpull,"P") ;
             pullFrame.Draw()
             pullFrame.GetYaxis().SetTitle("Pull")
-            pullFrame.GetYaxis().SetTitleSize(0.25)
-            pullFrame.GetYaxis().SetLabelSize(0.25)
+            pullFrame.GetYaxis().SetTitleSize(0.35)
+            pullFrame.GetYaxis().SetLabelSize(0.3)
             pullFrame.GetXaxis().SetTitleSize(0)
             pullFrame.GetXaxis().SetLabelSize(0)
-            pullFrame.GetYaxis().SetTitleOffset(0.15)
+            pullFrame.GetYaxis().SetTitleOffset(0.17)
             pullFrame.GetYaxis().SetNdivisions(4)
             pullFrame.GetYaxis().SetRangeUser(-3.1,3.1)
             pullFrame.GetXaxis().SetTitleOffset(0.8)
@@ -196,7 +218,7 @@ def showFitResult(fitVar,data,pdf,categs,w,showComponents=[],rangeX=(0,400),outD
         c.Modified()
         c.Update()
         #raw_input()
-        for ext in ['png','pdf']:
+        for ext in extsToSave:
             c.SaveAs('%s/%s_%s%s.%s'%(outDir,fitVar,tagTitle if tag=='' else tag,pfix,ext))
 
 def showLikelihoods(pll,ll,var):

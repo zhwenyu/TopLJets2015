@@ -3,6 +3,12 @@
 import ROOT
 from TopLJets2015.TopAnalysis.eventShapeTools import *
 
+AXISANGLE = {
+    'ptttbar':'phittbar',
+    'ptll':'phill',
+    'ptpos':'phipos'
+    }
+
 """
 parses the event and counts particles in each region at gen/rec levels
 """
@@ -18,6 +24,7 @@ class UEEventCounter:
         self.piMass=0.139570
 
         self.varList=varList
+        self.axes=axes
         self.reset(axes)
 
         #tracking efficiency scale factor
@@ -60,27 +67,21 @@ class UEEventCounter:
         self.gen_chfluxz  = 0
         self.gen_chavgpz  = 0
 
-        self.rec_chmult_incWrtTo={}    #reco counts per reco region
-        self.rec_chflux_incWrtTo={}
-        self.rec_chavgpt_incWrtTo={}
-        self.rec_chmult_wrtTo={}       #migration matrix true-reco regions
+        self.rec_chmult_wrtTo={}       #reco counts per reco region
         self.rec_chflux_wrtTo={}
         self.rec_chavgpt_wrtTo={}
         self.gen_chmult_wrtTo={}       #gen counts per gen region
         self.gen_chflux_wrtTo={}
         self.gen_chavgpt_wrtTo={}
         
-        if axes is None : axes=self.rec_chmult_incWrtTo.keys()
+        if axes is None : axes=self.rec_chmult_wrtTo.keys()
         for a in axes:
-            self.rec_chmult_incWrtTo[a]  = [ [0]*3 ]*nvars
-            self.rec_chflux_incWrtTo[a]  = [ [0]*3 ]*nvars
-            self.rec_chavgpt_incWrtTo[a] = [ [0]*3 ]*nvars
-            self.rec_chmult_wrtTo[a]     = [[0]*3,[0]*3,[0]*3]
-            self.rec_chflux_wrtTo[a]     = [[0]*3,[0]*3,[0]*3]
-            self.rec_chavgpt_wrtTo[a]    = [[0]*3,[0]*3,[0]*3]
-            self.gen_chmult_wrtTo[a]     = [0]*3
-            self.gen_chflux_wrtTo[a]     = [0]*3
-            self.gen_chavgpt_wrtTo[a]    = [0]*3
+            self.rec_chmult_wrtTo[a]  = [ [0]*3 ]*nvars
+            self.rec_chflux_wrtTo[a]  = [ [0]*3 ]*nvars
+            self.rec_chavgpt_wrtTo[a] = [ [0]*3 ]*nvars
+            self.gen_chmult_wrtTo[a]  = [0]*3
+            self.gen_chflux_wrtTo[a]  = [0]*3
+            self.gen_chavgpt_wrtTo[a] = [0]*3
 
     """
     printout the event contents
@@ -116,7 +117,7 @@ class UEEventCounter:
         mceraLumi=ROOT.gRandom.Uniform(35874.8)
         mcera='BCDEF' if mceraLumi < 19323.4 else 'GH'
 
-        self.reset()
+        self.reset(self.axes)
         evshapes=EventShapeTool()
         p4=ROOT.TLorentzVector(0,0,0,0)
 
@@ -152,17 +153,15 @@ class UEEventCounter:
                     self.rec_chmult[ivar] +=1
                     self.rec_chflux[ivar] += p4.Pt()
                     self.rec_chfluxz[ivar] += abs(p4.Pz())
+
                     for a in self.rec_chmult_wrtTo:
                      
-                        phirec=getattr(t,a)[varIdx]
+                        phirec=getattr(t,AXISANGLE[a])[varIdx]
                         idxrec=self.getRegionFor( ROOT.TVector2.Phi_mpi_pi(t.phi[n]-phirec) )
-                         
-                        phigen=getattr(t,'gen_'+a)
-                        idxgen=self.getRegionFor( ROOT.TVector2.Phi_mpi_pi(t.phi[n]-phigen) )
-                        self.rec_chmult_incWrtTo[a][idxrec] +=1
-                        self.rec_chflux_incWrtTo[a][idxrec] += t.pt[n]                    
-                        self.rec_chmult_wrtTo[a][idxgen][idxrec] +=1
-                        self.rec_chflux_wrtTo[a][idxgen][idxrec] += t.pt[n]
+
+                        self.rec_chmult_wrtTo[a][ivar][idxrec] +=1
+                        self.rec_chflux_wrtTo[a][ivar][idxrec] += t.pt[n]                    
+                        
 
 
                 #event shapes
@@ -176,15 +175,10 @@ class UEEventCounter:
                 self.rec_chavgpt[ivar] = self.rec_chflux[ivar]/self.rec_chmult[ivar]  if self.rec_chmult[ivar]>0 else 0.
                 self.rec_chavgpz[ivar] = self.rec_chfluxz[ivar]/self.rec_chmult[ivar] if self.rec_chmult[ivar]>0 else 0.
                 for a in self.rec_chmult_wrtTo:
-                    for k in xrange(0,len(self.rec_chmult_wrtTo[a])):
-                        for l in xrange(0,len(self.rec_chmult_wrtTo[a][k])):
-                            ncounted=self.rec_chmult_wrtTo[a][k][l]
-                            if ncounted==0 : continue
-                            self.rec_chavgpt_wrtTo[a][k][l]=self.rec_chflux_wrtTo[a][k][l]/ncounted
-                for k in xrange(0,len(self.rec_chmult_incWrtTo[a])):
-                    ncounted=self.rec_chmult_incWrtTo[a][k]
-                    if ncounted==0 : continue
-                    self.rec_chavgpt_incWrtTo[a][k]=self.rec_chflux_incWrtTo[a][k]/ncounted
+                    for k in xrange(0,len(self.rec_chmult_wrtTo[a][ivar])):
+                        ncounted=self.rec_chmult_wrtTo[a][ivar][k]
+                        if ncounted==0 : continue
+                        self.rec_chavgpt_wrtTo[a][ivar][k]=self.rec_chflux_wrtTo[a][ivar][k]/ncounted
 
         #gen level
         self.gen_passSel=(t.gen_passSel&0x1)
@@ -203,7 +197,7 @@ class UEEventCounter:
                 self.gen_chflux += p4.Pt()
                 self.gen_chfluxz += abs(p4.Pz())
                 for a in self.gen_chmult_wrtTo:
-                    phigen=getattr(t,'gen_'+a)
+                    phigen=getattr(t,'gen_'+AXISANGLE[a])
                     idxgen=self.getRegionFor( ROOT.TVector2.Phi_mpi_pi(t.gen_phi[n]-phigen) )
                     self.gen_chmult_wrtTo[a][idxgen] +=1
                     self.gen_chflux_wrtTo[a][idxgen] += t.gen_pt[n]

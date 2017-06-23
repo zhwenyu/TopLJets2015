@@ -73,14 +73,14 @@ case $WHAT in
 	eosprefix=root://eoscms//eos/cms
 	echo "Computing resolutions"
 	base="${eosprefix}/${summaryeosdir}/Chunks/MC13TeV_TTJets"
-	python test/TopUEAnalysis/runUEanalysis.py -i ${base}_0.root,${base}_1.root,${base}_2.root,${base}_3.root,${base}_4.root --step 0 --ptThr 0.9,0.9 -o ${outdir};
+	#python test/TopUEAnalysis/runUEanalysis.py -i ${base}_0.root,${base}_1.root,${base}_2.root,${base}_3.root,${base}_4.root --step 0 --ptThr 0.9,0.9 -o ${outdir};
 	
 	echo "Defining analysis configuration"
-	python test/TopUEAnalysis/runUEanalysis.py --step 1 -o ${outdir};
+	#python test/TopUEAnalysis/runUEanalysis.py --step 1 -o ${outdir};
 	
 	echo "Filling the histograms"
-        #queue=local
-	python test/TopUEAnalysis/runUEanalysis.py -i ${summaryeosdir}/Chunks      --step 2 -q ${queue} -o ${outdir}; # --only TTJets;
+        queue=local
+	python test/TopUEAnalysis/runUEanalysis.py -i ${summaryeosdir}/Chunks      --step 2 -q ${queue} -o ${outdir} --only TTJets;
 	;;
     MERGEANA )
 	./scripts/mergeOutputs.py UEanalysis/analysis True 

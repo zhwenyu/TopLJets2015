@@ -6,28 +6,48 @@ def defineDataset(data):
 
     if 'Data8.16TeV_pPb' in data:
         dataset=OrderedDict()
-        if '_e' in data:
-            dataset['l+jets']         = (['data/Data_EJets_PAEle20_WPLoose_Gsf_or_PASinglePhoton30_Eta3p1.root'],       '#4575b4', [11],   False)
-            dataset['non-iso l+jets'] = (['data/DataNonIso_EJets.root'], '#91bfdb', [1100], False)
-        if '_mu' in data:
-            dataset['l+jets']         = (['data/Data_MuJets_RecheckWithMergedFiles.root'],       '#4575b4', [13],   False)   #data/Data_MuJets.root
-            dataset['non-iso l+jets'] = (['data/DataNonIso_MuJets.root'], '#91bfdb', [1300], False)
+        dataset['l+jets']         = (['/afs/cern.ch/work/g/gkrintir/public/forMarta/Data_PbP_EJets_GEDElectrons_WithHFAndSkimInfo_PAEle20_WPLoose_Gsf_or_PASinglePhoton30_Eta3p1.root',
+                                      '/afs/cern.ch/work/g/gkrintir/public/forMarta/Data_PPb_EJets_GEDElectrons_WithHFAndSkimInfo_PAEle20_WPLoose_Gsf_or_PASinglePhoton30_Eta3p1.root',
+                                      '/afs/cern.ch/work/g/gkrintir/public/forMarta/Data_PbP_MuJets_WithHFAndSkimInfo.root',
+                                      '/afs/cern.ch/work/g/gkrintir/public/forMarta/Data_PPb_MuJets_WithHFAndSkimInfo.root'],
+                                     '#4575b4', [11,13],   False)
+        dataset['non-iso l+jets'] = (['/afs/cern.ch/work/g/gkrintir/public/forMarta/DataNonIso_PbP_EJets_GEDElectrons_WithHFAndSkimInfo_PAEle20_WPLoose_Gsf_or_PASinglePhoton30_Eta3p1.root',
+                                      '/afs/cern.ch/work/g/gkrintir/public/forMarta/DataNonIso_PPb_EJets_GEDElectrons_WithHFAndSkimInfo_PAEle20_WPLoose_Gsf_or_PASinglePhoton30_Eta3p1.root',
+                                      '/afs/cern.ch/work/g/gkrintir/public/forMarta/DataNonIso_PPb_MuJets_WithHFAndSkimInfo.root',
+                                      '/afs/cern.ch/work/g/gkrintir/public/forMarta/DataNonIso_PbP_MuJets_WithHFAndSkimInfo.root'],
+                                      '#91bfdb', [1100,1300], False)
+    if 'Data8.16TeV_pPb_nonsubiso' in data:
+        dataset=OrderedDict()
+        dataset['l+jets']         = (['/afs/cern.ch/work/g/gkrintir/public/forMarta/Data_PbP_MuJets_WithHFAndSkimInfo_NonSubractedIso.root',
+                                      '/afs/cern.ch/work/g/gkrintir/public/forMarta/Data_PPb_MuJets_WithHFAndSkimInfo_NonSubractedIso.root',
+                                      '/afs/cern.ch/work/g/gkrintir/public/forMarta/Data_PbP_EJets_GEDElectrons_WithHFAndSkimInfo_NonSubractedIso_PAEle20_WPLoose_Gsf_or_PASinglePhoton30_Eta3p1.root',
+                                      '/afs/cern.ch/work/g/gkrintir/public/forMarta/Data_PPb_EJets_GEDElectrons_WithHFAndSkimInfo_NonSubractedIso_PAEle20_WPLoose_Gsf_or_PASinglePhoton30_Eta3p1.root'],
+                                     '#4575b4', [11,13],   False)
+        dataset['non-iso l+jets'] = (['/afs/cern.ch/work/g/gkrintir/public/forMarta/DataNonIso_PPb_MuJets_WithHFAndSkimInfo_NonSubractedIso.root',
+                                      '/afs/cern.ch/work/g/gkrintir/public/forMarta/DataNonIso_PbP_MuJets_WithHFAndSkimInfo_NonSubractedIso.root',
+                                      '/afs/cern.ch/work/g/gkrintir/public/forMarta/DataNonIso_PbP_EJets_GEDElectrons_WithHFAndSkimInfo_NonSubractedIso_PAEle20_WPLoose_Gsf_or_PASinglePhoton30_Eta3p1.root',
+                                      '/afs/cern.ch/work/g/gkrintir/public/forMarta/DataNonIso_PPb_EJets_GEDElectrons_WithHFAndSkimInfo_NonSubractedIso_PAEle20_WPLoose_Gsf_or_PASinglePhoton30_Eta3p1.root'],
+                                     '#91bfdb', [1100,1300], False)
     if 'MC8.16TeV_TTbar_pPb' in data:
         dataset=OrderedDict()
-        
-        dataset['l+jets']         = (['data/PYQUEN_TTJets_PPb_MuJets.root','data/PYQUEN_TTJets_PbP_MuJets.root',
-                                      'data/PYQUEN_TTJets_PPb_EJets.root','data/PYQUEN_TTJets_PbP_EJets.root'],
+
+        dataset['l+jets']         = (['/afs/cern.ch/work/g/gkrintir/public/forMarta/PYQUEN_TTbar_PPb-EmbEPOS_EJets.root',
+                                      '/afs/cern.ch/work/g/gkrintir/public/forMarta/PYQUEN_TTbar_PPb-EmbEPOS_MuJets.root'],
                                       '#4575b4', [11,13],   True)
-        if '_e' in data:
-            dataset['l+jets']=(dataset['l+jets'][0][2:4],dataset['l+jets'][1],[11],True)
-        if '_mu' in data:
-            dataset['l+jets']=(dataset['l+jets'][0][0:2],dataset['l+jets'][1],[13],True)
+    if 'MC8.16TeV_TTbar_pPb_Pohweg' in data:
+        dataset=OrderedDict()
+        dataset['l+jets']         = (['/afs/cern.ch/work/g/gkrintir/public/forMarta/Powheg_TTbar_PPb-EmbEPOS_EJets.root',
+                                      '/afs/cern.ch/work/g/gkrintir/public/forMarta/Powheg_TTbar_PPb-EmbEPOS_MuJets.root'],
+                                      '#4575b4', [11,13],   True)
 
 
     if 'MC8.16TeV_WJets_pPb' in data:
         dataset=OrderedDict()
-        dataset['l+jets']         = (['data/PYQUEN_WJets_PbP_MuJets.root','data/PYQUEN_WJets_PPb_MuJets.root'],
-                                    '#4575b4', [11,13],   False)
+        dataset['l+jets']         = (['/afs/cern.ch/work/g/gkrintir/public/forMarta/WToMuNu_anstahll-Embedded_PileUp_POWHEG_WToMuNu_Plus_CT14_EPPS16_8160GeV_pythia8_reverse_RECO.root',
+                                      '/afs/cern.ch/work/g/gkrintir/public/forMarta/WToMuNu_anstahll-Embedded_PileUp_POWHEG_WToMuNu_Minus_CT14_EPPS16_8160GeV_pythia8_reverse_RECO.root',
+                                      '/afs/cern.ch/work/g/gkrintir/public/forMarta/WToMuNu_anstahll-Embedded_PileUp_POWHEG_WToMuNu_Plus_CT14_EPPS16_8160GeV_pythia8_RECO.root',
+                                      '/afs/cern.ch/work/g/gkrintir/public/forMarta/WToMuNu_anstahll-Embedded_PileUp_POWHEG_WToMuNu_Minus_CT14_EPPS16_8160GeV_pythia8_RECO.root'],
+                                     '#4575b4', [11,13],   False)
 
     if 'MC8TeV_WJets_pp' in data:
         dataset=OrderedDict()
