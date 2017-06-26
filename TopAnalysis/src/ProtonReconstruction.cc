@@ -57,7 +57,7 @@ XiInterpolator::computeXiSpline( unsigned int arm, unsigned int pot, float track
               de_rel_dx = 0.1;
 
   // apply the alignment
-  const float x_corr = ( track_x + ac.x ) * 1.e-3; // convert to m
+  const float x_corr = track_x + ac.x*1.e-3; // convert to m
 
   xi = interp->Eval( x_corr );
 
