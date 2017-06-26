@@ -36,7 +36,7 @@ XiInterpolator::computeXiSpline( unsigned int arm, unsigned int pot, float track
 
   // retrieve the alignment parameters
   const CTPPSAlCa::RPAlignmentConstants::Quantities ac = align_.quantities( arm*100+pot );
-  std::cout << "--> for this pot:\n" << ac << std::endl;
+  //std::cout << "--> for this pot:\n" << ac << std::endl;
 
   // retrieve the proper interpolation curve
   TSpline3 *interp = 0;
@@ -99,7 +99,7 @@ namespace CTPPSAlCa
   {
     Map::const_iterator it = map_.find( detid );
     if ( it!=map_.end() ) return it->second;
-    std::cerr << "WARNING failed to retrieve quantities for RP with DetId " << detid << std::endl;
+    edm::LogWarning("RPAlignmentConstants") << "Failed to retrieve quantities for RP with DetId " << detid;
     return Quantities();
   }
 
