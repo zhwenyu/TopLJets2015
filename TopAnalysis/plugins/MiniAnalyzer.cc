@@ -44,6 +44,7 @@
 #include "DataFormats/PatCandidates/interface/PackedTriggerPrescales.h"
 #include "DataFormats/PatCandidates/interface/PackedGenParticle.h"
 #include "DataFormats/CTPPSReco/interface/CTPPSLocalTrackLite.h"
+#include "DataFormats/CTPPSDetId/interface/CTPPSDetId.h"
 
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 #include "TopLJets2015/TopAnalysis/interface/MiniEvent.h"
@@ -506,12 +507,12 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
     const CTPPSDetId detid(lt.getRPId());
     if (detid.station()!=0) continue; // only keep the 210m horizontal stations
 
-    fwdtrk_arm[ev_.nfwdtrk] = detid.arm(); // 0 = sector 4-5 ; 1 = sector 5-6
-    fwdtrk_pot[ev_.nfwdtrk] = detid.rp(); // 2 = near pot ; 3 = far pot
-    fwdtrk_x[ev_.nfwdtrk] = lt.getX()*1.e-3; // store in m
-    fwdtrk_x_unc[ev_.nfwdtrk] = lt.getXUnc()*1.e-3;
-    fwdtrk_y[ev_.nfwdtrk] = lt.getY()*1.e-3;
-    fwdtrk_y_unc[ev_.nfwdtrk] = lt.getYUnc()*1.e-3;
+    ev_.fwdtrk_arm[ev_.nfwdtrk] = detid.arm(); // 0 = sector 4-5 ; 1 = sector 5-6
+    ev_.fwdtrk_pot[ev_.nfwdtrk] = detid.rp(); // 2 = near pot ; 3 = far pot
+    ev_.fwdtrk_x[ev_.nfwdtrk] = lt.getX()*1.e-3; // store in m
+    ev_.fwdtrk_x_unc[ev_.nfwdtrk] = lt.getXUnc()*1.e-3;
+    ev_.fwdtrk_y[ev_.nfwdtrk] = lt.getY()*1.e-3;
+    ev_.fwdtrk_y_unc[ev_.nfwdtrk] = lt.getYUnc()*1.e-3;
 
     ev_.nfwdtrk++;
   }
