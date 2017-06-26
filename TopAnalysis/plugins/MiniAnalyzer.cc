@@ -499,22 +499,24 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
   edm::Handle<pat::PackedCandidateCollection> pfcands;
   iEvent.getByToken(pfToken_,pfcands);
 
-  //CTPPS local tracks
-  ev_.nfwdtrk=0;
-  edm::Handle<std::vector<CTPPSLocalTrackLite> > ctppslocaltracks;
-  iEvent.getByToken(ctppsToken_, ctppslocaltracks);
-  for (const CTPPSLocalTrackLite& lt : *ctppslocaltracks) {
-    const CTPPSDetId detid(lt.getRPId());
-    if (detid.station()!=0) continue; // only keep the 210m horizontal stations
+  if(iEvent.isRealData()) {
+    //CTPPS local tracks (only present in data)
+    ev_.nfwdtrk=0;
+    edm::Handle<std::vector<CTPPSLocalTrackLite> > ctppslocaltracks;
+    iEvent.getByToken(ctppsToken_, ctppslocaltracks);
+    for (const CTPPSLocalTrackLite& lt : *ctppslocaltracks) {
+      const CTPPSDetId detid(lt.getRPId());
+      if (detid.station()!=0) continue; // only keep the 210m horizontal stations
 
-    ev_.fwdtrk_arm[ev_.nfwdtrk] = detid.arm(); // 0 = sector 4-5 ; 1 = sector 5-6
-    ev_.fwdtrk_pot[ev_.nfwdtrk] = detid.rp(); // 2 = near pot ; 3 = far pot
-    ev_.fwdtrk_x[ev_.nfwdtrk] = lt.getX()*1.e-3; // store in m
-    ev_.fwdtrk_x_unc[ev_.nfwdtrk] = lt.getXUnc()*1.e-3;
-    ev_.fwdtrk_y[ev_.nfwdtrk] = lt.getY()*1.e-3;
-    ev_.fwdtrk_y_unc[ev_.nfwdtrk] = lt.getYUnc()*1.e-3;
+      ev_.fwdtrk_arm[ev_.nfwdtrk] = detid.arm(); // 0 = sector 4-5 ; 1 = sector 5-6
+      ev_.fwdtrk_pot[ev_.nfwdtrk] = detid.rp(); // 2 = near pot ; 3 = far pot
+      ev_.fwdtrk_x[ev_.nfwdtrk] = lt.getX()*1.e-3; // store in m
+      ev_.fwdtrk_x_unc[ev_.nfwdtrk] = lt.getXUnc()*1.e-3;
+      ev_.fwdtrk_y[ev_.nfwdtrk] = lt.getY()*1.e-3;
+      ev_.fwdtrk_y_unc[ev_.nfwdtrk] = lt.getYUnc()*1.e-3;
 
-    ev_.nfwdtrk++;
+      ev_.nfwdtrk++;
+    }
   }
 
 
