@@ -46,8 +46,8 @@ void RunExclusiveTop(TString filename,
 
   const char* CMSSW_BASE = getenv("CMSSW_BASE");
   CTPPSAlCa::AlignmentLUTHandler pots_align(Form("%s/TopLJets2015/TopAnalysis/data/era2016/alignment_collection_v2.out", CMSSW_BASE));
-  CTPPSAlCa::FillNumberLUTHandler run_to_fill(Form("%s/TopAnalysis/data/era2016/fill_run_lut_v2.dat", CMSSW_BASE));
-  XiInterpolator proton_reco(Form("%s/TopAnalysis/data/era2016/ctpps_optics_9mar2017.root", CMSSW_BASE));
+  CTPPSAlCa::FillNumberLUTHandler run_to_fill(Form("%s/TopLJets2015/TopAnalysis/data/era2016/fill_run_lut_v2.dat", CMSSW_BASE));
+  XiInterpolator proton_reco(Form("%s/TopLJets2015/TopAnalysis/data/era2016/ctpps_optics_9mar2017.root", CMSSW_BASE));
 
   bool isTTbar( filename.Contains("_TTJets") or (normH and TString(normH->GetTitle()).Contains("_TTJets")));
   bool isData( filename.Contains("Data") );
