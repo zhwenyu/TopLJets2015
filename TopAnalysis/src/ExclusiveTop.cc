@@ -13,6 +13,10 @@
 #include "TopLJets2015/TopAnalysis/interface/ExclusiveTop.h"
 #include "TopLJets2015/TopAnalysis/interface/LeptonEfficiencyWrapper.h"
 
+#include "TopLJets2015/TopAnalysis/interface/FillNumberLUTHandler.h"
+#include "TopLJets2015/TopAnalysis/interface/AlignmentLUTHandler.h"
+#include "TopLJets2015/TopAnalysis/interface/ProtonReconstruction.h"
+
 #include <vector>
 #include <set>
 #include <iostream>
@@ -39,6 +43,12 @@ void RunExclusiveTop(TString filename,
   ///////////////////
   TRandom* random = new TRandom(0); // random seed for period selection
   std::vector<RunPeriod_t> runPeriods=getRunPeriods(era);
+
+  const char* CMSSW_BASE = getenv("CMSSW_BASE");
+  CTPPSAlCa::AlignmentLUTHandler pots_align(Form("%s/TopLJets2015/TopAnalysis/data/era2016/alignment_collection_v2.out", CMSSW_BASE));
+  CTPPSAlCa::FillNumberLUTHandler run_to_fill(Form("%s/TopAnalysis/data/era2016/fill_run_lut_v2.dat", CMSSW_BASE));
+  XiInterpolator proton_reco(Form("%s/TopAnalysis/data/era2016/ctpps_optics_9mar2017.root", CMSSW_BASE));
+
   bool isTTbar( filename.Contains("_TTJets") or (normH and TString(normH->GetTitle()).Contains("_TTJets")));
   bool isData( filename.Contains("Data") );
   
@@ -98,6 +108,9 @@ void RunExclusiveTop(TString filename,
     {
       t->GetEntry(iev);
       if(iev%10==0) printf ("\r [%3.0f%%] done", 100.*(float)iev/(float)nentries);
+
+      int fill_number = run_to_fill.getFillNumber(ev.run);
+      proton_reco.setAlignmentConstants(pots_align.getAlignmentConstants(fill_number));
       
       //assign randomly a run period
       TString period = assignRunPeriod(runPeriods,random);
@@ -170,6 +183,12 @@ void RunExclusiveTop(TString filename,
         plotwgts[0]=wgt;
       }
 
+      if (ev.isData) {
+        for (int ift=0; ift<ev.nfwdtrk; ift++) {
+          float xi, xi_error;
+          proton_reco.computeXiSpline(ev.fwdtrk_arm[ift], ev.fwdtrk_pot[ift], ev.fwdtrk_x[ift], xi, xi_error);
+        }
+      }
 
       //control histograms
       ht.fill("nvtx",     ev.nvtx,        plotwgts);
