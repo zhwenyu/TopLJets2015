@@ -160,16 +160,7 @@ void RunMttbarAnalyzer(TString filename,
         EffCorrection_t  selSF= lepEffH.getOfflineCorrection(leptons[0], period);
 
         wgt *= puWgt*trigSF.first*selSF.first;
-        
-        //top pt weighting
-        double topptsf = 1.0;
-        if(isTTbar) {
-          for (int igen=0; igen<ev.ngtop; igen++) {
-            if(abs(ev.gtop_id[igen])!=6) continue;
-            topptsf *= TMath::Exp(0.0615-0.0005*ev.gtop_pt[igen]);
-          }
-        }
-        
+      
         // generator level weights
         wgt *= (ev.g_nw>0 ? ev.g_w[0] : 1.0);
 
@@ -260,7 +251,7 @@ void RunMttbarAnalyzer(TString filename,
           for(Int_t it=0; it<ev.ngtop; it++)
             {
               int absid(abs(ev.gtop_id[it]));
-              if(abs(ev.gtop_id[igen])!=6) continue;
+              if(abs(ev.gtop_id[it])!=6) continue;
               TLorentzVector p4(0,0,0,0);
               p4.SetPtEtaPhiM(ev.gtop_pt[it],ev.gtop_eta[it],ev.gtop_phi[it],ev.gtop_m[it]);
               ttbar += p4;
