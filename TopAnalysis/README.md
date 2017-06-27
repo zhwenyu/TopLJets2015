@@ -6,8 +6,8 @@ These installation instructions correspond to the 2016 data/MC Moriond17 re-reco
 To install execute the following in your work area.
 
 ```
-cmsrel CMSSW_8_0_26_patch1
-cd CMSSW_8_0_26_patch1/src 
+cmsrel CMSSW_8_0_28
+cd CMSSW_8_0_28/src 
 cmsenv
 
 #EGM electron regression+smearer

@@ -257,17 +257,14 @@ void RunMttbarAnalyzer(TString filename,
       if(ev.ngtop>0)
         {
           TLorentzVector ttbar(0,0,0,0);
-          Int_t nfs(0);
           for(Int_t it=0; it<ev.ngtop; it++)
             {
               int absid(abs(ev.gtop_id[it]));
-              if(absid!=5000 && absid!=11000 && absid!=13000 && absid!=0) continue;
-              nfs++;
+              if(abs(ev.gtop_id[igen])!=6) continue;
               TLorentzVector p4(0,0,0,0);
               p4.SetPtEtaPhiM(ev.gtop_pt[it],ev.gtop_eta[it],ev.gtop_phi[it],ev.gtop_m[it]);
               ttbar += p4;
             }
-          if(nfs!=5) ttbar.SetPtEtaPhiM(0,0,0,0);
           summary.gen_mttbar=ttbar.M();
         }
 
