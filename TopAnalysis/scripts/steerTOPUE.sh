@@ -22,7 +22,7 @@ myletter=${whoami:0:1}
 eosdir=/store/cmst3/group/top/ReReco2016/${githash}
 summaryeosdir=/store/cmst3/group/top/TopUE-v2
 outdir=${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/UEanalysis/
-wwwdir=~/www/TOP-17-015
+wwwdir=~/www/TOP-17-015-v2
 
 
 RED='\e[31m'
@@ -73,14 +73,14 @@ case $WHAT in
 	eosprefix=root://eoscms//eos/cms
 	echo "Computing resolutions"
 	base="${eosprefix}/${summaryeosdir}/Chunks/MC13TeV_TTJets"
-	#python test/TopUEAnalysis/runUEanalysis.py -i ${base}_0.root,${base}_1.root,${base}_2.root,${base}_3.root,${base}_4.root --step 0 --ptThr 0.9,0.9 -o ${outdir};
-	
+	python test/TopUEAnalysis/runUEanalysis.py -i ${base}_0.root,${base}_1.root,${base}_2.root,${base}_3.root,${base}_4.root --step 0 --ptThr 0.9,0.9 -o ${outdir};
+
 	echo "Defining analysis configuration"
 	#python test/TopUEAnalysis/runUEanalysis.py --step 1 -o ${outdir};
 	
 	echo "Filling the histograms"
-        queue=local
-	python test/TopUEAnalysis/runUEanalysis.py -i ${summaryeosdir}/Chunks      --step 2 -q ${queue} -o ${outdir} --only TTJets;
+        #queue=local
+	#python test/TopUEAnalysis/runUEanalysis.py -i ${summaryeosdir}/Chunks      --step 2 -q ${queue} -o ${outdir}; # --only TTJets;
 	;;
     MERGEANA )
 	./scripts/mergeOutputs.py UEanalysis/analysis True 
@@ -89,17 +89,17 @@ case $WHAT in
 
         mkdir -p UEanalysis/analysis/plots/rawana
 	commonOpts="-l ${lumi} --saveLog --mcUnc ${lumiUnc} --procSF DY:${outdir}/plots/.dyscalefactors.pck";
-        filter="--only None_inc,ptttbar_inc,nj_inc"
-	python scripts/plotter.py -i UEanalysis/analysis -j data/era2016/samples.json      ${commonOpts} ${filter}
-	python scripts/plotter.py -i UEanalysis/analysis -j data/era2016/syst_samples.json ${commonOpts} ${filter} --silent --outName syst_plotter.root;	
+        #filter="--only _0_" #None_inc,ptttbar_inc,nj_inc"
+	#python scripts/plotter.py -i UEanalysis/analysis -j data/era2016/samples.json      ${commonOpts} ${filter}
+	#python scripts/plotter.py -i UEanalysis/analysis -j data/era2016/syst_samples.json ${commonOpts} ${filter} --silent --outName syst_plotter.root;	
+        #python test/TopUEAnalysis/UETools.py -o UEanalysis/analysis/plots/ -i  UEanalysis/analysis/MC13TeV_TTJets.root
 	python test/TopUEAnalysis/showFinalRecoDistribution.py UEanalysis/analysis/plots/plotter.root UEanalysis/analysis/plots/syst_plotter.root
-        python test/TopUEAnalysis/showFinalUnfoldedDistribution.py \
-            UEanalysis/analysis/plots/plotter.root \
-            UEanalysis/analysis/plots/syst_plotter.root \
-            --out UEanalysis/analysis/plots/rawana \
-            --reco;
-
-	python test/TopUEAnalysis/UETools.py -o UEanalysis/analysis/plots/ -i  UEanalysis/analysis/MC13TeV_TTJets.root
+        #python test/TopUEAnalysis/showFinalUnfoldedDistribution.py \
+        #    UEanalysis/analysis/plots/plotter.root \
+        #    UEanalysis/analysis/plots/syst_plotter.root \
+        #    --out UEanalysis/analysis/plots/rawana \
+        #    --reco;
+	
 	;;
     WWWANA )
 	mkdir -p ${wwwdir}/rawana

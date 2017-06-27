@@ -120,7 +120,7 @@ class UEAnalysisHandler:
     return the most appropriate bin for a given value, taking into account the range available
     """
     def getBinForVariable(self,val,axis):
-        xmin,xmax=axis.GetXmin(),axis.GetXmax()
-        if val>xmax : return axis.GetNbins()
+        xmin,xmax=axis.GetXmin(),axis.GetXmax()       
+        if val>=xmax : return axis.GetNbins()
         if val<xmin : return 0
         return axis.FindBin(val)

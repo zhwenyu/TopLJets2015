@@ -56,8 +56,6 @@ def buildWjj(lightJets,orderBy='drjj'):
                     scaleP4(p2,lightJets[k].scaleUnc[syst+var])
                     unc=(p1+p2).M()/jj.M()
                     WjjCandidates[-1].setScaleUnc(syst+var,unc)
-                    print syst+var,lightJets[j].p4.Pt(),'->',p1.Pt(),lightJets[k].p4.Pt(),'->',p2.Pt(),unc
-            raw_input()
 
     WjjCandidates.sort(key=lambda x: x.rankVal,reverse=False)
     return WjjCandidates

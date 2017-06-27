@@ -78,23 +78,26 @@ def getJets(tree,minPt=25.,maxEta=2.4,mcTruth=None,shiftJES=0):
         jesUnc=0.028
         if partColl[-1].p4.Pt()<40 : jesUnc=ROOT.TMath.Sqrt(0.02**2+jesUnc**2)
         partColl[-1].setScaleUnc('jesup',(1.0+jesUnc))
-        partColl[-1].setScaleUnc('jesdn',(1.0+jesUnc))
+        partColl[-1].setScaleUnc('jesdn',(1.0-jesUnc))
         partColl[-1].setScaleUnc('jerup',cjerUp/cjer)
         partColl[-1].setScaleUnc('jerdn',cjerDn/cjer)
 
-        #match parton level
+        #match parton level, if available
         minDR=999
         imatch=-1
-        for i in xrange(0,len(mcTruth)):
-            p=mcTruth[i]
-            dR=p.DeltaR(partColl[-1])
-            if dR>minDR : continue
-            minDR=dR
-            imatch=i
-        if imatch<0 or imatch in matchedGen: continue
-        if minDR>0.4 : continue
-        matchedGen.append(imatch)
-        partColl[-1].setMCtruth(mcTruth[imatch])
+        try:
+            for i in xrange(0,len(mcTruth)):
+                p=mcTruth[i]
+                dR=p.DeltaR(partColl[-1])
+                if dR>minDR : continue
+                minDR=dR
+                imatch=i
+            if imatch<0 or imatch in matchedGen: continue
+            if minDR>0.4 : continue
+            matchedGen.append(imatch)
+            partColl[-1].setMCtruth(mcTruth[imatch])
+        except:
+            pass
 
     return partColl
 
@@ -203,7 +206,7 @@ def fillDataAndPlots(data,ws,args,tree,leptonSel,mcTruth=False,wjjOrder='drjj',t
         except:
             pass
         MET=Particle(0,tree.met_pt,0.,tree.met_phi,0.)
-        jets=getJets(tree=tree,minPt=25,maxEta=2.4,mcTruth=mcTruth,shiftJES=shiftJES,smearJER=smearJER)
+        jets=getJets(tree=tree,minPt=25,maxEta=2.4,mcTruth=mcTruth,shiftJES=shiftJES)
         jets.sort(key=lambda x: x.rankVal, reverse=True)
         if len(jets)<4 : continue
 
@@ -291,8 +294,8 @@ def fillDataAndPlots(data,ws,args,tree,leptonSel,mcTruth=False,wjjOrder='drjj',t
         ws.cat('sample').setLabel(cat)
         args.setCatLabel(cat)
         argValList=[('mjj',    Wjj.p4.M()),
-                    ('dmjj_jes',Wjj.scaleUnc['jesup']),
-                    ('dmjj_jer',Wjj.scaleUnc['jerup']),
+                    ('dmjj_jes',0.5*(abs(1-Wjj.scaleUnc['jesup'])+abs(1-Wjj.scaleUnc['jesdn'])) ),
+                    ('dmjj_jer',0.5*(abs(1-Wjj.scaleUnc['jerup'])+abs(1-Wjj.scaleUnc['jerdn'])) ),
                     ('mthad',  thad.p4.M()),
                     ('mtlep',  tlep.p4.M()),
                     ('corwjj', 1 if goodWjj  else 0),

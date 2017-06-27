@@ -118,6 +118,7 @@ def determineSliceResolutions(opt):
 
         #show plot
         c.Clear()
+        c.SetRightMargin(0.12)
         h2d.Draw('colz')
         h2d.GetYaxis().SetTitleOffset(1.1)
         resGr.Draw('p')
@@ -132,6 +133,33 @@ def determineSliceResolutions(opt):
         c.Modified()
         c.Update()
         for ext in ['png','pdf']: c.SaveAs('%s/%s_resol.%s'%(opt.out,var,ext))
+
+        #inclusive resolution
+        c.Clear()
+        c.SetRightMargin(0.02)
+        tmp=h2d.ProjectionY('tmp',1,h2d.GetNbinsX())
+        tmp.Scale(1./tmp.Integral())
+        tmp.SetMarkerStyle(20)
+        tmp.Draw()
+        tmp.GetYaxis().SetTitle('PDF')
+        tmp.GetYaxis().SetTitleOffset(1.2)
+        mean,sigma=tmp.GetMean(),tmp.GetRMS()
+        tmp.Fit('gaus','MRQ+','same',mean-sigma,mean+sigma)
+        gaus=tmp.GetFunction('gaus')
+        mean=gaus.GetParameter(1)
+        sigma=gaus.GetParameter(2)
+        tex=ROOT.TLatex()        
+        tex.SetTextFont(42)
+        tex.SetTextSize(0.035)
+        tex.SetNDC()
+        tex.DrawLatex(0.12,0.9,'#bf{CMS} #it{simulation preliminary} %s'%VARS[var][0])
+        tex.DrawLatex(0.84,0.96,'#sqrt{s}=13 TeV')
+        tex.DrawLatex(0.12,0.85,'#mu=%3.2f #sigma=%3.2f'%(mean,sigma))
+        c.SetLogx(False)
+        c.Modified()
+        c.Update()
+        for ext in ['png','pdf']: c.SaveAs('%s/%s_incresol.%s'%(opt.out,var,ext))
+
 
         varResolutions[var]=(h2d,resGr)
 
@@ -224,8 +252,11 @@ def defineAnalysisBinning(opt):
             recBin.append( genBin[-1]+0.25*(genBin[-1]+genBin[-2]) )
 
         if var in ['chavgpt','chavgpz']  : 
+            genBin[0],recBin[0]=0.9,0.9
             del genBin[1]
             del recBin[1]
+        if var in ['chflux','chfluxz']:
+            genBin[0],recBin[0]=0.9,0.9
         if var in ['C','D','sphericity'] : 
             genBin[-1],recBin[-1]=1,1
         if var in ['aplanarity']         : 

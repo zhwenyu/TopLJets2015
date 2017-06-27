@@ -76,9 +76,13 @@ class UEEventCounter:
         
         if axes is None : axes=self.rec_chmult_wrtTo.keys()
         for a in axes:
-            self.rec_chmult_wrtTo[a]  = [ [0]*3 ]*nvars
-            self.rec_chflux_wrtTo[a]  = [ [0]*3 ]*nvars
-            self.rec_chavgpt_wrtTo[a] = [ [0]*3 ]*nvars
+            self.rec_chmult_wrtTo[a]  = []
+            self.rec_chflux_wrtTo[a]  = []
+            self.rec_chavgpt_wrtTo[a] = []
+            for i in xrange(0,nvars):
+                self.rec_chmult_wrtTo[a].append( [0]*3 )
+                self.rec_chflux_wrtTo[a].append( [0]*3 )
+                self.rec_chavgpt_wrtTo[a].append( [0]*3 )
             self.gen_chmult_wrtTo[a]  = [0]*3
             self.gen_chflux_wrtTo[a]  = [0]*3
             self.gen_chavgpt_wrtTo[a] = [0]*3
@@ -87,9 +91,15 @@ class UEEventCounter:
     printout the event contents
     """
     def show(self):
-        print 'Level # pTsum <pT> pZsum <pZ>'
-        print 'RECO %d %3.1f %3.1f %3.1f %3.1f'%( self.rec_chmult[0], self.rec_chflux[0], self.rec_chavgpt[0], self.rec_chfluxz[0], self.rec_chavgpz[0] )
-        print 'GEN %d %3.1f %3.1f %3.1f %3.1f'%( self.gen_chmult[0],  self.gen_chflux[0], self.gen_chavgpt[0], self.gen_chfluxz[0], self.gen_chavgpz[0] )
+        #print 'Level # pTsum <pT> pZsum <pZ>'
+        #print 'RECO %d %3.1f %3.1f %3.1f %3.1f'%( self.rec_chmult[0], self.rec_chflux[0], self.rec_chavgpt[0], self.rec_chfluxz[0], self.rec_chavgpz[0] )
+        #print 'GEN %d %3.1f %3.1f %3.1f %3.1f'%( self.gen_chmult[0],  self.gen_chflux[0], self.gen_chavgpt[0], self.gen_chfluxz[0], self.gen_chavgpz[0] )
+        print self.rec_chmult[0]
+        print self.rec_chmult_wrtTo['ptll']
+        print self.gen_chmult
+        print self.gen_chmult_wrtTo['ptll']
+
+
 
     """
     0 - tow(ards), 1 trans(verse), 2 away
@@ -153,17 +163,12 @@ class UEEventCounter:
                     self.rec_chmult[ivar] +=1
                     self.rec_chflux[ivar] += p4.Pt()
                     self.rec_chfluxz[ivar] += abs(p4.Pz())
-
                     for a in self.rec_chmult_wrtTo:
-                     
                         phirec=getattr(t,AXISANGLE[a])[varIdx]
                         idxrec=self.getRegionFor( ROOT.TVector2.Phi_mpi_pi(t.phi[n]-phirec) )
-
                         self.rec_chmult_wrtTo[a][ivar][idxrec] +=1
                         self.rec_chflux_wrtTo[a][ivar][idxrec] += t.pt[n]                    
-                        
-
-
+                
                 #event shapes
                 evshapes.analyseNewEvent(selP4)
                 self.rec_sphericity[ivar]     = evshapes.sphericity
@@ -180,6 +185,7 @@ class UEEventCounter:
                         if ncounted==0 : continue
                         self.rec_chavgpt_wrtTo[a][ivar][k]=self.rec_chflux_wrtTo[a][ivar][k]/ncounted
 
+                
         #gen level
         self.gen_passSel=(t.gen_passSel&0x1)
         if self.gen_passSel:

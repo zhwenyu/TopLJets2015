@@ -1141,6 +1141,9 @@ std::vector<double> getZg(Jet jet, bool includeNeutrals, bool usePuppi, double p
   return results;
 }
 
+double deltaR(TLorentzVector v1, TLorentzVector v2) { return v1.DeltaR(v2); }
+double mapAngleMPiToPi(double phi) { return TVector2::Phi_mpi_pi(phi); }
+
 //
 void createTopJetShapeEventTree(TTree *t,TopJetShapeEvent_t &tjsev)
 {

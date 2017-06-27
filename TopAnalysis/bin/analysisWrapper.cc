@@ -9,6 +9,7 @@
 #include "TopLJets2015/TopAnalysis/interface/WbChargeAsymmetry.h"
 #include "TopLJets2015/TopAnalysis/interface/FourTopsAnalyzer.h"
 #include "TopLJets2015/TopAnalysis/interface/ExclusiveTop.h"
+#include "TopLJets2015/TopAnalysis/interface/MttbarAnalyzer.h"
 #include "TopLJets2015/TopAnalysis/interface/TOPSynchExercise.h"
 
 #include "TH1F.h"
@@ -98,6 +99,7 @@ int main(int argc, char* argv[])
   else if(method=="WbChargeAsymmetry::RunWbChargeAsymmetry") RunWbChargeAsymmetry(in,out,channel,charge,normH,era,debug);
   else if(method=="FourTopsAnalyzer::RunFourTopsAnalyzer")   RunFourTopsAnalyzer(in,out,channel,charge,normH,era,debug);
   else if(method=="ExclusiveTop::RunExclusiveTop")           RunExclusiveTop(in,out,channel,charge,normH,era,debug);
+  else if(method=="MttbarAnalyzer::RunMttbarAnalyzer")       RunMttbarAnalyzer(in,out,channel,charge,normH,era,debug);
   else
     {
       cout << "Check method=" << method <<endl;
