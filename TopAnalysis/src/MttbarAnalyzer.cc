@@ -251,7 +251,7 @@ void RunMttbarAnalyzer(TString filename,
           for(Int_t it=0; it<ev.ngtop; it++)
             {
               int absid(abs(ev.gtop_id[it]));
-              if(abs(ev.gtop_id[it])!=6) continue;
+              if(absid!=6) continue;
               TLorentzVector p4(0,0,0,0);
               p4.SetPtEtaPhiM(ev.gtop_pt[it],ev.gtop_eta[it],ev.gtop_phi[it],ev.gtop_m[it]);
               ttbar += p4;
