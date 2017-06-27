@@ -9,9 +9,6 @@ if [ "$#" -ne 1 ]; then
     echo "        WWW          - move plots to web-based are"
     exit 1; 
 fi
-
-export LSB_JOB_REPORT_MAIL=N
-queue=2nd
 githash=b312177
 lumi=35922
 lumiUnc=0.025
@@ -31,7 +28,7 @@ case $WHAT in
         #to run on the batck use "-q condor"
 	python scripts/runLocalAnalysis.py -i ${eosdir} \
             --only test/summer2017/mttbar_samples.json --exactonly \
-            --njobs 8 -q local \
+            -q condor \
             -o ${outdir} \
             --era era2016 -m MttbarAnalyzer::RunMttbarAnalyzer --ch 0 --runSysts;
 	;;

@@ -279,6 +279,7 @@ void RunMttbarAnalyzer(TString filename,
   
   //save histos to file  
   fOut->cd();
+  tree->Write();
   for (auto& it : ht.getPlots())  { 
     it.second->SetDirectory(fOut); it.second->Write(); 
   }
