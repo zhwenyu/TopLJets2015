@@ -3,6 +3,8 @@
 import ROOT
 import sys
 
+from runDataFit import lumi
+
 plots={'pdfcomp1':None,
        'pdfcomp0':None,
        'data':None,
@@ -79,6 +81,7 @@ for ch in ['e','mu']:
 
 ROOT.gStyle.SetOptStat(0)
 ROOT.gStyle.SetOptTitle(0)
+ROOT.gROOT.SetBatch(True)
 
 c=ROOT.TCanvas('c','c',800,800)
 c.SetTopMargin(0)
@@ -112,15 +115,15 @@ label.SetNDC()
 label.SetTextFont(42)
 label.SetTextSize(0.05)
 label.DrawLatex(0.5,0.92,'#bf{CMS} #it{preliminary}')
-label.DrawLatex(0.5,0.86,'180 nb^{-1} (#sqrt{s_{NN}}=8.16 TeV)')
+label.DrawLatex(0.5,0.86,'%3.0f nb^{-1} (#sqrt{s_{NN}}=8.16 TeV)'%lumi[0])
 label.DrawLatex(0.5,0.8,'#it{%s}'%catTitle)
 label.DrawLatex(0.5,0.74,'#chi^{2}/ndof=%3.2f'%plots['totalpdf'].chiSquare(plots['data'],1))
 
-leg=ROOT.TLegend(0.6,0.7,0.95,0.5)
+leg=ROOT.TLegend(0.57,0.7,0.95,0.5)
 leg.SetFillStyle(0)
 leg.SetBorderSize(0)
 leg.SetTextFont(42)
-leg.SetTextSize(0.04)
+leg.SetTextSize(0.035)
 leg.AddEntry(plots['data'],'data','ep')
 leg.AddEntry(plots['totalpdf'],'background','f')
 leg.AddEntry(plots['pdfcomp1'],'t#bar{t} correct permutations','f')

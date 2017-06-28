@@ -1,5 +1,7 @@
 import ROOT
 
+from runDataFit import lumi
+
 """
 """
 def getEffSigma(var,pdf,wmin,wmax,step=0.1,epsilon=1e-4):
@@ -159,7 +161,7 @@ def showFitResult(fitVar,data,pdf,categs,w,showComponents=[],rangeX=(0,400),outD
         label.SetTextFont(42)
         label.SetTextSize(0.05)
         label.DrawLatex(0.5,0.92,'#bf{CMS} #it{preliminary}')
-        label.DrawLatex(0.5,0.86,'175 nb^{-1} (#sqrt{s_{NN}}=8.16 TeV)')
+        label.DrawLatex(0.5,0.86,'%3.0f nb^{-1} (#sqrt{s_{NN}}=8.16 TeV)'%lumi[0])
         label.DrawLatex(0.5,0.8,'#it{%s}'%(tagTitle if tagTitle!='' else 'inclusive'))
         label.DrawLatex(0.5,0.74,'#chi^{2}/ndof=%3.2f'%frame.chiSquare())
 

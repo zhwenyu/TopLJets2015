@@ -1,12 +1,19 @@
 #!/usr/bin/env python2.7
 
+from TopLJets2015.TopAnalysis.rounding import *
+
+import json
+
 from prepareWorkspace import EVENTCATEGORIES as SELEVENTCATEGORIES
 EVENTCATEGORIES=[x for x in SELEVENTCATEGORIES if not '1f' in x]
 
-lumi=174.5
-acceptance={'e':0.056,'mu':0.060}
-efficiency={'e':0.95*0.85*0.95,'mu':0.954*0.993*0.985*0.981}
-ebExp,ebUnc=0.595,0.10*0.595
+lumi=(174.5,6.98)
+acceptance={'e':(0.056,0.0014),
+            'mu':(0.060,0.0016)}
+efficiency={'e':(0.767,0.0304),
+            'mu':(0.915,0.0366)}
+ebExp=(0.595,0.0595)
+jsf=(1.0,0.034)
 
 
 import ROOT
@@ -45,17 +52,20 @@ def addToFitResults(title,fitResults,varSet):
     iparam = iter.Next()
     while iparam :
         if not iparam.getAttribute('Constant'):
-            fitResults[title][iparam.GetName()]=(iparam.getVal(),iparam.getError())
+            fitResults[title][iparam.GetName()]=(iparam.getVal(),iparam.getErrorLo(),iparam.getErrorHi())
         iparam = iter.Next()
 
 """
 """
-def printFitResults(fitResults,opt):
+def printFitResults(fitResults,impacts,opt):
+
+    #sort out all the parameters
     allVars=set()
     for key in fitResults:
         for pname in fitResults[key]:
             allVars.add(pname)
 
+    #save a neat tex table
     with open('%s/fitResults_%d.tex'%(opt.output,opt.fitType),'w') as fOut:
         fOut.write('\\hline\n')
         fOut.write('\multirow{3}{*}{Variable} & \\multicolumn{3}{c}{Fit type} \\\\\n')
@@ -69,9 +79,16 @@ def printFitResults(fitResults,opt):
                 if not pname in fitResults[key]:
                     fOut.write('& %25s'%'')
                 else :
-                    fOut.write('& %25s'%'$%3.2f \\pm %3.2f$'%fitResults[key][pname])
+                    val,unclo,unchi=fitResults[key][pname]
+                    unc=0.5*(abs(unclo)+abs(unchi))
+                    fOut.write('& %25s'%toLatexRounded(val,unc)) #'$%3.2f_{%3.2f}^{%3.2f}$'%fitResults[key][pname])
             fOut.write('\\\\\n')
         fOut.write('\\hline\n')
+
+    #save impacts as a json file
+    with open('%s/impacts_%d.json'%(opt.output,opt.fitType),'w') as fOut:
+        json.dump(impacts,fOut)
+
 
 """
 """
@@ -141,9 +158,10 @@ def definePDF(w,varName):
         w.factory("RooFormulaVar::Nw_{0}('@0*(1-@1)',{{Nbkg_{0},fqcd_{0}}})".format(cat))
         ch='e' if cat[0]=='e' else 'mu'
         baseCat=cat[1:] if cat[0]=='e' else cat[2:]
-        mpvName,widthName='mpv_w{1}_{0}'.format(baseCat,varName),'width_w{1}_{0}'.format(baseCat,varName)
+        #mpvName,widthName='mpv_w{1}_{0}'.format(baseCat,varName),'width_w{1}_{0}'.format(baseCat,varName)
+        mpvName,widthName='mpv_w{1}_{0}'.format(cat,varName),'width_w{1}_{0}'.format(cat,varName)
         minMPV=20  if varName=='mjj' else 150
-        maxMPV=80 if varName=='mjj' else 200
+        maxMPV=120 if varName=='mjj' else 200
         w.factory('{0}[{1},{2}]'.format(mpvName,minMPV,maxMPV))
         w.factory('{0}[10,100]'.format(widthName))
         w.factory('RooLandau::W_{1}_{0}({1},{2},{3})'.format(cat,varName,mpvName,widthName))
@@ -297,12 +315,12 @@ def runFit(pdf,data,poi,obs,w,outDir):
         c.SaveAs('%s/ll_%s.%s'%(outDir,mc.GetName(),ext))
 
 #simple roofit version
-def runSimpleFit(pdf,data,poi,constr=None):
+def runSimpleFit(pdf,data,poi,constr=None,pToFix=None):
 
     #create the log likelihood
     nll=pdf.createNLL(data,
                       ROOT.RooFit.Extended(True),
-                      ROOT.RooFit.NumCPU(2))
+                      ROOT.RooFit.NumCPU(8))
 
     #add constraints
     if constr:
@@ -315,7 +333,22 @@ def runSimpleFit(pdf,data,poi,constr=None):
             var = iter.Next()
         nll=ROOT.RooAddition('nllc','nllc',parcels)
 
+    #fix parameters
+    if pToFix:
+        iter = pdf.getParameters(data).createIterator()
+        iparam = iter.Next()
+        while iparam :
+            try:
+                pname=iparam.GetName()
+                if pname in pToFix:
+                    iparam.setConstant(True)
+            except:
+                pass
+            iparam = iter.Next()
+
+    #maximize the likelihood
     minuit=ROOT.RooMinuit(nll)
+    minuit.setStrategy(2)
     minuit.migrad() #minimize with respect to all parameters
     minuit.minos(poi)
     r=minuit.save()
@@ -337,6 +370,7 @@ def performFits(opt):
 
     #fit results summary
     fitResults={}
+    impacts={}
 
     #run the 2D/3D fits
     if opt.fitType in [1,2]:
@@ -352,6 +386,13 @@ def performFits(opt):
             #constraints
             constr=ROOT.RooArgSet()
             constr.add( w.function('ebconstraint') )
+            constr.add( w.function('jsfconstraint') )
+            constr.add( w.function('acc_e_constraint') )
+            constr.add( w.function('acc_mu_constraint') )
+            constr.add( w.function('eff_mu_constraint') )
+            constr.add( w.function('eff_e_constraint') )
+            constr.add( w.function('lumi_constraint') )
+            #constr.add( w.function('jerconstraint') )
 
             t='2D' if opt.fitType==1 else '3D'
             pdf=w.pdf('model_{0}_{1}'.format(ch,t))
@@ -363,7 +404,7 @@ def performFits(opt):
             result,pll=runSimpleFit(pdf,data,poi,constr)
             w.saveSnapshot('fitresult_%s'%ch,pdf.getParameters(data))
 
-            addToFitResults('%s_%s'%(ch,t),fitResults,pdf.getParameters(data))
+            addToFitResults('%s_%s'%(ch,t),fitResults,result.floatParsFinal()) #pdf.getParameters(data))
             #pll.plotOn(xsecframe,ROOT.RooFit.Name(ch),ROOT.RooFit.ShiftToZero())
 
             EVENTCATEGORIES2SHOW=EVENTCATEGORIES if ch=='combined' else [ch+'1l4j'+x for x in ['2q','1b1q','2q']]
@@ -393,7 +434,13 @@ def performFits(opt):
             #constraints
             constr=ROOT.RooArgSet()
             constr.add( w.function('ebconstraint') )
-            #constr.add( w.function('jsfconstraint') )
+            constr.add( w.function('jsfconstraint') )
+            constr.add( w.function('acc_e_constraint') )
+            constr.add( w.function('acc_mu_constraint') )
+            constr.add( w.function('eff_mu_constraint') )
+            constr.add( w.function('eff_e_constraint') )
+            constr.add( w.function('lumi_constraint') )
+            #constr.add( w.function('jerconstraint') )
 
             #pdf
             pdf=w.pdf('model_%s_mjj'%ch)
@@ -404,8 +451,53 @@ def performFits(opt):
             #runFit(pdf,data,poi,obsList,w,opt.output)
             result,pll=runSimpleFit(pdf,data,poi,constr)
             w.saveSnapshot('fitresult_%s'%ch,pdf.getParameters(data))
-            addToFitResults('%s_1D'%ch,fitResults,pdf.getParameters(data))
+
+            key='%s_1D'%ch
+            addToFitResults(key,fitResults,result.floatParsFinal()) #pdf.getParameters(data))
+
+            #do the following only for the main fit
+            if opt.fitType!=0 or ch!='combined' : continue
+
+            #fit stat unc. (fix all except xsec and repeat the fit)
+            pToFix=[]
+            for pname in fitResults[key]:
+                if pname!='xsec': pToFix.append(pname)
+            result,_=runSimpleFit(pdf,data,poi,constr,pToFix)
+            fitResults['%s_1D'%ch]['xsec_statonly']=(
+                result.floatParsFinal().find('xsec').getVal(),
+                result.floatParsFinal().find('xsec').getErrorLo(),
+                result.floatParsFinal().find('xsec').getErrorHi()
+                )
+
+            #let all float again
+            for pname in pToFix:
+                w.var(pname).setConstant(False)
+            
+            #now do the impacts
+            impacts[key]={}
+            for pname in fitResults[key]:
+                if 'xsec' in pname: continue
+
+                impacts[key][pname]=[]
+
+                #get postfit
+                val,unclo,unchi=fitResults[key][pname]
+
+                #set at +/-1 sigma postfit and repeat fit
+                for ivar in xrange(0,2):
+                    w.var(pname).setVal(val+unclo if ivar==0 else val+unchi)
+                    result,_=runSimpleFit(pdf,data,poi,constr,[pname])
+
+                    #save difference in xsec
+                    dR=result.floatParsFinal().find('xsec').getVal()-fitResults['%s_1D'%ch]['xsec'][0]
+                    impacts[key][pname].append(dR)
+
+                #let it float again
+                w.var(pname).setConstant(False)
+                
+
             #pll.plotOn(xsecframe,ROOT.RooFit.Name(ch),ROOT.RooFit.ShiftToZero())
+
             continue
             compsToShow=['S_cor*','S_cor*,S_wro*'] #,'S_cor*,S_wro*,W_*']
             if opt.fitType==3 :
@@ -428,8 +520,9 @@ def performFits(opt):
                           paramList=paramList,
                           pfix='_%s_%dfit'%(ch,opt.fitType))
 
-    printFitResults(fitResults,opt)
+    printFitResults(fitResults,impacts,opt)
     w.writeToFile('finalfitworkspace_%d.root'%(opt.fitType))
+
 
     #show the likelihoods
     #xsecframe=w.var('xsec').frame(ROOT.RooFit.Bins(10),ROOT.RooFit.Range(0,100))
@@ -461,20 +554,19 @@ def addPDFToWorkspace(opt):
     fIn.Close()
 
     #common to all variables and/or channels
-    w.factory('xsec[0,300]')
-    w.factory('lumi[%f]'%lumi)
+    w.factory('xsec[0,300]')    
+    w.factory("RooFormulaVar::lumi_constraint('0.5*pow((@0-%f)/%f,2)',{lumi[0,500]})"%lumi)
     for ch in ['e','mu']:
-        w.factory('acc_%s[%f]'%(ch,acceptance[ch]))
-        w.factory('eff_%s[%f]'%(ch,efficiency[ch]))
-    w.factory("RooFormulaVar::ebconstraint('0.5*pow((@0-%f)/%f,2)',{eb[0.60,0.0,1.0]})"%(ebExp,ebUnc))
-
-    w.factory("RooFormulaVar::jsfconstraint('0.5*pow(@0,2)',{jsf[-5,5]})")
-    w.factory("RooFormulaVar::jerconstraint('0.5*pow(@0,2)',{jer[-5,5]})")
-    w.factory("RooFormulaVar::scaledmjj('(1+@0*@1)*(1+@2*@3)*@4',{jsf,dmjj_jes,jer,dmjj_jer,mjj})")
-    w.var('jsf').setVal(0.0)
-    w.var('jsf').setConstant(True)
-    w.var('jer').setVal(0.0)
-    w.var('jer').setConstant(True)
+        w.factory("RooFormulaVar::acc_%s_constraint('0.5*pow((@0-%f)/%f,2)',{acc_%s[0.,1.0]})"%(ch,acceptance[ch][0],acceptance[ch][1],ch))
+        w.factory("RooFormulaVar::eff_%s_constraint('0.5*pow((@0-%f)/%f,2)',{eff_%s[0.,1.]})"%(ch,efficiency[ch][0],efficiency[ch][1],ch))
+    w.factory("RooFormulaVar::ebconstraint('0.5*pow((@0-%f)/%f,2)',{eb[0.60,0.0,1.0]})"%ebExp)
+    w.factory("RooFormulaVar::jsfconstraint('0.5*pow((@0-%f)/%f,2)',{jsf[0.5,1.5]})"%jsf)
+    #w.factory("RooFormulaVar::jerconstraint('0.5*pow(@0,2)',{jer[-5,5]})")
+    w.factory("RooFormulaVar::scaledmjj('TMath::Max(0.,@0*@1)',{jsf,mjj})")
+    #w.var('jsf').setVal(jsf[0])
+    #w.var('jsf').setConstant(True)
+    #w.var('jer').setVal(0.0)
+    #w.var('jer').setConstant(True)
 
     #instantiate PDFs
     for vname,vtit in observables:

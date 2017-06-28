@@ -80,6 +80,10 @@ case $WHAT in
 
     FINALCOMP )
         python doPRLplots.py -i finalfitworkspace_0.root;
-        python mergePLRplotCategs.py
+        for var in mjj mthad mtlep; do
+            for cat in 1l4j2b 1l4j1b1q 1l4j2q; do
+                python mergePLRplotCategs.py $var $cat;
+            done
+        done
 	;;
 esac
