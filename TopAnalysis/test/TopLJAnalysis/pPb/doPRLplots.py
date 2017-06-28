@@ -14,6 +14,7 @@ def main():
     ROOT.gStyle.SetOptStat(0)
     ROOT.gStyle.SetOptTitle(0)
     ROOT.gROOT.SetBatch(True) #False)
+    ROOT.gErrorIgnoreLevel = 5000
 
     #configuration
     usage = 'usage: %prog [options]'
@@ -56,12 +57,10 @@ def main():
         if '2b' in x   : xtitle += ' (#geq2b)'
         xtitle += ' events'
 
-        for var,rangeX,model in [('mjj',(25,300),'model_combined_mjj'),
-                                 #('mthad',(100,400),'model_combined_3D'),
-                                 #('mtlep',(100,400),'model_combined_3D')
+        for var,rangeX,model in [('mjj',(25,300),'model_combined_mjj'),                                 
                                  ('mthad',(100,400),'model_combined_mthad'),
                                  ('mtlep',(100,400),'model_combined_mtlep')
-                            ]:
+                                 ]:
             showFitResult(fitVar=var,
                         data=w.data('data'),
                         pdf=w.pdf(model),

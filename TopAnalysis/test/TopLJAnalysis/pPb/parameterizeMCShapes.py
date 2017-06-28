@@ -6,14 +6,15 @@ from roofitTools import *
 ALLPDFS={
 ('S_cor','mjj'):
     [
-     'RooBifurGauss::S_cor1mjj_{0}(mjj,mu_scormjj_{0}[20,100],sigmaL_scormjj_{0}[1,20],sigmaR_scormjj_{0}[1,20])',
-     'RooGamma::S_cor2mjj_{0}(mjj,gamma_scormjj_{0}[50,0.1,100],beta_scormjj_{0}[0.5,0.01,100],lambda_scormjj_{0}[0])',
-     'SUM::S_cormjj_{0}( f_scormjj_{0}[0.2,0.9]*S_cor1mjj_{0}, S_cor2mjj_{0} )'
+     'RooCBShape::S_cor1mjj_{0}(mjj,mu_scormjj_{0}[70,90],sigma_scormjj_{0}[5,15],alpha_scormjj_{0}[0.01,20],n_scormjj_{0}[0])',
+     #'RooBifurGauss::S_cor1mjj_{0}(mjj,mu_scormjj_{0}[70,90],sigmaL_scormjj_{0}[1,30],sigmaR_scormjj_{0}[1,30])',
+     'RooGamma::S_cor2mjj_{0}(mjj,gamma_scormjj_{0}[5,0.1,100],beta_scormjj_{0}[1,0.1,100],lambda_scormjj_{0}[0])',
+     'SUM::S_cormjj_{0}( f_scormjj_{0}[0.2,0.98]*S_cor1mjj_{0}, S_cor2mjj_{0} )'
     ],
 ('S_wro','mjj'):
     [
-    'RooBifurGauss::S_wro1mjj_{0}(mjj,mu_swromjj_{0}[0,50],sigmaL_swromjj_{0}[1,100],sigmaR_swromjj_{0}[1,100])',
-    'RooLandau::S_wro2mjj_{0}(mjj,mpv_swromjj_{0}[20,200],width_swromjj_{0}[20,0.01,100])',
+    'RooBifurGauss::S_wro1mjj_{0}(mjj,mu_swromjj_{0}[25,75],sigmaL_swromjj_{0}[15,100],sigmaR_swromjj_{0}[15,100])',
+    'RooLandau::S_wro2mjj_{0}(mjj,mpv_swromjj_{0}[25,200],width_swromjj_{0}[20,5,100])',
     'SUM::S_wromjj_{0}( f_swromjj_{0}[0,1]*S_wro1mjj_{0}, S_wro2mjj_{0} )'
     ],
 ('B','mjj'):
@@ -28,7 +29,7 @@ ALLPDFS={
     ],
 ('S_wro','mthad'):
     [
-     'RooBifurGauss::S_wro1mthad_{0}(mthad,mu_swromthad_{0}[100,200],sigmaL_swromthad_{0}[5,100],sigmaR_swromthad_{0}[5,100])',
+     'RooBifurGauss::S_wro1mthad_{0}(mthad,mu_swromthad_{0}[100,200],sigmaL_swromthad_{0}[20,100],sigmaR_swromthad_{0}[20,100])',
      'RooLandau::S_wro2mthad_{0}(mthad,mpv_swromthad_{0}[100,200],width_swromthad_{0}[5,100])',
      'SUM::S_wromthad_{0}( f_swromthad_{0}[0,1]*S_wro1mthad_{0}, S_wro2mthad_{0} )'
     ],
@@ -66,17 +67,16 @@ def parametrize(data,varName,w,pdfDef):
     pdf.fitTo(data)
 
     #showFitResult(fitVar=varName,
-    #          data=data,
-    #          pdf=pdf,
-    #          categs=[''],
-    #          w=w,
-    #          tagTitle=data.GetName(),
-    #          rangeX=(0,500),
-    #          showComponents=[],
-    #          outDir='/dev/null',
-    #          paramList=[])
+    #              data=data,
+    #              pdf=pdf,
+    #              categs=[''],
+    #              w=w,
+    #             tagTitle=data.GetName(),
+    #              rangeX=(0,500),
+    #              showComponents=[('*1*','1'),('*1*,*2*','2')],
+    #              outDir='/dev/null',
+    #              paramList=[])
     #raw_input()
-
 
     #freeze parameters
     iter = pdf.getParameters(data).createIterator()
@@ -109,6 +109,7 @@ def main():
 
     ROOT.gStyle.SetOptStat(0)
     ROOT.gStyle.SetOptTitle(0)
+    ROOT.gROOT.SetBatch(True)
 
     #get the workspace from the file
     url=sys.argv[1]
@@ -202,7 +203,8 @@ def main():
                                 w=w,
                                 tagTitle=cat,
                                 rangeX=(0,500),
-                                showComponents=['S_cor*','S_cor*,S_wro*'],
+                                showComponents=[('S_cor*','wrong permutations'),
+                                                ('S_cor*,S_wro*','wrong permutations')],
                                 outDir='./',
                                 paramList=[])
 

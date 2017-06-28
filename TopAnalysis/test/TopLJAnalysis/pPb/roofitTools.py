@@ -159,7 +159,7 @@ def showFitResult(fitVar,data,pdf,categs,w,showComponents=[],rangeX=(0,400),outD
         label.SetTextFont(42)
         label.SetTextSize(0.05)
         label.DrawLatex(0.5,0.92,'#bf{CMS} #it{preliminary}')
-        label.DrawLatex(0.5,0.86,'180 nb^{-1} (#sqrt{s_{NN}}=8.16 TeV)')
+        label.DrawLatex(0.5,0.86,'175 nb^{-1} (#sqrt{s_{NN}}=8.16 TeV)')
         label.DrawLatex(0.5,0.8,'#it{%s}'%(tagTitle if tagTitle!='' else 'inclusive'))
         label.DrawLatex(0.5,0.74,'#chi^{2}/ndof=%3.2f'%frame.chiSquare())
 
@@ -191,8 +191,8 @@ def showFitResult(fitVar,data,pdf,categs,w,showComponents=[],rangeX=(0,400),outD
                 ivar=0
                 for var,tit in paramList:
                     label.DrawLatex(0.5,
-                                0.80-0.04*ivar,
-                                '#scale[0.8]{%s=%3.2f#pm%3.2f}'%(tit,
+                                0.70-0.035*ivar,
+                                '#scale[0.6]{%s=%3.2f#pm%3.2f}'%(tit,
                                                                 w.var(var).getVal(),
                                                                 w.var(var).getError()) )
                     ivar+=1

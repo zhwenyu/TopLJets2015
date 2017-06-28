@@ -3,11 +3,10 @@
 from prepareWorkspace import EVENTCATEGORIES as SELEVENTCATEGORIES
 EVENTCATEGORIES=[x for x in SELEVENTCATEGORIES if not '1f' in x]
 
-lumi=180
-acceptance={'e':0.052,'mu':0.055}
-efficiency={'e':0.574,'mu':0.826}
-ebExp,ebUnc=0.59,0.10*0.59
-jsfUnc=0.50
+lumi=174.5
+acceptance={'e':0.056,'mu':0.060}
+efficiency={'e':0.95*0.85*0.95,'mu':0.954*0.993*0.985*0.981}
+ebExp,ebUnc=0.595,0.10*0.595
 
 
 import ROOT
@@ -143,7 +142,7 @@ def definePDF(w,varName):
         ch='e' if cat[0]=='e' else 'mu'
         baseCat=cat[1:] if cat[0]=='e' else cat[2:]
         mpvName,widthName='mpv_w{1}_{0}'.format(baseCat,varName),'width_w{1}_{0}'.format(baseCat,varName)
-        minMPV=10  if varName=='mjj' else 150
+        minMPV=20  if varName=='mjj' else 150
         maxMPV=80 if varName=='mjj' else 200
         w.factory('{0}[{1},{2}]'.format(mpvName,minMPV,maxMPV))
         w.factory('{0}[10,100]'.format(widthName))
@@ -184,15 +183,16 @@ def addQCDModel(w,opt,varName):
         getattr(w,'import')(keyspdf,ROOT.RooFit.RecycleConflictNodes())
 
         #save fit result plot
-        showFitResult(fitVar=varName,
-                    data=fullsideBand,
-                    pdf=w.pdf('QCD_%s_%s'%(varName,ch)),
-                    categs=[''],
-                    w=w,
-                    showComponents=[],
-                    rangeX=(0,400),
-                    tagTitle='QCD_%s'%ch,
-                    outDir=opt.output)
+        #showFitResult(fitVar=varName,
+        #            data=fullsideBand,
+        #            pdf=w.pdf('QCD_%s_%s'%(varName,ch)),
+        #            categs=[''],
+        #            w=w,
+        #            showComponents=[],
+        #            rangeX=(0,400),
+        #            tagTitle='QCD_%s'%ch,
+        #            outDir=opt.output)
+
 
 """
 readout signal models
@@ -375,7 +375,8 @@ def performFits(opt):
                             categs=EVENTCATEGORIES2SHOW,
                             w=w,
                             showComponents=['S_cor*','S_cor*,S_wro*'],
-                            rangeX=(0,300 if obs[0]=='mjj' else 400),
+                            rangeX=(25 if obs[0]=='mjj' else 150,
+                                    300 if obs[0]=='mjj' else 400),
                             outDir=opt.output,
                             paramList=paramList,
                             pfix='_%s_%sfit'%(ch,t))
@@ -405,7 +406,7 @@ def performFits(opt):
             w.saveSnapshot('fitresult_%s'%ch,pdf.getParameters(data))
             addToFitResults('%s_1D'%ch,fitResults,pdf.getParameters(data))
             #pll.plotOn(xsecframe,ROOT.RooFit.Name(ch),ROOT.RooFit.ShiftToZero())
-
+            continue
             compsToShow=['S_cor*','S_cor*,S_wro*'] #,'S_cor*,S_wro*,W_*']
             if opt.fitType==3 :
                 compsToShow=['S_cor*','S_cor*,W_*']
@@ -422,13 +423,13 @@ def performFits(opt):
                           categs=EVENTCATEGORIES2SHOW,
                           w=w,
                           showComponents=compsToShow,
-                          rangeX=(0,300),
+                          rangeX=(25,300),
                           outDir=opt.output,
                           paramList=paramList,
                           pfix='_%s_%dfit'%(ch,opt.fitType))
 
     printFitResults(fitResults,opt)
-    w.writeToFile('finalfitworkskace_%d.root'%(opt.fitType))
+    w.writeToFile('finalfitworkspace_%d.root'%(opt.fitType))
 
     #show the likelihoods
     #xsecframe=w.var('xsec').frame(ROOT.RooFit.Bins(10),ROOT.RooFit.Range(0,100))
@@ -467,10 +468,13 @@ def addPDFToWorkspace(opt):
         w.factory('eff_%s[%f]'%(ch,efficiency[ch]))
     w.factory("RooFormulaVar::ebconstraint('0.5*pow((@0-%f)/%f,2)',{eb[0.60,0.0,1.0]})"%(ebExp,ebUnc))
 
-    w.factory("RooFormulaVar::jsfconstraint('0.5*pow((@0-1.0)/%f,2)',{jsf[0.0,2.0]})"%(jsfUnc))
-    w.factory("RooFormulaVar::scaledmjj('@0*@1',{jsf,mjj})")
-    w.var('jsf').setVal(1.0)
+    w.factory("RooFormulaVar::jsfconstraint('0.5*pow(@0,2)',{jsf[-5,5]})")
+    w.factory("RooFormulaVar::jerconstraint('0.5*pow(@0,2)',{jer[-5,5]})")
+    w.factory("RooFormulaVar::scaledmjj('(1+@0*@1)*(1+@2*@3)*@4',{jsf,dmjj_jes,jer,dmjj_jer,mjj})")
+    w.var('jsf').setVal(0.0)
     w.var('jsf').setConstant(True)
+    w.var('jer').setVal(0.0)
+    w.var('jer').setConstant(True)
 
     #instantiate PDFs
     for vname,vtit in observables:
@@ -494,7 +498,7 @@ def main():
 
     ROOT.gStyle.SetOptStat(0)
     ROOT.gStyle.SetOptTitle(0)
-    ROOT.gROOT.SetBatch(True) #False)
+    ROOT.gROOT.SetBatch(True) 
 
     #configuration
     usage = 'usage: %prog [options]'

@@ -33,7 +33,7 @@ def getMC(tree,doPseudoTop=False):
 
 """
 """
-def getJets(tree,minPt=25.,maxEta=2.4,mcTruth=None,shiftJES=0):
+def getJets(tree,minPt=25.,maxEta=2.4,mcTruth=None,shiftJES=0,jerProf=None):
     partColl=[]
     matchedGen=[]
     for j in xrange(0,tree.nj):
@@ -65,14 +65,27 @@ def getJets(tree,minPt=25.,maxEta=2.4,mcTruth=None,shiftJES=0):
         ptSF_err =ROOT.TMath.Sqrt(ptSF_err**2+0.098**2) 
 
         cjer,cjerUp,cjerDn=1,1,1
-        for gj in xrange(0,tree.ngj):
-            gjet=Particle(0,tree.j_pt[gj],tree.j_eta[gj], tree.j_phi[gj],tree.gj_m[gj])
-            if gjet.p4.DeltaR( partColl[-1].p4 ) >0.2 : continue
-            cjer   = ROOT.TMath.Max(0,tree.gj_pt[gj]+ptSF*(tree.j_pt[j]-tree.gj_pt[gj]))/tree.j_pt[j]
-            cjerUp = ROOT.TMath.Max(0,tree.gj_pt[gj]+(ptSF+ptSF_err)*(tree.j_pt[j]-tree.gj_pt[gj]))/tree.j_pt[j]
-            cjerDn = ROOT.TMath.Max(0,tree.gj_pt[gj]+(ptSF-ptSF_err)*(tree.j_pt[j]-tree.gj_pt[gj]))/tree.j_pt[j]
-            break
-        scaleP4(partColl[-1].p4,cjer)
+        try:
+            for gj in xrange(0,tree.ngj):
+                gjet=Particle(0,tree.j_pt[gj],tree.j_eta[gj], tree.j_phi[gj],tree.gj_m[gj])
+                if gjet.p4.DeltaR( partColl[-1].p4 ) >0.2 : continue
+                cjer   = ROOT.TMath.Max(0,tree.gj_pt[gj]+ptSF*(tree.j_pt[j]-tree.gj_pt[gj]))/tree.j_pt[j]
+                cjerUp = ROOT.TMath.Max(0,tree.gj_pt[gj]+(ptSF+ptSF_err)*(tree.j_pt[j]-tree.gj_pt[gj]))/tree.j_pt[j]
+                cjerDn = ROOT.TMath.Max(0,tree.gj_pt[gj]+(ptSF-ptSF_err)*(tree.j_pt[j]-tree.gj_pt[gj]))/tree.j_pt[j]
+                break
+
+            #fill jer profile
+            if jerProf.InheritsFrom('TH1'):
+                testP4=ROOT.TLorentzVector(partColl[-1].p4)
+                scaleP4(testP4,cjerUp)
+                jerProf.Fill(abs(partColl[-1].p4.Eta()),testP4.Pt()/partColl[-1].p4.Pt())
+
+            scaleP4(partColl[-1].p4,cjer)
+
+        except:
+            cjerUp=jerProf.Eval(abs(partColl[-1].p4.Eta()))
+            cjerDn=1./cjerUp
+            pass
 
         #add scale uncertainties
         jesUnc=0.028
@@ -136,7 +149,7 @@ def startWorkspace(opt):
 """
 books control distributions and loops over the events to fill the dataset for the fit
 """
-def fillDataAndPlots(data,ws,args,tree,leptonSel,mcTruth=False,wjjOrder='drjj',thadOrder='dm2tlep',shiftJES=0):
+def fillDataAndPlots(data,ws,args,tree,leptonSel,mcTruth=False,wjjOrder='drjj',thadOrder='dm2tlep',shiftJES=0,jerProf=None):
 
     p4=ROOT.TLorentzVector(0,0,0,0)
 
@@ -147,6 +160,7 @@ def fillDataAndPlots(data,ws,args,tree,leptonSel,mcTruth=False,wjjOrder='drjj',t
             break
 
     plots={}
+    plots['jerprofile']=ROOT.TProfile('jerprofile',';Pseudo-rapidity;#delta p_{T}/p_{T}',5,0,2.5)
     for cat in EVENTCATEGORIES:
 
         plots['jeteff_%s'%cat] = ROOT.TH1F('jeteff_%s'%cat,';Matched jet multiplicity;Events',11,0,11)
@@ -206,7 +220,7 @@ def fillDataAndPlots(data,ws,args,tree,leptonSel,mcTruth=False,wjjOrder='drjj',t
         except:
             pass
         MET=Particle(0,tree.met_pt,0.,tree.met_phi,0.)
-        jets=getJets(tree=tree,minPt=25,maxEta=2.4,mcTruth=mcTruth,shiftJES=shiftJES)
+        jets=getJets(tree=tree,minPt=25,maxEta=2.4,mcTruth=mcTruth,shiftJES=shiftJES,jerProf=jerProf if jerProf else plots['jerprofile'])
         jets.sort(key=lambda x: x.rankVal, reverse=True)
         if len(jets)<4 : continue
 
@@ -445,8 +459,16 @@ def main():
     parser.add_option(      '--shiftJES',   dest='shiftJES',  default=0.98,                           type=float,       help='shift jes [%default]')
     parser.add_option(      '--wjjOrder',   dest='wjjOrder',  default='drjj',                         type='string',    help='wjj ordering (drjj,mjj,sumpt) [%default]')
     parser.add_option(      '--thadOrder',  dest='thadOrder', default='dm2tlep',                      type='string',    help='thad ordering (dr,dm2tlep,dm2pdg) [%default]')
+    parser.add_option(      '--jerProf',    dest='jerProf',   default=None,                      type='string',    help='plotter with JER profile [%default]')
 
     (opt, args) = parser.parse_args()
+
+    jerProf=None
+    if opt.jerProf:
+        print 'Reading JER profile from',opt.jerProf
+        fIn=ROOT.TFile.Open(opt.jerProf)
+        jerProf=ROOT.TGraph(fIn.Get('jerprofile'))        
+        fIn.Close()
 
     #init the workspace
     ws,data,args=startWorkspace(opt)
@@ -457,8 +479,10 @@ def main():
     for coll in dataset:
         urlList,color,leptonSel,mcTruth=dataset[coll]
         tree=ROOT.TChain('data')
-        for url in urlList: tree.AddFile(url)
-        allPlots.append( fillDataAndPlots(data,ws,args,tree,leptonSel,mcTruth,opt.wjjOrder,opt.thadOrder,opt.shiftJES) )
+        for url in urlList: 
+            tree.AddFile(url)
+            print url
+        allPlots.append( fillDataAndPlots(data,ws,args,tree,leptonSel,mcTruth,opt.wjjOrder,opt.thadOrder,opt.shiftJES,jerProf) )
 
         color=ROOT.TColor.GetColor(color)
         for p in allPlots[-1]:

@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python
 
 from collections import OrderedDict
 
@@ -10,8 +10,8 @@ def defineDataset(data):
         dataset=OrderedDict()
         dataset['l+jets']         = (['%s/Data_PbP_EJets_GEDElectrons_WithHFAndSkimInfo_PAEle20_WPLoose_Gsf_or_PASinglePhoton30_Eta3p1.root'%baseDir,
                                       '%s/Data_PPb_EJets_GEDElectrons_WithHFAndSkimInfo_PAEle20_WPLoose_Gsf_or_PASinglePhoton30_Eta3p1.root'%baseDir,
-                                      '%s/Data_PbP_MuJets_WithHFAndSkimInfo.root',
-                                      '%s/Data_PPb_MuJets_WithHFAndSkimInfo.root'],
+                                      '%s/Data_PbP_MuJets_WithHFAndSkimInfo.root'%baseDir,
+                                      '%s/Data_PPb_MuJets_WithHFAndSkimInfo.root'%baseDir],
                                      '#4575b4', [11,13],   False)
         dataset['non-iso l+jets'] = (['%s/DataNonIso_PbP_EJets_GEDElectrons_WithHFAndSkimInfo_PAEle20_WPLoose_Gsf_or_PASinglePhoton30_Eta3p1.root'%baseDir,
                                       '%s/DataNonIso_PPb_EJets_GEDElectrons_WithHFAndSkimInfo_PAEle20_WPLoose_Gsf_or_PASinglePhoton30_Eta3p1.root'%baseDir,
@@ -25,8 +25,8 @@ def defineDataset(data):
                                       '%s/Data_PbP_EJets_GEDElectrons_WithHFAndSkimInfo_NonSubractedIso_PAEle20_WPLoose_Gsf_or_PASinglePhoton30_Eta3p1.root'%baseDir,
                                       '%s/Data_PPb_EJets_GEDElectrons_WithHFAndSkimInfo_NonSubractedIso_PAEle20_WPLoose_Gsf_or_PASinglePhoton30_Eta3p1.root'%baseDir],
                                      '#4575b4', [11,13],   False)
-        dataset['non-iso l+jets'] = (['%s/DataNonIso_PPb_MuJets_WithHFAndSkimInfo_NonSubractedIso.root',
-                                      '%s/DataNonIso_PbP_MuJets_WithHFAndSkimInfo_NonSubractedIso.root',
+        dataset['non-iso l+jets'] = (['%s/DataNonIso_PbP_MuJets_WithHFAndSkimInfo_NonSubractedIso.root'%baseDir,
+                                      '%s/DataNonIso_PbP_MuJets_WithHFAndSkimInfo_NonSubractedIso.root'%baseDir,
                                       '%s/DataNonIso_PbP_EJets_GEDElectrons_WithHFAndSkimInfo_NonSubractedIso_PAEle20_WPLoose_Gsf_or_PASinglePhoton30_Eta3p1.root'%baseDir,
                                       '%s/DataNonIso_PPb_EJets_GEDElectrons_WithHFAndSkimInfo_NonSubractedIso_PAEle20_WPLoose_Gsf_or_PASinglePhoton30_Eta3p1.root'%baseDir],
                                      '#91bfdb', [1100,1300], False)

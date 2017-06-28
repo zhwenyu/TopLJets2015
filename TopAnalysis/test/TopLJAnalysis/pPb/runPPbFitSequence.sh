@@ -35,22 +35,24 @@ case $WHAT in
 
     SEL)
 	common="--wjjOrder drjj --thadOrder dm2tlep"
-        for sample in MC8.16TeV_TTbar_pPb MC8.16TeV_TTbar_pPb_Pohweg MC8.16TeV_WJets_pPb; do        
+        for sample in MC8.16TeV_TTbar_pPb; do # MC8.16TeV_TTbar_pPb_Pohweg MC8.16TeV_WJets_pPb; do        
 	    python prepareWorkspace.py  -d ${sample} ${common};
 	done
 	;;
 
     SELDATA )
      	common="--wjjOrder drjj --thadOrder dm2tlep"
-	python prepareWorkspace.py  -d Data8.16TeV_pPb ${common};
+        for sample in Data8.16TeV_pPb_nonsubiso; do #Data8.16TeV_pPb
+	    python prepareWorkspace.py  -d ${sample} ${common} --jerProf plots/MC8.16TeV_TTbar_pPb/controlplots.root;
+        done
 	;;
     
     PARAM)
 
-	a=(`ls workspace_MC8.16TeV_TTbar_pPb_j*.root`)
-	for i in ${a[@]}; do
-	    python parameterizeMCShapes.py ${i};
-	    outDir=plots/MC8.16TeV_TTbar_pPb/${i/.root/}
+        for sample in MC8.16TeV_TTbar_pPb MC8.16TeV_TTbar_pPb_Pohweg; do
+
+	    python parameterizeMCShapes.py workspace_${sample}.root;
+	    outDir=plots/$sample/workspace/
 	    mkdir ${outDir}
 	    b=(`ls *.{png,pdf}`)
 	    for i in ${b[@]}; do
@@ -59,7 +61,6 @@ case $WHAT in
 	    done
 	done
 
-	exit -1
 	python parameterizeMCShapes.py workspace_MC8.16TeV_WJets_pPb.root pdf_workspace_MC8.16TeV_TTbar_pPb.root;
 	a=(`ls *.{png,pdf}`)
 	for i in ${a[@]}; do
@@ -69,25 +70,16 @@ case $WHAT in
 	;;
 
     FITS)
+        sigRef=MC8.16TeV_TTbar_pPb #_Pohweg
+        dataRef=Data8.16TeV_pPb_nonsubiso
 	for f in `seq 0 0`; do
-	    python runDataFit.py --fitType ${f} -s pdf_workspace_MC8.16TeV_TTbar_pPb.root -i workspace_Data8.16TeV_pPb.root -o plots/Data8.16TeV_pPb/ ;
-	    python runDataFit.py --fitType ${f} -o plots/Data8.16TeV_pPb/ --verbose 9 --finalWorkspace finalworkspace.root;
-	done
-	;;
-
-    SYSTS)
-	for syst in jer-1 jer1 jes0.964 jes1.036; do
-	    mkdir -p plots/Data8.16TeV_pPb_${syst}/
-	    python runDataFit.py --fitType 0 -s pdf_workspace_MC8.16TeV_TTbar_pPb_${syst}.root -i workspace_Data8.16TeV_pPb.root -o plots/Data8.16TeV_pPb_${syst}/;
-	    python runDataFit.py --fitType 0 -o plots/Data8.16TeV_pPb_${syst} --verbose 9 --finalWorkspace finalworkspace.root;
+	    python runDataFit.py --fitType ${f} -s pdf_workspace_${sigRef}.root -i workspace_${dataRef}.root -o plots/${dataRef};
+	    python runDataFit.py --fitType ${f} -o plots/${dataRef}/ --verbose 9 --finalWorkspace finalworkspace.root;
 	done
 	;;
 
     FINALCOMP )
-	common="--wjjOrder drjj --thadOrder dm2tlep"
-	for l in e mu; do
-	    python prepareWorkspace.py  -d MC8.16TeV_TTbar_pPb_${l} ${common};
-	done
-	python combineFinalControlPlots.py
+        python doPRLplots.py -i finalfitworkspace_0.root;
+        python mergePLRplotCategs.py
 	;;
 esac
