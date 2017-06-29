@@ -38,248 +38,280 @@ def main():
     parser.add_option('--flavor', dest='flavor',  default='all', help='flavor [default: %default]')
     (opt, args) = parser.parse_args()
     
-    # statistical covariance
+    observables = ["mult", "width", "ptd", "ptds", "ecc", "tau21", "tau32", "tau43", "zg", "zgxdr", "zgdr", "ga_width", "ga_lha", "ga_thrust", "c1_02", "c1_05", "c1_10", "c1_20", "c2_02", "c2_05", "c2_10", "c2_20", "c3_02", "c3_05", "c3_10", "c3_20"]
     
-    toyfile = '%s/%s_charged_%s_toys.root'%(opt.inDirToys, opt.obs, opt.flavor)
-    fInToy = ROOT.TFile.Open(toyfile)
-    
-    pseudoresults = []
-    counter = 0
-    while True:
-        pseudoresult = []
-        h = fInToy.Get('Unfolded_' + str(counter))
-        if not h: break
-        for i in range(1, h.GetNbinsX()+1):
-            pseudoresult.append(h.GetBinContent(i)/h.GetBinWidth(i))
-        integral = sum(pseudoresult)
-        for i in range(len(pseudoresult)):
-            pseudoresult[i] = pseudoresult[i]/integral
-        pseudoresults.append(pseudoresult)
-        counter += 1
-    
-    print('Imported', counter, 'toy experiments')
-    
-    x = numpy.array(pseudoresults).T
-    print(x)
-    statcov = numpy.cov(x)
-    print(statcov)
-    statcov_reduced = numpy.delete(statcov, 3, 0)
-    statcov_reduced = numpy.delete(statcov_reduced, 3, 1)
-    print(statcov_reduced)
-    print(numpy.linalg.det(statcov_reduced))
-    print(numpy.linalg.inv(statcov_reduced))
-    
-    #rootoutfile = ROOT.TFile.Open(opt.outDir+'/'+opt.obs+'_charged_'+opt.flavor+'_cov.root', 'RECREATE')
-    #rootoutfile.cd()
-    
-    # 11-class RdBu http://colorbrewer2.org/#type=diverging&scheme=RdBu&n=11
-    stops = array('d', [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
-    red   = array('d')
-    green = array('d')
-    blue  = array('d')
-    colors = [[103,0,31],
-              [178,24,43],
-              [214,96,77],
-              [244,165,130],
-              [253,219,199],
-              [247,247,247],
-              [209,229,240],
-              [146,197,222],
-              [67,147,195],
-              [33,102,172],
-              [5,48,97]]
-    for color in colors:
-        red.append(color[0]/255.)
-        green.append(color[1]/255.)
-        blue.append(color[2]/255.)
-    ROOT.TColor.CreateGradientColorTable(11, stops, red[::-1], green[::-1], blue[::-1], 30)
-    
-    ROOT.gStyle.SetOptStat(0)
-    c = ROOT.TCanvas('c','c',500,500)
-    c.SetRightMargin(0.15)
-    c.SetLeftMargin(0.12)
-    c.SetTopMargin(0.1)
-    c.SetTopMargin(0.05)
-    c.cd()
-    
-    h = fInToy.Get('Unfolded_0')
-    dataStatCovNorm = ROOT.TH2D('dataStatCovNorm', '', h.GetNbinsX(), h.GetXaxis().GetXbins().GetArray(), h.GetNbinsX(), h.GetXaxis().GetXbins().GetArray())
-    axistitle = h.GetXaxis().GetTitle().replace('generated ', '')
-    dataStatCovNorm.SetXTitle(axistitle)
-    dataStatCovNorm.SetYTitle(axistitle)
-    
-    for i in range(1, dataStatCovNorm.GetNbinsX()+1):
-        for j in range(1, dataStatCovNorm.GetNbinsY()+1):
-            dataStatCovNorm.SetBinContent(i, j, statcov[i-1][j-1])
-    
-    dataStatCovNorm.GetZaxis().SetRangeUser(-max(abs(statcov.min()), abs(statcov.max())),
-                                             max(abs(statcov.min()), abs(statcov.max())))
-    dataStatCovNorm.Draw('colz')
-    
-    ROOT.gPad.Update()
-    tl1 = ROOT.TLine(ROOT.gPad.GetUxmin(), ROOT.gPad.GetUymax(),
-                     ROOT.gPad.GetUxmax(), ROOT.gPad.GetUymax())
-    tl1.Draw()
-    tl2 = ROOT.TLine(ROOT.gPad.GetUxmax(), ROOT.gPad.GetUymin(),
-                     ROOT.gPad.GetUxmax(), ROOT.gPad.GetUymax())
-    tl2.Draw()
-    
-    txt=ROOT.TLatex()
-    txt.SetNDC(True)
-    txt.SetTextFont(42)
-    txt.SetTextSize(0.041)
-    txt.SetTextAlign(12)
-    txt.DrawLatex(0.16,0.91, cmsLabel)
-    txt.DrawLatex(0.63,0.97, '#scale[0.8]{%3.1f fb^{-1} (%s)}' % (opt.lumi/1000.,opt.com) )
-    txt.DrawLatex(0.16,0.85, 'Statistical covariance')
-    
-    c.Print(opt.outDir+'/'+opt.obs+'_charged_'+opt.flavor+'_cov_stat.pdf')
-    c.Print(opt.outDir+'/'+opt.obs+'_charged_'+opt.flavor+'_cov_stat.png')
-    
-    
-    # Read lists of syst samples
-    allSystVars = ['jec_CorrelationGroupMPFInSitu',
-                   'jec_RelativeFSR',
-                   'jec_CorrelationGroupUncorrelated',
-                   'jec_FlavorPureGluon',
-                   'jec_FlavorPureQuark',
-                   'jec_FlavorPureCharm',
-                   'jec_FlavorPureBottom',
-                   'jer',
-                   'btag_heavy',
-                   'btag_light',
-                   'csv_heavy',
-                   'csv_light',
-                   'tracking'
-                  ]
-    varList = []
-    for var in allSystVars:
-        varList.append(var+'_up')
-        varList.append(var+'_down')
-    varList += ['evtgen',
-                'm171v5',
-                'm173v5',
-                'herwig',
-                'isrup',
-                'isrdn',
-                'fsrup',
-                'fsrdn',
-                'hdampup',
-                'hdampdn',
-                'ueup',
-                'uedn',
-                'erdON',
-                'qcdBased']
+    flavors = ['all', 'light', 'bottom', 'gluon']
 
-    expSystSamplesList = []
-    for var in varList:
-        expSystSamplesList.append(['MC13TeV_TTJets_'+var, [832., 0., '', 't#bar{t} '+var]])
+    sumNominal = 0.
+    sumFSRUp = 0.
+    sumFSRDown = 0.
+    sumHerwig = 0.
     
-    resultfile = '%s/%s_charged_%s_result.root'%(opt.inDir, opt.obs, opt.flavor)
-    fIn=ROOT.TFile.Open(resultfile)
-    
-    # reference
-    hnominal    = fIn.Get('MC13TeV_TTJets_Unfolded')
-    nominal     = []
-    for i in range(1, hnominal.GetNbinsX()+1):
-        nominal.append(hnominal.GetBinContent(i))
-    
-    systcov = copy.copy(statcov)
-    systcov -= systcov
-    
-    for slist in [expSystSamplesList]:
-        for tag,sample in slist: 
-            if tag in ['MC13TeV_TTJets_cflip']: continue
-            if not 't#bar{t}' in sample[3] : continue
-
-            hsyst = fIn.Get(tag+'_Unfolded')
-            if not hsyst:
-                print(tag, 'not loaded')  
-                continue
-            
-            syst = []
-            for i in range(1, hsyst.GetNbinsX()+1):
-                syst.append(hsyst.GetBinContent(i))
-            
-            x = numpy.array([nominal, syst]).T
-            cov = numpy.cov(x)
-            systcov += cov
-            
-    dataSystCovNorm = dataStatCovNorm.Clone('dataSystCovNorm')
-    dataSystCovNorm.Reset()
-    
-    for i in range(1, dataSystCovNorm.GetNbinsX()+1):
-        for j in range(1, dataSystCovNorm.GetNbinsY()+1):
-            dataSystCovNorm.SetBinContent(i, j, systcov[i-1][j-1])
-    
-    dataSystCovNorm.GetZaxis().SetRangeUser(-max(abs(systcov.min()), abs(systcov.max())),
-                                             max(abs(systcov.min()), abs(systcov.max())))
-    dataSystCovNorm.Draw('colz')
-    
-    ROOT.gPad.Update()
-    tl1 = ROOT.TLine(ROOT.gPad.GetUxmin(), ROOT.gPad.GetUymax(),
-                     ROOT.gPad.GetUxmax(), ROOT.gPad.GetUymax())
-    tl1.Draw()
-    tl2 = ROOT.TLine(ROOT.gPad.GetUxmax(), ROOT.gPad.GetUymin(),
-                     ROOT.gPad.GetUxmax(), ROOT.gPad.GetUymax())
-    tl2.Draw()
-    
-    txt=ROOT.TLatex()
-    txt.SetNDC(True)
-    txt.SetTextFont(42)
-    txt.SetTextSize(0.041)
-    txt.SetTextAlign(12)
-    txt.DrawLatex(0.16,0.91, cmsLabel)
-    txt.DrawLatex(0.63,0.97, '#scale[0.8]{%3.1f fb^{-1} (%s)}' % (opt.lumi/1000.,opt.com) )
-    txt.DrawLatex(0.16,0.85, 'Systematic covariance')
-    
-    c.Print(opt.outDir+'/'+opt.obs+'_charged_'+opt.flavor+'_cov_syst.pdf')
-    c.Print(opt.outDir+'/'+opt.obs+'_charged_'+opt.flavor+'_cov_syst.png')
-    
-    dataCovNorm = dataStatCovNorm.Clone('dataCovNorm')
-    dataCovNorm.Reset()
-    
-    cov = statcov + systcov
-    
-    for i in range(1, dataCovNorm.GetNbinsX()+1):
-        for j in range(1, dataCovNorm.GetNbinsY()+1):
-            dataCovNorm.SetBinContent(i, j, cov[i-1][j-1])
-    
-    dataCovNorm.GetZaxis().SetRangeUser(-max(abs(cov.min()), abs(cov.max())),
-                                         max(abs(cov.min()), abs(cov.max())))
-    dataCovNorm.Draw('colz')
-    
-    ROOT.gPad.Update()
-    tl1 = ROOT.TLine(ROOT.gPad.GetUxmin(), ROOT.gPad.GetUymax(),
-                     ROOT.gPad.GetUxmax(), ROOT.gPad.GetUymax())
-    tl1.Draw()
-    tl2 = ROOT.TLine(ROOT.gPad.GetUxmax(), ROOT.gPad.GetUymin(),
-                     ROOT.gPad.GetUxmax(), ROOT.gPad.GetUymax())
-    tl2.Draw()
-    
-    txt=ROOT.TLatex()
-    txt.SetNDC(True)
-    txt.SetTextFont(42)
-    txt.SetTextSize(0.041)
-    txt.SetTextAlign(12)
-    txt.DrawLatex(0.16,0.91, cmsLabel)
-    txt.DrawLatex(0.63,0.97, '#scale[0.8]{%3.1f fb^{-1} (%s)}' % (opt.lumi/1000.,opt.com) )
-    txt.DrawLatex(0.16,0.85, 'Total covariance')
-    
-    c.Print(opt.outDir+'/'+opt.obs+'_charged_'+opt.flavor+'_cov.pdf')
-    c.Print(opt.outDir+'/'+opt.obs+'_charged_'+opt.flavor+'_cov.png')
-    
-    print(numpy.linalg.det(cov))
-    cov_reduced = numpy.delete(cov, 0, 0)
-    cov_reduced = numpy.delete(cov_reduced, 0, 1)
-    print(cov_reduced)
-    print(numpy.linalg.det(cov_reduced))
-    print(numpy.linalg.inv(cov_reduced))
-    
-    print(opt.obs, opt.flavor, 'chi2 nominal',  returnChi2(fIn, cov_reduced, nominal, 'nominalGen'))
-    print(opt.obs, opt.flavor, 'chi2 fsr up',   returnChi2(fIn, cov_reduced, nominal, 'FSRUpGen'))
-    print(opt.obs, opt.flavor, 'chi2 fsr down', returnChi2(fIn, cov_reduced, nominal, 'FSRDownGen'))
-    print(opt.obs, opt.flavor, 'chi2 herwig',   returnChi2(fIn, cov_reduced, nominal, 'herwigGen'))
+    with open('%s/table.tex'%(opt.outDir), 'w') as tex:
+        for obs in observables:
+            for flavor in flavors:
+        
+                # statistical covariance
+                
+                toyfile = '%s/%s_charged_%s_toys.root'%(opt.inDirToys, obs, flavor)
+                fInToy = ROOT.TFile.Open(toyfile)
+                if not fInToy: continue
+                
+                pseudoresults = []
+                counter = 0
+                while True:
+                    pseudoresult = []
+                    h = fInToy.Get('Unfolded_' + str(counter))
+                    if not h: break
+                    for i in range(1, h.GetNbinsX()+1):
+                        pseudoresult.append(h.GetBinContent(i)/h.GetBinWidth(i))
+                    integral = sum(pseudoresult)
+                    for i in range(len(pseudoresult)):
+                        pseudoresult[i] = pseudoresult[i]/integral
+                    pseudoresults.append(pseudoresult)
+                    counter += 1
+                
+                print('Imported', counter, 'toy experiments')
+                
+                x = numpy.array(pseudoresults).T
+                #print(x)
+                statcov = numpy.cov(x)
+                #print(statcov)
+                statcov_reduced = numpy.delete(statcov, 3, 0)
+                statcov_reduced = numpy.delete(statcov_reduced, 3, 1)
+                #print(statcov_reduced)
+                #print(numpy.linalg.det(statcov_reduced))
+                #print(numpy.linalg.inv(statcov_reduced))
+                
+                #rootoutfile = ROOT.TFile.Open(opt.outDir+'/'+obs+'_charged_'+flavor+'_cov.root', 'RECREATE')
+                #rootoutfile.cd()
+                
+                # 11-class RdBu http://colorbrewer2.org/#type=diverging&scheme=RdBu&n=11
+                stops = array('d', [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
+                red   = array('d')
+                green = array('d')
+                blue  = array('d')
+                colors = [[103,0,31],
+                          [178,24,43],
+                          [214,96,77],
+                          [244,165,130],
+                          [253,219,199],
+                          [247,247,247],
+                          [209,229,240],
+                          [146,197,222],
+                          [67,147,195],
+                          [33,102,172],
+                          [5,48,97]]
+                for color in colors:
+                    red.append(color[0]/255.)
+                    green.append(color[1]/255.)
+                    blue.append(color[2]/255.)
+                ROOT.TColor.CreateGradientColorTable(11, stops, red[::-1], green[::-1], blue[::-1], 30)
+                
+                ROOT.gStyle.SetOptStat(0)
+                c = ROOT.TCanvas('c','c',500,500)
+                c.SetRightMargin(0.15)
+                c.SetLeftMargin(0.12)
+                c.SetTopMargin(0.1)
+                c.SetTopMargin(0.05)
+                c.cd()
+                
+                h = fInToy.Get('Unfolded_0')
+                dataStatCovNorm = ROOT.TH2D('dataStatCovNorm', '', h.GetNbinsX(), h.GetXaxis().GetXbins().GetArray(), h.GetNbinsX(), h.GetXaxis().GetXbins().GetArray())
+                axistitle = h.GetXaxis().GetTitle().replace('generated ', '')
+                dataStatCovNorm.SetXTitle(axistitle)
+                dataStatCovNorm.SetYTitle(axistitle)
+                
+                for i in range(1, dataStatCovNorm.GetNbinsX()+1):
+                    for j in range(1, dataStatCovNorm.GetNbinsY()+1):
+                        dataStatCovNorm.SetBinContent(i, j, statcov[i-1][j-1])
+                
+                dataStatCovNorm.GetZaxis().SetRangeUser(-max(abs(statcov.min()), abs(statcov.max())),
+                                                         max(abs(statcov.min()), abs(statcov.max())))
+                dataStatCovNorm.Draw('colz')
+                
+                ROOT.gPad.Update()
+                tl1 = ROOT.TLine(ROOT.gPad.GetUxmin(), ROOT.gPad.GetUymax(),
+                                 ROOT.gPad.GetUxmax(), ROOT.gPad.GetUymax())
+                tl1.Draw()
+                tl2 = ROOT.TLine(ROOT.gPad.GetUxmax(), ROOT.gPad.GetUymin(),
+                                 ROOT.gPad.GetUxmax(), ROOT.gPad.GetUymax())
+                tl2.Draw()
+                
+                txt=ROOT.TLatex()
+                txt.SetNDC(True)
+                txt.SetTextFont(42)
+                txt.SetTextSize(0.041)
+                txt.SetTextAlign(12)
+                txt.DrawLatex(0.16,0.91, cmsLabel)
+                txt.DrawLatex(0.63,0.97, '#scale[0.8]{%3.1f fb^{-1} (%s)}' % (opt.lumi/1000.,opt.com) )
+                txt.DrawLatex(0.16,0.85, 'Statistical covariance')
+                
+                c.Print(opt.outDir+'/'+obs+'_charged_'+flavor+'_cov_stat.pdf')
+                c.Print(opt.outDir+'/'+obs+'_charged_'+flavor+'_cov_stat.png')
+                
+                
+                # Read lists of syst samples
+                allSystVars = ['jec_CorrelationGroupMPFInSitu',
+                               'jec_RelativeFSR',
+                               'jec_CorrelationGroupUncorrelated',
+                               'jec_FlavorPureGluon',
+                               'jec_FlavorPureQuark',
+                               'jec_FlavorPureCharm',
+                               'jec_FlavorPureBottom',
+                               'jer',
+                               'btag_heavy',
+                               'btag_light',
+                               'csv_heavy',
+                               'csv_light',
+                               'tracking'
+                              ]
+                varList = []
+                for var in allSystVars:
+                    varList.append([var+'_up', var+'_down'])
+                varList += [['evtgen'],
+                            ['m171v5', 'm173v5'],
+                            ['herwig'],
+                            ['isrup', 'isrdn'],
+                            ['fsrup', 'fsrdn'],
+                            ['hdampup', 'hdampdn'],
+                            ['ueup', 'uedn'],
+                            ['erdON'],
+                            ['qcdBased']]
+                
+                resultfile = '%s/%s_charged_%s_result.root'%(opt.inDir, obs, flavor)
+                fIn=ROOT.TFile.Open(resultfile)
+                
+                # reference
+                hnominal    = fIn.Get('MC13TeV_TTJets_Unfolded')
+                nominal     = []
+                for i in range(1, hnominal.GetNbinsX()+1):
+                    nominal.append(hnominal.GetBinContent(i))
+                
+                systcov = copy.copy(statcov)
+                systcov -= systcov
+                
+                for var in varList:
+                    if len(var) == 1:
+                        hsyst = fIn.Get('MC13TeV_TTJets_'+var[0]+'_Unfolded')
+                        if not hsyst:
+                            print(var, 'not loaded')  
+                            continue
+                        
+                        syst = []
+                        for i in range(1, hsyst.GetNbinsX()+1):
+                            syst.append(hsyst.GetBinContent(i))
+                        
+                        x = numpy.array([nominal, syst]).T
+                        cov = numpy.cov(x)
+                        systcov += cov
+                    if len(var) == 2:
+                        hsyst_up = fIn.Get('MC13TeV_TTJets_'+var[0]+'_Unfolded')
+                        hsyst_dn = fIn.Get('MC13TeV_TTJets_'+var[1]+'_Unfolded')
+                        if not hsyst_up or not hsyst_dn:
+                            print(var, 'not loaded')  
+                            continue
+                        
+                        up = []
+                        dn = []
+                        maxdelta = []
+                        for i in range(1, hsyst_up.GetNbinsX()+1):
+                            up.append(hsyst_up.GetBinContent(i))
+                            dn.append(hsyst_dn.GetBinContent(i))
+                            maxdelta.append(max(abs(hsyst_up.GetBinContent(i) - nominal[i-1]), abs(hsyst_dn.GetBinContent(i) - nominal[i-1])))
+                        
+                        x = numpy.array([up, dn]).T
+                        cov = numpy.cov(x)
+                        
+                        for i in range(len(maxdelta)):
+                            for j in range(len(maxdelta)):
+                                cov[i][j] = maxdelta[i] * maxdelta[j] * numpy.sign(cov[i][j])
+                        
+                        systcov += cov
+                
+                dataSystCovNorm = dataStatCovNorm.Clone('dataSystCovNorm')
+                dataSystCovNorm.Reset()
+                
+                for i in range(1, dataSystCovNorm.GetNbinsX()+1):
+                    for j in range(1, dataSystCovNorm.GetNbinsY()+1):
+                        dataSystCovNorm.SetBinContent(i, j, systcov[i-1][j-1])
+                
+                dataSystCovNorm.GetZaxis().SetRangeUser(-max(abs(systcov.min()), abs(systcov.max())),
+                                                         max(abs(systcov.min()), abs(systcov.max())))
+                dataSystCovNorm.Draw('colz')
+                
+                ROOT.gPad.Update()
+                tl1 = ROOT.TLine(ROOT.gPad.GetUxmin(), ROOT.gPad.GetUymax(),
+                                 ROOT.gPad.GetUxmax(), ROOT.gPad.GetUymax())
+                tl1.Draw()
+                tl2 = ROOT.TLine(ROOT.gPad.GetUxmax(), ROOT.gPad.GetUymin(),
+                                 ROOT.gPad.GetUxmax(), ROOT.gPad.GetUymax())
+                tl2.Draw()
+                
+                txt=ROOT.TLatex()
+                txt.SetNDC(True)
+                txt.SetTextFont(42)
+                txt.SetTextSize(0.041)
+                txt.SetTextAlign(12)
+                txt.DrawLatex(0.16,0.91, cmsLabel)
+                txt.DrawLatex(0.63,0.97, '#scale[0.8]{%3.1f fb^{-1} (%s)}' % (opt.lumi/1000.,opt.com) )
+                txt.DrawLatex(0.16,0.85, 'Systematic covariance')
+                
+                c.Print(opt.outDir+'/'+obs+'_charged_'+flavor+'_cov_syst.pdf')
+                c.Print(opt.outDir+'/'+obs+'_charged_'+flavor+'_cov_syst.png')
+                
+                dataCovNorm = dataStatCovNorm.Clone('dataCovNorm')
+                dataCovNorm.Reset()
+                
+                cov = statcov + systcov
+                
+                for i in range(1, dataCovNorm.GetNbinsX()+1):
+                    for j in range(1, dataCovNorm.GetNbinsY()+1):
+                        dataCovNorm.SetBinContent(i, j, cov[i-1][j-1])
+                
+                dataCovNorm.GetZaxis().SetRangeUser(-max(abs(cov.min()), abs(cov.max())),
+                                                     max(abs(cov.min()), abs(cov.max())))
+                dataCovNorm.Draw('colz')
+                
+                ROOT.gPad.Update()
+                tl1 = ROOT.TLine(ROOT.gPad.GetUxmin(), ROOT.gPad.GetUymax(),
+                                 ROOT.gPad.GetUxmax(), ROOT.gPad.GetUymax())
+                tl1.Draw()
+                tl2 = ROOT.TLine(ROOT.gPad.GetUxmax(), ROOT.gPad.GetUymin(),
+                                 ROOT.gPad.GetUxmax(), ROOT.gPad.GetUymax())
+                tl2.Draw()
+                
+                txt=ROOT.TLatex()
+                txt.SetNDC(True)
+                txt.SetTextFont(42)
+                txt.SetTextSize(0.041)
+                txt.SetTextAlign(12)
+                txt.DrawLatex(0.16,0.91, cmsLabel)
+                txt.DrawLatex(0.63,0.97, '#scale[0.8]{%3.1f fb^{-1} (%s)}' % (opt.lumi/1000.,opt.com) )
+                txt.DrawLatex(0.16,0.85, 'Total covariance')
+                
+                c.Print(opt.outDir+'/'+obs+'_charged_'+flavor+'_cov.pdf')
+                c.Print(opt.outDir+'/'+obs+'_charged_'+flavor+'_cov.png')
+                
+                #print(numpy.linalg.det(cov))
+                cov_reduced = numpy.delete(cov, 0, 0)
+                cov_reduced = numpy.delete(cov_reduced, 0, 1)
+                #print(cov_reduced)
+                #print(numpy.linalg.det(cov_reduced))
+                #print(numpy.linalg.inv(cov_reduced))
+                
+                chi2Nominal = returnChi2(fIn, cov_reduced, nominal, 'nominalGen')
+                chi2FSRUp   = returnChi2(fIn, cov_reduced, nominal, 'FSRUpGen')
+                chi2FSRDown = returnChi2(fIn, cov_reduced, nominal, 'FSRDownGen')
+                chi2Herwig  = returnChi2(fIn, cov_reduced, nominal, 'herwigGen')
+                
+                sumNominal += chi2Nominal
+                sumFSRUp   += chi2FSRUp
+                sumFSRDown += chi2FSRDown
+                sumHerwig  += chi2Herwig
+                
+                tex.write('%s & %s & %.1f & %.1f & %.1f & %.1f \\\\\n'%(obs, flavor, chi2Nominal, chi2FSRUp, chi2FSRDown, chi2Herwig))
+        tex.write('Total &  & %.1f & %.1f & %.1f & %.1f \\\\\n'%(sumNominal, sumFSRUp, sumFSRDown, sumHerwig))
     
 def returnChi2(fIn, cov_reduced, nominal, prediction):
     hpred = fIn.Get(prediction)
@@ -293,7 +325,7 @@ def returnChi2(fIn, cov_reduced, nominal, prediction):
     chi2 = numpy.array(diff[1:]).T.dot(numpy.linalg.inv(cov_reduced).dot(numpy.array(diff[1:])))
     ndf  = hpred.GetNbinsX()-2
     prob = ROOT.TMath.Prob(chi2, ndf)
-    return chi2/ndf, prob
+    return chi2/ndf
 
 def normalizeAndDivideByBinWidth(hist):
     hist.Scale(1./hist.Integral())
