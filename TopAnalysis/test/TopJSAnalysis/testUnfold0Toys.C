@@ -47,6 +47,12 @@
   along with TUnfold.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <string> 
+#include <sstream>
+
+#define SSTR( x ) static_cast< std::ostringstream & >( \
+        ( std::ostringstream() << std::dec << x ) ).str()
+
 #include <TError.h>
 #include <TMath.h>
 #include <TCanvas.h>
@@ -177,6 +183,9 @@ int testUnfold0Toys(TString observable = "mult", int nToys = 100)
   TRandom3 random(1);
   
   TH2F* hPull = new TH2F("pull", "pull;bin;pull", histMgenMC->GetNbinsX()+2, 0, histMgenMC->GetNbinsX()+2, 50, -5, 5);
+  std::vector<std::vector<double> > pseudoresults;
+  
+  TFile outfile("unfolding/toys/"+observable+"_"+flavor+"_toys.root", "RECREATE");
   
   for (int t = 0; t < nToys; ++t) {
     std::cout<<"toy number "<<t<<std::endl;
@@ -336,13 +345,26 @@ int testUnfold0Toys(TString observable = "mult", int nToys = 100)
     unfold.DoUnfold(0.);
     //else unfold.DoUnfold(opt_tau);
     
-    TH1 *histMunfold=unfold.GetOutput("Unfolded");
+    outfile.cd();
+    TH1 *histMunfold=unfold.GetOutput((std::string("Unfolded_")+std::to_string(t)).c_str());
+    histMunfold->Write();
     
     for (int i = 0; i < histMunfold->GetNbinsX()+2; ++i) {
       double pull = (histMunfold->GetBinContent(i) - histMgenToy->GetBinContent(i)) / histMunfold->GetBinError(i); // sqrt(pow(histMunfold->GetBinError(i), 2) + pow(histMgenToy->GetBinError(i), 2));
       //std::cout << histMgenMC->GetBinContent(i) << std::endl;
       hPull->Fill(i, pull);
     }
+    
+    std::vector<double> pseudoresult;
+    double integral = 0.;
+    for (int i = 1; i < histMunfold->GetNbinsX()+1; ++i) {
+      pseudoresult.push_back(histMunfold->GetBinContent(i));
+      integral += histMunfold->GetBinContent(i);
+    }
+    for (int i = 0; i < histMunfold->GetNbinsX(); ++i) {
+      pseudoresult[i] = pseudoresult[i]/integral;
+    }
+    pseudoresults.push_back(pseudoresult);
   }
 
 
@@ -350,12 +372,6 @@ int testUnfold0Toys(TString observable = "mult", int nToys = 100)
   // plot some histograms
   TCanvas output("output","output",500,500);
   output.cd();
-  
-  hPull->Draw("colz");
-  
-  output.SaveAs("unfolding/toys/"+observable+"_"+flavor+"_pull.pdf");
-  output.SaveAs("unfolding/toys/"+observable+"_"+flavor+"_pull.png");
-  output.SaveAs("unfolding/toys/"+observable+"_"+flavor+"_pull.root");
   
   hPull->FitSlicesY();
   TH1D *pull_1 = (TH1D*) gDirectory->Get("pull_1");
@@ -373,6 +389,32 @@ int testUnfold0Toys(TString observable = "mult", int nToys = 100)
   output.SaveAs("unfolding/toys/"+observable+"_"+flavor+"_pull_width.pdf");
   output.SaveAs("unfolding/toys/"+observable+"_"+flavor+"_pull_width.png");
   output.SaveAs("unfolding/toys/"+observable+"_"+flavor+"_pull_width.root");
+  
+  for (int i = 0; i < pull_1->GetNbinsX()+2; ++i) {
+    pull_1->SetBinError(i, pull_2->GetBinContent(i));
+  }
+  
+  hPull->Draw("colz");
+  pull_1->SetLineColor(kRed+1);
+  pull_1->SetMarkerColor(kRed+1);
+  pull_1->SetLineWidth(4);
+  pull_1->Draw("e1,same");
+  
+  output.SaveAs("unfolding/toys/"+observable+"_"+flavor+"_pull.pdf");
+  output.SaveAs("unfolding/toys/"+observable+"_"+flavor+"_pull.png");
+  output.SaveAs("unfolding/toys/"+observable+"_"+flavor+"_pull.root");
+  
+  /*
+  vector<vector<double>> pseudoresults_T;
+  for (unsigned int i = 0; i < pseudoresults[0].size(); i++) {
+    std::vector<double> column;
+    for (unsigned int j = 0; j < pseudoresults.size(); j++) {
+      column.push_back(pseudoresults[j][i]);
+    }
+    pseudoresults_T.push_back(column);
+  }
+  vector<vector<double>> cov = compute_covariance_matrix(pseudoresults_T);
+  */
 
   return 0;
 }

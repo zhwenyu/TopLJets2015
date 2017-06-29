@@ -100,7 +100,6 @@ void RunTopJetShape(TString filename,
   std::map<TString, std::vector<TGraph *> > puWgtGr;
   if( !isData ) puWgtGr=getPileupWeightsMap(era,genPU);
   
-  
   //LEPTON EFFICIENCIES
   LeptonEfficiencyWrapper lepEffH(filename.Contains("Data13TeV"),era+"GH");
 
@@ -378,10 +377,16 @@ void RunTopJetShape(TString filename,
         
         // pu weight
         double puWgt(puWgtGr[period][0]->Eval(ev.g_pu));
+        if (std::isnan(puWgt)) puWgt = 1.;
+        if (puWgt == 0.) puWgt = 1.;
         allPlots["puwgtctr"]->Fill(1,puWgt);
         wgt *= puWgt;
-        varweights.push_back(std::make_pair(puWgtGr[period][1]->Eval(ev.g_pu), true)); // 1
-        varweights.push_back(std::make_pair(puWgtGr[period][2]->Eval(ev.g_pu), true)); // 2
+        double puWgt1(puWgtGr[period][1]->Eval(ev.g_pu));
+        if (std::isnan(puWgt1)) puWgt1 = 1.;
+        varweights.push_back(std::make_pair(puWgt1/puWgt, true)); // 1
+        double puWgt2(puWgtGr[period][2]->Eval(ev.g_pu));
+        if (std::isnan(puWgt2)) puWgt2 = 1.;
+        varweights.push_back(std::make_pair(puWgt2/puWgt, true)); // 2
         
         // lepton trigger*selection weights
         if (singleLepton) {

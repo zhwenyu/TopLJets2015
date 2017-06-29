@@ -48,6 +48,12 @@ case $WHAT in
         cd -;
         ;;
 
+    FULLSELCENTRAL )
+        cd batch;
+        python ../scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} -o ${summaryeosdir} --era era2016 -m TOPJetShape::RunTopJetShape --only MC13TeV_TTJets --exactonly;
+        cd -;
+        ;;
+
     FULLSELSYST )
         cd batch;
         python ../scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} -o ${summaryeosdir}_expsyst --era era2016 -m TOPJetShape::RunTopJetShape --skipexisting --only MC13TeV_TTJets --systVar all --exactonly;
@@ -60,13 +66,14 @@ case $WHAT in
 
     PLOTSEL )
         rm -r plots
-        commonOpts="-i ${summaryeosdir} -j data/era2016/samples.json,data/era2016/qcd_samples.json --systJson data/era2016/syst_samples.json -l ${lumi} --mcUnc ${lumiUnc} --rebin 1"
+        commonOpts="-i ${summaryeosdir} -j data/era2016/samples.json,data/era2016/qcd_samples.json --systJson data/era2016/syst_samples.json,data/era2016/expsyst_samples.json -l ${lumi} --mcUnc ${lumiUnc} --rebin 1"
         python scripts/plotter.py ${commonOpts} --outDir plots;
         ;;
 
     TESTPLOTSEL )
-        commonOpts="-i ${summaryeosdir} -j data/era2016/samples.json,data/era2016/qcd_samples.json --systJson data/era2016/syst_samples.json -l ${lumi}"
-        python scripts/plotter.py ${commonOpts} --outDir plots/test --only L4_1l4j2b2w_njets,js_tau32_puppi;
+        commonOpts="-i ${summaryeosdir} -j data/era2016/samples.json,data/era2016/qcd_samples.json --systJson data/era2016/syst_samples.json,data/era2016/expsyst_samples.json -l ${lumi}"
+        python scripts/plotter.py ${commonOpts} --outDir plots/test --only L4_1l4j2b2w_njets,L4_1l4j2b2w_nvtx,js_tau32_charged;
+        #python scripts/plotter.py ${commonOpts} --outDir plots/test --only L4_1l4j2b2w_nvtx;
         ;;
 
     WWWSEL )
@@ -89,15 +96,14 @@ case $WHAT in
 
     FILL )
         cd batch;
-        python ../test/TopJSAnalysis/fillUnfoldingMatrix.py -q 1nh -i /eos/user/m/mseidel/analysis/TopJetShapes/b312177/Chunks/; #TODO: exclude default sample (to be processed with weights)
-        python ../test/TopJSAnalysis/fillUnfoldingMatrix.py -q 1nh -i /eos/user/m/mseidel/analysis/TopJetShapes/b312177_expsyst/Chunks/;
+        python ../test/TopJSAnalysis/fillUnfoldingMatrix.py -q workday -i /eos/user/m/mseidel/analysis/TopJetShapes/b312177/Chunks/ --skipexisting;
         cd -;
         ;;
-    
+        
     FILLWEIGHTS )
         cd batch;
-        python ../test/TopJSAnalysis/fillUnfoldingMatrix.py -i /eos/user/m/mseidel/analysis/TopJetShapes/b312177/Chunks/ --only MC13TeV_TTJets --nweights 20 -q 8nh;
-        cd -
+        python ../test/TopJSAnalysis/fillUnfoldingMatrix.py -q longlunch -i /eos/user/m/mseidel/analysis/TopJetShapes/b312177/Chunks/ --only MC13TeV_TTJets --nweights 20;
+        cd -;
         ;;
     
     MERGEFILL )
@@ -107,9 +113,10 @@ case $WHAT in
     TOYUNFOLDING )
         for OBS in mult width ptd ptds ecc tau21 tau32 tau43 zg zgxdr zgdr ga_width ga_lha ga_thrust c1_02 c1_05 c1_10 c1_20 c2_02 c2_05 c2_10 c2_20 c3_02 c3_05 c3_10 c3_20
         do
-          mkdir -p unfolding/toys/farm/${OBS}
-          cp test/TopJSAnalysis/testUnfold0Toys.C unfolding/toys/farm/${OBS}
-          root -l -b -q "unfolding/toys/farm/${OBS}/testUnfold0Toys.C++(\"${OBS}\", 1000)"&
+          while [ $(jobs | wc -l) -ge 4 ] ; do sleep 1 ; done
+          mkdir -p unfolding/toys_farm/${OBS}
+          cp test/TopJSAnalysis/testUnfold0Toys.C unfolding/toys_farm/${OBS}
+          root -l -b -q "unfolding/toys_farm/${OBS}/testUnfold0Toys.C++(\"${OBS}\", 1000)"&
         done
         ;;
         
@@ -121,6 +128,13 @@ case $WHAT in
             while [ $(jobs | wc -l) -ge 4 ] ; do sleep 1 ; done
             python test/TopJSAnalysis/doUnfolding.py --obs ${OBS} --flavor ${FLAVOR} &
           done
+        done
+        ;;
+    
+    FLAVORPLOTS )
+        for OBS in mult width ptd ptds ecc tau21 tau32 tau43 zg zgxdr zgdr ga_width ga_lha ga_thrust c1_02 c1_05 c1_10 c1_20 c2_02 c2_05 c2_10 c2_20 c3_02 c3_05 c3_10 c3_20
+        do
+          python test/TopJSAnalysis/compareFlavors.py --obs ${OBS}
         done
         ;;
 

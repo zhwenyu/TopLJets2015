@@ -99,7 +99,7 @@ std::vector<TGraph *> getPileupWeights(TString era, TH1 *genPU,TString period)
         }
       TGraph *gr=new TGraph(tmp);
       grName.ReplaceAll("pu","puwgts");
-      gr->SetName(grName);
+      gr->SetName(period+grName);
       puWgtGr.push_back( gr );
       tmp->Delete();
     }
