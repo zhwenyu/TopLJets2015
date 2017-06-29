@@ -128,7 +128,7 @@ void normalize(TH1* hist) {
   hist->Scale(1./hist->Integral());
 }
 
-int testUnfold0Toys(TString observable = "mult", int nToys = 100)
+int testUnfold0Toys(TString observable = "mult", TString flavor = "all", int nToys = 100)
 {
   // switch on histogram errors
   TH1::SetDefaultSumw2();
@@ -145,7 +145,6 @@ int testUnfold0Toys(TString observable = "mult", int nToys = 100)
   
   //TString observable  = "tau21";
           observable += "_charged";
-  TString flavor      = "all";
   bool reg = false;
   
   TH1D *histMgenMC = (TH1D*) file.Get(observable+"_"+flavor+"_responsematrix_px");
@@ -156,14 +155,16 @@ int testUnfold0Toys(TString observable = "mult", int nToys = 100)
   TH1D* histMdetMCsig = histMdetGenMC->ProjectionY("histMdetNonGenMC", 1, -1);
   TH2D* histMdetGenMCSig = (TH2D*) histMdetGenMC->Clone("histMdetGenMCSig");
   
-  double dataMCSF = 36500.*832.;
+  double lumi = 16551.;
+  
+  double dataMCSF = lumi*832.;
   histMgenMC->Scale(dataMCSF);
   histMdetMC->Scale(dataMCSF);
   histMdetMCsig->Scale(dataMCSF);
   
   double integral = histMdetGenMC->Integral(0,-1,0,-1);
   //std::cout << "integral: " << integral << std::endl;
-  double nExpectedEvents = integral*36500*832.;
+  double nExpectedEvents = integral*lumi*832.;
   std::vector<double> wheel = { 0. };
   for (int i = 0; i < histMdetGenMC->GetNcells()+1; ++i) {
     //std::cout << wheel.back() << std::endl;

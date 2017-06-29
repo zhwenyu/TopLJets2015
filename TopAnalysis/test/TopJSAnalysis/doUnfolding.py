@@ -80,7 +80,7 @@ def main():
     
     for slist,isSyst in [ (samplesList,False), (systSamplesList,True), (expSystSamplesList,True) ]:
         for tag,sample in slist: 
-            if tag in ['MC13TeV_TTJets_cflip', 'MC13TeV_TTJets_evtgen']: continue
+            if tag in ['MC13TeV_TTJets_cflip']: continue
             if isSyst and not 't#bar{t}' in sample[3] : continue
             isData = sample[1]
             isSig  = not isSyst and sample[3] == 't#bar{t}'
@@ -141,7 +141,6 @@ def main():
                 if debug: print(tag, nominal.GetEntries())
                 # signal file should contain systematics weights
                 for i in range(1, 21):
-                    if i in [1,2]: continue #buggy PU variations
                     ih=fIn.Get(opt.obs+'_charged_'+opt.flavor+'_wgt'+str(i)+'_responsematrix')
                     itag = tag + '_wgt' + str(i)
                     try:

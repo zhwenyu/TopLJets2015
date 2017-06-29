@@ -113,10 +113,13 @@ case $WHAT in
     TOYUNFOLDING )
         for OBS in mult width ptd ptds ecc tau21 tau32 tau43 zg zgxdr zgdr ga_width ga_lha ga_thrust c1_02 c1_05 c1_10 c1_20 c2_02 c2_05 c2_10 c2_20 c3_02 c3_05 c3_10 c3_20
         do
-          while [ $(jobs | wc -l) -ge 4 ] ; do sleep 1 ; done
-          mkdir -p unfolding/toys_farm/${OBS}
-          cp test/TopJSAnalysis/testUnfold0Toys.C unfolding/toys_farm/${OBS}
-          root -l -b -q "unfolding/toys_farm/${OBS}/testUnfold0Toys.C++(\"${OBS}\", 1000)"&
+          for FLAVOR in all bottom light gluon
+          do
+            while [ $(jobs | wc -l) -ge 4 ] ; do sleep 1 ; done
+            mkdir -p unfolding/toys_farm/${OBS}_${FLAVOR}
+            cp test/TopJSAnalysis/testUnfold0Toys.C unfolding/toys_farm/${OBS}_${FLAVOR}
+            root -l -b -q "unfolding/toys_farm/${OBS}_${FLAVOR}/testUnfold0Toys.C++(\"${OBS}\", \"${FLAVOR}\", 1000)"&
+          done
         done
         ;;
         
