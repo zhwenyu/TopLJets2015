@@ -9,6 +9,7 @@ from math import sqrt
 from array import *
 import random
 import numpy
+import copy
 
 debug = True
 
@@ -141,6 +142,7 @@ def main():
                 if debug: print(tag, nominal.GetEntries())
                 # signal file should contain systematics weights
                 for i in range(1, 21):
+                    if i in [17, 19]: continue
                     ih=fIn.Get(opt.obs+'_charged_'+opt.flavor+'_wgt'+str(i)+'_responsematrix')
                     itag = tag + '_wgt' + str(i)
                     try:
@@ -165,9 +167,39 @@ def main():
     rootoutfile.cd()
     
     dataUnfolded, dataFoldedBack, dataBkgSub, dataStatCov = unfold('MC13TeV_TTJets', nominal, backgrounds, data)
+    
     systematicUnfolded = {}
     for tag,systematic in systematics.iteritems():
         systematicUnfolded[tag] = unfold(tag, systematic, backgrounds, data)[0]
+    
+    background_systematics = [
+        [
+            ['singletop'],
+            ['MC13TeV_SingleTbar_tW', 0.0537],
+            ['MC13TeV_SingleT_tW', 0.0537],
+            ['MC13TeV_SingleTbar_t', 0.051],
+            ['MC13TeV_SingleT_t', 0.0405]
+        ],
+        [
+            ['wjets'],
+            ['MC13TeV_W0Jets', -0.057],
+            ['MC13TeV_W1Jets',  0.101],
+            ['MC13TeV_W2Jets',  0.328],
+        ]
+    ]
+    
+    for bkg_sys in background_systematics:
+        for direction in ['up', 'down']:
+            backgrounds_var = copy.copy(backgrounds)
+            for item in bkg_sys:
+                if len(item) == 1: continue
+                try:
+                  if direction == 'up':   backgrounds_var[item[0]].Scale(1. + item[1])
+                  if direction == 'down': backgrounds_var[item[0]].Scale(1. - item[1])
+                except: continue
+            tag = 'MC13TeV_TTJets_'+bkg_sys[0][0]+'_'+direction
+            print(tag)
+            systematicUnfolded[tag] = unfold(tag, nominal, backgrounds, data)[0]
     
     systUp=[0.]
     systDown=[0.]
@@ -526,9 +558,11 @@ def main():
     c.Print(opt.outDir+'/'+opt.obs+'_charged_'+opt.flavor+'_cov_tunfold.png')
     
 
-def unfold(Mtag, M, backgrounds, data):
+def unfold(Mtag, Morig, backgrounds, data):
     # Background subtraction
     dataBkgSub = data.Clone(Mtag+'_dataBkgSub')
+    
+    M = Morig.Clone('M')
 
     # TODO: background uncertainties
     for tag,background in backgrounds.iteritems():
@@ -565,9 +599,9 @@ def unfold(Mtag, M, backgrounds, data):
     # Retrieve results
     dataUnfolded = normalizeAndDivideByBinWidth(unfold.GetOutput(Mtag+"_Unfolded"))
     
-    #if debug:
-    #    for i in range(1, dataUnfolded.GetNbinsX()+1):
-    #        print('dataUnfolded', i, dataUnfolded.GetBinContent(i), dataUnfolded.GetBinError(i))
+    if debug:
+        for i in range(1, dataUnfolded.GetNbinsX()+1):
+            print('dataUnfolded', i, dataUnfolded.GetBinContent(i), dataUnfolded.GetBinError(i))
     dataFoldedBack = normalizeAndDivideByBinWidth(unfold.GetFoldedOutput(Mtag+"_FoldedBack"))
     
     # get error matrix (input distribution [stat] errors only)

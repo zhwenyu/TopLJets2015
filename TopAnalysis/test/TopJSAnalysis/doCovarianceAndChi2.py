@@ -164,7 +164,9 @@ def main():
                                'btag_light',
                                'csv_heavy',
                                'csv_light',
-                               'tracking'
+                               'tracking',
+                               'singletop',
+                               'wjets'
                               ]
                 varList = []
                 for var in allSystVars:
@@ -177,7 +179,18 @@ def main():
                             ['hdampup', 'hdampdn'],
                             ['ueup', 'uedn'],
                             ['erdON'],
-                            ['qcdBased']]
+                            ['qcdBased'],
+                            ['wgt1', 'wgt2'],
+                            ['wgt3', 'wgt4'],
+                            ['wgt5', 'wgt6'],
+                            ['wgt7', 'wgt8'],
+                            ['wgt9'],
+                            ['wgt10', 'wgt11'],
+                            ['wgt12'],
+                            ['wgt13', 'wgt14'],
+                            ['wgt15', 'wgt18'],
+                            ['wgt16', 'wgt20'],
+                           ]
                 
                 resultfile = '%s/%s_charged_%s_result.root'%(opt.inDir, obs, flavor)
                 fIn=ROOT.TFile.Open(resultfile)

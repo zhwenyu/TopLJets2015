@@ -132,6 +132,12 @@ case $WHAT in
             python test/TopJSAnalysis/doUnfolding.py --obs ${OBS} --flavor ${FLAVOR} &
           done
         done
+        python test/TopJSAnalysis/plotMeanTau.py
+        for FLAVOR in all bottom light gluon
+        do
+          python test/TopJSAnalysis/plotMeanCvsBeta.py --flavor ${FLAVOR}
+        done
+        python test/TopJSAnalysis/doCovarianceAndChi2.py
         ;;
     
     FLAVORPLOTS )
