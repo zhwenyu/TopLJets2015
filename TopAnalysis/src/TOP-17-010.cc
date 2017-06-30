@@ -77,6 +77,9 @@ void RunTop17010(TString filename,
   std::map<TString, std::vector<TGraph *> > puWgtGr;
   if( !isDataFile ) puWgtGr=getPileupWeightsMap(era,genPU);
 
+  //b-fragmentation
+  float bfragWgt(1.0);
+
   //lepton efficiencies
   LeptonEfficiencyWrapper lepEffH(isDataFile,era);
 
@@ -127,6 +130,10 @@ void RunTop17010(TString filename,
       JetCorrectorParameters *p = new JetCorrectorParameters(jecUncUrl.Data(), jecUncSrcs[i].Data());
       jecUncs.push_back( new JetCorrectionUncertainty(*p) );
     }
+
+  //b-fragmentation weights
+  std::map<TString, TGraph*> fragWeights=getBFragmentationWeights(era);
+  std::map<TString, std::map<int, double> > semilepBRwgts=getSemilepBRWeights(era);
     
   //BOOK HISTOGRAMS
   std::map<TString, TH1 *> allPlots;
@@ -316,9 +323,11 @@ void RunTop17010(TString filename,
                   mSelCorrWgt.first *= selSF.first;
                 }
             }
-	  
+          
+          bfragWgt=computeBFragmentationWeight(ev,fragWeights["downFrag"]);
+
 	  //update nominal event weight
-	  wgt=triggerCorrWgt.first*eSelCorrWgt.first*mSelCorrWgt.first*puWgt*norm;
+	  wgt=triggerCorrWgt.first*eSelCorrWgt.first*mSelCorrWgt.first*puWgt*bfragWgt*norm;
 	  if(ev.g_nw>0) wgt*=ev.g_w[0];
 	}
       
@@ -428,7 +437,7 @@ void RunTop17010(TString filename,
       if(chTag=="MM") twev.cat=13*13;
       if(chTag=="EM") twev.cat=11*13;
       if(chTag=="EE") twev.cat=11*11;
-      twev.nw=10;
+      twev.nw=14;
       twev.weight[0]=wgt;
       twev.weight[1]=wgt*puWgtUp/puWgt;
       twev.weight[2]=wgt*puWgtDn/puWgt;
@@ -439,10 +448,15 @@ void RunTop17010(TString filename,
       twev.weight[7]=wgt*(mSelCorrWgt.first+mSelCorrWgt.second)/mSelCorrWgt.first;
       twev.weight[8]=wgt*(mSelCorrWgt.first-mSelCorrWgt.second)/mSelCorrWgt.first;
       twev.weight[9]=wgt*topptsf;
+      twev.weight[10]=wgt*computeSemilepBRWeight(ev,semilepBRwgts["semilepbrDown"]);
+      twev.weight[11]=wgt*computeSemilepBRWeight(ev,semilepBRwgts["semilepbrUp"]);
+      twev.weight[12]=wgt*computeBFragmentationWeight(ev,fragWeights["downFrag"])/bfragWgt;
+      twev.weight[13]=wgt*computeBFragmentationWeight(ev,fragWeights["upFrag"])/bfragWgt;
+      twev.weight[14]=wgt*computeBFragmentationWeight(ev,fragWeights["PetersonFrag"]);
       if(ev.g_nw>0)
 	{
 	  twev.nw+=ev.g_nw;
-	  for(int iw=1; iw<=ev.g_nw; iw++) twev.weight[9+iw]=wgt*ev.g_w[iw]/ev.g_w[0];
+	  for(int iw=1; iw<=ev.g_nw; iw++) twev.weight[14+iw]=wgt*ev.g_w[iw]/ev.g_w[0];
 	}
       twev.nt=0;
       twev.met_pt=ev.met_pt[0];
@@ -554,7 +568,7 @@ void resetTopWidthEvent(TopWidthEvent_t &twev)
 {
   twev.cat=0;   twev.nw=0;   twev.nl=0;   twev.nj=0;   twev.nt=0;
   twev.met_pt=0; twev.met_phi=0;
-  for(int i=0; i<10; i++) twev.weight[i]=0;
+  for(int i=0; i<20; i++) twev.weight[i]=0;
   for(int i=0; i<2; i++) { twev.l_pt[i]=0;   twev.l_eta[i]=0;   twev.l_phi[i]=0;   twev.l_m[i]=0; twev.l_id[i]=0; twev.l_les[i]=0; twev.gl_pt[i]=0;   twev.gl_eta[i]=0;   twev.gl_phi[i]=0;   twev.gl_m[i]=0; twev.gl_id[i]=0; }
   for(int i=0; i<50; i++) { twev.j_pt[i]=0;   twev.j_eta[i]=0;   twev.j_phi[i]=0;   twev.j_m[i]=0; twev.j_btag[i]=0; twev.j_jer[i]=0;  twev.gj_pt[i]=0;   twev.gj_eta[i]=0;   twev.gj_phi[i]=0;   twev.gj_m[i]=0; twev.gj_flav[i]=0; twev.gj_hadflav[i]=0; }  twev.j_jes.clear(); //[i].clear(); } 
   for(int i=0; i<10; i++) { twev.t_pt[i]=0;   twev.t_eta[i]=0;   twev.t_phi[i]=0;   twev.t_m[i]=0; twev.t_id[i]=0; }

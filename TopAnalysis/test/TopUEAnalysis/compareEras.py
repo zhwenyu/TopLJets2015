@@ -8,7 +8,7 @@ import re
 path='UEanalysis/analysis'
 onlyfiles = [f for f in listdir(path) if 'MuonEG' in f]
 
-#dist='chmult_None_inc_None_True'
+dist='chmult_None_inc_None_True'
 #dist='chflux_None_inc_None_True'
 #dist='chfluxz_None_inc_None_True'
 #dist='chavgpt_None_inc_None_True'
@@ -16,7 +16,7 @@ onlyfiles = [f for f in listdir(path) if 'MuonEG' in f]
 #dist='aplanarity_None_inc_None_True'
 #dist='sphericity_None_inc_None_True'
 #dist='C_None_inc_None_True'
-dist='D_None_inc_None_True'
+#dist='D_None_inc_None_True'
 
 plots={}
 total=None
