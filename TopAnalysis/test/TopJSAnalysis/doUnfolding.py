@@ -599,9 +599,9 @@ def unfold(Mtag, Morig, backgrounds, data):
     # Retrieve results
     dataUnfolded = normalizeAndDivideByBinWidth(unfold.GetOutput(Mtag+"_Unfolded"))
     
-    if debug:
-        for i in range(1, dataUnfolded.GetNbinsX()+1):
-            print('dataUnfolded', i, dataUnfolded.GetBinContent(i), dataUnfolded.GetBinError(i))
+    #if debug:
+    #    for i in range(1, dataUnfolded.GetNbinsX()+1):
+    #        print('dataUnfolded', i, dataUnfolded.GetBinContent(i), dataUnfolded.GetBinError(i))
     dataFoldedBack = normalizeAndDivideByBinWidth(unfold.GetFoldedOutput(Mtag+"_FoldedBack"))
     
     # get error matrix (input distribution [stat] errors only)

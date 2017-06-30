@@ -251,7 +251,12 @@ int testUnfold0Toys(TString observable = "mult", TString flavor = "all", int nTo
     for (int i = 0; i < histMdetDataBGSubtracted->GetNbinsX()+2; ++i) {
       double sf = histMdetNonGenMCbkg->GetBinContent(i) / histMdetNonGenMCall->GetBinContent(i);
       histMdetDataBGSubtracted->SetBinContent(i, (1.-sf)*histMdetDataBGSubtracted->GetBinContent(i));
+      if (std::isnan(histMdetDataBGSubtracted->GetBinContent(i)))
+        histMdetDataBGSubtracted->SetBinContent(i, 0);
       histMdetDataBGSubtracted->SetBinError(i, (1.-sf)*histMdetDataBGSubtracted->GetBinError(i));
+      if (std::isnan(histMdetDataBGSubtracted->GetBinError(i)))
+        histMdetDataBGSubtracted->SetBinError(i, 0);
+      
     }
     //*/
     /*
