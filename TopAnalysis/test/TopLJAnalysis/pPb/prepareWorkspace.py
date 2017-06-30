@@ -64,23 +64,22 @@ def getJets(tree,minPt=25.,maxEta=2.4,mcTruth=None,shiftJES=0,jerProf=None):
         #inflate due to difference between high and low HF energy
         ptSF_err =ROOT.TMath.Sqrt(ptSF_err**2+0.098**2) 
 
-        cjer,cjerUp,cjerDn=1,1,1
+        cjer=1
         try:
+            resol=-1
             for gj in xrange(0,tree.ngj):
                 gjet=Particle(0,tree.j_pt[gj],tree.j_eta[gj], tree.j_phi[gj],tree.gj_m[gj])
                 if gjet.p4.DeltaR( partColl[-1].p4 ) >0.2 : continue
+                resol=(tree.j_pt[j]/tree.gj_pt[gj]-1)
                 cjer   = ROOT.TMath.Max(0,tree.gj_pt[gj]+ptSF*(tree.j_pt[j]-tree.gj_pt[gj]))/tree.j_pt[j]
-                cjerUp = ROOT.TMath.Max(0,tree.gj_pt[gj]+(ptSF+ptSF_err)*(tree.j_pt[j]-tree.gj_pt[gj]))/tree.j_pt[j]
-                cjerDn = ROOT.TMath.Max(0,tree.gj_pt[gj]+(ptSF-ptSF_err)*(tree.j_pt[j]-tree.gj_pt[gj]))/tree.j_pt[j]
                 break
 
             #fill jer profile
-            if jerProf.InheritsFrom('TH1'):
-                testP4=ROOT.TLorentzVector(partColl[-1].p4)
-                scaleP4(testP4,cjerUp)
-                jerProf.Fill(abs(partColl[-1].p4.Eta()),testP4.Pt()/partColl[-1].p4.Pt())
-
-            scaleP4(partColl[-1].p4,cjer)
+            if jerProf.InheritsFrom('TH1'):          
+                if resol>0 : jerProf.Fill(abs(partColl[-1].p4.Eta()),resol)
+                #testP4=ROOT.TLorentzVector(partColl[-1].p4)
+                #scaleP4(testP4,cjer)
+                #jerProf.Fill(abs(partColl[-1].p4.Eta()),testP4.Pt()/partColl[-1].p4.Pt())
 
         except:
             cjerUp=jerProf.Eval(abs(partColl[-1].p4.Eta()))
@@ -92,8 +91,8 @@ def getJets(tree,minPt=25.,maxEta=2.4,mcTruth=None,shiftJES=0,jerProf=None):
         if partColl[-1].p4.Pt()<40 : jesUnc=ROOT.TMath.Sqrt(0.02**2+jesUnc**2)
         partColl[-1].setScaleUnc('jesup',(1.0+jesUnc))
         partColl[-1].setScaleUnc('jesdn',(1.0-jesUnc))
-        partColl[-1].setScaleUnc('jerup',cjerUp/cjer)
-        partColl[-1].setScaleUnc('jerdn',cjerDn/cjer)
+        partColl[-1].setScaleUnc('jerup',max(cjer,1./cjer))
+        partColl[-1].setScaleUnc('jerdn',min(cjer,1./cjer))
 
         #match parton level, if available
         minDR=999
@@ -503,7 +502,7 @@ def main():
     #show results
     ROOT.gStyle.SetOptStat(0)
     ROOT.gStyle.SetOptTitle(0)
-    ROOT.gROOT.SetBatch(False)
+    ROOT.gROOT.SetBatch(True)
     outDir='plots/%s'%opt.data
     os.system('mkdir -p %s'%outDir)
     fOut=ROOT.TFile.Open('%s/controlplots.root'%outDir,'RECREATE')

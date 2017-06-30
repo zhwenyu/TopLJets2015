@@ -33,23 +33,20 @@ def defineDataset(data):
     if 'MC8.16TeV_TTbar_pPb' in data:
         dataset=OrderedDict()
 
-        dataset['l+jets']         = (['%s/PYQUEN_TTbar_PPb-EmbEPOS_EJets.root'%baseDir,
-                                      '%s/PYQUEN_TTbar_PPb-EmbEPOS_MuJets.root'%baseDir],
+        dataset['l+jets']         = (['%s/PYQUEN_TTbar_PPb-EmbEPOS_EJets_CheckForBugInJER.root'%baseDir,
+                                      '%s/PYQUEN_TTbar_PPb-EmbEPOS_MuJets_CheckForBugInJER.root'%baseDir],
                                       '#4575b4', [11,13],   True)
     if 'MC8.16TeV_TTbar_pPb_Pohweg' in data:
         dataset=OrderedDict()
-        dataset['l+jets']         = (['%s/Powheg_TTbar_PPb-EmbEPOS_MuJets.root'%baseDir,
-                                      '%s/Powheg_TTbar_PbP-EmbEPOS_MuJets.root'%baseDir,
-                                      '%s/Powheg_TTbar_PbP-EmbEPOS_EJets.root'%baseDir,
-                                      '%s/Powheg_TTbar_PPb-EmbEPOS_EJets.root'%baseDir],
+        dataset['l+jets']         = (['%s/Powheg_TTbar_PPb-EmbEPOS_MuJets_CheckForBugInJER.root'%baseDir,
+                                      '%s/Powheg_TTbar_PbP-EmbEPOS_MuJets_CheckForBugInJER.root'%baseDir,
+                                      '%s/Powheg_TTbar_PbP-EmbEPOS_EJets_CheckForBugInJER.root'%baseDir,
+                                      '%s/Powheg_TTbar_PPb-EmbEPOS_EJets_CheckForBugInJER.root'%baseDir],
                                       '#4575b4', [11,13],   True)
 
     if 'MC8.16TeV_WJets_pPb' in data:
         dataset=OrderedDict()
-        dataset['l+jets']         = (['%s/WToMuNu_anstahll-Embedded_PileUp_POWHEG_WToMuNu_Plus_CT14_EPPS16_8160GeV_pythia8_reverse_RECO.root'%baseDir,
-                                      '%s/WToMuNu_anstahll-Embedded_PileUp_POWHEG_WToMuNu_Minus_CT14_EPPS16_8160GeV_pythia8_reverse_RECO.root'%baseDir,
-                                      '%s/WToMuNu_anstahll-Embedded_PileUp_POWHEG_WToMuNu_Plus_CT14_EPPS16_8160GeV_pythia8_RECO.root'%baseDir,
-                                      '%s/WToMuNu_anstahll-Embedded_PileUp_POWHEG_WToMuNu_Minus_CT14_EPPS16_8160GeV_pythia8_RECO.root'%baseDir],
+        dataset['l+jets']         = (['%s/WToMuNu_anstahll-Embedded_PileUp_POWHEG_WToMuNu_MergedSign_CT14_EPPS16_8160GeV_pythia8_MergedDirs.root'%baseDir],
                                      '#4575b4', [11,13],   False)
 
     if 'MC8TeV_WJets_pp' in data:

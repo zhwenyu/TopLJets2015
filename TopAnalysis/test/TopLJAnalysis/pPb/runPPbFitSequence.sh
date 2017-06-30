@@ -35,7 +35,7 @@ case $WHAT in
 
     SEL)
 	common="--wjjOrder drjj --thadOrder dm2tlep"
-        for sample in MC8.16TeV_TTbar_pPb; do # MC8.16TeV_TTbar_pPb_Pohweg MC8.16TeV_WJets_pPb; do        
+        for sample in MC8.16TeV_TTbar_pPb MC8.16TeV_TTbar_pPb_Pohweg MC8.16TeV_WJets_pPb; do        
 	    python prepareWorkspace.py  -d ${sample} ${common};
 	done
 	;;
@@ -60,7 +60,7 @@ case $WHAT in
 		mv -v ${i} ${outDir}/${f};
 	    done
 	done
-
+        
 	python parameterizeMCShapes.py workspace_MC8.16TeV_WJets_pPb.root pdf_workspace_MC8.16TeV_TTbar_pPb.root;
 	a=(`ls *.{png,pdf}`)
 	for i in ${a[@]}; do
@@ -74,7 +74,7 @@ case $WHAT in
         dataRef=Data8.16TeV_pPb_nonsubiso
 	for f in `seq 0 0`; do
 	    python runDataFit.py --fitType ${f} -s pdf_workspace_${sigRef}.root -i workspace_${dataRef}.root -o plots/${dataRef};
-	    python runDataFit.py --fitType ${f} -o plots/${dataRef}/ --verbose 9 --finalWorkspace finalworkspace.root;
+	    python runDataFit.py --fitType ${f} -o plots/${dataRef}/ --verbose 9 --finalWorkspace finalworkspace.root; #--impacts
 	done
 	;;
 

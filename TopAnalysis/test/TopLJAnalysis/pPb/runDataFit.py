@@ -7,7 +7,7 @@ import json
 from prepareWorkspace import EVENTCATEGORIES as SELEVENTCATEGORIES
 EVENTCATEGORIES=[x for x in SELEVENTCATEGORIES if not '1f' in x]
 
-lumi=(174.5,6.98)
+lumi=(174.5,8.725)
 acceptance={'e':(0.056,0.0014),
             'mu':(0.060,0.0016)}
 efficiency={'e':(0.767,0.0304),
@@ -139,14 +139,15 @@ def definePDF(w,varName):
         w.factory("RooFormulaVar::Nsig_{0}1l4j2b('@0*pow(@1,2)',{{Nsig_{0},eb}})".format(ch))
         w.factory("RooFormulaVar::Nsig_{0}1l4j1b1q('@0*2*@1*(1-@1)',{{Nsig_{0},eb}})".format(ch))
         w.factory("RooFormulaVar::Nsig_{0}1l4j2q('@0*pow(1-@1,2)',{{Nsig_{0},eb}})".format(ch))
+    w.factory("RooFormulaVar::Nsig_total('@0+@1',{{Nsig_e,Nsig_mu}})")
 
     #backgrounds yields are indepedent in each category (to be profiled)
     #the number of QCD (W) like is parameterized as fqcd.Nbkg ((1-fqcd).Nw)
     for cat in EVENTCATEGORIES:
 
         w.factory('Nbkg_{0}[1000,0,100000]'.format(cat))
-        if '2b'   in cat : w.factory('fqcd_{0}[0.0,0.5]'.format(cat))
-        elif '1b' in cat : w.factory('fqcd_{0}[0.0,0.9]'.format(cat))
+        if '2b'   in cat : w.factory('fqcd_{0}[0.0,0.3]'.format(cat))
+        elif '1b' in cat : w.factory('fqcd_{0}[0.0,0.5]'.format(cat))
         else             : w.factory('fqcd_{0}[0.0,1.0]'.format(cat))
         #if '2b'   in cat : w.factory('fqcd_{0}[0.0]'.format(cat))
         #elif '1b' in cat : w.factory('fqcd_{0}[0.0]'.format(cat))
@@ -158,8 +159,8 @@ def definePDF(w,varName):
         w.factory("RooFormulaVar::Nw_{0}('@0*(1-@1)',{{Nbkg_{0},fqcd_{0}}})".format(cat))
         ch='e' if cat[0]=='e' else 'mu'
         baseCat=cat[1:] if cat[0]=='e' else cat[2:]
-        #mpvName,widthName='mpv_w{1}_{0}'.format(baseCat,varName),'width_w{1}_{0}'.format(baseCat,varName)
-        mpvName,widthName='mpv_w{1}_{0}'.format(cat,varName),'width_w{1}_{0}'.format(cat,varName)
+        mpvName,widthName='mpv_w{1}_{0}'.format(baseCat,varName),'width_w{1}_{0}'.format(baseCat,varName)
+        #mpvName,widthName='mpv_w{1}_{0}'.format(cat,varName),'width_w{1}_{0}'.format(cat,varName)
         minMPV=20  if varName=='mjj' else 150
         maxMPV=120 if varName=='mjj' else 200
         w.factory('{0}[{1},{2}]'.format(mpvName,minMPV,maxMPV))
@@ -405,6 +406,7 @@ def performFits(opt):
             w.saveSnapshot('fitresult_%s'%ch,pdf.getParameters(data))
 
             addToFitResults('%s_%s'%(ch,t),fitResults,result.floatParsFinal()) #pdf.getParameters(data))
+
             #pll.plotOn(xsecframe,ROOT.RooFit.Name(ch),ROOT.RooFit.ShiftToZero())
 
             EVENTCATEGORIES2SHOW=EVENTCATEGORIES if ch=='combined' else [ch+'1l4j'+x for x in ['2q','1b1q','2q']]
@@ -423,7 +425,7 @@ def performFits(opt):
                             pfix='_%s_%sfit'%(ch,t))
 
     else:
-        for ch in ['e','mu','combined']:
+        for ch in ['mu','e','combined']:
 
             #parameter of interest
             poi=ROOT.RooArgSet()
@@ -450,20 +452,27 @@ def performFits(opt):
             #obsList.add(w.var('mjj'))
             #runFit(pdf,data,poi,obsList,w,opt.output)
             result,pll=runSimpleFit(pdf,data,poi,constr)
-            w.saveSnapshot('fitresult_%s'%ch,pdf.getParameters(data))
+            snapshotKey='fitresult_%s'%ch
+            w.saveSnapshot(snapshotKey,pdf.getParameters(data))
 
+            #add fit results to the summary, including event yields
             key='%s_1D'%ch
-            addToFitResults(key,fitResults,result.floatParsFinal()) #pdf.getParameters(data))
+            addToFitResults(key,fitResults,result.floatParsFinal())
+            for formName in ['Nsig_e','Nsig_mu','Nsig_total']:
+                func=w.function(formName)
+                val,unc=func.getVal(),func.getPropagatedError(result)
+                fitResults[key][formName]=(val,unc,unc)
 
-            #do the following only for the main fit
-            if opt.fitType!=0 or ch!='combined' : continue
+            #do the following only for the main fit and if required
+            if opt.fitType!=0 or not opt.impacts: continue
 
             #fit stat unc. (fix all except xsec and repeat the fit)
             pToFix=[]
             for pname in fitResults[key]:
                 if pname!='xsec': pToFix.append(pname)
+            w.loadSnapshot(snapshotKey)
             result,_=runSimpleFit(pdf,data,poi,constr,pToFix)
-            fitResults['%s_1D'%ch]['xsec_statonly']=(
+            fitResults[key]['xsec_statonly']=(
                 result.floatParsFinal().find('xsec').getVal(),
                 result.floatParsFinal().find('xsec').getErrorLo(),
                 result.floatParsFinal().find('xsec').getErrorHi()
@@ -475,8 +484,7 @@ def performFits(opt):
             
             #now do the impacts
             impacts[key]={}
-            for pname in fitResults[key]:
-                if 'xsec' in pname: continue
+            for pname in ['lumi','eb','eff_e','eff_mu','jsf']:
 
                 impacts[key][pname]=[]
 
@@ -485,6 +493,8 @@ def performFits(opt):
 
                 #set at +/-1 sigma postfit and repeat fit
                 for ivar in xrange(0,2):
+
+                    w.loadSnapshot(snapshotKey)
                     w.var(pname).setVal(val+unclo if ivar==0 else val+unchi)
                     result,_=runSimpleFit(pdf,data,poi,constr,[pname])
 
@@ -493,32 +503,7 @@ def performFits(opt):
                     impacts[key][pname].append(dR)
 
                 #let it float again
-                w.var(pname).setConstant(False)
-                
-
-            #pll.plotOn(xsecframe,ROOT.RooFit.Name(ch),ROOT.RooFit.ShiftToZero())
-
-            continue
-            compsToShow=['S_cor*','S_cor*,S_wro*'] #,'S_cor*,S_wro*,W_*']
-            if opt.fitType==3 :
-                compsToShow=['S_cor*','S_cor*,W_*']
-            if opt.fitType==4 :
-                compsToShow=['S_*','S_*,W_*']
-                paramList += [ ('mu_scormjj','#mu'),
-                            ('sigmaL_scormjj','#sigma_{L}'),
-                            ('sigmaR_scormjj','#sigma_{R}')]
-
-            EVENTCATEGORIES2SHOW=EVENTCATEGORIES if ch=='combined' else [ch+'1l4j'+x for x in ['2q','1b1q','2q']]
-            showFitResult(fitVar='mjj',
-                          data=data,
-                          pdf=pdf,
-                          categs=EVENTCATEGORIES2SHOW,
-                          w=w,
-                          showComponents=compsToShow,
-                          rangeX=(25,300),
-                          outDir=opt.output,
-                          paramList=paramList,
-                          pfix='_%s_%dfit'%(ch,opt.fitType))
+                w.var(pname).setConstant(False)                
 
     printFitResults(fitResults,impacts,opt)
     w.writeToFile('finalfitworkspace_%d.root'%(opt.fitType))
@@ -600,6 +585,7 @@ def main():
     parser.add_option('-s', '--signal',    dest='signal',    default='pdf_workspace_MC8.16TeV_TTbar_pPb.root', type='string',   help='signal workspace [%default]')
     parser.add_option(      '--fitType',   dest='fitType',   default=0,                  type=int,
         help='0-full signal; 1-full signal 2D; 2-full signal 3D; 3-res from MC; 4-res from CB [%default]')
+    parser.add_option(      '--impacts',   dest='impacts',   default=False,                        action='store_true',        help='Run impacts [%default]')
     parser.add_option('-v', '--verbose',   dest='verbose',   default=0,                            type=int,        help='Verbose mode [%default]')
     parser.add_option(      '--finalWorkspace',      dest='finalWS',      default=None,            type='string',   help='final workspace to be used for the fit [%default]')
 

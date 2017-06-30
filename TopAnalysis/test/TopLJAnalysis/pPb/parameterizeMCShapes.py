@@ -6,16 +6,19 @@ from roofitTools import *
 ALLPDFS={
 ('S_cor','mjj'):
     [
-     'RooCBShape::S_cor1mjj_{0}(mjj,mu_scormjj_{0}[70,90],sigma_scormjj_{0}[5,15],alpha_scormjj_{0}[0.01,20],n_scormjj_{0}[0])',
-     #'RooBifurGauss::S_cor1mjj_{0}(mjj,mu_scormjj_{0}[70,90],sigmaL_scormjj_{0}[1,30],sigmaR_scormjj_{0}[1,30])',
-     'RooGamma::S_cor2mjj_{0}(mjj,gamma_scormjj_{0}[5,0.1,100],beta_scormjj_{0}[1,0.1,100],lambda_scormjj_{0}[0])',
-     'SUM::S_cormjj_{0}( f_scormjj_{0}[0.2,0.98]*S_cor1mjj_{0}, S_cor2mjj_{0} )'
+        #'RooBifurGauss::S_cor1mjj_{0}(mjj,mu_scormjj_{0}[20,100],sigmaL_scormjj_{0}[1,14],sigmaR_scormjj_{0}[1,14])',
+        
+        'RooCBShape::S_cor1mjj_{0}(mjj,mu_scormjj_{0}[75,90],sigma_scormjj_{0}[5,13],alpha_scormjj_{0}[0.01,20],n_scormjj_{0}[0])',
+        'RooGamma::S_cor2mjj_{0}(mjj,gamma_scormjj_{0}[50.,0.1,100],beta_scormjj_{0}[5,0.01,100],lambda_scormjj_{0}[0])',
+        'SUM::S_cormjj_{0}( f_scormjj_{0}[0.1,0.98]*S_cor1mjj_{0},S_cor2mjj_{0} )'
     ],
 ('S_wro','mjj'):
     [
-    'RooBifurGauss::S_wro1mjj_{0}(mjj,mu_swromjj_{0}[25,75],sigmaL_swromjj_{0}[15,100],sigmaR_swromjj_{0}[15,100])',
-    'RooLandau::S_wro2mjj_{0}(mjj,mpv_swromjj_{0}[25,200],width_swromjj_{0}[20,5,100])',
-    'SUM::S_wromjj_{0}( f_swromjj_{0}[0,1]*S_wro1mjj_{0}, S_wro2mjj_{0} )'
+        #'RooCBShape::S_wro1mjj_{0}(mjj,mu_swromjj_{0}[25,250],sigma_swromjj_{0}[5,13],alpha_swromjj_{0}[0.01,20],n_swromjj_{0}[0])',
+        #'RooGamma::S_wro2mjj_{0}(mjj,gamma_swromjj_{0}[50.,0.1,100],beta_swromjj_{0}[5,0.01,100],lambda_swromjj_{0}[1])',
+        'RooBifurGauss::S_wro1mjj_{0}(mjj,mu_swromjj_{0}[25,75],sigmaL_swromjj_{0}[15,100],sigmaR_swromjj_{0}[15,100])',
+        'RooLandau::S_wro2mjj_{0}(mjj,mpv_swromjj_{0}[25,200],width_swromjj_{0}[50,5,100])',
+        'SUM::S_wromjj_{0}( f_swromjj_{0}[0,1]*S_wro1mjj_{0}, S_wro2mjj_{0} )'
     ],
 ('B','mjj'):
     [
@@ -133,7 +136,8 @@ def main():
     corSummary={}
     for varName,varTitle in [('mjj','M(jj)'),
                              ('mthad','M(t_{had})'),
-                             ('mtlep','M(t_{lep})')]:
+                             ('mtlep','M(t_{lep})')
+                             ]:
         w.var(varName).SetTitle(varTitle)
         for ch in ['e','mu']:
             for jcount in ['1l4j2b','1l4j2q','1l4j1b1q']:
@@ -203,8 +207,8 @@ def main():
                                 w=w,
                                 tagTitle=cat,
                                 rangeX=(0,500),
-                                showComponents=[('S_cor*','wrong permutations'),
-                                                ('S_cor*,S_wro*','wrong permutations')],
+                                showComponents=[('S_wro*','wront permutations'),
+                                                ('S_cor*,S_wro*','correct permutations')],
                                 outDir='./',
                                 paramList=[])
 

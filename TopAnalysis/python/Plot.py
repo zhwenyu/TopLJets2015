@@ -382,7 +382,9 @@ class Plot(object):
             inixlumi=0.65
 
         txt.DrawLatex(inix,iniy,self.cmsLabel)
-        if lumi<100:
+        if lumi<1:
+            txt.DrawLatex(inixlumi,0.97,'#scale[0.8]{%3.1f nb^{-1} (%s)}' % (lumi*1000.,self.com) )
+        elif lumi<100:
             txt.DrawLatex(inixlumi,0.97,'#scale[0.8]{%3.1f pb^{-1} (%s)}' % (lumi,self.com) )
         else:
             txt.DrawLatex(inixlumi,0.97,'#scale[0.8]{%3.1f fb^{-1} (%s)}' % (lumi/1000.,self.com) )
