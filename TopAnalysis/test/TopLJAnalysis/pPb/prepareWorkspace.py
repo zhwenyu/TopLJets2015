@@ -8,7 +8,7 @@ from collections import OrderedDict
 from kinTools import *
 from datasets import *
 
-EVENTCATEGORIES=['1l4j2b','1l4j1b1q','1l4j2q','1f4j2q']
+EVENTCATEGORIES=[ch+cat for ch in ['e','mu'] for cat in ['1l4j2b','1l4j1b1q','1l4j2q','1f4j2q']]
 
 
 """
@@ -33,7 +33,7 @@ def getMC(tree,doPseudoTop=False):
 
 """
 """
-def getJets(tree,minPt=25.,maxEta=2.4,mcTruth=None,shiftJES=0,smearJER=0):
+def getJets(tree,minPt=25.,maxEta=2.4,mcTruth=None,shiftJES=0,jerProf=None):
     partColl=[]
     matchedGen=[]
     for j in xrange(0,tree.nj):
@@ -46,9 +46,10 @@ def getJets(tree,minPt=25.,maxEta=2.4,mcTruth=None,shiftJES=0,smearJER=0):
                                   tree.j_phi[j],
                                   tree.j_m[j]) )
         partColl[-1].setRank(tree.j_btag[j])
-
-        if mcTruth is None: continue
-
+        
+        #residual JES
+        if shiftJES!=0: scaleP4(partColl[-1].p4,shiftJES)
+        
         #JER smearing
         if   abseta<0.5 : ptSF,ptSF_err=1.109,0.008
         elif abseta<0.8 : ptSF,ptSF_err=1.138,0.013
@@ -59,29 +60,57 @@ def getJets(tree,minPt=25.,maxEta=2.4,mcTruth=None,shiftJES=0,smearJER=0):
         elif abseta<2.1 : ptSF,ptSF_err=1.140,0.047
         elif abseta<2.3 : ptSF,ptSF_err=1.067,0.053
         elif abseta<2.5 : ptSF,ptSF_err=1.117,0.041
-            
-        cjer=1
-        for gj in xrange(0,tree.ngj):
-            gjet=Particle(0,tree.j_pt[gj],tree.j_eta[gj], tree.j_phi[gj],tree.gj_m[gj])
-            if gjet.p4.DeltaR( partColl[-1].p4 ) >0.2 : continue
-            cjer += (smearJER*ptSF_err-1)*(tree.j_pt[j]-tree.gj_pt[gj])/tree.j_pt[j]
-            break
-        scaleP4(partColl[-1].p4,cjer)
-        if shiftJES!=0: scaleP4(partColl[-1].p4,shiftJES)
 
+        #inflate due to difference between high and low HF energy
+        ptSF_err =ROOT.TMath.Sqrt(ptSF_err**2+0.098**2) 
+
+        cjer=1
+        try:
+            resol=-1
+            for gj in xrange(0,tree.ngj):
+                gjet=Particle(0,tree.j_pt[gj],tree.j_eta[gj], tree.j_phi[gj],tree.gj_m[gj])
+                if gjet.p4.DeltaR( partColl[-1].p4 ) >0.2 : continue
+                resol=(tree.j_pt[j]/tree.gj_pt[gj]-1)
+                cjer   = ROOT.TMath.Max(0,tree.gj_pt[gj]+ptSF*(tree.j_pt[j]-tree.gj_pt[gj]))/tree.j_pt[j]
+                break
+
+            #fill jer profile
+            if jerProf.InheritsFrom('TH1'):          
+                if resol>0 : jerProf.Fill(abs(partColl[-1].p4.Eta()),resol)
+                #testP4=ROOT.TLorentzVector(partColl[-1].p4)
+                #scaleP4(testP4,cjer)
+                #jerProf.Fill(abs(partColl[-1].p4.Eta()),testP4.Pt()/partColl[-1].p4.Pt())
+
+        except:
+            cjerUp=jerProf.Eval(abs(partColl[-1].p4.Eta()))
+            cjerDn=1./cjerUp
+            pass
+
+        #add scale uncertainties
+        jesUnc=0.028
+        if partColl[-1].p4.Pt()<40 : jesUnc=ROOT.TMath.Sqrt(0.02**2+jesUnc**2)
+        partColl[-1].setScaleUnc('jesup',(1.0+jesUnc))
+        partColl[-1].setScaleUnc('jesdn',(1.0-jesUnc))
+        partColl[-1].setScaleUnc('jerup',max(cjer,1./cjer))
+        partColl[-1].setScaleUnc('jerdn',min(cjer,1./cjer))
+
+        #match parton level, if available
         minDR=999
         imatch=-1
-        for i in xrange(0,len(mcTruth)):
-            p=mcTruth[i]
-            dR=p.DeltaR(partColl[-1])
-            if dR>minDR : continue
-            minDR=dR
-            imatch=i
-        if imatch<0 or imatch in matchedGen: continue
-        if minDR>0.4 : continue
-        matchedGen.append(imatch)
-        partColl[-1].setMCtruth(mcTruth[imatch])
-        
+        try:
+            for i in xrange(0,len(mcTruth)):
+                p=mcTruth[i]
+                dR=p.DeltaR(partColl[-1])
+                if dR>minDR : continue
+                minDR=dR
+                imatch=i
+            if imatch<0 or imatch in matchedGen: continue
+            if minDR>0.4 : continue
+            matchedGen.append(imatch)
+            partColl[-1].setMCtruth(mcTruth[imatch])
+        except:
+            pass
+
     return partColl
 
 
@@ -95,23 +124,20 @@ def startWorkspace(opt):
 
     #list of variables of interest
     args=ROOT.RooArgSet()
-    varList=['mjj[0,500]',  'mthad[0,500]', 'mtlep[0,500]',
-             'corwjj[0,1]', 'corthad[0,1]', 'cortlep[0,1]' ]
-#             'y_l[-4,4]',        'y_bhad[-4,4]',   'y_blep[-4,4]', #particle level
-#             'm_wjj[0,500]',     'dr_jj[0,6]',                     #w hadronic level
-#             'pt_wl[0,500]',     'y_wl[-4,4]',                     #w lep level
-#             'pt_wjj[0,500]',    'y_wjj[-4,4]',                    #w had level
-#             'm_bwjj[0,500]',    'y_bwjj[-4,4]',                   #hadronic top level
-#             'm_bwl[0,500]',     'y_bwl[-4,4]',                    #leptonic top level
-#             'dy_bwjjbwl[0,5]',  'sy_bwjjbwl[0,5]'                 #top vs anti-top
-#             ]
+    varList=['mjj[0,500]',  
+             'dmjj_jes[0,2]',
+             'dmjj_jer[0,2]',
+             'mthad[0,500]', 
+             'mtlep[0,500]',
+             'corwjj[0,1]', 
+             'corthad[0,1]', 
+             'cortlep[0,1]' ]
     for var in varList :
         args.add( ws.factory(var) )
 
     #categories for the data
     sample=ROOT.RooCategory('sample','sample')
-    for name in EVENTCATEGORIES :
-        sample.defineType(name)
+    for name in EVENTCATEGORIES : sample.defineType(name)
     getattr(ws,'import')(sample)
     args.add(ws.cat('sample'))
 
@@ -122,7 +148,7 @@ def startWorkspace(opt):
 """
 books control distributions and loops over the events to fill the dataset for the fit
 """
-def fillDataAndPlots(data,ws,args,tree,leptonSel,mcTruth=False,wjjOrder='drjj',thadOrder='dm2tlep',shiftJES=0,smearJER=0):
+def fillDataAndPlots(data,ws,args,tree,leptonSel,mcTruth=False,wjjOrder='drjj',thadOrder='dm2tlep',shiftJES=0,jerProf=None):
 
     p4=ROOT.TLorentzVector(0,0,0,0)
 
@@ -133,6 +159,7 @@ def fillDataAndPlots(data,ws,args,tree,leptonSel,mcTruth=False,wjjOrder='drjj',t
             break
 
     plots={}
+    plots['jerprofile']=ROOT.TProfile('jerprofile',';Pseudo-rapidity;#delta p_{T}/p_{T}',5,0,2.5)
     for cat in EVENTCATEGORIES:
 
         plots['jeteff_%s'%cat] = ROOT.TH1F('jeteff_%s'%cat,';Matched jet multiplicity;Events',11,0,11)
@@ -145,7 +172,7 @@ def fillDataAndPlots(data,ws,args,tree,leptonSel,mcTruth=False,wjjOrder='drjj',t
         plots['jeteff_%s'%cat].GetXaxis().SetBinLabel(10,'thad')
         plots['jeteff_%s'%cat].GetXaxis().SetBinLabel(11,'tlep')
 
-        for t in ['','_cor','_wro']: #'_rot']:
+        for t in ['','_cor','_wro']:
             plots['mjj_%s%s'%(cat,t)]   = ROOT.TH1F('mjj_%s%s'%(cat,t),  ';W_{jj} mass [GeV]; Events / 10 GeV',  20,0, 200)
             plots['mthad_%s%s'%(cat,t)] = ROOT.TH1F('mthad_%s%s'%(cat,t),';t_{had} mass [GeV]; Events / 10 GeV', 30,50,350)
             plots['mtlep_%s%s'%(cat,t)] = ROOT.TH1F('mtlep_%s%s'%(cat,t),';t_{lep} mass [GeV]; Events / 10 GeV', 30,50,350)
@@ -172,7 +199,14 @@ def fillDataAndPlots(data,ws,args,tree,leptonSel,mcTruth=False,wjjOrder='drjj',t
 
         #lepton selection
         if len(leptonSel)!=0 and not tree.l_id in leptonSel : continue
+        leptonCat='e' if (abs(tree.l_id)==11 or abs(tree.l_id)==1100) else 'mu'
         if tree.l_pt<30 or abs(tree.l_eta)>2.1: continue
+
+        #apply filtering, if available (older or pp versions) don't have this
+        try:
+            if tree.pPAprimaryVertexFilter<1 or tree.HBHENoiseFilterResultRun2Loose<1 : continue
+        except:
+            pass
 
         #readout the event
         mcTruth=getMC(tree=tree) if mcTruth else None
@@ -185,7 +219,7 @@ def fillDataAndPlots(data,ws,args,tree,leptonSel,mcTruth=False,wjjOrder='drjj',t
         except:
             pass
         MET=Particle(0,tree.met_pt,0.,tree.met_phi,0.)
-        jets=getJets(tree=tree,minPt=25,maxEta=2.4,mcTruth=mcTruth,shiftJES=shiftJES,smearJER=smearJER)
+        jets=getJets(tree=tree,minPt=25,maxEta=2.4,mcTruth=mcTruth,shiftJES=shiftJES,jerProf=jerProf if jerProf else plots['jerprofile'])
         jets.sort(key=lambda x: x.rankVal, reverse=True)
         if len(jets)<4 : continue
 
@@ -198,12 +232,12 @@ def fillDataAndPlots(data,ws,args,tree,leptonSel,mcTruth=False,wjjOrder='drjj',t
             lightJets.append(jets[j])
         if len(lightJets)<2 : continue
 
-        cat=baseCat
+        cat=leptonCat+baseCat
         if bJets[0].rankVal*bJets[1].rankVal==9 : cat += '2b'
         elif bJets[0].rankVal==3 or bJets[1].rankVal==3 : cat += '1b1q'
         else : cat += '2q'
 
-        if baseCat=='1f4j' and cat!='1f4j2q' : continue
+        if baseCat=='1f4j' and not '1f4j2q' in cat : continue
 
         #W->qq' system
         WjjCandidates=buildWjj(lightJets=lightJets,orderBy=wjjOrder)
@@ -229,12 +263,6 @@ def fillDataAndPlots(data,ws,args,tree,leptonSel,mcTruth=False,wjjOrder='drjj',t
         plots['mjj_%s'%cat].Fill(Wjj.p4.M())
         plots['mtlep_%s'%cat].Fill(tlep.p4.M())
         plots['mthad_%s'%cat].Fill(thad.p4.M())
-
-        #combinatorial background model
-        #rotWjj=randomlyRotate(Wjj)
-        #rotThad=rotWjj+thad.daughters[0].p4
-        #plots['mjj_%s_rot'%cat].Fill(rotWjj.M())
-        #plots['mthad_%s_rot'%cat].Fill(rotThad.M())
 
         #check matching efficiency
         goodWjj,goodTlep,goodThad=True,True,True
@@ -274,15 +302,18 @@ def fillDataAndPlots(data,ws,args,tree,leptonSel,mcTruth=False,wjjOrder='drjj',t
             if goodThad: plots['jeteff_%s'%cat].Fill(9)
             if goodTlep: plots['jeteff_%s'%cat].Fill(10)
 
+
         #add entry to dataset
         ws.cat('sample').setLabel(cat)
         args.setCatLabel(cat)
-        argValList=[('mjj',     Wjj.p4.M()),
-                     ('mthad',  thad.p4.M()),
-                     ('mtlep',  tlep.p4.M()),
-                     ('corwjj', 1 if goodWjj  else 0),
-                     ('corthad',1 if goodThad else 0),
-                     ('cortlep',1 if goodTlep else 0)]
+        argValList=[('mjj',    Wjj.p4.M()),
+                    ('dmjj_jes',0.5*(abs(1-Wjj.scaleUnc['jesup'])+abs(1-Wjj.scaleUnc['jesdn'])) ),
+                    ('dmjj_jer',0.5*(abs(1-Wjj.scaleUnc['jerup'])+abs(1-Wjj.scaleUnc['jerdn'])) ),
+                    ('mthad',  thad.p4.M()),
+                    ('mtlep',  tlep.p4.M()),
+                    ('corwjj', 1 if goodWjj  else 0),
+                    ('corthad',1 if goodThad else 0),
+                    ('cortlep',1 if goodTlep else 0)]
         for argName,argVal in argValList:
             args.find(argName).setVal(argVal)
         data.add(args)
@@ -422,14 +453,21 @@ def main():
     #configuration
     usage = 'usage: %prog [options]'
     parser = optparse.OptionParser(usage)
-    parser.add_option('-d', '--data',       dest='data',      default='Data8TeV_pp',   type='string',    help='dataset to use [%default]')
-    parser.add_option('-v', '--verbose',    dest='verbose',   default=0,               type=int,         help='Verbose mode [%default]')
-    parser.add_option(      '--smearJER',   dest='smearJER',  default=0,               type=float,       help='smear jer [%default]')
-    parser.add_option(      '--shiftJES',   dest='shiftJES',  default=0,               type=float,       help='shift jes [%default]')
-    parser.add_option(      '--wjjOrder',   dest='wjjOrder',  default='drjj',          type='string',    help='wjj ordering (drjj,mjj,sumpt) [%default]')
-    parser.add_option(      '--thadOrder',  dest='thadOrder', default='dm2tlep',       type='string',    help='thad ordering (dr,dm2tlep,dm2pdg) [%default]')
-    
+    parser.add_option('-d', '--data',       dest='data',      default='MC8.16TeV_TTbar_pPb_Pohweg',   type='string',    help='dataset to use [%default]')
+    parser.add_option('-v', '--verbose',    dest='verbose',   default=0,                              type=int,         help='Verbose mode [%default]')
+    parser.add_option(      '--shiftJES',   dest='shiftJES',  default=0.98,                           type=float,       help='shift jes [%default]')
+    parser.add_option(      '--wjjOrder',   dest='wjjOrder',  default='drjj',                         type='string',    help='wjj ordering (drjj,mjj,sumpt) [%default]')
+    parser.add_option(      '--thadOrder',  dest='thadOrder', default='dm2tlep',                      type='string',    help='thad ordering (dr,dm2tlep,dm2pdg) [%default]')
+    parser.add_option(      '--jerProf',    dest='jerProf',   default=None,                      type='string',    help='plotter with JER profile [%default]')
+
     (opt, args) = parser.parse_args()
+
+    jerProf=None
+    if opt.jerProf:
+        print 'Reading JER profile from',opt.jerProf
+        fIn=ROOT.TFile.Open(opt.jerProf)
+        jerProf=ROOT.TGraph(fIn.Get('jerprofile'))        
+        fIn.Close()
 
     #init the workspace
     ws,data,args=startWorkspace(opt)
@@ -440,8 +478,10 @@ def main():
     for coll in dataset:
         urlList,color,leptonSel,mcTruth=dataset[coll]
         tree=ROOT.TChain('data')
-        for url in urlList: tree.AddFile(url)
-        allPlots.append( fillDataAndPlots(data,ws,args,tree,leptonSel,mcTruth,opt.wjjOrder,opt.thadOrder,opt.shiftJES,opt.smearJER) )
+        for url in urlList: 
+            tree.AddFile(url)
+            print url
+        allPlots.append( fillDataAndPlots(data,ws,args,tree,leptonSel,mcTruth,opt.wjjOrder,opt.thadOrder,opt.shiftJES,jerProf) )
 
         color=ROOT.TColor.GetColor(color)
         for p in allPlots[-1]:
@@ -462,7 +502,7 @@ def main():
     #show results
     ROOT.gStyle.SetOptStat(0)
     ROOT.gStyle.SetOptTitle(0)
-    ROOT.gROOT.SetBatch(False)
+    ROOT.gROOT.SetBatch(True)
     outDir='plots/%s'%opt.data
     os.system('mkdir -p %s'%outDir)
     fOut=ROOT.TFile.Open('%s/controlplots.root'%outDir,'RECREATE')

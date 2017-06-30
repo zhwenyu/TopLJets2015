@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import ROOT
 import sys
 
@@ -14,8 +16,8 @@ print '\\hline'
 
 #fill table
 for cat in ['1l4j2q','1l4j1b1q','1l4j2b']:
+    print cat,fIn
     h=fIn.Get('jeteff_%s'%cat)
-
     for i in xrange(1,6):
         total.SetBinContent(i,h.GetBinContent(1))
         total.SetBinError(i,h.GetBinError(1))

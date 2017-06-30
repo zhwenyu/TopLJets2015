@@ -8,6 +8,9 @@ class Particle:
         self.p4.SetPtEtaPhiM(pt,eta,phi,m)
         self.mcTruth=None
         self.daughters=[]
+        self.scaleUnc={}
+    def setScaleUnc(self,name,unc):
+        self.scaleUnc[name]=unc
     def setRank(self,rankVal):
         self.rankVal=rankVal
     def setMCtruth(self,part):
@@ -44,6 +47,16 @@ def buildWjj(lightJets,orderBy='drjj'):
             WjjCandidates[-1].setRank(chi)
             WjjCandidates[-1].addDaughter( lightJets[j] )
             WjjCandidates[-1].addDaughter( lightJets[k] )
+
+            for syst in ['jes','jer']:
+                for var in ['up','dn']:
+                    p1=ROOT.TLorentzVector(lightJets[j].p4)
+                    scaleP4(p1,lightJets[j].scaleUnc[syst+var])
+                    p2=ROOT.TLorentzVector(lightJets[k].p4)
+                    scaleP4(p2,lightJets[k].scaleUnc[syst+var])
+                    unc=(p1+p2).M()/jj.M()
+                    WjjCandidates[-1].setScaleUnc(syst+var,unc)
+
     WjjCandidates.sort(key=lambda x: x.rankVal,reverse=False)
     return WjjCandidates
 

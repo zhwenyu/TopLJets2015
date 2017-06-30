@@ -8,6 +8,8 @@
 #include "TopLJets2015/TopAnalysis/interface/TOPJetShape.h"
 #include "TopLJets2015/TopAnalysis/interface/WbChargeAsymmetry.h"
 #include "TopLJets2015/TopAnalysis/interface/FourTopsAnalyzer.h"
+#include "TopLJets2015/TopAnalysis/interface/ExclusiveTop.h"
+#include "TopLJets2015/TopAnalysis/interface/MttbarAnalyzer.h"
 #include "TopLJets2015/TopAnalysis/interface/TOPSynchExercise.h"
 
 #include "TH1F.h"
@@ -87,15 +89,17 @@ int main(int argc, char* argv[])
     }
 
   //check method to run
-  if(method=="TOP-16-006::RunTop16006")                    RunTop16006(in,out,channel,charge,SelectionTool::FlavourSplitting(flav),normH,runSysts,era);
-  else if(method=="TOP-17-010::RunTop17010")               RunTop17010(in,out,channel,charge,SelectionTool::FlavourSplitting(flav),normH,runSysts,era);
-  else if(method=="TOP-HIForest::RunTop16023")             RunTop16023(in,out,channel,charge,normH,runSysts,era);
-  else if(method=="TOP-HIForest::RunHin17002")             RunHin17002(in,out,channel,charge,normH,runSysts,era);
-  else if(method=="TOP-UE::RunTopUE")                      RunTopUE(in,out,channel,charge,SelectionTool::FlavourSplitting(flav),normH,runSysts,era);
-  else if(method=="TOPJetShape::RunTopJetShape")           RunTopJetShape(in,out,channel,charge,SelectionTool::FlavourSplitting(flav),normH,runSysts,systVar,era,debug);
-  else if(method=="TOPSynchExercise::RunTOPSynchExercise") RunTOPSynchExercise(in,out,debug);
+  if(method=="TOP-16-006::RunTop16006")                      RunTop16006(in,out,channel,charge,SelectionTool::FlavourSplitting(flav),normH,runSysts,era);
+  else if(method=="TOP-17-010::RunTop17010")                 RunTop17010(in,out,channel,charge,SelectionTool::FlavourSplitting(flav),normH,runSysts,era);
+  else if(method=="TOP-HIForest::RunTop16023")               RunTop16023(in,out,channel,charge,normH,runSysts,era);
+  else if(method=="TOP-HIForest::RunHin17002")               RunHin17002(in,out,channel,charge,normH,runSysts,era);
+  else if(method=="TOP-UE::RunTopUE")                        RunTopUE(in,out,channel,charge,SelectionTool::FlavourSplitting(flav),normH,runSysts,era);
+  else if(method=="TOPJetShape::RunTopJetShape")             RunTopJetShape(in,out,channel,charge,SelectionTool::FlavourSplitting(flav),normH,runSysts,systVar,era,debug);
+  else if(method=="TOPSynchExercise::RunTOPSynchExercise")   RunTOPSynchExercise(in,out,debug);
   else if(method=="WbChargeAsymmetry::RunWbChargeAsymmetry") RunWbChargeAsymmetry(in,out,channel,charge,normH,era,debug);
-  else if(method=="FourTopsAnalyzer::RunFourTopsAnalyzer") RunFourTopsAnalyzer(in,out,channel,charge,normH,era,debug);
+  else if(method=="FourTopsAnalyzer::RunFourTopsAnalyzer")   RunFourTopsAnalyzer(in,out,channel,charge,normH,era,debug);
+  else if(method=="ExclusiveTop::RunExclusiveTop")           RunExclusiveTop(in,out,channel,charge,normH,era,debug);
+  else if(method=="MttbarAnalyzer::RunMttbarAnalyzer")       RunMttbarAnalyzer(in,out,channel,charge,normH,era,debug);
   else
     {
       cout << "Check method=" << method <<endl;
