@@ -8,9 +8,11 @@ from prepareWorkspace import EVENTCATEGORIES as SELEVENTCATEGORIES
 EVENTCATEGORIES=[x for x in SELEVENTCATEGORIES if not '1f' in x]
 
 lumi=(174.5,8.725)
-acceptance={'e':(0.056,0.0014),
+acceptance={'e':(0.0508,0.0014), #<1.5
+            #'e':(0.056,0.0014),
             'mu':(0.060,0.0016)}
-efficiency={'e':(0.767,0.0304),
+efficiency={#'e':(0.767,0.0304),
+            'e':(0.623,0.0249),
             'mu':(0.915,0.0366)}
 ebExp=(0.595,0.0595)
 jsf=(1.0,0.034)
@@ -147,7 +149,7 @@ def definePDF(w,varName):
 
         w.factory('Nbkg_{0}[1000,0,100000]'.format(cat))
         if '2b'   in cat : w.factory('fqcd_{0}[0.0,0.3]'.format(cat))
-        elif '1b' in cat : w.factory('fqcd_{0}[0.0,0.5]'.format(cat))
+        elif '1b' in cat : w.factory('fqcd_{0}[0.0,0.8]'.format(cat))
         else             : w.factory('fqcd_{0}[0.0,1.0]'.format(cat))
         #if '2b'   in cat : w.factory('fqcd_{0}[0.0]'.format(cat))
         #elif '1b' in cat : w.factory('fqcd_{0}[0.0]'.format(cat))
@@ -425,7 +427,7 @@ def performFits(opt):
                             pfix='_%s_%sfit'%(ch,t))
 
     else:
-        for ch in ['mu','e','combined']:
+        for ch in ['combined','mu','e']:
 
             #parameter of interest
             poi=ROOT.RooArgSet()
@@ -539,7 +541,7 @@ def addPDFToWorkspace(opt):
     fIn.Close()
 
     #common to all variables and/or channels
-    w.factory('xsec[0,300]')    
+    w.factory('xsec[60,0,300]')    
     w.factory("RooFormulaVar::lumi_constraint('0.5*pow((@0-%f)/%f,2)',{lumi[0,500]})"%lumi)
     for ch in ['e','mu']:
         w.factory("RooFormulaVar::acc_%s_constraint('0.5*pow((@0-%f)/%f,2)',{acc_%s[0.,1.0]})"%(ch,acceptance[ch][0],acceptance[ch][1],ch))

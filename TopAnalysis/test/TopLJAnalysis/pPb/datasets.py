@@ -30,10 +30,28 @@ def defineDataset(data):
                                       '%s/DataNonIso_PbP_EJets_GEDElectrons_WithHFAndSkimInfo_NonSubractedIso_PAEle20_WPLoose_Gsf_or_PASinglePhoton30_Eta3p1.root'%baseDir,
                                       '%s/DataNonIso_PPb_EJets_GEDElectrons_WithHFAndSkimInfo_NonSubractedIso_PAEle20_WPLoose_Gsf_or_PASinglePhoton30_Eta3p1.root'%baseDir],
                                      '#91bfdb', [1100,1300], False)
+    if 'Data8.16TeV_pPb_nonsubiso_tighte' in data:
+        dataset=OrderedDict()
+        dataset['l+jets']         = (['%s/Data_PbP_MuJets_WithHFAndSkimInfo_NonSubractedIso.root'%baseDir,
+                                      '%s/Data_PPb_MuJets_WithHFAndSkimInfo_NonSubractedIso.root'%baseDir,
+                                      '%s/Data_PbP_EJets_GEDElectrons_WithHFAndSkimInfo_PAEle20_WPLoose_Gsf_or_PASinglePhoton30_Eta3p1.root'%baseDir,
+                                      '%s/Data_PPb_EJets_GEDElectrons_WithHFAndSkimInfo_PAEle20_WPLoose_Gsf_or_PASinglePhoton30_Eta3p1.root'%baseDir],
+                                     '#4575b4', [11,13],   False)
+        dataset['non-iso l+jets'] = (['%s/DataNonIso_PbP_MuJets_WithHFAndSkimInfo_NonSubractedIso.root'%baseDir,
+                                      '%s/DataNonIso_PbP_MuJets_WithHFAndSkimInfo_NonSubractedIso.root'%baseDir,
+                                      '%s/DataNonIso_PbP_EJets_GEDElectrons_WithHFAndSkimInfo_PAEle20_WPLoose_Gsf_or_PASinglePhoton30_Eta3p1.root'%baseDir,
+                                      '%s/DataNonIso_PPb_EJets_GEDElectrons_WithHFAndSkimInfo_PAEle20_WPLoose_Gsf_or_PASinglePhoton30_Eta3p1.root'%baseDir],
+                                     '#91bfdb', [1100,1300], False)
     if 'MC8.16TeV_TTbar_pPb' in data:
         dataset=OrderedDict()
 
         dataset['l+jets']         = (['%s/PYQUEN_TTbar_PPb-EmbEPOS_EJets_CheckForBugInJER.root'%baseDir,
+                                      '%s/PYQUEN_TTbar_PPb-EmbEPOS_MuJets_CheckForBugInJER.root'%baseDir],
+                                      '#4575b4', [11,13],   True)
+    if 'MC8.16TeV_TTbar_pPb_tighte' in data:
+        dataset=OrderedDict()
+
+        dataset['l+jets']         = (['%s/PYQUEN_TTbar_PPb-EmbEPOS_EJets_RevertIsolation.root'%baseDir,
                                       '%s/PYQUEN_TTbar_PPb-EmbEPOS_MuJets_CheckForBugInJER.root'%baseDir],
                                       '#4575b4', [11,13],   True)
     if 'MC8.16TeV_TTbar_pPb_Pohweg' in data:

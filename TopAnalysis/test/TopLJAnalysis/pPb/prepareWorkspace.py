@@ -148,7 +148,7 @@ def startWorkspace(opt):
 """
 books control distributions and loops over the events to fill the dataset for the fit
 """
-def fillDataAndPlots(data,ws,args,tree,leptonSel,mcTruth=False,wjjOrder='drjj',thadOrder='dm2tlep',shiftJES=0,jerProf=None):
+def fillDataAndPlots(data,ws,args,tree,leptonSel,mcTruth=False,wjjOrder='drjj',thadOrder='dm2tlep',shiftJES=0,jerProf=None,etaRestr=False):
 
     p4=ROOT.TLorentzVector(0,0,0,0)
 
@@ -201,6 +201,7 @@ def fillDataAndPlots(data,ws,args,tree,leptonSel,mcTruth=False,wjjOrder='drjj',t
         if len(leptonSel)!=0 and not tree.l_id in leptonSel : continue
         leptonCat='e' if (abs(tree.l_id)==11 or abs(tree.l_id)==1100) else 'mu'
         if tree.l_pt<30 or abs(tree.l_eta)>2.1: continue
+        if etaRestr and leptonCat=='e' and abs(tree.l_eta)>1.5: continue
 
         #apply filtering, if available (older or pp versions) don't have this
         try:
@@ -459,7 +460,7 @@ def main():
     parser.add_option(      '--wjjOrder',   dest='wjjOrder',  default='drjj',                         type='string',    help='wjj ordering (drjj,mjj,sumpt) [%default]')
     parser.add_option(      '--thadOrder',  dest='thadOrder', default='dm2tlep',                      type='string',    help='thad ordering (dr,dm2tlep,dm2pdg) [%default]')
     parser.add_option(      '--jerProf',    dest='jerProf',   default=None,                      type='string',    help='plotter with JER profile [%default]')
-
+    parser.add_option(      '--etaRestr',   dest='etaRestr',   default=False,   action="store_true", help='restrict electron selection to barrel [%default]')
     (opt, args) = parser.parse_args()
 
     jerProf=None
@@ -481,7 +482,7 @@ def main():
         for url in urlList: 
             tree.AddFile(url)
             print url
-        allPlots.append( fillDataAndPlots(data,ws,args,tree,leptonSel,mcTruth,opt.wjjOrder,opt.thadOrder,opt.shiftJES,jerProf) )
+        allPlots.append( fillDataAndPlots(data,ws,args,tree,leptonSel,mcTruth,opt.wjjOrder,opt.thadOrder,opt.shiftJES,jerProf,opt.etaRestr) )
 
         color=ROOT.TColor.GetColor(color)
         for p in allPlots[-1]:
@@ -494,16 +495,17 @@ def main():
             allPlots[-1][p].Sumw2()
             allPlots[-1][p].SetDirectory(0)
 
+    pfix='_etarestr' if opt.etaRestr else ''
 
     #import data and save workspace
     getattr(ws,'import')(data)
-    ws.writeToFile('workspace_%s.root'%opt.data,True)
+    ws.writeToFile('workspace_%s%s.root'%(opt.data,pfix),True)
 
     #show results
     ROOT.gStyle.SetOptStat(0)
     ROOT.gStyle.SetOptTitle(0)
     ROOT.gROOT.SetBatch(True)
-    outDir='plots/%s'%opt.data
+    outDir='plots/%s%s'%(opt.data,pfix)
     os.system('mkdir -p %s'%outDir)
     fOut=ROOT.TFile.Open('%s/controlplots.root'%outDir,'RECREATE')
     showControlPlots(allPlots,fOut,outDir=outDir)
