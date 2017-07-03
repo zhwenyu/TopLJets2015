@@ -10,14 +10,14 @@ struct BJetSummary_t
   float pt,eta,phi,m,csv;
   int nch,ch[200];
   float chpt[200], cheta[200], chphi[200], chm[200]; 
-  float ptD, ptDs, width, tau21, tau32, tau43, zg;
+  float ptD,ptDs,width,tau21,tau32,tau43,zg;
+  float ch_05,ch_08,ch_1,ch_15;
+  float ch2_05,ch2_08,ch2_1,ch2_15;
+  float ch3_05,ch3_08,ch3_1,ch3_15;
 
   float g_pt,g_eta,g_phi,g_m;
-  int g_bHad,g_pId;
+  int g_bId,g_pId;
   float g_xb;
-  int g_nch,g_ch[200];
-  float g_chpt[200], g_cheta[200], g_chphi[200], g_chm[200]; 
-  float g_ptD, g_ptDs, g_width, g_tau21, g_tau32, g_tau43, g_zg;
 };
 
 
