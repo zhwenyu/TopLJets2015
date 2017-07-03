@@ -64,9 +64,10 @@ void RunBjetChargeTreeProducer(TString filename,
   for (Int_t iev=0;iev<nentries;iev++)
     {
       t->GetEntry(iev);
+      selector.flagFinalState(ev);
       if(iev%10==0) printf ("\r [%3.0f%%] done", 100.*(float)iev/(float)nentries);
-      
-      //loop over reco jets 
+
+      //loop over reco jets
       std::vector<Jet>      &jets        = selector.getJets();  
       for(size_t ij=0; ij<jets.size(); ij++)
         {
@@ -150,8 +151,6 @@ void RunBjetChargeTreeProducer(TString filename,
 
               summary.nch++;
             }
-
-
 
           tree->Fill();
         }
