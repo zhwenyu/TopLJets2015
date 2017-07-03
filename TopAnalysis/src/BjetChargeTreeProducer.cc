@@ -93,7 +93,7 @@ void RunBjetChargeTreeProducer(TString filename,
           summary.nch=0;
           std::vector<Particle> &pinJet=jets[ij].particles(); 
           float avgchPow[]={0.5,0.8,1.0,1.5};
-          std::vector<float> avgch(4,0.),avgch2(4,0.),avgch3(4,0.),avgchwgts(4,0.); 
+          std::vector<float> avgch(4,0.),avgchwgts(4,0.); 
           for(size_t ipinj=0; ipinj<pinJet.size(); ipinj++)
             {
               summary.ch[summary.nch]=pinJet[ipinj].charge();
@@ -107,24 +107,14 @@ void RunBjetChargeTreeProducer(TString filename,
               for(size_t ipow=0; ipow<4; ipow++)
                 {
                   float chwgt=pow(summary.chpt[summary.nch],avgchPow[ipow]);
-                  avgch[ipow]  += summary.ch[summary.nch]*chwgt;
-                  avgch2[ipow] += pow(summary.ch[summary.nch],2)*chwgt;
-                  avgch3[ipow] += pow(summary.ch[summary.nch],3)*chwgt;
-                  avgchwgts[ipow]    += chwgt;
+                  avgch[ipow]     += summary.ch[summary.nch]*chwgt;
+                  avgchwgts[ipow] += chwgt;
                 }
 
               summary.ch_05 = avgch[0]/avgchwgts[0];
               summary.ch_08 = avgch[1]/avgchwgts[1];
               summary.ch_1  = avgch[2]/avgchwgts[2];
               summary.ch_15 = avgch[3]/avgchwgts[3];
-              summary.ch2_05 = avgch2[0]/avgchwgts[0];
-              summary.ch2_08 = avgch2[1]/avgchwgts[1];
-              summary.ch2_1  = avgch2[2]/avgchwgts[2];
-              summary.ch2_15 = avgch2[3]/avgchwgts[3];
-              summary.ch3_05 = avgch3[0]/avgchwgts[0];
-              summary.ch3_08 = avgch3[1]/avgchwgts[1];
-              summary.ch3_1  = avgch3[2]/avgchwgts[2];
-              summary.ch3_15 = avgch3[3]/avgchwgts[3];
 
               //gen jet
               int genJetIdx=ev.j_g[ij];
@@ -192,15 +182,7 @@ void createBJetSummaryTree(TTree *t,BJetSummary_t &summary)
   t->Branch("ch_08",               &summary.ch_08,         "ch_08/F");
   t->Branch("ch_1",                &summary.ch_1,          "ch_1/F");
   t->Branch("ch_15",               &summary.ch_15,         "ch_15/F");
-  t->Branch("ch2_05",              &summary.ch2_05,        "ch2_05/F");
-  t->Branch("ch2_08",              &summary.ch2_08,        "ch2_08/F");
-  t->Branch("ch2_1",               &summary.ch2_1,         "ch2_1/F");
-  t->Branch("ch3_15",              &summary.ch2_15,        "ch2_15/F");
-  t->Branch("ch3_05",              &summary.ch3_05,        "ch3_05/F");
-  t->Branch("ch3_08",              &summary.ch3_08,        "ch3_08/F");
-  t->Branch("ch3_1",               &summary.ch3_1,         "ch3_1/F");
-  t->Branch("ch3_15",              &summary.ch3_15,        "ch3_15/F");
-
+  
   //gen jet
   t->Branch("g_pt",                &summary.g_pt,            "g_pt/F");
   t->Branch("g_eta",               &summary.g_eta,           "g_eta/F");

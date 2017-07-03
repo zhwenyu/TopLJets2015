@@ -12,8 +12,6 @@ struct BJetSummary_t
   float chpt[200], cheta[200], chphi[200], chm[200]; 
   float ptD,ptDs,width,tau21,tau32,tau43,zg;
   float ch_05,ch_08,ch_1,ch_15;
-  float ch2_05,ch2_08,ch2_1,ch2_15;
-  float ch3_05,ch3_08,ch3_1,ch3_15;
 
   float g_pt,g_eta,g_phi,g_m;
   int g_bId,g_pId;

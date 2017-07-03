@@ -20,7 +20,7 @@ lumiUnc=0.025
 whoami=`whoami`
 myletter=${whoami:0:1}
 eosdir=/store/cmst3/group/top/ReReco2016/${githash}
-summaryeosdir=/store/cmst3/group/top/TopUE-v2
+summaryeosdir=/store/cmst3/group/top/TopUE
 outdir=${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/UEanalysis/
 wwwdir=~/www/TOP-17-015-v2
 
