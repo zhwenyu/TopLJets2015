@@ -30,7 +30,8 @@ case $WHAT in
         #to run locally use "--njobs 8 -q local" instead of "-q condor"
 	python scripts/runLocalAnalysis.py -i ${eosdir} \
             --only test/summer2017/exctop_samples.json --exactonly \
-            -o ${outdir} -q condor \
+            -o ${outdir} \
+            --njobs 8 -q local \
             --era era2016 -m ExclusiveTop::RunExclusiveTop --ch 0 --runSysts;
 	;;
 
