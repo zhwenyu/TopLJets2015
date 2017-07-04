@@ -8,11 +8,12 @@ from prepareWorkspace import EVENTCATEGORIES as SELEVENTCATEGORIES
 EVENTCATEGORIES=[x for x in SELEVENTCATEGORIES if not '1f' in x]
 
 lumi=(174.5,8.725)
-acceptance={'e':(0.0508,0.0014), #<1.5
-            #'e':(0.056,0.0014),
+acceptance={#'e':(0.0508,0.0014), #eta restricted
+            'e':(0.056,0.0014),
             'mu':(0.060,0.0016)}
-efficiency={#'e':(0.767,0.0304),
-            'e':(0.623,0.0249),
+efficiency={#'e':(0.767,0.0304), #LOOSE ISO
+            'e':(0.623,0.0249), #MEDIUM ID+ISO
+            #'e':(0.536,0.0206), #TIGHT ID+ISO)
             'mu':(0.915,0.0366)}
 ebExp=(0.595,0.0595)
 jsf=(1.0,0.034)

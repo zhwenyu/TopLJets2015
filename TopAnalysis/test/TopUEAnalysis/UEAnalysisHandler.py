@@ -10,7 +10,7 @@ VARS={
     'ptttbar'        : ('p_{T}(t#bar{t})',  True,  False, False),
     'ptll'           : ('p_{T}(l,l)',       True,  False, False),
     'nj'             : ('N(jets)',          True,  False, False),
-    'chmult'         : ('N(ch)',            False, True,  True),
+    'chmult'         : ('N(ch)',            True,  True,  True),
     'chflux'         : ('#Sigma p_{T}(ch)', False, True,  True),
     'chavgpt'        : ('#bar{p}_{T}(ch)',  False, True,  True),
     'chfluxz'        : ('#Sigma p_{z}(ch)', False, True,  False),

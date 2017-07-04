@@ -34,38 +34,48 @@ case $WHAT in
 	;;
 
     SEL)
-	common="--wjjOrder drjj --thadOrder dm2tlep --etaRestr"
-        for sample in MC8.16TeV_TTbar_pPb_tighte; do #MC8.16TeV_TTbar_pPb MC8.16TeV_TTbar_pPb_Pohweg MC8.16TeV_WJets_pPb; do        
+	common="--wjjOrder drjj --thadOrder dm2tlep" # --etaRestr
+        for sample in MC8.16TeV_TTbar_pPb_hypertighte; do #MC8.16TeV_TTbar_pPb_tighte; do #MC8.16TeV_TTbar_pPb MC8.16TeV_TTbar_pPb_Pohweg MC8.16TeV_WJets_pPb; do        
 	    python prepareWorkspace.py  -d ${sample} ${common};
 	done
 	;;
 
     SELDATA )
-     	common="--wjjOrder drjj --thadOrder dm2tlep --etaRestr"
-        for sample in Data8.16TeV_pPb_nonsubiso_tighte; do #Data8.16TeV_pPb_nonsubiso; do #Data8.16TeV_pPb
+     	common="--wjjOrder drjj --thadOrder dm2tlep" # --etaRestr"
+        for sample in Data8.16TeV_pPb_nonsubiso_hypertighte; do #Data8.16TeV_pPb_nonsubiso_tighte Data8.16TeV_pPb_nonsubiso; do #Data8.16TeV_pPb
 	    python prepareWorkspace.py  -d ${sample} ${common} --jerProf plots/MC8.16TeV_TTbar_pPb/controlplots.root;
         done
 	;;
 
     COMPLOTS )
-        python compareControlPlots.py --outDir ~/www/HIN-17-002/mccomp --ref "pPb" \
-            "pPb (|#eta_{e}|<1.5)":plots/MC8.16TeV_TTbar_pPb_tighte_etarestr/controlplots.root \
+        python compareControlPlots.py --outDir ~/www/HIN-17-002/mccomp --ref "pPb" --shape \
             "pPb":plots/MC8.16TeV_TTbar_pPb_tighte/controlplots.root \
-            "pPb (loose e iso)":plots/MC8.16TeV_TTbar_pPb/controlplots.root \
             "v2 (pp, private)":plots/controlplots_mcfreeze.root
-        cp ../../index.php ~/www/HIN-17-002/mccomp
+        cp ../../index.php ~/www/HIN-17-002/mccomp;
+
+        python compareControlPlots.py --outDir ~/www/HIN-17-002/mccomp-eid --ref "pPb" \
+            "pPb":plots/MC8.16TeV_TTbar_pPb_tighte/controlplots.root \
+            "pPb (|#eta_{e}|<1.5)":plots/MC8.16TeV_TTbar_pPb_tighte_etarestr/controlplots.root \
+            "pPb (loose e iso)":plots/MC8.16TeV_TTbar_pPb/controlplots.root \
+            "pPb (tight e)":plots/MC8.16TeV_TTbar_pPb_hypertighte/controlplots.root
+        cp ../../index.php ~/www/HIN-17-002/mccomp-eid;
 
         python compareControlPlots.py --outDir ~/www/HIN-17-002/datacomp --ref "pPb" --data \
-            "pPb (|#eta_{e}|<1.5)":plots/Data8.16TeV_pPb_nonsubiso_tighte_etarestr/controlplots.root \
             "pPb":plots/Data8.16TeV_pPb_nonsubiso_tighte/controlplots.root \
-            "pPb (loose e iso)":plots/Data8.16TeV_pPb_nonsubiso/controlplots.root \
             "v2":plots/controlplots_datafreeze.root
-        cp ../../index.php ~/www/HIN-17-002/datacomp
+        cp ../../index.php ~/www/HIN-17-002/datacomp;
+
+        python compareControlPlots.py --outDir ~/www/HIN-17-002/datacomp-eid --ref "pPb" --data \
+            "pPb":plots/Data8.16TeV_pPb_nonsubiso_tighte/controlplots.root \
+            "pPb (|#eta_{e}|<1.5)":plots/Data8.16TeV_pPb_nonsubiso_tighte_etarestr/controlplots.root \
+            "pPb (loose e iso)":plots/Data8.16TeV_pPb_nonsubiso/controlplots.root \
+            "pPb (tight e)":plots/Data8.16TeV_pPb_nonsubiso_hypertighte/controlplots.root;
+        cp ../../index.php ~/www/HIN-17-002/datacomp-eid;
         ;;
     
     PARAM)
 
-        for sample in MC8.16TeV_TTbar_pPb_tighte_etarestr; do #MC8.16TeV_TTbar_pPb_tighte MC8.16TeV_TTbar_pPb MC8.16TeV_TTbar_pPb_Pohweg; do
+        for sample in MC8.16TeV_TTbar_pPb_hypertighte; do  #MC8.16TeV_TTbar_pPb_tighte_etarestr MC8.16TeV_TTbar_pPb_tighte MC8.16TeV_TTbar_pPb MC8.16TeV_TTbar_pPb_Pohweg; do
 
 	    python parameterizeMCShapes.py workspace_${sample}.root;
 	    outDir=plots/$sample/workspace/
@@ -86,10 +96,12 @@ case $WHAT in
 	;;
 
     FITS)
-        #sigRef=MC8.16TeV_TTbar_pPb_tighte #_Pohweg
-        #dataRef=Data8.16TeV_pPb_nonsubiso_tighte
-        sigRef=MC8.16TeV_TTbar_pPb_tighte_etarestr
-        dataRef=Data8.16TeV_pPb_nonsubiso_tighte_etarestr
+        sigRef=MC8.16TeV_TTbar_pPb_tighte #_Pohweg
+        dataRef=Data8.16TeV_pPb_nonsubiso_tighte
+        #sigRef=MC8.16TeV_TTbar_pPb_tighte_etarestr
+        #dataRef=Data8.16TeV_pPb_nonsubiso_tighte_etarestr
+        #sigRef=MC8.16TeV_TTbar_pPb_hypertighte
+        #dataRef=Data8.16TeV_pPb_nonsubiso_hypertighte
 	for f in `seq 0 0`; do
 	    python runDataFit.py --fitType ${f} -s pdf_workspace_${sigRef}.root -i workspace_${dataRef}.root -o plots/${dataRef};
 	    python runDataFit.py --fitType ${f} -o plots/${dataRef}/ --verbose 9 --finalWorkspace finalworkspace.root; #--impacts

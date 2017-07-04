@@ -41,6 +41,7 @@ def defineDataset(data):
                                       '%s/DataNonIso_PbP_MuJets_WithHFAndSkimInfo_NonSubractedIso.root'%baseDir,
                                       '%s/DataNonIso_PbP_EJets_GEDElectrons_WithHFAndSkimInfo_PAEle20_WPLoose_Gsf_or_PASinglePhoton30_Eta3p1.root'%baseDir,
                                       '%s/DataNonIso_PPb_EJets_GEDElectrons_WithHFAndSkimInfo_PAEle20_WPLoose_Gsf_or_PASinglePhoton30_Eta3p1.root'%baseDir],
+                                      '#91bfdb', [1100,1300], False)
     if 'Data8.16TeV_pPb_nonsubiso_hypertighte' in data:
         dataset=OrderedDict()
         dataset['l+jets']         = (['%s/Data_PbP_MuJets_WithHFAndSkimInfo_NonSubractedIso.root'%baseDir,

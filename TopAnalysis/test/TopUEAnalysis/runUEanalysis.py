@@ -227,7 +227,7 @@ def defineAnalysisBinning(opt):
             nSigmaForBins=2.5
             if var in ['C','D','aplanarity','sphericity'] : nSigmaForBins=1.5
             #if var in ['chavgpt','chavgpz'] : nSigmaForBins=3
-            if VARS[var][1]    : nSigmaForBins=5
+            if VARS[var][1] and var!='chmult' : nSigmaForBins=5
             if var in ['ptll'] : nSigmaForBins=20
 
             lastAcceptResol=resolGr.GetErrorY(0)

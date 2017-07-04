@@ -38,6 +38,7 @@ def main():
     parser.add_option(      '--outDir', dest='outDir', default='./',    type='string',       help='data flag [%default]')
     parser.add_option(      '--ref',    dest='ref',    default=None,    type='string',       help='plotter to use as reference [%default]')
     parser.add_option(      '--data',   dest='data',   default=False,   action="store_true", help='data flag [%default]')
+    parser.add_option(      '--shape',  dest='shape',   default=False,   action="store_true", help='shape only flag [%default]')
     (opt, args) = parser.parse_args()
 
     ROOT.gROOT.SetBatch(True) #False)
@@ -54,7 +55,7 @@ def main():
                 plots=getPlots(dist,args)
                 p=Plot(dist)
                 for era in plots:
-                    if not opt.data: plots[era].Scale(1./plots[era].Integral())
+                    if opt.shape: plots[era].Scale(1./plots[era].Integral())
                     isRef = True if era == opt.ref else False
                     ci=plots[era].GetLineColor()
                     if isRef : ci=1
