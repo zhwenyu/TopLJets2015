@@ -40,7 +40,7 @@ def main():
     
     observables = ["mult", "width", "ptd", "ptds", "ecc", "tau21", "tau32", "tau43", "zg", "zgxdr", "zgdr", "ga_width", "ga_lha", "ga_thrust", "c1_02", "c1_05", "c1_10", "c1_20", "c2_02", "c2_05", "c2_10", "c2_20", "c3_02", "c3_05", "c3_10", "c3_20"]
     
-    flavors = ['all', 'light', 'bottom', 'gluon']
+    flavors = ['all', 'bottom', 'light', 'gluon']
 
     sumNominal = 0.
     sumFSRUp = 0.
@@ -119,8 +119,8 @@ def main():
                 h = fInToy.Get('Unfolded_0')
                 dataStatCovNorm = ROOT.TH2D('dataStatCovNorm', '', h.GetNbinsX(), h.GetXaxis().GetXbins().GetArray(), h.GetNbinsX(), h.GetXaxis().GetXbins().GetArray())
                 axistitle = h.GetXaxis().GetTitle().replace('generated ', '')
-                dataStatCovNorm.SetXTitle(axistitle)
-                dataStatCovNorm.SetYTitle(axistitle)
+                dataStatCovNorm.SetXTitle(axistitle + ' (%s)'%(flavor))
+                dataStatCovNorm.SetYTitle(axistitle + ' (%s)'%(flavor))
                 
                 for i in range(1, dataStatCovNorm.GetNbinsX()+1):
                     for j in range(1, dataStatCovNorm.GetNbinsY()+1):
@@ -323,8 +323,8 @@ def main():
                 sumFSRDown += chi2FSRDown
                 sumHerwig  += chi2Herwig
                 
-                tex.write('%s & %s & %.1f & %.1f & %.1f & %.1f \\\\\n'%(obs, flavor, chi2Nominal, chi2FSRUp, chi2FSRDown, chi2Herwig))
-        tex.write('Total &  & %.1f & %.1f & %.1f & %.1f \\\\\n'%(sumNominal, sumFSRUp, sumFSRDown, sumHerwig))
+                tex.write('$%s$ & %s & %.1f & %.1f & %.1f & %.1f \\\\\n'%(axistitle[1:].replace('#', '\\'), flavor, chi2Nominal, chi2FSRUp, chi2FSRDown, chi2Herwig))
+        tex.write('\\hline\nTotal &  & %.1f & %.1f & %.1f & %.1f \\\\\n'%(sumNominal, sumFSRUp, sumFSRDown, sumHerwig))
     
 def returnChi2(fIn, cov_reduced, nominal, prediction):
     hpred = fIn.Get(prediction)
@@ -336,7 +336,7 @@ def returnChi2(fIn, cov_reduced, nominal, prediction):
         diff.append(pred[i] - nominal[i])
     
     chi2 = numpy.array(diff[1:]).T.dot(numpy.linalg.inv(cov_reduced).dot(numpy.array(diff[1:])))
-    ndf  = hpred.GetNbinsX()-2
+    ndf  = hpred.GetNbinsX()-1
     prob = ROOT.TMath.Prob(chi2, ndf)
     return chi2/ndf
 

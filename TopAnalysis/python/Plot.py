@@ -40,6 +40,7 @@ class Plot(object):
         self.doPoissonErrorBars=True
         self.mc = OrderedDict()
         self.mcsyst = {}
+        self.totalMCUnc = None
         self.spimpose={}
         self.dataH = None
         self.data = None
@@ -130,6 +131,8 @@ class Plot(object):
             outDir.cd()
         for m in self.mc :
             self.mc[m].Write(self.mc[m].GetName(), ROOT.TObject.kOverwrite)
+        if self.totalMCUnc:
+            self.totalMCUnc.Write(self.totalMCUnc.GetName(), ROOT.TObject.kOverwrite)
         for m in self.spimpose:
             self.spimpose[m].Write(self.spimpose[m].GetName(), ROOT.TObject.kOverwrite)
         if self.dataH :
@@ -300,6 +303,7 @@ class Plot(object):
             for xbin in xrange(1,nominalTTbar.GetNbinsX()+1):
                 totalMCUncShape.SetBinContent(xbin, totalMCUncShape.GetBinContent(xbin) + (systUpShape[xbin]-systDownShape[xbin])/2.)
                 totalMCUncShape.SetBinError(xbin, math.sqrt(totalMCUncShape.GetBinError(xbin)**2 + ((systUpShape[xbin]+systDownShape[xbin])/2.)**2))
+            self.totalMCUnc = totalMCUnc
 
         #test for null plots
         if totalMC :
