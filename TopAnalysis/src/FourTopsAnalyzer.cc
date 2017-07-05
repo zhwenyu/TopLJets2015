@@ -12,6 +12,7 @@
 #include "TopLJets2015/TopAnalysis/interface/CorrectionTools.h"
 #include "TopLJets2015/TopAnalysis/interface/FourTopsAnalyzer.h"
 #include "TopLJets2015/TopAnalysis/interface/LeptonEfficiencyWrapper.h"
+#include "TopLJets2015/TopAnalysis/interface/TMVAUtils.h"
 
 #include <vector>
 #include <set>
@@ -40,6 +41,12 @@ void RunFourTopsAnalyzer(TString filename,
   bool isTTbar( filename.Contains("_TTJets") or (normH and TString(normH->GetTitle()).Contains("_TTJets")));
   bool isData( filename.Contains("Data") );
   
+  TMVA::Reader *tmvaReader = new TMVA::Reader( "!Color:!Silent" );
+  //FIXME TOP: add all the variables you need to use here and update the xml file location
+  Float_t tmva_var1;
+  tmvaReader->AddVariable( "var1", &tmva_var1 );
+  tmvaReader->BookMVA( "BDT", "/afs/cern.ch/user/p/psilva/public/forTop/FourTopsML_BDT.weights.xml");
+
   //PREPARE OUTPUT
   TString baseName=gSystem->BaseName(outname); 
   TString dirName=gSystem->DirName(outname);
@@ -78,6 +85,7 @@ void RunFourTopsAnalyzer(TString filename,
   ht.addHist("njets",    new TH1F("njets",";Jet multiplicity;Events",15,-0.5,14.5));
   ht.addHist("nbjets",   new TH1F("nbjets",";b jet multiplicity;Events",10,-0.5,9.5));
   ht.addHist("nleptons", new TH1F("nleptons",";Lepton multiplicity;Events",6,-0.5,5.5));
+  ht.addHist("bdt",      new TH1F("bdt",";BDT;Events",50,-2,2));
 
   std::cout << "init done" << std::endl;
 
@@ -165,6 +173,11 @@ void RunFourTopsAnalyzer(TString filename,
       ht.fill("njets",    jets.size(),    plotwgts);
       ht.fill("nbjets",   sel_nbjets,     plotwgts);
       ht.fill("nleptons", leptons.size(), plotwgts);
+
+      //FIXME TOP: assign all the values to the variables here before evaluating the bdt discriminator
+      tmva_var1=1;
+      float bdt=tmvaReader->EvaluateMVA("BDT");
+      ht.fill("bdt", bdt, plotwgts);
     }
   
   //close input file
