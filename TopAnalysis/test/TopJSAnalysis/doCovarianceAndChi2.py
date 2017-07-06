@@ -40,12 +40,30 @@ def main():
     
     observables = ["mult", "width", "ptd", "ptds", "ecc", "tau21", "tau32", "tau43", "zg", "zgxdr", "zgdr", "ga_width", "ga_lha", "ga_thrust", "c1_02", "c1_05", "c1_10", "c1_20", "c2_02", "c2_05", "c2_10", "c2_20", "c3_02", "c3_05", "c3_10", "c3_20"]
     
+    nice_observables_tex = {"mult": "N", "width": "width", "ptd": "$p_{T}D$", "ptds": "$p_{T}D^{s}$", "ecc": "$\\varepsilon$", "tau21": "$\\tau_{21}$", "tau32": "$\\tau_{32}$", "tau43": "$\\tau_{43}$", "zg": "$z_{g}$", "zgxdr": "$z_{g} \\times \\Delta R$", "zgdr": "$z_{g} \\Delta R$", "ga_width": "$\\lambda_{1}^{1}$ (width)", "ga_lha": "$\\lambda_{0.5}^{1}$ (LHA)", "ga_thrust": "$\\lambda_{2}^{1}$ (thrust)", "c1_02": "$C_{1}^{(0.2)}$", "c1_05": "$C_{1}^{(0.5)}$", "c1_10": "$C_{1}^{(1.0)}$", "c1_20": "$C_{1}^{(2.0)}$", "c2_02": "$C_{2}^{(0.2)}$", "c2_05": "$C_{2}^{(0.5)}$", "c2_10": "$C_{2}^{(1.0)}$", "c2_20":  "$C_{2}^{(2.0)}$", "c3_02": "$C_{3}^{(0.2)}$", "c3_05": "$C_{3}^{(0.5)}$", "c3_10": "$C_{3}^{(1.0)}$", "c3_20": "$C_{3}^{(2.0)}$"}
+    
+    observables_low = ["ptds", "ecc", "tau43", "zg", "zgdr"]
+    
     flavors = ['all', 'bottom', 'light', 'gluon']
 
     sumNominal = 0.
     sumFSRUp = 0.
     sumFSRDown = 0.
     sumHerwig = 0.
+    
+    sumLowNominal = {}
+    sumLowFSRUp   = {}
+    sumLowFSRDown = {}
+    sumLowHerwig  = {}
+    sumLowNominal['total'] = 0.
+    sumLowFSRUp  ['total'] = 0.
+    sumLowFSRDown['total'] = 0.
+    sumLowHerwig ['total'] = 0.
+    for flavor in flavors:
+        sumLowNominal[flavor] = 0.
+        sumLowFSRUp  [flavor] = 0.
+        sumLowFSRDown[flavor] = 0.
+        sumLowHerwig [flavor] = 0.
     
     with open('%s/table.tex'%(opt.outDir), 'w') as tex:
         for obs in observables:
@@ -323,8 +341,26 @@ def main():
                 sumFSRDown += chi2FSRDown
                 sumHerwig  += chi2Herwig
                 
-                tex.write('$%s$ & %s & %.1f & %.1f & %.1f & %.1f \\\\\n'%(axistitle[1:].replace('#', '\\'), flavor, chi2Nominal, chi2FSRUp, chi2FSRDown, chi2Herwig))
+                if obs in observables_low:
+                    sumLowNominal['total']  += chi2Nominal
+                    sumLowFSRUp  ['total']  += chi2FSRUp
+                    sumLowFSRDown['total']  += chi2FSRDown
+                    sumLowHerwig ['total']  += chi2Herwig
+                    sumLowNominal[flavor] += chi2Nominal
+                    sumLowFSRUp  [flavor] += chi2FSRUp
+                    sumLowFSRDown[flavor] += chi2FSRDown
+                    sumLowHerwig [flavor] += chi2Herwig
+                
+                tex.write('%s & %s & %.1f & %.1f & %.1f & %.1f \\\\\n'%(nice_observables_tex[obs], flavor, chi2Nominal, chi2FSRUp, chi2FSRDown, chi2Herwig))
         tex.write('\\hline\nTotal &  & %.1f & %.1f & %.1f & %.1f \\\\\n'%(sumNominal, sumFSRUp, sumFSRDown, sumHerwig))
+        tex.write('\\hline\nTotal low corr. &  & %.1f & %.1f & %.1f & %.1f \\\\\n'%(sumLowNominal['total'], sumLowFSRUp['total'], sumLowFSRDown['total'], sumLowHerwig['total']))
+        for flavor in flavors:
+            tex.write('-- %s &  & %.1f & %.1f & %.1f & %.1f \\\\\n'%(flavor, sumLowNominal[flavor], sumLowFSRUp[flavor], sumLowFSRDown[flavor], sumLowHerwig[flavor]))
+            probLowNominal = ROOT.TMath.Prob(sumLowNominal[flavor], len(observables_low))
+            probLowFSRUp   = ROOT.TMath.Prob(sumLowFSRUp[flavor], len(observables_low))
+            probLowFSRDown = ROOT.TMath.Prob(sumLowFSRDown[flavor], len(observables_low))
+            probLowHerwig  = ROOT.TMath.Prob(sumLowHerwig[flavor], len(observables_low))
+            tex.write('$P(\\chi^{2})$ &  & %.3f & %.3f & %.3f & %.3f \\\\\n'%(probLowNominal, probLowFSRUp, probLowFSRDown, probLowHerwig))
     
 def returnChi2(fIn, cov_reduced, nominal, prediction):
     hpred = fIn.Get(prediction)
