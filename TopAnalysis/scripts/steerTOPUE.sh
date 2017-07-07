@@ -12,7 +12,7 @@ fi
 export LSB_JOB_REPORT_MAIL=N
 
 
-queue=2nd
+queue=workday
 githash=b312177
 lumi=35922
 lumiSpecs="" #--lumiSpecs EE:11391"
