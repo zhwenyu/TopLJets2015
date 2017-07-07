@@ -37,9 +37,9 @@ case $WHAT in
 
     SEL)
 	common="--wjjOrder drjj --thadOrder dm2tlep" # --etaRestr
-        for sample in MC8.16TeV_WJets_pPb; do #  MC8.16TeV_TTbar_pPb_tighte MC8.16TeV_WJets_pPb; do #MC8.16TeV_TTbar_pPb MC8.16TeV_TTbar_pPb_Pohweg MC8TeV_WJets_pp MC8.16TeV_TTbar_pPb_hypertighte    
-	    #python prepareWorkspace.py  -d ${sample} ${common};
-	    python prepareWorkspace.py  -d ${sample} ${common} --etaRestr;
+        for sample in MC8.16TeV_TTbar_pPb_tighte; do  #MC8.16TeV_DY_pPb MC8.16TeV_WJets_pPb MC8.16TeV_TTbar_pPb MC8.16TeV_TTbar_pPb_Pohweg MC8TeV_WJets_pp MC8.16TeV_TTbar_pPb_hypertighte    
+	    python prepareWorkspace.py  -d ${sample} ${common};
+	    #python prepareWorkspace.py  -d ${sample} ${common} --etaRestr;
 	done
 	;;
 
@@ -66,11 +66,20 @@ case $WHAT in
 
         python runQCDestimation.py data:plots/Data8.16TeV_pPb_nonsubiso_tighte/controlplots.root \
             ttbar:plots/MC8.16TeV_TTbar_pPb_tighte/controlplots.root \
-            wjets:plots/MC8.16TeV_WJets_pPb/controlplots.root;
+            wjets:plots/MC8.16TeV_WJets_pPb/controlplots.root \
+            dy:plots/MC8.16TeV_DY_pPb/controlplots.root;
         mkdir ${wwwdir}/qcdest;
         mv *fit_*{pdf,png} ${wwwdir}/qcdest;
         cp ../../index.php ${wwwdir}/qcdest;
-        
+
+        python produceXsecBasedControlPlots.py data:plots/Data8.16TeV_pPb_nonsubiso_tighte/controlplots.root \
+            ttbar:plots/MC8.16TeV_TTbar_pPb_tighte/controlplots.root \
+            wjets:plots/MC8.16TeV_WJets_pPb/controlplots.root \
+            dy:plots/MC8.16TeV_DY_pPb/controlplots.root;
+        mkdir ${wwwdir}/controlplots;
+        mv *control.{pdf,png} ${wwwdir}/controlplots;
+        cp ../../index.php ${wwwdir}/controlplots;
+
         python generateWshapes.py plots/MC8TeV_WJets_pp/controlplots.root plots/MC8.16TeV_WJets_pPb/controlplots.root;
         mkdir  ${wwwdir}/west;
         mv w_*{pdf,png} ${wwwdir}/west;

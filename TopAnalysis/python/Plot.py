@@ -465,7 +465,7 @@ class Plot(object):
                         ratioframeshape.SetBinContent(xbin,totalMCUncShape.GetBinContent(xbin)/val)
                         ratioframeshape.SetBinError(xbin,totalUncShape)
                     else: totalUnc=ROOT.TMath.Sqrt((totalMC.GetBinError(xbin)/val)**2+self.mcUnc**2)
-                    ratioframe.SetBinContent(xbin,totalMCUnc.GetBinContent(xbin)/val)
+                    ratioframe.SetBinContent(xbin,totalMCnoUnc.GetBinContent(xbin)/val)
                     ratioframe.SetBinError(xbin,totalUnc)
                 ratioframe.Draw('e2')
                 if (len(self.mcsyst)>0): ratioframeshape.Draw('e2 same')

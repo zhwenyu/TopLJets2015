@@ -161,6 +161,7 @@ def fillDataAndPlots(data,ws,args,tree,leptonSel,mcTruth=False,wjjOrder='drjj',t
             break
 
     plots={}
+    plots['recacc']=ROOT.TH1F('recacc',';Variation;Acceptance',3,0,3)
     plots['jerprofile']=ROOT.TProfile('jerprofile',';Pseudo-rapidity;#delta p_{T}/p_{T}',5,0,2.5)
     for cat in EVENTCATEGORIES:
 
@@ -176,10 +177,12 @@ def fillDataAndPlots(data,ws,args,tree,leptonSel,mcTruth=False,wjjOrder='drjj',t
 
         for t in ['','_cor','_wro']:
             plots['drjj_%s%s'%(cat,t)]  = ROOT.TH1F('drjj_%s%s'%(cat,t), ';#DeltaR; Events',  6,0, 6)
-            plots['mjj_%s%s'%(cat,t)]   = ROOT.TH1F('mjj_%s%s'%(cat,t),  ';W_{jj} mass [GeV]; Events / 10 GeV',  20,0, 200)
+            plots['mjj_%s%s'%(cat,t)]   = ROOT.TH1F('mjj_%s%s'%(cat,t),  ';W_{jj} mass [GeV]; Events / 10 GeV',  20,0, 200)            
             plots['mthad_%s%s'%(cat,t)] = ROOT.TH1F('mthad_%s%s'%(cat,t),';t_{had} mass [GeV]; Events / 10 GeV', 30,50,350)
             plots['mtlep_%s%s'%(cat,t)] = ROOT.TH1F('mtlep_%s%s'%(cat,t),';t_{lep} mass [GeV]; Events / 10 GeV', 30,50,350)
             if t=='':
+                plots['minmlb_%s%s'%(cat,t)]   = ROOT.TH1F('minmlb_%s%s'%(cat,t),  ';min M_{lb} [GeV]; Events / 10 GeV',  20,0, 200)
+                plots['maxmlb_%s%s'%(cat,t)]   = ROOT.TH1F('maxmlb_%s%s'%(cat,t),  ';max M_{lb} [GeV]; Events / 10 GeV',  20,0, 200)
                 plots['mtw_%s'%cat] = ROOT.TH1F('mtw_%s'%cat,';M_{T}(l,MET) [GeV]; Events / 10 GeV', 20,0,200)
                 plots['met_%s'%cat] = ROOT.TH1F('met_%s'%cat,';MET [GeV]; Events / 10 GeV', 20,0,200)
                 plots['ntracks_%s'%cat] = ROOT.TH1F('ntracks_%s'%cat,';Track multiplicity; Events', 20,0,200)
@@ -230,8 +233,18 @@ def fillDataAndPlots(data,ws,args,tree,leptonSel,mcTruth=False,wjjOrder='drjj',t
         MET=Particle(0,tree.met_pt,0.,tree.met_phi,0.)
         jets=getJets(tree=tree,minPt=25,maxEta=2.4,mcTruth=mcTruth,shiftJES=shiftJES,jerProf=jerProf if jerProf else plots['jerprofile'])
         jets.sort(key=lambda x: x.rankVal, reverse=True)
-        if len(jets)<4 : continue
 
+        #for the acceptance systematics
+        njets,njetsUp,njetsDn=0,0,0
+        for j in jets:
+            if j.p4.Pt()>25 : njets+=1
+            if j.p4.Pt()*j.scaleUnc['jesup'] > 25 : njetsUp+=1
+            if j.p4.Pt()*j.scaleUnc['jesdn'] > 25 : njetsDn+=1
+        if njets>=4   : plots['recacc'].Fill(1)
+        if njetsUp>=4 : plots['recacc'].Fill(2)
+        if njetsDn>=4 : plots['recacc'].Fill(3)
+
+        if len(jets)<4 : continue
 
         #separate the jets according to the b-tagging decision
         bJets=jets[0:2]
@@ -258,6 +271,9 @@ def fillDataAndPlots(data,ws,args,tree,leptonSel,mcTruth=False,wjjOrder='drjj',t
         #ttbar hypothesis
         ttCandidates=buildTTbar(bJets=bJets,Wjj=Wjj,Wlnu=Wlnu)
 
+        minmlb=min((lepton.p4+bJets[0].p4).M(),(lepton.p4+bJets[1].p4).M())
+        maxmlb=max((lepton.p4+bJets[0].p4).M(),(lepton.p4+bJets[1].p4).M())
+
         thad,tlep = ttCandidates[0]
         if thadOrder=='dm2tlep':
             chi=[ abs(x.p4.M()-y.p4.M()) for x,y in ttCandidates ]
@@ -273,6 +289,8 @@ def fillDataAndPlots(data,ws,args,tree,leptonSel,mcTruth=False,wjjOrder='drjj',t
         plots['mjj_%s'%cat].Fill(Wjj.p4.M())
         plots['mtlep_%s'%cat].Fill(tlep.p4.M())
         plots['mthad_%s'%cat].Fill(thad.p4.M())
+        plots['minmlb_%s'%cat].Fill(minmlb)
+        plots['maxmlb_%s'%cat].Fill(maxmlb)
 
         #check matching efficiency
         goodWjj,goodTlep,goodThad=True,True,True

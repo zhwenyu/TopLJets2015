@@ -10,8 +10,8 @@ EVENTCATEGORIES=[x for x in SELEVENTCATEGORIES if not '1f' in x]
 
 lumi=(174.5,8.725)
 acceptance={#'e':(0.0508,0.0014), #eta restricted
-            'e':(0.056,0.0014),
-            'mu':(0.060,0.0016)}
+            'e' :(0.056,ROOT.TMath.Sqrt(0.0014**2+(0.031*0.056)**2)),
+            'mu':(0.060,ROOT.TMath.Sqrt(0.0016**2+(0.031*0.060)**2))}
 efficiency={#'e':(0.767,0.0304), #LOOSE ISO
             'e':(0.623,0.0249), #MEDIUM ID+ISO
             #'e':(0.536,0.0206), #TIGHT ID+ISO)
