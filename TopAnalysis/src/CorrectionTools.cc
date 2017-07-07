@@ -99,7 +99,7 @@ std::vector<TGraph *> getPileupWeights(TString era, TH1 *genPU,TString period)
         }
       TGraph *gr=new TGraph(tmp);
       grName.ReplaceAll("pu","puwgts");
-      gr->SetName(grName);
+      gr->SetName(period+grName);
       puWgtGr.push_back( gr );
       tmp->Delete();
     }
@@ -123,8 +123,8 @@ std::map<TString, std::vector<TGraph *> > getPileupWeightsMap(TString era, TH1 *
 
 
 //apply jet energy resolutions
-MiniEvent_t smearJetEnergies(MiniEvent_t &ev, std::string option) {
-  if(ev.isData) return ev;
+void smearJetEnergies(MiniEvent_t &ev, std::string option) {
+  if(ev.isData) return;
 
   for (int k = 0; k < ev.nj; k++) {
     TLorentzVector jp4;
@@ -141,8 +141,6 @@ MiniEvent_t smearJetEnergies(MiniEvent_t &ev, std::string option) {
       ev.j_mass[k] = jp4.M();
     }
   }
-  
-  return ev;
 }
 
 //
@@ -156,18 +154,16 @@ void smearJetEnergy(TLorentzVector &jp4, float genJet_pt,std::string option)
 }
 
 //see working points in https://twiki.cern.ch/twiki/bin/view/CMS/BtagRecommendation80XReReco
-MiniEvent_t addBTagDecisions(MiniEvent_t &ev,float wp,float wpl) {
+void addBTagDecisions(MiniEvent_t &ev,float wp,float wpl) {
   for (int k = 0; k < ev.nj; k++) {
     if (ev.j_hadflav[k] >= 4) ev.j_btag[k] = (ev.j_csv[k] > wp);
     else                      ev.j_btag[k] = (ev.j_csv[k] > wpl);
   }
-  
-  return ev;
 }
 
 
 //details in https://twiki.cern.ch/twiki/bin/view/CMS/BTagCalibration
-MiniEvent_t updateBTagDecisions(MiniEvent_t &ev, 
+void updateBTagDecisions(MiniEvent_t &ev, 
 				std::map<BTagEntry::JetFlavor,BTagCalibrationReader *> &btvsfReaders,
 				std::map<BTagEntry::JetFlavor, TGraphAsymmErrors*> &expBtagEff, 
 				std::map<BTagEntry::JetFlavor, TGraphAsymmErrors*> &expBtagEffPy8, 
@@ -196,8 +192,6 @@ MiniEvent_t updateBTagDecisions(MiniEvent_t &ev,
       ev.j_btag[k] = isBTagged;
     }
   }
-  
-  return ev;
 }
 
 //details in https://twiki.cern.ch/twiki/bin/view/CMS/BTagCalibration
@@ -260,7 +254,7 @@ std::map<BTagEntry::JetFlavor, TGraphAsymmErrors *> readExpectedBtagEff(TString 
 
 
 // See https://twiki.cern.ch/twiki/bin/viewauth/CMS/JECUncertaintySources#Main_uncertainties_2016_80X
-MiniEvent_t applyJetCorrectionUncertainty(MiniEvent_t &ev, JetCorrectionUncertainty *jecUnc, TString jecVar, TString direction) {
+void applyJetCorrectionUncertainty(MiniEvent_t &ev, JetCorrectionUncertainty *jecUnc, TString jecVar, TString direction) {
   for (int k = 0; k < ev.nj; k++) {
     if ((jecVar == "FlavorPureGluon"  and not (ev.j_flav[k] == 21 or ev.j_flav[k] == 0)) or
         (jecVar == "FlavorPureQuark"  and not (abs(ev.j_flav[k]) <= 3 and abs(ev.j_flav[k]) != 0)) or
@@ -276,8 +270,6 @@ MiniEvent_t applyJetCorrectionUncertainty(MiniEvent_t &ev, JetCorrectionUncertai
     ev.j_phi[k]  = jp4.Phi();
     ev.j_mass[k] = jp4.M();
   }
-  
-  return ev;
 }
 
 //
@@ -349,3 +341,22 @@ double computeSemilepBRWeight(MiniEvent_t &ev, std::map<int, double> corr, int p
   }
   return weight;
 }
+
+void applyTrackingEfficiencySF(MiniEvent_t &ev, double sf) {
+  if(ev.isData) return;
+  
+  TRandom* random = new TRandom(0); // random seed
+
+  for (int k = 0; k < ev.npf; k++) {
+    if (random->Rndm() > sf) {
+      //make sure that particle does not pass any cuts
+      ev.pf_pt[k]  = 1e-20;
+      ev.pf_m[k]   = 1e-20;
+      ev.pf_eta[k] = 999.;
+      ev.pf_c[k]   = 0;
+    }
+  }
+  
+  delete random;
+}
+
