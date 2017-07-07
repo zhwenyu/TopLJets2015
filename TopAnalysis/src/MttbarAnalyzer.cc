@@ -113,7 +113,7 @@ void RunMttbarAnalyzer(TString filename,
       ////////////////
       double csvm = 0.8484;
       addBTagDecisions(ev, csvm, csvm);
-      if(!ev.isData) ev = smearJetEnergies(ev);
+      if(!ev.isData) smearJetEnergies(ev);
            
       ///////////////////////////
       // RECO LEVEL SELECTION //

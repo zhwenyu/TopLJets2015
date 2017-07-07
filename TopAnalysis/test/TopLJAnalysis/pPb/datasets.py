@@ -81,7 +81,8 @@ def defineDataset(data):
 
     if 'MC8.16TeV_WJets_pPb' in data:
         dataset=OrderedDict()
-        dataset['l+jets']         = (['%s/WToMuNu_anstahll-Embedded_PileUp_POWHEG_WToMuNu_MergedSign_CT14_EPPS16_8160GeV_pythia8_MergedDirs.root'%baseDir],
+        dataset['l+jets']         = (['%s/WToMuNu_anstahll-Embedded_PileUp_POWHEG_WToMuNu_MergedSign_CT14_EPPS16_8160GeV_pythia8_MergedDirs.root'%baseDir,
+                                      '%s/WtoENu_pPb-EmbEPOS_8p16_Pyquen_pPb816Summer16DR-pPbEmb_80X_mcRun2_pA_v4.root'%baseDir],
                                      '#4575b4', [11,13],   False)
 
     if 'MC8TeV_WJets_pp' in data:
