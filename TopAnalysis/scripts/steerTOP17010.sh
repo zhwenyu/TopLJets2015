@@ -26,13 +26,13 @@ export LSB_JOB_REPORT_MAIL=N
 
 
 queue=workday
-githash=b312177
 lumi=35922
-lumiSpecs="" #"--lumiSpecs EE:11391"
+lumiSpecs=""
 lumiUnc=0.025
 whoami=`whoami`
 myletter=${whoami:0:1}
-eosdir=/store/cmst3/group/top/ReReco2016/${githash}
+eosdir=/store/cmst3/group/top/ReReco2016/b312177
+dataeosdir=/store/cmst3/group/top/ReReco2016/be52dbe_03Feb2017
 summaryeosdir=/store/cmst3/group/top/TOP-17-010/
 COMBINERELEASE=~/scratch0/CMSSW_7_4_7/src/
 outdir=/afs/cern.ch/work/${myletter}/${whoami}/TOP-17-010/
@@ -43,10 +43,13 @@ RED='\e[31m'
 NC='\e[0m'
 case $WHAT in
     TEST )
-	python scripts/runLocalAnalysis.py -i ${eosdir} -q local -o /tmp/`whoami` --era era2016 -m TOP-17-010::RunTop17010 --ch 0 --runSysts --only TTJets;
+	python scripts/runLocalAnalysis.py -i root://eoscms//eos/cms/store/cmst3/group/top/ReReco2016/b312177/MC13TeV_TTJets/MergedMiniEvents_0_ext0.root \
+            -q local -o /tmp/`whoami`/test.root --era era2016 -m TOP-17-010::RunTop17010 --ch 0 --runSysts;
         ;;
     SEL )
-	python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} -o ${summaryeosdir} --era era2016 -m TOP-17-010::RunTop17010 --ch 0 --runSysts;
+        commonOpts="-q ${queue} -o ${summaryeosdir} --era era2016 -m TOP-17-010::RunTop17010 --ch 0 --runSysts";
+	python scripts/runLocalAnalysis.py -i ${eosdir} ${commonOpts}     --only MC --farmappendix TOP17010MC;
+	python scripts/runLocalAnalysis.py -i ${dataeosdir} ${commonOpts} --only Data --farmappendix TOP17010Data;
 	;;
     MERGESEL )
 	mkdir -p ${outdir}
@@ -63,6 +66,9 @@ case $WHAT in
 	cp ${outdir}/plots/*.{png,pdf} ${wwwdir}/sel
 	cp test/index.php ${wwwdir}/sel
 	;;
+    TESTANA )
+	python scripts/runTopWidthAnalysis.py -i root://eoscms//eos/cms//store/cmst3/group/top/TOP-17-010//Chunks/MC13TeV_TTJets_12.root -o ${outdir}/analysis/Chunks -q local;
+        ;;
     ANA )
 	python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${outdir}/analysis/Chunks -q ${queue};	
 	;;
