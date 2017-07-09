@@ -410,8 +410,7 @@ def performFits(opt):
             constr=ROOT.RooArgSet()
             constr.add( w.function('ebconstraint') )
             constr.add( w.function('jsfconstraint') )
-            constr.add( w.function('acc_e_constraint') )
-            constr.add( w.function('acc_mu_constraint') )
+            constr.add( w.function('acc_constraint') )
             constr.add( w.function('eff_mu_constraint') )
             constr.add( w.function('eff_e_constraint') )
             constr.add( w.function('lumi_constraint') )
@@ -461,8 +460,7 @@ def performFits(opt):
             constr=ROOT.RooArgSet()
             constr.add( w.function('ebconstraint') )
             constr.add( w.function('jsfconstraint') )
-            constr.add( w.function('acc_e_constraint') )
-            constr.add( w.function('acc_mu_constraint') )
+            constr.add( w.function('acc_constraint') )
             constr.add( w.function('eff_mu_constraint') )
             constr.add( w.function('eff_e_constraint') )
             constr.add( w.function('lumi_constraint') )
@@ -568,26 +566,22 @@ def addPDFToWorkspace(opt):
     #common to all variables and/or channels
     w.factory('xsec[60,0,300]')    
 
-    w.factory("RooFormulaVar::lumi_constraint('0.5*pow((@0-@1)/@2,2)',{lumi[0,500],lumiCen[%f],lumiUnc[%f]})"%lumi)
+    w.factory("RooFormulaVar::lumi_constraint('0.5*pow((@0-@1)/@2,2)',{lumiCen[%f],lumi[0,500],lumiUnc[%f]})"%lumi)
     w.factory("RooGaussian::lumi_gconstraint(lumiCen,lumi,lumiUnc)")
 
+    w.factory("RooFormulaVar::accconstraint('0.5*pow((@0-@1)/@2,2)',{accCen[0.0],acc[0.5,1.5],accUnc[1.0]})")
+    w.factory("RooGaussian::acc_gconstraint(accCen,acc,accUnc)")
+
     for ch in ['e','mu']:
-        w.factory("RooFormulaVar::acc_%s_constraint('0.5*pow((@0-@1)/@2,2)',{acc_%s[0.,1.0],accCen_%s[%f],accUnc_%s[%f]})"%(ch,ch,ch,acceptance[ch][0],ch,acceptance[ch][1]))
-        w.factory("RooGaussian::acc_{0}_gconstraint(accCen_{0},acc_{0},accUnc_{0})".format(ch))
-        w.factory("RooFormulaVar::eff_%s_constraint('0.5*pow((@0-@1)/@2,2)',{eff_%s[0.,1.0],effCen_%s[%f],effUnc_%s[%f]})"%(ch,ch,ch,efficiency[ch][0],ch,efficiency[ch][1]))
+        w.factory("RooFormulaVar::acc_%s('%f*(1+%f*@1)',{accCen})"%(ch,acceptance[ch][0],acceptance[ch][1]))
+        w.factory("RooFormulaVar::eff_%s_constraint('0.5*pow((@0-@1)/@2,2)',{effCen_%s[%f],eff_%s[0.,1.0],effUnc_%s[%f]})"%(ch,ch,ch,efficiency[ch][0],ch,efficiency[ch][1]))
         w.factory("RooGaussian::eff_{0}_gconstraint(effCen_{0},acc_{0},effUnc_{0})".format(ch))
 
-    w.factory("RooFormulaVar::ebconstraint('0.5*pow((@0-@1)/@2,2)',{eb[0.60,0.0,1.0],ebCen[%f],ebUnc[%f]})"%ebExp)
+    w.factory("RooFormulaVar::ebconstraint('0.5*pow((@0-@1)/@2,2)',{ebCen[%f],eb[0.60,0.0,1.0],ebUnc[%f]})"%ebExp)
     w.factory("RooGaussian::eb_gconstraint(ebCen,eb,ebUnc)")
 
-    w.factory("RooFormulaVar::jsfconstraint('0.5*pow((@0-@1)/@2,2)',{jsf[0.5,1.5],jsfCen[%f],jsfUnc[%f]})"%jsf)
+    w.factory("RooFormulaVar::jsfconstraint('0.5*pow((@0-@1)/@2,2)',{jsfCen[%f],jsf[0.5,1.5],jsfUnc[%f]})"%jsf)
     w.factory("RooGaussian::jsf_gconstraint(jsfCen,jsf,jsfUnc)")
-
-    #w.factory("RooFormulaVar::jerconstraint('0.5*pow(@0,2)',{jer[-5,5]})")
-    #w.var('jsf').setVal(jsf[0])
-    #w.var('jsf').setConstant(True)
-    #w.var('jer').setVal(0.0)
-    #w.var('jer').setConstant(True)
 
     w.factory("RooFormulaVar::scaledmjj('TMath::Max(0.,@0*@1)',{jsf,mjj})")
 
