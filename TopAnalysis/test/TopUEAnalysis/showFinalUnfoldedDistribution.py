@@ -7,45 +7,6 @@ import pickle
 from collections import OrderedDict
 from UEAnalysisHandler import VARS,SYSTS
 
-FILLS=[1001,3004,3002,1001]
-COLORS=[ROOT.kAzure+4, ROOT.kMagenta, ROOT.kGreen+3,  ROOT.kMagenta+2, ROOT.kMagenta-9,ROOT.kRed+1,ROOT.kAzure+7, ROOT.kBlue-7,ROOT.kGray,ROOT.kGray]
-
-MARKERS=[22,24,27,23,33,20,32,24]
-OBSERVABLES=['chmult','sphericity','C','D','aplanarity','chavgpt','chavgpz','chflux','chfluxz']
-OBSRANGES={'sphericity':(5e-2,5),
-           'aplanarity':(5e-3,30),
-           'C':(5e-2,5),
-           'D':(5e-3,10),
-           'chmult':(5e-4,0.1),
-           'chavgpt':(2e-3,2),
-           'chavgpz':(2e-3,2),
-           'chflux':(5e-5,5e-2),
-           'chfluxz':(5e-5,5e-2)}
-RATIORANGES={'sphericity':(0.8,1.27),
-           'aplanarity':(0.8,1.47),
-           'C':(0.8,1.27),
-           'D':(0.8,1.47),
-           'chmult':(0.5,2.17),
-           'chavgpt':(0.6,1.67),
-           'chavgpz':(0.7,1.47),
-           'chflux':(0.5,1.77),
-           'chfluxz':(0.5,1.77)}
-
-SLICES=[None] #,'nj','ptttbar','ptll']
-MAINMC=('POWHEG+PY8 CUETP8M2T4','t#bar{t}')
-#MAINMC=('POWHEG+HW++ EE5C','t#bar{t} Herwig++')
-COMPARISONSETS=[
-    ('POWHEG+PY8 CUETP8M2T4', [ ('nominal',         ['t#bar{t}']), 
-                                ('#deltaCUET8P2MT4',['t#bar{t} UEup',     't#bar{t} UEdn']),
-                                ('FSR',             ['t#bar{t} fsr up',   't#bar{t} fsr dn']),
-                                ('ISR',             ['t#bar{t} isr up',   't#bar{t} isr dn']),
-                                ('hdamp',           ['t#bar{t} hdamp up', 't#bar{t} hdamp dn']),
-                                ('CR',              ['t#bar{t} QCDbased', 't#bar{t} ERDon', 't#bar{t} gluon move']) ] 
-     ),
-    ('aMC@NLO+PY8 CUETP8M2T4', [ ('nominal', ['t#bar{t} aMC@NLO']) ]),
-    ('POWHEG+HW++ EE5C'      , [ ('nominal', ['t#bar{t} Herwig++']) ]),
-    ]
-
 """
 """
 def showSystsSummary(systUpH,systDnH,systSummary,outdir,outname) :

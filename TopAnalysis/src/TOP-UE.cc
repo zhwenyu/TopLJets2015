@@ -462,7 +462,7 @@ void RunTopUE(TString filename,
 	  TLorentzVector dil(leptons[0].p4()+leptons[1].p4());
 	  float mll=dil.M();
 	  bool passLepPresel(mll>12
-                             && (leptons[0].pt()>25 || leptons[1].pt()<25)
+                             && (leptons[0].pt()>25 || leptons[1].pt()>25)
                              && (fabs(leptons[0].eta())<2.5 && fabs(leptons[1].eta())<2.5) );
 
 	  //divide jets                                                                                                                              

@@ -6,15 +6,19 @@ from roofitTools import *
 ALLPDFS={
 ('S_cor','mjj'):
     [
-     'RooBifurGauss::S_cor1mjj_{0}(mjj,mu_scormjj_{0}[20,100],sigmaL_scormjj_{0}[5,15],sigmaR_scormjj_{0}[5,15])',
-     'RooGamma::S_cor2mjj_{0}(mjj,gamma_scormjj_{0}[50,0.1,100],beta_scormjj_{0}[0.5,0.01,100],lambda_scormjj_{0}[0])',
-     'SUM::S_cormjj_{0}( f_scormjj_{0}[0.,1]*S_cor1mjj_{0}, S_cor2mjj_{0} )'
+        #'RooBifurGauss::S_cor1mjj_{0}(mjj,mu_scormjj_{0}[20,100],sigmaL_scormjj_{0}[1,14],sigmaR_scormjj_{0}[1,14])',
+        
+        'RooCBShape::S_cor1mjj_{0}(mjj,mu_scormjj_{0}[75,90],sigma_scormjj_{0}[5,13],alpha_scormjj_{0}[0.01,20],n_scormjj_{0}[0])',
+        'RooGamma::S_cor2mjj_{0}(mjj,gamma_scormjj_{0}[50.,0.1,100],beta_scormjj_{0}[5,0.01,100],lambda_scormjj_{0}[0])',
+        'SUM::S_cormjj_{0}( f_scormjj_{0}[0.1,0.98]*S_cor1mjj_{0},S_cor2mjj_{0} )'
     ],
 ('S_wro','mjj'):
     [
-    'RooBifurGauss::S_wro1mjj_{0}(mjj,mu_swromjj_{0}[0,50],sigmaL_swromjj_{0}[5,20],sigmaR_swromjj_{0}[5,50])',
-    'RooLandau::S_wro2mjj_{0}(mjj,mpv_swromjj_{0}[20,200],width_swromjj_{0}[20,0.01,100])',
-    'SUM::S_wromjj_{0}( f_swromjj_{0}[0,1]*S_wro1mjj_{0}, S_wro2mjj_{0} )'
+        #'RooCBShape::S_wro1mjj_{0}(mjj,mu_swromjj_{0}[25,250],sigma_swromjj_{0}[5,13],alpha_swromjj_{0}[0.01,20],n_swromjj_{0}[0])',
+        #'RooGamma::S_wro2mjj_{0}(mjj,gamma_swromjj_{0}[50.,0.1,100],beta_swromjj_{0}[5,0.01,100],lambda_swromjj_{0}[1])',
+        'RooBifurGauss::S_wro1mjj_{0}(mjj,mu_swromjj_{0}[25,75],sigmaL_swromjj_{0}[15,100],sigmaR_swromjj_{0}[15,100])',
+        'RooLandau::S_wro2mjj_{0}(mjj,mpv_swromjj_{0}[25,200],width_swromjj_{0}[50,5,100])',
+        'SUM::S_wromjj_{0}( f_swromjj_{0}[0,1]*S_wro1mjj_{0}, S_wro2mjj_{0} )'
     ],
 ('B','mjj'):
     [
@@ -28,7 +32,7 @@ ALLPDFS={
     ],
 ('S_wro','mthad'):
     [
-     'RooBifurGauss::S_wro1mthad_{0}(mthad,mu_swromthad_{0}[100,200],sigmaL_swromthad_{0}[5,100],sigmaR_swromthad_{0}[5,100])',
+     'RooBifurGauss::S_wro1mthad_{0}(mthad,mu_swromthad_{0}[100,200],sigmaL_swromthad_{0}[20,100],sigmaR_swromthad_{0}[20,100])',
      'RooLandau::S_wro2mthad_{0}(mthad,mpv_swromthad_{0}[100,200],width_swromthad_{0}[5,100])',
      'SUM::S_wromthad_{0}( f_swromthad_{0}[0,1]*S_wro1mthad_{0}, S_wro2mthad_{0} )'
     ],
@@ -66,17 +70,16 @@ def parametrize(data,varName,w,pdfDef):
     pdf.fitTo(data)
 
     #showFitResult(fitVar=varName,
-    #          data=data,
-    #          pdf=pdf,
-    #          categs=[''],
-    #          w=w,
-    #          tagTitle=data.GetName(),
-    #          rangeX=(0,500),
-    #          showComponents=[],
-    #          outDir='/dev/null',
-    #          paramList=[])
+    #              data=data,
+    #              pdf=pdf,
+    #              categs=[''],
+    #              w=w,
+    #             tagTitle=data.GetName(),
+    #              rangeX=(0,500),
+    #              showComponents=[('*1*','1'),('*1*,*2*','2')],
+    #              outDir='/dev/null',
+    #              paramList=[])
     #raw_input()
-
 
     #freeze parameters
     iter = pdf.getParameters(data).createIterator()
@@ -109,6 +112,7 @@ def main():
 
     ROOT.gStyle.SetOptStat(0)
     ROOT.gStyle.SetOptTitle(0)
+    ROOT.gROOT.SetBatch(True)
 
     #get the workspace from the file
     url=sys.argv[1]
@@ -132,84 +136,88 @@ def main():
     corSummary={}
     for varName,varTitle in [('mjj','M(jj)'),
                              ('mthad','M(t_{had})'),
-                             ('mtlep','M(t_{lep})')]:
+                             ('mtlep','M(t_{lep})')
+                             ]:
         w.var(varName).SetTitle(varTitle)
-        for cat in ['1l4j2b','1l4j2q','1l4j1b1q']:
-            catCut="sample==sample::%s"%cat
+        for ch in ['e','mu']:
+            for jcount in ['1l4j2b','1l4j2q','1l4j1b1q']:
+                cat=ch+jcount
+                catCut="sample==sample::%s"%cat
 
-            if not doSignal:
+                if not doSignal:
 
-                #data
-                redData=data.reduce(ROOT.RooFit.Cut(catCut))
-                w.cat('sample').setLabel(cat)
-
-                #define the PDF
-                pdfDef=[x.format(cat) for x in  ALLPDFS[('B',varName)] ]
-                pdf=parametrize(redData,varName,w,pdfDef)
-
-                pdfAux=None
-                try:
-                    pdfAux=waux.pdf('S_wro%s_%s'%(varName,cat))
-                except:
-                    pass
-
-                showFitResult(fitVar=varName,
-                              data=redData,
-                              pdf=pdf,
-                              categs=[''],
-                              w=w,
-                              tagTitle=cat,
-                              rangeX=(0,500),
-                              showComponents=[],
-                              outDir='./',
-                              paramList=[],
-                              pdfAux=pdfAux)
-            else:
-
-                for c in ['cor','wro']:
-
-                    #project the data
-                    cut=catCut
-                    if c=='cor':
-                        if varName=='mjj'   : cut += ' && corwjj==1'
-                        if varName=='mthad' : cut += ' && corthad==1'
-                        if varName=='mtlep' : cut += ' && cortlep==1'
-                    if c=='wro':
-                        if varName=='mjj'   : cut += ' && corwjj==0'
-                        if varName=='mthad' : cut += ' && corthad==0'
-                        if varName=='mtlep' : cut += ' && cortlep==0'
-                    redData=data.reduce(ROOT.RooFit.Cut(cut))
+                    #data
+                    redData=data.reduce(ROOT.RooFit.Cut(catCut))
                     w.cat('sample').setLabel(cat)
 
                     #define the PDF
-                    pdfDef=[x.format(cat) for x in  ALLPDFS[('S_%s'%c,varName)] ]
+                    pdfDef=[x.format(cat) for x in  ALLPDFS[('B',varName)] ]
                     pdf=parametrize(redData,varName,w,pdfDef)
 
-                    if c=='cor':
-                        mean,median,mode,effWid=getEffSigma(w.var(varName),pdf,0,200)
-                        corSummary[(cat,varName)]=(mean,median,mode,effWid)
+                    pdfAux=None
+                    try:
+                        pdfAux=waux.pdf('S_wro%s_%s'%(varName,cat))
+                    except:
+                        pass
 
-                #combine correct+wrong combinations
-                redData=data.reduce(catCut)
-                pdf=w.factory('SUM::S_{0}_{1}( f_s{0}_{1}[0,1]*S_cor{0}_{1}, S_wro{0}_{1} )'.format(varName,cat))
-                pdf.fitTo(redData)
-                showFitResult(fitVar=varName,
-                              data=redData,
-                              pdf=pdf,
-                              categs=[''],
-                              w=w,
-                              tagTitle=cat,
-                              rangeX=(0,500),
-                              showComponents=['S_cor*','S_cor*,S_wro*'],
-                              outDir='./',
-                              paramList=[])
+                    showFitResult(fitVar=varName,
+                            data=redData,
+                            pdf=pdf,
+                            categs=[''],
+                            w=w,
+                            tagTitle=cat,
+                            rangeX=(0,500),
+                            showComponents=[],
+                            outDir='./',
+                            paramList=[],
+                            pdfAux=pdfAux)
+                else:
+
+                    for c in ['cor','wro']:
+
+                        #project the data
+                        cut=catCut
+                        if c=='cor':
+                            if varName=='mjj'   : cut += ' && corwjj==1'
+                            if varName=='mthad' : cut += ' && corthad==1'
+                            if varName=='mtlep' : cut += ' && cortlep==1'
+                        if c=='wro':
+                            if varName=='mjj'   : cut += ' && corwjj==0'
+                            if varName=='mthad' : cut += ' && corthad==0'
+                            if varName=='mtlep' : cut += ' && cortlep==0'
+                        redData=data.reduce(ROOT.RooFit.Cut(cut))
+                        w.cat('sample').setLabel(cat)
+
+                        #define the PDF
+                        pdfDef=[x.format(cat) for x in  ALLPDFS[('S_%s'%c,varName)] ]
+                        pdf=parametrize(redData,varName,w,pdfDef)
+
+                        if c=='cor':
+                            mean,median,mode,effWid=getEffSigma(w.var(varName),pdf,0,200)
+                            corSummary[(cat,varName)]=(mean,median,mode,effWid)
+
+                    #combine correct+wrong combinations
+                    redData=data.reduce(catCut)
+                    pdf=w.factory('SUM::S_{0}_{1}( f_s{0}_{1}[0,1]*S_cor{0}_{1}, S_wro{0}_{1} )'.format(varName,cat))
+                    pdf.fitTo(redData)
+                    showFitResult(fitVar=varName,
+                                data=redData,
+                                pdf=pdf,
+                                categs=[''],
+                                w=w,
+                                tagTitle=cat,
+                                rangeX=(0,500),
+                                showComponents=[('S_wro*','wront permutations'),
+                                                ('S_cor*,S_wro*','correct permutations')],
+                                outDir='./',
+                                paramList=[])
 
     if doSignal:
         with open(url.replace('.root','.dat'),'w') as fOut:
             fOut.write('Category | Variable | Eff. width | Mean | Median\n')
             for cat,varName in corSummary:
                 fOut.write('%s %s '%(cat,varName))
-                for x in corSummary[(cat,varName)]: 
+                for x in corSummary[(cat,varName)]:
                     fOut.write('%3.1f '%x)
                 fOut.write('\n')
 

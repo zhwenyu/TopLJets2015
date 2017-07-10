@@ -84,15 +84,14 @@ def showMatrices(opt):
     conditionNumbers=[]
     for key in ueHandler.histos:
 
-        obs,sliceVar,sel,systVar,distType=key
+        obs,sliceVar,sliceIdx,sel,systVar,distType=key
         title=VARS[obs][0]
         sliceVarTitle=VARS[sliceVar][0] if not sliceVar is None else ''
-        outName=obs
-        if sliceVar: outName += '_%s'%sliceVar
+        outName='_'.join(map(str,key))
 
         if distType!='mig' : continue
         if systVar!=0 : continue
-        if sel != 'inc' : continue
+        #if sel != 'inc' : continue
 
         #get histogram  
         hname=ueHandler.histos[key].GetName()

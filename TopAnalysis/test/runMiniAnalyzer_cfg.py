@@ -82,7 +82,8 @@ process.source = cms.Source("PoolSource",
                             duplicateCheckMode = cms.untracked.string('noDuplicateCheck') 
                             )
 if options.runOnData:
-    process.source.fileNames = cms.untracked.vstring('/store/data/Run2016B/MuonEG/MINIAOD/23Sep2016-v3/120000/E8C2C234-BF97-E611-82BB-0025907B4EE4.root')
+    process.source.fileNames = cms.untracked.vstring('/store/data/Run2016B/MuonEG/MINIAOD/03Feb2017_ver2-v2/100000/FCAE58F9-9BEC-E611-A285-0090FAA58294.root')
+    #process.source.fileNames = cms.untracked.vstring('/store/data/Run2016B/MuonEG/MINIAOD/23Sep2016-v3/120000/E8C2C234-BF97-E611-82BB-0025907B4EE4.root')
 
 if options.inputFile and len(options.inputFile)!=0:
     process.source.fileNames = cms.untracked.vstring(options.inputFile)
