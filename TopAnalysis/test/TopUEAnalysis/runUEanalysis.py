@@ -508,6 +508,7 @@ def main():
                 condor.write('executable = {0}/$(jobName).sh\n'.format(FarmDirectory))
                 condor.write('output     = {0}/output_$(jobName).out\n'.format(FarmDirectory))
                 condor.write('error      = {0}/output_$(jobName).err\n'.format(FarmDirectory))
+                condor.write('+JobFlavour = workday\n')
 
                 for fileName,_,cfgDir in tasklist:
                     

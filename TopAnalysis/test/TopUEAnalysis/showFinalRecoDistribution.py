@@ -14,14 +14,14 @@ def buildUEPlot(obsAxis,sliceAxis,regions,fIn,fSyst):
     nSliceBins=1
     if sliceAxis: nSliceBins += sliceAxis.GetNbins()
 
-    ueplot = UESummaryPlotInfo(obsAxis,sliceAxis)
 
-    for i in xrange(0,nSliceBins):
+    for r in regions:
+
+        reg=str(r)
+        ueplot = UESummaryPlotInfo(obsAxis,sliceAxis,reg)
+
+        for i in xrange(0,nSliceBins):
       
-        for r in regions:
-    
-            reg=str(r)
-
             #read the nominal expectations
             nomKey='%s_%s_%d_%s_None_True'%(ueplot.obs,ueplot.sliceVar,i,reg)
             t=fIn.Get(nomKey)
@@ -31,15 +31,15 @@ def buildUEPlot(obsAxis,sliceAxis,regions,fIn,fSyst):
                 h=t.Get(pkey.GetName())
                 if not h.InheritsFrom('TH1') : continue
                 if 'Data' in h.GetTitle(): 
-                    ueplot.addData(h,i,r)
+                    ueplot.addData(h,i)
                 elif h.GetTitle() in 't#bar{t}':
-                    ueplot.addSignal(h,i,r)
+                    ueplot.addSignal(h,i)
                 else:
                     if bkg is None: bkg=h.Clone('bkg')
                     else : bkg.Add(h)
                 
             #subtract the background
-            ueplot.subtractBackground(bkg,i,r)
+            ueplot.subtractBackground(bkg,i)
 
 #
 #            #project experimental systematics and signal variations
@@ -113,7 +113,9 @@ def readPlotsFrom(args,opt):
             if s in EVAXES: regions += [0,1,2]
 
             uePlot=buildUEPlot(obsAxis,sliceAxis,regions,fIn,fSyst)
-            uePlot.show(outdir)
+            #uePlot.showMain(outdir)
+            if not s is None:
+                uePlot.showProfile(outdir)
 
 """
 """

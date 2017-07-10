@@ -548,15 +548,8 @@ def createAnalysisTasks(opt):
                 condor.write('jobName=%s\n'%jobName)
                 condor.write('queue 1\n')
 
-                #localRun='python %s/src/TopLJets2015/TopAnalysis/test/TopUEAnalysis/runUEanalysis.py -i %s -o %s -q local -s 2'%(cmsswBase,fileName,cfgDir)
-                #cmd='bsub -q %s %s/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh \"%s\"' % (opt.queue,cmsswBase,localRun)
-                #os.system(cmd)
             os.system('condor_submit %s/condor.sub'%FarmDirectory)
 
-            #localRun='python %s/src/TopLJets2015/TopAnalysis/scripts/runTopWidthAnalysis.py -i %s -o %s -q local'%(cmsswBase,fileName,opt.output)
-            #cmd='bsub -q %s %s/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh \"%s\"' % (opt.queue,cmsswBase,localRun)
-            #print cmd
-            #os.system(cmd)
 
 """
 steer
