@@ -122,10 +122,10 @@ std::map<TString, std::vector<TGraph *> > getPileupWeightsMap(TString era, TH1 *
 }
 
 
-//apply jet energy resolutions
+//apply jet energy resolutions (scaling method)
 void smearJetEnergies(MiniEvent_t &ev, std::string option) {
   if(ev.isData) return;
-
+  
   for (int k = 0; k < ev.nj; k++) {
     TLorentzVector jp4;
     jp4.SetPtEtaPhiM(ev.j_pt[k],ev.j_eta[k],ev.j_phi[k],ev.j_mass[k]);
@@ -143,6 +143,41 @@ void smearJetEnergies(MiniEvent_t &ev, std::string option) {
   }
 }
 
+//apply jet energy resolutions (hybrid method)
+void smearJetEnergies(MiniEvent_t &ev, JME::JetResolution* jer, std::string option) {
+  if(ev.isData) return;
+
+  TRandom* random = new TRandom3(0); // random seed
+  
+  for (int k = 0; k < ev.nj; k++) {
+    TLorentzVector jp4;
+    jp4.SetPtEtaPhiM(ev.j_pt[k],ev.j_eta[k],ev.j_phi[k],ev.j_mass[k]);
+
+    //smear jet energy resolution for MC
+    float genJet_pt(0);
+    if(ev.j_g[k]>-1) genJet_pt = ev.g_pt[ ev.j_g[k] ];
+    //scaling method for matched jets
+    if(genJet_pt>0) {
+      smearJetEnergy(jp4,genJet_pt,option);
+      ev.j_pt[k]   = jp4.Pt();
+      ev.j_eta[k]  = jp4.Eta();
+      ev.j_phi[k]  = jp4.Phi();
+      ev.j_mass[k] = jp4.M();
+    }
+    //stochastic smearing for unmatched jets
+    else {
+      double jet_resolution = jer->getResolution({{JME::Binning::JetPt, ev.j_pt[k]}, {JME::Binning::JetEta, ev.j_eta[k]}, {JME::Binning::Rho, ev.rho}});
+      smearJetEnergyStochastic(jp4,random,jet_resolution,option);
+      ev.j_pt[k]   = jp4.Pt();
+      ev.j_eta[k]  = jp4.Eta();
+      ev.j_phi[k]  = jp4.Phi();
+      ev.j_mass[k] = jp4.M();
+    }
+  }
+  
+  delete random;
+}
+
 //
 void smearJetEnergy(TLorentzVector &jp4, float genJet_pt,std::string option)
 {
@@ -151,6 +186,17 @@ void smearJetEnergy(TLorentzVector &jp4, float genJet_pt,std::string option)
   if(option=="down") smearIdx=2;
   float jerSmear=getJetResolutionScales(jp4.Pt(),jp4.Eta(),genJet_pt)[smearIdx];
   jp4 *= jerSmear;
+}
+
+//
+void smearJetEnergyStochastic(TLorentzVector &jp4, TRandom* random, double resolution, std::string option)
+{
+  int smearIdx(0);
+  if(option=="up") smearIdx=1;
+  if(option=="down") smearIdx=2;
+  float jerSmear=getJetResolutionScales(jp4.Pt(),jp4.Eta(),0.)[smearIdx];
+  float jerFactor = 1 + random->Gaus(0, resolution) * sqrt(std::max(pow(jerSmear, 2) - 1., 0.));
+  jp4 *= jerFactor;
 }
 
 //see working points in https://twiki.cern.ch/twiki/bin/view/CMS/BtagRecommendation80XReReco
@@ -345,7 +391,7 @@ double computeSemilepBRWeight(MiniEvent_t &ev, std::map<int, double> corr, int p
 void applyTrackingEfficiencySF(MiniEvent_t &ev, double sf) {
   if(ev.isData) return;
   
-  TRandom* random = new TRandom(0); // random seed
+  TRandom* random = new TRandom3(0); // random seed
 
   for (int k = 0; k < ev.npf; k++) {
     if (random->Rndm() > sf) {

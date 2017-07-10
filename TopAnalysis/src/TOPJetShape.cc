@@ -136,6 +136,10 @@ void RunTopJetShape(TString filename,
   JetCorrectorParameters *jecParam = new JetCorrectorParameters(jecUncUrl.Data(), jecVar);
   JetCorrectionUncertainty *jecUnc = new JetCorrectionUncertainty( *jecParam );
   
+  //JER SMEARING
+  TString resolutionFile(era+"/Spring16_25nsV10_MC_PtResolution_AK4PFchs.txt");
+  gSystem->ExpandPathName(resolutionFile);
+  JME::JetResolution *jer = new JME::JetResolution(resolutionFile.Data());
   
   //BFRAG UNCERTAINTIES
   std::map<TString, TGraph*> bfrag = getBFragmentationWeights(era);
@@ -305,9 +309,9 @@ void RunTopJetShape(TString filename,
         }
         //jer
         if (vSystVar[0] == "jer") {
-          smearJetEnergies(ev, vSystVar[1]);
+          smearJetEnergies(ev, jer, vSystVar[1]);
         }
-        else smearJetEnergies(ev);
+        else smearJetEnergies(ev, jer);
         //b tagging
         if (vSystVar[0] == "btag") {
           if (vSystVar[1] == "heavy") {
