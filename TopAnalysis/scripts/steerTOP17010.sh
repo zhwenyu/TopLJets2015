@@ -70,7 +70,7 @@ case $WHAT in
 	python scripts/runTopWidthAnalysis.py -i root://eoscms//eos/cms//store/cmst3/group/top/TOP-17-010//Chunks/MC13TeV_TTJets_12.root -o ${outdir}/analysis/Chunks -q local;
         ;;
     ANA )
-	python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${outdir}/analysis/Chunks -q ${queue};	
+	python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${outdir}/analysis/Chunks -q ${queue} --only MC;	
 	;;
     MERGE )
 	./scripts/mergeOutputs.py ${outdir}/analysis;

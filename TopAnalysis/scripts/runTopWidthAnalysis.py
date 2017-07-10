@@ -522,11 +522,41 @@ def createAnalysisTasks(opt):
                 runTopWidthAnalysis(fileName,outFileName)
     else:
         cmsswBase=os.environ['CMSSW_BASE']
-        for fileName,_ in tasklist:
-            localRun='python %s/src/TopLJets2015/TopAnalysis/scripts/runTopWidthAnalysis.py -i %s -o %s -q local'%(cmsswBase,fileName,opt.output)
-            cmd='bsub -q %s %s/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh \"%s\"' % (opt.queue,cmsswBase,localRun)
-            print cmd
-            os.system(cmd)
+        FarmDirectory = '%s/FARM17010ANA'%cmsswBase
+        os.system('mkdir -p %s'%FarmDirectory)
+        
+        with open ('%s/condor.sub'%FarmDirectory,'w') as condor:
+            condor.write('executable = {0}/$(jobName).sh\n'.format(FarmDirectory))
+            condor.write('output     = {0}/output_$(jobName).out\n'.format(FarmDirectory))
+            condor.write('error      = {0}/output_$(jobName).err\n'.format(FarmDirectory))
+            condor.write('+JobFlavour = workday\n')
+
+            for fileName,_ in tasklist:
+                jobName='%s'%(os.path.splitext(os.path.basename(fileName))[0])
+                jobScript='%s/%s.sh'%(FarmDirectory,jobName)
+                with open(jobScript,'w') as job:
+                    job.write('#!/bin/bash\n')
+                    job.write('WORKDIR=`pwd`\n')
+                    job.write('echo "Working directory is ${WORKDIR}"\n')
+                    job.write('cd %s\n'%cmsswBase)
+                    job.write('eval `scram r -sh`\n')
+                    job.write('cd ${WORKDIR}\n')
+                    job.write('python {0}/src/TopLJets2015/TopAnalysis/scripts/runTopWidthAnalysis.py -o {1} -q local -i {2}\n'.format(cmsswBase,opt.output,fileName))
+                    job.write('echo "All done"\n')
+
+                os.system('chmod u+x %s'%jobScript)
+                condor.write('jobName=%s\n'%jobName)
+                condor.write('queue 1\n')
+
+                #localRun='python %s/src/TopLJets2015/TopAnalysis/test/TopUEAnalysis/runUEanalysis.py -i %s -o %s -q local -s 2'%(cmsswBase,fileName,cfgDir)
+                #cmd='bsub -q %s %s/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh \"%s\"' % (opt.queue,cmsswBase,localRun)
+                #os.system(cmd)
+            os.system('condor_submit %s/condor.sub'%FarmDirectory)
+
+            #localRun='python %s/src/TopLJets2015/TopAnalysis/scripts/runTopWidthAnalysis.py -i %s -o %s -q local'%(cmsswBase,fileName,opt.output)
+            #cmd='bsub -q %s %s/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh \"%s\"' % (opt.queue,cmsswBase,localRun)
+            #print cmd
+            #os.system(cmd)
 
 """
 steer
