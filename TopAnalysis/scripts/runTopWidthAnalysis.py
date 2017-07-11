@@ -522,7 +522,7 @@ def createAnalysisTasks(opt):
                 runTopWidthAnalysis(fileName,outFileName)
     else:
         cmsswBase=os.environ['CMSSW_BASE']
-        FarmDirectory = '%s/FARM17010ANA'%cmsswBase
+        FarmDirectory = '%s/%s'%(cmsswBase,opt.farm)
         os.system('mkdir -p %s'%FarmDirectory)
         
         with open ('%s/condor.sub'%FarmDirectory,'w') as condor:
@@ -575,6 +575,10 @@ def main():
                           dest='output',
                           default='analysis',
                           help='Output directory [default: %default]')
+	parser.add_option('--farm',
+                          dest='farm',
+                          default='TOP17010ANA',
+                          help='farm directory name [default: %default]')
 	parser.add_option('-q', '--queue',
                           dest='queue',
                           default='local',

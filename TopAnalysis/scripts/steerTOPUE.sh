@@ -95,7 +95,10 @@ case $WHAT in
 #	python scripts/plotter.py -i UEanalysis/analysis -j data/era2016/samples.json      ${commonOpts} ${filter}
 #	python scripts/plotter.py -i UEanalysis/analysis -j data/era2016/syst_samples.json ${commonOpts} ${filter} --silent --outName syst_plotter.root;	
 #        python test/TopUEAnalysis/UETools.py -o UEanalysis/analysis/plots/ -i  UEanalysis/analysis/MC13TeV_TTJets.root
-	python test/TopUEAnalysis/showFinalRecoDistribution.py UEanalysis/analysis/plots/plotter.root UEanalysis/analysis/plots/syst_plotter.root
+	python test/TopUEAnalysis/showFinalRecoDistribution.py \
+            UEanalysis/analysis/plots/plotter.root \
+            UEanalysis/analysis/plots/syst_plotter.root \
+            --out UEanalysis/analysis/plots/reco;
         #python test/TopUEAnalysis/showFinalUnfoldedDistribution.py \
         #    UEanalysis/analysis/plots/plotter.root \
         #    UEanalysis/analysis/plots/syst_plotter.root \
@@ -104,10 +107,13 @@ case $WHAT in
 	
 	;;
     WWWANA )
-	mkdir -p ${wwwdir}/rawana
-        cp UEanalysis/analysis/plots/*.{png,pdf,dat} ${wwwdir}/rawana
-	cp  UEanalysis/analysis/plots/rawana/*.{png,pdf,dat} ${wwwdir}/rawana
-        cp test/index.php ${wwwdir}/rawana
+	mkdir -p ${wwwdir}/rawana        
+        #cp UEanalysis/analysis/plots/*.{png,pdf,dat} ${wwwdir}/rawana
+	#cp  UEanalysis/analysis/plots/rawana/*.{png,pdf,dat} ${wwwdir}/rawana
+        #cp test/index.php ${wwwdir}/rawana
+        mkdir -p ${wwwdir}/reco
+        cp UEanalysis/analysis/plots/reco/*{png,pdf} ${wwwdir}/reco
+        cp test/index.php ${wwwdir}/reco
 	;;
     UNFOLD )
         commonOpts="--plotter UEanalysis/analysis/plots/plotter.root --syst UEanalysis/analysis/plots/syst_plotter.root -d UEanalysis/analysis/Chunks/"

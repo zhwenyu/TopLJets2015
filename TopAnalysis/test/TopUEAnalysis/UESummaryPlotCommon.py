@@ -2,11 +2,35 @@
 
 import ROOT
 from UEAnalysisHandler import VARS,EVAXES
+from collections import defaultdict
+
+PLOTFORMATS=[ 
+    (ROOT.kAzure+4,20,1001),
+    (ROOT.kMagenta,20,1001),
+    (ROOT.kGreen+3,20,1001),
+    (ROOT.kMagenta+2,20,3004),
+    (ROOT.kMagenta-9,20,3002),
+    (ROOT.kRed+1,20,1001),
+    ]
+
+COMPARISONSETS=[
+    ('POWHEG+PY8 CUETP8M2T4', [ ('nominal',         ['t#bar{t}']), 
+                                ('#deltaCUET8P2MT4',['t#bar{t} UEup',     't#bar{t} UEdn']),
+                                ('FSR',             ['t#bar{t} fsr up',   't#bar{t} fsr dn']),
+                                ('ISR',             ['t#bar{t} isr up',   't#bar{t} isr dn']),
+                                ('hdamp',           ['t#bar{t} hdamp up', 't#bar{t} hdamp dn']),
+                                ('CR',              ['t#bar{t} QCDbased', 't#bar{t} ERDon', 't#bar{t} gluon move']) ] 
+     ),
+    ('aMC@NLO+PY8 CUETP8M2T4', [ ('nominal', ['t#bar{t} aMC@NLO']) ]),
+    ('POWHEG+HW++ EE5C'      , [ ('nominal', ['t#bar{t} Herwig++']) ]),
+    ]
+
+
+
 
 FILLS=[1001,3004,3002,1001]
-COLORS=[1,ROOT.kAzure+4, ROOT.kMagenta, ROOT.kGreen+3,  ROOT.kMagenta+2, ROOT.kMagenta-9,ROOT.kRed+1,ROOT.kAzure+7, ROOT.kBlue-7,ROOT.kGray,ROOT.kGray]
-
-MARKERS=[20,22,24,27,23,33,20,32,24]
+COLORS=[ROOT.kAzure+4, ROOT.kMagenta, ROOT.kGreen+3,  ROOT.kMagenta+2, ROOT.kMagenta-9,ROOT.kRed+1,ROOT.kAzure+7, ROOT.kBlue-7,ROOT.kGray,ROOT.kGray]
+MARKERS=[20,22,24,27] #,23,33,20,32,24]
 OBSERVABLES=['chmult','sphericity','C','D','aplanarity','chavgpt','chavgpz','chflux','chfluxz']
 OBSRANGES={'sphericity':(5e-2,5),
            'aplanarity':(5e-3,30),
@@ -27,20 +51,7 @@ RATIORANGES={'sphericity':(0.8,1.27),
            'chflux':(0.5,1.77),
            'chfluxz':(0.5,1.77)}
 
-SLICES=['nj',None] #,'nj','ptttbar','ptll']
-MAINMC=('POWHEG+PY8 CUETP8M2T4','t#bar{t}')
-#MAINMC=('POWHEG+HW++ EE5C','t#bar{t} Herwig++')
-COMPARISONSETS=[
-    ('POWHEG+PY8 CUETP8M2T4', [ ('nominal',         ['t#bar{t}']), 
-                                ('#deltaCUET8P2MT4',['t#bar{t} UEup',     't#bar{t} UEdn']),
-                                ('FSR',             ['t#bar{t} fsr up',   't#bar{t} fsr dn']),
-                                ('ISR',             ['t#bar{t} isr up',   't#bar{t} isr dn']),
-                                ('hdamp',           ['t#bar{t} hdamp up', 't#bar{t} hdamp dn']),
-                                ('CR',              ['t#bar{t} QCDbased', 't#bar{t} ERDon', 't#bar{t} gluon move']) ] 
-     ),
-    ('aMC@NLO+PY8 CUETP8M2T4', [ ('nominal', ['t#bar{t} aMC@NLO']) ]),
-    ('POWHEG+HW++ EE5C'      , [ ('nominal', ['t#bar{t} Herwig++']) ]),
-    ]
+SLICES=['nj',None] #,'ptll','chmult','ptttbar']
 
 """
 """
@@ -84,11 +95,14 @@ class SimpleUEPlot:
         self.generateGraph()
 
     def generateGraph(self):
-        self.gr=ROOT.TGraphAsymmErrors()
-        self.gr.SetName('%s_gr'%self.h.GetName())
 
         norm=self.h.Integral()
+        if norm==0:
+            self.gr=None
+            return self.gr
 
+        self.gr=ROOT.TGraphAsymmErrors()
+        self.gr.SetName('%s_gr'%self.h.GetName())
         self.xmean=0
         self.xmeanUnc=0
         for xbin in xrange(1,self.trueAxis.GetNbins()+1):
@@ -141,7 +155,7 @@ class UESummaryPlotInfo:
 
     """
     """
-    def __init__(self,obsAxis,sliceAxis,tag=''):
+    def __init__(self,obsAxis,sliceAxis,tag='',isReco=True):
         
         self.obsAxis=obsAxis
         self.sliceAxis=sliceAxis
@@ -153,7 +167,6 @@ class UESummaryPlotInfo:
         self.signal = []
         self.expSysts = []
         self.signalVars = []
-
 
     """
     """
@@ -167,6 +180,23 @@ class UESummaryPlotInfo:
         self.signal.append( (islice,
                              SimpleUEPlot(h,'signal_%s_%s'%(str(islice),self.tag),self.obsAxis,True) ) )
 
+    """
+    """
+    def addExperimentalUncs(self,expSysts,islice):
+        self.expSysts.append( (islice,defaultdict(list) ) )
+        for x in expSysts:
+            for h in expSysts[x]:
+                self.expSysts[-1][1][x].append( SimpleUEPlot(h,'signalexp_%s_%s'%(h.GetName(),self.tag),self.obsAxis,True) )
+
+    """
+    """
+    def addSignalVariations(self,signalVars,islice):
+        self.signalVars.append( (islice,{}) )
+        for compSet in signalVars:
+            self.signalVars[-1][1][compSet]=defaultdict(list)
+            for compVarName in signalVars[compSet]:
+                for h in signalVars[compSet][compVarName]:
+                    self.signalVars[-1][1][compSet][compVarName].append(  SimpleUEPlot(h,'signalth_%s_%s'%(h.GetName(),self.tag),self.obsAxis,True) )
         
     """
     subtracts the background
@@ -176,21 +206,12 @@ class UESummaryPlotInfo:
             if i!=islice: continue
             d.subtractContribution(bkg)
 
+
     """
     """
     def showProfile(self,outDir):
 
-
-        meanMin,meanMax=1.0e9,-1.0e9
-        for _,p in self.data:
-            meanMin=min(meanMin,p.xmean)
-            meanMax=max(meanMax,p.xmean)
-        frame=ROOT.TH1F('frame','frame',self.sliceAxis.GetNbins(),self.sliceAxis.GetXbins().GetArray())
-
-        frame.GetYaxis().SetRangeUser(meanMin*0.5,meanMax*1.5)
-        incframe=ROOT.TH1F('incframe','incframe',1,0,2)
-        incframe.GetYaxis().SetRangeUser(meanMin*0.5,meanMax*1.5)
-
+        #start the canvas
         c=ROOT.TCanvas('c','c',500,500)
         c.SetTopMargin(0.05)
         c.SetRightMargin(0.0)
@@ -212,31 +233,82 @@ class UESummaryPlotInfo:
         p2.SetLeftMargin(0.01)
         p2.SetBottomMargin(0.1)
         p2.Draw()
-        
-        leg=ROOT.TLegend(0.68,0.88,0.95,0.88-(len(self.data)+1)*0.05)
-        leg.SetFillStyle(0)
-        leg.SetBorderSize(0)
-        leg.SetTextFont(42)
-        leg.SetTextSize(0.035)
 
+        #check ranges and prepare frames
+        meanMin,meanMax=1.0e9,-1.0e9
+        for _,p in self.data:
+            meanMin=min(meanMin,p.xmean)
+            meanMax=max(meanMax,p.xmean)
+        frame=ROOT.TH1F('frame','frame',self.sliceAxis.GetNbins(),self.sliceAxis.GetXbins().GetArray())
+        frame.GetYaxis().SetRangeUser(meanMin*0.5,meanMax*1.5)
+        incframe=ROOT.TH1F('incframe','incframe',1,0.5,1.5)
+        incframe.GetYaxis().SetRangeUser(meanMin*0.5,meanMax*1.5)
+                
         #signal
         mcAvgProfile=ROOT.TGraphAsymmErrors()
-        ci=ROOT.kAzure+7
+        ci=ROOT.TColor.GetColor('#3182bd')
         mcAvgProfile.SetMarkerColor(ci)
         mcAvgProfile.SetLineColor(ci)
         mcAvgProfile.SetFillColor(ci)
         mcAvgProfile.SetFillStyle(1001)
         mcProfile=mcAvgProfile.Clone()
+        
+        ci=ROOT.TColor.GetColor('#9ecae1')
+        mcAvgExpProfile=mcAvgProfile.Clone()
+        mcAvgExpProfile.SetFillColor(ci)
+        mcExpProfile=mcAvgExpProfile.Clone()
+
+        ci=ROOT.TColor.GetColor('#deebf7')
+        mcAvgTotalProfile=mcAvgProfile.Clone()
+        mcAvgTotalProfile.SetFillColor(ci)
+        mcTotalProfile=mcAvgTotalProfile.Clone()
+
         for islice,p in self.signal:
             mean,meanUnc=p.xmean,p.xmeanUnc
+
+            #experimental uncertainties
+            expUnc=meanUnc**2
+            for i,d in self.expSysts:
+                if i!=islice: continue   
+                for x in d:
+                    iexpUnc=0
+                    for h in d[x]:
+                        if h.gr is None : continue
+                        iexpUnc=max(iexpUnc,abs(h.xmean-mean))
+                    expUnc += iexpUnc**2
+            expUnc=ROOT.TMath.Sqrt(expUnc)
+
+            #total uncertainties
+            totalUnc=expUnc**2
+            for i,d, in self.signalVars:
+                if i!=islice: continue  
+                for compSet in d:
+                    if compSet!=MAINMC[0] : continue
+                    for x in d[compSet]:
+                        ithUnc=0
+                        for h in d[compSet][x]:
+                            if h.gr is None : continue
+                            ithUnc=max(ithUnc,abs(h.xmean-mean))
+                        totalUnc += ithUnc**2
+            totalUnc=ROOT.TMath.Sqrt(totalUnc)
+
+            #add to plots
             if islice==0:
                 mcAvgProfile.SetPoint(0,1,mean)
                 mcAvgProfile.SetPointError(0,0.5,0.5,meanUnc,meanUnc)
+                mcExpProfile.SetPoint(0,1,mean)
+                mcExpProfile.SetPointError(0,0.5,0.5,expUnc,expUnc)
+                mcAvgTotalProfile.SetPoint(0,1,mean)
+                mcAvgTotalProfile.SetPointError(0,0.5,0.5,totalUnc,totalUnc)
             else:
                 xcen=self.sliceAxis.GetBinCenter(islice)
                 xwid=self.sliceAxis.GetBinWidth(islice)
                 mcProfile.SetPoint(islice-1,xcen,mean)
                 mcProfile.SetPointError(islice-1,0.5*xwid,0.5*xwid,meanUnc,meanUnc)
+                mcExpProfile.SetPoint(islice-1,xcen,mean)
+                mcExpProfile.SetPointError(islice-1,0.5*xwid,0.5*xwid,expUnc,expUnc)
+                mcTotalProfile.SetPoint(islice-1,xcen,mean)
+                mcTotalProfile.SetPointError(islice-1,0.5*xwid,0.5*xwid,totalUnc,totalUnc)
 
         #data
         dataAvgProfile=ROOT.TGraphAsymmErrors()
@@ -255,15 +327,37 @@ class UESummaryPlotInfo:
                 dataProfile.SetPointError(islice-1,0,0,meanUnc,meanUnc)
 
 
+        #inclusive frame
         p2.cd()
         incframe.Draw()
         incframe.GetXaxis().SetNdivisions(0)
         incframe.GetXaxis().SetTitleSize(0.15)
-        incframe.GetXaxis().SetTitle('inclusive')
+        incframe.GetXaxis().SetTitle('Inclusive')
         incframe.GetXaxis().SetTitleOffset(0.25)
+        mcAvgTotalProfile.Draw('2')
+        mcAvgExpProfile.Draw('2')
         mcAvgProfile.Draw('2')
         dataAvgProfile.Draw('ep')
+
+        #legend for uncertainties
+        lines=[]
+        for gr in [mcAvgTotalProfile,mcAvgExpProfile,mcAvgProfile]:
+            lines.append(ROOT.TLine())
+            dx=0.35
+            if len(lines)>1: dx=0.24
+            if len(lines)>2: dx=0.1
+            lines[-1].SetLineWidth(5)
+            lines[-1].SetLineColor(gr.GetFillColor())
+            lines[-1].DrawLineNDC(0.6-dx,0.93,0.6+0.9*dx,0.93)
+        tex=ROOT.TLatex()
+        tex.SetTextFont(42)
+        tex.SetTextSize(0.1)
+        tex.SetNDC()
+        tex.DrawLatex(0.1,0.95,'#it{Total Exp. Stat.}')
+
+        p2.RedrawAxis()
                 
+        #differential frame
         p1.cd()
         frame.Draw()
         frame.GetYaxis().SetTitle('<%s>'%VARS[self.obs][0])
@@ -273,30 +367,54 @@ class UESummaryPlotInfo:
         frame.GetXaxis().SetTitle(VARS[self.sliceVar][0])
         frame.GetXaxis().SetTitleSize(0.04)
         frame.GetXaxis().SetLabelSize(0.04)
+        mcTotalProfile.Draw('2')
+        mcExpProfile.Draw('2')
         mcProfile.Draw('2')
         dataProfile.Draw('ep')
 
+        #add legend
+        leg=ROOT.TLegend(0.15,0.9,0.94,0.75)
+        leg.SetFillStyle(0)
+        leg.SetBorderSize(0)
+        leg.SetTextFont(42)
+        leg.SetTextSize(0.04)
+        leg.AddEntry(dataProfile,'Data','ep')
+        leg.AddEntry(mcTotalProfile,'#splitline{Powheg+Pythia8}{CUETP8M2T4}','f')
+        leg.Draw()
+        
+        #the header
         tex2=ROOT.TLatex()
         tex2.SetTextFont(42)
         tex2.SetTextSize(0.045)
         tex2.SetNDC()
         tex2.DrawLatex(0.15,0.93,'#bf{CMS} #it{preliminary}')
 
-        c.cd()
-        tex=ROOT.TLatex()
-        tex.SetTextFont(42)
-        tex.SetTextSize(0.04)
-        tex.SetNDC()
-        tex.DrawLatex(0.7,0.96,'#scale[0.8]{35.9 fb^{-1} (#sqrt{s}=13 TeV)}')
+        p1.RedrawAxis()
 
+        #the lumi/sqrts
+        c.cd()
+        tex3=ROOT.TLatex()
+        tex3.SetTextFont(42)
+        tex3.SetTextSize(0.04)
+        tex3.SetNDC()
+        tex3.DrawLatex(0.7,0.96,'#scale[0.8]{35.9 fb^{-1} (#sqrt{s}=13 TeV)}')
+
+        # all done
         c.Modified()
         c.Update()
-        raw_input()
+        outName='profile%s_%s_%s'%(self.tag,self.obs,self.sliceVar)
+        for ext in ['pdf','png']:
+            c.SaveAs('%s/%s.%s'%(outDir,outName,ext))
+
+        p1.Delete()
+        p2.Delete()
+        c.Delete()
+
+
 
     """
     """
     def showMain(self,outDir):
-
 
         c=ROOT.TCanvas('c','c',500,500)
         c.SetTopMargin(0.05)
@@ -349,12 +467,13 @@ class UESummaryPlotInfo:
                                                                 self.sliceAxis.GetBinUpEdge(islice),
                                                                 islice) )
             dataGrs[-1].Draw('p')
-            dataGrs[-1].SetMarkerStyle(MARKERS[islice])
-            dataGrs[-1].SetMarkerColor(COLORS[islice])
-            dataGrs[-1].SetLineColor(COLORS[islice])
+            dataGrs[-1].SetMarkerStyle(MARKERS[islice%len(MARKERS)])
+            ci=COLORS[islice/len(MARKERS)]
+            dataGrs[-1].SetMarkerColor(ci)
+            dataGrs[-1].SetLineColor(ci)
             leg.AddEntry(dataGrs[-1],dataGrs[-1].GetTitle(),'ep')
 
-        leg.AddEntry(mcGrs[0],'#scale[0.8]{#splitline{POWHEG+PYTHIA8}{CUETP8M2T4}}','f')
+        leg.AddEntry(mcGrs[0],'#scale[0.8]{#splitline{Powheg+Pythia8}{CUETP8M2T4}}','f')
         leg.Draw()
       
 
@@ -365,7 +484,13 @@ class UESummaryPlotInfo:
         tex.DrawLatex(0.7,0.9,'#bf{CMS} #it{preliminary}')
         tex.DrawLatex(0.72,0.96,'#scale[0.8]{35.9 fb^{-1} (#sqrt{s}=13 TeV)}')
         
-        raw_input()
+
+        outName='main%s_%s_%s'%(self.tag,self.obs,self.sliceVar)
+        for ext in ['pdf','png']:
+            c.SaveAs('%s/%s.%s'%(outDir,outName,ext))
+
+        c.Delete()
+
 
 
 

@@ -70,17 +70,20 @@ case $WHAT in
 	python scripts/runTopWidthAnalysis.py -i root://eoscms//eos/cms//store/cmst3/group/top/TOP-17-010//Chunks/MC13TeV_TTJets_12.root -o ${outdir}/analysis/Chunks -q local;
         ;;
     ANA )
-	python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${outdir}/analysis/Chunks -q ${queue} --only MC;	
+	python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${outdir}/analysis/Chunks -q ${queue} --only MC;
+	python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${outdir}/analysis/Chunks -q ${queue} --only Data --farm TOP17010DataANA;
 	;;
     MERGE )
 	./scripts/mergeOutputs.py ${outdir}/analysis;
 	;;
     BKG )
 	python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json  -l ${lumi} ${lumiSpecs} --onlyData --only mll -o dy_plotter.root; 
-	;;
-    DY )
 	python scripts/runDYRinRout.py --in ${outdir}/analysis/plots/dy_plotter.root --categs 1b,2b --out ${outdir}/analysis/plots/;
 	;;
+    PLOT )
+        python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --silent;
+        python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/syst_samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --silent -o syst_plotter.root;
+        ;;
     PLOT_P1 )
 		#python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --only count --saveTeX -o count_plotter2.root --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck > count2.out & 
 		#python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --only njets,ptlb -o njets_plotter2.root --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck > njets2.out &
