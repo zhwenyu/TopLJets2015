@@ -113,7 +113,6 @@ case $WHAT in
     PARAM)
 
         for sample in MC8.16TeV_TTbar_pPb_hypertighte MC8.16TeV_TTbar_pPb_tighte_etarestr MC8.16TeV_TTbar_pPb_tighte MC8.16TeV_TTbar_pPb MC8.16TeV_TTbar_pPb_Pohweg; do
-
 	    python parameterizeMCShapes.py workspace_${sample}.root;
 	    outDir=plots/$sample/workspace/
 	    mkdir ${outDir}
@@ -145,13 +144,14 @@ case $WHAT in
         #dataRef=Data8.16TeV_pPb_nonsubiso_tighte_etarestr
         #sigRef=MC8.16TeV_TTbar_pPb_hypertighte
         #dataRef=Data8.16TeV_pPb_nonsubiso_hypertighte
-	for f in `seq 0 3`; do
-            for wmodel in `seq 0 2`; do
+	for f in `seq 0 0`; do
+            for wmodel in `seq 0 0`; do
 	        python runDataFit.py --fitType ${f} -s pdf_workspace_${sigRef}.root -i workspace_${dataRef}.root -o plots/${dataRef} --wModel ${wmodel};
                 impacts=""
-                if [[ "f" == "0" && "wmodel" == "0" ]]; then
+                if [[ "${f}" == "0" && "${wmodel}" == "0" ]]; then
                     impacts="--impacts"
                 fi
+                impacts=""
 	        python runDataFit.py --fitType ${f} -o plots/${dataRef}/ --verbose 9 --finalWorkspace finalworkspace_wmodel${wmodel}.root --wModel ${wmodel} ${impacts}
 	    done
         done

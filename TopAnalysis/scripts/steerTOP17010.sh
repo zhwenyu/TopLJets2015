@@ -78,17 +78,17 @@ case $WHAT in
 	;;
     BKG )
 	python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json  -l ${lumi} ${lumiSpecs} --onlyData --only mll -o dy_plotter.root; 
-	python scripts/runDYRinRout.py --in ${outdir}/analysis/plots/dy_plotter.root --categs 1b,2b --out ${outdir}/analysis/plots/;
+	python scripts/runDYRinRout.py --in ${outdir}/analysis/plots/dy_plotter.root --categs 1b,2b --out ${outdir}/analysis/plots/ > ${outdir}/analysis/plots/dysf.dat;
 	;;
     PLOT )
         python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --silent;
         python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/syst_samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --silent -o syst_plotter.root;
         ;;
     PLOT_P1 )
-		#python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --only count --saveTeX -o count_plotter2.root --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck > count2.out & 
-		#python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --only njets,ptlb -o njets_plotter2.root --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck > njets2.out &
-    	#python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck -o plotter4.root > plotter4.out &
-		#python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/syst_samples.json -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --silent -o syst_plotter2.root > syst2.out &
+	python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --only count --saveTeX -o count_plotter.root --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck > count2.out & 
+	python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --only njets,ptlb -o njets_plotter.root --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck > njets2.out &
+    	python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck -o plotter.root > plotter.out &
+	python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/syst_samples.json -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --silent -o syst_plotter2.root > syst2.out &
 		#stdcmd="python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --only count --saveTeX -o count_plotter.root --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck;"
 	    #	bsub -q ${queue} ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${stdcmd}; 
 		#stdcmd="python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --only njets,ptlb -o njets_plotter.root --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck; "

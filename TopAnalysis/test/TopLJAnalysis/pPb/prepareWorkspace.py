@@ -488,7 +488,7 @@ def main():
     parser = optparse.OptionParser(usage)
     parser.add_option('-d', '--data',       dest='data',      default='MC8.16TeV_TTbar_pPb_Pohweg',   type='string',    help='dataset to use [%default]')
     parser.add_option('-v', '--verbose',    dest='verbose',   default=0,                              type=int,         help='Verbose mode [%default]')
-    parser.add_option(      '--shiftJES',   dest='shiftJES',  default=0.98,                           type=float,       help='shift jes [%default]')
+    parser.add_option(      '--shiftJES',   dest='shiftJES',  default=0.97,                           type=float,       help='shift jes [%default]')
     parser.add_option(      '--wjjOrder',   dest='wjjOrder',  default='drjj',                         type='string',    help='wjj ordering (drjj,mjj,sumpt) [%default]')
     parser.add_option(      '--thadOrder',  dest='thadOrder', default='dm2tlep',                      type='string',    help='thad ordering (dr,dm2tlep,dm2pdg) [%default]')
     parser.add_option(      '--jerProf',    dest='jerProf',   default=None,                      type='string',    help='plotter with JER profile [%default]')
