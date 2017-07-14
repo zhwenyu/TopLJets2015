@@ -11,6 +11,9 @@
 #include "CondFormats/BTauObjects/interface/BTagCalibration.h"
 #include "CondTools/BTau/interface/BTagCalibrationReader.h"
 
+#include "JetMETCorrections/Modules/interface/JetResolution.h"
+#include <CondFormats/JetMETObjects/interface/JetResolutionObject.h>
+
 #include "TGraphAsymmErrors.h"
 
 typedef std::pair<TString,float> RunPeriod_t;
@@ -30,7 +33,9 @@ void applyJetCorrectionUncertainty(TLorentzVector &jp4,JetCorrectionUncertainty 
 
 //apply jet energy resolutions
 void smearJetEnergies(MiniEvent_t &ev, std::string option = "central");
+void smearJetEnergies(MiniEvent_t &ev, JME::JetResolution* jer, std::string option = "central");
 void smearJetEnergy(TLorentzVector &jp4, float genJet_pt,std::string option = "central");
+void smearJetEnergyStochastic(TLorentzVector &jp4, TRandom* random, double resolution, std::string option = "central");
 
 //see working points in https://twiki.cern.ch/twiki/bin/view/CMS/BtagRecommendation80XReReco
 void addBTagDecisions(MiniEvent_t &ev,float wp=0.8484,float wpl=0.8484);

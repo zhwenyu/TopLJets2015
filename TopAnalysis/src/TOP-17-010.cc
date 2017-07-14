@@ -424,7 +424,7 @@ void RunTop17010(TString filename,
                   jecUncs[iju]->setJetPt(twev.j_pt[ij]);
                   Float_t unc=jecUncs[iju]->getUncertainty(true);
                   if(jecUncSrcs[iju]=="FlavorPureGluon" && abs(twev.gj_flav[ij])!=21) unc=0;
-                  if(jecUncSrcs[iju]=="FlavorPureQuark" && (abs(twev.gj_flav[ij])>4 || abs(twev.gj_flav[ij])==0)) unc=0;
+                  if(jecUncSrcs[iju]=="FlavorPureQuark" && (abs(twev.gj_flav[ij])>=4 || abs(twev.gj_flav[ij])==0)) unc=0;
                   if(jecUncSrcs[iju]=="FlavorPureCharm" && abs(twev.gj_flav[ij])!=4) unc=0;
                   if(jecUncSrcs[iju]=="FlavorPureBottom"&& abs(twev.gj_flav[ij])!=5) unc=0;
                   twev.j_jes[ij].push_back( unc );

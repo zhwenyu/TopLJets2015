@@ -13,16 +13,16 @@ export LSB_JOB_REPORT_MAIL=N
 
 
 queue=workday
-githash=b312177
 lumi=35922
 lumiSpecs="" #--lumiSpecs EE:11391"
 lumiUnc=0.025
 whoami=`whoami`
 myletter=${whoami:0:1}
-eosdir=/store/cmst3/group/top/ReReco2016/${githash}
+eosdir=/store/cmst3/group/top/ReReco2016/b312177
+dataeos=/store/cmst3/group/top/ReReco2016/be52dbe_03Feb2017
 summaryeosdir=/store/cmst3/group/top/TopUE
 outdir=${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/UEanalysis/
-wwwdir=~/www/TOP-17-015-v2
+wwwdir=~/www/TOP-17-015
 
 
 RED='\e[31m'
@@ -47,7 +47,9 @@ case $WHAT in
 	;;
 
     SEL )
-	python scripts/runLocalAnalysis.py -i ${eosdir}      -q ${queue} -o ${summaryeosdir}      --era era2016 -m TOP-UE::RunTopUE --ch 0 --runSysts;
+        commonOpts="-q ${queue} -o ${summaryeosdir}      --era era2016 -m TOP-UE::RunTopUE --ch 0 --runSysts";
+	python scripts/runLocalAnalysis.py -i ${eosdir}  --farmappendix TopUEMC ${commonOpts} --only MC;
+	python scripts/runLocalAnalysis.py -i ${dataeos} --farmappendix TopUEMC ${commonOpts} --only Data;
 	;;
 
     MERGESEL )
@@ -90,10 +92,13 @@ case $WHAT in
         mkdir -p UEanalysis/analysis/plots/rawana
 	commonOpts="-l ${lumi} --saveLog --mcUnc ${lumiUnc} --procSF DY:${outdir}/plots/.dyscalefactors.pck";
         #filter="--only _0_" #None_inc,ptttbar_inc,nj_inc"
-	python scripts/plotter.py -i UEanalysis/analysis -j data/era2016/samples.json      ${commonOpts} ${filter}
-	python scripts/plotter.py -i UEanalysis/analysis -j data/era2016/syst_samples.json ${commonOpts} ${filter} --silent --outName syst_plotter.root;	
-        python test/TopUEAnalysis/UETools.py -o UEanalysis/analysis/plots/ -i  UEanalysis/analysis/MC13TeV_TTJets.root
-	#python test/TopUEAnalysis/showFinalRecoDistribution.py UEanalysis/analysis/plots/plotter.root UEanalysis/analysis/plots/syst_plotter.root
+#	python scripts/plotter.py -i UEanalysis/analysis -j data/era2016/samples.json      ${commonOpts} ${filter}
+#	python scripts/plotter.py -i UEanalysis/analysis -j data/era2016/syst_samples.json ${commonOpts} ${filter} --silent --outName syst_plotter.root;	
+#        python test/TopUEAnalysis/UETools.py -o UEanalysis/analysis/plots/ -i  UEanalysis/analysis/MC13TeV_TTJets.root
+	python test/TopUEAnalysis/showFinalRecoDistribution.py \
+            UEanalysis/analysis/plots/plotter.root \
+            UEanalysis/analysis/plots/syst_plotter.root \
+            --out UEanalysis/analysis/plots/reco;
         #python test/TopUEAnalysis/showFinalUnfoldedDistribution.py \
         #    UEanalysis/analysis/plots/plotter.root \
         #    UEanalysis/analysis/plots/syst_plotter.root \
@@ -102,10 +107,13 @@ case $WHAT in
 	
 	;;
     WWWANA )
-	mkdir -p ${wwwdir}/rawana
-        cp UEanalysis/analysis/plots/*.{png,pdf,dat} ${wwwdir}/rawana
-	cp  UEanalysis/analysis/plots/rawana/*.{png,pdf,dat} ${wwwdir}/rawana
-        cp test/index.php ${wwwdir}/rawana
+	mkdir -p ${wwwdir}/rawana        
+        #cp UEanalysis/analysis/plots/*.{png,pdf,dat} ${wwwdir}/rawana
+	#cp  UEanalysis/analysis/plots/rawana/*.{png,pdf,dat} ${wwwdir}/rawana
+        #cp test/index.php ${wwwdir}/rawana
+        mkdir -p ${wwwdir}/reco
+        cp UEanalysis/analysis/plots/reco/*{png,pdf} ${wwwdir}/reco
+        cp test/index.php ${wwwdir}/reco
 	;;
     UNFOLD )
         commonOpts="--plotter UEanalysis/analysis/plots/plotter.root --syst UEanalysis/analysis/plots/syst_plotter.root -d UEanalysis/analysis/Chunks/"

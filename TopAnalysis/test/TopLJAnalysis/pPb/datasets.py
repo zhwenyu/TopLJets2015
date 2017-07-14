@@ -85,6 +85,13 @@ def defineDataset(data):
                                       '%s/WtoENu_pPb-EmbEPOS_8p16_Pyquen_pPb816Summer16DR-pPbEmb_80X_mcRun2_pA_v4.root'%baseDir],
                                      '#4575b4', [11,13],   False)
 
+    if 'MC8.16TeV_DY_pPb' in data:
+        dataset=OrderedDict()
+        dataset['l+jets']         = (['%s/DYtoMuMu_M-30_pPb-EmbEPOS_8p16_Pyquen_pPb816Summer16DR-pPbEmb_80X_mcRun2_pA_v4.root'%baseDir,
+                                      '%s/DYtoEE_M-30_pPb-EmbEPOS_8p16_Pyquen_pPb816Summer16DR-pPbEmb_80X_mcRun2_pA_v4.root'%baseDir],
+                                     '#4575b4', [11,13],   False)
+
+
     if 'MC8TeV_WJets_pp' in data:
         dataset=OrderedDict()
         dataset['l+jets'] = ( ['%s/MC8TeV_W3Jets.root'%baseDir],

@@ -26,13 +26,13 @@ export LSB_JOB_REPORT_MAIL=N
 
 
 queue=workday
-githash=b312177
 lumi=35922
-lumiSpecs="" #"--lumiSpecs EE:11391"
+lumiSpecs=""
 lumiUnc=0.025
 whoami=`whoami`
 myletter=${whoami:0:1}
-eosdir=/store/cmst3/group/top/ReReco2016/${githash}
+eosdir=/store/cmst3/group/top/ReReco2016/b312177
+dataeosdir=/store/cmst3/group/top/ReReco2016/be52dbe_03Feb2017
 summaryeosdir=/store/cmst3/group/top/TOP-17-010/
 COMBINERELEASE=~/scratch0/CMSSW_7_4_7/src/
 outdir=/afs/cern.ch/work/${myletter}/${whoami}/TOP-17-010/
@@ -43,10 +43,13 @@ RED='\e[31m'
 NC='\e[0m'
 case $WHAT in
     TEST )
-	python scripts/runLocalAnalysis.py -i ${eosdir} -q local -o /tmp/`whoami` --era era2016 -m TOP-17-010::RunTop17010 --ch 0 --runSysts --only TTJets;
+	python scripts/runLocalAnalysis.py -i root://eoscms//eos/cms/store/cmst3/group/top/ReReco2016/b312177/MC13TeV_TTJets/MergedMiniEvents_0_ext0.root \
+            -q local -o /tmp/`whoami`/test.root --era era2016 -m TOP-17-010::RunTop17010 --ch 0 --runSysts;
         ;;
     SEL )
-	python scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} -o ${summaryeosdir} --era era2016 -m TOP-17-010::RunTop17010 --ch 0 --runSysts;
+        commonOpts="-q ${queue} -o ${summaryeosdir} --era era2016 -m TOP-17-010::RunTop17010 --ch 0 --runSysts";
+	python scripts/runLocalAnalysis.py -i ${eosdir} ${commonOpts}     --only MC --farmappendix TOP17010MC;
+	python scripts/runLocalAnalysis.py -i ${dataeosdir} ${commonOpts} --only Data --farmappendix TOP17010Data;
 	;;
     MERGESEL )
 	mkdir -p ${outdir}
@@ -63,23 +66,29 @@ case $WHAT in
 	cp ${outdir}/plots/*.{png,pdf} ${wwwdir}/sel
 	cp test/index.php ${wwwdir}/sel
 	;;
+    TESTANA )
+	python scripts/runTopWidthAnalysis.py -i root://eoscms//eos/cms//store/cmst3/group/top/TOP-17-010//Chunks/MC13TeV_TTJets_12.root -o ${outdir}/analysis/Chunks -q local;
+        ;;
     ANA )
-	python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${outdir}/analysis/Chunks -q ${queue};	
+	python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${outdir}/analysis/Chunks -q ${queue} --only MC;
+	python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${outdir}/analysis/Chunks -q ${queue} --only Data --farm TOP17010DataANA;
 	;;
     MERGE )
 	./scripts/mergeOutputs.py ${outdir}/analysis;
 	;;
     BKG )
 	python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json  -l ${lumi} ${lumiSpecs} --onlyData --only mll -o dy_plotter.root; 
+	python scripts/runDYRinRout.py --in ${outdir}/analysis/plots/dy_plotter.root --categs 1b,2b --out ${outdir}/analysis/plots/ > ${outdir}/analysis/plots/dysf.dat;
 	;;
-    DY )
-	python scripts/runDYRinRout.py --in ${outdir}/analysis/plots/dy_plotter.root --categs 1b,2b --out ${outdir}/analysis/plots/;
-	;;
+    PLOT )
+        python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --silent;
+        python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/syst_samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --silent -o syst_plotter.root;
+        ;;
     PLOT_P1 )
-		#python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --only count --saveTeX -o count_plotter2.root --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck > count2.out & 
-		#python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --only njets,ptlb -o njets_plotter2.root --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck > njets2.out &
-    	#python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck -o plotter4.root > plotter4.out &
-		#python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/syst_samples.json -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --silent -o syst_plotter2.root > syst2.out &
+	python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --only count --saveTeX -o count_plotter.root --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck > count2.out & 
+	python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --only njets,ptlb -o njets_plotter.root --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck > njets2.out &
+    	python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck -o plotter.root > plotter.out &
+	python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/syst_samples.json -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --silent -o syst_plotter2.root > syst2.out &
 		#stdcmd="python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --only count --saveTeX -o count_plotter.root --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck;"
 	    #	bsub -q ${queue} ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${stdcmd}; 
 		#stdcmd="python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --only njets,ptlb -o njets_plotter.root --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck; "

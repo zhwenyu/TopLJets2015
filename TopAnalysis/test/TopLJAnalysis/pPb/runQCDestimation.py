@@ -2,7 +2,16 @@ import ROOT
 import sys
 import pickle
 
+from runDataFit import lumi
+
 QCDNORM={}
+PROCNORM={('ttbar','e'):59./100000.,
+          ('ttbar','mu'):59./100000.,
+          ('wjets','e'):1970./1.99183e+06,
+          ('wjets','mu'):1970./3.93920e+06,
+          ('dy','mu'):224./951411.,
+          ('dy','e'):224./1.00000e+06,
+          }
 
 """
 """
@@ -41,7 +50,7 @@ def getHistos(args,var):
 
 """
 """
-def fitQCD(args,varName='mtw'):
+def fitQCD(args,varName='mtw',c=None):
     
     #fit the QCD yields
     histos=getHistos(args,varName)
@@ -52,29 +61,31 @@ def fitQCD(args,varName='mtw'):
                             0,200)
         data=ROOT.RooDataHist('data','data',ROOT.RooArgList(var),histos['data'][key])
 
-        ttbar=ROOT.RooDataHist('ttbar','ttbar',ROOT.RooArgList(var),histos['ttbar'][key])
-        ttbarpdf=ROOT.RooHistPdf('ttbarpdf','ttbarpdf',ROOT.RooArgSet(var),ttbar,0)
-        nttbar=ROOT.RooRealVar('nttbar','nttbar',0,1e6)
 
-        wjetspdf=None
+        histos['ttbar'][key].Scale(lumi[0]*PROCNORM[('ttbar',key[0])])
+        nonqcdH=histos['ttbar'][key].Clone('nonqcd')
         try:
-            wjets=ROOT.RooDataHist('wjets','wjets',ROOT.RooArgList(var),histos['wjets'][key])
-            wjetspdf=ROOT.RooHistPdf('wjetspdf','wjetspdf',ROOT.RooArgSet(var),wjets,0)
-            nwjets=ROOT.RooRealVar('nwjets','nwjets',0,1e6)
+            histos['wjets'][key].Scale(lumi[0]*PROCNORM[('wjets',key[0])])
+            nonqcdH.Add(histos['wjets'][key])
         except:
             pass
+        try:
+            histos['dy'][key].Scale(lumi[0]*PROCNORM[('dy',key[0])])
+            nonqcdH.Add(histos['dy'][key])
+        except:
+            pass
+
+        nonQCD=ROOT.RooDataHist('nonQCD','nonQCD',ROOT.RooArgList(var),nonqcdH)
+        nonQCDpdf=ROOT.RooHistPdf('nonQCDpdf','nonQCDpdf',ROOT.RooArgSet(var),nonQCD,0)
+        nnonQCDVal=nonqcdH.Integral()
+        nnonQCD=ROOT.RooRealVar('nnonQCD','nnonQCD',nnonQCDVal,nnonQCDVal*0.7,nnonQCDVal*1.3)
 
         qcdKey=(key[0],'1l4j2q')
         qcd=ROOT.RooDataHist('qcd','qcd',ROOT.RooArgList(var),histos['qcd'][qcdKey])
         qcdpdf=ROOT.RooHistPdf('qcdpdf','qcdpdf',ROOT.RooArgSet(var),qcd,0)
         nqcd=ROOT.RooRealVar('nqcd','nqcd',0,1e6)
 
-        #sum up available contributions
-        model=None
-        if wjetspdf:
-            model=ROOT.RooAddPdf('model','model',ROOT.RooArgList(ttbarpdf,wjetspdf,qcdpdf),ROOT.RooArgList(nttbar,nwjets,nqcd)) 
-        else:
-            model=ROOT.RooAddPdf('model','model',ROOT.RooArgList(ttbarpdf,qcdpdf),ROOT.RooArgList(nttbar,nqcd) )
+        model=ROOT.RooAddPdf('model','model',ROOT.RooArgList(nonQCDpdf,qcdpdf),ROOT.RooArgList(nnonQCD,nqcd) )
 
         model.fitTo(data,ROOT.RooFit.Save(),ROOT.RooFit.Minos(1))
 
@@ -93,8 +104,8 @@ def fitQCD(args,varName='mtw'):
         data.plotOn(frame,ROOT.RooFit.Name('data'))
         color=ROOT.kGray
         model.plotOn(frame,
-                     ROOT.RooFit.Components('tt*,w*'),
-                     ROOT.RooFit.Name('ttw'),
+                     ROOT.RooFit.Components('non*'),
+                     ROOT.RooFit.Name('nonqcd'),
                      ROOT.RooFit.ProjWData(data),
                      ROOT.RooFit.LineColor(color),
                      ROOT.RooFit.FillColor(color),
@@ -113,7 +124,7 @@ def fitQCD(args,varName='mtw'):
         leg.SetTextSize(0.035)
         leg.AddEntry(data,'Data','ep')
         leg.AddEntry('qcd','QCD','l')
-        leg.AddEntry('ttw','t#bar{t},W','f')
+        leg.AddEntry('nonqcd','t#bar{t},W,DY','f')
         leg.Draw()
     
         label = ROOT.TLatex()
@@ -131,25 +142,30 @@ def fitQCD(args,varName='mtw'):
             c.SaveAs(varName+'fit_%s%s.'%key+ext)
         #raw_input()
 
+"""
+"""
+def main():
+    ROOT.gStyle.SetOptStat(0)
+    ROOT.gStyle.SetOptTitle(0)
+    ROOT.gROOT.SetBatch(True)
+    c=ROOT.TCanvas('c','c',500,500)
+    c.SetTopMargin(0.05)
+    c.SetLeftMargin(0.12)
+    c.SetRightMargin(0.04)
+    c.SetBottomMargin(0.12)
+    
+    fitQCD(sys.argv[1:],'met',c)
+    fitQCD(sys.argv[1:],'mtw',c)
 
-ROOT.gStyle.SetOptStat(0)
-ROOT.gStyle.SetOptTitle(0)
-ROOT.gROOT.SetBatch(True)
-c=ROOT.TCanvas('c','c',500,500)
-c.SetTopMargin(0.05)
-c.SetLeftMargin(0.12)
-c.SetRightMargin(0.04)
-c.SetBottomMargin(0.12)
+    #saturate the uncertainty at 50% at least but not more than 100%
+    for key in QCDNORM:
+        val,valUnc=QCDNORM[key]
+        valUnc=min(val,max(0.5*val,valUnc))
+        QCDNORM[key]=(val,valUnc)
 
-fitQCD(sys.argv[1:],'met')
-fitQCD(sys.argv[1:],'mtw')
+    #dump results to a pickle file
+    with open('qcdnorm.pck','wb') as fOut:
+        pickle.dump(QCDNORM,fOut)
 
-#saturate the uncertainty at 50% at least but not more than 100%
-for key in QCDNORM:
-    val,valUnc=QCDNORM[key]
-    valUnc=min(val,max(0.5*val,valUnc))
-    QCDNORM[key]=(val,valUnc)
-
-#dump results to a pickle file
-with open('qcdnorm.pck','wb') as fOut:
-    pickle.dump(QCDNORM,fOut)
+if __name__ == "__main__":
+    main()
