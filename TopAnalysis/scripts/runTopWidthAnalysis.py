@@ -530,6 +530,7 @@ def createAnalysisTasks(opt):
             condor.write('output     = {0}/output_$(jobName).out\n'.format(FarmDirectory))
             condor.write('error      = {0}/output_$(jobName).err\n'.format(FarmDirectory))
             condor.write('+JobFlavour = workday\n')
+            condor.write('RequestCpus = 4\n')
 
             for fileName,_ in tasklist:
                 jobName='%s'%(os.path.splitext(os.path.basename(fileName))[0])
