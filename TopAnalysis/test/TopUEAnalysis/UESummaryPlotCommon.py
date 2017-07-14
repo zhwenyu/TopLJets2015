@@ -4,30 +4,6 @@ import ROOT
 from UEAnalysisHandler import VARS,EVAXES
 from collections import defaultdict
 
-PLOTFORMATS=[ 
-    (ROOT.kAzure+4,20,1001),
-    (ROOT.kMagenta,20,1001),
-    (ROOT.kGreen+3,20,1001),
-    (ROOT.kMagenta+2,20,3004),
-    (ROOT.kMagenta-9,20,3002),
-    (ROOT.kRed+1,20,1001),
-    ]
-
-COMPARISONSETS=[
-    ('POWHEG+PY8 CUETP8M2T4', [ ('nominal',         ['t#bar{t}']), 
-                                ('#deltaCUET8P2MT4',['t#bar{t} UEup',     't#bar{t} UEdn']),
-                                ('FSR',             ['t#bar{t} fsr up',   't#bar{t} fsr dn']),
-                                ('ISR',             ['t#bar{t} isr up',   't#bar{t} isr dn']),
-                                ('hdamp',           ['t#bar{t} hdamp up', 't#bar{t} hdamp dn']),
-                                ('CR',              ['t#bar{t} QCDbased', 't#bar{t} ERDon', 't#bar{t} gluon move']) ] 
-     ),
-    ('aMC@NLO+PY8 CUETP8M2T4', [ ('nominal', ['t#bar{t} aMC@NLO']) ]),
-    ('POWHEG+HW++ EE5C'      , [ ('nominal', ['t#bar{t} Herwig++']) ]),
-    ]
-
-
-
-
 FILLS=[1001,3004,3002,1001]
 COLORS=[ROOT.kAzure+4, ROOT.kMagenta, ROOT.kGreen+3,  ROOT.kMagenta+2, ROOT.kMagenta-9,ROOT.kRed+1,ROOT.kAzure+7, ROOT.kBlue-7,ROOT.kGray,ROOT.kGray]
 MARKERS=[20,22,24,27] #,23,33,20,32,24]
@@ -51,7 +27,7 @@ RATIORANGES={'sphericity':(0.8,1.27),
            'chflux':(0.5,1.77),
            'chfluxz':(0.5,1.77)}
 
-SLICES=['nj',None] #,'ptll','chmult','ptttbar']
+SLICES=['ptll','nj','chmult','ptttbar','ptll',None]
 
 """
 """

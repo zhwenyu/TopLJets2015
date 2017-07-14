@@ -63,7 +63,9 @@ def defineDataset(data):
     if 'MC8.16TeV_TTbar_pPb_tighte' in data:
         dataset=OrderedDict()
 
-        dataset['l+jets']         = (['%s/PYQUEN_TTbar_PPb-EmbEPOS_EJets_RevertIsolation.root'%baseDir,
+        dataset['l+jets']         = (['%s/PYQUEN_TTbar_PbP-EmbEPOS_EJets.root'%baseDir,
+                                      '%s/PYQUEN_TTbar_PPb-EmbEPOS_EJets_RevertIsolation.root'%baseDir,
+                                      '%s/PYQUEN_TTbar_PbP-EmbEPOS_MuJets.root'%baseDir,
                                       '%s/PYQUEN_TTbar_PPb-EmbEPOS_MuJets_CheckForBugInJER.root'%baseDir],
                                       '#4575b4', [11,13],   True)
     if 'MC8.16TeV_TTbar_pPb_hypertighte' in data:

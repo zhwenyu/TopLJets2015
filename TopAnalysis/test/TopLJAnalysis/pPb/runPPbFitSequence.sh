@@ -37,9 +37,9 @@ case $WHAT in
 
     SEL)
 	common="--wjjOrder drjj --thadOrder dm2tlep" # --etaRestr
-        for sample in MC8.16TeV_TTbar_pPb_tighte; do  #MC8.16TeV_DY_pPb MC8.16TeV_WJets_pPb MC8.16TeV_TTbar_pPb MC8.16TeV_TTbar_pPb_Pohweg MC8TeV_WJets_pp MC8.16TeV_TTbar_pPb_hypertighte    
+        for sample in MC8.16TeV_TTbar_pPb_tighte MC8.16TeV_DY_pPb MC8.16TeV_WJets_pPb MC8.16TeV_TTbar_pPb MC8.16TeV_TTbar_pPb_Pohweg MC8TeV_WJets_pp MC8.16TeV_TTbar_pPb_hypertighte; do    
 	    python prepareWorkspace.py  -d ${sample} ${common};
-	    #python prepareWorkspace.py  -d ${sample} ${common} --etaRestr;
+	    python prepareWorkspace.py  -d ${sample} ${common} --etaRestr;
 	done
 	;;
 
@@ -112,7 +112,7 @@ case $WHAT in
     
     PARAM)
 
-        for sample in MC8.16TeV_TTbar_pPb_hypertighte MC8.16TeV_TTbar_pPb_tighte_etarestr MC8.16TeV_TTbar_pPb_tighte MC8.16TeV_TTbar_pPb MC8.16TeV_TTbar_pPb_Pohweg; do
+        for sample in MC8.16TeV_TTbar_pPb_tighte; do #MC8.16TeV_TTbar_pPb_hypertighte MC8.16TeV_TTbar_pPb_tighte_etarestr MC8.16TeV_TTbar_pPb_tighte MC8.16TeV_TTbar_pPb MC8.16TeV_TTbar_pPb_Pohweg; do
 	    python parameterizeMCShapes.py workspace_${sample}.root;
 	    outDir=plots/$sample/workspace/
 	    mkdir ${outDir}

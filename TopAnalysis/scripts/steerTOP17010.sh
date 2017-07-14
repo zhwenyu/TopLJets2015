@@ -71,7 +71,7 @@ case $WHAT in
         ;;
     ANA )
 	python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${outdir}/analysis/Chunks -q ${queue} --only MC;
-	python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${outdir}/analysis/Chunks -q ${queue} --only Data --farm TOP17010DataANA;
+	#python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${outdir}/analysis/Chunks -q ${queue} --only Data --farm TOP17010DataANA;
 	;;
     MERGE )
 	./scripts/mergeOutputs.py ${outdir}/analysis;

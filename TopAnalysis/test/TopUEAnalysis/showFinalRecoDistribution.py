@@ -7,11 +7,12 @@ from collections import OrderedDict,defaultdict
 import pprint
 
 from UEPlot import *
+from UEPlottingUtils import *
 from UESummaryPlotCommon import *
 
 """
 """
-def buildUEPlot(obsAxis,sliceAxis,regions,fIn,fSyst):
+def buildUEPlot(obsAxis,sliceAxis,regions,fIn,fSyst,outDir):
 
     obs        = obsAxis.GetName().split('_')[0]
     sliceVar   = sliceAxis.GetName().split('_')[0] if sliceAxis else None
@@ -19,7 +20,7 @@ def buildUEPlot(obsAxis,sliceAxis,regions,fIn,fSyst):
 
     for r in regions:
 
-        plotsPerRegion=[]
+        plotsPerSlice=[]
         for i in xrange(0,nSliceBins):
 
             nomKey='%s_%s_%d_%s_None_True'%(obs,sliceVar,i,r)
@@ -29,8 +30,7 @@ def buildUEPlot(obsAxis,sliceAxis,regions,fIn,fSyst):
             #collect different comparison sets
             for icomp in xrange(0,len(COMPARISONSETS)):
                 compSet, compVarList = COMPARISONSETS[icomp]
-                ci, marker, fill     = PLOTFORMATS[icomp]
-                uePlots[compSet]     = UEPlot(nomKey+'_mc%d'%icomp,compSet, ci, marker,fill , obsAxis)
+                uePlots[compSet]     = UEPlot(nomKey+'_mc%d'%icomp,compSet,obsAxis)
                 
                 for compVarName,varList in compVarList:
 
@@ -91,13 +91,22 @@ def buildUEPlot(obsAxis,sliceAxis,regions,fIn,fSyst):
             except:
                 pass
 
-            uePlots['Data']=UEPlot(nomKey+'_data', obs, 1,             1, 0,    obsAxis) 
+            uePlots['Data']=UEPlot(nomKey+'_data', obs, obsAxis) 
             uePlots['Data'].addVariation('Data',None,data)
-
-            plotsPerRegion.append( uePlots )
+            
+            #finalize plots and save them
+            for key in uePlots: uePlots[key].finalize()
+            plotsPerSlice.append( uePlots )
 
         #
-        showUEPlots(uePlots,opt.outDir)
+        if nSliceBins>1:
+            showProfile(plotColl=plotsPerSlice,
+                        sliceAxis=sliceAxis,
+                        xtitle=VARS[sliceVar][0],
+                        ytitle='<%s>'%VARS[obs][0],
+                        outName='%s/profile_%s_%s_%s'%(outDir,obs,sliceVar,r))
+        #showUEPlots(plotColl=plotsPerSlice,outDir=opt.outDir)
+        return
 
 """
 """
@@ -112,7 +121,6 @@ def readPlotsFrom(args,opt):
     fIn=ROOT.TFile.Open(args[0])
     fSyst=ROOT.TFile.Open(args[1]) if len(args)>1 else None
 
-
     #build and show the different plot combinations (observables vs slices)
     for obs in OBSERVABLES:
 
@@ -124,10 +132,11 @@ def readPlotsFrom(args,opt):
             regions=['inc']
             if not s is None:
                 sliceAxis = analysisaxis[(s,False)]
-                if s in EVAXES and obs in ['chmult','chavgpt','chflux']: regions += [0,1,2]
+                if s in EVAXES:
+                    if obs in ['chmult','chavgpt','chflux']: regions += [0,1,2]
+                    else : continue
                 if s =='chmult' and not obs in ['chavgpt','chflux'] : continue
-             
-            buildUEPlot(obsAxis,sliceAxis,regions,fIn,fSyst)
+            buildUEPlot(obsAxis,sliceAxis,regions,fIn,fSyst,opt.outDir)
 
 
 """
@@ -136,7 +145,7 @@ def main():
 
     ROOT.gStyle.SetOptStat(0)
     ROOT.gStyle.SetOptTitle(0)
-    ROOT.gROOT.SetBatch(True)
+    ROOT.gROOT.SetBatch(False) #True)
 
     #configuration
     usage = 'usage: %prog [options]'

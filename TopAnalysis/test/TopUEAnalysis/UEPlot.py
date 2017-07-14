@@ -10,24 +10,20 @@ class UEPlot:
     list of variation histograms and associated list of means
     """
 
-    def __init__(self,name,title,ci,marker,fill,trueAxis):
+    def __init__(self,name,title,trueAxis):
         """Setup the attributes of this plot"""
         self.name=name
         self.mean=[0.,[]]
         self.plot=[ROOT.TGraphErrors(),[]]
         self.plot[0].SetName('%s_central'%self.name)
         self.plot[0].SetTitle(title)
-        self.plot[0].SetMarkerStyle(marker)
-        self.plot[0].SetMarkerColor(ci)
-        self.plot[0].SetLineColor(ci)
-        self.plot[0].SetFillColor(ci)
-        self.plot[0].SetFillStyle(fill)
         for i in ['stat','exp','th']:
             self.plot[1].append( self.plot[0].Clone( '%s_%s'%(self.name,i) ) )
             self.mean[1].append( 0. )
         self.trueAxis=trueAxis        
         self.variations=defaultdict(list)
         self.variationMeans=defaultdict(list)
+        self.covMatrices=defaultdict(list)
 
     def addVariation(self,varName,varType,varH):
         """Add one more variation. varType is used to signal if is nominal (None), experimental (exp) or theory (th)"""
@@ -51,7 +47,7 @@ class UEPlot:
         except:
             self.variationMeans[key].append( None )
             
-
+        
     def clear(self):
         """Free memory of this plot"""
         self.plot[0].Delete()
@@ -61,7 +57,58 @@ class UEPlot:
             for p in self.variations[key]:
                 p.Delete()
 
-    def finalize(self):
+    def finalizeCovMatrices(self,statCov=None):
+        """finalize covariance matrices: if received, statCovariance is assumed not-normalized"""
+        
+        #find the nominal prediction
+        nomKey=None
+        for key in self.variations:
+            if not key[1] is None : continue 
+            nomKey=key
+            break
+        if nomKey is None: return
+        nbins=self.variations[nomKey][0].GetNbinsX()
+        norm=self.variations[nomKey][0].Integral()
+
+        #statistical covariance
+        if statCov is None:
+            statCov=ROOT.TMatrixF(nbins,nbins)
+            for xbin in xrange(1,nbins+1):
+                statCov[xbin][xbin]=(self.variations[nomKey][0].GetBinError(xbin)/norm)**2
+            self.covMatrices[nomKey]=statCov
+        else:
+            self.covMatrices[nomKey]=statCov*((1/norm)**2)
+
+        #systematic covariance
+        #see https://twiki.cern.ch/twiki/bin/view/CMS/TopUnfolding#Treatment_of_systematic_uncertai
+        totalSyst=ROOT.TMatrixF(nbins,nbins)
+        for key in self.variations:
+            if key is None: continue
+            if len(self.variations[key])==0 : continue
+
+            cov=ROOT.TMatrixF(nbins,nbins)
+            for xbin in xrange(1,nbins+1):
+                dxList=[ x.GetBinContent(xbin)-self.variations[nomKey][0].GetBinContent(xbin) for x in self.variations[key] ]
+                for ybin in xrange(1,nbins+1):
+                    dyList=[ x.GetBinContent(ybin)-self.variations[nomKey][0].GetBinContent(ybin) for x in self.variations[key] ]
+                    print dyList
+                    dxMax,dyMax=0,0
+                    for i in xrange(0,len(dxList)):
+                        if abs(x)<abs(dxList[i]): x=dxList[i]
+                        if abs(y)<abs(dyList[i]): y=dyList[i]
+                    cov[xbin-1][ybin-1]=dxMax*dyMax/(norm**2)
+
+            self.covMatrices[key]=cov
+            totalSyst+=cov
+        self.covMatrices['syst']=totalSyst
+        self.covMatrices['total']=totalSyst.Clone()
+        self.covMatrices['total']=self.covMatrix[nomKey]
+
+        for key in self.covMatrices:
+            self.covMatrices.Draw('colz')
+            raw_input(key)
+
+    def finalize(self,statCov=None):
         """To be used once all variations have been given: fills plots and computes means"""
 
         #start by organizing the keys
@@ -115,6 +162,9 @@ class UEPlot:
             ctsTotalUnc=ROOT.TMath.Sqrt(ctsStatUnc**2+ctsExpUnc**2+ctsThUnc**2)
             self.plot[0].SetPointError(xbin,xwid,ctsTotalUnc)
 
+        #compute covariance matrcies
+        self.finalizeCovMatrices(statCov)
+
         #final mean
         self.mean[0]=self.variationMeans[nomKey][0][0]
         self.mean[1][0]=self.variationMeans[nomKey][0][1]
@@ -136,4 +186,5 @@ class UEPlot:
                 iMeanThUnc=max( abs(m-self.mean[0]), iMeanThUnc )
             meanThUnc += iMeanThUnc**2
         self.mean[1][2]=ROOT.TMath.Sqrt(meanThUnc)
+
 

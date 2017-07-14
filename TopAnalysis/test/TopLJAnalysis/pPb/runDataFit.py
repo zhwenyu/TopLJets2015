@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+lumi=(174.5,8.725)
+
 from TopLJets2015.TopAnalysis.rounding import *
 import pickle
 import json
@@ -13,7 +15,6 @@ from prepareWorkspace import EVENTCATEGORIES as SELEVENTCATEGORIES
 
 EVENTCATEGORIES=[x for x in SELEVENTCATEGORIES if not '1f' in x]
 
-lumi=(174.5,8.725)
 acceptance={#'e':(0.0508,ROOT.TMath.Sqrt(0.0014**2+(0.031*0.0508)**2)), #eta restricted
             'e' :(0.056,ROOT.TMath.Sqrt(0.0014**2+(0.031*0.056)**2)),
             'mu':(0.060,ROOT.TMath.Sqrt(0.0016**2+(0.031*0.060)**2))}

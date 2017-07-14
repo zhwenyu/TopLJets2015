@@ -76,7 +76,7 @@ def runTopWidthAnalysis(fileName,
             systs += ['jesup_%d'%i,'jesdn_%d'%i]
 
         #generator level systematics for ttbar
-        if 'TTJets' in fileName:
+        if 'TTJets' in fileName or 'SingleT_tW' in fileName:
             thsysts += ['topptup','topptdn','nloproddec']
             ngenWgts=tree.nw-15
             print 'Adding',ngenWgts,'gen-level weights for systs'
