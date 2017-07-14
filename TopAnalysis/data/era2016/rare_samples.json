@@ -1,0 +1,20 @@
+{
+"MC13TeV_TTWW":  [0.01150,  1, "/TTWW_TuneCUETP8M2T4_13TeV-madgraph-pythia8/RunIISummer16MiniAODv2-PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v3/MINIAODSIM",  "Rares", 1, false, false, 1],
+"MC13TeV_TTTW":  [0.000788,  1, "/TTTW_TuneCUETP8M2T4_13TeV-madgraph-pythia8/RunIISummer16MiniAODv2-PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v2/MINIAODSIM",  "Rares", 1, false, false, 1],
+"MC13TeV_TTWZ":  [0.003884,  1, "/TTWZ_TuneCUETP8M2T4_13TeV-madgraph-pythia8/RunIISummer16MiniAODv2-PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v2/MINIAODSIM",  "Rares", 1, false, false, 1],
+"MC13TeV_TTZZ":  [0.001982,  1, "/TTZZ_TuneCUETP8M2T4_13TeV-madgraph-pythia8/RunIISummer16MiniAODv2-PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v2/MINIAODSIM",  "Rares", 1, false, false, 1],
+"MC13TeV_TTWH":  [0.001582,  1, "/TTWH_TuneCUETP8M2T4_13TeV-madgraph-pythia8/RunIISummer16MiniAODv2-PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v3/MINIAODSIM",  "Rares", 1, false, false, 1],
+"MC13TeV_TTZH":  [0.001535,  1, "/TTZH_TuneCUETP8M2T4_13TeV-madgraph-pythia8/RunIISummer16MiniAODv2-PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v2/MINIAODSIM",  "Rares", 1, false, false, 1],
+"MC13TeV_TTHH":  [0.000757,  1, "/TTHH_TuneCUETP8M2T4_13TeV-madgraph-pythia8/RunIISummer16MiniAODv2-PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v2/MINIAODSIM",  "Rares", 1, false, false, 1],
+"MC13TeV_TTTJ":  [0.000474,  1, "/TTTJ_TuneCUETP8M2T4_13TeV-madgraph-pythia8/RunIISummer16MiniAODv2-PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v2/MINIAODSIM",  "Rares", 1, false, false, 1],
+"MC13TeV_TTTT_isrup":  [0.0092,  1, "/TTTT_TuneCUETP8M2T4_13TeV-amcatnlo-isrup-pythia8/RunIISummer16MiniAODv2-PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/MINIAODSIM",  "t#bar{t}t#bar{t} isr up", 1, false, false, 1],
+"MC13TeV_TTTT_isrdn":  [0.0092,  1, "/TTTT_TuneCUETP8M2T4_13TeV-amcatnlo-isrdown-pythia8/RunIISummer16MiniAODv2-PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/MINIAODSIM",  "t#bar{t}t#bar{t} isr dn", 1, false, false, 1],
+"MC13TeV_TTTT_fsrup":  [0.0092,  1, "/TTTT_TuneCUETP8M2T4_13TeV-amcatnlo-fsrup-pythia8/RunIISummer16MiniAODv2-PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/MINIAODSIM",  "t#bar{t}t#bar{t} fsr up", 1, false, false, 1],
+"MC13TeV_TTTT_fsrdn":  [0.0092,  1, "/TTTT_TuneCUETP8M2T4_13TeV-amcatnlo-fsrdown-pythia8/RunIISummer16MiniAODv2-PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/MINIAODSIM",  "t#bar{t}t#bar{t} fsr dn", 1, false, false, 1]
+}
+
+
+
+
+
+
