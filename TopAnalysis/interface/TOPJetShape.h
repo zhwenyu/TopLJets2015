@@ -30,10 +30,10 @@ struct TopJetShapeEvent_t
   Int_t gl_id[5];
   
   Float_t j_pt[50], j_eta[50], j_phi[50], j_m[50];
-  Int_t j_flavor[50], j_overlap[50], j_gj[50];
+  Int_t j_flavor[50], j_partonflavor[50], j_overlap[50], j_gj[50];
   
   Float_t gj_pt[50], gj_eta[50], gj_phi[50], gj_m[50];
-  Int_t gj_flavor[50], gj_overlap[50], gj_j[50];
+  Int_t gj_flavor[50], gj_partonflavor[50], gj_overlap[50], gj_j[50];
   
   Float_t met_pt,met_phi;
   

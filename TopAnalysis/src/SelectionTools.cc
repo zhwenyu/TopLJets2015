@@ -140,6 +140,7 @@ std::vector<Jet> SelectionTool::getGoodJets(MiniEvent_t &ev, double minPt, doubl
     
     Jet jet(jp4, flavor, k);
     jet.setCSV(ev.j_csv[k]);
+    jet.setPartonFlavor(ev.j_flav[k]);
 
     //fill jet constituents
     for (int p = 0; p < ev.npf; p++) {
@@ -204,6 +205,9 @@ std::vector<Jet> SelectionTool::getGenJets(MiniEvent_t &ev, double minPt, double
     int flavor = ev.g_id[i];
       
     Jet jet(jp4, flavor, i);
+    for (int k=0; k<ev.nj; k++) {
+      if (ev.j_g[k] == i) jet.setPartonFlavor(ev.j_flav[k]);
+    }
       
     //fill jet constituents
     for (int p = 0; p < ev.ngpf; p++) {

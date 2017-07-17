@@ -162,6 +162,7 @@ void RunTopJetShape(TString filename,
       if(ratevsrunH)
         allPlots[tag+"ratevsrun"] = (TH1 *)ratevsrunH->Clone(tag+"ratevsrun");
       ht.addHist(tag+"nvtx", new TH1F(tag+"nvtx",";Vertex multiplicity;Events",55,0,55));
+      ht.addHist(tag+"rho", new TH1F(tag+"rho",";#rho;Events",40,0,40));
       ht.addHist(tag+"nleps", new TH1F(tag+"nleps",";Lepton multiplicity;Events",5,-0.5,4.5));
       ht.addHist(tag+"njets", new TH1F(tag+"njets",";Jet multiplicity;Events",15,-0.5,14.5));
       ht.addHist(tag+"nbjets", new TH1F(tag+"nbjets",";b jet multiplicity;Events",5,-0.5,4.5));
@@ -499,6 +500,7 @@ void RunTopJetShape(TString filename,
           if(rIt!=lumiMap.end() && ratevsrunH) allPlots[tag+"ratevsrun"]->Fill(std::distance(lumiMap.begin(),rIt),1./rIt->second);
           
           ht.fill(tag+"nvtx", ev.nvtx, plotwgts);
+          ht.fill(tag+"rho", ev.rho, plotwgts);
           ht.fill(tag+"nleps", leptons.size(), plotwgts);
           ht.fill(tag+"njets", jets.size(), plotwgts);
           ht.fill(tag+"nbjets", sel_nbjets, plotwgts);
@@ -545,6 +547,7 @@ void RunTopJetShape(TString filename,
         tjsev.j_phi[ij]     = jets[ij].p4().Phi();
         tjsev.j_m[ij]       = jets[ij].p4().M(); 
         tjsev.j_flavor[ij]  = jets[ij].flavor();
+        tjsev.j_partonflavor[ij]  = jets[ij].partonflavor();
         tjsev.j_overlap[ij] = jets[ij].overlap();
         
         if (tjsev.reco_sel != 1) continue;
@@ -772,6 +775,7 @@ void RunTopJetShape(TString filename,
           tjsev.gj_phi    [i] = genJets[i].p4().Phi();
           tjsev.gj_m      [i] = genJets[i].p4().M();
           tjsev.gj_flavor [i] = genJets[i].flavor();
+          tjsev.gj_partonflavor [i] = genJets[i].partonflavor();
           tjsev.gj_overlap[i] = genJets[i].overlap();
           
           //matching to reco jet
@@ -1191,6 +1195,7 @@ void createTopJetShapeEventTree(TTree *t,TopJetShapeEvent_t &tjsev)
   t->Branch("j_phi", tjsev.j_phi , "j_phi[nj]/F");
   t->Branch("j_m",   tjsev.j_m ,   "j_m[nj]/F");
   t->Branch("j_flavor",  tjsev.j_flavor ,  "j_flavor[nj]/I");
+  t->Branch("j_partonflavor",  tjsev.j_partonflavor ,  "j_partonflavor[nj]/I");
   t->Branch("j_overlap",  tjsev.j_overlap ,  "j_overlap[nj]/I");
   t->Branch("j_gj",  tjsev.j_gj ,  "j_gj[nj]/I");
   
@@ -1201,6 +1206,7 @@ void createTopJetShapeEventTree(TTree *t,TopJetShapeEvent_t &tjsev)
   t->Branch("gj_phi", tjsev.gj_phi , "gj_phi[ngj]/F");
   t->Branch("gj_m",   tjsev.gj_m ,   "gj_m[ngj]/F");
   t->Branch("gj_flavor",  tjsev.gj_flavor ,  "gj_flavor[ngj]/I");
+  t->Branch("gj_partonflavor",  tjsev.gj_partonflavor ,  "gj_partonflavor[ngj]/I");
   t->Branch("gj_overlap",  tjsev.gj_overlap ,  "gj_overlap[ngj]/I");
   t->Branch("gj_j",  tjsev.gj_j ,  "gj_j[ngj]/I");
   
@@ -1376,8 +1382,8 @@ void resetTopJetShapeEvent(TopJetShapeEvent_t &tjsev)
   for(int i=0; i<1000; i++) tjsev.weight[i]=0;
   for(int i=0; i<5; i++) { tjsev.l_pt[i]=0;   tjsev.l_eta[i]=0;   tjsev.l_phi[i]=0;   tjsev.l_m[i]=0; tjsev.l_id[i]=0; tjsev.gl_pt[i]=0;   tjsev.gl_eta[i]=0;   tjsev.gl_phi[i]=0;   tjsev.gl_m[i]=0; tjsev.gl_id[i]=0; }
   for(int i=0; i<50; i++) {
-    tjsev.j_pt[i]=0;   tjsev.j_eta[i]=0;   tjsev.j_phi[i]=0;   tjsev.j_m[i]=0; tjsev.j_flavor[i]=0; tjsev.j_overlap[i]=0; tjsev.j_gj[i]=-1;
-    tjsev.gj_pt[i]=0;   tjsev.gj_eta[i]=0;   tjsev.gj_phi[i]=0;   tjsev.gj_m[i]=0; tjsev.gj_flavor[i]=0; tjsev.gj_overlap[i]=0; tjsev.gj_j[i]=-1;
+    tjsev.j_pt[i]=0;   tjsev.j_eta[i]=0;   tjsev.j_phi[i]=0;   tjsev.j_m[i]=0; tjsev.j_flavor[i]=0; tjsev.j_partonflavor[i]=0; tjsev.j_overlap[i]=0; tjsev.j_gj[i]=-1;
+    tjsev.gj_pt[i]=0;   tjsev.gj_eta[i]=0;   tjsev.gj_phi[i]=0;   tjsev.gj_m[i]=0; tjsev.gj_flavor[i]=0; tjsev.gj_partonflavor[i]=0; tjsev.gj_overlap[i]=0; tjsev.gj_j[i]=-1;
     
     tjsev.j_mult_charged[i]=-99;
     tjsev.j_mult_puppi[i]=-99;
