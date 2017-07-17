@@ -22,6 +22,7 @@ class UEPlot:
             self.mean[1].append( 0. )
         self.trueAxis=trueAxis        
         self.variations=defaultdict(list)
+        self.normVals=defaultdict(list)
         self.variationMeans=defaultdict(list)
         self.covMatrices=defaultdict(list)
 
@@ -74,68 +75,93 @@ class UEPlot:
         if statCov is None:
             statCov=ROOT.TMatrixF(nbins,nbins)
             for xbin in xrange(1,nbins+1):
-                statCov[xbin][xbin]=(self.variations[nomKey][0].GetBinError(xbin)/norm)**2
+                statCov[xbin-1][xbin-1]=(self.variations[nomKey][0].GetBinError(xbin)/norm)**2
             self.covMatrices[nomKey]=statCov
         else:
             self.covMatrices[nomKey]=statCov*((1/norm)**2)
 
+
         #systematic covariance
         #see https://twiki.cern.ch/twiki/bin/view/CMS/TopUnfolding#Treatment_of_systematic_uncertai
         totalSyst=ROOT.TMatrixF(nbins,nbins)
+        print self.variations
         for key in self.variations:
-            if key is None: continue
+            if key ==nomKey : continue
             if len(self.variations[key])==0 : continue
 
+            varNorms=[x.Integral() for x in self.variations[key]]
+            print key,norm,varNorms
             cov=ROOT.TMatrixF(nbins,nbins)
             for xbin in xrange(1,nbins+1):
-                dxList=[ x.GetBinContent(xbin)-self.variations[nomKey][0].GetBinContent(xbin) for x in self.variations[key] ]
+
+                dxList=[ 
+                    self.variations[key][i].GetBinContent(xbin)/varNorms[i]-self.variations[nomKey][0].GetBinContent(xbin)/norm 
+                    for i in xrange(0,len(self.variations[key]))
+                    ]
                 for ybin in xrange(1,nbins+1):
-                    dyList=[ x.GetBinContent(ybin)-self.variations[nomKey][0].GetBinContent(ybin) for x in self.variations[key] ]
-                    print dyList
+
+                    dyList=[ 
+                        self.variations[key][i].GetBinContent(ybin)/varNorms[i]-self.variations[nomKey][0].GetBinContent(ybin)/norm
+                        for i in xrange(0,len(self.variations[key]))
+                    ]
+
                     dxMax,dyMax=0,0
                     for i in xrange(0,len(dxList)):
-                        if abs(x)<abs(dxList[i]): x=dxList[i]
-                        if abs(y)<abs(dyList[i]): y=dyList[i]
-                    cov[xbin-1][ybin-1]=dxMax*dyMax/(norm**2)
+                        if abs(dxMax)<abs(dxList[i]): dxMax=dxList[i]
+                        if abs(dyMax)<abs(dyList[i]): dyMax=dyList[i]
+
+                    cov[xbin-1][ybin-1]=dxMax*dyMax
+                    if xbin==ybin:
+                        print key,cov[xbin-1][ybin-1]
 
             self.covMatrices[key]=cov
             totalSyst+=cov
         self.covMatrices['syst']=totalSyst
-        self.covMatrices['total']=totalSyst.Clone()
-        self.covMatrices['total']=self.covMatrix[nomKey]
+        self.covMatrices['total']=ROOT.TMatrixF(totalSyst)
+        self.covMatrices['total']+=self.covMatrices[nomKey]
 
-        for key in self.covMatrices:
-            self.covMatrices.Draw('colz')
-            raw_input(key)
+#        c=ROOT.TCanvas('c','c',500,500)
+#        c.SetRightMargin(0.2)
+#        c.Print('~/www/cov.pdf[')
+#        for key in self.covMatrices:
+#            if not key in [nomKey,'syst','total'] : continue
+#            self.covMatrices[key].Draw('colz')            
+#            c.BuildLegend(0.6,0.9,0.9,0.8,key[0])
+#            c.Print('~/www/cov.pdf')
+#        c.Print('~/www/cov.pdf]')
+#        raise Exception('ok')
 
     def finalize(self,statCov=None):
         """To be used once all variations have been given: fills plots and computes means"""
 
-        #start by organizing the keys
+        #start by organizing the keys and normalizing distributions
         nomKey=None
         expKeys=[]
-        thKeys=[]
+        thKeys=[]        
         for key in self.variations:
             if key[1] is None : nomKey=key
             elif key[1]=='exp': expKeys.append(key)
             elif key[1]=='th':  thKeys.append(key)
+            for h in self.variations[key]: 
+                hinteg=h.Integral()
+                self.normVals[key].append(hinteg)
+                h.Scale(1./hinteg)
 
         #check normalization
-        norm=self.variations[nomKey][0].Integral()
-        if norm==0: raise Exception('Null counts found in %s plot - unable to finalize'%self.name)
+        if self.normVals[nomKey][0]==0: raise Exception('Null counts found in %s plot - unable to finalize'%self.name)
 
         for xbin in xrange(1,self.trueAxis.GetNbins()+1):
             cen        = self.trueAxis.GetBinCenter(xbin)
             xwid       = self.trueAxis.GetBinWidth(xbin)*0.5
             cts        = self.variations[nomKey][0].GetBinContent(xbin)
             
-            cenVal=cts/(xwid*norm)
+            cenVal=cts/xwid
             self.plot[0].SetPoint(xbin-1, cen, cenVal)
 
             #statistical uncertainty
             ctsStatUnc = self.variations[nomKey][0].GetBinError(xbin)
             self.plot[1][0].SetPoint(xbin-1, cen, cenVal)
-            self.plot[1][0].SetPointError(xbin-1, xwid, ctsStatUnc/(xwid*norm) )
+            self.plot[1][0].SetPointError(xbin-1, xwid, ctsStatUnc/xwid )
 
             #experimental uncertainty
             ctsExpUnc=0
@@ -146,7 +172,7 @@ class UEPlot:
                 ctsExpUnc += iCtsExpUnc**2
             ctsExpUnc=ROOT.TMath.Sqrt(ctsExpUnc)
             self.plot[1][1].SetPoint(xbin-1, cen, cenVal)
-            self.plot[1][1].SetPointError(xbin-1, xwid, ctsExpUnc/(xwid*norm) )
+            self.plot[1][1].SetPointError(xbin-1, xwid, ctsExpUnc/xwid )
             
             #theory uncertainty
             ctsThUnc=0
@@ -154,16 +180,17 @@ class UEPlot:
                 iCtsThUnc=0
                 for h in self.variations[key]:
                     iCtsThUnc=max( abs(h.GetBinContent(xbin)-cts), iCtsThUnc )
-                ctsThUnc += iCtsExpUnc**2
+                ctsThUnc += iCtsThUnc**2
             ctsThUnc=ROOT.TMath.Sqrt(ctsThUnc)
             self.plot[1][2].SetPoint(xbin-1, cen, cenVal)
-            self.plot[1][2].SetPointError(xbin-1, xwid, ctsThUnc/(xwid*norm) )
-            
+            self.plot[1][2].SetPointError(xbin-1, xwid, ctsThUnc/xwid)
+
             ctsTotalUnc=ROOT.TMath.Sqrt(ctsStatUnc**2+ctsExpUnc**2+ctsThUnc**2)
-            self.plot[0].SetPointError(xbin,xwid,ctsTotalUnc)
+            self.plot[0].SetPointError(xbin-1,xwid,ctsTotalUnc/xwid)
+
 
         #compute covariance matrcies
-        self.finalizeCovMatrices(statCov)
+        #self.finalizeCovMatrices(statCov)
 
         #final mean
         self.mean[0]=self.variationMeans[nomKey][0][0]

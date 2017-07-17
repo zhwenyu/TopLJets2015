@@ -27,7 +27,7 @@ RATIORANGES={'sphericity':(0.8,1.27),
            'chflux':(0.5,1.77),
            'chfluxz':(0.5,1.77)}
 
-SLICES=['ptll','nj','chmult','ptttbar','ptll',None]
+SLICES=['nj','chmult',None] #'ptll','nj','chmult','ptttbar','ptll',None]
 
 """
 """

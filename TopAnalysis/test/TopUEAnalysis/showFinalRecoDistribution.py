@@ -41,7 +41,7 @@ def buildUEPlot(obsAxis,sliceAxis,regions,fIn,fSyst,outDir):
                             hvar.GetNbinsX()
                         except:
                             hvar=fSyst.Get('%s/%s_%s'%(nomKey,nomKey,varName))
-                        uePlots[compSet].addVariation(varName,
+                        uePlots[compSet].addVariation(compVarName,                                                       
                                                       None if compVarName=='nominal' else 'th',
                                                       hvar)
                     
@@ -61,17 +61,20 @@ def buildUEPlot(obsAxis,sliceAxis,regions,fIn,fSyst,outDir):
 
                         varName=expSystsH.GetYaxis().GetBinLabel(ybin)
                         if varName[-2:] in ['up','dn']  : varName=varName[:-2]
+                        if 'tkeff' in varName : varName='tkeff'
                         varType='exp'
                         if varName in ['mur','muf','q'] :                    
                             varName='ME scale'
                             varType='th'
-                        elif varName in ['p_{T}(t)']:
+                        elif varName in ['toppt']:
                             varName='toppt'
                             varType='th'
 
                         #skip special theory unc. based on re-weighting if not the first sample
                         if icomp!=0 and varType=='th': continue
-                        uePlots[compSet].addVariation(varName,'exp',h)
+                        uePlots[compSet].addVariation(varName,varType,h)
+
+                        h.Delete()
 
             #add the data
             t=fIn.Get(nomKey)
@@ -96,6 +99,7 @@ def buildUEPlot(obsAxis,sliceAxis,regions,fIn,fSyst,outDir):
             
             #finalize plots and save them
             for key in uePlots: uePlots[key].finalize()
+            #raise Exception('on purpose')
             plotsPerSlice.append( uePlots )
 
         #
@@ -105,8 +109,15 @@ def buildUEPlot(obsAxis,sliceAxis,regions,fIn,fSyst,outDir):
                         xtitle=VARS[sliceVar][0],
                         ytitle='<%s>'%VARS[obs][0],
                         outName='%s/profile_%s_%s_%s'%(outDir,obs,sliceVar,r))
-        #showUEPlots(plotColl=plotsPerSlice,outDir=opt.outDir)
+        showDifferential(plotColl=plotsPerSlice,
+                         obsAxis=obsAxis,
+                         sliceAxis=sliceAxis,
+                         sliceTitle=VARS[sliceVar][0] if sliceAxis else None,
+                         xtitle=VARS[obs][0],
+                         ytitle='1/N dN/d%s'%VARS[obs][0],
+                         outName='%s/diff_%s_%s_%s'%(outDir,obs,sliceVar,r))
         return
+    return
 
 """
 """
@@ -145,7 +156,7 @@ def main():
 
     ROOT.gStyle.SetOptStat(0)
     ROOT.gStyle.SetOptTitle(0)
-    ROOT.gROOT.SetBatch(False) #True)
+    ROOT.gROOT.SetBatch(True)
 
     #configuration
     usage = 'usage: %prog [options]'

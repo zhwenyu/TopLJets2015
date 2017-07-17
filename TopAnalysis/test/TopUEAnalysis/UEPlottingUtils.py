@@ -27,11 +27,11 @@ PLOTFORMATS=[
 
 COMPARISONSETS=[
     ('PW+PY8 CUETP8M2T4', [ ('nominal',         ['t#bar{t}']), 
-                                ('#deltaCUET8P2MT4',['t#bar{t} UEup',     't#bar{t} UEdn']),
-                                ('FSR',             ['t#bar{t} fsr up',   't#bar{t} fsr dn']),
-                                ('ISR',             ['t#bar{t} isr up',   't#bar{t} isr dn']),
-                                ('hdamp',           ['t#bar{t} hdamp up', 't#bar{t} hdamp dn']),
-                                ('CR',              ['t#bar{t} QCDbased', 't#bar{t} ERDon', 't#bar{t} gluon move']) ] 
+                            ('#deltaCUET8P2MT4',['t#bar{t} UEup',     't#bar{t} UEdn']),
+                            ('FSR',             ['t#bar{t} fsr up',   't#bar{t} fsr dn']),
+                            ('ISR',             ['t#bar{t} isr up',   't#bar{t} isr dn']),
+                            ('hdamp',           ['t#bar{t} hdamp up', 't#bar{t} hdamp dn']),
+                            ('CR',              ['t#bar{t} QCDbased', 't#bar{t} ERDon', 't#bar{t} gluon move']) ] 
      ),
     ('FSR up', [ ('nominal',         ['t#bar{t} fsr up'])]),
     ('FSR dn', [ ('nominal',         ['t#bar{t} fsr dn'])]),
@@ -48,8 +48,8 @@ PLOTTINGSETS=(
     ['PW+PY8 CUETP8M2T4'],
     ['QCD based CR','ERD on CR','Gluon move CR'],
     ['ISR up','ISR dn'],
-    ['FSR up','FSR dn'],
-    ['PW+HW++ EE5C']
+    ['FSR up','FSR dn']
+#    ['PW+HW++ EE5C']
 )
 
 
@@ -91,27 +91,21 @@ def showProfile(plotColl,sliceAxis,xtitle,ytitle,outName):
 
             #start graphs
             if not key in incProfiles:
-                incProfiles[key]=[ROOT.TGraphErrors(),ROOT.TGraphErrors()]
-                incProfiles[key][0].SetName("prof_%s"%key)
+                incProfiles[key]=ROOT.TGraphErrors()
+                incProfiles[key].SetName("prof_%s"%key)
 
                 ci,fill,marker=1,0,20
                 if key!='Data': 
                     ci,marker,fill=PLOTFORMATS[ modelIndices[key][1] ]
-                    print ci,key
                     ci=ROOT.TColor.GetColor(ci)
 
                 #print key,ci,marker,fill,modelIndices[key][1]
-                incProfiles[key][0].SetMarkerStyle(marker)
-                incProfiles[key][0].SetFillStyle(fill)
-                incProfiles[key][0].SetMarkerColor(ci)
-                incProfiles[key][0].SetLineColor(ci)
-                incProfiles[key][0].SetFillColor(ci)                
-                incProfiles[key][1]=incProfiles[key][0].Clone("profexp_%s"%key)                    
-                if key!='Data':
-                    incProfiles[key][1].SetMarkerColor(ci+1)
-                    incProfiles[key][1].SetLineColor(ci+1)
-                    incProfiles[key][1].SetFillColor(ci+1)
-                profiles[key]=[x.Clone('exc'+x.GetName()) for x in incProfiles[key]]
+                incProfiles[key].SetMarkerStyle(marker)
+                incProfiles[key].SetFillStyle(fill)
+                incProfiles[key].SetMarkerColor(ci)
+                incProfiles[key].SetLineColor(ci)
+                incProfiles[key].SetFillColor(ci)                
+                profiles[key]=incProfiles[key].Clone('excprof_%s'%key)
             
             #fill plots
             if i==0:          
@@ -120,10 +114,8 @@ def showProfile(plotColl,sliceAxis,xtitle,ytitle,outName):
                     xwid=1.0/float(len(PLOTTINGSETS))
                     xcen=0.5+(modelIndices[key][0]+0.5)*xwid
                     xwid/=2
-                incProfiles[key][0].SetPoint(0,xcen,mean)
-                incProfiles[key][0].SetPointError(0,xwid,totalUnc)
-                incProfiles[key][1].SetPoint(0,xcen,mean)
-                incProfiles[key][1].SetPointError(0,xwid,expUnc)
+                incProfiles[key].SetPoint(0,xcen,mean)
+                incProfiles[key].SetPointError(0,xwid,totalUnc)
             else:
                 xcen=sliceAxis.GetBinCenter(i)
                 xwid=sliceAxis.GetBinWidth(i)*0.5
@@ -134,11 +126,9 @@ def showProfile(plotColl,sliceAxis,xtitle,ytitle,outName):
                     xwid=2*xwid/float(len(PLOTTINGSETS))
                     xcen+=(modelIndices[key][0]+0.5)*xwid
                     xwid/=2
-                np=profiles[key][0].GetN()
-                profiles[key][0].SetPoint(np,xcen,mean)
-                profiles[key][0].SetPointError(np,xwid,totalUnc)
-                profiles[key][1].SetPoint(np,xcen,mean)
-                profiles[key][1].SetPointError(np,xwid,expUnc)
+                np=profiles[key].GetN()
+                profiles[key].SetPoint(np,xcen,mean)
+                profiles[key].SetPointError(np,xwid,totalUnc)
 
     showFormattedUEPlots(incProfiles,profiles,modelIndices,meanMax*1.5,meanMin*0.5,imax,sliceAxis,xtitle,ytitle,outName)
     incProfilesRatio=getRatiosWithRespectTo(incProfiles,'Data')
@@ -146,12 +136,104 @@ def showProfile(plotColl,sliceAxis,xtitle,ytitle,outName):
     showFormattedUEPlots(incProfilesRatio,profilesRatio,modelIndices,1.5,0.7,1,sliceAxis,xtitle,'K^{%s}_{MC/data}'%ytitle,outName+'_ratio')
 
     for key in incProfiles:
-        for i in xrange(0,len(incProfiles[key])):
-            incProfiles[key][i].Delete()
-            profiles[key][i].Delete()
-            incProfilesRatio[key][i].Delete()
-            profilesRatio[key][i].Delete()
+        incProfiles[key].Delete()
+        profiles[key].Delete()
+        incProfilesRatio[key].Delete()
+        profilesRatio[key].Delete()
 
+
+def showDifferential(plotColl,obsAxis,sliceAxis,sliceTitle,xtitle,ytitle,outName):
+    """show differential distributions"""
+
+    def sliceScale(i): return ROOT.TMath.Power(10,-i)
+
+    #check ranges and prepare frames
+    imax,minVal,maxVal=0,1.0e9,-1.0e9
+    x,y=ROOT.Double(0),ROOT.Double(0)
+    allProfiles=[]
+    for i in xrange(0,len(plotColl)):
+        p=plotColl[i]["Data"]
+        key=('Data',None)
+        allProfiles.append( {'Data':p.plot[0].Clone('diffdata_%d'%i)} )
+        allProfiles[-1]['Data'].SetMarkerStyle(20+i)
+        allProfiles[-1]['Data'].SetFillStyle(0)
+        allProfiles[-1]['Data'].SetLineColor(1)
+        allProfiles[-1]['Data'].SetMarkerColor(1)
+        dataTitle='Data'
+        if sliceAxis and i>0:
+            dataTitle='%d<%s<%d #scale[0.8]{(x10^{-%d})}'%(sliceAxis.GetBinLowEdge(i),sliceTitle,sliceAxis.GetBinUpEdge(i),i)
+        allProfiles[-1]['Data'].SetTitle(dataTitle)
+        for np in xrange(0,allProfiles[-1]['Data'].GetN()):
+            allProfiles[-1]['Data'].GetPoint(np,x,y)
+            ey=allProfiles[-1]['Data'].GetErrorY(np)
+            if y==0 : continue
+            newy=y*sliceScale(i)
+            newey=ey*sliceScale(i)            
+            allProfiles[-1]['Data'].SetPoint(np,x,newy)
+            allProfiles[-1]['Data'].SetPointError(np,0,newey)
+            minVal=min(newy*0.1,minVal)
+            maxVal=max(newy*100,maxVal)
+
+    #check how models should be plotted (order and format)
+    modelIndices=OrderedDict()
+    for idx in xrange(0,len(PLOTTINGSETS)):
+        for key in PLOTTINGSETS[idx]:
+            modelIndices[key]=(idx,len(modelIndices))
+
+    #make graphs
+    for i in xrange(0,len(plotColl)):
+        for key in plotColl[i]:
+            
+            #filter only for needed keys
+            if key=='Data' : continue
+            if not key in modelIndices : continue
+            
+            p=plotColl[i][key]
+            allProfiles[i][key]=p.plot[0].Clone('diff%s_%d'%(key,i))
+            ci,marker,fill=PLOTFORMATS[ modelIndices[key][1] ]
+            ci=ROOT.TColor.GetColor(ci)
+            allProfiles[i][key].SetMarkerStyle(marker)
+            allProfiles[i][key].SetFillStyle(fill)
+            allProfiles[i][key].SetMarkerColor(ci)
+            allProfiles[i][key].SetLineColor(ci)
+            allProfiles[i][key].SetFillColor(ci)                
+            
+            for np in xrange(0,allProfiles[i][key].GetN()):
+
+                allProfiles[i][key].GetPoint(np,x,y)
+                ex=allProfiles[i][key].GetErrorX(np)
+                ey=allProfiles[i][key].GetErrorY(np)
+            
+                newy=y*sliceScale(i)
+                newey=ey*sliceScale(i)
+                allProfiles[i][key].SetPoint(np,x,newy)
+                allProfiles[i][key].SetPointError(np,ex,newey)
+
+    showFormattedDifferentialUEPlots(allProfiles,modelIndices,maxVal,minVal,imax,obsAxis,xtitle,ytitle,outName)
+
+    #compute profile ratios and shift in x
+    allProfileRatios=[]
+    for profList in allProfiles:
+        allProfileRatios.append( getRatiosWithRespectTo(profList,"Data") )
+        for key in allProfileRatios[-1]:
+            if key=='Data' : continue
+            if not key in modelIndices: continue
+            for np in xrange(0,allProfileRatios[-1][key].GetN()):
+                allProfileRatios[-1][key].GetPoint(np,x,y)
+                ex=allProfileRatios[-1][key].GetErrorX(np)
+                ey=allProfileRatios[-1][key].GetErrorY(np)
+                newex=2*ex/float(len(PLOTTINGSETS)) 
+                newx=(x-ex)+(modelIndices[key][0]+0.5)*newex  
+                newex/=2.                         
+                allProfileRatios[-1][key].SetPoint(np,newx,y)
+                allProfileRatios[-1][key].SetPointError(np,newex,ey)
+    showFormattedDifferentialRatiosUEPlots(allProfileRatios,modelIndices,obsAxis,sliceAxis,sliceTitle,xtitle,ytitle,outName)
+    
+    #free mem
+    for i in xrange(0,len(allProfiles)):
+        for key in allProfiles[i]:
+            allProfiles[i][key].Delete()
+            allProfileRatios[i][key].Delete()
 
 def getRatiosWithRespectTo(profiles,refKey):
     """
@@ -161,31 +243,29 @@ def getRatiosWithRespectTo(profiles,refKey):
     x,y=ROOT.Double(0),ROOT.Double(0)
     xref,yref=ROOT.Double(0),ROOT.Double(0)    
     for key in profiles:
-        profilesRatio[key]=[gr.Clone('ratio2%s_%s'%(refKey,gr.GetName())) for gr in profiles[key]]
-        for np in xrange(0,profiles[key][0].GetN()):
+        profilesRatio[key]=profiles[key].Clone('ratio2%s_%s'%(refKey,profiles[key].GetName()))
+        for np in xrange(0,profiles[key].GetN()):
 
-            profiles[key][0].GetPoint(np,x,y)
-            profiles[refKey][0].GetPoint(np,xref,yref)
+            profiles[key].GetPoint(np,x,y)
+            profiles[refKey].GetPoint(np,xref,yref)
             ratio=-1 if yref==0 else y/yref
 
-            ex=profiles[key][0].GetErrorX(np)
-            for i in xrange(0,len(profiles[key])):
-                ey=profiles[key][i].GetErrorY(np)
-                eyref=profiles[refKey][i].GetErrorY(np)
+            ex=profiles[key].GetErrorX(np)
+            ey=profiles[key].GetErrorY(np)
+            eyref=profiles[refKey].GetErrorY(np)
                 
-                ratioUnc=(eyref*y)**2
-                if key!=refKey:ratioUnc+=(ey*yref)**2
-                ratioUnc=ROOT.TMath.Sqrt(ratioUnc)/(yref**2)
+            ratioUnc=(eyref*y)**2
+            if key!=refKey:ratioUnc+=(ey*yref)**2
+            ratioUnc=0 if yref==0 else ROOT.TMath.Sqrt(ratioUnc)/(yref**2)
 
-                profilesRatio[key][i].SetPoint(np,x,ratio)
-                profilesRatio[key][i].SetPointError(np,ex,ratioUnc)
+            profilesRatio[key].SetPoint(np,x,ratio)
+            profilesRatio[key].SetPointError(np,ex,ratioUnc)
 
     return profilesRatio
 
 def showFormattedUEPlots(incProfiles,profiles,modelIndices,meanMax,meanMin,imax,sliceAxis,xtitle,ytitle,outName):
-    """
-    This method dumps the formatted plots to the canvas
-    """
+    """This method dumps the formatted plots to the canvas"""
+
     legAtLeft=True if sliceAxis.GetBinCenter(imax)>(sliceAxis.GetXmax()+sliceAxis.GetXmin())*0.5 else False
     frame=ROOT.TH1F('frame','frame',sliceAxis.GetNbins(),sliceAxis.GetXbins().GetArray())
     frame.GetYaxis().SetRangeUser(meanMin,meanMax)
@@ -226,28 +306,8 @@ def showFormattedUEPlots(incProfiles,profiles,modelIndices,meanMax,meanMin,imax,
     incframe.GetXaxis().SetTitleOffset(0.25)
     for key in incProfiles:
         if key =='Data': continue
-        incProfiles[key][0].Draw('2')
-        #incProfiles[key][1].Draw('2')
-    incProfiles['Data'][0].Draw('ep')
-    #incProfiles['Data'][1].Draw('ep')
-
-    #legend for uncertainties
-    #lines=[]
-    #for i in [0]: #,1]:
-    #    lines.append(ROOT.TLine())
-    #    lines[-1].SetLineWidth(5)
-    #    dx,ci=0.25,PLOTFORMATS[0][0]
-    #    if ci==1:
-    #        dx=0.15
-    #        ci+=1
-    #    lines[-1].SetLineColor(ci)
-    #    lines[-1].DrawLineNDC(0.5-dx,0.93,0.5+dx,0.93)
-    #tex=ROOT.TLatex()
-    #tex.SetTextFont(42)
-    #tex.SetTextSize(0.1)
-    #tex.SetNDC()
-    #tex.DrawLatex(0.1,0.95,'#it{Total Exp.}')
-
+        incProfiles[key].Draw('2')
+    incProfiles['Data'].Draw('ep')
     p2.RedrawAxis()
                 
     #differential frame
@@ -263,10 +323,8 @@ def showFormattedUEPlots(incProfiles,profiles,modelIndices,meanMax,meanMin,imax,
     frame.GetXaxis().SetLabelSize(0.04)
     for key in profiles:
         if key =='Data': continue
-        profiles[key][0].Draw('2')
-        #profiles[key][1].Draw('2')
-    profiles['Data'][0].Draw('ep')
-    #profiles['Data'][1].Draw('ep')
+        profiles[key].Draw('2')        
+    profiles['Data'].Draw('ep')
         
     #draw the legend
     startLegX=0.15 if legAtLeft else 0.50
@@ -276,8 +334,8 @@ def showFormattedUEPlots(incProfiles,profiles,modelIndices,meanMax,meanMin,imax,
     leg.SetBorderSize(0)
     leg.SetTextFont(42)
     leg.SetTextSize(0.035)
-    leg.AddEntry( incProfiles['Data'][0], 'Data','ep' )
-    for key in modelIndices: leg.AddEntry(profiles[key][0],key,'f')
+    leg.AddEntry( incProfiles['Data'], 'Data','ep' )
+    for key in modelIndices: leg.AddEntry(profiles[key],key,'f')
     leg.Draw()
         
     #the header
@@ -304,4 +362,164 @@ def showFormattedUEPlots(incProfiles,profiles,modelIndices,meanMax,meanMin,imax,
 
     p1.Delete()
     p2.Delete()
+    c.Delete()
+
+def showFormattedDifferentialUEPlots(allProfiles,modelIndices,maxVal,minVal,imax,sliceAxis,xtitle,ytitle,outName):
+    """Differential distributions"""
+    
+    legAtLeft=True if sliceAxis.GetBinCenter(imax)>(sliceAxis.GetXmax()+sliceAxis.GetXmin())*0.5 else False
+    frame=ROOT.TH1F('frame','frame',sliceAxis.GetNbins(),sliceAxis.GetXbins().GetArray())
+    frame.GetYaxis().SetRangeUser(minVal,maxVal)
+    
+    #start the canvas
+    c=ROOT.TCanvas('c','c',500,500)
+    c.SetTopMargin(0.05)
+    c.SetLeftMargin(0.12)
+    c.SetRightMargin(0.03)
+    c.SetBottomMargin(0.1)
+    c.SetLogy()
+
+    frame.Draw()
+    frame.GetYaxis().SetTitle(ytitle)
+    frame.GetYaxis().SetTitleOffset(1.3)
+    frame.GetYaxis().SetTitleSize(0.04)
+    frame.GetYaxis().SetLabelSize(0.04)
+    frame.GetXaxis().SetTitle(xtitle)
+    frame.GetXaxis().SetTitleSize(0.04)
+    frame.GetXaxis().SetLabelSize(0.04)
+
+    #draw the legend
+    startLegX=0.15 if legAtLeft else 0.50
+    startLegY=0.9  if legAtLeft else 0.93
+    leg=ROOT.TLegend(startLegX,startLegY,startLegX+0.4,startLegY-(len(allProfiles)+1)*0.04) 
+    leg.SetFillStyle(0)
+    leg.SetBorderSize(0)
+    leg.SetTextFont(42)
+    leg.SetTextSize(0.035)
+
+    for profList in allProfiles:
+        profList[COMPARISONSETS[0][0]].Draw('20')
+        profList['Data'].Draw('ep')
+        leg.AddEntry(profList['Data'],profList['Data'].GetTitle(),'ep')
+    leg.AddEntry(allProfiles[0][COMPARISONSETS[0][0]],COMPARISONSETS[0][0],'f')
+    leg.Draw()
+        
+    #the header
+    tex=ROOT.TLatex()
+    tex.SetTextFont(42)
+    tex.SetTextSize(0.045)
+    tex.SetNDC()
+    tex.DrawLatex(0.16,0.9,'#bf{CMS} #it{preliminary}')
+    tex.DrawLatex(0.65,0.96,'#scale[0.8]{35.9 fb^{-1} (#sqrt{s}=13 TeV)}')
+
+    # all done
+    c.RedrawAxis()
+    c.Modified()
+    c.Update()
+    for ext in ['pdf','png']: c.SaveAs('%s.%s'%(outName,ext))
+
+    c.Delete()
+
+def showFormattedDifferentialRatiosUEPlots(allProfileRatios,modelIndices,obsAxis,sliceAxis,sliceTitle,xtitle,ytitle,outName):
+    """Ratios of differential distributions"""
+
+    npads=len(allProfileRatios)
+    height=500 if npads==1 else 1000
+    dyBottom,dyTop=50,120
+    padHeight=(1-float(dyBottom+dyTop)/float(height))/float(npads)
+    
+    fontSize=0.04 if npads==1 else 0.04/(2*padHeight)
+
+    frame=ROOT.TH1F('frame','frame',obsAxis.GetNbins(),obsAxis.GetXbins().GetArray())
+    frame.GetYaxis().SetNdivisions(10)
+    frame.GetYaxis().SetRangeUser(0.44,1.56)
+    frame.GetYaxis().SetTitle('K^{%s}_{MC/data}'%ytitle)
+    frame.GetYaxis().SetTitleOffset(0.9)
+    frame.GetYaxis().SetTitleSize(fontSize)
+    frame.GetYaxis().SetLabelSize(fontSize)
+    frame.GetXaxis().SetTitleSize(0.0)
+    frame.GetXaxis().SetLabelSize(0.0)
+    finalFrame=frame.Clone('finalframe')
+    finalFontSize=fontSize*padHeight*height/(padHeight*height+dyBottom)
+    finalFrame.GetXaxis().SetTitleSize(finalFontSize)
+    finalFrame.GetXaxis().SetLabelSize(finalFontSize)
+    finalFrame.GetXaxis().SetTitle(xtitle)
+    finalFrame.SetTitleOffset(1.1)
+    finalFrame.GetYaxis().SetTitleSize(finalFontSize)
+    finalFrame.GetYaxis().SetLabelSize(finalFontSize)
+
+
+    #start the canvas
+    c=ROOT.TCanvas('c','c',500,height)
+    c.SetTopMargin(float(dyTop)/float(height))
+
+    c.SetLeftMargin(0.)
+    c.SetRightMargin(0.0)
+    c.SetBottomMargin(0.)
+    allPads=[]
+    allCaptions=[]
+    for i in xrange(0,npads):
+        c.cd()
+        padAnchor=(1-float(dyTop)/float(height))-i*padHeight
+        yup,ydn=padAnchor,padAnchor-padHeight
+        if i==npads-1 : ydn=0
+        allPads.append( ROOT.TPad('p%d'%i,'p%d'%i,0,yup,1,ydn) )
+        allPads[-1].SetTopMargin(0.01)
+        allPads[-1].SetLeftMargin(0.2)
+        allPads[-1].SetRightMargin(0.03)
+        allPads[-1].SetBottomMargin(0.01 if i!=npads-1 else float(dyBottom)/(height*padHeight) )
+        allPads[-1].Draw()
+        allPads[-1].SetGridy()
+        allPads[-1].cd()
+        if i==npads-1: 
+            finalFrame.Draw()
+        else : frame.Draw()
+        for key in allProfileRatios[i]:
+            if key =='Data': continue
+            allProfileRatios[i][key].Draw('2')
+        allProfileRatios[i]['Data'].Draw('ep')
+        
+        if npads==1: continue
+        allCaptions.append( ROOT.TLatex() )
+        allCaptions[-1].SetTextFont(42)
+        allCaptions[-1].SetTextSize( 0.8*(fontSize if i!=npads-1 else finalFontSize ) )
+        allCaptions[-1].SetNDC()
+        caption='inclusive'
+        if i>0:
+            caption='%d<%s<%d'%(sliceAxis.GetBinLowEdge(i),sliceTitle,sliceAxis.GetBinUpEdge(i))
+        allCaptions[-1].DrawLatex(0.8,0.92,caption)
+
+        
+    #the header
+    c.cd()
+    allPads.append( ROOT.TPad('ph','ph',0,1,1,1-float(dyTop)/float(height)) )
+    allPads[-1].SetTopMargin(0)
+    allPads[-1].SetBottomMargin(0)
+    allPads[-1].SetLeftMargin(0)
+    allPads[-1].SetRightMargin(0)
+    allPads[-1].Draw()
+    allPads[-1].cd()
+
+    leg=ROOT.TLegend(0.1,0.05,1,0.7)
+    leg.SetTextFont(42)
+    leg.SetTextSize(fontSize*1.2 if npads!=1 else fontSize*2)
+    leg.SetBorderSize(0)
+    leg.SetFillStyle(0)
+    leg.AddEntry(allProfileRatios[0]['Data'],'Data','ep')
+    for key in modelIndices: leg.AddEntry(allProfileRatios[0][key],key,'f')
+    leg.SetNColumns((len(modelIndices)+1)/3)
+    leg.Draw()
+
+    tex=ROOT.TLatex()
+    tex.SetTextFont(42)
+    tex.SetTextSize(fontSize*1.8 if npads!=1 else fontSize*2.5)
+    tex.SetNDC()
+    tex.DrawLatex(0.1,0.8,'#bf{CMS} #it{preliminary}')
+    tex.DrawLatex(0.67,0.8,'#scale[0.8]{35.9 fb^{-1} (#sqrt{s}=13 TeV)}')
+
+    # all done    
+    c.Modified()
+    c.Update()
+    for ext in ['pdf','png']: c.SaveAs('%s_ratio.%s'%(outName,ext))
+    for p in allPads: p.Delete()
     c.Delete()
