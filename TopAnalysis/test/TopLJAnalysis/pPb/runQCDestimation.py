@@ -5,8 +5,8 @@ import pickle
 from runDataFit import lumi
 
 QCDNORM={}
-PROCNORM={('ttbar','e'):59./100000.,
-          ('ttbar','mu'):59./100000.,
+PROCNORM={('ttbar','e'):59./200000.,
+          ('ttbar','mu'):59./200000.,
           ('wjets','e'):1970./1.99183e+06,
           ('wjets','mu'):1970./3.93920e+06,
           ('dy','mu'):224./951411.,

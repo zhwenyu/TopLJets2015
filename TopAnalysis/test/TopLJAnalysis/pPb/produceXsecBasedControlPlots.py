@@ -36,7 +36,7 @@ def showPlotFor(args,var):
         
             p.ratiorange=(0.4,1.7)
             p.com='8.16 TeV'
-            p.show(outDir='./',lumi=lumi[0]*1e-3)
+            p.show(outDir='./',lumi=174*1e-3)
             p.reset()
 
 """
