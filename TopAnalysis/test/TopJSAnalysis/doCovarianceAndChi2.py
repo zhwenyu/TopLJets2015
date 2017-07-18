@@ -46,6 +46,90 @@ def main():
     
     flavors = ['all', 'bottom', 'light', 'gluon']
 
+    # Read lists of syst samples
+    varList = []
+    varExp = ['jec_CorrelationGroupMPFInSitu',
+              'jec_RelativeFSR',
+              'jec_CorrelationGroupUncorrelated',
+              'jec_FlavorPureGluon',
+              'jec_FlavorPureQuark',
+              'jec_FlavorPureCharm',
+              'jec_FlavorPureBottom',
+              'jer',
+              'btag_heavy',
+              'btag_light',
+              'csv_heavy',
+              'csv_light',
+              'tracking',
+              'singletop',
+              'wjets'
+             ]
+    for var in varExp:
+        varList.append([var+'_up', var+'_down'])
+    varModel = [['evtgen'],
+                ['m171v5', 'm173v5'],
+                ['herwig'],
+                ['isrup', 'isrdn'],
+                ['fsrup', 'fsrdn'],
+                ['hdampup', 'hdampdn'],
+                ['ueup', 'uedn'],
+                ['erdON'],
+                ['qcdBased'],
+                ['wgt7', 'wgt8'], # b frag Bowler-Lund up/down
+                ['wgt9'], # b frag Peterson
+                ['wgt10', 'wgt11'], # B hadron semilep BR
+                ['wgt12'], # top pt reweighting
+                ['wgt13', 'wgt14'], # muF
+                ['wgt15', 'wgt18'], # muR
+                ['wgt16', 'wgt20'], # muF+muR
+               ]
+    varList += varModel
+    
+    varExpWgt = [['wgt1', 'wgt2'], # PU
+                 ['wgt3', 'wgt4'], # lepton trigger
+                 ['wgt5', 'wgt6'], # lepton selection
+                ]
+    varList += varExpWgt
+
+    modelsToTest = varModel + [['cflip'], ['nominalGen']]
+    
+    allVars_lowCorChi2 = OrderedDict()
+    for var in modelsToTest:
+        for vardir in var:
+            allVars_lowCorChi2[vardir] = {}
+            for flavor in flavors:
+                allVars_lowCorChi2[vardir][flavor] = 0.
+    
+    varModelDict = {'evtgen': 'EvtGen',
+                    'm171v5': 'mt down',
+                    'm173v5': 'mt up',
+                    'herwig': 'Herwig++',
+                    'isrup': 'ISR up',
+                    'isrdn': 'ISR down',
+                    'fsrup': 'FSR up',
+                    'fsrdn': 'FSR down',
+                    'hdampup': 'hdamp up',
+                    'hdampdn': 'hdamp down',
+                    'ueup': 'UE up',
+                    'uedn': 'UE down',
+                    'erdON': 'CR: erd on',
+                    'qcdBased': 'CR: QCD-inspired',
+                    'wgt7': 'b frag up',
+                    'wgt8': 'b frag down', # b frag Bowler-Lund up/down
+                    'wgt9': 'b frag Peterson', # b frag Peterson
+                    'wgt10': 'B semilep BR up',
+                    'wgt11': 'B semilep BR down', # B hadron semilep BR
+                    'wgt12': 'top pt', # top pt reweighting
+                    'wgt13': 'muF up',
+                    'wgt14': 'muF down', # muF
+                    'wgt15': 'muR up',
+                    'wgt18': 'muR down', # muR
+                    'wgt16': 'muF+muR up',
+                    'wgt20': 'muF+muR down', # muF+muR
+                    'cflip': 'Color octet W',
+                    'nominalGen': 'nominal sample'
+                    }
+    
     sumNominal = 0.
     sumFSRUp = 0.
     sumFSRDown = 0.
@@ -65,6 +149,30 @@ def main():
         sumLowFSRDown[flavor] = 0.
         sumLowHerwig [flavor] = 0.
     
+    # 11-class RdBu http://colorbrewer2.org/#type=diverging&scheme=RdBu&n=11
+    stops = array('d', [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
+    red   = array('d')
+    green = array('d')
+    blue  = array('d')
+    colors = [[103,0,31],
+              [178,24,43],
+              [214,96,77],
+              [244,165,130],
+              [253,219,199],
+              [247,247,247],
+              [209,229,240],
+              [146,197,222],
+              [67,147,195],
+              [33,102,172],
+              [5,48,97]]
+    for color in colors:
+        red.append(color[0]/255.)
+        green.append(color[1]/255.)
+        blue.append(color[2]/255.)
+    ROOT.TColor.CreateGradientColorTable(11, stops, red[::-1], green[::-1], blue[::-1], 30)
+    
+    ROOT.gStyle.SetOptStat(0)
+
     with open('%s/table.tex'%(opt.outDir), 'w') as tex:
         for obs in observables:
             for flavor in flavors:
@@ -104,29 +212,6 @@ def main():
                 #rootoutfile = ROOT.TFile.Open(opt.outDir+'/'+obs+'_charged_'+flavor+'_cov.root', 'RECREATE')
                 #rootoutfile.cd()
                 
-                # 11-class RdBu http://colorbrewer2.org/#type=diverging&scheme=RdBu&n=11
-                stops = array('d', [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
-                red   = array('d')
-                green = array('d')
-                blue  = array('d')
-                colors = [[103,0,31],
-                          [178,24,43],
-                          [214,96,77],
-                          [244,165,130],
-                          [253,219,199],
-                          [247,247,247],
-                          [209,229,240],
-                          [146,197,222],
-                          [67,147,195],
-                          [33,102,172],
-                          [5,48,97]]
-                for color in colors:
-                    red.append(color[0]/255.)
-                    green.append(color[1]/255.)
-                    blue.append(color[2]/255.)
-                ROOT.TColor.CreateGradientColorTable(11, stops, red[::-1], green[::-1], blue[::-1], 30)
-                
-                ROOT.gStyle.SetOptStat(0)
                 c = ROOT.TCanvas('c','c',500,500)
                 c.SetRightMargin(0.15)
                 c.SetLeftMargin(0.12)
@@ -168,56 +253,14 @@ def main():
                 c.Print(opt.outDir+'/'+obs+'_charged_'+flavor+'_cov_stat.pdf')
                 c.Print(opt.outDir+'/'+obs+'_charged_'+flavor+'_cov_stat.png')
                 
-                
-                # Read lists of syst samples
-                allSystVars = ['jec_CorrelationGroupMPFInSitu',
-                               'jec_RelativeFSR',
-                               'jec_CorrelationGroupUncorrelated',
-                               'jec_FlavorPureGluon',
-                               'jec_FlavorPureQuark',
-                               'jec_FlavorPureCharm',
-                               'jec_FlavorPureBottom',
-                               'jer',
-                               'btag_heavy',
-                               'btag_light',
-                               'csv_heavy',
-                               'csv_light',
-                               'tracking',
-                               'singletop',
-                               'wjets'
-                              ]
-                varList = []
-                for var in allSystVars:
-                    varList.append([var+'_up', var+'_down'])
-                varList += [['evtgen'],
-                            ['m171v5', 'm173v5'],
-                            ['herwig'],
-                            ['isrup', 'isrdn'],
-                            ['fsrup', 'fsrdn'],
-                            ['hdampup', 'hdampdn'],
-                            ['ueup', 'uedn'],
-                            ['erdON'],
-                            ['qcdBased'],
-                            ['wgt1', 'wgt2'],
-                            ['wgt3', 'wgt4'],
-                            ['wgt5', 'wgt6'],
-                            ['wgt7', 'wgt8'],
-                            ['wgt9'],
-                            ['wgt10', 'wgt11'],
-                            ['wgt12'],
-                            ['wgt13', 'wgt14'],
-                            ['wgt15', 'wgt18'],
-                            ['wgt16', 'wgt20'],
-                           ]
-                
                 resultfile = '%s/%s_charged_%s_result.root'%(opt.inDir, obs, flavor)
                 fIn=ROOT.TFile.Open(resultfile)
                 
                 # reference
-                hnominal    = fIn.Get('MC13TeV_TTJets_Unfolded')
-                nominal     = []
-                for i in range(1, hnominal.GetNbinsX()+1):
-                    nominal.append(hnominal.GetBinContent(i))
+                hdata = fIn.Get('MC13TeV_TTJets_Unfolded')
+                data  = []
+                for i in range(1, hdata.GetNbinsX()+1):
+                    data.append(hdata.GetBinContent(i))
                 
                 systcov = copy.copy(statcov)
                 systcov -= systcov
@@ -233,7 +276,7 @@ def main():
                         for i in range(1, hsyst.GetNbinsX()+1):
                             syst.append(hsyst.GetBinContent(i))
                         
-                        x = numpy.array([nominal, syst]).T
+                        x = numpy.array([data, syst]).T
                         cov = numpy.cov(x)
                         systcov += cov
                     if len(var) == 2:
@@ -249,7 +292,7 @@ def main():
                         for i in range(1, hsyst_up.GetNbinsX()+1):
                             up.append(hsyst_up.GetBinContent(i))
                             dn.append(hsyst_dn.GetBinContent(i))
-                            maxdelta.append(max(abs(hsyst_up.GetBinContent(i) - nominal[i-1]), abs(hsyst_dn.GetBinContent(i) - nominal[i-1])))
+                            maxdelta.append(max(abs(hsyst_up.GetBinContent(i) - data[i-1]), abs(hsyst_dn.GetBinContent(i) - data[i-1])))
                         
                         x = numpy.array([up, dn]).T
                         cov = numpy.cov(x)
@@ -323,6 +366,7 @@ def main():
                 
                 c.Print(opt.outDir+'/'+obs+'_charged_'+flavor+'_cov.pdf')
                 c.Print(opt.outDir+'/'+obs+'_charged_'+flavor+'_cov.png')
+                c.Print(opt.outDir+'/'+obs+'_charged_'+flavor+'_cov.root')
                 
                 #print(numpy.linalg.det(cov))
                 cov_reduced = numpy.delete(cov, 0, 0)
@@ -331,10 +375,10 @@ def main():
                 #print(numpy.linalg.det(cov_reduced))
                 #print(numpy.linalg.inv(cov_reduced))
                 
-                chi2Nominal = returnChi2(fIn, cov_reduced, nominal, 'nominalGen')
-                chi2FSRUp   = returnChi2(fIn, cov_reduced, nominal, 'FSRUpGen')
-                chi2FSRDown = returnChi2(fIn, cov_reduced, nominal, 'FSRDownGen')
-                chi2Herwig  = returnChi2(fIn, cov_reduced, nominal, 'herwigGen')
+                chi2Nominal = returnChi2(fIn, cov_reduced, data, 'nominalGen')
+                chi2FSRUp   = returnChi2(fIn, cov_reduced, data, 'FSRUpGen')
+                chi2FSRDown = returnChi2(fIn, cov_reduced, data, 'FSRDownGen')
+                chi2Herwig  = returnChi2(fIn, cov_reduced, data, 'herwigGen')
                 
                 sumNominal += chi2Nominal
                 sumFSRUp   += chi2FSRUp
@@ -350,8 +394,17 @@ def main():
                     sumLowFSRUp  [flavor] += chi2FSRUp
                     sumLowFSRDown[flavor] += chi2FSRDown
                     sumLowHerwig [flavor] += chi2Herwig
+                    
+                    for var in modelsToTest:
+                        for vardir in var:
+                            if vardir in ['nominalGen']:
+                                prediction = vardir
+                            else:
+                                prediction = 'MC13TeV_TTJets_'+vardir+'_gen'
+                            allVars_lowCorChi2[vardir][flavor] += returnChi2(fIn, cov_reduced, data, prediction)
                 
                 tex.write('%s & %s & %.1f & %.1f & %.1f & %.1f \\\\\n'%(nice_observables_tex[obs], flavor, chi2Nominal, chi2FSRUp, chi2FSRDown, chi2Herwig))
+                
         tex.write('\\hline\nTotal &  & %.1f & %.1f & %.1f & %.1f \\\\\n'%(sumNominal, sumFSRUp, sumFSRDown, sumHerwig))
         tex.write('\\hline\nTotal low corr. &  & %.1f & %.1f & %.1f & %.1f \\\\\n'%(sumLowNominal['total'], sumLowFSRUp['total'], sumLowFSRDown['total'], sumLowHerwig['total']))
         for flavor in flavors:
@@ -361,15 +414,23 @@ def main():
             probLowFSRDown = ROOT.TMath.Prob(sumLowFSRDown[flavor], len(observables_low))
             probLowHerwig  = ROOT.TMath.Prob(sumLowHerwig[flavor], len(observables_low))
             tex.write('$P(\\chi^{2})$ &  & %.3f & %.3f & %.3f & %.3f \\\\\n'%(probLowNominal, probLowFSRUp, probLowFSRDown, probLowHerwig))
+            
+        for var, chi2 in allVars_lowCorChi2.iteritems():
+            print('%s & $\chi^{2}$ & %.1f & %.1f & %.1f & %.1f'%(varModelDict[var], chi2['all'], chi2['bottom'], chi2['light'], chi2['gluon']))
+            probAll = ROOT.TMath.Prob(chi2['all'], len(observables_low))
+            probBottom = ROOT.TMath.Prob(chi2['bottom'], len(observables_low))
+            probLight = ROOT.TMath.Prob(chi2['light'], len(observables_low))
+            probGluon = ROOT.TMath.Prob(chi2['gluon'], len(observables_low))
+            print(' & $P(\chi^{2})$ & %.3f & %.3f & %.3f & %.3f'%(probAll, probBottom, probLight, probGluon))
     
-def returnChi2(fIn, cov_reduced, nominal, prediction):
+def returnChi2(fIn, cov_reduced, data, prediction):
     hpred = fIn.Get(prediction)
     pred  = []
     for i in range(1, hpred.GetNbinsX()+1):
         pred.append(hpred.GetBinContent(i))
     diff = []
-    for i in range(len(nominal)):
-        diff.append(pred[i] - nominal[i])
+    for i in range(len(data)):
+        diff.append(pred[i] - data[i])
     
     chi2 = numpy.array(diff[1:]).T.dot(numpy.linalg.inv(cov_reduced).dot(numpy.array(diff[1:])))
     ndf  = hpred.GetNbinsX()-1

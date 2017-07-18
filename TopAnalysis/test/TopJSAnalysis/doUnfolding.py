@@ -81,7 +81,6 @@ def main():
     
     for slist,isSyst in [ (samplesList,False), (systSamplesList,True), (expSystSamplesList,True) ]:
         for tag,sample in slist: 
-            if tag in ['MC13TeV_TTJets_cflip']: continue
             if isSyst and not 't#bar{t}' in sample[3] : continue
             isData = sample[1]
             isSig  = not isSyst and sample[3] == 't#bar{t}'
@@ -170,6 +169,8 @@ def main():
     
     systematicUnfolded = {}
     for tag,systematic in systematics.iteritems():
+        gen = normalizeAndDivideByBinWidth(systematic.ProjectionX(tag+'_gen'))
+        if tag in ['MC13TeV_TTJets_cflip']: continue
         systematicUnfolded[tag] = unfold(tag, systematic, backgrounds, data)[0]
     
     background_systematics = [
