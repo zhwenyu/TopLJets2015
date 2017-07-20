@@ -96,13 +96,8 @@ case $WHAT in
 
     FILL )
         cd batch;
-        python ../test/TopJSAnalysis/fillUnfoldingMatrix.py -q workday -i /eos/user/m/mseidel/analysis/TopJetShapes/b312177/Chunks/ --skipexisting;
-        cd -;
-        ;;
-        
-    FILLWEIGHTS )
-        cd batch;
-        python ../test/TopJSAnalysis/fillUnfoldingMatrix.py -q longlunch -i /eos/user/m/mseidel/analysis/TopJetShapes/b312177/Chunks/ --only MC13TeV_TTJets --nweights 20;
+        python ../test/TopJSAnalysis/fillUnfoldingMatrix.py -q longlunch -i /eos/user/m/mseidel/analysis/TopJetShapes/b312177/Chunks/ --skip MC13TeV_TTJets --skipexisting;
+        python ../test/TopJSAnalysis/fillUnfoldingMatrix.py -q longlunch -i /eos/user/m/mseidel/analysis/TopJetShapes/b312177/Chunks/ --only MC13TeV_TTJets --skipexisting --nweights 20;
         cd -;
         ;;
     
@@ -111,7 +106,7 @@ case $WHAT in
         ;;
         
     TOYUNFOLDING )
-        for OBS in mult width ptd ptds ecc tau21 tau32 tau43 zg zgxdr zgdr ga_width ga_lha ga_thrust c1_02 c1_05 c1_10 c1_20 c2_02 c2_05 c2_10 c2_20 c3_02 c3_05 c3_10 c3_20
+        for OBS in mult width ptd ptds ecc tau21 tau32 tau43 zg zgxdr zgdr ga_width ga_lha ga_thrust c1_02 c1_05 c1_10 c1_20 c2_02 c2_05 c2_10 c2_20 c3_02 c3_05 c3_10 c3_20 m2_b1 n2_b1 n3_b1 m2_b2 n2_b2 n3_b2
         do
           for FLAVOR in all bottom light gluon
           do
@@ -124,7 +119,7 @@ case $WHAT in
         ;;
         
     UNFOLDING )
-        for OBS in mult width ptd ptds ecc tau21 tau32 tau43 zg zgxdr zgdr ga_width ga_lha ga_thrust c1_02 c1_05 c1_10 c1_20 c2_02 c2_05 c2_10 c2_20 c3_02 c3_05 c3_10 c3_20
+        for OBS in mult width ptd ptds ecc tau21 tau32 tau43 zg zgxdr zgdr ga_width ga_lha ga_thrust c1_02 c1_05 c1_10 c1_20 c2_02 c2_05 c2_10 c2_20 c3_02 c3_05 c3_10 c3_20 m2_b1 n2_b1 n3_b1 m2_b2 n2_b2 n3_b2
         do
           for FLAVOR in all bottom light gluon
           do
@@ -141,7 +136,7 @@ case $WHAT in
         ;;
     
     FLAVORPLOTS )
-        for OBS in mult width ptd ptds ecc tau21 tau32 tau43 zg zgxdr zgdr ga_width ga_lha ga_thrust c1_02 c1_05 c1_10 c1_20 c2_02 c2_05 c2_10 c2_20 c3_02 c3_05 c3_10 c3_20
+        for OBS in mult width ptd ptds ecc tau21 tau32 tau43 zg zgxdr zgdr ga_width ga_lha ga_thrust c1_02 c1_05 c1_10 c1_20 c2_02 c2_05 c2_10 c2_20 c3_02 c3_05 c3_10 c3_20 m2_b1 n2_b1 n3_b1 m2_b2 n2_b2 n3_b2
         do
           python test/TopJSAnalysis/compareFlavors.py --obs ${OBS}
         done

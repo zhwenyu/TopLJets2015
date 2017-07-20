@@ -379,13 +379,13 @@ void RunTopJetShape(TString filename,
             topptsf *= TMath::Exp(0.0615-0.0005*ev.gtop_pt[igen]);
           }
         }
-        varweights.push_back(std::make_pair(topptsf, true)); // TODO: should have been 12 but prevented by false `else`
+        varweights.push_back(std::make_pair(topptsf, true)); // 12
         
         // lhe weights
         wgt *= (ev.g_nw>0 ? ev.g_w[0] : 1.0);
         
         std::set<std::string> scalesForPlotter = {
-          "id1002muR1muF2hdampmt272.7225",    // 13 (12=1,1)
+          "id1002muR1muF2hdampmt272.7225",    // 13
           "id1003muR1muF0.5hdampmt272.7225",  // 14
           "id1004muR2muF1hdampmt272.7225",    // 15
           "id1005muR2muF2hdampmt272.7225",    // 16

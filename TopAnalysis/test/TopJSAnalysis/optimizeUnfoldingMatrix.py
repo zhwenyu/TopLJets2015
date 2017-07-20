@@ -32,7 +32,10 @@ def optimize(inputfile, output, obs, reco, ptcut, rootoutput):
     #ROOT.gStyle.SetPalette(53)
     
     tree = ROOT.TChain('tjsev')
-    if inputfile == 'eos':
+    if inputfile == 'local':
+        tree.Add('MC13TeV_TTJets_0.root')
+        tree.Add('MC13TeV_TTJets_1.root')
+    elif inputfile == 'eos':
         tree.Add('/eos/user/m/mseidel/analysis/TopJetShapes/b312177/Chunks/MC13TeV_TTJets_0.root')
         tree.Add('/eos/user/m/mseidel/analysis/TopJetShapes/b312177/Chunks/MC13TeV_TTJets_1.root')
         #tree.Add('/eos/user/m/mseidel/analysis/TopJetShapes/b312177/Chunks/MC13TeV_TTJets_2.root')
@@ -80,6 +83,10 @@ def optimize(inputfile, output, obs, reco, ptcut, rootoutput):
         label = "#tau_{32}"
     if (obs == "tau43"):
         label = "#tau_{43}"
+        lowbin = 0.3
+        highbin = 0.9
+        nbins = 30
+        #sigmaFactor = 0.33
     if (obs == "zg"):
         label = "z_{g}"
         lowbin = 0.1
@@ -87,11 +94,11 @@ def optimize(inputfile, output, obs, reco, ptcut, rootoutput):
         nbins = 40
         sigmaFactor = 0.25
     if (obs == "zgdr"):
-        label = "z_{g} #DeltaR"
+        label = "#DeltaR_{g}"
         highbin = 0.5
         sigmaFactor = 0.25
     if (obs == "zgxdr"):
-        label = "z_{g} #times #DeltaR"
+        label = "z_{g} #times #DeltaR_{g}"
         highbin = 0.25
     if (obs == "ga_width"):
         label = "#lambda_{ 1}^{1} (width)"
@@ -145,6 +152,32 @@ def optimize(inputfile, output, obs, reco, ptcut, rootoutput):
         label = "C_{ 3}^{ (2.0)}"
         highbin = 0.15
         nbins = 30
+    if (obs == "m2_b1"):
+        label = "M_{ 2}^{ (1)}"
+        highbin = 0.18
+        nbins = 36
+    if (obs == "n2_b1"):
+        label = "N_{ 2}^{ (1)}"
+        highbin = 0.45
+        nbins = 45
+    if (obs == "n3_b1"):
+        label = "N_{ 3}^{ (1)}"
+        lowbin = 0.2
+        highbin = 2.5
+        nbins = 46
+        sigmaFactor = 0.4
+    if (obs == "m2_b2"):
+        label = "M_{ 2}^{ (2)}"
+        highbin = 0.12
+        nbins = 48
+    if (obs == "n2_b2"):
+        label = "N_{ 2}^{ (2)}"
+        highbin = 0.36
+        nbins = 36
+    if (obs == "n3_b2"):
+        label = "N_{ 3}^{ (2)}"
+        highbin = 3.5
+        nbins = 35
     
     label1 = reco + " particles, p_{T}>" + ptcut + " GeV;" + label
     labels = reco + " particles, p_{T}>" + ptcut + " GeV;generated  " + label + ";reconstructed  " + label
@@ -416,6 +449,13 @@ def getPointsFromTree(tree, obs, reco, ptcut):
                 
                 valReco = eval('event.j_'+obs+'_'+reco)[j]
                 valGen  = eval('event.gj_'+obs+'_'+reco)[i]
+                
+                #if obs == 'tau43':
+                #    minMult = 8
+                #    multReco = eval('event.j_mult_'+reco)[j]
+                #    multGen  = eval('event.gj_mult_'+reco)[i]
+                #    if multReco < minMult: valReco = -1
+                #    if multGen  < minMult: valGen  = -1
                 
                 '''
                 if not 'ptds' in obs:
@@ -702,7 +742,7 @@ def main():
     os.system('mkdir -p %s' % opt.output)
     rootoutfile = ROOT.TFile(opt.output + "/" + opt.rootoutput, "UPDATE");
     
-    if opt.obs == 'all': observables = ["mult", "width", "ptd", "ptds", "ecc", "tau21", "tau32", "tau43", "zg", "zgxdr", "zgdr", "ga_width", "ga_lha", "ga_thrust", "c1_02", "c1_05", "c1_10", "c1_20", "c2_02", "c2_05", "c2_10", "c2_20", "c3_02", "c3_05", "c3_10", "c3_20"]
+    if opt.obs == 'all': observables = ["mult", "width", "ptd", "ptds", "ecc", "tau21", "tau32", "tau43", "zg", "zgxdr", "zgdr", "ga_width", "ga_lha", "ga_thrust", "c1_02", "c1_05", "c1_10", "c1_20", "c2_02", "c2_05", "c2_10", "c2_20", "c3_02", "c3_05", "c3_10", "c3_20", "m2_b1", "n2_b1", "n3_b1", "m2_b2", "n2_b2", "n3_b2"]
     else: observables = opt.obs.split(',')
 
     if len(observables) == 1: optimize(opt.input, opt.output, opt.obs, opt.reco, opt.ptcut, rootoutfile)

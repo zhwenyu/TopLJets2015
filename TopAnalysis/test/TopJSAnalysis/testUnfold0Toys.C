@@ -50,6 +50,9 @@
 #include <string> 
 #include <sstream>
 
+#include <algorithm>
+#include <iterator>
+
 #define SSTR( x ) static_cast< std::ostringstream & >( \
         ( std::ostringstream() << std::dec << x ) ).str()
 
@@ -136,6 +139,24 @@ int testUnfold0Toys(TString observable = "mult", TString flavor = "all", int nTo
   // show fit result
   gStyle->SetOptFit(1111);
   
+  // Viridis palette reversed + white
+  //stops = array('d', [0.0, 0.05, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0000])
+  //red   = array('d', [26./255., 51./255.,  43./255.,  33./255.,  28./255.,  35./255.,  74./255., 144./255., 246./255., 1., 1.])
+  //std::reverse(std::begin(arr), std::end(arr));
+  //green = array('d', [9./255., 24./255.,  55./255.,  87./255., 118./255., 150./255., 180./255., 200./255., 222./255., 1., 1.])
+  //blue  = array('d', [30./255., 96./255., 112./255., 114./255., 112./255., 101./255.,  72./255.,  35./255.,   0./255., 1., 1.])
+  //ROOT.TColor.CreateGradientColorTable(11, stops, red[::-1], green[::-1], blue[::-1], 255)
+  
+  const Int_t Number = 11;
+  Double_t Red[Number]    = { 26./255., 51./255.,  43./255.,  33./255.,  28./255.,  35./255.,  74./255., 144./255., 246./255., 1., 1. };
+  std::reverse(std::begin(Red), std::end(Red));
+  Double_t Green[Number]  = { 9./255., 24./255.,  55./255.,  87./255., 118./255., 150./255., 180./255., 200./255., 222./255., 1., 1. };
+  std::reverse(std::begin(Green), std::end(Green));
+  Double_t Blue[Number]   = { 30./255., 96./255., 112./255., 114./255., 112./255., 101./255.,  72./255.,  35./255.,   0./255., 1., 1. };
+  std::reverse(std::begin(Blue), std::end(Blue));
+  Double_t Length[Number] = { 0.0, 0.05, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0 };
+  TColor::CreateGradientColorTable(Number,Length,Red,Green,Blue, 255);
+    
   TString basepath = "/afs/cern.ch/work/m/mseidel/TopAnalysis/CMSSW_8_0_26_patch1/src/TopLJets2015/TopAnalysis/unfolding/fill/";
   
   //============================================
@@ -183,7 +204,7 @@ int testUnfold0Toys(TString observable = "mult", TString flavor = "all", int nTo
   
   TRandom3 random(1);
   
-  TH2F* hPull = new TH2F("pull", "pull;bin;pull", histMgenMC->GetNbinsX()+2, 0, histMgenMC->GetNbinsX()+2, 50, -5, 5);
+  TH2F* hPull = new TH2F("pull", "pull;bin;pull", histMgenMC->GetNbinsX(), 0.5, histMgenMC->GetNbinsX()+0.5, 50, -5, 5);
   std::vector<std::vector<double> > pseudoresults;
   
   TFile outfile("unfolding/toys/"+observable+"_"+flavor+"_toys.root", "RECREATE");
@@ -355,7 +376,7 @@ int testUnfold0Toys(TString observable = "mult", TString flavor = "all", int nTo
     TH1 *histMunfold=unfold.GetOutput((std::string("Unfolded_")+std::to_string(t)).c_str());
     histMunfold->Write();
     
-    for (int i = 0; i < histMunfold->GetNbinsX()+2; ++i) {
+    for (int i = 1; i < histMunfold->GetNbinsX()+1; ++i) {
       double pull = (histMunfold->GetBinContent(i) - histMgenToy->GetBinContent(i)) / histMunfold->GetBinError(i); // sqrt(pow(histMunfold->GetBinError(i), 2) + pow(histMgenToy->GetBinError(i), 2));
       //std::cout << histMgenMC->GetBinContent(i) << std::endl;
       hPull->Fill(i, pull);
@@ -401,8 +422,8 @@ int testUnfold0Toys(TString observable = "mult", TString flavor = "all", int nTo
   }
   
   hPull->Draw("colz");
-  pull_1->SetLineColor(kRed+1);
-  pull_1->SetMarkerColor(kRed+1);
+  pull_1->SetLineColor(kWhite);
+  pull_1->SetMarkerColor(kWhite);
   pull_1->SetLineWidth(4);
   pull_1->Draw("e1,same");
   
