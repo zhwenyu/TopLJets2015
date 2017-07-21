@@ -34,8 +34,9 @@ def main():
     (opt, args) = parser.parse_args()
 
     #read lists of samples
-    betas = [0.2, 0.5, 1., 2.]
-    sbetas = ['02', '05', '10', '20']
+    observables = ["m2_b1", "n2_b1", "n3_b1", "m2_b2", "n2_b2", "n3_b2"]
+    nice_observables_root = {"m2_b1": "M_{ 2}^{ (1)}", "n2_b1": "N_{ 2}^{ (1)}", "n3_b1": "N_{ 3}^{ (1)}", "m2_b2": "M_{ 2}^{ (2)}", "n2_b2": "N_{ 2}^{ (2)}", "n3_b2":"N_{ 3}^{ (2)}"}
+    
     colors = {'all': ROOT.kBlack, 'bottom': ROOT.kRed+1, 'light': ROOT.kBlue+1, 'gluon': ROOT.kGreen+1}
     markers = {'all': 20, 'bottom': 21, 'light': 22, 'gluon': 23}
     fills = {'all': 1001, 'bottom': 3254, 'light': 3245, 'gluon': 3390}
@@ -43,43 +44,42 @@ def main():
     hists = {}
     unchists = {}
     
-    dataUnfolded = ROOT.TH1F('dataUnfolded', 'dataUnfolded', 12, 0, 12)
-    dataUnfoldedSys = ROOT.TH1F('dataUnfoldedSys', 'dataUnfoldedSys', 12, 0, 12)
-    nominalGen = ROOT.TH1F('nominalGen', 'nominalGen', 12, 0, 12)
-    FSRUpGen = ROOT.TH1F('FSRUpGen', 'FSRUpGen',       12, 0, 12)
-    FSRDownGen = ROOT.TH1F('FSRDownGen', 'FSRDownGen', 12, 0, 12)
-    herwigGen = ROOT.TH1F('herwigGen', 'herwigGen',    12, 0, 12)
+    dataUnfolded = ROOT.TH1F('dataUnfolded', 'dataUnfolded', len(observables), 0, len(observables))
+    dataUnfoldedSys = ROOT.TH1F('dataUnfoldedSys', 'dataUnfoldedSys', len(observables), 0, len(observables))
+    nominalGen = ROOT.TH1F('nominalGen', 'nominalGen', len(observables), 0, len(observables))
+    FSRUpGen = ROOT.TH1F('FSRUpGen', 'FSRUpGen',       len(observables), 0, len(observables))
+    FSRDownGen = ROOT.TH1F('FSRDownGen', 'FSRDownGen', len(observables), 0, len(observables))
+    herwigGen = ROOT.TH1F('herwigGen', 'herwigGen',    len(observables), 0, len(observables))
     
     counter = 0
-    for c in range(1,4):
-        for sbeta in sbetas:
-            counter += 1
-            infile = ROOT.TFile.Open('%s/c%i_%s_charged_%s_result.root'%(opt.inDir, c, sbeta, opt.flavor))
-            
-            inhist = infile.Get('mean')
-            dataUnfolded.SetBinContent(counter, inhist.GetBinContent(1))
-            dataUnfolded.SetBinError(counter, inhist.GetBinError(1))
-            
-            inhistErr = infile.Get('meanErr')
-            dataUnfoldedSys.SetBinContent(counter, inhistErr.GetBinContent(1))
-            dataUnfoldedSys.SetBinError(counter, inhistErr.GetBinError(1))
-            dataUnfoldedSys.GetXaxis().SetBinLabel(counter, 'C_{'+str(c)+'}^{('+str(int(sbeta)/10.)+')}')
-            
-            innominalGen = infile.Get('nominalGen')
-            nominalGen.SetBinContent(counter, innominalGen.GetMean())
-            nominalGen.SetBinError(counter, innominalGen.GetMeanError())
-            
-            inFSRUpGen = infile.Get('FSRUpGen')
-            FSRUpGen.SetBinContent(counter, inFSRUpGen.GetMean())
-            FSRUpGen.SetBinError(counter, inFSRUpGen.GetMeanError())
-            
-            inFSRDownGen = infile.Get('FSRDownGen')
-            FSRDownGen.SetBinContent(counter, inFSRDownGen.GetMean())
-            FSRDownGen.SetBinError(counter, inFSRDownGen.GetMeanError())
-            
-            inHerwigGen = infile.Get('herwigGen')
-            herwigGen.SetBinContent(counter, inHerwigGen.GetMean())
-            herwigGen.SetBinError(counter, inHerwigGen.GetMeanError())
+    for obs in observables:
+        counter += 1
+        infile = ROOT.TFile.Open('%s/%s_charged_%s_result.root'%(opt.inDir, obs, opt.flavor))
+        
+        inhist = infile.Get('mean')
+        dataUnfolded.SetBinContent(counter, inhist.GetBinContent(1))
+        dataUnfolded.SetBinError(counter, inhist.GetBinError(1))
+        
+        inhistErr = infile.Get('meanErr')
+        dataUnfoldedSys.SetBinContent(counter, inhistErr.GetBinContent(1))
+        dataUnfoldedSys.SetBinError(counter, inhistErr.GetBinError(1))
+        dataUnfoldedSys.GetXaxis().SetBinLabel(counter, nice_observables_root[obs])
+        
+        innominalGen = infile.Get('nominalGen')
+        nominalGen.SetBinContent(counter, innominalGen.GetMean())
+        nominalGen.SetBinError(counter, innominalGen.GetMeanError())
+        
+        inFSRUpGen = infile.Get('FSRUpGen')
+        FSRUpGen.SetBinContent(counter, inFSRUpGen.GetMean())
+        FSRUpGen.SetBinError(counter, inFSRUpGen.GetMeanError())
+        
+        inFSRDownGen = infile.Get('FSRDownGen')
+        FSRDownGen.SetBinContent(counter, inFSRDownGen.GetMean())
+        FSRDownGen.SetBinError(counter, inFSRDownGen.GetMeanError())
+        
+        inHerwigGen = infile.Get('herwigGen')
+        herwigGen.SetBinContent(counter, inHerwigGen.GetMean())
+        herwigGen.SetBinError(counter, inHerwigGen.GetMeanError())
     
     #plot
     ROOT.gStyle.SetOptStat(0)
@@ -105,7 +105,7 @@ def main():
     dataUnfolded.GetXaxis().SetTitleSize(0.045)
     dataUnfolded.GetXaxis().SetLabelSize(0.04)
     dataUnfolded.SetYTitle('<C_{N}^{(#beta)}>')
-    dataUnfolded.GetYaxis().SetRangeUser(0.0001, 1.5*dataUnfolded.GetMaximum())
+    dataUnfolded.GetYaxis().SetRangeUser(0.0001, 1.6*dataUnfolded.GetMaximum())
     dataUnfolded.GetYaxis().SetTitleSize(0.05)
     dataUnfolded.GetYaxis().SetLabelSize(0.045)
     dataUnfolded.GetYaxis().SetTitleOffset(1.1)
@@ -195,7 +195,7 @@ def main():
     dataUnfoldedSysRatio.GetYaxis().SetTitleSize(0.2)
     dataUnfoldedSysRatio.GetYaxis().SetTitleOffset(0.3)
     dataUnfoldedSysRatio.GetYaxis().SetLabelSize(0.18)
-    dataUnfoldedSysRatio.GetYaxis().SetRangeUser(0.95,1.25)
+    dataUnfoldedSysRatio.GetYaxis().SetRangeUser(0.95,1.15)
     dataUnfoldedSysRatio.GetYaxis().SetNdivisions(503)
     
     nominalGenRatio=nominalGen.Clone('nominalGenRatio')
@@ -222,8 +222,8 @@ def main():
     FSRDownGenRatio.Draw('SAME P X0 E1')
     herwigGenRatio.Draw ('SAME H')
             
-    c.Print(opt.outDir+'/meanCvsBeta_'+opt.flavor+'.pdf')
-    c.Print(opt.outDir+'/meanCvsBeta_'+opt.flavor+'.png')
+    c.Print(opt.outDir+'/meanECF_'+opt.flavor+'.pdf')
+    c.Print(opt.outDir+'/meanECF_'+opt.flavor+'.png')
         
 def normalizeAndDivideByBinWidth(hist):
     hist.Scale(1./hist.Integral())
