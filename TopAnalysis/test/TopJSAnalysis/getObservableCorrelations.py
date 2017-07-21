@@ -152,9 +152,13 @@ def main():
     c.Print('correlations.pdf')
     c.Print('correlations.png')
     
+    # actually try to remove some that cannot be measured too well by subjective criteria...
+    blacklist = ['n3_b1']
+    
     # algorithm deleting observables with highest correlation
     observables_low = copy.copy(observables)
-    blacklist = []
+    for obs in blacklist:
+        observables_low.remove(obs)
     while (len(observables_low) > 15):
         maxCorrelation = 0.
         maxCorrelationPair = None
@@ -172,14 +176,15 @@ def main():
                 if not observables[j] in observables_low: continue
                 sumcorr[i] += abs(h_correlations.GetBinContent(i+1, j+1))
         maxCorrelationObs = max(sumcorr.iterkeys(), key=(lambda key: sumcorr[key]))
-        print('remove', maxCorrelation, maxCorrelationObs, observables[maxCorrelationObs])
+        minCorrelationObs = min(sumcorr.iterkeys(), key=(lambda key: sumcorr[key]))
+        print('remove', maxCorrelationObs, observables[maxCorrelationObs], maxCorrelation, minCorrelationObs, observables[minCorrelationObs])
         observables_low.remove(observables[maxCorrelationObs])
     print(observables_low)
     
     # finding set of observables with smallest global correlation now
     bestCombination = None
     bestSumCorr = 9999999.
-    for combination in itertools.combinations(observables_low,5):
+    for combination in itertools.combinations(observables_low, 5):
         sumcorr = 0.
         for si in combination:
             for sj in combination:
