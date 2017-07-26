@@ -60,7 +60,7 @@ case $WHAT in
 	;;
     PLOTSEL )
         commonOpts="-i ${outdir} --puNormSF puwgtctr  -j data/era2016/samples.json -l ${lumi}  --saveLog --mcUnc ${lumiUnc}"
-	python scripts/plotter.py ${commonOpts}
+	python scripts/plotter.py ${commonOpts} 
 	;;
     WWWSEL )
 	mkdir -p ${wwwdir}/sel
@@ -71,22 +71,28 @@ case $WHAT in
 	python scripts/runTopWidthAnalysis.py -i root://eoscms//eos/cms//store/cmst3/group/top/TOP-17-010//Chunks/MC13TeV_TTJets_12.root -o ${outdir}/analysis/Chunks -q local;
         ;;
     ANA )
-	python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${outdir}/analysis/Chunks -q ${queue};
-	#python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${outdir}/analysis/Chunks -q ${queue} --only Data --farm TOP17010DataANA;
+	python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${outdir}/analysis/Chunks -q ${queue} --only MC;
+	python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${outdir}/analysis/Chunks -q ${queue} --only Data --farm TOP17010DataANA;
 	;;
     MERGE )
 	./scripts/mergeOutputs.py ${outdir}/analysis;
 	;;
     BKG )
-	python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json  -l ${lumi} ${lumiSpecs} --onlyData --only mll -o dy_plotter.root; 
-	python scripts/runDYRinRout.py --in ${outdir}/analysis/plots/dy_plotter.root --categs 1b,2b --out ${outdir}/analysis/plots/ > ${outdir}/analysis/plots/dysf.dat;
+        opts="-j data/era2016/samples.json  -l ${lumi} ${lumiSpecs} --onlyData"
+#	python scripts/plotter.py -i ${outdir}/analysis ${opts} --only mll -o dy_plotter.root; 
+#	python scripts/runDYRinRout.py --in ${outdir}/analysis/plots/dy_plotter.root --categs 1b,2b --out ${outdir}/analysis/plots/ > ${outdir}/analysis/plots/dysf.dat;
+        opts="${opts} --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck"
+#	python scripts/plotter.py -i ${outdir}/analysis ${opts} --only mll,evcount,dphilb,drlb,met,njets,ptlb,incmlb_w100 -o dysf_plotter.root; 
+	python scripts/plotter.py -i ${outdir}/analysis ${opts} --only count --saveTeX -o count_plotter.root;
 	;;
     PLOT )
-        python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --silent;
-        python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/syst_samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --silent -o syst_plotter.root;
+        opts="-l ${lumi} ${lumiSpecs} --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck --mcUnc ${lumiUnc} --silent"
+        python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json      ${opts};
+        python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/syst_samples.json  ${opts} -o syst_plotter.root;
         ;;
     PLOT_P1 )
 	python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --only count --saveTeX -o count_plotter.root --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck > count2.out & 
+
 	python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --only njets,ptlb -o njets_plotter.root --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck > njets2.out &
     	python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck -o plotter.root > plotter.out &
 	python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/syst_samples.json -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --silent -o syst_plotter2.root > syst2.out &
@@ -124,16 +130,17 @@ case $WHAT in
 	;;
     HYPOTEST ) 
 	mainHypo=100
-	CATS=(
-    "EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt")
+	CATS=(            
+            "EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt")
 	#    "EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt"
 	#    "EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt"
 	#)
-    TAGS=("inclesscpu1000") # "ll" "em")
-	altHypo=(20 40 60 80 100 120 140 160 180 200 220 240 260 280 300 350 400)
+        TAGS=("inc") # "ll" "em")
+	altHypo=(100) #20 40 60 80 100 120 140 160 180 200 220 240 260 280 300 350 400)
 	#altHypo=(20 40 60 80 120 140 160 180 200 220 240 280 300 350)
 	#data=(-1 100 400)	
-    data=(100)
+        data=(100)
+
 	#still to be debugged
         #cmd="${cmd} --addBinByBin 0.3" 
 	for h in ${altHypo[@]}; do
@@ -146,11 +153,13 @@ case $WHAT in
 		    cmd="python test/TopWidthAnalysis/runHypoTestDatacards.py"
 		    cmd="${cmd} --combine ${COMBINERELEASE}"
 		    cmd="${cmd} --mainHypo=${mainHypo} --altHypo ${h} --pseudoData=${d}"
-		    cmd="${cmd} -s tbart --replaceDYshape"
+		    cmd="${cmd} -s tbart,Singletop" #tW --replaceDYshape"
 		    cmd="${cmd} --dist incmlb"		    
 		    cmd="${cmd} --nToys 2000"		    
-		    cmd="${cmd} -i ${outdir}/analysis/plots/plotter.root"
-		    cmd="${cmd} --systInput ${outdir}/analysis/plots/syst_plotter.root"
+		    #cmd="${cmd} -i ${outdir}/analysis/plots/plotter.root"
+		    #cmd="${cmd} --systInput ${outdir}/analysis/plots/syst_plotter.root"
+		    cmd="${cmd} -i /eos/cms/store/cmst3/group/top/TOP-17-010/plotter/plotter.root"
+		    cmd="${cmd} --systInput /eos/cms/store/cmst3/group/top/TOP-17-010/plotter/syst_plotter.root"
 		    cmd="${cmd} -c ${icat}"
 		    cmd="${cmd} --rebin 2"            
 		    if [ "$h" == "220" ]; then
@@ -159,22 +168,25 @@ case $WHAT in
 			    cmd="${cmd} --doValidation"
 			fi
 		    fi
-
+                    
+                    
 		    echo "Submitting ($mainHypo,$h,$d,$itag,$icat)"		
 		    stdcmd="${cmd} -o ${outdir}/datacards_${itag}/"
-		    bsub -q ${queue} ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${stdcmd};
-		    #if [ "$itag" == "inc" ]; then
-			#if [ "$d" == "100" ]; then
-			#    #echo "    injecting pseudo-data from nloproddec"
-			#    #nlocmd="${cmd} --pseudoDataFromWgt nloproddec -o ${outdir}/datacards_${itag}_nloproddec"
-			#    #bsub -q ${queue} ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${nlocmd};   
-			#    #echo "    injecting pseudo-data from widthx4"
-			#    #width4cmd="${cmd} --pseudoDataFromSim=t#bar{t}_widthx4 -o ${outdir}/datacards_${itag}_widthx4"
-			#    #bsub -q ${queue} sh ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${width4cmd};
-			#fi
-		    #fi
+                    echo $stdcmd
+#		    bsub -q ${queue} ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${stdcmd};
+#		    #if [ "$itag" == "inc" ]; then
+#			#if [ "$d" == "100" ]; then
+#			#    #echo "    injecting pseudo-data from nloproddec"
+#			#    #nlocmd="${cmd} --pseudoDataFromWgt nloproddec -o ${outdir}/datacards_${itag}_nloproddec"
+#			#    #bsub -q ${queue} ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${nlocmd};   
+#			#    #echo "    injecting pseudo-data from widthx4"
+#			#    #width4cmd="${cmd} --pseudoDataFromSim=t#bar{t}_widthx4 -o ${outdir}/datacards_${itag}_widthx4"
+#			#    #bsub -q ${queue} sh ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${width4cmd};
+#			#fi
+#		    #fi
+                    
 		done
-        done
+            done
 	done
 	;;
     PLOTHYPOTEST )

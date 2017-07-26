@@ -484,7 +484,7 @@ Create analysis tasks
 """
 def createAnalysisTasks(opt):
 
-    onlyList=opt.only.split('v')
+    onlyList=opt.only.split(',')
 
     ## Local directory
     file_list=[]

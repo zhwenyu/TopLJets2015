@@ -191,11 +191,11 @@ def doDataCards(opt,args):
 
     #define RATE systematics : syst,val,pdf,whiteList,blackList  (val can be a list of values [-var,+var])
     rateSysts=[
-          ('lumi_13TeV',       1.062,    'lnN',    [],                  ['DY']),
+          ('lumi_13TeV',       1.025,    'lnN',    [],                  ['DY']),
           ('DYnorm_*CH*',      1.30,     'lnN',    ['DY'],              []),
           ('Wnorm_th',         1.30,     'lnN',    ['W'],               []),
-          ('tWnorm_th',        1.054,    'lnN',    tWScenarioList,      []),
-          ('tnorm_th',         1.044,    'lnN',    ['tch'],             []),
+          ('tWnorm_th',        1.15,     'lnN',    tWScenarioList,      []),
+          #('tnorm_th',         1.044,    'lnN',    ['tch'],             []),
           ('VVnorm_th',        1.20,     'lnN',    ['Multiboson'],      []),
           ('tbartVnorm_th',    1.30,     'lnN',    ['tbartV'],          []),
     ]
@@ -463,7 +463,6 @@ def doDataCards(opt,args):
 
             # jes has annoying formatting different
 
-
             #get shapes and adapt them
             iexpUp,iexpDn=None,None
             if len(weightList)==1:
@@ -636,7 +635,7 @@ def doDataCards(opt,args):
                     newProc=proc
                     if isSignal:
                         newProc=('%sw%.0f'%(proc,hypo)).replace('.','p')
-
+                    
                     jexpUp.values()[0].SetName(newProc)
                     iexpUp[newProc]=jexpUp.values()[0]
 
