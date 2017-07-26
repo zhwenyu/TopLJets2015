@@ -25,7 +25,7 @@ fi
 export LSB_JOB_REPORT_MAIL=N
 
 
-queue=workday
+queue=1nd
 lumi=35922
 lumiSpecs=""
 lumiUnc=0.025
@@ -34,8 +34,9 @@ myletter=${whoami:0:1}
 eosdir=/store/cmst3/group/top/ReReco2016/b312177
 dataeosdir=/store/cmst3/group/top/ReReco2016/be52dbe_03Feb2017
 summaryeosdir=/store/cmst3/group/top/TOP-17-010/
-COMBINERELEASE=~/scratch0/CMSSW_7_4_7/src/
+COMBINERELEASE=~/CMSSW_7_4_7/src/
 outdir=/afs/cern.ch/work/${myletter}/${whoami}/TOP-17-010/
+anadir=${outdir}/$2
 wwwdir=~/www/TOP-17-010/
 
 
@@ -78,10 +79,11 @@ case $WHAT in
 	;;
     BKG )
         opts="-j data/era2016/samples.json  -l ${lumi} ${lumiSpecs} --onlyData"
-	python scripts/plotter.py -i ${outdir}/analysis ${opts} --only mll -o dy_plotter.root; 
-	python scripts/runDYRinRout.py --in ${outdir}/analysis/plots/dy_plotter.root --categs 1b,2b --out ${outdir}/analysis/plots/ > ${outdir}/analysis/plots/dysf.dat;
+#	python scripts/plotter.py -i ${outdir}/analysis ${opts} --only mll -o dy_plotter.root; 
+#	python scripts/runDYRinRout.py --in ${outdir}/analysis/plots/dy_plotter.root --categs 1b,2b --out ${outdir}/analysis/plots/ > ${outdir}/analysis/plots/dysf.dat;
         opts="${opts} --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck"
-	python scripts/plotter.py -i ${outdir}/analysis ${opts} --only mll,evcount,dphilb,drlb,met,njets,ptlb,incmlb_w100 -o dysf_plotter.root; 
+#	python scripts/plotter.py -i ${outdir}/analysis ${opts} --only mll,evcount,dphilb,drlb,met,njets,ptlb,incmlb_w100 -o dysf_plotter.root; 
+	python scripts/plotter.py -i ${outdir}/analysis ${opts} --only count --saveTeX -o count_plotter.root;
 	;;
     PLOT )
         opts="-l ${lumi} ${lumiSpecs} --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck --mcUnc ${lumiUnc} --silent"
@@ -90,6 +92,7 @@ case $WHAT in
         ;;
     PLOT_P1 )
 	python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --only count --saveTeX -o count_plotter.root --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck > count2.out & 
+
 	python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --only njets,ptlb -o njets_plotter.root --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck > njets2.out &
     	python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck -o plotter.root > plotter.out &
 	python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/syst_samples.json -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --silent -o syst_plotter2.root > syst2.out &
@@ -126,18 +129,18 @@ case $WHAT in
         cp test/index.php ${wwwdir}/comb
 	;;
     HYPOTEST ) 
-	mainHypo=1.0
-	CATS=(
-	    "lowptEE1b,lowptEE2b,highptEE1b,highptEE2b,lowptEM1b,lowptEM2b,highptEM1b,highptEM2b,lowptMM1b,lowptMM2b,highptMM1b,highptMM2b"
-	    "lowptEE1b,lowptEE2b,highptEE1b,highptEE2b,lowptMM1b,lowptMM2b,highptMM1b,highptMM2b"
-	    "lowptEM1b,lowptEM2b,highptEM1b,highptEM2b"
-	)
-	TAGS=("inc" "ll" "em")
-	altHypo=(0.2 0.4 0.6 0.8 1.0 1.2 1.4 1.6 1.8 2.0 2.2 2.4 2.6 2.8 3.0 3.5 4.0)
-	data=(-1.0 1.0 4.0)
+	mainHypo=100
+	CATS=(            
+            "EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt")
+	#    "EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt"
+	#    "EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt"
+	#)
+        TAGS=("inc") # "ll" "em")
+	altHypo=(100) #20 40 60 80 100 120 140 160 180 200 220 240 260 280 300 350 400)
+	#altHypo=(20 40 60 80 120 140 160 180 200 220 240 280 300 350)
+	#data=(-1 100 400)	
+        data=(100)
 
-	altHypo=(1.6)
-        data=(1.0)
 	#still to be debugged
         #cmd="${cmd} --addBinByBin 0.3" 
 	for h in ${altHypo[@]}; do
@@ -152,30 +155,36 @@ case $WHAT in
 		    cmd="${cmd} --mainHypo=${mainHypo} --altHypo ${h} --pseudoData=${d}"
 		    cmd="${cmd} -s tbart,Singletop" #tW --replaceDYshape"
 		    cmd="${cmd} --dist incmlb"		    
-		    cmd="${cmd} -i ${outdir}/analysis/plots/plotter.root"
-		    cmd="${cmd} --systInput ${outdir}/analysis/plots/syst_plotter.root"
+		    cmd="${cmd} --nToys 2000"		    
+		    #cmd="${cmd} -i ${outdir}/analysis/plots/plotter.root"
+		    #cmd="${cmd} --systInput ${outdir}/analysis/plots/syst_plotter.root"
+		    cmd="${cmd} -i /eos/cms/store/cmst3/group/top/TOP-17-010/plotter/plotter.root"
+		    cmd="${cmd} --systInput /eos/cms/store/cmst3/group/top/TOP-17-010/plotter/syst_plotter.root"
 		    cmd="${cmd} -c ${icat}"
 		    cmd="${cmd} --rebin 2"            
-		    if [ "$h" == "2.2" ]; then
-			if [ "$d" == "-1.0" ]; then
+		    if [ "$h" == "220" ]; then
+			if [ "$d" == "-1" ]; then
 			    echo "    validation will be included"
 			    cmd="${cmd} --doValidation"
 			fi
 		    fi
-
-		    #echo "Submitting ($mainHypo,$h,$d,$itag,$icat)"		
-		    #stdcmd="${cmd} -o ${outdir}/datacards_${itag}/"
-		    #bsub -q ${queue} ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${stdcmd};
-		    #if [ "$itag" == "inc" ]; then
-		#	if [ "$d" == "1.0" ]; then
-		#	    echo "    injecting pseudo-data from nloproddec"
-		#	    nlocmd="${cmd} --pseudoDataFromWgt nloproddec -o ${outdir}/datacards_${itag}_nloproddec"
-		#	    bsub -q ${queue} ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${nlocmd};   
-		#	    echo "    injecting pseudo-data from widthx4"
-		#	    width4cmd="${cmd} --pseudoDataFromSim=t#bar{t}_widthx4 -o ${outdir}/datacards_${itag}_widthx4"
-		#	    bsub -q ${queue} sh ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${width4cmd};
-		#	fi
-		 #   fi
+                    
+                    
+		    echo "Submitting ($mainHypo,$h,$d,$itag,$icat)"		
+		    stdcmd="${cmd} -o ${outdir}/datacards_${itag}/"
+                    echo $stdcmd
+#		    bsub -q ${queue} ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${stdcmd};
+#		    #if [ "$itag" == "inc" ]; then
+#			#if [ "$d" == "100" ]; then
+#			#    #echo "    injecting pseudo-data from nloproddec"
+#			#    #nlocmd="${cmd} --pseudoDataFromWgt nloproddec -o ${outdir}/datacards_${itag}_nloproddec"
+#			#    #bsub -q ${queue} ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${nlocmd};   
+#			#    #echo "    injecting pseudo-data from widthx4"
+#			#    #width4cmd="${cmd} --pseudoDataFromSim=t#bar{t}_widthx4 -o ${outdir}/datacards_${itag}_widthx4"
+#			#    #bsub -q ${queue} sh ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${width4cmd};
+#			#fi
+#		    #fi
+                    
 		done
             done
 	done
@@ -197,7 +206,7 @@ case $WHAT in
 	    itag=${TAGS[${i}]}
             mkdir -p ${wwwdir}/hypo${itag}
             cp ${outdir}/datacards${itag}/*.{png,pdf} ${wwwdir}/hypo${itag};
-            cp ${outdir}/datacards${itag}/hypotest_1.0vs2.2_data/*.{png,pdf} ${wwwdir}/hypo${itag};
+            cp ${outdir}/datacards${itag}/hypotest_100vs220_data/*.{png,pdf} ${wwwdir}/hypo${itag};
             cp test/index.php ${wwwdir}/hypo${itag}
 	done
 	;;
