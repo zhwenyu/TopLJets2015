@@ -10,7 +10,7 @@ steer the script
 """
 def main():
 
-    eos_cmd = '/afs/cern.ch/project/eos/installation/cms/bin/eos.select'
+    #eos_cmd = '/afs/cern.ch/project/eos/installation/cms/bin/eos.select'
 
     #configuration
     usage = 'usage: %prog [options]'
@@ -24,13 +24,14 @@ def main():
     (opt, args) = parser.parse_args()
 
     baseEOS='/eos/cms/'
-    if opt.mount:
-        Popen([eos_cmd, ' -b fuse mount', 'eos'],stdout=PIPE).communicate()
-        baseEOS='eos/cms/'
+    #if opt.mount:
+    #    Popen([eos_cmd, ' -b fuse mount', 'eos'],stdout=PIPE).communicate()
+    #    baseEOS='eos/cms/'
 
     #prepare output directory
     if opt.outDir is None: opt.outDir=opt.inDir
-    Popen([eos_cmd, 'mkdir',baseEOS+opt.outDir],stdout=PIPE).communicate()
+    #Popen([eos_cmd, 'mkdir',baseEOS+opt.outDir],stdout=PIPE).communicate()
+    Popen(['mkdir',baseEOS+opt.outDir],stdout=PIPE).communicate()
 
     dset_list=getEOSlslist(directory=opt.inDir,prepend='')
     for dset in dset_list:
@@ -78,7 +79,8 @@ def main():
                 choice = raw_input('Will move to %s current output directory. [y/n] ?' % newDir ).lower()
                 if not 'y' in choice : continue
             
-            Popen([eos_cmd, 'mkdir', baseEOS+newDir],stdout=PIPE).communicate()
+            #Popen([eos_cmd, 'mkdir', baseEOS+newDir],stdout=PIPE).communicate()
+            Popen(['mkdir', baseEOS+newDir],stdout=PIPE).communicate()
     
             moveIndividualFiles=True
             if len(file_list)>0:
@@ -103,9 +105,9 @@ def main():
                             mergedFileName='MergedMiniEvents_%d.root '%ilist
                         toAdd='%s ' % mergedFileName
                         for f in split_file_lists[ilist]:                            
-                            toAdd += 'eos/cms/%s '%f 
+                            toAdd += '/eos/cms/%s '%f 
 
-                        finalOutput='eos/cms/%s/%s'%(newDir,mergedFileName)
+                        finalOutput='/eos/cms/%s/%s'%(newDir,mergedFileName)
                         fIn=ROOT.TFile.Open(finalOutput)
                         try:
                             if fIn or not fIn.IsZombie():
@@ -130,13 +132,13 @@ def main():
 
             if not opt.nocheck and opt.cleanup : 
                 choice = raw_input('Will remove output directory. [y/n] ?').lower()
-                if 'y' in choice: 
-                    Popen([eos_cmd, 'rm', '-r %s/%s'%(baseEOS,dset)],stdout=PIPE).communicate()
+                #if 'y' in choice: 
+                #    Popen([eos_cmd, 'rm', '-r %s/%s'%(baseEOS,dset)],stdout=PIPE).communicate()
 
             print 'Crab outputs may now be found in %s' % newDir
 
-    if opt.mount:
-        Popen([eos_cmd, ' -b fuse umount', 'eos'],stdout=PIPE).communicate()
+    #if opt.mount:
+    #    Popen([eos_cmd, ' -b fuse umount', 'eos'],stdout=PIPE).communicate()
     print '-'*50
     print 'All done. In case errors were found check that the crab output structure is '
     print '<outLFNDirBase>/<primary-dataset>/<publication-name>/<time-stamp>/<counter>/<file-name>'

@@ -37,9 +37,9 @@ case $WHAT in
 
     SEL)
 	common="--wjjOrder drjj --thadOrder dm2tlep" # --etaRestr
-        for sample in MC8.16TeV_TTbar_pPb_tighte MC8.16TeV_DY_pPb MC8.16TeV_WJets_pPb MC8.16TeV_TTbar_pPb MC8.16TeV_TTbar_pPb_Pohweg MC8TeV_WJets_pp MC8.16TeV_TTbar_pPb_hypertighte; do    
+        for sample in MC8.16TeV_TTbar_pPb_tighte; do # MC8.16TeV_DY_pPb MC8.16TeV_WJets_pPb MC8.16TeV_TTbar_pPb MC8.16TeV_TTbar_pPb_Pohweg MC8TeV_WJets_pp MC8.16TeV_TTbar_pPb_hypertighte; do    
 	    python prepareWorkspace.py  -d ${sample} ${common};
-	    python prepareWorkspace.py  -d ${sample} ${common} --etaRestr;
+	    #python prepareWorkspace.py  -d ${sample} ${common} --etaRestr;
 	done
 	;;
 
@@ -128,13 +128,13 @@ case $WHAT in
         cp plots/MC8.16TeV_TTbar_pPb_tighte/workspace/*dat ${wwwdir}/param;
         cp ../../index.php ${wwwdir}/param/;
         
-	python parameterizeMCShapes.py workspace_MC8.16TeV_WJets_pPb.root pdf_workspace_MC8.16TeV_TTbar_pPb_tighte.root;
-	a=(`ls *.{png,pdf}`)
-	for i in ${a[@]}; do
-	    f=${i/./_w.}
-	    mv -v ${i} plots/MC8.16TeV_WJets_pPb/${f};
-	done
-        cp plots/MC8.16TeV_WJets_pPb/*_w.{png,pdf}  ${wwwdir}/param/;
+	#python parameterizeMCShapes.py workspace_MC8.16TeV_WJets_pPb.root pdf_workspace_MC8.16TeV_TTbar_pPb_tighte.root;
+	#a=(`ls *.{png,pdf}`)
+	#for i in ${a[@]}; do
+	#    f=${i/./_w.}
+	#    mv -v ${i} plots/MC8.16TeV_WJets_pPb/${f};
+	#done
+        #cp plots/MC8.16TeV_WJets_pPb/*_w.{png,pdf}  ${wwwdir}/param/;
 	;;
 
     FITS)
@@ -161,7 +161,7 @@ case $WHAT in
         python doPRLplots.py -i fit_finalworkspace_wmodel0_0.root
         for var in mjj mthad mtlep; do
             for cat in 1l4j2b 1l4j1b1q 1l4j2q; do
-                python mergePLRplotCategs.py $var $cat;
+                python mergePLRplotCategs.py $var $cat;        
             done
         done
 

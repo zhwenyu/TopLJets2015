@@ -32,6 +32,15 @@ case $WHAT in
             -o ${outdir} \
             --era era2016 -m BjetChargeTreeProducer::RunBjetChargeTreeProducer --ch 0 --runSysts;
 	;;
+    SELSYST )
+        #to run locally use "--njobs 8 -q local"
+        #to run on the batck use "-q condor"
+	python scripts/runLocalAnalysis.py -i ${eosdir} \
+            --only test/summer2017/ttbar_systs.json --exactonly \
+            -q condor \
+            -o ${outdir} \
+            --era era2016 -m BjetChargeTreeProducer::RunBjetChargeTreeProducer --ch 0 --runSysts;
+	;;
 
     MERGE )
 	./scripts/mergeOutputs.py ${outdir};
