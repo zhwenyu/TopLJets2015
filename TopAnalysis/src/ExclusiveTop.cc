@@ -45,8 +45,8 @@ void RunExclusiveTop(TString filename,
   std::vector<RunPeriod_t> runPeriods=getRunPeriods(era);
 
   const char* CMSSW_BASE = getenv("CMSSW_BASE");
-  CTPPSAlCa::AlignmentLUTHandler pots_align(Form("%s/src/TopLJets2015/TopAnalysis/data/era2016/alignment_collection_v2.out", CMSSW_BASE));
-  CTPPSAlCa::FillNumberLUTHandler run_to_fill(Form("%s/src/TopLJets2015/TopAnalysis/data/era2016/fill_run_lut_v2.dat", CMSSW_BASE));
+//  CTPPSAlCa::AlignmentLUTHandler pots_align(Form("%s/src/TopLJets2015/TopAnalysis/data/era2016/alignment_collection_v2.out", CMSSW_BASE));
+//  CTPPSAlCa::FillNumberLUTHandler run_to_fill(Form("%s/src/TopLJets2015/TopAnalysis/data/era2016/fill_run_lut_v2.dat", CMSSW_BASE));
   XiInterpolator proton_reco(Form("%s/src/TopLJets2015/TopAnalysis/data/era2016/ctpps_optics_9mar2017.root", CMSSW_BASE));
 
   bool isTTbar( filename.Contains("_TTJets") or (normH and TString(normH->GetTitle()).Contains("_TTJets")));
@@ -109,8 +109,8 @@ void RunExclusiveTop(TString filename,
       t->GetEntry(iev);
       if(iev%10==0) printf ("\r [%3.0f%%] done", 100.*(float)iev/(float)nentries);
 
-      int fill_number = run_to_fill.getFillNumber(ev.run);
-      proton_reco.setAlignmentConstants(pots_align.getAlignmentConstants(fill_number));
+//      int fill_number = run_to_fill.getFillNumber(ev.run);
+//      proton_reco.setAlignmentConstants(pots_align.getAlignmentConstants(fill_number));
       
       //assign randomly a run period
       TString period = assignRunPeriod(runPeriods,random);

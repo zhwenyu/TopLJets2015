@@ -58,7 +58,8 @@ void RunTop16006(TString filename,
   std::vector<TGraph *>puWgtGr;
   if(!ev.isData)
     {
-      TString puWgtUrl(era+"/pileupWgts.root"); 
+//      TString puWgtUrl(era+"/pileupWgts.root"); 
+      TString puWgtUrl("data/era2016/pileupWgts.root"); 
       gSystem->ExpandPathName(puWgtUrl);
       TFile *fIn=TFile::Open(puWgtUrl);
       for(size_t i=0; i<3; i++)
@@ -83,7 +84,7 @@ void RunTop16006(TString filename,
 	  tmp->Delete();
 	}
       
-      /*
+      
 	if(fIn)
 	{
 	puWgtGr.push_back( (TGraph *)fIn->Get("puwgts_nom") );
@@ -91,9 +92,9 @@ void RunTop16006(TString filename,
 	puWgtGr.push_back( (TGraph *)fIn->Get("puwgts_up") );
 	fIn->Close();
 	}
-      */
+      
     }
-
+/*
   //LEPTON EFFICIENCIES
   TString lepEffUrl(era+"/muonEfficiencies.root"); 
   gSystem->ExpandPathName(lepEffUrl);
@@ -174,11 +175,11 @@ void RunTop16006(TString filename,
 	  jecUncs.push_back( new JetCorrectionUncertainty(*p) );
 	}
     }
-
+*/
   //LIST OF SYSTEMATICS
   Int_t nGenSysts(0);
   std::vector<TString> expSysts;
-  if(runSysts)
+/*  if(runSysts)
     {
       if(normH)
 	for(Int_t xbin=1; xbin<=normH->GetNbinsX(); xbin++) 
@@ -202,7 +203,7 @@ void RunTop16006(TString filename,
       cout << "\t..." << nGenSysts << "/" << expSysts.size() << " generator level/experimental systematics will be considered" << endl;
     }
 
-
+*/
   //BOOK HISTOGRAMS
   std::map<TString, TH1 *> allPlots;
   std::map<TString, TH2 *> all2dPlots;
@@ -303,7 +304,7 @@ void RunTop16006(TString filename,
     }
 
   for (auto& it : allPlots)   { it.second->Sumw2(); it.second->SetDirectory(0); }
-  for (auto& it : all2dPlots) { it.second->Sumw2(); it.second->SetDirectory(0); }
+//  for (auto& it : all2dPlots) { it.second->Sumw2(); it.second->SetDirectory(0); }
 
   //LOOP OVER EVENTS
   for (Int_t iev=0;iev<nentries;iev++)
@@ -406,7 +407,7 @@ void RunTop16006(TString filename,
 	  //cross clean with respect to leptons 
 	  if(jp4.DeltaR(lp4)<0.5) continue;
 	  if(isZ && jp4.DeltaR(l2p4)<0.5)continue;
-
+/*
 	  //smear jet energy resolution for MC
 	  //jetDiff -= jp4;
 	  float genJet_pt(0);
@@ -422,7 +423,7 @@ void RunTop16006(TString filename,
 
 	  //require back-to-back configuration with Z
 	  if(isZ && jp4.DeltaPhi(dilp4)<2.7) continue;
-
+*/
 	  // re-inforce kinematics cuts
 	  if(jp4.Pt()<30) continue;
 	  if(fabs(jp4.Eta()) > 2.4) continue;
@@ -434,7 +435,7 @@ void RunTop16006(TString filename,
 	  //b-tag
 	  float csv = ev.j_csv[k];	  
 	  bool isBTagged(csv>0.800);
-	  if(!ev.isData)
+/*	  if(!ev.isData)
 	    {
 	      float jptForBtag(jp4.Pt()>1000. ? 999. : jp4.Pt()), jetaForBtag(fabs(jp4.Eta()));
 	      float expEff(1.0), jetBtagSF(1.0);
@@ -450,12 +451,12 @@ void RunTop16006(TString filename,
 	      //updated b-tagging decision with the data/MC scale factor
 	      myBTagSFUtil.modifyBTagsWithSF(isBTagged,      jetBtagSF,      expEff);
 	    }
-
+*/
 	  //save jet
 	  if(isBTagged) bJets.push_back(jp4);
 	  else          lightJets.push_back(jp4);
 	}
-
+/*
       //check if flavour splitting was required
       if(!ev.isData)
 	{
@@ -466,7 +467,7 @@ void RunTop16006(TString filename,
 	      else if(flavourSplitting==SelectionTool::FlavourSplitting::UDSGSPLITTING) { if(nljets==0 || ncjets!=0 || nbjets!=0) continue; }
 	    }
 	}
-
+*/
       //MET and transverse mass
       TLorentzVector met(0,0,0,0);
       met.SetPtEtaPhiM(ev.met_pt[0],0,ev.met_phi[0],0.);
@@ -503,7 +504,7 @@ void RunTop16006(TString filename,
 	  //update lepton selection scale factors, if found
 	  TString prefix("m");
 	  if(lid==11 || lid==1100) prefix="e";
-	  if(lepEffH.find(prefix+"_sel")!=lepEffH.end() && !isZ)
+/*	  if(lepEffH.find(prefix+"_sel")!=lepEffH.end() && !isZ)
 	    {
 	      for(UInt_t il=0; il<TMath::Min((UInt_t)1,(UInt_t)tightLeptonsIso.size()); il++)
 		{
@@ -529,7 +530,7 @@ void RunTop16006(TString filename,
 
 		  lepTriggerSF[0]*=trigSF; lepTriggerSF[1]*=(trigSF-trigSFUnc); lepTriggerSF[2]*=(trigSF+trigSFUnc);
 		}
-	    }
+	    }*/
 
 	  Int_t ntops(0);
 	  float ptsf(1.0);
@@ -615,7 +616,7 @@ void RunTop16006(TString filename,
 	      allPlots["drlb_"+tag]->Fill(drlb,wgt);		 		 
 	    }	  
 	}
-      
+/*      
       //ANALYSIS WITH SYSTEMATICS
       if(!runSysts) continue;
       
@@ -822,7 +823,7 @@ void RunTop16006(TString filename,
 		  all2dPlots["nbtagsshapes_"+tag+"_exp"]->Fill(varBJets.size(),2*ivar+isign,newWgt);
 		}
 	    }
-	}
+	}*/
     }
   
   //close input file
@@ -838,9 +839,9 @@ void RunTop16006(TString filename,
   for (auto& it : allPlots)  { 
     it.second->SetDirectory(fOut); it.second->Write(); 
   }
-  for (auto& it : all2dPlots)  { 
-    it.second->SetDirectory(fOut); it.second->Write(); 
-  }
+//  for (auto& it : all2dPlots)  { 
+//    it.second->SetDirectory(fOut); it.second->Write(); 
+//  }
   fOut->Close();
 }
 

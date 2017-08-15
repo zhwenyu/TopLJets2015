@@ -61,111 +61,56 @@ process.load('Configuration.StandardSequences.Services_cff')
 process.load('Configuration.StandardSequences.GeometryDB_cff')
 process.load('Configuration.StandardSequences.MagneticField_38T_cff')
 
-
-# global tag
-process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
-from Configuration.AlCa.GlobalTag import GlobalTag
-process.GlobalTag = GlobalTag(process.GlobalTag, globalTag)
+process.load("GeneratorInterface.RivetInterface.mergedGenParticles_cfi")
+process.load("GeneratorInterface.RivetInterface.genParticles2HepMC_cfi")
+process.genParticles2HepMC.genParticles = cms.InputTag("mergedGenParticles")
+process.load("GeneratorInterface.RivetInterface.particleLevel_cfi") 
 
 
 #message logger
 process.load("FWCore.MessageService.MessageLogger_cfi")
 process.MessageLogger.cerr.threshold = ''
-process.MessageLogger.cerr.FwkReport.reportEvery = 1000
+#process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 
 
 # set input to process
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(options.maxEvents) )
+#process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(options.maxEvents) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10000) )
 process.source = cms.Source("PoolSource",
-                            fileNames = cms.untracked.vstring('/store/mc/RunIISummer16MiniAODv2/ST_tW_antitop_5f_DS_NoFullyHadronicDecays_13TeV-powheg-pythia8/MINIAODSIM/PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/110000/083B59AE-F233-E711-867A-B499BAABD8C6.root'),
+                            fileNames = cms.untracked.vstring('/store/mc/PhaseISpring17MiniAOD/TTJets_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/FlatPU28to62_90X_upgrade2017_realistic_v20-v1/00000/0260246D-3129-E711-8B3A-001E67DDD0AA.root',
+                            '/store/mc/PhaseISpring17MiniAOD/TTJets_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/FlatPU28to62_90X_upgrade2017_realistic_v20-v1/00000/02781287-E22A-E711-8EF8-A0000420FE80.root',
+                            '/store/mc/PhaseISpring17MiniAOD/TTJets_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/FlatPU28to62_90X_upgrade2017_realistic_v20-v1/00000/0405C65F-3229-E711-9FEE-70106F4A469C.root'),
+                            
                             #fileNames = cms.untracked.vstring('/store/mc/RunIISummer16MiniAODv2/TT_TuneCUETP8M2T4_13TeV-powheg-pythia8/MINIAODSIM/PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/50000/36CDAE89-B3BE-E611-B022-0025905B8604.root'),
                             duplicateCheckMode = cms.untracked.string('noDuplicateCheck') 
                             )
+
 if options.runOnData:
-    process.source.fileNames = cms.untracked.vstring('/store/data/Run2016B/MuonEG/MINIAOD/03Feb2017_ver2-v2/100000/FCAE58F9-9BEC-E611-A285-0090FAA58294.root')
-    #process.source.fileNames = cms.untracked.vstring('/store/data/Run2016B/MuonEG/MINIAOD/23Sep2016-v3/120000/E8C2C234-BF97-E611-82BB-0025907B4EE4.root')
-
-if options.inputFile and len(options.inputFile)!=0:
-    process.source.fileNames = cms.untracked.vstring(options.inputFile)
-
-#apply lumi json, if passed in command line
-if options.lumiJson:
-    print 'Lumi sections will be selected with',options.lumiJson
-    from FWCore.PythonUtilities.LumiList import LumiList
-    myLumis = LumiList(filename = options.lumiJson).getCMSSWString().split(',')
-    process.source.lumisToProcess = cms.untracked.VLuminosityBlockRange()
-    process.source.lumisToProcess.extend(myLumis)
-
-process.options   = cms.untracked.PSet(
-   # wantSummary = cms.untracked.bool(True),
-    allowUnscheduled = cms.untracked.bool(True)
+      process.source.fileNames = cms.untracked.vstring('/store/data/Run2017A/SingleMuon/MINIAOD/PromptReco-v2/000/296/168/00000/084C505D-784C-E711-8140-02163E019DA4.root',
+      '/store/data/Run2017A/SingleMuon/MINIAOD/PromptReco-v2/000/296/172/00000/66D29210-674C-E711-AFD2-02163E01A270.root',
+      '/store/data/Run2017A/SingleMuon/MINIAOD/PromptReco-v2/000/296/173/00000/4C85F093-654C-E711-99AA-02163E01A203.root')
+                                  
+process.load('SimGeneral.HepPDTESSource.pythiapdt_cfi')
+process.mergedGenParticles = cms.EDProducer("MergedGenParticleProducer",
+                    inputPruned = cms.InputTag("prunedGenParticles"),
+                        inputPacked = cms.InputTag("packedGenParticles"),
 )
+from GeneratorInterface.RivetInterface.genParticles2HepMC_cfi import genParticles2HepMC
+process.genParticles2HepMC = genParticles2HepMC.clone( genParticles = cms.InputTag("mergedGenParticles") )
+#process.load("TopQuarkAnalysis.TopEventProducers.producers.particleLevel_cfi")
+#process.load('TopQuarkAnalysis.BFragmentationAnalyzer.bfragWgtProducer_cfi')
 
-#pseudo-top
-if not options.runOnData:
-    process.load('SimGeneral.HepPDTESSource.pythiapdt_cfi')
-    process.mergedGenParticles = cms.EDProducer("MergedGenParticleProducer",
-        inputPruned = cms.InputTag("prunedGenParticles"),
-        inputPacked = cms.InputTag("packedGenParticles"),
-    )
-
-    from GeneratorInterface.RivetInterface.genParticles2HepMC_cfi import genParticles2HepMC
-    process.genParticles2HepMC = genParticles2HepMC.clone( genParticles = cms.InputTag("mergedGenParticles") )
-
-    process.load("TopQuarkAnalysis.TopEventProducers.producers.pseudoTop_cfi")
-    process.pseudoTop.leptonMinPt=cms.double(20)
-    process.pseudoTop.leptonMaxEta=cms.double(2.5)
-    process.pseudoTop.jetMaxEta=cms.double(5.0)
-
-    process.load('TopQuarkAnalysis.BFragmentationAnalyzer.bfragWgtProducer_cfi')
-
-#EGM
-from TopLJets2015.TopAnalysis.customizeEGM_cff import *
-customizeEGM(process=process,runOnData=options.runOnData)
-process.RandomNumberGeneratorService = cms.Service("RandomNumberGeneratorService",
-                                                   calibratedPatElectrons  = cms.PSet( initialSeed = cms.untracked.uint32(81),
-                                                                                       engineName = cms.untracked.string('TRandom3'),
-                                                                                       )
-                                                   )
-
-#jet energy corrections
-process.load('JetMETCorrections.Configuration.DefaultJEC_cff')
-from JetMETCorrections.Configuration.DefaultJEC_cff import *
-from JetMETCorrections.Configuration.JetCorrectionServices_cff import *
-from TopLJets2015.TopAnalysis.customizeJetTools_cff import *
-customizeJetTools(process=process,
-                  jecTag=jecTag,
-                  jecDB=jecDB,
-                  baseJetCollection=options.baseJetCollection,
-                  runOnData=options.runOnData)
-
-#tfile service
 process.TFileService = cms.Service("TFileService",
-                                   fileName = cms.string(options.outFilename)
-                                   )
+                                   fileName = cms.string('histo.root')
+                                  )
 
-
-#analysis
 process.load('TopLJets2015.TopAnalysis.miniAnalyzer_cfi')
-print 'Ntuplizer configuration is as follows'
-process.analysis.saveTree=cms.bool(options.saveTree)
-process.analysis.savePF=cms.bool(options.savePF)
-if options.useRawLeptons:
-    process.selectedElectrons.src=cms.InputTag('slimmedElectrons')
-    process.analysis.electrons=cms.InputTag('selectedElectrons')
-    process.analysis.useRawLeptons=cms.bool(True)
-    print 'Switched off corrections for leptons'
-if not process.analysis.saveTree :
-    print '\t Summary tree won\'t be saved'
-if not process.analysis.savePF :
-    print 'Summary PF info won\'t be saved'
+
 if options.runOnData:
     process.analysis.metFilterBits = cms.InputTag("TriggerResults","","RECO")
 
-
 if options.runOnData:
     process.p = cms.Path(process.analysis)
-    #process.p = cms.Path(process.egmSeq*process.jetmetSeq*process.analysis)
 else:
-    process.p = cms.Path(process.pseudoTop*process.bfragWgtProducer*process.analysis)
-    #process.p = cms.Path(process.egmSeq*process.jetmetSeq*process.pseudoTop*process.analysis)
+    process.p = cms.Path(process.mergedGenParticles*process.genParticles2HepMC*process.particleLevel*process.analysis)
+
