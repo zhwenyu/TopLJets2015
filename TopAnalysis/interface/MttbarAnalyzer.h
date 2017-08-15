@@ -34,5 +34,12 @@ void RunMttbarAnalyzer(TString filename,
 
 void createMttbarSummaryTree(TTree *t,MttbarSummary_t &summary);
 
+void RunTTZAnalyzer(TString filename,
+                    TString outname,
+                    Int_t channelSelection, 
+                    Int_t chargeSelection, 
+                    TH1F *normH, 
+                    TString era,
+                    Bool_t debug);
 
 #endif
