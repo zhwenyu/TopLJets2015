@@ -63,7 +63,7 @@
 
 #include "DataFormats/EgammaCandidates/interface/GsfElectron.h"
 
-#include "TopQuarkAnalysis/BFragmentationAnalyzer/interface/BFragmentationAnalyzerUtils.h"
+//#include "TopQuarkAnalysis/BFragmentationAnalyzer/interface/BFragmentationAnalyzerUtils.h"
 
 #include "KaMuCa/Calibration/interface/KalmanMuonCalibrator.h"
 
@@ -119,7 +119,7 @@ private:
   edm::EDGetTokenT<reco::METCollection> genMetsToken_;
   edm::EDGetTokenT<pat::PackedGenParticleCollection> genParticlesToken_;
   edm::EDGetTokenT<reco::GenParticleCollection> prunedGenParticlesToken_;
-  edm::EDGetTokenT<reco::GenParticleCollection> pseudoTopToken_;
+  edm::EDGetTokenT<reco::GenParticleCollection> particleLevelToken_;
 
   edm::EDGetTokenT<edm::TriggerResults> triggerBits_,metFilterBits_;
   edm::EDGetTokenT<pat::PackedTriggerPrescales> triggerPrescales_;
@@ -174,12 +174,12 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig) :
   generatorlheToken_(consumes<LHEEventProduct>(edm::InputTag("externalLHEProducer",""))),
   generatorRunInfoToken_(consumes<LHERunInfoProduct,edm::InRun>({"externalLHEProducer"})),
   puToken_(consumes<std::vector<PileupSummaryInfo>>(edm::InputTag("slimmedAddPileupInfo"))),  
-  genLeptonsToken_(consumes<std::vector<reco::GenJet> >(edm::InputTag("pseudoTop:leptons"))),
-  genJetsToken_(consumes<std::vector<reco::GenJet> >(edm::InputTag("pseudoTop:jets"))),
-  genMetsToken_(consumes<reco::METCollection>(edm::InputTag("pseudoTop:mets"))),
+  genLeptonsToken_(consumes<std::vector<reco::GenJet> >(edm::InputTag("particleLevel:leptons"))),
+  genJetsToken_(consumes<std::vector<reco::GenJet> >(edm::InputTag("particleLevel:jets"))),
+  genMetsToken_(consumes<reco::METCollection>(edm::InputTag("particleLevel:mets"))),
   genParticlesToken_(consumes<pat::PackedGenParticleCollection>(edm::InputTag("packedGenParticles"))),
   prunedGenParticlesToken_(consumes<reco::GenParticleCollection>(edm::InputTag("prunedGenParticles"))),
-  pseudoTopToken_(consumes<reco::GenParticleCollection>(edm::InputTag("pseudoTop"))),
+  particleLevelToken_(consumes<reco::GenParticleCollection>(edm::InputTag("particleLevel"))),
   triggerBits_(consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("triggerBits"))),
   metFilterBits_(consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("metFilterBits"))),
   triggerPrescales_(consumes<pat::PackedTriggerPrescales>(iConfig.getParameter<edm::InputTag>("prescales"))),
@@ -305,19 +305,20 @@ int MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
   int ngjets(0),ngbjets(0);
   for(auto genJet=genJets->begin(); genJet!=genJets->end(); ++genJet)
     {
-
+    
       edm::Ref<std::vector<reco::GenJet> > genJetRef(genJets,genJet-genJets->begin());
 
+
       //map the gen particles which are clustered in this jet
-      JetFragInfo_t jinfo=analyzeJet(*genJet);
+//      JetFragInfo_t jinfo=analyzeJet(*genJet);
 
       std::vector< const reco::Candidate * > jconst=genJet->getJetConstituentsQuick();
       for(size_t ijc=0; ijc <jconst.size(); ijc++) jetConstsMap[ jconst[ijc] ] = ev_.ng;
 
-      ev_.g_tagCtrs[ev_.ng]       = (jinfo.nbtags&0xf) | ((jinfo.nctags&0xf)<<4) | ((jinfo.ntautags&0xf)<<8);
-      ev_.g_xb[ev_.ng]            = jinfo.xb;
-      ev_.g_bid[ev_.ng]           = jinfo.leadTagId;
-      ev_.g_isSemiLepBhad[ev_.ng] = jinfo.hasSemiLepDecay;
+//      ev_.g_tagCtrs[ev_.ng]       = (jinfo.nbtags&0xf) | ((jinfo.nctags&0xf)<<4) | ((jinfo.ntautags&0xf)<<8);
+//      ev_.g_xb[ev_.ng]            = jinfo.xb;
+//      ev_.g_bid[ev_.ng]           = jinfo.leadTagId;
+//      ev_.g_isSemiLepBhad[ev_.ng] = jinfo.hasSemiLepDecay;
       //cout << "xb=" << jinfo.xb << " petersonFrag=" << (*petersonFrag)[genJetRef] << endl;
       ev_.g_id[ev_.ng]   = genJet->pdgId();
       ev_.g_pt[ev_.ng]   = genJet->pt();
@@ -410,11 +411,11 @@ int MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
     }
   
   //pseudo-tops 
-  edm::Handle<reco::GenParticleCollection> pseudoTop;
-  iEvent.getByToken(pseudoTopToken_,pseudoTop);
-  for (size_t i = 0; i < pseudoTop->size(); ++i)
+/*  edm::Handle<reco::GenParticleCollection> particleLevel;
+  iEvent.getByToken(particleLevelToken_,particleLevel);
+  for (size_t i = 0; i < particleLevel->size(); ++i)
     {
-      const GenParticle & genIt = (*pseudoTop)[i];
+      const GenParticle & genIt = (*particleLevel)[i];
       ev_.gtop_id[ ev_.ngtop ]  = genIt.pdgId()*1000;
       ev_.gtop_pt[ ev_.ngtop ]  = genIt.pt();
       ev_.gtop_eta[ ev_.ngtop ] = genIt.eta();
@@ -422,7 +423,7 @@ int MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       ev_.gtop_m[ ev_.ngtop ]   = genIt.mass();
       ev_.ngtop++;
     }
-
+*/
   //gen met
   edm::Handle<reco::METCollection> genMet;
   iEvent.getByToken(genMetsToken_,genMet);
@@ -526,15 +527,15 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
 
   //
   //LEPTON SELECTION
-  //
+  
   int nrecleptons(0);
   ev_.nl=0; 
 
   //MUON SELECTION: cf. https://twiki.cern.ch/twiki/bin/viewauth/CMS/SWGuideMuonIdRun2
   edm::Handle<pat::MuonCollection> muons;
   iEvent.getByToken(muonToken_, muons);
-  float maxMuPtForCor(200.);
-  if(!useRawLeptons_ && muonCor_==0) muonCor_=new KalmanMuonCalibrator( ev_.isData? "DATA_80X_13TeV" : "MC_80X_13TeV");
+//  float maxMuPtForCor(200.);
+//  if(!useRawLeptons_ && muonCor_==0) muonCor_=new KalmanMuonCalibrator( ev_.isData? "DATA_80X_13TeV" : "MC_80X_13TeV");
   for (const pat::Muon &mu : *muons) 
     { 
 
@@ -548,21 +549,21 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       float eta = mu.eta();
       float phi = mu.phi();
       float ptUnc = mu.bestTrack()->ptError();
-      if(muonCor_ && mu.muonBestTrackType() == 1 && pt < maxMuPtForCor)
+/*      if(muonCor_ && mu.muonBestTrackType() == 1 && pt < maxMuPtForCor)
         {
-	  bool corrApplied(true);
+//	  bool corrApplied(true);
           if( !ev_.isData )
 	    {
-	      pt = muonCor_->getCorrectedPt(pt, eta, phi, mu.charge());
-	      pt = muonCor_->smear(pt, eta);
+//	      pt = muonCor_->getCorrectedPt(pt, eta, phi, mu.charge());
+//	      pt = muonCor_->smear(pt, eta);
 	    }
 	  else if (pt > 2. && fabs(eta) < 2.4)
 	    {
-	      pt = muonCor_->getCorrectedPt(pt, eta, phi, mu.charge());
+//	      pt = muonCor_->getCorrectedPt(pt, eta, phi, mu.charge());
 	    }
 	  else
 	    {
-	      corrApplied=false;
+//	      corrApplied=false;
 	    }
           
           if(pt<0.1 || isnan(pt))
@@ -575,7 +576,7 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
           
           if(corrApplied)
 	    {
-	      int n=muonCor_->getN();
+//	      int n=muonCor_->getN();
 	      float uncUp(0),uncDn(0);
 	      for(int i=0; i<n; i++)
 		{
@@ -591,7 +592,7 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
 	      uncDn += pow(vClose-pt,2);
 	      ptUnc = 0.5*(TMath::Sqrt(uncUp)+TMath::Sqrt(uncDn));
 	    }
-        }
+        }*/
       p4.SetPtEtaPhiM(pt,eta,phi,mu.mass());
 
       //kinematics
@@ -636,12 +637,12 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
 				) / p4.Pt();
       ev_.l_ip3d[ev_.nl]    = -9999.;
       ev_.l_ip3dsig[ev_.nl] = -9999;
-      if(mu.innerTrack().get())
+/*      if(mu.innerTrack().get())
 	{
 	  std::pair<bool,Measurement1D> ip3dRes = getImpactParameter<reco::TrackRef>(mu.innerTrack(), primVtxRef, iSetup, true);
 	  ev_.l_ip3d[ev_.nl]    = ip3dRes.second.value();
 	  ev_.l_ip3dsig[ev_.nl] = ip3dRes.second.significance();
-	}   
+	}   */
       ev_.nl++;    
 
       if( p4.Pt()>20 && fabs(p4.Eta())<2.5 && isLoose) nrecleptons++;
@@ -674,7 +675,7 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       if(!passPt || !passEta) continue;
       
       //take out id information alone
-      bool passVetoId(true), passLooseId(true), passMediumId(true), passTightId(true);
+/*      bool passVetoId(true), passLooseId(true), passMediumId(true), passTightId(true);
       vid::CutFlowResult vetoCutBits   = (*veto_cuts)[e];
       for(size_t icut = 0; icut<vetoCutBits.cutFlowSize(); icut++)  
 	{ 
@@ -807,7 +808,7 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       ev_.nl++;
       
       if( e->pt()>20 && passEta && passLooseId ) nrecleptons++;
-    }
+*/    }
 
   // JETS
   ev_.nj=0; 
@@ -1041,7 +1042,7 @@ MiniAnalyzer::endRun(const edm::Run& iRun,
     edm::Handle<LHERunInfoProduct> lheruninfo;
     typedef std::vector<LHERunInfoProduct::Header>::const_iterator headers_const_iterator;
     iRun.getByToken(generatorRunInfoToken_, lheruninfo );
-    //iRun.getByLabel( "externalLHEProducer", lheruninfo );
+//    iRun.getByLabel( "externalLHEProducer", lheruninfo );
 
     LHERunInfoProduct myLHERunInfoProduct = *(lheruninfo.product());
     for (headers_const_iterator iter=myLHERunInfoProduct.headers_begin(); 
