@@ -35,7 +35,7 @@ case $WHAT in
 	;;
     FULLSEL )
 	python scripts/runLocalAnalysis.py -i ${eosdir} \
-            --only test/summer2017/ttz_full_samples.json --exactonly \
+            --only test/summer2017/ttz_fullsamples.json --exactonly \
             -q workday \
             -o ${outdir} \
             --era era2016 -m TTZAnalyzer::RunTTZAnalyzer --ch 0 --runSysts;
@@ -48,7 +48,7 @@ case $WHAT in
 	python scripts/plotter.py ${commonOpts}; 
 	;;
     FULLPLOT )
-	commonOpts="-i ${outdir} --puNormSF puwgtctr -j test/summer2017/ttz_full_samples.json -l ${lumi}  --saveLog --mcUnc ${lumiUnc} --noStack"
+	commonOpts="-i ${outdir} --puNormSF puwgtctr -j test/summer2017/ttz_fullsamples.json -l ${lumi}  --saveLog --mcUnc ${lumiUnc}"
 	python scripts/plotter.py ${commonOpts}; 
 	;;
     WWW )

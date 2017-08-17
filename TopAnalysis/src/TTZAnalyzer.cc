@@ -79,6 +79,7 @@ void RunTTZAnalyzer(TString filename,
   ht.addHist("mll",          new TH1F("mll",         ";M(l,l') [GeV];Events",25,91-20,91+20));
   ht.addHist("ptll",         new TH1F("ptll",        ";p_{T}(l,l') [GeV];Events",25,0,250));
   ht.addHist("dphill",       new TH1F("dphill",      ";#Delta#phi(l,l');Events",25,0,3.15));
+  ht.addHist("count",        new TH1F("count",       ";Event category;Events",15,2,17));
 
   std::cout << "init done" << std::endl;
 
@@ -108,7 +109,7 @@ void RunTTZAnalyzer(TString filename,
       // RECO LEVEL SELECTION //
       /////////////////////////
       TString chTag = selector.flagFinalState(ev);
-      if(chTag=="") continue;
+      if(chTag!="EE" && chTag!="EM" && chTag!="MM") continue;
 
       //leptons: merge tight and loose lepton collections
       std::vector<Particle> &tightLeptons = selector.getSelLeptons(); 
@@ -140,22 +141,6 @@ void RunTTZAnalyzer(TString filename,
           if(jets[ij].flavor()==5) bJets.push_back(jets[ij]);
           else                     lightJets.push_back(jets[ij]);
         }
-
-      ///////////////////////////
-      // EVENT SELECTION      //
-      ///////////////////////////
-
-      //require at least one tight lepton
-      if(tightLeptons.size()==0) continue;
-
-      //require at least a Z candidate
-      if(zCandidates.size()!=1) continue;
-
-      //jet selection: 4 for a 3-lepton event / 6 for a 2-lepton event
-      bool passJets(jets.size()>=4);
-      if(leptons.size()==2) passJets = (jets.size()>=6);
-      bool passBJets(bJets.size()>=2);
-      if(!passJets || !passBJets) continue;
       
       ////////////////////
       // EVENT WEIGHTS //
@@ -175,8 +160,10 @@ void RunTTZAnalyzer(TString filename,
         
         // lepton trigger*selection weights
         std::vector<Particle> trigLepton(1,leptons[0]);
-        EffCorrection_t trigSF = lepEffH.getTriggerCorrection(trigLepton, period);
-        EffCorrection_t  selSF= lepEffH.getOfflineCorrection(leptons[0], period);
+        EffCorrection_t trigSF = lepEffH.getTriggerCorrection(tightLeptons, period);
+        EffCorrection_t sel1SF = lepEffH.getOfflineCorrection(tightLeptons[0], period);
+        EffCorrection_t sel2SF = lepEffH.getOfflineCorrection(tightLeptons[1], period);
+        EffCorrection_t selSF(EffCorrection_t(sel1SF.first*sel1SF.first,sqrt(pow(sel1SF.second*sel2SF.first,2)+pow(sel1SF.first*sel2SF.second,2))));
 
         wgt *= puWgt*trigSF.first*selSF.first;
       
@@ -188,6 +175,25 @@ void RunTTZAnalyzer(TString filename,
       }
 
       
+      ///////////////////////////
+      // EVENT SELECTION      //
+      ///////////////////////////
+
+      //require at least one tight lepton
+      if(tightLeptons.size()==0) continue;
+
+      //require at least a Z candidate
+      if(zCandidates.size()!=1) continue;
+      
+      if(jets.size()>=2)
+        ht.fill("count", TMath::Min(jets.size(),size_t(6))+TMath::Min(bJets.size(),size_t(2))*5., plotwgts);
+
+      //jet selection: 4 for a 3-lepton event / 6 for a 2-lepton event
+      bool passJets(jets.size()>=4);
+      if(leptons.size()==2) passJets = (jets.size()>=6);
+      bool passBJets(bJets.size()>=2);
+      if(!passJets || !passBJets) continue;
+
 
       //control histograms
       ht.fill("nvtx",     ev.nvtx,        plotwgts);
