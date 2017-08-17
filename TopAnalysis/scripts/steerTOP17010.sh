@@ -22,10 +22,8 @@ if [ "$#" -ne 1 ]; then
     exit 1; 
 fi
 
-export LSB_JOB_REPORT_MAIL=N
 
-
-queue=1nd
+queue=workday
 lumi=35922
 lumiSpecs=""
 lumiUnc=0.025
@@ -71,13 +69,14 @@ case $WHAT in
 	python scripts/runTopWidthAnalysis.py -i root://eoscms//eos/cms//store/cmst3/group/top/TOP-17-010//Chunks/MC13TeV_TTJets_12.root -o ${outdir}/analysis/Chunks -q local;
         ;;
     ANA )
-	#python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${outdir}/analysis/Chunks -q ${queue} --only MC;
-	python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${outdir}/analysis/Chunks -q ${queue} --only Data13TeV_Single --farm TOP17010DataANA;
+	python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${outdir}/analysis/Chunks -q ${queue} --only MC;
+        python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${outdir}/analysis/Chunks -q ${queue} --only Data13TeV_SingleE --farm TOP17010DataANA;
+	python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${outdir}/analysis/Chunks -q ${queue} --only Data13TeV_SingleM --farm TOP17010DataANA;
 	python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${outdir}/analysis/Chunks -q ${queue} --only Data13TeV_Double --farm TOP17010DataANA;
 	;;
     CHECKANA )
         python scripts/checkAnalysisIntegrity.py ${CMSSW_BASE}/TOP17010ANA ~/work/TOP-17-010/analysis/Chunks/
-        #python scripts/checkAnalysisIntegrity.py ${CMSSW_BASE}/TOP17010DataANA ~/work/TOP-17-010/analysis/Chunks/
+        python scripts/checkAnalysisIntegrity.py ${CMSSW_BASE}/TOP17010DataANA ~/work/TOP-17-010/analysis/Chunks/
         ;;
     MERGE )
 	./scripts/mergeOutputs.py ${outdir}/analysis;

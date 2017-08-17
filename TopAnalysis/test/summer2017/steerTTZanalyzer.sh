@@ -3,7 +3,8 @@
 WHAT=$1; 
 if [ "$#" -ne 1 ]; then 
     echo "steerTTZAnalyzer.sh <SEL/MERGE/PLOT/WWW>";
-    echo "        SEL          - launches selection jobs to the batch, output will contain summary trees and control plots"; 
+    echo "        FULLSEL      - launches selection jobs to the batch, output will contain summary trees and control plots"; 
+    echo "        SEL          - launches a test selection job locally for the signal only"
     echo "        MERGE        - merge output"
     echo "        PLOT         - make plots"
     echo "        WWW          - move plots to web-based are"
@@ -32,12 +33,22 @@ case $WHAT in
             -o ${outdir} \
             --era era2016 -m TTZAnalyzer::RunTTZAnalyzer --ch 0 --runSysts;
 	;;
-
+    FULLSEL )
+	python scripts/runLocalAnalysis.py -i ${eosdir} \
+            --only test/summer2017/ttz_full_samples.json --exactonly \
+            -q workday \
+            -o ${outdir} \
+            --era era2016 -m TTZAnalyzer::RunTTZAnalyzer --ch 0 --runSysts;
+	;;
     MERGE )
 	./scripts/mergeOutputs.py ${outdir};
 	;;
     PLOT )
 	commonOpts="-i ${outdir} --puNormSF puwgtctr -j test/summer2017/ttz_samples.json -l ${lumi}  --saveLog --mcUnc ${lumiUnc} --noStack"
+	python scripts/plotter.py ${commonOpts}; 
+	;;
+    FULLPLOT )
+	commonOpts="-i ${outdir} --puNormSF puwgtctr -j test/summer2017/ttz_full_samples.json -l ${lumi}  --saveLog --mcUnc ${lumiUnc} --noStack"
 	python scripts/plotter.py ${commonOpts}; 
 	;;
     WWW )
