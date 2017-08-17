@@ -109,11 +109,12 @@ void RunTTZAnalyzer(TString filename,
       /////////////////////////
       TString chTag = selector.flagFinalState(ev);
       if(chTag=="") continue;
+
+      //leptons: merge tight and loose lepton collections
       std::vector<Particle> &tightLeptons = selector.getSelLeptons(); 
       std::vector<Particle> &looseLeptons = selector.getVetoLeptons();
       std::vector<Particle> leptons(tightLeptons);
       for(auto &l : looseLeptons) leptons.push_back(l);
-      std::vector<Jet> jets              = selector.getJets();  
 
       //select a Z candidate out of the leptons
       std::vector<std::pair<int,int> > zCandidates;
@@ -129,6 +130,9 @@ void RunTTZAnalyzer(TString filename,
             }
         }
 
+      //jets
+      std::vector<Jet> jets = selector.getJets();  
+
       //separate jets according to flavour
       std::vector<Jet> bJets,lightJets;
       for(size_t ij=0; ij<jets.size(); ij++) 
@@ -137,6 +141,9 @@ void RunTTZAnalyzer(TString filename,
           else                     lightJets.push_back(jets[ij]);
         }
 
+      ///////////////////////////
+      // EVENT SELECTION      //
+      ///////////////////////////
 
       //require at least one tight lepton
       if(tightLeptons.size()==0) continue;
