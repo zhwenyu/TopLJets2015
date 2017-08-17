@@ -3,6 +3,8 @@
 import sys
 import os
 
+def RunLocal(script): os.system('sh %s'%script)
+
 FARMDIR,OUTDIR=sys.argv[1:]
 
 #check if there is one ROOT file per job script
@@ -11,8 +13,17 @@ toRun=[]
 for script in scriptFiles:
     if os.path.isfile(os.path.join(OUTDIR, script.replace('.sh','.root'))): continue
     toRun.append( os.path.splitext(script)[0] )
+if len(toRun)==0: sys.exit()
 print 'There are %d/%d outputs missing, will resubmit them on condor'%(len(toRun),len(scriptFiles))
 
+#run locally
+#task_list=[]
+#for jobName in toRun: task_list.append( ('%s.sh'%os.path.join(FARMDIR,jobName))  )
+#from multiprocessing import Pool
+#pool = Pool(8)
+#pool.map(RunLocal, task_list)
+
+#run on condor
 #create a new condor script
 condor=open(os.path.join(FARMDIR,'condor.sub'),'r')
 newCondorName=os.path.join(FARMDIR,'condor_resub.sub')

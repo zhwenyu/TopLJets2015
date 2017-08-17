@@ -453,7 +453,7 @@ def runTopWidthAnalysis(fileName,
                     for ith in xrange(0,len(thsysts)):                            
                         s=thsysts[ith]
                         thEvWeight=evWeight
-                        if s=='topptup': thEvWeight=puNormSF[0]*ROOT.TMath.Sqrt(1./tree.weight[9])
+                        if s=='topptup': thEvWeight=puNormSF[0]*tree.weight[9]
                         if s=='topptdn': thEvWeight=puNormSF[0]*ROOT.TMath.Sqrt(tree.weight[9])
                         if 'gen' in s  : thEvWeight=puNormSF[0]*tree.weight[10+int(s[3:])]
                         if s=='nloproddec'  : thEvWeight = evWeight*pairWeightAtNLO

@@ -12,8 +12,6 @@
 #include "TopLJets2015/TopAnalysis/interface/CorrectionTools.h"
 #include "TopLJets2015/TopAnalysis/interface/MttbarAnalyzer.h"
 #include "TopLJets2015/TopAnalysis/interface/LeptonEfficiencyWrapper.h"
-#include "TopLJets2015/TopAnalysis/interface/TOPJetShape.h"
-
 
 #include <vector>
 #include <set>
@@ -21,8 +19,6 @@
 #include <algorithm>
 
 #include "TMath.h"
-#include "TopQuarkAnalysis/TopTools/interface/MEzCalculator.h"
-
 
 using namespace std;
 
@@ -41,7 +37,6 @@ void RunTTZAnalyzer(TString filename,
   ///////////////////
   TRandom* random = new TRandom(0); // random seed for period selection
   std::vector<RunPeriod_t> runPeriods=getRunPeriods(era);
-  bool isTTbar( filename.Contains("_TTJets") or (normH and TString(normH->GetTitle()).Contains("_TTJets")));
   bool isData( filename.Contains("Data") );
   
   //PREPARE OUTPUT
@@ -63,9 +58,6 @@ void RunTTZAnalyzer(TString filename,
 
   cout << "...producing " << outname << " from " << nentries << " events" << endl;
   
-  //auxiliary to solve neutrino pZ using MET
-  MEzCalculator neutrinoPzComputer;
-
   //PILEUP WEIGHTING
   std::map<TString, std::vector<TGraph *> > puWgtGr;
   if( !isData ) puWgtGr=getPileupWeightsMap(era,genPU);
@@ -84,9 +76,9 @@ void RunTTZAnalyzer(TString filename,
   ht.addHist("nvtx",         new TH1F("nvtx",        ";Vertex multiplicity;Events",55,-0.5,49.5));
   ht.addHist("njets",        new TH1F("njets",       ";Jet multiplicity;Events",15,-0.5,14.5));
   ht.addHist("nbjets",       new TH1F("nbjets",      ";b jet multiplicity;Events",10,-0.5,9.5));
-  ht.addHist("mll",          new TH1F("mll",         ";M(l,l') [GeV];Events",50,91-20,91+20));
-  ht.addHist("ptll",         new TH1F("ptll",        ";p_{T}(l,l') [GeV];Events",50,0,250));
-  ht.addHist("dphill",       new TH1F("dphill",      ";#Delta#phi(l,l');Events",50,0,3.15));
+  ht.addHist("mll",          new TH1F("mll",         ";M(l,l') [GeV];Events",25,91-20,91+20));
+  ht.addHist("ptll",         new TH1F("ptll",        ";p_{T}(l,l') [GeV];Events",25,0,250));
+  ht.addHist("dphill",       new TH1F("dphill",      ";#Delta#phi(l,l');Events",25,0,3.15));
 
   std::cout << "init done" << std::endl;
 
@@ -117,8 +109,11 @@ void RunTTZAnalyzer(TString filename,
       /////////////////////////
       TString chTag = selector.flagFinalState(ev);
       if(chTag=="") continue;
-      std::vector<Particle> &leptons     = selector.getSelLeptons(); 
-      std::vector<Jet>      &jets        = selector.getJets();  
+      std::vector<Particle> &tightLeptons = selector.getSelLeptons(); 
+      std::vector<Particle> &looseLeptons = selector.getVetoLeptons();
+      std::vector<Particle> leptons(tightLeptons);
+      for(auto &l : looseLeptons) leptons.push_back(l);
+      std::vector<Jet> jets              = selector.getJets();  
 
       //select a Z candidate out of the leptons
       std::vector<std::pair<int,int> > zCandidates;
@@ -142,10 +137,16 @@ void RunTTZAnalyzer(TString filename,
           else                     lightJets.push_back(jets[ij]);
         }
 
-      //require at least three leptons and one Z candidate
-      if(leptons.size()<3) continue;
+
+      //require at least one tight lepton
+      if(tightLeptons.size()==0) continue;
+
+      //require at least a Z candidate
       if(zCandidates.size()!=1) continue;
-      bool passJets(lightJets.size()>=2);
+
+      //jet selection: 4 for a 3-lepton event / 6 for a 2-lepton event
+      bool passJets(jets.size()>=4);
+      if(leptons.size()==2) passJets = (jets.size()>=6);
       bool passBJets(bJets.size()>=2);
       if(!passJets || !passBJets) continue;
       
