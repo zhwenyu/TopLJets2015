@@ -34,7 +34,7 @@ def main():
     (opt, args) = parser.parse_args()
 
     #read lists of samples
-    observables = ["m2_b1", "n2_b1", "n3_b1", "m2_b2", "n2_b2", "n3_b2"]
+    observables = ["m2_b1", "m2_b2", "n2_b1", "n2_b2", "n3_b1", "n3_b2"]
     nice_observables_root = {"m2_b1": "M_{ 2}^{ (1)}", "n2_b1": "N_{ 2}^{ (1)}", "n3_b1": "N_{ 3}^{ (1)}", "m2_b2": "M_{ 2}^{ (2)}", "n2_b2": "N_{ 2}^{ (2)}", "n3_b2":"N_{ 3}^{ (2)}"}
     
     colors = {'all': ROOT.kBlack, 'bottom': ROOT.kRed+1, 'light': ROOT.kBlue+1, 'gluon': ROOT.kGreen+1}
@@ -104,8 +104,8 @@ def main():
     dataUnfolded.SetXTitle(flavor+' jets')
     dataUnfolded.GetXaxis().SetTitleSize(0.045)
     dataUnfolded.GetXaxis().SetLabelSize(0.04)
-    dataUnfolded.SetYTitle('<C_{N}^{(#beta)}>')
-    dataUnfolded.GetYaxis().SetRangeUser(0.0001, 1.6*dataUnfolded.GetMaximum())
+    dataUnfolded.SetYTitle('<X_{N}^{(#beta)}>')
+    dataUnfolded.GetYaxis().SetRangeUser(0.0001, 1.3*dataUnfolded.GetMaximum())
     dataUnfolded.GetYaxis().SetTitleSize(0.05)
     dataUnfolded.GetYaxis().SetLabelSize(0.045)
     dataUnfolded.GetYaxis().SetTitleOffset(1.1)
@@ -150,14 +150,23 @@ def main():
     
     inix = 0.5
     if (nominalGen.GetMaximumBin() > nominalGen.GetNbinsX()/2.): inix = 0.15
-    legend = ROOT.TLegend(inix,0.625,inix+0.35,0.9)
+    legend = ROOT.TLegend(inix,0.55,inix+0.45,0.9)
     legend.SetLineWidth(0)
     legend.SetFillStyle(0)
+    dummy = dataUnfolded.Clone('dummy')
+    dummy.SetMarkerSize(0)
     legend.AddEntry(dataUnfolded, "Data", "ep")
     legend.AddEntry(nominalGen, "Powheg+Pythia 8", "pl")
-    legend.AddEntry(FSRUpGen, "#minus FSR up", "p")
-    legend.AddEntry(FSRDownGen, "#minus FSR down", "p")
+    dummy1 = legend.AddEntry(dummy, "(#alpha_{s}^{FSR}(m_{Z})=0.1365, with MEC)", "p")
+    dummy1.SetTextSize(0.0225)
+    dummy1.SetTextAlign(13)
+    legend.AddEntry(FSRUpGen, "#minus FSR up  #scale[0.65]{(#alpha_{s}^{FSR}(m_{Z})=0.1543)}", "p")
+    legend.AddEntry(FSRDownGen, "#minus FSR down  #scale[0.65]{(#alpha_{s}^{FSR}(m_{Z})=0.1224)}", "p")
+    #legend.AddEntry(qcdBasedGen, "#minus QCD-based CR", "p")
     legend.AddEntry(herwigGen, "Powheg+Herwig++", "pl")
+    dummy2 = legend.AddEntry(dummy, "(#alpha_{s}^{FSR}(m_{Z})=0.12, no MEC)", "p")
+    dummy2.SetTextSize(0.0225)
+    dummy2.SetTextAlign(13)
     legend.Draw()
     txt=ROOT.TLatex()
     txt.SetNDC(True)
@@ -187,7 +196,7 @@ def main():
     dataUnfoldedSysRatio.Divide(dataUnfolded)
     dataUnfoldedSysRatio.SetTitle('')
     dataUnfoldedSysRatio.SetXTitle(dataUnfolded.GetXaxis().GetTitle())
-    dataUnfoldedSysRatio.SetYTitle('Ratio ')
+    dataUnfoldedSysRatio.SetYTitle('MC/data')
     dataUnfoldedSysRatio.SetFillColor(ROOT.kGray)
     dataUnfoldedSysRatio.GetXaxis().SetTitleSize(0.2)
     dataUnfoldedSysRatio.GetXaxis().SetTitleOffset(0.8)

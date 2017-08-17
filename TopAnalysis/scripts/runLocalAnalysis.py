@@ -202,6 +202,7 @@ def main():
 
                 condor.write('cfgFile=%s\n'%cfgFile)
                 condor.write('queue 1\n')
+                condor.write('max_retries = 10\n')
                 
                 with open('%s/%s.sh'%(FarmDirectory,cfgFile),'w') as cfg:
 
@@ -216,12 +217,30 @@ def main():
                         %(inF, localOutF, charge, channel, era, tag, flav, method, systVar)
                     if runSysts : runOpts += ' --runSysts'
                     if debug :    runOpts += ' --debug'
-                    cfg.write('python %s/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py %s\n'%(cmsswBase,runOpts))
+                    cfg.write('python %s/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py %s || exit $?\n'%(cmsswBase,runOpts))
                     if '/store' in outF:
                         cfg.write('xrdcp ${WORKDIR}/%s root://eoscms//eos/cms/%s\n'%(localOutF,outF))
                         cfg.write('rm ${WORKDIR}/%s'%localOutF)
                     elif outF!=localOutF:
-                        cfg.write('  mv -v ${WORKDIR}/%s %s\n'%(localOutF,outF))
+                        cfg.write('''
+                                  MAX_RETRIES=10
+                                  i=0
+                                  # Set the initial return value to failure
+                                  RT=1
+                                  while [ $RT -ne 0 -a $i -lt $MAX_RETRIES ]
+                                  do
+                                    i=$(($i+1))
+                                    mv -v ${WORKDIR}/%s %s
+                                    RT=$?
+                                    sleep 15
+                                  done
+                                  if [ $i -eq $MAX_RETRIES ]
+                                  then
+                                    echo "Hit maximum number of mv retries, giving up."
+                                    rm %s
+                                    exit 1
+                                  fi
+                                  '''%(localOutF,outF,outF))
 
                 os.system('chmod u+x %s/%s.sh'%(FarmDirectory,cfgFile))
 

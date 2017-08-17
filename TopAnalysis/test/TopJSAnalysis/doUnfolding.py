@@ -289,18 +289,22 @@ def main():
     nominalGen.SetMarkerStyle(24)
     nominalGen.Draw('SAME H')
     
+    dataUnfoldedNoErr = dataUnfolded.Clone('dataUnfoldedNoErr')
+    for i in range(1, dataUnfoldedNoErr.GetNbinsX()+1):
+        dataUnfoldedNoErr.SetBinError(i, 1e-20)
+
     nominalGenRatio=nominalGen.Clone('nominalGenRatio')
-    nominalGenRatio.Divide(dataUnfolded)
+    nominalGenRatio.Divide(dataUnfoldedNoErr)
     
     dataUnfoldedRatio=dataUnfolded.Clone('dataUnfoldedRatio')
-    dataUnfoldedRatio.Divide(dataUnfolded)
+    dataUnfoldedRatio.Divide(dataUnfoldedNoErr)
     dataUnfoldedRatio.SetFillStyle(3254)
     #dataUnfoldedRatio.SetFillColor(ROOT.TColor.GetColor('#99d8c9'))
     #dataUnfoldedRatio.SetFillColor(ROOT.kGray+1)
     dataUnfoldedRatio.SetFillColor(ROOT.kBlack)
     
     dataUnfoldedSysRatio=dataUnfoldedSys.Clone('dataUnfoldedSysRatio')
-    dataUnfoldedSysRatio.Divide(dataUnfolded)
+    dataUnfoldedSysRatio.Divide(dataUnfoldedNoErr)
     dataUnfoldedSysRatio.SetTitle('')
     dataUnfoldedSysRatio.SetXTitle(dataUnfolded.GetXaxis().GetTitle())
     dataUnfoldedSysRatio.SetYTitle('Ratio ')
@@ -322,7 +326,7 @@ def main():
     FSRUpGen.SetMarkerStyle(26)
     FSRUpGen.Draw('SAME P X0 E1')
     FSRUpGenRatio=FSRUpGen.Clone('FSRUpGenRatio')
-    FSRUpGenRatio.Divide(dataUnfolded)
+    FSRUpGenRatio.Divide(dataUnfoldedNoErr)
     
     FSRDownGen = normalizeAndDivideByBinWidth(systematics['MC13TeV_TTJets_fsrdn'].ProjectionX("FSRDownGen"))
     for i in range(1, FSRDownGen.GetNbinsX()+1):
@@ -332,7 +336,7 @@ def main():
     FSRDownGen.SetMarkerStyle(32)
     FSRDownGen.Draw('SAME P X0 E1')
     FSRDownGenRatio=FSRDownGen.Clone('FSRDownGenRatio')
-    FSRDownGenRatio.Divide(dataUnfolded)
+    FSRDownGenRatio.Divide(dataUnfoldedNoErr)
     
     nominalGenFSR = nominalGen.Clone('nominalGenFSR')
     for i in range(1, nominalGenFSR.GetNbinsX()+1):
@@ -345,7 +349,7 @@ def main():
     nominalGenFSR.SetFillColor(ROOT.kRed-9)
     #nominalGenFSR.Draw('same,e2')
     nominalGenFSRRatio=nominalGenFSR.Clone('nominalGenFSRRatio')
-    nominalGenFSRRatio.Divide(dataUnfolded)
+    nominalGenFSRRatio.Divide(dataUnfoldedNoErr)
     
     #qcdBasedGen = normalizeAndDivideByBinWidth(systematics['MC13TeV_TTJets_qcdBased'].ProjectionX("qcdBasedGen"))
     #qcdBasedGen.SetLineColor(ROOT.kBlue+1)
@@ -355,7 +359,7 @@ def main():
     #qcdBasedGen.SetMarkerStyle(28)
     #qcdBasedGen.Draw('SAME P X0 E1')
     #qcdBasedGenRatio=qcdBasedGen.Clone('qcdBasedGenRatio')
-    #qcdBasedGenRatio.Divide(dataUnfolded)
+    #qcdBasedGenRatio.Divide(dataUnfoldedNoErr)
     
     herwigGen = normalizeAndDivideByBinWidth(systematics['MC13TeV_TTJets_herwig'].ProjectionX("herwigGen"))
     for i in range(1, herwigGen.GetNbinsX()+1):
@@ -367,21 +371,29 @@ def main():
     herwigGen.SetMarkerStyle(25)
     herwigGen.Draw('SAME H')
     herwigGenRatio=herwigGen.Clone('herwigGenRatio')
-    herwigGenRatio.Divide(dataUnfolded)
+    herwigGenRatio.Divide(dataUnfoldedNoErr)
     
     flip_threshold = 0.4
     inix = 0.5
     if (nominalGen.GetMaximumBin() > nominalGen.GetNbinsX()*flip_threshold): inix = 0.15 # TODO: this should compare bin center and axis range
     
-    legend = ROOT.TLegend(inix,0.625,inix+0.35,0.9)
+    legend = ROOT.TLegend(inix,0.55,inix+0.45,0.9)
     legend.SetLineWidth(0)
     legend.SetFillStyle(0)
+    dummy = dataUnfolded.Clone('dummy')
+    dummy.SetMarkerSize(0)
     legend.AddEntry(dataUnfolded, "Data", "ep")
     legend.AddEntry(nominalGen, "Powheg+Pythia 8", "pl")
-    legend.AddEntry(FSRUpGen, "#minus FSR up", "p")
-    legend.AddEntry(FSRDownGen, "#minus FSR down", "p")
+    dummy1 = legend.AddEntry(dummy, "(#alpha_{s}^{FSR}(m_{Z})=0.1365, with MEC)", "p")
+    dummy1.SetTextSize(0.0225)
+    dummy1.SetTextAlign(13)
+    legend.AddEntry(FSRUpGen, "#minus FSR up  #scale[0.65]{(#alpha_{s}^{FSR}(m_{Z})=0.1543)}", "p")
+    legend.AddEntry(FSRDownGen, "#minus FSR down  #scale[0.65]{(#alpha_{s}^{FSR}(m_{Z})=0.1224)}", "p")
     #legend.AddEntry(qcdBasedGen, "#minus QCD-based CR", "p")
     legend.AddEntry(herwigGen, "Powheg+Herwig++", "pl")
+    dummy2 = legend.AddEntry(dummy, "(#alpha_{s}^{FSR}(m_{Z})=0.12, no MEC)", "p")
+    dummy2.SetTextSize(0.0225)
+    dummy2.SetTextAlign(13)
     legend.Draw()
     txt=ROOT.TLatex()
     txt.SetNDC(True)
@@ -495,13 +507,13 @@ def main():
         if not tag in ['MC13TeV_TTJets_fsrup', 'MC13TeV_TTJets_fsrdn', 'MC13TeV_TTJets_herwig', 'MC13TeV_TTJets_tracking_up', 'MC13TeV_TTJets_tracking_down']: continue
         #if any(x in tag for x in ['wgt', 'jec', 'btag', 'csv', 'jer']): continue
         #if 'weight' in tag: continue
-        systematic.Divide(dataUnfolded)
+        systematic.Divide(dataUnfoldedNoErr)
         systematic.SetLineColor(colors[color])
         systematic.SetMarkerColor(colors[color])
         systematic.SetMarkerStyle(21+color)
         color += 1
         legend.AddEntry(systematic, uncmap.get(tag.replace('MC13TeV_TTJets_', ''), tag), 'pl')
-        systematic.Draw('same')
+        systematic.Draw('same hist p')
     legend.Draw()
     txt=ROOT.TLatex()
     txt.SetNDC(True)

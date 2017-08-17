@@ -59,6 +59,13 @@ case $WHAT in
         python ../scripts/runLocalAnalysis.py -i ${eosdir} -q ${queue} -o ${summaryeosdir}_expsyst --era era2016 -m TOPJetShape::RunTopJetShape --skipexisting --only MC13TeV_TTJets --systVar all --exactonly;
         cd -;
         ;;
+    
+    FULLSELGEN )
+        cd batch;
+        #ttbar GEN samples
+        python ../scripts/runLocalAnalysis.py -i /eos/user/m/mseidel/ReReco2016/b312177 -q ${queue} -o ${summaryeosdir} --era era2016 -m TOPJetShape::RunTopJetShape --skipexisting --farmappendix samplesGEN;
+        cd -;
+        ;;
 
     MERGE )
         python scripts/mergeOutputs.py ${summaryeosdir} True;

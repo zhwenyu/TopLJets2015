@@ -33,8 +33,8 @@ def optimize(inputfile, output, obs, reco, ptcut, rootoutput):
     
     tree = ROOT.TChain('tjsev')
     if inputfile == 'local':
-        tree.Add('MC13TeV_TTJets_0.root')
-        tree.Add('MC13TeV_TTJets_1.root')
+        tree.Add('unfolding/MC13TeV_TTJets_0.root')
+        tree.Add('unfolding/MC13TeV_TTJets_1.root')
     elif inputfile == 'eos':
         tree.Add('/eos/user/m/mseidel/analysis/TopJetShapes/b312177/Chunks/MC13TeV_TTJets_0.root')
         tree.Add('/eos/user/m/mseidel/analysis/TopJetShapes/b312177/Chunks/MC13TeV_TTJets_1.root')
@@ -74,6 +74,11 @@ def optimize(inputfile, output, obs, reco, ptcut, rootoutput):
     if (obs == "ecc"):
         label = "eccentricity"
         sigmaFactor = 0.25
+    if (obs == "nsd"):
+        label = "n_{SD}"
+        nbins   = 15
+        highbin = 15
+        sigmaFactor = 0.25
     if (obs == "tau21"):
         label = "#tau_{21}"
         #nbins   = 60
@@ -83,9 +88,9 @@ def optimize(inputfile, output, obs, reco, ptcut, rootoutput):
         label = "#tau_{32}"
     if (obs == "tau43"):
         label = "#tau_{43}"
-        lowbin = 0.3
+        lowbin = 0.1
         highbin = 0.9
-        nbins = 30
+        nbins = 40
         #sigmaFactor = 0.33
     if (obs == "zg"):
         label = "z_{g}"
@@ -107,6 +112,11 @@ def optimize(inputfile, output, obs, reco, ptcut, rootoutput):
         highbin = 0.5
     if (obs == "ga_lha"):
         label = "#lambda_{ 0.5}^{1} (LHA)"
+    if (obs == "c1_00"):
+        label = "C_{ 1}^{ (0.0)}"
+        lowbin= 0.2
+        highbin = 0.5
+        nbins = 30
     if (obs == "c1_02"):
         label = "C_{ 1}^{ (0.2)}"
         highbin = 0.5
@@ -121,6 +131,11 @@ def optimize(inputfile, output, obs, reco, ptcut, rootoutput):
     if (obs == "c1_20"):
         label = "C_{ 1}^{ (2.0)}"
         highbin = 0.1
+    if (obs == "c2_00"):
+        label = "C_{ 2}^{ (0.0)}"
+        highbin = 0.3
+        highbin = 0.7
+        nbins = 40
     if (obs == "c2_02"):
         label = "C_{ 2}^{ (0.2)}"
         highbin = 0.7
@@ -137,6 +152,11 @@ def optimize(inputfile, output, obs, reco, ptcut, rootoutput):
         label = "C_{ 2}^{ (2.0)}"
         highbin = 0.15
         nbins = 30
+    if (obs == "c3_00"):
+        label = "C_{ 3}^{ (0.0)}"
+        lowbin = 0.4
+        highbin = 0.75
+        nbins = 35
     if (obs == "c3_02"):
         label = "C_{ 3}^{ (0.2)}"
         highbin = 0.7
@@ -292,7 +312,7 @@ def optimize(inputfile, output, obs, reco, ptcut, rootoutput):
     for i in range(len(bins)-1):
         for j in range(divisor):
             step = abs(bins[i]-bins[i+1])/divisor*j
-            if (j != 0 and obs == 'mult' and step < 1): continue
+            if (j != 0 and obs in ['mult', 'nsd'] and step < 1): continue
             bins2.append(bins[i] + step)
     bins2.append(bins[-1])
     
@@ -742,12 +762,12 @@ def main():
     os.system('mkdir -p %s' % opt.output)
     rootoutfile = ROOT.TFile(opt.output + "/" + opt.rootoutput, "UPDATE");
     
-    if opt.obs == 'all': observables = ["mult", "width", "ptd", "ptds", "ecc", "tau21", "tau32", "tau43", "zg", "zgxdr", "zgdr", "ga_width", "ga_lha", "ga_thrust", "c1_02", "c1_05", "c1_10", "c1_20", "c2_02", "c2_05", "c2_10", "c2_20", "c3_02", "c3_05", "c3_10", "c3_20", "m2_b1", "n2_b1", "n3_b1", "m2_b2", "n2_b2", "n3_b2"]
+    if opt.obs == 'all': observables = ["mult", "width", "ptd", "ptds", "ecc", "tau21", "tau32", "tau43", "zg", "zgxdr", "zgdr", "ga_width", "ga_lha", "ga_thrust", "c1_02", "c1_00", "c1_05", "c1_10", "c1_20", "c2_02", "c2_00", "c2_05", "c2_10", "c2_20", "c3_00", "c3_02", "c3_05", "c3_10", "c3_20", "m2_b1", "n2_b1", "n3_b1", "m2_b2", "n2_b2", "n3_b2", "nsd"]
     else: observables = opt.obs.split(',')
 
     if len(observables) == 1: optimize(opt.input, opt.output, opt.obs, opt.reco, opt.ptcut, rootoutfile)
     else:
-        reco        = ["charged"]
+        reco        = ["charged", "all"]
         #reco        = ["charged", "puppi", "all"]
         #ptcuts      = {"0.5", "1.0", "1.5"}
         

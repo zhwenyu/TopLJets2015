@@ -32,6 +32,11 @@ struct TopJetShapeEvent_t
   Float_t j_pt[50], j_eta[50], j_phi[50], j_m[50];
   Int_t j_flavor[50], j_partonflavor[50], j_overlap[50], j_gj[50];
   
+  Float_t j_charged_hadron_fraction[50];
+  Float_t j_neutral_hadron_fraction[50];
+  Float_t j_photon_fraction[50];
+  Float_t j_lepton_fraction[50];
+  
   Float_t gj_pt[50], gj_eta[50], gj_phi[50], gj_m[50];
   Int_t gj_flavor[50], gj_partonflavor[50], gj_overlap[50], gj_j[50];
   
@@ -52,13 +57,16 @@ struct TopJetShapeEvent_t
   Float_t j_ga_lha_charged[50];
   Float_t j_ga_thrust_charged[50];
   Float_t j_c1_02_charged[50];
+  Float_t j_c1_00_charged[50];
   Float_t j_c1_05_charged[50];
   Float_t j_c1_10_charged[50];
   Float_t j_c1_20_charged[50];
   Float_t j_c2_02_charged[50];
+  Float_t j_c2_00_charged[50];
   Float_t j_c2_05_charged[50];
   Float_t j_c2_10_charged[50];
   Float_t j_c2_20_charged[50];
+  Float_t j_c3_00_charged[50];
   Float_t j_c3_02_charged[50];
   Float_t j_c3_05_charged[50];
   Float_t j_c3_10_charged[50];
@@ -69,6 +77,44 @@ struct TopJetShapeEvent_t
   Float_t j_m2_b2_charged[50];
   Float_t j_n2_b2_charged[50];
   Float_t j_n3_b2_charged[50];
+  Float_t j_nsd_charged[50];
+  Float_t j_mult_all[50];
+  Float_t j_width_all[50];
+  Float_t j_ptd_all[50];
+  Float_t j_ptds_all[50];
+  Float_t j_ecc_all[50];
+  Float_t j_tau21_all[50];
+  Float_t j_tau32_all[50];
+  Float_t j_tau43_all[50];
+  Float_t j_zg_all[50];
+  Float_t j_zgxdr_all[50];
+  Float_t j_zgdr_all[50];
+  Float_t j_ga_width_all[50];
+  Float_t j_ga_lha_all[50];
+  Float_t j_ga_thrust_all[50];
+  Float_t j_c1_02_all[50];
+  Float_t j_c1_00_all[50];
+  Float_t j_c1_05_all[50];
+  Float_t j_c1_10_all[50];
+  Float_t j_c1_20_all[50];
+  Float_t j_c2_02_all[50];
+  Float_t j_c2_00_all[50];
+  Float_t j_c2_05_all[50];
+  Float_t j_c2_10_all[50];
+  Float_t j_c2_20_all[50];
+  Float_t j_c3_00_all[50];
+  Float_t j_c3_02_all[50];
+  Float_t j_c3_05_all[50];
+  Float_t j_c3_10_all[50];
+  Float_t j_c3_20_all[50];
+  Float_t j_m2_b1_all[50];
+  Float_t j_n2_b1_all[50];
+  Float_t j_n3_b1_all[50];
+  Float_t j_m2_b2_all[50];
+  Float_t j_n2_b2_all[50];
+  Float_t j_n3_b2_all[50];
+  Float_t j_nsd_all[50];
+
 
   Float_t gj_mult_charged[50];
   Float_t gj_width_charged[50];
@@ -85,13 +131,16 @@ struct TopJetShapeEvent_t
   Float_t gj_ga_lha_charged[50];
   Float_t gj_ga_thrust_charged[50];
   Float_t gj_c1_02_charged[50];
+  Float_t gj_c1_00_charged[50];
   Float_t gj_c1_05_charged[50];
   Float_t gj_c1_10_charged[50];
   Float_t gj_c1_20_charged[50];
   Float_t gj_c2_02_charged[50];
+  Float_t gj_c2_00_charged[50];
   Float_t gj_c2_05_charged[50];
   Float_t gj_c2_10_charged[50];
   Float_t gj_c2_20_charged[50];
+  Float_t gj_c3_00_charged[50];
   Float_t gj_c3_02_charged[50];
   Float_t gj_c3_05_charged[50];
   Float_t gj_c3_10_charged[50];
@@ -102,6 +151,44 @@ struct TopJetShapeEvent_t
   Float_t gj_m2_b2_charged[50];
   Float_t gj_n2_b2_charged[50];
   Float_t gj_n3_b2_charged[50];
+  Float_t gj_nsd_charged[50];
+  Float_t gj_mult_all[50];
+  Float_t gj_width_all[50];
+  Float_t gj_ptd_all[50];
+  Float_t gj_ptds_all[50];
+  Float_t gj_ecc_all[50];
+  Float_t gj_tau21_all[50];
+  Float_t gj_tau32_all[50];
+  Float_t gj_tau43_all[50];
+  Float_t gj_zg_all[50];
+  Float_t gj_zgxdr_all[50];
+  Float_t gj_zgdr_all[50];
+  Float_t gj_ga_width_all[50];
+  Float_t gj_ga_lha_all[50];
+  Float_t gj_ga_thrust_all[50];
+  Float_t gj_c1_02_all[50];
+  Float_t gj_c1_00_all[50];
+  Float_t gj_c1_05_all[50];
+  Float_t gj_c1_10_all[50];
+  Float_t gj_c1_20_all[50];
+  Float_t gj_c2_02_all[50];
+  Float_t gj_c2_00_all[50];
+  Float_t gj_c2_05_all[50];
+  Float_t gj_c2_10_all[50];
+  Float_t gj_c2_20_all[50];
+  Float_t gj_c3_00_all[50];
+  Float_t gj_c3_02_all[50];
+  Float_t gj_c3_05_all[50];
+  Float_t gj_c3_10_all[50];
+  Float_t gj_c3_20_all[50];
+  Float_t gj_m2_b1_all[50];
+  Float_t gj_n2_b1_all[50];
+  Float_t gj_n3_b1_all[50];
+  Float_t gj_m2_b2_all[50];
+  Float_t gj_n2_b2_all[50];
+  Float_t gj_n3_b2_all[50];
+  Float_t gj_nsd_all[50];
+
 };
 
 double calcGA(double beta, double kappa, Jet jet, bool includeNeutrals = false, bool usePuppi = false, double ptcut = 1.0);
@@ -117,6 +204,9 @@ double getTau(int N, int M, Jet jet, bool includeNeutrals = false, bool usePuppi
 double getC(int N, double beta, Jet jet, bool includeNeutrals = false, bool usePuppi = false, double ptcut = 1.0);
 std::vector<double> getZg(Jet jet, bool includeNeutrals = false, bool usePuppi = false, double ptcut = 1.0);
 std::map<TString,double> getECF(Jet jet, bool includeNeutrals = false, bool usePuppi = false, double ptcut = 1.0);
+double getNSD(double zcut, double beta, Jet jet, bool includeNeutrals = false, bool usePuppi = false, double ptcut = 1.0);
+
+double getPFFraction(std::vector<int> pids, Jet jet);
 
 double deltaR(TLorentzVector v1, TLorentzVector v2) { return v1.DeltaR(v2); }
 double mapAngleMPiToPi(double phi) { return TVector2::Phi_mpi_pi(phi); }

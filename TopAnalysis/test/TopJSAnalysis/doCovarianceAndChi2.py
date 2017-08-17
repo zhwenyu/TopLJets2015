@@ -76,6 +76,7 @@ def main():
                 ['ueup', 'uedn'],
                 ['erdON'],
                 ['qcdBased'],
+                #['gluonMove'], # TODO: needs reprocessing with new normCache
                 ['wgt7', 'wgt8'], # b frag Bowler-Lund up/down
                 ['wgt9'], # b frag Peterson
                 ['wgt10', 'wgt11'], # B hadron semilep BR
@@ -115,6 +116,7 @@ def main():
                     'uedn': 'UE down',
                     'erdON': 'CR: erd on',
                     'qcdBased': 'CR: QCD-inspired',
+                    #'gluonMove': 'CR: gluon-move',
                     'wgt7': 'b frag up',
                     'wgt8': 'b frag down', # b frag Bowler-Lund up/down
                     'wgt9': 'b frag Peterson', # b frag Peterson

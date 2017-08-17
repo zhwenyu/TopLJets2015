@@ -9,7 +9,11 @@ def getEOSlslist(directory, mask='', prepend='root://eoscms//eos/cms/'):
     print 'looking into: '+directory+'...'
 
     eos_cmd = 'eos'
-    data = Popen([eos_cmd, 'ls', directory],stdout=PIPE)
+    if '/eos/user/' in directory:
+        data = Popen(['ls', directory],stdout=PIPE)
+        prepend = ''
+    else:
+        data = Popen([eos_cmd, 'ls', directory],stdout=PIPE)
     out,err = data.communicate()
 
     full_list = []

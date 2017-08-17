@@ -18,8 +18,8 @@ def getCorrelation(points, obs1, obs2):
         val1 = points[obs1][i]
         val2 = points[obs2][i]
         
-        if obs1 == 'mult': val1 /= 100.
-        if obs2 == 'mult': val2 /= 100.
+        if obs1 in ['mult', 'nsd']: val1 /= 100.
+        if obs2 in ['mult', 'nsd']: val2 /= 100.
         
         if obs1 in ['n3_b1', 'n3_b2']: val1 /= 5.
         if obs2 in ['n3_b1', 'n3_b2']: val2 /= 5.
@@ -80,9 +80,10 @@ def main():
 
     rootoutfile = ROOT.TFile(opt.rootoutput, "RECREATE");
     
-    observables = ["mult", "width", "ptd", "ptds", "ecc", "tau21", "tau32", "tau43", "zg", "zgxdr", "zgdr", "ga_width", "ga_lha", "ga_thrust", "c1_02", "c1_05", "c1_10", "c1_20", "c2_02", "c2_05", "c2_10", "c2_20", "c3_02", "c3_05", "c3_10", "c3_20", "m2_b1", "n2_b1", "n3_b1", "m2_b2", "n2_b2", "n3_b2"]
+    #observables = ["mult", "width", "ptd", "ptds", "ecc", "zg", "zgxdr", "zgdr", "nsd", "ga_width", "ga_lha", "ga_thrust", "tau21", "tau32", "tau43", "c1_00", "c1_02", "c1_05", "c1_10", "c1_20", "c2_00", "c2_02", "c2_05", "c2_10", "c2_20", "c3_00", "c3_02", "c3_05", "c3_10", "c3_20", "m2_b1", "m2_b2", "n2_b1", "n2_b2", "n3_b1", "n3_b2"]
+    observables = ["mult", "ptds", "ga_width", "ga_lha", "ga_thrust", "ecc", "zg", "zgdr", "nsd", "tau21", "tau32", "tau43", "c1_00", "c1_02", "c1_05", "c1_10", "c1_20", "c2_00", "c2_02", "c2_05", "c2_10", "c2_20", "c3_00", "c3_02", "c3_05", "c3_10", "c3_20", "m2_b1", "m2_b2", "n2_b1", "n2_b2", "n3_b1", "n3_b2"]
     
-    nice_observables_root = {"mult": "N", "width": "width", "ptd": "p_{T}D", "ptds": "p_{T}D*", "ecc": "#varepsilon", "tau21": "#tau_{21}", "tau32": "#tau_{32}", "tau43": "#tau_{43}", "zg": "z_{g}", "zgxdr": "z_{g} #times #DeltaR", "zgdr": "#DeltaR_{g}", "ga_width": "#lambda_{1}^{1}", "ga_lha": "#lambda_{0.5}^{1}", "ga_thrust": "#lambda_{2}^{1}", "c1_02": "C_{1}^{(0.2)}", "c1_05": "C_{1}^{(0.5)}", "c1_10": "C_{1}^{(1.0)}", "c1_20": "C_{1}^{(2.0)}", "c2_02": "C_{2}^{(0.2)}", "c2_05": "C_{2}^{(0.5)}", "c2_10": "C_{2}^{(1.0)}", "c2_20":  "C_{2}^{(2.0)}", "c3_02": "C_{3}^{(0.2)}", "c3_05": "C_{3}^{(0.5)}", "c3_10": "C_{3}^{(1.0)}", "c3_20": "C_{3}^{(2.0)}", "m2_b1": "M_{ 2}^{ (1)}", "n2_b1": "N_{ 2}^{ (1)}", "n3_b1": "N_{ 3}^{ (1)}", "m2_b2": "M_{ 2}^{ (2)}", "n2_b2": "N_{ 2}^{ (2)}", "n3_b2":"N_{ 3}^{ (2)}"}
+    nice_observables_root = {"mult": "#lambda_{0}^{0} (N)", "width": "width", "ptd": "p_{T}D", "ptds": "#lambda_{0}^{2}* (p_{T}D*)", "ecc": "#varepsilon", "tau21": "#tau_{21}", "tau32": "#tau_{32}", "tau43": "#tau_{43}", "zg": "z_{g}", "zgxdr": "z_{g} #times #DeltaR", "zgdr": "#DeltaR_{g}", "ga_width": "#lambda_{1}^{1} (width)", "ga_lha": "#lambda_{0.5}^{1} (LHA)", "ga_thrust": "#lambda_{2}^{1} (thrust)", "c1_00": "C_{1}^{(0.0)}", "c1_02": "C_{1}^{(0.2)}", "c1_05": "C_{1}^{(0.5)}", "c1_10": "C_{1}^{(1.0)}", "c1_20": "C_{1}^{(2.0)}", "c2_00": "C_{2}^{(0.0)}", "c2_02": "C_{2}^{(0.2)}", "c2_05": "C_{2}^{(0.5)}", "c2_10": "C_{2}^{(1.0)}", "c2_20":  "C_{2}^{(2.0)}", "c3_00": "C_{3}^{(0.0)}", "c3_02": "C_{3}^{(0.2)}", "c3_05": "C_{3}^{(0.5)}", "c3_10": "C_{3}^{(1.0)}", "c3_20": "C_{3}^{(2.0)}", "m2_b1": "M_{ 2}^{ (1)}", "n2_b1": "N_{ 2}^{ (1)}", "n3_b1": "N_{ 3}^{ (1)}", "m2_b2": "M_{ 2}^{ (2)}", "n2_b2": "N_{ 2}^{ (2)}", "n3_b2": "N_{ 3}^{ (2)}", "nsd": "n_{SD}"}
     
     points = getPointsFromTree(tree, observables)
     
@@ -128,9 +129,11 @@ def main():
             h_correlations.SetBinContent(j+1, i+1, correlation)
     
     h_correlations.GetXaxis().LabelsOption('v')
+    h_correlations.GetXaxis().SetLabelSize(0.02)
+    h_correlations.GetYaxis().SetLabelSize(0.02)
     h_correlations.GetZaxis().SetRangeUser(-100., 100.)
     h_correlations.GetZaxis().SetTitle('Correlation [%]     ')
-    h_correlations.SetMarkerSize(0.7)
+    h_correlations.SetMarkerSize(0.5)
     h_correlations.Draw('colz,text')
     
     ROOT.gPad.Update()
