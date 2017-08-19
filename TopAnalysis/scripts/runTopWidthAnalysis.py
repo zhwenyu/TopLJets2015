@@ -455,7 +455,12 @@ def runTopWidthAnalysis(fileName,
                         thEvWeight=evWeight
                         if s=='topptup': thEvWeight=puNormSF[0]*tree.weight[9]
                         if s=='topptdn': thEvWeight=puNormSF[0]*ROOT.TMath.Sqrt(tree.weight[9])
-                        if 'gen' in s  : thEvWeight=puNormSF[0]*tree.weight[10+int(s[3:])]
+                        if 'gen' in s  : 
+                            gen_idx=int(s[3:])
+                            if 10+gen_idx<tree.nw:
+                                thEvWeight=puNormSF[0]*tree.weight[10+gen_idx]
+                            else:
+                                thEvWeight=0
                         if s=='nloproddec'  : thEvWeight = evWeight*pairWeightAtNLO
                         for w in widthList:
                             var=evcat+btagcat+ptCat+'_incmlb_w%d_gen'%int(100*w)
@@ -530,8 +535,8 @@ def createAnalysisTasks(opt):
             condor.write('executable = {0}/$(jobName).sh\n'.format(FarmDirectory))
             condor.write('output     = {0}/output_$(jobName).out\n'.format(FarmDirectory))
             condor.write('error      = {0}/output_$(jobName).err\n'.format(FarmDirectory))
-            condor.write('+JobFlavour = workday\n')
-            condor.write('RequestCpus = 4\n')
+            condor.write('+JobFlavour = \"workday\"\n')
+            condor.write('RequestCpus = 8\n')
 
             for fileName,_ in tasklist:
                 jobName='%s'%(os.path.splitext(os.path.basename(fileName))[0])

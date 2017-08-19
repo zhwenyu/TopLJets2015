@@ -83,17 +83,28 @@ case $WHAT in
 	;;
     BKG )
         opts="-j data/era2016/samples.json  -l ${lumi} ${lumiSpecs} --onlyData"
-#	python scripts/plotter.py -i ${outdir}/analysis ${opts} --only mll -o dy_plotter.root; 
-#	python scripts/runDYRinRout.py --in ${outdir}/analysis/plots/dy_plotter.root --categs 1b,2b --out ${outdir}/analysis/plots/ > ${outdir}/analysis/plots/dysf.dat;
+	python scripts/plotter.py -i ${outdir}/analysis ${opts} --only mll -o dy_plotter.root; 
+	python scripts/runDYRinRout.py --in ${outdir}/analysis/plots/dy_plotter.root --categs 1b,2b --out ${outdir}/analysis/plots/ > ${outdir}/analysis/plots/dysf.dat;
         opts="${opts} --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck"
-#	python scripts/plotter.py -i ${outdir}/analysis ${opts} --only mll,evcount,dphilb,drlb,met,njets,ptlb,incmlb_w100 -o dysf_plotter.root; 
+	python scripts/plotter.py -i ${outdir}/analysis ${opts} --only mll,evcount,dphilb,drlb,met,njets,ptlb,incmlb_w100 -o dysf_plotter.root; 
 	python scripts/plotter.py -i ${outdir}/analysis ${opts} --only count --saveTeX -o count_plotter.root;
 	;;
     PLOT )
         opts="-l ${lumi} ${lumiSpecs} --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck --mcUnc ${lumiUnc} --silent"
-        python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json      ${opts};
+        python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json       ${opts};
         python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/syst_samples.json  ${opts} -o syst_plotter.root;
         ;;
+    COMBPLOT )
+	#combined plots
+	python test/TopWidthAnalysis/combinePlotsForAllCategories.py ptlb       EE1b,EE2b,MM1b,MM2b,EM1b,EM2b     ${outdir}/analysis/plots/plotter.root
+	python test/TopWidthAnalysis/combinePlotsForAllCategories.py ptlb       EE1b,MM1b,EM1b                    ${outdir}/analysis/plots/plotter.root
+	python test/TopWidthAnalysis/combinePlotsForAllCategories.py ptlb       EE2b,MM2b,EM2b                    ${outdir}/analysis/plots/plotter.root
+	python test/TopWidthAnalysis/combinePlotsForAllCategories.py incmlb_w100 EE1blowpt,MM1blowpt,EM1blowpt    ${outdir}/analysis/plots/plotter.root
+	python test/TopWidthAnalysis/combinePlotsForAllCategories.py incmlb_w100 EE2blowpt,MM2blowpt,EM2blowpt    ${outdir}/analysis/plots/plotter.root
+	python test/TopWidthAnalysis/combinePlotsForAllCategories.py incmlb_w100 EE1bhighpt,MM1bhighpt,EM1bhighpt ${outdir}/analysis/plots/plotter.root
+	python test/TopWidthAnalysis/combinePlotsForAllCategories.py incmlb_w100 EE2bhighpt,MM2bhighpt,EM2bhighpt ${outdir}/analysis/plots/plotter.root
+        ;;
+
     PLOT_P1 )
 	python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --only count --saveTeX -o count_plotter.root --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck > count2.out & 
 
@@ -114,15 +125,6 @@ case $WHAT in
 	python test/TopWidthAnalysis/createtWShapeUncs.py ~/work/TopWidth_era2015/analysis/plots/plotter.root ~/work/TopWidth_era2015/analysis/plots/syst_plotter.root  ${outdir}/analysis/plots/plotter.root;
 	hadd ${outdir}/analysis/plots/syst_plotter.root tW_syst_plotter.root ${outdir}/analysis/plots/syst_plotter_orig.root 
 	mv tW_syst_plotter.root ${outdir}/analysis/plots/tW_syst_plotter.root;	       
-	
-	#combined plots
-	python test/TopWidthAnalysis/combinePlotsForAllCategories.py ptlb        EE1b,EE2b,MM1b,MM2b,EM1b,EM2b    ${outdir}/analysis/plots/plotter.root
-	python test/TopWidthAnalysis/combinePlotsForAllCategories.py ptlb        EE1b,MM1b,EM1b                   ${outdir}/analysis/plots/plotter.root
-	python test/TopWidthAnalysis/combinePlotsForAllCategories.py ptlb        EE2b,MM2b,EM2b                   ${outdir}/analysis/plots/plotter.root
-	python test/TopWidthAnalysis/combinePlotsForAllCategories.py incmlb_1.0w lowptEE1b,lowptMM1b,lowptEM1b    ${outdir}/analysis/plots/plotter.root
-	python test/TopWidthAnalysis/combinePlotsForAllCategories.py incmlb_1.0w lowptEE2b,lowptMM2b,lowptEM2b    ${outdir}/analysis/plots/plotter.root
-	python test/TopWidthAnalysis/combinePlotsForAllCategories.py incmlb_1.0w highptEE1b,highptMM1b,highptEM1b ${outdir}/analysis/plots/plotter.root
-	python test/TopWidthAnalysis/combinePlotsForAllCategories.py incmlb_1.0w highptEE2b,highptMM2b,highptEM2b ${outdir}/analysis/plots/plotter.root
         ;;
     WWW )
         mkdir -p ${wwwdir}/ana

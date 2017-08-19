@@ -1,6 +1,17 @@
 from TopLJets2015.TopAnalysis.Plot import *
 import sys
 
+COLORS={
+    "t#bar{t}":0,
+    "Single top":"#91bfdb",
+    "W":"#fee090",
+    "DY":"#fc8d59",
+    "Multiboson":"#d73027",
+    "t#bar{t}+V":"#00374A",
+    "Data":1
+}
+
+
 """
 """
 def doPlot(plotName,chList,extraText,url):
@@ -39,10 +50,9 @@ def doPlot(plotName,chList,extraText,url):
     plot.wideCanvas=False
     plot.ratiorange=(0.76,1.24)
     plot.plotformats=['root','pdf','png']
-    for key in  plotsPerProc:
+    for key in ['Data','t#bar{t}','Single top','W','DY','Multiboson','t#bar{t}+V']:
         isData=True if 'Data' in plotsPerProc[key].GetTitle() else False
-        color=1 if isData else plotsPerProc[key].GetFillColor()
-        print color
+        color=COLORS[plotsPerProc[key].GetTitle()]
         plot.add(plotsPerProc[key],
                  plotsPerProc[key].GetTitle(),
                  color,

@@ -93,7 +93,7 @@ void RunTTZAnalyzer(TString filename,
   for (Int_t iev=0;iev<nentries;iev++)
     {
       t->GetEntry(iev);
-      if(iev%10==0) printf ("\r [%3.0f%%] done", 100.*(float)iev/(float)nentries);
+      if(iev%1000==0) printf ("\r [%3.0f%%] done", 100.*(float)iev/(float)nentries);
       
       //assign randomly a run period
       TString period = assignRunPeriod(runPeriods,random);
@@ -123,21 +123,26 @@ void RunTTZAnalyzer(TString filename,
         {
           for(size_t jl=il+1; jl<leptons.size(); jl++)
             {
-              if( abs(leptons[il].id())!=abs(leptons[jl].id()) ) continue;
-              if( leptons[il].charge()*leptons[jl].charge()>=0) continue;
               TLorentzVector dil=leptons[il].p4()+leptons[jl].p4();
               if( fabs(dil.M()-91)>20 ) continue;
+              if( abs(leptons[il].id())!=abs(leptons[jl].id()) ) continue;
+              if( leptons[il].charge()*leptons[jl].charge()>=0) continue;
               zCandidates.push_back( std::pair<int,int>(il,jl) );
             }
         }
 
       //jets
       std::vector<Jet> jets = selector.getJets();  
-
-      //separate jets according to flavour
       std::vector<Jet> bJets,lightJets;
       for(size_t ij=0; ij<jets.size(); ij++) 
         {
+
+          //make sure that the jets do not overlap with the leptons
+          double dR(999.);
+          for(auto &l : leptons) dR=TMath::Min( dR, l.p4().DeltaR( jets[ij].p4() ) );
+          if(dR<0.4) continue;
+
+          //separate jets according to flavour
           if(jets[ij].flavor()==5) bJets.push_back(jets[ij]);
           else                     lightJets.push_back(jets[ij]);
         }

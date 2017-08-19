@@ -33,6 +33,7 @@ newCondor=open(newCondorName,'w')
 for line in condor:
     if 'jobName=' in line: break
     newCondor.write(line)
+newCondor.write('log  = %s/resublog_$(ClusterId).log\n'%FARMDIR)
 for jobName in toRun:
     newCondor.write('jobName=%s\n'%jobName)
     newCondor.write('queue 1\n')
