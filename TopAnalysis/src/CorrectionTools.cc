@@ -388,19 +388,80 @@ double computeSemilepBRWeight(MiniEvent_t &ev, std::map<int, double> corr, int p
   return weight;
 }
 
+// TODO: eta-dependent scale factors
 void applyTrackingEfficiencySF(MiniEvent_t &ev, double sf) {
   if(ev.isData) return;
   
   TRandom* random = new TRandom3(0); // random seed
 
-  for (int k = 0; k < ev.npf; k++) {
-    if (random->Rndm() > sf) {
-      //make sure that particle does not pass any cuts
-      ev.pf_pt[k]  = 1e-20;
-      ev.pf_m[k]   = 1e-20;
-      ev.pf_eta[k] = 999.;
-      ev.pf_c[k]   = 0;
+  if (sf <= 1) {
+    for (int k = 0; k < ev.npf; k++) {
+      if (abs(ev.pf_id[k]) != 211) continue;
+      if (random->Rndm() > sf) {
+        //make sure that particle does not pass any cuts
+        ev.pf_pt[k]  = 1e-20;
+        ev.pf_m[k]   = 1e-20;
+        ev.pf_eta[k] = 999.;
+        ev.pf_c[k]   = 0;
+      }
     }
+  }
+  else { // sf > 1
+    // find charged hadrons that were not reconstructed
+    double dRcut = 0.01;
+    std::vector<int> chGenNonRecoHadrons;
+    int NchGenHadrons = 0;
+    for (int g = 0; g < ev.ngpf; g++) {
+      if (ev.gpf_pt[g] < 0.9) continue;
+      if (ev.gpf_c[g] == 0) continue;
+      if (abs(ev.gpf_id[g]) < 100) continue;
+      NchGenHadrons++;
+      bool matched = false;
+      for (int k = 0; k < ev.npf; k++) {
+        if (ev.pf_pt[k] < 0.8) continue;
+        if (abs(ev.pf_id[k]) != 211) continue;
+        double dEta = ev.gpf_eta[g] - ev.pf_eta[k];
+        double dPhi = TVector2::Phi_mpi_pi(ev.gpf_phi[g] - ev.pf_phi[k]);
+        double dR = sqrt(pow(dEta, 2) + pow(dPhi, 2));
+        if (dR < dRcut) {
+          matched = true;
+          break;
+        }
+      }
+      if (!matched) chGenNonRecoHadrons.push_back(g);
+    }
+    double promotionProb = TMath::Min(1., NchGenHadrons*(sf-1.)/chGenNonRecoHadrons.size());
+    std::vector<int> chGenNonRecoHadronsToPromote;
+    for (const int g : chGenNonRecoHadrons) {
+      if (random->Rndm() < promotionProb) {
+        chGenNonRecoHadronsToPromote.push_back(g);
+      }
+    }
+    for (unsigned int g = 0; g < chGenNonRecoHadronsToPromote.size(); g++) {
+      int k = ev.npf + g;
+      // jet association
+      int j = -1;
+      double jetR = 0.4;
+      for (int ij = 0; ij < ev.nj; ij++) {
+        double dEta = ev.gpf_eta[g] - ev.j_eta[ij];
+        double dPhi = TVector2::Phi_mpi_pi(ev.gpf_phi[g] - ev.j_phi[ij]);
+        double dR = sqrt(pow(dEta, 2) + pow(dPhi, 2));
+        if (dR < jetR) {
+          j = ij;
+          break;
+        }
+      }
+      ev.pf_j[k]   = j;
+      ev.pf_id[k]  = ev.gpf_id[g];
+      ev.pf_c[k]   = ev.gpf_c[g];
+      ev.pf_pt[k]  = ev.gpf_pt[g];
+      ev.pf_eta[k] = ev.gpf_eta[g];
+      ev.pf_phi[k] = ev.gpf_phi[g];
+      ev.pf_m[k]   = ev.gpf_m[g];
+      ev.pf_dxy[k] = 0.;
+      ev.pf_dz[k]  = 0.;
+    }
+    ev.npf    = ev.npf + chGenNonRecoHadronsToPromote.size();
   }
   
   delete random;
