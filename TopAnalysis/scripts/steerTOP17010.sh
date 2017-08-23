@@ -104,28 +104,6 @@ case $WHAT in
 	python test/TopWidthAnalysis/combinePlotsForAllCategories.py incmlb_w100 EE1bhighpt,MM1bhighpt,EM1bhighpt ${outdir}/analysis/plots/plotter.root
 	python test/TopWidthAnalysis/combinePlotsForAllCategories.py incmlb_w100 EE2bhighpt,MM2bhighpt,EM2bhighpt ${outdir}/analysis/plots/plotter.root
         ;;
-
-    PLOT_P1 )
-	python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --only count --saveTeX -o count_plotter.root --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck > count2.out & 
-
-	python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --only njets,ptlb -o njets_plotter.root --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck > njets2.out &
-    	python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck -o plotter.root > plotter.out &
-	python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/syst_samples.json -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --silent -o syst_plotter2.root > syst2.out &
-		#stdcmd="python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --only count --saveTeX -o count_plotter.root --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck;"
-	    #	bsub -q ${queue} ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${stdcmd}; 
-		#stdcmd="python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --only njets,ptlb -o njets_plotter.root --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck; "
-	    #	bsub -q ${queue} ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${stdcmd}; 
-    	#stdcmd="python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck &"
-	    #	bsub -q ${queue} ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${stdcmd}; 
-		#stdcmd="python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/syst_samples.json -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --silent -o syst_plotter.root;"
-	    #	bsub -q ${queue} ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${stdcmd}; 
-	;;
-	PLOT_P2 )
-	mv ${outdir}/analysis/plots/syst_plotter.root ${outdir}/analysis/plots/syst_plotter_orig.root
-	python test/TopWidthAnalysis/createtWShapeUncs.py ~/work/TopWidth_era2015/analysis/plots/plotter.root ~/work/TopWidth_era2015/analysis/plots/syst_plotter.root  ${outdir}/analysis/plots/plotter.root;
-	hadd ${outdir}/analysis/plots/syst_plotter.root tW_syst_plotter.root ${outdir}/analysis/plots/syst_plotter_orig.root 
-	mv tW_syst_plotter.root ${outdir}/analysis/plots/tW_syst_plotter.root;	       
-        ;;
     WWW )
         mkdir -p ${wwwdir}/ana
         cp ${outdir}/analysis/plots/*.{png,pdf} ${wwwdir}/ana        

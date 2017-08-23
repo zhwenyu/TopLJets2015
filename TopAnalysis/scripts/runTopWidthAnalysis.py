@@ -369,6 +369,8 @@ def runTopWidthAnalysis(fileName,
                 if s=='bfragdn'   : evWeight=puNormSF[0]*tree.weight[13]
                 if s=='petersfrag': evWeight=puNormSF[0]*tree.weight[14]
                 
+                if math.isnan(evWeight) : continue
+
                 #require two jets
                 njets=len(bjets[ijhyp])+len(otherjets[ijhyp])
                 if njets<2 : continue
@@ -462,6 +464,7 @@ def runTopWidthAnalysis(fileName,
                             else:
                                 thEvWeight=0
                         if s=='nloproddec'  : thEvWeight = evWeight*pairWeightAtNLO
+                        if math.isnan(thEvWeight) : continue
                         for w in widthList:
                             var=evcat+btagcat+ptCat+'_incmlb_w%d_gen'%int(100*w)
                             observablesH[var].Fill(mlb,ith,thEvWeight*widthWeight[w])
