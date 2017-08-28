@@ -76,7 +76,7 @@ class Jet {
     int &getJetIndex() { return idx_; }
     std::vector<IdTrack> &getTracks() { return trks_; }
     void sortTracksByPt() { sort(trks_.begin(),trks_.end(), sortIdTracksByPt); }
-    
+
     static bool sortJetsByPt(Jet i, Jet j)  { return i.getVec().Pt() > j.getVec().Pt(); }
     static bool sortJetsByCSV(Jet i, Jet j) { return i.getCSV() > j.getCSV(); }
   

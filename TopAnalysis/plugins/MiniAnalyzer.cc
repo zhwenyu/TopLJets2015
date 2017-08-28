@@ -860,6 +860,7 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
 	      ev_.j_vtxpy[ev_.nj]          = vp4.py();
 	      ev_.j_vtxpz[ev_.nj]          = vp4.pz();
 	      ev_.j_vtxmass[ev_.nj]        = vp4.mass();
+              ev_.j_vtxchi2[ev_.nj]        = svtx.vertexChi2();
 	      ev_.j_vtxNtracks[ev_.nj]     = candSVTagInfo->nVertexTracks(0);
 	      ev_.j_vtx3DVal[ev_.nj]       = candSVTagInfo->flightDistance(0).value();
 	      ev_.j_vtx3DSig[ev_.nj]       = candSVTagInfo->flightDistance(0).significance();
@@ -877,8 +878,6 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
 
       //save all PF candidates central jet
       if(fabs(j->eta())>2.5) continue;
-      cout << ev_.j_vtxNtracks[ev_.nj] << " " << tkInSvtx.size() << " ";
-      int imatch(0);
       for(size_t ipf=0; ipf<j->numberOfDaughters(); ipf++)
 	{
 	  const reco::Candidate *pf=j->daughter(ipf);
@@ -890,9 +889,8 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
               for(size_t isvtxTk=0; isvtxTk<tkInSvtx.size(); isvtxTk++)
                 {
                   if(pf->charge() != tkInSvtx[isvtxTk]->charge() ) continue;
-                  if( deltaR(pf->eta(),pf->phi(), tkInSvtx[isvtxTk]->eta(),tkInSvtx[isvtxTk]->phi()) > 0.01 ) continue;
+                  if( deltaR(pf->eta(),pf->phi(), tkInSvtx[isvtxTk]->eta(),tkInSvtx[isvtxTk]->phi()) > 0.05 ) continue;
                   isInSvtx=true;
-                  imatch++;
                   break;
                 }
             }
@@ -901,7 +899,6 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
                                                                                        std::pair<int,bool>(ev_.nj-1,isInSvtx))
                                );
 	}
-      cout << imatch << endl;
     }
       
   // MET
@@ -963,7 +960,7 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
 	  if(pf->pdgId()!=clustCands[i].first->pdgId()) continue;
 	  if(deltaR(*pf,*(clustCands[i].first))>0.01) continue;
 	  ev_.pf_j[ev_.npf]=clustCands[i].second.first;
-          ///ev_.pf_svtx[ev_.npf]=clustCands[i].second.second;
+          ev_.pf_svtx[ev_.npf]=clustCands[i].second.second;
 	  break;
 	}
 
