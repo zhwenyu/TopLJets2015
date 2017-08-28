@@ -25,19 +25,19 @@ case $WHAT in
 
     SEL )
         #to run locally use "--njobs 8 -q local"
-        #to run on the batck use "-q condor"
+        #to run on the batck use "-q workday"
 	python scripts/runLocalAnalysis.py -i ${eosdir} \
             --only test/summer2017/mttbar_samples.json --exactonly \
-            -q condor \
+            -q workday \
             -o ${outdir} \
             --era era2016 -m BjetChargeTreeProducer::RunBjetChargeTreeProducer --ch 0 --runSysts;
 	;;
     SELSYST )
         #to run locally use "--njobs 8 -q local"
-        #to run on the batck use "-q condor"
+        #to run on the batck use "-q workday"
 	python scripts/runLocalAnalysis.py -i ${eosdir} \
             --only test/summer2017/ttbar_systs.json --exactonly \
-            -q condor \
+            -q workday \
             -o ${outdir} \
             --era era2016 -m BjetChargeTreeProducer::RunBjetChargeTreeProducer --ch 0 --runSysts;
 	;;

@@ -351,18 +351,14 @@ void RunTTZAnalyzer(TString filename,
       TTZEvent reco = selectRecoEvents(selector,ev,neutrinoPzComputer);
       std::vector<Particle> &allLeptons = reco.Leptons;	 
 
-      std::cout<<"passSelection="<<reco.passSelection<<endl;
-      std::cout<<"contador="<<l<<endl;
       ///////////////
       //GEN EVENTS//
       /////////////
-      cout << __LINE__ << endl;
-      //TTZEvent gen = selectGenEvents(selector,ev);
-      cout << __LINE__ << endl;
-
+      TTZEvent gen = selectGenEvents(selector,ev);
+      
       //Reconstructed events
       if(reco.passSelection){
-      cout << __LINE__ << endl;
+      
       //////////////
       //PLOT WGTS//
       ////////////
@@ -376,40 +372,36 @@ void RunTTZAnalyzer(TString filename,
 	  wgt  = (normH? normH->GetBinContent(1) : 1.0);
         
 	  // pu weight
-      cout << __LINE__ << endl;
 	  double puWgt(puWgtGr[period][0]->Eval(ev.g_pu));
 	  std::vector<double>puPlotWgts(1,puWgt);
 	  ht.fill("puwgtctr",1,puPlotWgts);
-          cout << __LINE__ << " " << allLeptons.size() << endl;
 
 	  // lepton trigger*selection weights
 	  std::vector<Particle> trigLepton(1,allLeptons[0]);
 	  EffCorrection_t trigSF = lepEffH.getTriggerCorrection(trigLepton, period);
 	  EffCorrection_t  selSF= lepEffH.getOfflineCorrection(allLeptons[0], period);
-      cout << __LINE__ << endl;
 	  wgt *= puWgt*trigSF.first*selSF.first;
       
 	  // generator level weights
 	  wgt *= (ev.g_nw>0 ? ev.g_w[0] : 1.0);
-      cout << __LINE__ << endl;
+      
 	  //update weight for plotter
 	  plotwgts[0]=wgt;
 	}
 
-          cout << __LINE__ << endl;
 	//ttbar kinematics
 	ht.fill("ttbarPt",(reco.ttbar).Pt(),plotwgts);
 	ht.fill("ttbarEta",(reco.ttbar).PseudoRapidity(),plotwgts);
 	ht.fill("ttbarPhi",(reco.ttbar).Phi(),plotwgts);
 	ht.fill("ttbarM",(reco.ttbar).M(),plotwgts);
 	//ht.fill("ttbar+Z",ttbarZ.M(),plotwgts);
-         cout << __LINE__ << endl;
+        
 	//control histograms
 	ht.fill("nvtx",     ev.nvtx,        plotwgts);
 	ht.fill("nbjets", (reco.BJets).size(), plotwgts);
 	ht.fill("njets",  (reco.Jets).size(),  plotwgts);
 	ht.fill("nbLeptons",(reco.Leptons).size(),plotwgts);
-      cout << __LINE__ << endl;
+
 	//Z kinematics
 	ht.fill("mll",     (reco.z).M(),                                  plotwgts);
 	ht.fill("ptll",    (reco.z).Pt(),                                 plotwgts);
@@ -423,7 +415,7 @@ void RunTTZAnalyzer(TString filename,
 	ht.fill("zlepton2Pt",(reco.zl2).Pt(),plotwgts);
 	ht.fill("zlepton2Eta",(reco.zl2).PseudoRapidity(),plotwgts);
 	ht.fill("zleptons2Phi",(reco.zl2).Phi(),plotwgts);
-         cout << __LINE__ << endl;
+
 	/*    //Kinematics of the light jets
 	for(size_t ji=0; ji<(reco.Jets).size();ji++){
 
@@ -438,7 +430,7 @@ void RunTTZAnalyzer(TString filename,
 	  ht.fill("bJetsEta",reco.BJets[jl].PseudoRapidity(),plotwgts);
 	 
 	  }*/
-      cout << __LINE__ << endl;
+
       //W kinematics
 	ht.fill("mjj", (reco.wjj).M(), plotwgts);
 	ht.fill("mlnu", (reco.wlnu).M(), plotwgts);
@@ -459,17 +451,14 @@ void RunTTZAnalyzer(TString filename,
 
   //close input file
   f->Close();
-        cout << __LINE__ << endl;
   //save histos to file  
   fOut->cd();
   for (auto& it : ht.getPlots())  { 
     it.second->SetDirectory(fOut); it.second->Write(); 
   }
-      cout << __LINE__ << endl;
   for (auto& it : ht.get2dPlots())  { 
     it.second->SetDirectory(fOut); it.second->Write(); 
   }
-      cout << __LINE__ << endl;
   fOut->Close();
 }
 

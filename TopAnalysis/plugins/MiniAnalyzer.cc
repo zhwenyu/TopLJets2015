@@ -853,7 +853,8 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
 	  const reco::CandSecondaryVertexTagInfo *candSVTagInfo = j->tagInfoCandSecondaryVertex("pfInclusiveSecondaryVertexFinder");
 	  if( candSVTagInfo->nVertices() >= 1 ) 
 	    {
-	      math::XYZTLorentzVectorD vp4 = candSVTagInfo->secondaryVertex(0).p4();
+              const reco::VertexCompositePtrCandidate svtx = candSVTagInfo->secondaryVertex(0);
+	      math::XYZTLorentzVectorD vp4 = svtx.p4();
 	      ev_.j_vtxpx[ev_.nj]          = vp4.px();
 	      ev_.j_vtxpy[ev_.nj]          = vp4.py();
 	      ev_.j_vtxpz[ev_.nj]          = vp4.pz();
@@ -861,6 +862,15 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
 	      ev_.j_vtxNtracks[ev_.nj]     = candSVTagInfo->nVertexTracks(0);
 	      ev_.j_vtx3DVal[ev_.nj]       = candSVTagInfo->flightDistance(0).value();
 	      ev_.j_vtx3DSig[ev_.nj]       = candSVTagInfo->flightDistance(0).significance();
+              
+              const std::vector<reco::CandidatePtr> & tracks = svtx.daughterPtrVector();
+              for(std::vector<reco::CandidatePtr>::const_iterator track = tracks.begin(); track != tracks.end(); ++track) 
+                {
+                  const reco::Track& mytrack = *(*track)->bestTrack();
+                  cout << mytrack.pt() << " " << mytrack.charge() << endl;
+                }
+
+
 	    }
 	}
 
