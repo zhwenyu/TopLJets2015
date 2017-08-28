@@ -813,7 +813,7 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
   ev_.nj=0; 
   edm::Handle<edm::View<pat::Jet> > jets;
   iEvent.getByToken(jetToken_,jets);
-  std::vector< std::pair<const reco::Candidate *,int> > clustCands;
+  std::vector< std::pair<const reco::Candidate *,std::pair<int,bool> > > clustCands;
   for(auto j = jets->begin();  j != jets->end(); ++j)
     {
       //kinematics
@@ -848,6 +848,7 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       //ev_.j_deepcsvc[ev_.nj]   = j->bDiscriminator("deepFlavourJetTags:probc")+j->bDiscriminator("deepFlavourJetTags:probcc");
       //ev_.j_deepcsvb[ev_.nj]   = j->bDiscriminator("deepFlavourJetTags:probb")+j->bDiscriminator("deepFlavourJetTags:probbb");
 
+      std::vector< const reco::Track *> tkInSvtx;
       if( j->hasTagInfo("pfInclusiveSecondaryVertexFinder") )
 	{
 	  const reco::CandSecondaryVertexTagInfo *candSVTagInfo = j->tagInfoCandSecondaryVertex("pfInclusiveSecondaryVertexFinder");
@@ -865,13 +866,8 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
               
               const std::vector<reco::CandidatePtr> & tracks = svtx.daughterPtrVector();
               for(std::vector<reco::CandidatePtr>::const_iterator track = tracks.begin(); track != tracks.end(); ++track) 
-                {
-                  const reco::Track& mytrack = *(*track)->bestTrack();
-                  cout << mytrack.pt() << " " << mytrack.charge() << endl;
-                }
-
-
-	    }
+                tkInSvtx.push_back( (*track)->bestTrack() );
+            }
 	}
 
       ev_.j_flav[ev_.nj]       = j->partonFlavour();
@@ -881,11 +877,31 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
 
       //save all PF candidates central jet
       if(fabs(j->eta())>2.5) continue;
+      cout << ev_.j_vtxNtracks[ev_.nj] << " " << tkInSvtx.size() << " ";
+      int imatch(0);
       for(size_t ipf=0; ipf<j->numberOfDaughters(); ipf++)
 	{
 	  const reco::Candidate *pf=j->daughter(ipf);
-	  clustCands.push_back(std::pair<const reco::Candidate *,int>(pf,ev_.nj-1));
+
+          //check if it is also in secondary vertex
+          bool isInSvtx(false);
+          if(pf->charge()!=0)
+            {
+              for(size_t isvtxTk=0; isvtxTk<tkInSvtx.size(); isvtxTk++)
+                {
+                  if(pf->charge() != tkInSvtx[isvtxTk]->charge() ) continue;
+                  if( deltaR(pf->eta(),pf->phi(), tkInSvtx[isvtxTk]->eta(),tkInSvtx[isvtxTk]->phi()) > 0.01 ) continue;
+                  isInSvtx=true;
+                  imatch++;
+                  break;
+                }
+            }
+          
+	  clustCands.push_back(std::pair<const reco::Candidate *,std::pair<int,bool> >(pf,
+                                                                                       std::pair<int,bool>(ev_.nj-1,isInSvtx))
+                               );
 	}
+      cout << imatch << endl;
     }
       
   // MET
@@ -946,7 +962,8 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
 	{
 	  if(pf->pdgId()!=clustCands[i].first->pdgId()) continue;
 	  if(deltaR(*pf,*(clustCands[i].first))>0.01) continue;
-	  ev_.pf_j[ev_.npf]=clustCands[i].second;
+	  ev_.pf_j[ev_.npf]=clustCands[i].second.first;
+          ///ev_.pf_svtx[ev_.npf]=clustCands[i].second.second;
 	  break;
 	}
 
