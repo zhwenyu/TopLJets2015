@@ -7,11 +7,10 @@
 
 struct BJetSummary_t
 {
-  float pt,eta,phi,m,csv;
-  int nch,ch[200];
-  float chpt[200], cheta[200], chphi[200], chm[200]; 
-  float ptD,ptDs,width,tau21,tau32,tau43,zg;
-  float ch_05,ch_08,ch_1,ch_15;
+  float pt,eta,phi,m;
+  float vtxmass,vtxchi2,vtxL3d,vtxL3dSig;
+  int nch,vtxnch,nmu,vtxnmu;
+  float ch,vtxch,much,vtxmuch;
 
   float g_pt,g_eta,g_phi,g_m;
   int g_bId,g_pId;

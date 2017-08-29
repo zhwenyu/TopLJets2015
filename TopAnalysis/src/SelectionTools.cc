@@ -146,7 +146,7 @@ std::vector<Jet> SelectionTool::getGoodJets(MiniEvent_t &ev, double minPt, doubl
       if (ev.pf_j[p] == k) {
         TLorentzVector pp4;
         pp4.SetPtEtaPhiM(ev.pf_pt[p],ev.pf_eta[p],ev.pf_phi[p],ev.pf_m[p]);
-        jet.addParticle(Particle(pp4, ev.pf_c[p], ev.pf_id[p], 0, p, ev.pf_puppiWgt[p]));
+        jet.addParticle(Particle(pp4, ev.pf_c[p], ev.pf_id[p], ev.pf_svtx[p], p, ev.pf_puppiWgt[p]));
         if (ev.pf_c[p] != 0) jet.addTrack(pp4, ev.pf_id[p]);
       }
     }

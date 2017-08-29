@@ -3,13 +3,14 @@
 WHAT=$1; 
 if [ "$#" -ne 1 ]; then 
     echo "steerBchargeAsymmetry.sh <SEL/MERGE/PLOT/WWW>";
+    echo "        TESTSEL      - tests the selection locally with a single file";
     echo "        SEL          - launches selection jobs to the batch, output will contain summary trees and control plots"; 
     echo "        MERGE        - merge output"
     echo "        PLOT         - make plots"
     echo "        WWW          - move plots to web-based are"
     exit 1; 
 fi
-githash=b312177
+githash=096794a
 lumi=35922
 lumiUnc=0.025
 whoami=`whoami`
@@ -22,6 +23,14 @@ wwwdir=~/www/BchargeAsymmetry
 RED='\e[31m'
 NC='\e[0m'
 case $WHAT in
+    
+    TESTSEL )
+	python scripts/runLocalAnalysis.py -i root://eoscms//eos/cms/${eosdir}/MC13TeV_TTJets/MergedMiniEvents_0_ext0.root \
+            --only test/summer2017/mttbar_samples.json --exactonly \
+            -q local \
+            -o ${outdir}/Chunks/MC13TeV_TTJets_0.root \
+            --era era2016 -m BjetChargeTreeProducer::RunBjetChargeTreeProducer --ch 0 --runSysts;
+        ;;
 
     SEL )
         #to run locally use "--njobs 8 -q local"
