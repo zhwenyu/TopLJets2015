@@ -207,6 +207,7 @@ def main():
                 with open('%s/%s.sh'%(FarmDirectory,cfgFile),'w') as cfg:
 
                     cfg.write('#!/bin/bash\n')
+                    cfg.write('trap "exit" INT\n')
                     cfg.write('WORKDIR=`pwd`\n')
                     cfg.write('echo "Working directory is ${WORKDIR}"\n')
                     cfg.write('cd %s\n'%cmsswBase)

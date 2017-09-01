@@ -52,11 +52,13 @@ except IndexError:
     print "Need to provide an input directory."
     exit(-1)
 
-noTrees=False
-if len(sys.argv)>2 and sys.argv[2]=='True': noTrees=True
+haddOptions = ''
+if len(sys.argv)>2 and sys.argv[2]=='True': haddOptions += ' -T '
 
 outputdir = inputdir
-if len(sys.argv)>3 : outputdir=sys.argv[3]
+if len(sys.argv)>3 and sys.argv[3]!='-': outputdir=sys.argv[3]
+
+if not (len(sys.argv)>4 and sys.argv[4]=='False'): haddOptions += ' -f '
 
 chunkdir  = os.path.join(inputdir, 'Chunks')
 basenames = getBaseNames(chunkdir)
@@ -72,11 +74,9 @@ for basename, files in counters.iteritems():
 
     # merging:
     print '... processing', basename
-    if noTrees:
-        cmd = 'hadd -f -T %s %s' % (target, filenames)
-    else:
-        cmd = 'hadd -f %s %s' % (target, filenames)
-    os.system(cmd)
+    cmd = 'hadd %s %s %s' % (haddOptions, target, filenames)
+    print(cmd)
+    #os.system(cmd)
 
 if (len(badFiles) > 0):
     print '-----------------------'
