@@ -324,13 +324,23 @@ void RunTopJetShape(TString filename,
           }
         }
         else updateBTagDecisions(ev, btvsfReaders[period],expBtagEff,expBtagEffPy8,myBTagSFUtil);
-        //tracking efficiency
-        if (vSystVar[0] == "tracking") {
-          // "up": no correction
-          // "down": apply twice
-          if (vSystVar[1] == "down") applyTrackingEfficiencySF(ev, pow(lepEffH.getTrackingCorrection(ev.nvtx, period).first,2));
+        //tracking efficiency GH
+        //TODO: add periods B-F to analysis again?
+        std::vector<double> trackBinning = {-2.4, -1.5, -0.8, 0.8, 1.5, 2.4};
+        std::vector<double> trackSF      = {1.12, 1.07, 1.04, 1.07, 1.12};
+        std::vector<double> trackSFunc   = {0.05, 0.06, 0.03, 0.06, 0.05};
+        std::vector<double> trackSFup, trackSFdn;
+        for (unsigned int i = 0; i < trackSF.size(); i++) {
+          trackSFup.push_back(trackSF[i]+trackSFunc[i]);
+          trackSFdn.push_back(trackSF[i]-trackSFunc[i]);
         }
-        else applyTrackingEfficiencySF(ev, lepEffH.getTrackingCorrection(ev.nvtx, period).first);
+        if (vSystVar[0] == "tracking") {
+          if (vSystVar[1] == "up") applyEtaDepTrackingEfficiencySF(ev, trackSFup, trackBinning);
+          if (vSystVar[1] == "down") applyEtaDepTrackingEfficiencySF(ev, trackSFdn, trackBinning);
+        }
+        else {
+          applyEtaDepTrackingEfficiencySF(ev, trackSF, trackBinning);
+        }
       }
       
       ///////////////////////////
@@ -627,14 +637,17 @@ void RunTopJetShape(TString filename,
         ht.fill("js_ga_width_charged", tjsev.j_ga_width_charged[ij], plotwgts);
         ht.fill("js_ga_lha_charged", tjsev.j_ga_lha_charged[ij], plotwgts);
         ht.fill("js_ga_thrust_charged", tjsev.j_ga_thrust_charged[ij], plotwgts);
+        ht.fill("js_c1_00_charged", tjsev.j_c1_00_charged[ij], plotwgts);
         ht.fill("js_c1_02_charged", tjsev.j_c1_02_charged[ij], plotwgts);
         ht.fill("js_c1_05_charged", tjsev.j_c1_05_charged[ij], plotwgts);
         ht.fill("js_c1_10_charged", tjsev.j_c1_10_charged[ij], plotwgts);
         ht.fill("js_c1_20_charged", tjsev.j_c1_20_charged[ij], plotwgts);
+        ht.fill("js_c2_00_charged", tjsev.j_c2_00_charged[ij], plotwgts);
         ht.fill("js_c2_02_charged", tjsev.j_c2_02_charged[ij], plotwgts);
         ht.fill("js_c2_05_charged", tjsev.j_c2_05_charged[ij], plotwgts);
         ht.fill("js_c2_10_charged", tjsev.j_c2_10_charged[ij], plotwgts);
         ht.fill("js_c2_20_charged", tjsev.j_c2_20_charged[ij], plotwgts);
+        ht.fill("js_c3_00_charged", tjsev.j_c3_00_charged[ij], plotwgts);
         ht.fill("js_c3_02_charged", tjsev.j_c3_02_charged[ij], plotwgts);
         ht.fill("js_c3_05_charged", tjsev.j_c3_05_charged[ij], plotwgts);
         ht.fill("js_c3_10_charged", tjsev.j_c3_10_charged[ij], plotwgts);
@@ -707,14 +720,17 @@ void RunTopJetShape(TString filename,
         ht.fill("js_ga_width_all", tjsev.j_ga_width_all[ij], plotwgts);
         ht.fill("js_ga_lha_all", tjsev.j_ga_lha_all[ij], plotwgts);
         ht.fill("js_ga_thrust_all", tjsev.j_ga_thrust_all[ij], plotwgts);
+        ht.fill("js_c1_00_all", tjsev.j_c1_00_all[ij], plotwgts);
         ht.fill("js_c1_02_all", tjsev.j_c1_02_all[ij], plotwgts);
         ht.fill("js_c1_05_all", tjsev.j_c1_05_all[ij], plotwgts);
         ht.fill("js_c1_10_all", tjsev.j_c1_10_all[ij], plotwgts);
         ht.fill("js_c1_20_all", tjsev.j_c1_20_all[ij], plotwgts);
+        ht.fill("js_c2_00_all", tjsev.j_c2_00_all[ij], plotwgts);
         ht.fill("js_c2_02_all", tjsev.j_c2_02_all[ij], plotwgts);
         ht.fill("js_c2_05_all", tjsev.j_c2_05_all[ij], plotwgts);
         ht.fill("js_c2_10_all", tjsev.j_c2_10_all[ij], plotwgts);
         ht.fill("js_c2_20_all", tjsev.j_c2_20_all[ij], plotwgts);
+        ht.fill("js_c3_00_all", tjsev.j_c3_00_all[ij], plotwgts);
         ht.fill("js_c3_02_all", tjsev.j_c3_02_all[ij], plotwgts);
         ht.fill("js_c3_05_all", tjsev.j_c3_05_all[ij], plotwgts);
         ht.fill("js_c3_10_all", tjsev.j_c3_10_all[ij], plotwgts);

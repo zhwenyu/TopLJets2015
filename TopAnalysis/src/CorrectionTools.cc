@@ -388,8 +388,14 @@ double computeSemilepBRWeight(MiniEvent_t &ev, std::map<int, double> corr, int p
   return weight;
 }
 
-// TODO: eta-dependent scale factors
-void applyTrackingEfficiencySF(MiniEvent_t &ev, double sf) {
+void applyEtaDepTrackingEfficiencySF(MiniEvent_t &ev, std::vector<double> sfs, std::vector<double> etas) {
+  if (sfs.size() != (etas.size() - 1)) std::cout << "applyEtaDepTrackingEfficiencySF error: need one more bin boundary than scale factors: " << sfs.size() << "," << etas.size() << std::endl;
+  for (unsigned int i = 0; i < sfs.size(); i++) {
+    applyTrackingEfficiencySF(ev, sfs[i], etas[i], etas[i+1]);
+  }
+}
+
+void applyTrackingEfficiencySF(MiniEvent_t &ev, double sf, double minEta, double maxEta) {
   if(ev.isData) return;
   
   TRandom* random = new TRandom3(0); // random seed
@@ -397,6 +403,8 @@ void applyTrackingEfficiencySF(MiniEvent_t &ev, double sf) {
   if (sf <= 1) {
     for (int k = 0; k < ev.npf; k++) {
       if (abs(ev.pf_id[k]) != 211) continue;
+      if (ev.pf_eta[k] < minEta) continue;
+      if (ev.pf_eta[k] > maxEta) continue;
       if (random->Rndm() > sf) {
         //make sure that particle does not pass any cuts
         ev.pf_pt[k]  = 1e-20;
@@ -413,6 +421,8 @@ void applyTrackingEfficiencySF(MiniEvent_t &ev, double sf) {
     int NchGenHadrons = 0;
     for (int g = 0; g < ev.ngpf; g++) {
       if (ev.gpf_pt[g] < 0.9) continue;
+      if (ev.gpf_eta[g] < minEta) continue;
+      if (ev.gpf_eta[g] > maxEta) continue;
       if (ev.gpf_c[g] == 0) continue;
       if (abs(ev.gpf_id[g]) < 100) continue;
       NchGenHadrons++;
@@ -430,6 +440,7 @@ void applyTrackingEfficiencySF(MiniEvent_t &ev, double sf) {
       }
       if (!matched) chGenNonRecoHadrons.push_back(g);
     }
+    if (chGenNonRecoHadrons.size() == 0) return;
     double promotionProb = TMath::Min(1., NchGenHadrons*(sf-1.)/chGenNonRecoHadrons.size());
     std::vector<int> chGenNonRecoHadronsToPromote;
     for (const int g : chGenNonRecoHadrons) {
@@ -437,8 +448,9 @@ void applyTrackingEfficiencySF(MiniEvent_t &ev, double sf) {
         chGenNonRecoHadronsToPromote.push_back(g);
       }
     }
-    for (unsigned int g = 0; g < chGenNonRecoHadronsToPromote.size(); g++) {
-      int k = ev.npf + g;
+    for (unsigned int i = 0; i < chGenNonRecoHadronsToPromote.size(); i++) {
+      int k = ev.npf + i;
+      int g = chGenNonRecoHadronsToPromote[i];
       // jet association
       int j = -1;
       double jetR = 0.4;
