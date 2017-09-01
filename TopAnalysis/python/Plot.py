@@ -25,7 +25,21 @@ def fixExtremities(h,addOverflow=True,addUnderflow=True):
 	h.SetBinContent(nbins+1,0)
 	h.SetBinError(nbins+1,0)
 
-
+"""
+Adapt plots to limited range
+(Useful for ratio plots! Otherwise, they are not drawn when the central point is outside the range.)
+"""
+def limitToRange(h, ratiorange):
+    for i in xrange(1,h.GetNbinsX()+1):
+        up = h.GetBinContent(i) + h.GetBinError(i)
+        if (up > ratiorange[1]):
+            up = ratiorange[1]
+        dn = h.GetBinContent(i) - h.GetBinError(i)
+        if (dn < ratiorange[0]):
+            dn = ratiorange[0]
+        h.SetBinContent(i, (up + dn)/2.)
+        h.SetBinError(i, (up - dn)/2.)
+        
 
 """
 A wrapper to store data and MC histograms for comparison
@@ -131,6 +145,8 @@ class Plot(object):
             outDir.cd()
         for m in self.mc :
             self.mc[m].Write(self.mc[m].GetName(), ROOT.TObject.kOverwrite)
+        for m in self.mcsyst :
+            self.mcsyst[m].Write(self.mcsyst[m].GetName(), ROOT.TObject.kOverwrite)
         if self.totalMCUnc:
             self.totalMCUnc.Write(self.totalMCUnc.GetName(), ROOT.TObject.kOverwrite)
         for m in self.spimpose:
@@ -465,9 +481,11 @@ class Plot(object):
                         totalUncShape=ROOT.TMath.Sqrt((totalMCUncShape.GetBinError(xbin)/val)**2+self.mcUnc**2)
                         ratioframeshape.SetBinContent(xbin,totalMCUncShape.GetBinContent(xbin)/val)
                         ratioframeshape.SetBinError(xbin,totalUncShape)
+                        limitToRange(ratioframeshape, self.ratiorange)
                     else: totalUnc=ROOT.TMath.Sqrt((totalMC.GetBinError(xbin)/val)**2+self.mcUnc**2)
                     ratioframe.SetBinContent(xbin,totalMCUnc.GetBinContent(xbin)/val)
                     ratioframe.SetBinError(xbin,totalUnc)
+                    limitToRange(ratioframe, self.ratiorange)
                 ratioframe.Draw('e2')
                 if (len(self.mcsyst)>0): ratioframeshape.Draw('e2 same')
                 #try:
