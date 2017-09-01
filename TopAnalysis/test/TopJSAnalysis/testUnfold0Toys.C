@@ -131,8 +131,10 @@ void normalize(TH1* hist) {
   hist->Scale(1./hist->Integral());
 }
 
-int testUnfold0Toys(TString observable = "mult", TString flavor = "all", int nToys = 100)
+int testUnfold0Toys(TString observable = "mult", TString reco = "charged", TString flavor = "incl", int nToys = 100)
 {
+  gErrorIgnoreLevel = kError;
+  
   // switch on histogram errors
   TH1::SetDefaultSumw2();
 
@@ -165,7 +167,7 @@ int testUnfold0Toys(TString observable = "mult", TString flavor = "all", int nTo
   TFile file(basepath+"MC13TeV_TTJets.root", "READ");
   
   //TString observable  = "tau21";
-          observable += "_charged";
+          observable += "_"+reco;
   bool reg = false;
   
   TH1D *histMgenMC = (TH1D*) file.Get(observable+"_"+flavor+"_responsematrix_px");
@@ -320,57 +322,23 @@ int testUnfold0Toys(TString observable = "mult", TString flavor = "all", int nTo
     // the unfolding is done here
     //
     // scan L curve and find best point
-    //Int_t nScan=100;
-    //// use automatic L-curve scan: start with taumin=taumax=0.0
-    //Double_t tauMin=1e-10;
-    //Double_t tauMax=1e-2;
-    //TSpline *rhoScan;
-    //TUnfoldDensity::EScanTauMode tauflag = TUnfoldDensity::kEScanTauRhoAvg;
-
-    //int iBest = unfold.ScanTau(nScan,tauMin,tauMax,&rhoScan,tauflag);
-    //
-    //// create graphs with one point to visualize best choice of tau
-    //double tau[1], rho[1];
     
-    //rhoScan->GetKnot(iBest, tau[0], rho[0]);
-    //TGraph *bestRho = new TGraph(1,tau,rho);
-    //double opt_tau = unfold.GetTau();
-    //cout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  TAU,iBest --> " << tau[0] << "  " << opt_tau << "  " << rho[0] << endl;
-
-    //==========================================================================
-    // print some results
-    //
-    //std::cout<<"toy number "<<t<<std::endl;
-    //std::cout<<"tau="<<unfold.GetTau()<<"\n";
-    //std::cout<<"chi**2="<<unfold.GetChi2A()<<"+"<<unfold.GetChi2L()
-    //         <<" / "<<unfold.GetNdf()<<"\n";
-    //std::cout<<"chi**2(sys)="<<unfold.GetChi2Sys()<<"\n";
-    
-    // Add systematic uncertainties
-    //std::vector<TString> uncertainties;
-    //uncertainties.push_back("MC13TeV_TTJets_fsrup.root");
-    //uncertainties.push_back("MC13TeV_TTJets_fsrdn.root");
-    //uncertainties.push_back("MC13TeV_TTJets_hdampup.root");
-    //uncertainties.push_back("MC13TeV_TTJets_hdampdn.root");
-    //uncertainties.push_back("MC13TeV_TTJets_isrup.root");
-    //uncertainties.push_back("MC13TeV_TTJets_isrdn.root");
-    //uncertainties.push_back("MC13TeV_TTJets_ueup.root");
-    //uncertainties.push_back("MC13TeV_TTJets_uedn.root");
-    //uncertainties.push_back("MC13TeV_TTJets_herwig.root");
-    //
-    //for (TString uncertainty : uncertainties) {
-    //  TFile uncfile(basepath+uncertainty, "READ");
-    //  TH2D *histMdetGenMCunc = (TH2D*) uncfile.Get(observable+"_"+flavor+"_responsematrix");
-    //  for (int i = 0; i<histMdetGenMCunc->GetNbinsY()+2; ++i) histMdetGenMCunc->SetBinContent(0, i, 0.);
-    //  unfold.AddSysError(histMdetGenMCunc, uncertainty, TUnfold::kHistMapOutputHoriz, TUnfoldSys::kSysErrModeMatrix);
-    //}
-
+    double opt_tau = 0;
+    /*
+    if (histMdetGenMCSig->GetNbinsX() > 2) {
+      Int_t nScan=100;
+      Double_t tauMin=1e-10;
+      Double_t tauMax=1e-3;
+      unfold.ScanLcurve(nScan, tauMin, tauMax, 0);
+      opt_tau = unfold.GetTau();
+    }
+    */
 
     //==========================================================================
     // retreive results into histograms
     
-    unfold.DoUnfold(0.);
-    //else unfold.DoUnfold(opt_tau);
+    //unfold.DoUnfold(0.);
+    unfold.DoUnfold(opt_tau);
     
     outfile.cd();
     TH1 *histMunfold=unfold.GetOutput((std::string("Unfolded_")+std::to_string(t)).c_str());

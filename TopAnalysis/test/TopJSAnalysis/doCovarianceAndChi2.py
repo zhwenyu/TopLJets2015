@@ -10,6 +10,7 @@ from array import *
 import random
 import numpy
 import copy
+import pickle
 
 debug = True
 
@@ -35,7 +36,8 @@ def main():
     parser.add_option(      '--saveTeX',     dest='saveTeX' ,    help='save as tex file as well',       default=False,             action='store_true')
     parser.add_option('-l', '--lumi',        dest='lumi' ,       help='lumi [/pb]',              default=16551.,              type=float)
     parser.add_option('--obs', dest='obs',  default='mult', help='observable [default: %default]')
-    parser.add_option('--flavor', dest='flavor',  default='all', help='flavor [default: %default]')
+    parser.add_option('--flavor', dest='flavor',  default='incl', help='flavor [default: %default]')
+    parser.add_option('-r', '--reco', dest='reco', default='charged', help='Use charged/puppi/all particles [default: %default]')
     (opt, args) = parser.parse_args()
     
     observables = ["mult", "width", "ptd", "ptds", "ecc", "tau21", "tau32", "tau43", "zg", "zgxdr", "zgdr", "ga_width", "ga_lha", "ga_thrust", "c1_02", "c1_05", "c1_10", "c1_20", "c2_02", "c2_05", "c2_10", "c2_20", "c3_02", "c3_05", "c3_10", "c3_20", "m2_b1", "n2_b1", "n3_b1", "m2_b2", "n2_b2", "n3_b2"]
@@ -45,7 +47,7 @@ def main():
     observables_low = ["ptds", "ecc", "tau43", "zg", "zgdr"]
     #observables_low = ["n3_b1", "ecc", "tau43", "zg", "zgdr"]
     
-    flavors = ['all', 'bottom', 'light', 'gluon']
+    flavors = ['incl', 'bottom', 'light', 'gluon']
 
     # Read lists of syst samples
     varList = []
@@ -76,7 +78,7 @@ def main():
                 ['ueup', 'uedn'],
                 ['erdON'],
                 ['qcdBased'],
-                #['gluonMove'], # TODO: needs reprocessing with new normCache
+                ['gluonMove'],
                 ['wgt7', 'wgt8'], # b frag Bowler-Lund up/down
                 ['wgt9'], # b frag Peterson
                 ['wgt10', 'wgt11'], # B hadron semilep BR
@@ -94,6 +96,21 @@ def main():
     varList += varExpWgt
 
     modelsToTest = varModel + [['cflip'], ['nominalGen']]
+    #FSR scan
+    modelsToTest.append(['herwigpp_asfsr0.100_meon_crdefault'])
+    modelsToTest.append(['herwigpp_asfsr0.110_meon_crdefault'])
+    modelsToTest.append(['herwigpp_asfsr0.115_meon_crdefault'])
+    modelsToTest.append(['herwigpp_asfsr0.120_meon_crdefault'])
+    modelsToTest.append(['herwigpp_asfsr0.125_meon_crdefault'])
+    modelsToTest.append(['herwigpp_asfsr0.130_meon_crdefault'])
+    modelsToTest.append(['pythia8_asfsr0.100_meon_crdefault'])
+    modelsToTest.append(['pythia8_asfsr0.110_meon_crdefault'])
+    modelsToTest.append(['pythia8_asfsr0.115_meon_crdefault'])
+    modelsToTest.append(['pythia8_asfsr0.120_meon_crdefault'])
+    modelsToTest.append(['pythia8_asfsr0.125_meon_crdefault'])
+    modelsToTest.append(['pythia8_asfsr0.130_meon_crdefault'])
+    modelsToTest.append(['pythia8_asfsr0.140_meon_crdefault'])
+    modelsToTest.append(['pythia8_asfsr0.1365_meoff_crdefault'])
     
     allVars_lowCorChi2 = OrderedDict()
     for var in modelsToTest:
@@ -101,6 +118,15 @@ def main():
             allVars_lowCorChi2[vardir] = {}
             for flavor in flavors:
                 allVars_lowCorChi2[vardir][flavor] = 0.
+    
+    unsummedChi2 = OrderedDict()
+    for obs in observables:
+        unsummedChi2[obs] = {}
+        for var in modelsToTest:
+            for vardir in var:
+                unsummedChi2[obs][vardir] = {}
+                for flavor in flavors:
+                    unsummedChi2[obs][vardir][flavor] = 0.
     
     varModelDict = {'evtgen': 'EvtGen',
                     'm171v5': 'mt down',
@@ -116,7 +142,7 @@ def main():
                     'uedn': 'UE down',
                     'erdON': 'CR: erd on',
                     'qcdBased': 'CR: QCD-inspired',
-                    #'gluonMove': 'CR: gluon-move',
+                    'gluonMove': 'CR: gluon-move',
                     'wgt7': 'b frag up',
                     'wgt8': 'b frag down', # b frag Bowler-Lund up/down
                     'wgt9': 'b frag Peterson', # b frag Peterson
@@ -130,7 +156,21 @@ def main():
                     'wgt16': 'muF+muR up',
                     'wgt20': 'muF+muR down', # muF+muR
                     'cflip': 'Color octet W',
-                    'nominalGen': 'nominal sample'
+                    'nominalGen': 'nominal sample',
+                    'herwigpp_asfsr0.100_meon_crdefault' : 'H++ asfsr=0.100',
+                    'herwigpp_asfsr0.110_meon_crdefault' : 'H++ asfsr=0.110',
+                    'herwigpp_asfsr0.115_meon_crdefault' : 'H++ asfsr=0.115',
+                    'herwigpp_asfsr0.120_meon_crdefault' : 'H++ asfsr=0.120',
+                    'herwigpp_asfsr0.125_meon_crdefault' : 'H++ asfsr=0.125',
+                    'herwigpp_asfsr0.130_meon_crdefault' : 'H++ asfsr=0.130',
+                    'pythia8_asfsr0.100_meon_crdefault' : 'P8 asfsr=0.100',
+                    'pythia8_asfsr0.110_meon_crdefault' : 'P8 asfsr=0.110',
+                    'pythia8_asfsr0.115_meon_crdefault' : 'P8 asfsr=0.115',
+                    'pythia8_asfsr0.120_meon_crdefault' : 'P8 asfsr=0.120',
+                    'pythia8_asfsr0.125_meon_crdefault' : 'P8 asfsr=0.125',
+                    'pythia8_asfsr0.130_meon_crdefault' : 'P8 asfsr=0.130',
+                    'pythia8_asfsr0.140_meon_crdefault' : 'P8 asfsr=0.140',
+                    'pythia8_asfsr0.1365_meoff_crdefault' : 'ME corr. off',
                     }
     
     sumNominal = 0.
@@ -176,13 +216,13 @@ def main():
     
     ROOT.gStyle.SetOptStat(0)
 
-    with open('%s/table.tex'%(opt.outDir), 'w') as tex:
+    with open('unfolding/chi2table_%s.tex'%(opt.reco), 'w') as tex:
         for obs in observables:
             for flavor in flavors:
         
                 # statistical covariance
                 
-                toyfile = '%s/%s_charged_%s_toys.root'%(opt.inDirToys, obs, flavor)
+                toyfile = '%s/%s_%s_%s_toys.root'%(opt.inDirToys, obs, opt.reco, flavor)
                 fInToy = ROOT.TFile.Open(toyfile)
                 if not fInToy: continue
                 
@@ -206,8 +246,8 @@ def main():
                 #print(x)
                 statcov = numpy.cov(x)
                 #print(statcov)
-                statcov_reduced = numpy.delete(statcov, 3, 0)
-                statcov_reduced = numpy.delete(statcov_reduced, 3, 1)
+                #statcov_reduced = numpy.delete(statcov, 0, 0)
+                #statcov_reduced = numpy.delete(statcov_reduced, 0, 1)
                 #print(statcov_reduced)
                 #print(numpy.linalg.det(statcov_reduced))
                 #print(numpy.linalg.inv(statcov_reduced))
@@ -253,10 +293,10 @@ def main():
                 txt.DrawLatex(0.63,0.97, '#scale[0.8]{%3.1f fb^{-1} (%s)}' % (opt.lumi/1000.,opt.com) )
                 txt.DrawLatex(0.16,0.85, 'Statistical covariance')
                 
-                c.Print(opt.outDir+'/'+obs+'_charged_'+flavor+'_cov_stat.pdf')
-                c.Print(opt.outDir+'/'+obs+'_charged_'+flavor+'_cov_stat.png')
+                c.Print(opt.outDir+'/'+obs+'_'+opt.reco+'_'+flavor+'_cov_stat.pdf')
+                c.Print(opt.outDir+'/'+obs+'_'+opt.reco+'_'+flavor+'_cov_stat.png')
                 
-                resultfile = '%s/%s_charged_%s_result.root'%(opt.inDir, obs, flavor)
+                resultfile = '%s/%s_%s_%s_result.root'%(opt.inDir, obs, opt.reco, flavor)
                 fIn=ROOT.TFile.Open(resultfile)
                 
                 # reference
@@ -334,8 +374,8 @@ def main():
                 txt.DrawLatex(0.63,0.97, '#scale[0.8]{%3.1f fb^{-1} (%s)}' % (opt.lumi/1000.,opt.com) )
                 txt.DrawLatex(0.16,0.85, 'Systematic covariance')
                 
-                c.Print(opt.outDir+'/'+obs+'_charged_'+flavor+'_cov_syst.pdf')
-                c.Print(opt.outDir+'/'+obs+'_charged_'+flavor+'_cov_syst.png')
+                c.Print(opt.outDir+'/'+obs+'_'+opt.reco+'_'+flavor+'_cov_syst.pdf')
+                c.Print(opt.outDir+'/'+obs+'_'+opt.reco+'_'+flavor+'_cov_syst.png')
                 
                 dataCovNorm = dataStatCovNorm.Clone('dataCovNorm')
                 dataCovNorm.Reset()
@@ -367,9 +407,9 @@ def main():
                 txt.DrawLatex(0.63,0.97, '#scale[0.8]{%3.1f fb^{-1} (%s)}' % (opt.lumi/1000.,opt.com) )
                 txt.DrawLatex(0.16,0.85, 'Total covariance')
                 
-                c.Print(opt.outDir+'/'+obs+'_charged_'+flavor+'_cov.pdf')
-                c.Print(opt.outDir+'/'+obs+'_charged_'+flavor+'_cov.png')
-                c.Print(opt.outDir+'/'+obs+'_charged_'+flavor+'_cov.root')
+                c.Print(opt.outDir+'/'+obs+'_'+opt.reco+'_'+flavor+'_cov.pdf')
+                c.Print(opt.outDir+'/'+obs+'_'+opt.reco+'_'+flavor+'_cov.png')
+                c.Print(opt.outDir+'/'+obs+'_'+opt.reco+'_'+flavor+'_cov.root')
                 
                 #print(numpy.linalg.det(cov))
                 cov_reduced = numpy.delete(cov, 0, 0)
@@ -388,6 +428,14 @@ def main():
                 sumFSRDown += chi2FSRDown
                 sumHerwig  += chi2Herwig
                 
+                for var in modelsToTest:
+                    for vardir in var:
+                        if vardir in ['nominalGen']:
+                            prediction = vardir
+                        else:
+                            prediction = 'MC13TeV_TTJets_'+vardir+'_gen'
+                        unsummedChi2[obs][vardir][flavor] = returnChi2(fIn, cov_reduced, data, prediction)
+                
                 if obs in observables_low:
                     sumLowNominal['total']  += chi2Nominal
                     sumLowFSRUp  ['total']  += chi2FSRUp
@@ -404,7 +452,7 @@ def main():
                                 prediction = vardir
                             else:
                                 prediction = 'MC13TeV_TTJets_'+vardir+'_gen'
-                            allVars_lowCorChi2[vardir][flavor] += returnChi2(fIn, cov_reduced, data, prediction)
+                            allVars_lowCorChi2[vardir][flavor] += unsummedChi2[obs][vardir][flavor]
                 
                 tex.write('%s & %s & %.1f & %.1f & %.1f & %.1f \\\\\n'%(nice_observables_tex[obs], flavor, chi2Nominal, chi2FSRUp, chi2FSRDown, chi2Herwig))
                 
@@ -419,12 +467,13 @@ def main():
             tex.write('$P(\\chi^{2})$ &  & %.3f & %.3f & %.3f & %.3f \\\\\n'%(probLowNominal, probLowFSRUp, probLowFSRDown, probLowHerwig))
             
         for var, chi2 in allVars_lowCorChi2.iteritems():
-            print('%s & $\chi^{2}$ & %.1f & %.1f & %.1f & %.1f'%(varModelDict[var], chi2['all'], chi2['bottom'], chi2['light'], chi2['gluon']))
-            probAll = ROOT.TMath.Prob(chi2['all'], len(observables_low))
+            print('%s & $\chi^{2}$ & %.1f & %.1f & %.1f & %.1f'%(varModelDict[var], chi2['incl'], chi2['bottom'], chi2['light'], chi2['gluon']))
+            probIncl = ROOT.TMath.Prob(chi2['incl'], len(observables_low))
             probBottom = ROOT.TMath.Prob(chi2['bottom'], len(observables_low))
             probLight = ROOT.TMath.Prob(chi2['light'], len(observables_low))
             probGluon = ROOT.TMath.Prob(chi2['gluon'], len(observables_low))
-            print(' & $P(\chi^{2})$ & %.3f & %.3f & %.3f & %.3f'%(probAll, probBottom, probLight, probGluon))
+            print(' & $P(\chi^{2})$ & %.3f & %.3f & %.3f & %.3f'%(probIncl, probBottom, probLight, probGluon))
+        pickle.dump(unsummedChi2, open("unsummedChi2.pkl", "wb"))
     
 def returnChi2(fIn, cov_reduced, data, prediction):
     hpred = fIn.Get(prediction)

@@ -1,4 +1,5 @@
 #!/bin/bash
+trap "exit" INT
 
 WHAT=$1;
 if [ "$#" -ne 1 ]; then
@@ -63,7 +64,7 @@ case $WHAT in
     FULLSELGEN )
         cd batch;
         #ttbar GEN samples
-        python ../scripts/runLocalAnalysis.py -i /eos/user/m/mseidel/ReReco2016/b312177 -q ${queue} -o ${summaryeosdir} --era era2016 -m TOPJetShape::RunTopJetShape --skipexisting --farmappendix samplesGEN;
+        python ../scripts/runLocalAnalysis.py -i /eos/user/m/mseidel/ReReco2016/b312177_merged -q ${queue} -o ${summaryeosdir} --era era2016 -m TOPJetShape::RunTopJetShape --skipexisting --farmappendix samplesGEN;
         cd -;
         ;;
 
@@ -79,7 +80,7 @@ case $WHAT in
 
     TESTPLOTSEL )
         commonOpts="-i ${summaryeosdir} -j data/era2016/samples.json,data/era2016/qcd_samples.json --systJson data/era2016/syst_samples.json,data/era2016/expsyst_samples.json -l ${lumi}"
-        python scripts/plotter.py ${commonOpts} --outDir plots/test --only L4_1l4j2b2w_njets,L4_1l4j2b2w_nvtx,js_tau32_charged;
+        python scripts/plotter.py ${commonOpts} --outDir plots/test --only L4_1l4j2b2w_njets,L4_1l4j2b2w_nvtx,js_tau32_charged,js_mult_charged;
         #python scripts/plotter.py ${commonOpts} --outDir plots/test --only L4_1l4j2b2w_nvtx;
         ;;
 
@@ -103,35 +104,43 @@ case $WHAT in
 
     FILL )
         cd batch;
-        python ../test/TopJSAnalysis/fillUnfoldingMatrix.py -q longlunch -i /eos/user/m/mseidel/analysis/TopJetShapes/b312177/Chunks/ --skip MC13TeV_TTJets --skipexisting;
-        python ../test/TopJSAnalysis/fillUnfoldingMatrix.py -q longlunch -i /eos/user/m/mseidel/analysis/TopJetShapes/b312177/Chunks/ --only MC13TeV_TTJets --skipexisting --nweights 20;
+        python ../test/TopJSAnalysis/fillUnfoldingMatrix.py -q workday -i /eos/user/m/mseidel/analysis/TopJetShapes/b312177/Chunks/ --skip MC13TeV_TTJets --skipexisting;
+        python ../test/TopJSAnalysis/fillUnfoldingMatrix.py -q workday -i /eos/user/m/mseidel/analysis/TopJetShapes/b312177/Chunks/ --only MC13TeV_TTJets --skipexisting --nweights 20;
         cd -;
         ;;
     
     MERGEFILL )
-        ./scripts/mergeOutputs.py unfolding/fill True
+        ./scripts/mergeOutputs.py unfolding/fill True - False
         ;;
         
     TOYUNFOLDING )
-        for OBS in mult width ptd ptds ecc tau21 tau32 tau43 zg zgxdr zgdr ga_width ga_lha ga_thrust c1_02 c1_05 c1_10 c1_20 c2_02 c2_05 c2_10 c2_20 c3_02 c3_05 c3_10 c3_20 m2_b1 n2_b1 n3_b1 m2_b2 n2_b2 n3_b2
+        # mult width ptd ptds ecc tau21 tau32 tau43 zg zgxdr zgdr ga_width ga_lha ga_thrust c1_02 c1_05 c1_10 c1_20 c2_02 c2_05 c2_10 c2_20 c3_02 c3_05 c3_10 c3_20 m2_b1 n2_b1 n3_b1 m2_b2 n2_b2 n3_b2
+        #for OBS in mult width ptd ptds ecc tau21 tau32 tau43 zg zgxdr zgdr ga_width ga_lha ga_thrust c1_00 c1_02 c1_05 c1_10 c1_20 c2_00 c2_02 c2_05 c2_10 c2_20 c3_00 c3_02 c3_05 c3_10 c3_20 m2_b1 n2_b1 n3_b1 m2_b2 n2_b2 n3_b2 nsd
+        for OBS in c1_00 c2_00 c3_00 nsd
         do
-          for FLAVOR in all bottom light gluon
+          for RECO in charged all
           do
-            while [ $(jobs | wc -l) -ge 4 ] ; do sleep 1 ; done
-            mkdir -p unfolding/toys_farm/${OBS}_${FLAVOR}
-            cp test/TopJSAnalysis/testUnfold0Toys.C unfolding/toys_farm/${OBS}_${FLAVOR}
-            root -l -b -q "unfolding/toys_farm/${OBS}_${FLAVOR}/testUnfold0Toys.C++(\"${OBS}\", \"${FLAVOR}\", 1000)"&
+            for FLAVOR in incl bottom light gluon
+            do
+              while [ $(jobs | wc -l) -ge 4 ] ; do sleep 1 ; done
+              mkdir -p unfolding/toys_farm/${OBS}_${RECO}_${FLAVOR}
+              cp test/TopJSAnalysis/testUnfold0Toys.C unfolding/toys_farm/${OBS}_${RECO}_${FLAVOR}
+              root -l -b -q "unfolding/toys_farm/${OBS}_${RECO}_${FLAVOR}/testUnfold0Toys.C++(\"${OBS}\", \"${RECO}\", \"${FLAVOR}\", 1000)"&
+            done
           done
         done
         ;;
         
     UNFOLDING )
-        for OBS in mult width ptd ptds ecc tau21 tau32 tau43 zg zgxdr zgdr ga_width ga_lha ga_thrust c1_02 c1_05 c1_10 c1_20 c2_02 c2_05 c2_10 c2_20 c3_02 c3_05 c3_10 c3_20 m2_b1 n2_b1 n3_b1 m2_b2 n2_b2 n3_b2
+        for OBS in mult width ptd ptds ecc tau21 tau32 tau43 zg zgxdr zgdr ga_width ga_lha ga_thrust c1_00 c1_02 c1_05 c1_10 c1_20 c2_00 c2_02 c2_05 c2_10 c2_20 c3_00 c3_02 c3_05 c3_10 c3_20 m2_b1 n2_b1 n3_b1 m2_b2 n2_b2 n3_b2 nsd
         do
-          for FLAVOR in all bottom light gluon
+          for RECO in charged all
           do
-            while [ $(jobs | wc -l) -ge 4 ] ; do sleep 1 ; done
-            python test/TopJSAnalysis/doUnfolding.py --obs ${OBS} --flavor ${FLAVOR} &
+            for FLAVOR in incl bottom light gluon
+            do
+              while [ $(jobs | wc -l) -ge 4 ] ; do sleep 1 ; done
+              python test/TopJSAnalysis/doUnfolding.py --obs ${OBS} --reco ${RECO} --flavor ${FLAVOR} &
+            done
           done
         done
         python test/TopJSAnalysis/plotMeanTau.py

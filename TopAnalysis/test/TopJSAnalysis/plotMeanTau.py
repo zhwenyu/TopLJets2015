@@ -35,10 +35,10 @@ def main():
 
     #read lists of samples
     staus = ['21', '32', '43']
-    flavors = ['all', 'bottom', 'light', 'gluon']
-    colors = {'all': ROOT.kBlack, 'bottom': ROOT.kRed+1, 'light': ROOT.kBlue+1, 'gluon': ROOT.kGreen+1}
-    markers = {'all': 20, 'bottom': 21, 'light': 22, 'gluon': 23}
-    fills = {'all': 1001, 'bottom': 3254, 'light': 3245, 'gluon': 3390}
+    flavors = ['incl', 'bottom', 'light', 'gluon']
+    colors = {'incl': ROOT.kBlack, 'bottom': ROOT.kRed+1, 'light': ROOT.kBlue+1, 'gluon': ROOT.kGreen+1}
+    markers = {'incl': 20, 'bottom': 21, 'light': 22, 'gluon': 23}
+    fills = {'incl': 1001, 'bottom': 3254, 'light': 3245, 'gluon': 3390}
     infiles = {}
     hists = {}
     unchists = {}
@@ -103,7 +103,7 @@ def main():
     dataUnfolded.GetXaxis().SetTitleSize(0.045)
     dataUnfolded.GetXaxis().SetLabelSize(0.04)
     dataUnfolded.SetYTitle('<#tau_{NM}>')
-    dataUnfolded.GetYaxis().SetRangeUser(0.555, 0.725)
+    dataUnfolded.GetYaxis().SetRangeUser(0.48, 0.74)
     dataUnfolded.GetYaxis().SetTitleSize(0.05)
     dataUnfolded.GetYaxis().SetLabelSize(0.045)
     dataUnfolded.GetYaxis().SetTitleOffset(1.1)
@@ -176,7 +176,7 @@ def main():
     txt.DrawLatex(inix,0.88,cmsLabel)
     txt.DrawLatex(0.7,0.97,'#scale[0.8]{%3.1f fb^{-1} (%s)}' % (opt.lumi/1000.,opt.com) )
     
-    lineHeight = 0.65
+    lineHeight = 0.63
     txt.DrawLatex(0.175,0.05,'all jets')
     divider1 = ROOT.TLine(3, 0., 3, lineHeight)
     divider1.SetLineColor(ROOT.kBlack)
@@ -211,7 +211,7 @@ def main():
     dataUnfoldedSysRatio.Divide(dataUnfolded)
     dataUnfoldedSysRatio.SetTitle('')
     dataUnfoldedSysRatio.SetXTitle(dataUnfolded.GetXaxis().GetTitle())
-    dataUnfoldedSysRatio.SetYTitle('Ratio ')
+    dataUnfoldedSysRatio.SetYTitle('MC/data')
     dataUnfoldedSysRatio.SetFillColor(ROOT.kGray)
     dataUnfoldedSysRatio.GetXaxis().SetTitleSize(0.2)
     dataUnfoldedSysRatio.GetXaxis().SetTitleOffset(0.8)
@@ -220,7 +220,7 @@ def main():
     dataUnfoldedSysRatio.GetYaxis().SetTitleSize(0.2)
     dataUnfoldedSysRatio.GetYaxis().SetTitleOffset(0.3)
     dataUnfoldedSysRatio.GetYaxis().SetLabelSize(0.18)
-    dataUnfoldedSysRatio.GetYaxis().SetRangeUser(0.98,1.06)
+    dataUnfoldedSysRatio.GetYaxis().SetRangeUser(0.96,1.11)
     dataUnfoldedSysRatio.GetYaxis().SetNdivisions(503)
     
     nominalGenRatio=nominalGen.Clone('nominalGenRatio')

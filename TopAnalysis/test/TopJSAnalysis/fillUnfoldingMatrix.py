@@ -9,7 +9,7 @@ from array import *
 from math import sqrt
 from math import isnan
 
-flavorMap = {'all': -1, 'light': 1, 'bottom': 5, 'gluon': 0}
+flavorMap = {'incl': -1, 'light': 1, 'bottom': 5, 'gluon': 0}
 
 def fillHist(hmap, tree, nweights):
     for event in tree:
@@ -102,11 +102,11 @@ def main():
         for tkey in rootinfile.GetListOfKeys():
             keys.append(tkey.GetName())
         #observables = ["mult", "width"]
-        observables = ["mult", "width", "ptd", "ptds", "ecc", "tau21", "tau32", "tau43", "zg", "zgxdr", "zgdr", "ga_width", "ga_lha", "ga_thrust", "c1_02", "c1_05", "c1_10", "c1_20", "c2_02", "c2_05", "c2_10", "c2_20", "c3_02", "c3_05", "c3_10", "c3_20", "m2_b1", "n2_b1", "n3_b1", "m2_b2", "n2_b2", "n3_b2"]
+        observables = ["mult", "width", "ptd", "ptds", "ecc", "tau21", "tau32", "tau43", "zg", "zgxdr", "zgdr", "ga_width", "ga_lha", "ga_thrust", "c1_00", "c1_02", "c1_05", "c1_10", "c1_20", "c2_00", "c2_02", "c2_05", "c2_10", "c2_20", "c3_00", "c3_02", "c3_05", "c3_10", "c3_20", "m2_b1", "n2_b1", "n3_b1", "m2_b2", "n2_b2", "n3_b2", "nsd"]
         
-        reco = ["charged"]
+        reco = ['charged', 'all']
         
-        flavors = ['all', 'light', 'bottom', 'gluon']
+        flavors = ['incl', 'light', 'bottom', 'gluon']
         
         hmap = {}
         for o in observables:
@@ -186,6 +186,7 @@ def main():
         #FIXME new
         FarmDirectory = '%s/FARM%s'%(cmsswBase,os.path.basename(opt.output))
         os.system('mkdir -p %s'%FarmDirectory)
+        os.system('mkdir -p '+workdir+opt.output+'/Chunks/')
         
         print 'Preparing %d tasks to submit to the batch'%len(inputlist)
         print 'Executables and condor wrapper are stored in %s'%FarmDirectory
@@ -207,10 +208,12 @@ def main():
 
                 condor.write('cfgFile=%s\n'%cfgFile)
                 condor.write('queue 1\n')
+                condor.write('max_retries = 10\n')
                 
                 with open('%s/%s.sh'%(FarmDirectory,cfgFile),'w') as cfg:
 
                     cfg.write('#!/bin/bash\n')
+                    cfg.write('trap "exit" INT\n')
                     cfg.write('WORKDIR=`pwd`\n')
                     cfg.write('echo "Working directory is ${WORKDIR}"\n')
                     cfg.write('cd %s\n'%cmsswBase)
@@ -222,9 +225,9 @@ def main():
                     binningfile = '%s/src/TopLJets2015/TopAnalysis/unfolding/optimize/output.root'%(cmsswBase)
                     runOpts='--input %s --rootinput %s --output . --nweights %d'\
                         %(inputfile, binningfile, nweights)
-                    cfg.write('python %s/src/TopLJets2015/TopAnalysis/test/TopJSAnalysis/fillUnfoldingMatrix.py %s\n'%(cmsswBase,runOpts))
+                    cfg.write('python %s/src/TopLJets2015/TopAnalysis/test/TopJSAnalysis/fillUnfoldingMatrix.py %s || exit $?\n'%(cmsswBase,runOpts))
                     if outF!=localOutF:
-                        cfg.write('mv -v ${WORKDIR}/%s %s\n'%(localOutF,outF))
+                        cfg.write('mv -v ${WORKDIR}/%s %s || exit $?\n'%(localOutF,outF))
 
                 os.system('chmod u+x %s/%s.sh'%(FarmDirectory,cfgFile))
 

@@ -33,8 +33,8 @@ def optimize(inputfile, output, obs, reco, ptcut, rootoutput):
     
     tree = ROOT.TChain('tjsev')
     if inputfile == 'local':
-        tree.Add('unfolding/MC13TeV_TTJets_0.root')
-        tree.Add('unfolding/MC13TeV_TTJets_1.root')
+        tree.Add('/home/mseidel/Projects/unfolding/MC13TeV_TTJets_0.root')
+        tree.Add('/home/mseidel/Projects/unfolding/MC13TeV_TTJets_1.root')
     elif inputfile == 'eos':
         tree.Add('/eos/user/m/mseidel/analysis/TopJetShapes/b312177/Chunks/MC13TeV_TTJets_0.root')
         tree.Add('/eos/user/m/mseidel/analysis/TopJetShapes/b312177/Chunks/MC13TeV_TTJets_1.root')
@@ -133,9 +133,9 @@ def optimize(inputfile, output, obs, reco, ptcut, rootoutput):
         highbin = 0.1
     if (obs == "c2_00"):
         label = "C_{ 2}^{ (0.0)}"
-        highbin = 0.3
+        lowbin = 0.2
         highbin = 0.7
-        nbins = 40
+        nbins = 50
     if (obs == "c2_02"):
         label = "C_{ 2}^{ (0.2)}"
         highbin = 0.7
@@ -150,8 +150,8 @@ def optimize(inputfile, output, obs, reco, ptcut, rootoutput):
         nbins = 50
     if (obs == "c2_20"):
         label = "C_{ 2}^{ (2.0)}"
-        highbin = 0.15
-        nbins = 30
+        highbin = 0.1
+        nbins = 50
     if (obs == "c3_00"):
         label = "C_{ 3}^{ (0.0)}"
         lowbin = 0.4
@@ -159,8 +159,9 @@ def optimize(inputfile, output, obs, reco, ptcut, rootoutput):
         nbins = 35
     if (obs == "c3_02"):
         label = "C_{ 3}^{ (0.2)}"
-        highbin = 0.7
-        nbins = 35
+        lowbin = 0.1
+        highbin = 0.6
+        nbins = 50
     if (obs == "c3_05"):
         label = "C_{ 3}^{ (0.5)}"
         highbin = 0.4
@@ -762,7 +763,7 @@ def main():
     os.system('mkdir -p %s' % opt.output)
     rootoutfile = ROOT.TFile(opt.output + "/" + opt.rootoutput, "UPDATE");
     
-    if opt.obs == 'all': observables = ["mult", "width", "ptd", "ptds", "ecc", "tau21", "tau32", "tau43", "zg", "zgxdr", "zgdr", "ga_width", "ga_lha", "ga_thrust", "c1_02", "c1_00", "c1_05", "c1_10", "c1_20", "c2_02", "c2_00", "c2_05", "c2_10", "c2_20", "c3_00", "c3_02", "c3_05", "c3_10", "c3_20", "m2_b1", "n2_b1", "n3_b1", "m2_b2", "n2_b2", "n3_b2", "nsd"]
+    if opt.obs == 'all': observables = ["mult", "width", "ptd", "ptds", "ecc", "tau21", "tau32", "tau43", "zg", "zgxdr", "zgdr", "ga_width", "ga_lha", "ga_thrust", "c1_00", "c1_02", "c1_05", "c1_10", "c1_20", "c2_00", "c2_02", "c2_05", "c2_10", "c2_20", "c3_00", "c3_02", "c3_05", "c3_10", "c3_20", "m2_b1", "n2_b1", "n3_b1", "m2_b2", "n2_b2", "n3_b2", "nsd"]
     else: observables = opt.obs.split(',')
 
     if len(observables) == 1: optimize(opt.input, opt.output, opt.obs, opt.reco, opt.ptcut, rootoutfile)
