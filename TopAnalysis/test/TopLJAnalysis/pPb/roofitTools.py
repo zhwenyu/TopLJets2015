@@ -133,18 +133,22 @@ def showFitResult(fitVar,data,pdf,categs,w,showComponents=[],rangeX=(0,400),outD
                            ROOT.RooFit.Slice(w.cat('sample'),tag),
                            ROOT.RooFit.Name('totalpdf'),
                            ROOT.RooFit.ProjWData(redData),
-                           ROOT.RooFit.FillStyle(0),
-                           ROOT.RooFit.FillColor(ROOT.kBlue),
-                           ROOT.RooFit.LineColor(ROOT.kBlue),
-                           ROOT.RooFit.LineWidth(2))
+                           ROOT.RooFit.FillStyle(1001),
+                           ROOT.RooFit.FillColor(ROOT.TColor.GetColor('#ece7f2')),
+                           ROOT.RooFit.LineColor(ROOT.TColor.GetColor('#ece7f2')),
+                           ROOT.RooFit.LineWidth(2),
+                           ROOT.RooFit.DrawOption('f'),
+                           ROOT.RooFit.MoveToBack())
             else:
                 pdf.plotOn(frame,
+                           ROOT.RooFit.Name('totalpdf'),                           
                            ROOT.RooFit.ProjWData(redData),
-                           ROOT.RooFit.LineColor(ROOT.kBlue),
-                           ROOT.RooFit.FillColor(ROOT.kBlue),
-                           ROOT.RooFit.Name('totalpdf'),
-                           ROOT.RooFit.FillStyle(0),
-                           ROOT.RooFit.LineWidth(2))
+                           ROOT.RooFit.FillStyle(1001),
+                           ROOT.RooFit.FillColor(TColor.GetColor('#ece7f2')),
+                           ROOT.RooFit.LineColor(TColor.GetColor('#ece7f2')),
+                           ROOT.RooFit.LineWidth(2),
+                           ROOT.RooFit.DrawOption('f'),
+                           ROOT.RooFit.MoveToBack())
 
         frame.Draw()
         frame.GetYaxis().SetTitle("Events")
@@ -159,11 +163,12 @@ def showFitResult(fitVar,data,pdf,categs,w,showComponents=[],rangeX=(0,400),outD
         label = ROOT.TLatex()
         label.SetNDC()
         label.SetTextFont(42)
-        label.SetTextSize(0.045)
-        label.DrawLatex(0.12,0.96,'#bf{CMS}') # #it{preliminary}')
-        label.DrawLatex(0.65,0.965,'#scale[0.8]{%3.0f nb^{-1} (#sqrt{s_{NN}}=8.16 TeV)}'%lumi[0])
-        label.DrawLatex(0.6,0.90,'#scale[0.9]{#it{%s}}'%(tagTitle if tagTitle!='' else 'inclusive'))
-        label.DrawLatex(0.6,0.84,'#scale[0.9]{#chi^{2}/ndof=%3.2f}'%frame.chiSquare())
+        label.SetTextSize(0.05)
+        label.DrawLatex(0.15,0.89,'#scale[1.2]{#bf{CMS}}') # #it{preliminary}')
+        label.DrawLatex(0.6,0.965,'#scale[0.8]{%3.0f nb^{-1} (#sqrt{s_{NN}} = 8.16 TeV)}'%lumi[0])
+        label.SetTextSize(0.055)
+        label.DrawLatex(0.5,0.90,'#scale[0.9]{#it{%s}}'%(tagTitle if tagTitle!='' else 'inclusive'))
+        label.DrawLatex(0.5,0.83,'#scale[0.9]{#chi^{2}/dof = %3.2f}'%frame.chiSquare())
 
         #print the PDF parameters on the canvas
         #paramList=[('Nsig','N_{cp}(t#bar{t})'),
@@ -171,13 +176,13 @@ def showFitResult(fitVar,data,pdf,categs,w,showComponents=[],rangeX=(0,400),outD
         #                ('sig_sigma_%s'%fitVar,'#sigma'),
         #               ('eb_%s'%j,'#epsilon_{b}')]
         if paramList is None:
-            leg=ROOT.TLegend(0.59,0.81,0.8,0.58)
+            leg=ROOT.TLegend(0.49,0.79,0.8,0.5)
             leg.SetFillStyle(0)
             leg.SetBorderSize(0)
             leg.SetTextFont(42)
-            leg.SetTextSize(0.04)
+            leg.SetTextSize(0.052)
             leg.AddEntry('data','Data','ep')
-            leg.AddEntry('totalpdf','background','f')
+            leg.AddEntry('totalpdf','background','lf')
             for icomp in reversed(xrange(0,len(showComponents))):
                 leg.AddEntry('pdfcomp%d'%icomp,showComponents[icomp][1],'lf')
             leg.Draw()
@@ -216,6 +221,9 @@ def showFitResult(fitVar,data,pdf,categs,w,showComponents=[],rangeX=(0,400),outD
             pullFrame.GetYaxis().SetRangeUser(-3.1,3.1)
             pullFrame.GetXaxis().SetTitleOffset(0.8)
 
+        p1.RedrawAxis()
+        p2.RedrawAxis()
+        
         c.cd()
         c.Modified()
         c.Update()

@@ -46,7 +46,7 @@ def main():
     pdfmtlep.fitTo(w.data('data'))
 
     #compsToShow=[('S_cor*','t#bar{t} cor. perm.'),('S_cor*,S_wro*','t#bar{t} wro. perm.')] #,'S_cor*,S_wro*,W_*']
-    compsToShow=[('S_wro*,S_cor2*','t#bar{t} wrong perm.'),('S_cor*,S_wro*','t#bar{t} correct perm.')] #,'S_cor*,S_wro*,W_*']
+    compsToShow=[('S_wro*,S_cor2*','t#bar{t} wrong assignments'),('S_cor*,S_wro*','t#bar{t} correct assignments')] #,'S_cor*,S_wro*,W_*']
     
     for x in EVENTCATEGORIES:
 
@@ -61,6 +61,7 @@ def main():
                                  ('mthad',(100,400),'model_combined_mthad'),
                                  ('mtlep',(100,400),'model_combined_mtlep')
                                  ]:
+            if var=='mjj' : w.var(var).SetTitle("m_{jj'} [GeV]")
             showFitResult(fitVar=var,
                         data=w.data('data'),
                         pdf=w.pdf(model),
@@ -73,7 +74,7 @@ def main():
                         paramList=None,
                         pfix='_final',
                         extsToSave=['png','pdf','root'])
-
+            #raw_input()
 
         
 

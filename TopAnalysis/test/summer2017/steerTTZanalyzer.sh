@@ -27,10 +27,14 @@ case $WHAT in
     SEL )
         #to run locally use "--njobs 8 -q local"
         #to run on the batck use "-q condor"
-	python scripts/runLocalAnalysis.py -i ${eosdir} \
+        #input=/store/cmst3/group/top/ReReco2016/b312177/MC13TeV_WZTo3LNu/MergedMiniEvents_0.root
+        #output=test_ttz.root
+        input=${eosdir}
+        output=${outdir}
+	python scripts/runLocalAnalysis.py -i ${input}\
             --only test/summer2017/ttz_samples.json --exactonly \
             --njobs 1 -q local \
-            -o ${outdir} \
+            -o ${output} \
             --era era2016 -m TTZAnalyzer::RunTTZAnalyzer --ch 0 --runSysts;
 	;;
     FULLSEL )

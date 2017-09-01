@@ -45,7 +45,7 @@ struct TTZEvent{
   std::vector<Jet> Jets;
   std::vector<Jet> LightJets;
   std::vector<Jet> BJets;
-
+  TString debug;
 };
 
 TTZEvent selectRecoEvents(SelectionTool &selector,MiniEvent_t &ev,MEzCalculator &neutrinoPzComputer){
@@ -53,11 +53,16 @@ TTZEvent selectRecoEvents(SelectionTool &selector,MiniEvent_t &ev,MEzCalculator 
     TTZEvent reco;
     reco.passSelection=false;
     
+    TString chTag = selector.flagFinalState(ev);
+    if(chTag=="") return reco;
+
     //select a Z candidate out of the leptons
     reco.Leptons = selector.getSelLeptons(); 
     std::vector<std::pair<int,int> > zCandidates;
+    //reco.debug = Form("RECO : %d |",(int)reco.Leptons.size());
     for(size_t il=0; il<reco.Leptons.size(); il++)
       {
+        //reco.debug += Form(" %d (%3.1f,%3.1f) ", reco.Leptons[il].id(),reco.Leptons[il].pt(),reco.Leptons[il].eta());
         for(size_t jl=il+1; jl<reco.Leptons.size(); jl++)
           {
             if( abs(reco.Leptons[il].id())!=abs(reco.Leptons[jl].id()) ) continue;
@@ -79,25 +84,29 @@ TTZEvent selectRecoEvents(SelectionTool &selector,MiniEvent_t &ev,MEzCalculator 
     bool passBJets(reco.BJets.size()>=2);
 
     //preselect the event =3l, =1Z, >=4j, >=2b
-    TString chTag = selector.flagFinalState(ev);
-    if(chTag=="") return reco;
-    if(reco.Leptons.size()!=3 || zCandidates.size()!=1 || !passJets || !passBJets ) return reco;
-
-    reco.passSelection = true;
+    if(reco.Leptons.size()!=3 || zCandidates.size()!=1) return reco;
 
     //Reconstruct Z kinematics from 2 leptons
     reco.zl1=reco.Leptons[ zCandidates[0].first ].p4();
     reco.zl2=reco.Leptons[ zCandidates[0].second ].p4();
     reco.z=reco.zl1+reco.zl2;
 
+    //int gref0=ev.l_g[ reco.Leptons[ zCandidates[0].first ].originalReference() ];
+    //int gref1=ev.l_g[ reco.Leptons[ zCandidates[0].second ].originalReference() ];
+    //reco.debug=Form("RECO: %d %3.1f | %d %3.1f | %3.2f",
+    //                reco.Leptons[ zCandidates[0].first ].id(),
+    //               reco.Leptons[ zCandidates[0].first ].pt(),
+    //                reco.Leptons[ zCandidates[0].second ].id(),
+    //                reco.Leptons[ zCandidates[0].second ].pt(),
+    //                reco.z.M());
+
     //Find index of 3rd lepton
     int xlep;
     if((zCandidates[0].first + zCandidates[0].second) == 1) xlep = 2;
     else if((zCandidates[0].first + zCandidates[0].second) == 2) xlep = 1;
     else xlep = 0;
-    //Reconstruct 3rd lepton
     reco.l0 = reco.Leptons[xlep].p4();
-    
+
     //Reconstruct neutrino kinematics
     TLorentzVector met(0.,0.,0.,0.);
     met.SetPtEtaPhiM(ev.met_pt[0],0,ev.met_phi[0],0.);
@@ -108,6 +117,10 @@ TTZEvent selectRecoEvents(SelectionTool &selector,MiniEvent_t &ev,MEzCalculator 
     
     //W kinematics from lepton and neutrino
     reco.wlnu = reco.l0+nu;
+    
+    if(!passJets || !passBJets ) return reco;
+
+    reco.passSelection = true;
 
     //jets are already ordered by pT, can take the first two
     reco.jb1 = reco.BJets[0].p4();
@@ -152,12 +165,14 @@ TTZEvent selectGenEvents(SelectionTool &selector,MiniEvent_t &ev){
 
   TTZEvent gen;
   gen.passSelection=false;
-
+  
   //Find Z candidate from generated leptons
-  gen.Leptons = selector.getGenLeptons(ev,20.,2.5);
+  gen.Leptons = selector.getGenLeptons(ev,20.,2.4);
   std::vector<std::pair<int,int> > zGenCandidates;
+  //  gen.debug = Form("GEN : %d | ", (int)gen.Leptons.size());
   for(size_t il=0; il<gen.Leptons.size(); il++)
     {
+      //  gen.debug += Form(" %d (%3.1f,%3.1f) ", gen.Leptons[il].id(),gen.Leptons[il].pt(),gen.Leptons[il].eta());
       for(size_t jl=il+1; jl<gen.Leptons.size(); jl++)
         {
           if( abs(gen.Leptons[il].id())!=abs(gen.Leptons[jl].id()) ) continue;
@@ -179,15 +194,13 @@ TTZEvent selectGenEvents(SelectionTool &selector,MiniEvent_t &ev){
   bool passGenBJets(gen.BJets.size()>=2);
 
   //preselect the event
-  if(gen.Leptons.size()!=3 || zGenCandidates.size()!=1 || !passGenJets || !passGenBJets ) return gen;
-
-  gen.passSelection = true;
+  if(gen.Leptons.size()!=3 || zGenCandidates.size()!=1) return gen;
 
   //Reconstruct Z kinematics from 2 leptons
   gen.zl1=gen.Leptons[ zGenCandidates[0].first ].p4();
   gen.zl2=gen.Leptons[ zGenCandidates[0].second ].p4();
   gen.z=gen.zl1+gen.zl2;
-  
+
   //Find index of 3rd lepton
   int xlep;
   if((zGenCandidates[0].first + zGenCandidates[0].second) == 1) xlep = 2;
@@ -195,10 +208,12 @@ TTZEvent selectGenEvents(SelectionTool &selector,MiniEvent_t &ev){
   else xlep = 0;
   gen.l0 = gen.Leptons[xlep].p4();
 
+  if(!passGenJets || !passGenBJets ) return gen;
+  gen.passSelection = true;
+  
   //set the b-jets
   gen.jb1=gen.BJets[0].p4();
   gen.jb2=gen.BJets[1].p4();
-
 
   //Get top kinematics
   TLorentzVector p4(0.,0.,0.,0.);  
@@ -333,7 +348,7 @@ void RunTTZAnalyzer(TString filename,
 
       l+=1;
       t->GetEntry(iev);
-      if(iev%10==0) printf ("\r [%3.0f%%] done", 100.*(float)iev/(float)nentries);
+      //      if(iev%10==0) printf ("\r [%3.0f%%] done", 100.*(float)iev/(float)nentries);
       
       //assign randomly a run period
       TString period = assignRunPeriod(runPeriods,random);
@@ -358,15 +373,14 @@ void RunTTZAnalyzer(TString filename,
       
       //Reconstructed events
       if(reco.passSelection){
-      
-      //////////////
-      //PLOT WGTS//
-      ////////////
-      float wgt(1.0);
-      std::vector<double>plotwgts(1,wgt);
-      ht.fill("puwgtctr",0,plotwgts);
 
-	if (!ev.isData) {
+        //////////////
+        //PLOT WGTS//
+        ////////////
+        float wgt(1.0);
+        std::vector<double>plotwgts(1,wgt);
+        ht.fill("puwgtctr",0,plotwgts);
+        if (!ev.isData) {
 
 	  // norm weight
 	  wgt  = (normH? normH->GetBinContent(1) : 1.0);
@@ -423,29 +437,27 @@ void RunTTZAnalyzer(TString filename,
 	  ht.fill("jetsEta",(reco.Jets)[ji].PseudoRapidity(),plotwgts);
 	}
 
-      //Kinematics of the b jets
+        //Kinematics of the b jets
 	for(size_t jl=0; jl<(reco.BJets).size();jl++){
-
-	  ht.fill("bJetsPt",reco.BJets[jl].Pt(),plotwgts);
+        
+        ht.fill("bJetsPt",reco.BJets[jl].Pt(),plotwgts);
 	  ht.fill("bJetsEta",reco.BJets[jl].PseudoRapidity(),plotwgts);
-	 
+          
 	  }*/
-
-      //W kinematics
+        
+        //W kinematics
 	ht.fill("mjj", (reco.wjj).M(), plotwgts);
 	ht.fill("mlnu", (reco.wlnu).M(), plotwgts);
-
+             
+        
+        //Generator events
+        if(gen.passSelection ){
+          float rec_zpt(reco.z.Pt()),gen_zpt(gen.z.Pt());
+          if(reco.passSelection!= true ) rec_zpt=-1;
+          if(gen.passSelection!= true )  gen_zpt=-1;
+          ht.get2dPlots()["mig_zpt"]->Fill(gen_zpt,rec_zpt,plotwgts[0]);
+        }
       }
-
-      //Generator events
-      /*   if( reco.passSelection || gen.passSelection ){
-
-	float rec_zpt(reco.z.Pt()),gen_zpt(gen.z.Pt());
-	if(reco.passSelection!= true ) rec_zpt=-1;
-	if(gen.passSelection!= true )  gen_zpt=-1;
-	ht.get2dPlots()["mig_zpt"]->Fill(gen_zpt,rec_zpt,plotwgts);
-
-	}*/
 
     }
 

@@ -12,7 +12,7 @@ plots={'pdfcomp1':None,
        'totalpdf':None}
 
 var=sys.argv[1]
-varTitle='M(jj) [GeV]'
+varTitle="m_{jj'} [GeV]"
 varRange=(25,300)
 if 'mthad' in var:
     varTitle='M_{top} [GeV]'
@@ -96,7 +96,7 @@ p1.SetTopMargin(0.05)
 p1.SetBottomMargin(0.01)
 p1.Draw()
 p1.cd()
-plots['totalpdf'].Draw('al')
+plots['totalpdf'].Draw('alf')
 plots['pdfcomp1'].SetPoint(plots['pdfcomp1'].GetN(),plots['totalpdf'].GetXaxis().GetXmax(),0)
 plots['pdfcomp0'].SetPoint(plots['pdfcomp0'].GetN(),plots['totalpdf'].GetXaxis().GetXmax(),0)
 plots['pdfcomp1'].Draw('lf')
@@ -116,21 +116,21 @@ plots['totalpdf'].GetXaxis().SetRangeUser(varRange[0],varRange[1])
 label = ROOT.TLatex()
 label.SetNDC()
 label.SetTextFont(42)
-label.SetTextSize(0.045)
-label.DrawLatex(0.12,0.96,'#bf{CMS}') # #it{preliminary}')                                                                                                                                          
-label.DrawLatex(0.65,0.965,'#scale[0.8]{%3.0f nb^{-1} (#sqrt{s_{NN}}=8.16 TeV)}'%lumi[0])
-label.DrawLatex(0.6,0.90,'#scale[0.9]{#it{%s}}'%catTitle)
-label.DrawLatex(0.6,0.84,'#scale[0.9]{#chi^{2}/ndof=%3.2f}'%plots['totalpdf'].chiSquare(plots['data'],1))
+label.DrawLatex(0.15,0.89,'#scale[1.2]{#bf{CMS}}') # #it{preliminary}')                                                                                                                            
+label.DrawLatex(0.6,0.965,'#scale[0.8]{%3.0f nb^{-1} (#sqrt{s_{NN}} = 8.16 TeV)}'%lumi[0])
+label.SetTextSize(0.055)
+label.DrawLatex(0.5,0.90,'#scale[0.9]{#it{%s}}'%catTitle)
+label.DrawLatex(0.5,0.83,'#scale[0.9]{#chi^{2}/dof = %3.2f}'%plots['totalpdf'].chiSquare(plots['data'],1))
 
-leg=ROOT.TLegend(0.59,0.81,0.8,0.58)
+leg=ROOT.TLegend(0.49,0.79,0.8,0.5)
 leg.SetFillStyle(0)
 leg.SetBorderSize(0)
 leg.SetTextFont(42)
-leg.SetTextSize(0.04)
-leg.AddEntry(plots['data'],'data','ep')
+leg.SetTextSize(0.052)
+leg.AddEntry(plots['data'],'Data','ep')
 leg.AddEntry(plots['totalpdf'],'background','f')
-leg.AddEntry(plots['pdfcomp1'],'t#bar{t} correct permutations','f')
-leg.AddEntry(plots['pdfcomp0'],'t#bar{t} wrong permutations','f')
+leg.AddEntry(plots['pdfcomp1'],'t#bar{t} correct assignments','f')
+leg.AddEntry(plots['pdfcomp0'],'t#bar{t} wrong assignments','f')
 leg.Draw()
 
 

@@ -19,6 +19,15 @@ lumi=27.4
 RED='\e[31m'
 NC='\e[0m'
 case $WHAT in
+    TESTSEL)
+        
+        
+        inFile=/store/group/phys_top/gkrintir/TopHI/TTbar_PbP-EmbEPOS_8p16_Pyquen_pPb816Summer16DR-PbPEmb_80X_mcRun2_pA_v4-v1v1/TTbar_PbP-EmbEPOS_8p16_Pyquen/crab_TopHI/170714_072932/0000/HiForestAOD_9.root;
+        commonOpts="--era era2016pPb -m TOP-HIForest::RunHin17002 -q local"
+        for ch in 11 13; do
+            python scripts/runLocalAnalysis.py -i ${inFile} -o hin17002_${ch}_test.root ${commonOpts} --ch ${ch};
+        done
+        ;;
     MCSEL)
 	echo -e "[ ${RED} Sending out jobs to batch ${NC} ]"
 	commonOpts="--era era2016pPb -m TOP-HIForest::RunHin17002 -q local"	

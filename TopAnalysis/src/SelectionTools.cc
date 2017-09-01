@@ -101,15 +101,35 @@ std::vector<Particle> SelectionTool::getGenLeptons(MiniEvent_t &ev, double minPt
   //loop over leptons from pseudotop producer
   for (int i = 0; i < ev.ng; i++) {
     int absid(abs(ev.g_id[i]));
-    if(absid!=11 && absid!=13) continue;
 
+    if(absid!=11 && absid!=13) continue;
     bool passKin(ev.g_pt[i]>minPt && fabs(ev.g_eta[i])<maxEta);
     if(!passKin) continue;
 
     TLorentzVector lp4;
     lp4.SetPtEtaPhiM(ev.g_pt[i],ev.g_eta[i],ev.g_phi[i],ev.g_m[i]);
-    leptons.push_back( Particle(lp4, -ev.g_id[i]/abs(ev.g_id[i]), ev.g_id[i], 0, 1) );
+    leptons.push_back( Particle(lp4, -ev.g_id[i]/abs(ev.g_id[i]), ev.g_id[i], 0, i) );
   }
+  
+  return leptons;
+}
+
+//
+std::vector<Particle> SelectionTool::getFinalStateGenLeptons(MiniEvent_t &ev, double minPt, double maxEta){
+  std::vector<Particle> leptons;
+  
+  for (int i = 0; i < ev.ngpf; i++) {
+    int absid(abs(ev.gpf_id[i]));
+
+    if(absid!=11 && absid!=13) continue;
+    bool passKin(ev.gpf_pt[i]>minPt && fabs(ev.gpf_eta[i])<maxEta);
+    if(!passKin) continue;
+
+    TLorentzVector lp4;
+    lp4.SetPtEtaPhiM(ev.gpf_pt[i],ev.gpf_eta[i],ev.gpf_phi[i],ev.gpf_m[i]);
+    leptons.push_back( Particle(lp4, ev.gpf_c[i], ev.gpf_id[i], 0, i) );
+  }
+
   
   return leptons;
 }
