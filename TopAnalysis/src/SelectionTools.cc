@@ -36,14 +36,14 @@ std::vector<Particle> SelectionTool::getTopFlaggedLeptons(MiniEvent_t &ev){
     if(abs(ev.l_id[il])==11)
       {
 	if( pt>20 && eta<2.4 && ((pid>>7) &0x1))                                     topLeptonQualityFlagsWord |= (0x1 << PASSLLID);
-	if( pt>30 && eta<2.1 && ((pid>>4) &0x1))                                     topLeptonQualityFlagsWord |= (0x1 << PASSLID);
+	if( pt>34 && eta<2.1 && ((pid>>7) &0x1))                                     topLeptonQualityFlagsWord |= (0x1 << PASSLID);
 	if( pt>15 && eta<2.4 && ((pid>>2) &0x1))                                     topLeptonQualityFlagsWord |= (0x1 << PASSLVETO);
 	if( pt>26 && eta<2.1 && ((pid>>5) &0x1) && ((pid>>4) &0x1)==0 && relIso>0.4) topLeptonQualityFlagsWord |= (0x1 << PASSLIDNONISO);
       }
     else
       {
 	if( pt>20 && eta<2.4 && ((pid>>4) &0x1) && relIso<0.15)  topLeptonQualityFlagsWord |= (0x1 << PASSLLID);
-	if( pt>30 && eta<2.1 && ((pid>>4) &0x1) && relIso<0.15)  topLeptonQualityFlagsWord |= (0x1 << PASSLID);
+	if( pt>26 && eta<2.4 && ((pid>>4) &0x1) && relIso<0.15)  topLeptonQualityFlagsWord |= (0x1 << PASSLID);
 	if( pt>15 && eta<2.4 && ((pid>>1) &0x1) && relIso<0.25)  topLeptonQualityFlagsWord |= (0x1 << PASSLVETO);
 	if( pt>26 && eta<2.1 && ((pid>>4) &0x1) && relIso>0.25)  topLeptonQualityFlagsWord |= (0x1 << PASSLIDNONISO);
       }
@@ -160,6 +160,7 @@ std::vector<Jet> SelectionTool::getGoodJets(MiniEvent_t &ev, double minPt, doubl
     
     Jet jet(jp4, flavor, k);
     jet.setCSV(ev.j_csv[k]);
+    jet.setPartonFlavor(ev.j_flav[k]);
 
     //fill jet constituents
     for (int p = 0; p < ev.npf; p++) {
@@ -224,6 +225,9 @@ std::vector<Jet> SelectionTool::getGenJets(MiniEvent_t &ev, double minPt, double
     int flavor = ev.g_id[i];
       
     Jet jet(jp4, flavor, i);
+    for (int k=0; k<ev.nj; k++) {
+      if (ev.j_g[k] == i) jet.setPartonFlavor(ev.j_flav[k]);
+    }
       
     //fill jet constituents
     for (int p = 0; p < ev.ngpf; p++) {
