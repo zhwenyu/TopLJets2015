@@ -15,6 +15,7 @@ git cms-init
 git cms-merge-topic cms-egamma:EGM_gain_v1
 cd EgammaAnalysis/ElectronTools/data
 git clone -b Moriond17_gainSwitch_unc https://github.com/ECALELFS/ScalesSmearings.git
+cd -
 
 #MET
 git cms-merge-topic cms-met:METRecipe_8020 -u
