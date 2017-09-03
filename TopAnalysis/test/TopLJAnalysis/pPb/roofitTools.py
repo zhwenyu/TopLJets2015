@@ -72,7 +72,7 @@ def showFitResult(fitVar,data,pdf,categs,w,showComponents=[],rangeX=(0,400),outD
             w.cat('sample').setLabel(tag)
         else:
             redData=data
-        redData.plotOn(frame,ROOT.RooFit.Name('data'))
+        redData.plotOn(frame,ROOT.RooFit.Name('data'),ROOT.RooFit.DrawOption('p'))
 
         if pdfAux:
             pdfAux.plotOn(frame,
@@ -134,8 +134,8 @@ def showFitResult(fitVar,data,pdf,categs,w,showComponents=[],rangeX=(0,400),outD
                            ROOT.RooFit.Name('totalpdf'),
                            ROOT.RooFit.ProjWData(redData),
                            ROOT.RooFit.FillStyle(1001),
-                           ROOT.RooFit.FillColor(ROOT.TColor.GetColor('#ece7f2')),
-                           ROOT.RooFit.LineColor(ROOT.TColor.GetColor('#ece7f2')),
+                           ROOT.RooFit.FillColor(ROOT.TColor.GetColor('#ded0ef')),
+                           ROOT.RooFit.LineColor(ROOT.TColor.GetColor('#ded0ef')),
                            ROOT.RooFit.LineWidth(2),
                            ROOT.RooFit.DrawOption('f'),
                            ROOT.RooFit.MoveToBack())
@@ -144,8 +144,8 @@ def showFitResult(fitVar,data,pdf,categs,w,showComponents=[],rangeX=(0,400),outD
                            ROOT.RooFit.Name('totalpdf'),                           
                            ROOT.RooFit.ProjWData(redData),
                            ROOT.RooFit.FillStyle(1001),
-                           ROOT.RooFit.FillColor(TColor.GetColor('#ece7f2')),
-                           ROOT.RooFit.LineColor(TColor.GetColor('#ece7f2')),
+                           ROOT.RooFit.FillColor(TColor.GetColor('#ded0ef')),
+                           ROOT.RooFit.LineColor(TColor.GetColor('#ded0ef')),
                            ROOT.RooFit.LineWidth(2),
                            ROOT.RooFit.DrawOption('f'),
                            ROOT.RooFit.MoveToBack())
@@ -160,12 +160,18 @@ def showFitResult(fitVar,data,pdf,categs,w,showComponents=[],rangeX=(0,400),outD
         frame.GetXaxis().SetTitleOffset(0.9)
         frame.GetXaxis().SetTitle(w.var(fitVar).GetTitle())
 
+        datagr=p1.GetPrimitive('data')
+        for i in xrange(0,datagr.GetN()):
+          datagr.SetPointEXhigh(i,0.)
+          datagr.SetPointEXlow(i,0.)
+          
+
         label = ROOT.TLatex()
         label.SetNDC()
         label.SetTextFont(42)
         label.SetTextSize(0.05)
         label.DrawLatex(0.15,0.89,'#scale[1.2]{#bf{CMS}}') # #it{preliminary}')
-        label.DrawLatex(0.6,0.965,'#scale[0.8]{%3.0f nb^{-1} (#sqrt{s_{NN}} = 8.16 TeV)}'%lumi[0])
+        label.DrawLatex(0.54,0.965,'#scale[0.8]{%3.0f nb^{-1} (pPb, #sqrt{s_{NN}} = 8.16 TeV)}'%lumi[0])
         label.SetTextSize(0.055)
         label.DrawLatex(0.5,0.90,'#scale[0.9]{#it{%s}}'%(tagTitle if tagTitle!='' else 'inclusive'))
         label.DrawLatex(0.5,0.83,'#scale[0.9]{#chi^{2}/dof = %3.2f}'%frame.chiSquare())

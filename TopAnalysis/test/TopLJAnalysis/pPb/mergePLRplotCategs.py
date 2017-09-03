@@ -22,7 +22,7 @@ if 'mtlep' in var:
     varRange=(100,400)
 
 cat=sys.argv[2]
-catTitle = 'e^{#pm}/mu^{#pm} + #geq4j'
+catTitle = 'e^{#pm}/#mu^{#pm} + #geq4j'
 if '2q' in cat   : catTitle += ' (=0b)'
 if '1b1q' in cat : catTitle += ' (=1b)'
 if '2b' in cat  : catTitle += ' (#geq2b)'
@@ -101,6 +101,9 @@ plots['pdfcomp1'].SetPoint(plots['pdfcomp1'].GetN(),plots['totalpdf'].GetXaxis()
 plots['pdfcomp0'].SetPoint(plots['pdfcomp0'].GetN(),plots['totalpdf'].GetXaxis().GetXmax(),0)
 plots['pdfcomp1'].Draw('lf')
 plots['pdfcomp0'].Draw('lf')
+for i in xrange(0,plots['data'].GetN()):
+    plots['data'].SetPointEXhigh(i,0.)
+    plots['data'].SetPointEXlow(i,0.)
 plots['data'].Draw('ep')
 plots['totalpdf'].GetYaxis().SetRangeUser(0,maxY*1.23)
 plots['totalpdf'].GetYaxis().SetTitle("Events")
@@ -117,7 +120,7 @@ label = ROOT.TLatex()
 label.SetNDC()
 label.SetTextFont(42)
 label.DrawLatex(0.15,0.89,'#scale[1.2]{#bf{CMS}}') # #it{preliminary}')                                                                                                                            
-label.DrawLatex(0.6,0.965,'#scale[0.8]{%3.0f nb^{-1} (#sqrt{s_{NN}} = 8.16 TeV)}'%lumi[0])
+label.DrawLatex(0.54,0.965,'#scale[0.8]{%3.0f nb^{-1} (pPb, #sqrt{s_{NN}} = 8.16 TeV)}'%lumi[0])
 label.SetTextSize(0.055)
 label.DrawLatex(0.5,0.90,'#scale[0.9]{#it{%s}}'%catTitle)
 label.DrawLatex(0.5,0.83,'#scale[0.9]{#chi^{2}/dof = %3.2f}'%plots['totalpdf'].chiSquare(plots['data'],1))
