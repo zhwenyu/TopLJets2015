@@ -1,7 +1,8 @@
 import ROOT
 ROOT.gROOT.SetBatch(True)
+ROOT.gErrorIgnoreLevel = ROOT.kError
 import optparse
-import os,sys
+import os,sys,io
 import json
 import re
 from collections import OrderedDict
@@ -34,7 +35,8 @@ def main():
     parser.add_option(      '--saveTeX',     dest='saveTeX' ,    help='save as tex file as well',       default=False,             action='store_true')
     parser.add_option('-l', '--lumi',        dest='lumi' ,       help='lumi [/pb]',              default=16551.,              type=float)
     parser.add_option('--obs', dest='obs',  default='mult', help='observable [default: %default]')
-    parser.add_option('--flavor', dest='flavor',  default='all', help='flavor [default: %default]')
+    parser.add_option('--flavor', dest='flavor',  default='incl', help='flavor [default: %default]')
+    parser.add_option('-r', '--reco', dest='reco', default='charged', help='Use charged/puppi/all particles [default: %default]')
     (opt, args) = parser.parse_args()
 
     #read lists of samples
@@ -70,9 +72,26 @@ def main():
     for var in allSystVars:
         varList.append(var+'_up')
         varList.append(var+'_down')
+
+    varList.append('herwigpp_asfsr0.100_meon_crdefault')
+    varList.append('herwigpp_asfsr0.110_meon_crdefault')
+    varList.append('herwigpp_asfsr0.115_meon_crdefault')
+    varList.append('herwigpp_asfsr0.120_meon_crdefault')
+    varList.append('herwigpp_asfsr0.125_meon_crdefault')
+    varList.append('herwigpp_asfsr0.130_meon_crdefault')
+    varList.append('pythia8_asfsr0.100_meon_crdefault')
+    varList.append('pythia8_asfsr0.110_meon_crdefault')
+    varList.append('pythia8_asfsr0.115_meon_crdefault')
+    varList.append('pythia8_asfsr0.120_meon_crdefault')
+    varList.append('pythia8_asfsr0.125_meon_crdefault')
+    varList.append('pythia8_asfsr0.130_meon_crdefault')
+    varList.append('pythia8_asfsr0.140_meon_crdefault')
+    varList.append('pythia8_asfsr0.1365_meoff_crdefault')
+
     expSystSamplesList = []
     for var in varList:
         expSystSamplesList.append(['MC13TeV_TTJets_'+var, [832., 0., '', 't#bar{t} '+var]])
+
     
     data        = None # data histogram
     backgrounds = {}   # background histograms
@@ -81,7 +100,6 @@ def main():
     
     for slist,isSyst in [ (samplesList,False), (systSamplesList,True), (expSystSamplesList,True) ]:
         for tag,sample in slist: 
-            if tag in ['MC13TeV_TTJets_cflip']: continue
             if isSyst and not 't#bar{t}' in sample[3] : continue
             isData = sample[1]
             isSig  = not isSyst and sample[3] == 't#bar{t}'
@@ -95,7 +113,7 @@ def main():
             if isData:
                 #if not 'SingleMuon' in tag: continue
                 if not any(x in tag for x in ['2016G', '2016H']): continue
-                h=fIn.Get(opt.obs+'_charged_'+opt.flavor+'_responsematrix_py')
+                h=fIn.Get(opt.obs+'_'+opt.reco+'_'+opt.flavor+'_responsematrix_py')
                 try:
                     data.Add(h)
                 except:
@@ -105,7 +123,7 @@ def main():
             
             if isBkg:
                 #if not tag in ['MC13TeV_SingleTbar_tW', 'MC13TeV_SingleT_tW', 'MC13TeV_SingleTbar_t', 'MC13TeV_SingleT_t']: continue
-                h=fIn.Get(opt.obs+'_charged_'+opt.flavor+'_responsematrix_py')
+                h=fIn.Get(opt.obs+'_'+opt.reco+'_'+opt.flavor+'_responsematrix_py')
                 h.Scale(opt.lumi*xs)
                 integral = h.Integral()
                 integralError = 0
@@ -132,7 +150,7 @@ def main():
                     print(tag, integral, integralError, integralRelError)
             
             if isSig:
-                h=fIn.Get(opt.obs+'_charged_'+opt.flavor+'_responsematrix')
+                h=fIn.Get(opt.obs+'_'+opt.reco+'_'+opt.flavor+'_responsematrix')
                 h.Scale(opt.lumi*xs)
                 try:
                     nominal.Add(h)
@@ -143,7 +161,8 @@ def main():
                 # signal file should contain systematics weights
                 for i in range(1, 21):
                     if i in [17, 19]: continue
-                    ih=fIn.Get(opt.obs+'_charged_'+opt.flavor+'_wgt'+str(i)+'_responsematrix')
+                    ih=fIn.Get(opt.obs+'_'+opt.reco+'_'+opt.flavor+'_wgt'+str(i)+'_responsematrix')
+                    ih.Scale(opt.lumi*xs)
                     itag = tag + '_wgt' + str(i)
                     try:
                         systematics[itag].Add(ih)
@@ -153,7 +172,8 @@ def main():
                     if debug: print(itag, systematics[itag].GetEntries())
             
             if isSyst:
-                h=fIn.Get(opt.obs+'_charged_'+opt.flavor+'_responsematrix')
+                h=fIn.Get(opt.obs+'_'+opt.reco+'_'+opt.flavor+'_responsematrix')
+                h.Scale(opt.lumi*xs)
                 try:
                     systematics[tag].Add(h)
                 except:
@@ -163,14 +183,26 @@ def main():
 
     # call unfolding
     
-    rootoutfile = ROOT.TFile.Open(opt.outDir+'/'+opt.obs+'_charged_'+opt.flavor+'_result.root', 'RECREATE')
+    rootoutfile = ROOT.TFile.Open(opt.outDir+'/'+opt.obs+'_'+opt.reco+'_'+opt.flavor+'_result.root', 'RECREATE')
     rootoutfile.cd()
     
-    dataUnfolded, dataFoldedBack, dataBkgSub, dataStatCov = unfold('MC13TeV_TTJets', nominal, backgrounds, data)
+    #no regularization
+    tau = 0
+    if (opt.obs in ['bla']):
+        tau = -1
+    
+    dataUnfolded, dataFoldedBack, dataBkgSub, dataStatCov = unfold('MC13TeV_TTJets', nominal, backgrounds, data, tau)
     
     systematicUnfolded = {}
     for tag,systematic in systematics.iteritems():
-        systematicUnfolded[tag] = unfold(tag, systematic, backgrounds, data)[0]
+        if (tag in ['MC13TeV_TTZToLLNuNu']): continue
+        gen = normalizeAndDivideByBinWidth(systematic.ProjectionX(tag+'_gen'))
+        if (tag in ['MC13TeV_TTJets_cflip']) or ('asfsr' in tag): continue
+        systematicUnfolded[tag] = unfold(tag, systematic, backgrounds, data, tau)[0]
+        #for i in range(1, dataUnfolded.GetNbinsX()):
+        #    if systematicUnfolded[tag].GetBinContent(i) > 1.2*dataUnfolded.GetBinContent(i):
+        #        print('LARGE SYST', tag, i)
+        #        systematicUnfolded[tag] = unfold(tag, systematic, backgrounds, data, -1)[0]
     
     background_systematics = [
         [
@@ -199,7 +231,11 @@ def main():
                 except: continue
             tag = 'MC13TeV_TTJets_'+bkg_sys[0][0]+'_'+direction
             print(tag)
-            systematicUnfolded[tag] = unfold(tag, nominal, backgrounds, data)[0]
+            systematicUnfolded[tag] = unfold(tag, nominal, backgrounds, data, tau)[0]
+            #for i in range(1, dataUnfolded.GetNbinsX()):
+            #    if systematicUnfolded[tag].GetBinContent(i) > 1.2*dataUnfolded.GetBinContent(i):
+            #        print('LARGE SYST', tag, i)
+            #        systematicUnfolded[tag] = unfold(tag, systematic, backgrounds, data, -1)[0]
     
     systUp=[0.]
     systDown=[0.]
@@ -280,27 +316,33 @@ def main():
     dataUnfoldedSys.Draw('SAME P X0 E1')
     
     nominalGen = normalizeAndDivideByBinWidth(nominal.ProjectionX("nominalGen"))
+    for i in range(1, nominalGen.GetNbinsX()+1):
+        nominalGen.SetBinError(i, 1e-20)
     nominalGen.SetLineColor(ROOT.kRed+1)
     nominalGen.SetLineWidth(2)
     nominalGen.SetMarkerColor(ROOT.kRed+1)
     nominalGen.SetMarkerStyle(24)
     nominalGen.Draw('SAME H')
     
+    dataUnfoldedNoErr = dataUnfolded.Clone('dataUnfoldedNoErr')
+    for i in range(1, dataUnfoldedNoErr.GetNbinsX()+1):
+        dataUnfoldedNoErr.SetBinError(i, 1e-20)
+
     nominalGenRatio=nominalGen.Clone('nominalGenRatio')
-    nominalGenRatio.Divide(dataUnfolded)
+    nominalGenRatio.Divide(dataUnfoldedNoErr)
     
     dataUnfoldedRatio=dataUnfolded.Clone('dataUnfoldedRatio')
-    dataUnfoldedRatio.Divide(dataUnfolded)
+    dataUnfoldedRatio.Divide(dataUnfoldedNoErr)
     dataUnfoldedRatio.SetFillStyle(3254)
     #dataUnfoldedRatio.SetFillColor(ROOT.TColor.GetColor('#99d8c9'))
     #dataUnfoldedRatio.SetFillColor(ROOT.kGray+1)
     dataUnfoldedRatio.SetFillColor(ROOT.kBlack)
     
     dataUnfoldedSysRatio=dataUnfoldedSys.Clone('dataUnfoldedSysRatio')
-    dataUnfoldedSysRatio.Divide(dataUnfolded)
+    dataUnfoldedSysRatio.Divide(dataUnfoldedNoErr)
     dataUnfoldedSysRatio.SetTitle('')
     dataUnfoldedSysRatio.SetXTitle(dataUnfolded.GetXaxis().GetTitle())
-    dataUnfoldedSysRatio.SetYTitle('Ratio ')
+    dataUnfoldedSysRatio.SetYTitle('MC/data')
     dataUnfoldedSysRatio.SetFillColor(ROOT.kGray)
     dataUnfoldedSysRatio.GetXaxis().SetTitleSize(0.2)
     dataUnfoldedSysRatio.GetXaxis().SetTitleOffset(0.8)
@@ -309,23 +351,28 @@ def main():
     dataUnfoldedSysRatio.GetYaxis().SetTitleOffset(0.3)
     dataUnfoldedSysRatio.GetYaxis().SetLabelSize(0.18)
     dataUnfoldedSysRatio.GetYaxis().SetRangeUser(0.4,1.6)
+    limitToRange(dataUnfoldedSysRatio, [0.0, 2.0])
     dataUnfoldedSysRatio.GetYaxis().SetNdivisions(503)
     
     FSRUpGen = normalizeAndDivideByBinWidth(systematics['MC13TeV_TTJets_fsrup'].ProjectionX("FSRUpGen"))
+    for i in range(1, FSRUpGen.GetNbinsX()+1):
+        FSRUpGen.SetBinError(i, 1e-20)
     FSRUpGen.SetLineColor(ROOT.kRed+1)
     FSRUpGen.SetMarkerColor(ROOT.kRed+1)
     FSRUpGen.SetMarkerStyle(26)
     FSRUpGen.Draw('SAME P X0 E1')
     FSRUpGenRatio=FSRUpGen.Clone('FSRUpGenRatio')
-    FSRUpGenRatio.Divide(dataUnfolded)
+    FSRUpGenRatio.Divide(dataUnfoldedNoErr)
     
     FSRDownGen = normalizeAndDivideByBinWidth(systematics['MC13TeV_TTJets_fsrdn'].ProjectionX("FSRDownGen"))
+    for i in range(1, FSRDownGen.GetNbinsX()+1):
+        FSRDownGen.SetBinError(i, 1e-20)
     FSRDownGen.SetLineColor(ROOT.kRed+1)
     FSRDownGen.SetMarkerColor(ROOT.kRed+1)
     FSRDownGen.SetMarkerStyle(32)
     FSRDownGen.Draw('SAME P X0 E1')
     FSRDownGenRatio=FSRDownGen.Clone('FSRDownGenRatio')
-    FSRDownGenRatio.Divide(dataUnfolded)
+    FSRDownGenRatio.Divide(dataUnfoldedNoErr)
     
     nominalGenFSR = nominalGen.Clone('nominalGenFSR')
     for i in range(1, nominalGenFSR.GetNbinsX()+1):
@@ -338,9 +385,21 @@ def main():
     nominalGenFSR.SetFillColor(ROOT.kRed-9)
     #nominalGenFSR.Draw('same,e2')
     nominalGenFSRRatio=nominalGenFSR.Clone('nominalGenFSRRatio')
-    nominalGenFSRRatio.Divide(dataUnfolded)
+    nominalGenFSRRatio.Divide(dataUnfoldedNoErr)
+    
+    #qcdBasedGen = normalizeAndDivideByBinWidth(systematics['MC13TeV_TTJets_qcdBased'].ProjectionX("qcdBasedGen"))
+    #qcdBasedGen.SetLineColor(ROOT.kBlue+1)
+    #qcdBasedGen.SetLineStyle(7)
+    #qcdBasedGen.SetLineWidth(2)
+    #qcdBasedGen.SetMarkerColor(ROOT.kOrange+1)
+    #qcdBasedGen.SetMarkerStyle(28)
+    #qcdBasedGen.Draw('SAME P X0 E1')
+    #qcdBasedGenRatio=qcdBasedGen.Clone('qcdBasedGenRatio')
+    #qcdBasedGenRatio.Divide(dataUnfoldedNoErr)
     
     herwigGen = normalizeAndDivideByBinWidth(systematics['MC13TeV_TTJets_herwig'].ProjectionX("herwigGen"))
+    for i in range(1, herwigGen.GetNbinsX()+1):
+        herwigGen.SetBinError(i, 1e-20)
     herwigGen.SetLineColor(ROOT.kBlue+1)
     herwigGen.SetLineStyle(7)
     herwigGen.SetLineWidth(2)
@@ -348,27 +407,50 @@ def main():
     herwigGen.SetMarkerStyle(25)
     herwigGen.Draw('SAME H')
     herwigGenRatio=herwigGen.Clone('herwigGenRatio')
-    herwigGenRatio.Divide(dataUnfolded)
+    herwigGenRatio.Divide(dataUnfoldedNoErr)
     
-    inix = 0.5
-    if (nominalGen.GetMaximumBin() > nominalGen.GetNbinsX()/2.): inix = 0.15
+    #fsrlist = []
+    #fsrlist.append('pythia8_asfsr0.100_meon_crdefault')
+    #fsrlist.append('pythia8_asfsr0.110_meon_crdefault')
+    #fsrlist.append('pythia8_asfsr0.115_meon_crdefault')
+    #fsrlist.append('pythia8_asfsr0.120_meon_crdefault')
+    #fsrlist.append('pythia8_asfsr0.125_meon_crdefault')
+    #fsrlist.append('pythia8_asfsr0.130_meon_crdefault')
+    #fsrlist.append('pythia8_asfsr0.140_meon_crdefault')
+    #for fsr in fsrlist:
+    #    hist = normalizeAndDivideByBinWidth(systematics['MC13TeV_TTJets_'+fsr].ProjectionX(fsr+"Gen"))
+    #    hist.Draw('same')
     
-    legend = ROOT.TLegend(inix,0.625,inix+0.35,0.9)
+    fliplegend = False
+    flip_threshold = 0.4
+    if (nominalGen.GetXaxis().GetBinCenter(nominalGen.GetMaximumBin()) > (nominalGen.GetXaxis().GetXmax() - nominalGen.GetXaxis().GetXmin())*flip_threshold):
+        fliplegend = True
+    inix = 0.5 if not fliplegend else 0.15
+    
+    legend = ROOT.TLegend(inix,0.55,inix+0.45,0.9)
     legend.SetLineWidth(0)
     legend.SetFillStyle(0)
+    dummy = dataUnfolded.Clone('dummy')
+    dummy.SetMarkerSize(0)
     legend.AddEntry(dataUnfolded, "Data", "ep")
     legend.AddEntry(nominalGen, "Powheg+Pythia 8", "pl")
-    legend.AddEntry(FSRUpGen, "#minus FSR up", "p")
-    legend.AddEntry(FSRDownGen, "#minus FSR down", "p")
+    dummy1 = legend.AddEntry(dummy, "(#alpha_{s}^{FSR}(m_{Z}) = 0.1365, with MEC)", "p")
+    dummy1.SetTextSize(0.0225)
+    dummy1.SetTextAlign(13)
+    legend.AddEntry(FSRUpGen, "#minus FSR up  #scale[0.65]{(#alpha_{s}^{FSR}(m_{Z}) = 0.1543)}", "p")
+    legend.AddEntry(FSRDownGen, "#minus FSR down  #scale[0.65]{(#alpha_{s}^{FSR}(m_{Z}) = 0.1224)}", "p")
+    #legend.AddEntry(qcdBasedGen, "#minus QCD-based CR", "p")
     legend.AddEntry(herwigGen, "Powheg+Herwig++", "pl")
+    dummy2 = legend.AddEntry(dummy, "(#alpha_{s}^{FSR}(m_{Z}) = 0.12, no MEC)", "p")
+    dummy2.SetTextSize(0.0225)
+    dummy2.SetTextAlign(13)
     legend.Draw()
     txt=ROOT.TLatex()
     txt.SetNDC(True)
     txt.SetTextFont(42)
     txt.SetTextSize(0.05)
     txt.SetTextAlign(12)
-    inix = 0.15
-    if (nominalGen.GetMaximumBin() > nominalGen.GetNbinsX()/2.): inix = 0.64
+    inix = 0.15 if not fliplegend else 0.64
     txt.DrawLatex(inix,0.88,cmsLabel)
     txt.DrawLatex(0.7,0.97,'#scale[0.8]{%3.1f fb^{-1} (%s)}' % (opt.lumi/1000.,opt.com) )
     
@@ -392,11 +474,12 @@ def main():
     nominalGenRatio.Draw('SAME H')
     FSRUpGenRatio.Draw  ('SAME P X0 E1')
     FSRDownGenRatio.Draw('SAME P X0 E1')
+    #qcdBasedGenRatio.Draw('SAME P X0 E1')
     herwigGenRatio.Draw ('SAME H')
     
-    c.Print(opt.outDir+'/'+opt.obs+'_charged_'+opt.flavor+'_result.pdf')
-    c.Print(opt.outDir+'/'+opt.obs+'_charged_'+opt.flavor+'_result.png')
-    #c.Print(opt.outDir+'/'+opt.obs+'_charged_'+opt.flavor+'_result.root')
+    c.Print(opt.outDir+'/'+opt.obs+'_'+opt.reco+'_'+opt.flavor+'_result.pdf')
+    c.Print(opt.outDir+'/'+opt.obs+'_'+opt.reco+'_'+opt.flavor+'_result.png')
+    #c.Print(opt.outDir+'/'+opt.obs+'_'+opt.reco+'_'+opt.flavor+'_result.root')
     rootoutfile.Write()
     
     #Folding test plot
@@ -438,8 +521,8 @@ def main():
     legend.AddEntry(dataFoldedBack, "data folded back", "p")
     legend.Draw()
     
-    c.Print(opt.outDir+'/'+opt.obs+'_charged_'+opt.flavor+'_test.pdf')
-    c.Print(opt.outDir+'/'+opt.obs+'_charged_'+opt.flavor+'_test.png')
+    c.Print(opt.outDir+'/'+opt.obs+'_'+opt.reco+'_'+opt.flavor+'_test.pdf')
+    c.Print(opt.outDir+'/'+opt.obs+'_'+opt.reco+'_'+opt.flavor+'_test.png')
     
     #Uncertainty plot
     c = ROOT.TCanvas('c','c',500,500)
@@ -460,26 +543,26 @@ def main():
     dataUnfoldedSysRatio.GetYaxis().SetTitleSize(0.045)
     dataUnfoldedSysRatio.GetYaxis().SetTitleOffset(1.2)
     dataUnfoldedSysRatio.GetYaxis().SetLabelSize(0.04)
-    dataUnfoldedSysRatio.GetYaxis().SetRangeUser(0.8,1.5)
+    dataUnfoldedSysRatio.GetYaxis().SetRangeUser(0.5,2.0)
     dataUnfoldedSysRatio.Draw('e2')
     legend.AddEntry(dataUnfoldedSysRatio, 'Total uncertainty', 'pf')
     dataUnfoldedRatio.SetFillColor(ROOT.kGray+1)
     dataUnfoldedRatio.Draw('e2,same')
     legend.AddEntry(dataUnfoldedRatio, 'Statistical uncertainty', 'pf')
-    colors = [ROOT.kRed+1, ROOT.kGreen+1, ROOT.kBlue+1, ROOT.kCyan+1, ROOT.kMagenta+1]
-    color = 0
-    uncmap = {'fsrup':'FSR up', 'fsrdn':'FSR down', 'herwig':'Herwig++', 'tracking_up':'Tracking up', 'tracking_down':'Tracking down'}
-    for tag,systematic in systematicUnfolded.iteritems():
-        if not tag in ['MC13TeV_TTJets_fsrup', 'MC13TeV_TTJets_fsrdn', 'MC13TeV_TTJets_herwig', 'MC13TeV_TTJets_tracking_up', 'MC13TeV_TTJets_tracking_down']: continue
-        #if any(x in tag for x in ['wgt', 'jec', 'btag', 'csv', 'jer']): continue
-        #if 'weight' in tag: continue
-        systematic.Divide(dataUnfolded)
-        systematic.SetLineColor(colors[color])
-        systematic.SetMarkerColor(colors[color])
-        systematic.SetMarkerStyle(21+color)
-        color += 1
-        legend.AddEntry(systematic, uncmap.get(tag.replace('MC13TeV_TTJets_', ''), tag), 'pl')
-        systematic.Draw('same')
+    syslist = [['MC13TeV_TTJets_tracking_up', 'Tracking up', ROOT.kCyan+1, 22],
+              ['MC13TeV_TTJets_tracking_down', 'Tracking down', ROOT.kCyan+1, 23],
+              ['MC13TeV_TTJets_fsrup', 'FSR up', ROOT.kRed+1, 26],
+              ['MC13TeV_TTJets_fsrdn', 'FSR down', ROOT.kRed+1, 32],
+              ['MC13TeV_TTJets_herwig', 'Herwig++', ROOT.kBlue+1, 25]
+             ]
+    for sys in syslist: #systematicUnfolded.iteritems():
+        hist = systematicUnfolded[sys[0]]
+        hist.Divide(dataUnfoldedNoErr)
+        hist.SetLineColor(sys[2])
+        hist.SetMarkerColor(sys[2])
+        hist.SetMarkerStyle(sys[3])
+        legend.AddEntry(hist, sys[1], 'pl')
+        hist.Draw('same hist p')
     legend.Draw()
     txt=ROOT.TLatex()
     txt.SetNDC(True)
@@ -489,9 +572,9 @@ def main():
     txt.DrawLatex(0.16,0.91,cmsLabel)
     txt.DrawLatex(0.7,0.97,'#scale[0.8]{%3.1f fb^{-1} (%s)}' % (opt.lumi/1000.,opt.com) )
             
-    c.Print(opt.outDir+'/'+opt.obs+'_charged_'+opt.flavor+'_syst.pdf')
-    c.Print(opt.outDir+'/'+opt.obs+'_charged_'+opt.flavor+'_syst.png')
-    c.Print(opt.outDir+'/'+opt.obs+'_charged_'+opt.flavor+'_syst.root')
+    c.Print(opt.outDir+'/'+opt.obs+'_'+opt.reco+'_'+opt.flavor+'_syst.pdf')
+    c.Print(opt.outDir+'/'+opt.obs+'_'+opt.reco+'_'+opt.flavor+'_syst.png')
+    c.Print(opt.outDir+'/'+opt.obs+'_'+opt.reco+'_'+opt.flavor+'_syst.root')
     
     # Covariance from TUnfold
     c.SetRightMargin(0.15)
@@ -554,11 +637,11 @@ def main():
     txt.DrawLatex(0.16,0.91,cmsLabel)
     txt.DrawLatex(0.63,0.97,'#scale[0.8]{%3.1f fb^{-1} (%s)}' % (opt.lumi/1000.,opt.com) )
     
-    c.Print(opt.outDir+'/'+opt.obs+'_charged_'+opt.flavor+'_cov_tunfold.pdf')
-    c.Print(opt.outDir+'/'+opt.obs+'_charged_'+opt.flavor+'_cov_tunfold.png')
+    c.Print(opt.outDir+'/'+opt.obs+'_'+opt.reco+'_'+opt.flavor+'_cov_tunfold.pdf')
+    c.Print(opt.outDir+'/'+opt.obs+'_'+opt.reco+'_'+opt.flavor+'_cov_tunfold.png')
     
 
-def unfold(Mtag, Morig, backgrounds, data):
+def unfold(Mtag, Morig, backgrounds, data, tau):
     # Background subtraction
     dataBkgSub = data.Clone(Mtag+'_dataBkgSub')
     
@@ -582,33 +665,55 @@ def unfold(Mtag, Morig, backgrounds, data):
         dataBkgSub.SetBinContent(i, (1.-sf)*dataBkgSub.GetBinContent(i))
         dataBkgSub.SetBinError  (i, (1.-sf)*dataBkgSub.GetBinError(i))
         M.SetBinContent(0, i, 0.)
+    # flat prior (deactivated)
+    #for i in range(0, M.GetNbinsX()+2):
+    #    continue
+    #    integral = M.ProjectionY('py', i, i).Integral()
+    #    print(integral)
+    #    if (integral == 0): continue
+    #    binwidth = M.GetXaxis().GetBinWidth(i)
+    #    print(binwidth)
+    #    for j in range(1, M.GetNbinsY()+2):
+    #        M.SetBinContent(i, j, M.GetBinContent(i, j)/integral/binwidth)
     #if debug:
     #    print('dataBkgSub', dataBkgSub.GetEntries(), dataBkgSub.Integral())
     #    for i in range(dataBkgSub.GetNbinsX()+2):
     #        print('dataBkgSub bin content', dataBkgSub.GetBinContent(i), 'bin error', dataBkgSub.GetBinError(i))
     
     # Do unfolding
-    unfold = ROOT.TUnfoldDensity(M, ROOT.TUnfold.kHistMapOutputHoriz, ROOT.TUnfold.kRegModeCurvature, ROOT.TUnfold.kEConstraintArea, ROOT.TUnfoldDensity.kDensityModeBinWidth)
+    unfold = ROOT.TUnfoldDensity(M, ROOT.TUnfold.kHistMapOutputHoriz, ROOT.TUnfold.kRegModeCurvature, ROOT.TUnfold.kEConstraintArea, ROOT.TUnfoldDensity.kDensityModeUser)
     
     if (unfold.SetInput(dataBkgSub) >= 10000):
         print('SetInput bad return value >= 10000')
         return
     
-    unfold.DoUnfold(0.);
+    if (tau == -1 and M.GetNbinsX() > 2):
+        nScan  = 100
+        tauMin = 1e-10
+        tauMax = 1e-3
+        iBest = unfold.ScanLcurve(nScan, tauMin, tauMax, ROOT.TGraph())
+        #iBest = unfold.ScanTau(nScan, tauMin, tauMax, ROOT.TSpline5(), ROOT.TUnfoldDensity.kEScanTauRhoAvg)
+        tau = unfold.GetTau()
+        print(Mtag, 'opt_tau', tau)
+        if (tau < 2*tauMin or tau > 0.5*tauMax):
+            iBest = unfold.ScanTau(nScan, tauMin, tauMax, ROOT.TSpline5(), ROOT.TUnfoldDensity.kEScanTauRhoAvg)
+            tau = unfold.GetTau()
+            print(Mtag, 'opt_tau backup', tau)
+    elif (tau == -1 and M.GetNbinsX() == 2):
+        tau = 0
+    
+    unfold.DoUnfold(tau)
     
     # Retrieve results
-    dataUnfolded = normalizeAndDivideByBinWidth(unfold.GetOutput(Mtag+"_Unfolded"))
-    
-    #if debug:
-    #    for i in range(1, dataUnfolded.GetNbinsX()+1):
-    #        print('dataUnfolded', i, dataUnfolded.GetBinContent(i), dataUnfolded.GetBinError(i))
-    dataFoldedBack = normalizeAndDivideByBinWidth(unfold.GetFoldedOutput(Mtag+"_FoldedBack"))
-    
+    dataUnfoldedOrig = unfold.GetOutput(Mtag+"_UnfoldedOrig")
     # get error matrix (input distribution [stat] errors only)
     dataStatCov = unfold.GetEmatrixTotal(Mtag+"_StatCov");
-    dataUnfoldedOrig = unfold.GetOutput(Mtag+"_UnfoldedOrig")
     dataStatCov.Scale(1./dataUnfoldedOrig.Integral()**2)
+    print(Mtag, 'dataStatCov.GetMaximum()', dataStatCov.GetMaximum())
     
+    dataUnfolded = normalizeAndDivideByBinWidth(unfold.GetOutput(Mtag+"_Unfolded"))
+    dataFoldedBack = normalizeAndDivideByBinWidth(unfold.GetFoldedOutput(Mtag+"_FoldedBack"))
+        
     return dataUnfolded, dataFoldedBack, dataBkgSub, dataStatCov
 
 
@@ -619,7 +724,22 @@ def normalizeAndDivideByBinWidth(hist):
         hist.SetBinContent(i, hist.GetBinContent(i)/hist.GetBinWidth(i))
         hist.SetBinError  (i, hist.GetBinError(i)  /hist.GetBinWidth(i))
     return hist
-        
+
+"""
+Adapt plots to limited range
+(Useful for ratio plots! Otherwise, they are not drawn when the central point is outside the range.)
+"""
+def limitToRange(h, ratiorange):
+    for i in xrange(1,h.GetNbinsX()+1):
+        up = h.GetBinContent(i) + h.GetBinError(i)
+        if (up > ratiorange[1]):
+            up = ratiorange[1]
+        dn = h.GetBinContent(i) - h.GetBinError(i)
+        if (dn < ratiorange[0]):
+            dn = ratiorange[0]
+        h.SetBinContent(i, (up + dn)/2.)
+        h.SetBinError(i, (up - dn)/2.)
+
 """
 for execution from another script
 """
