@@ -75,8 +75,7 @@ for basename, files in counters.iteritems():
     # merging:
     print '... processing', basename
     cmd = 'hadd %s %s %s' % (haddOptions, target, filenames)
-    print(cmd)
-    #os.system(cmd)
+    os.system(cmd)
 
 if (len(badFiles) > 0):
     print '-----------------------'
