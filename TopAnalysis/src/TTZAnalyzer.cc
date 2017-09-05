@@ -57,7 +57,15 @@ TTZEvent selectRecoEvents(SelectionTool &selector,MiniEvent_t &ev,MEzCalculator 
     if(chTag=="") return reco;
 
     //select a Z candidate out of the leptons
-    reco.Leptons = selector.getSelLeptons(); 
+    reco.Leptons.clear();
+    std::vector<Particle> tightLeptons=selector.getSelLeptons(); 
+    std::vector<Particle> looseLeptons=selector.getVetoLeptons();
+    for(auto &l : tightLeptons) reco.Leptons.push_back(l);
+    for(auto &l : looseLeptons) reco.Leptons.push_back(l);
+    
+    //at least one tight lepton is required
+    if(tightLeptons.size()==0) return reco;
+
     std::vector<std::pair<int,int> > zCandidates;
     //reco.debug = Form("RECO : %d |",(int)reco.Leptons.size());
     for(size_t il=0; il<reco.Leptons.size(); il++)

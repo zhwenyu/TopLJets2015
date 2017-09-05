@@ -47,6 +47,7 @@ def main():
 
     #compsToShow=[('S_cor*','t#bar{t} cor. perm.'),('S_cor*,S_wro*','t#bar{t} wro. perm.')] #,'S_cor*,S_wro*,W_*']
     compsToShow=[('S_wro*,S_cor2*','t#bar{t} wrong assignments'),('S_cor*,S_wro*','t#bar{t} correct assignments')] #,'S_cor*,S_wro*,W_*']
+    compsToShow=[('QCD_*,W_*','background'),('QCD_*,W_*,S_wro*,S_cor2*','t#bar{t} wrong assignments')] #,'S_cor*,S_wro*,W_*']
     
     for x in EVENTCATEGORIES:
 

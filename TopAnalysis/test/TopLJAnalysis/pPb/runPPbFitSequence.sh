@@ -158,11 +158,12 @@ case $WHAT in
 	;;
 
     FINALCOMP )
-        python doPRLplots.py -i fit_finalworkspace_wmodel0_0.root
+        #python doPRLplots.py -i ~/public/forGeorgios/HIN-17-002/fit_finalworkspace_wmodel0_0.root #fit_finalworkspace_wmodel0_0.root
         for var in mjj mthad mtlep; do
             for cat in 1l4j2b 1l4j1b1q 1l4j2q; do
                 python mergePLRplotCategs.py $var $cat;        
             done
+            break
         done
 
         mkdir ${wwwdir}/final;
