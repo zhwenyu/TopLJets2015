@@ -102,7 +102,7 @@ void RunTopJetShape(TString filename,
   if( !isData ) puWgtGr=getPileupWeightsMap(era,genPU);
   
   //LEPTON EFFICIENCIES
-  LeptonEfficiencyWrapper lepEffH(filename.Contains("Data13TeV"),era+"GH");
+  LeptonEfficiencyWrapper lepEffH(filename.Contains("Data13TeV"),era);
 
 
   //B-TAG CALIBRATION
@@ -146,6 +146,8 @@ void RunTopJetShape(TString filename,
   std::map<TString, TGraph*> bfrag = getBFragmentationWeights(era);
   std::map<TString, std::map<int, double> > semilepbr = getSemilepBRWeights(era);
   
+  //TRACKING SCALE FACTORS
+  std::map<TString, std::map<TString, std::vector<double> > > trackEffMap = getTrackingEfficiencyMap(era);
 
   //BOOK HISTOGRAMS
   HistTool ht;
@@ -276,14 +278,20 @@ void RunTopJetShape(TString filename,
   //EVENT SELECTION WRAPPER
   SelectionTool selector(filename, false, triggerList);
   
+  //RUN PERIODS
+  std::vector<RunPeriod_t> runPeriods=getRunPeriods(era);
+  
   for (Int_t iev=0;iev<nentries;iev++)
     {
       t->GetEntry(iev);
       resetTopJetShapeEvent(tjsev);
       if(iev%int(nentries/100)==0) printf ("[%3.0f%%] done\n", 100.*(float)iev/(float)nentries);
       
-      //assign run period GH
-      TString period = "GH";
+      //assign random run period
+      TString period = assignRunPeriod(runPeriods);
+      if (ev.isData) tjsev.period = 0;
+      else if (period == "BCDEF") tjsev.period = 1;
+      else if (period == "GH") tjsev.period = 2;
       
       //////////////////
       // CORRECTIONS //
@@ -324,22 +332,12 @@ void RunTopJetShape(TString filename,
           }
         }
         else updateBTagDecisions(ev, btvsfReaders[period],expBtagEff,expBtagEffPy8,myBTagSFUtil);
-        //tracking efficiency GH
-        //TODO: add periods B-F to analysis again?
-        std::vector<double> trackBinning = {-2.4, -1.5, -0.8, 0.8, 1.5, 2.4};
-        std::vector<double> trackSF      = {1.12, 1.07, 1.04, 1.07, 1.12};
-        std::vector<double> trackSFunc   = {0.05, 0.06, 0.03, 0.06, 0.05};
-        std::vector<double> trackSFup, trackSFdn;
-        for (unsigned int i = 0; i < trackSF.size(); i++) {
-          trackSFup.push_back(trackSF[i]+trackSFunc[i]);
-          trackSFdn.push_back(trackSF[i]-trackSFunc[i]);
-        }
+        //tracking efficiency
         if (vSystVar[0] == "tracking") {
-          if (vSystVar[1] == "up") applyEtaDepTrackingEfficiencySF(ev, trackSFup, trackBinning);
-          if (vSystVar[1] == "down") applyEtaDepTrackingEfficiencySF(ev, trackSFdn, trackBinning);
+          applyEtaDepTrackingEfficiencySF(ev, trackEffMap[period][vSystVar[1]], trackEffMap[period]["binning"]);
         }
         else {
-          applyEtaDepTrackingEfficiencySF(ev, trackSF, trackBinning);
+          applyEtaDepTrackingEfficiencySF(ev, trackEffMap[period]["nominal"], trackEffMap[period]["binning"]);
         }
       }
       
@@ -1273,6 +1271,7 @@ double getPFFraction(std::vector<int> pids, Jet jet) {
 void createTopJetShapeEventTree(TTree *t,TopJetShapeEvent_t &tjsev)
 {
   //event weights
+  t->Branch("period",  &tjsev.period, "period/I");
   t->Branch("nw",  &tjsev.nw, "nw/I");
   t->Branch("weight",  tjsev.weight, "weight[nw]/F");
 
@@ -1479,7 +1478,7 @@ void createTopJetShapeEventTree(TTree *t,TopJetShapeEvent_t &tjsev)
 //
 void resetTopJetShapeEvent(TopJetShapeEvent_t &tjsev)
 {
-  tjsev.nw=0;   tjsev.nl=0;   tjsev.nj=0;   tjsev.ngj=0;   tjsev.ngl=0;   tjsev.met_pt=0; tjsev.met_phi=0;
+  tjsev.period=-1;   tjsev.nw=0;   tjsev.nl=0;   tjsev.nj=0;   tjsev.ngj=0;   tjsev.ngl=0;   tjsev.met_pt=0; tjsev.met_phi=0;
   for(int i=0; i<1000; i++) tjsev.weight[i]=0;
   for(int i=0; i<5; i++) { tjsev.l_pt[i]=0;   tjsev.l_eta[i]=0;   tjsev.l_phi[i]=0;   tjsev.l_m[i]=0; tjsev.l_id[i]=0; tjsev.gl_pt[i]=0;   tjsev.gl_eta[i]=0;   tjsev.gl_phi[i]=0;   tjsev.gl_m[i]=0; tjsev.gl_id[i]=0; }
   for(int i=0; i<50; i++) {

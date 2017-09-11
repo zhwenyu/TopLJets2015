@@ -18,7 +18,7 @@ void RunTopJetShape(TString filename,
 
 struct TopJetShapeEvent_t
 {
-  Int_t nw, nl, ngl, nj, ngj;
+  Int_t period, nw, nl, ngl, nj, ngj;
   Int_t gen_sel, reco_sel;
   
   Float_t weight[1000];

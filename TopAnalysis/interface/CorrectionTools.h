@@ -65,6 +65,7 @@ std::map<TString, std::map<int, double> > getSemilepBRWeights(TString era);
 double computeSemilepBRWeight(MiniEvent_t &ev, std::map<int, double> corr, int pid = 0, bool useabs = true);
 
 //apply tracking efficiency
+std::map<TString, std::map<TString, std::vector<double> > > getTrackingEfficiencyMap(TString era);
 void applyTrackingEfficiencySF(MiniEvent_t &ev, double sf, double minEta = -2.4, double maxEta = 2.4);
 void applyEtaDepTrackingEfficiencySF(MiniEvent_t &ev, std::vector<double> sfs, std::vector<double> etaBins);
 

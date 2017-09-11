@@ -388,6 +388,29 @@ double computeSemilepBRWeight(MiniEvent_t &ev, std::map<int, double> corr, int p
   return weight;
 }
 
+std::map<TString, std::map<TString, std::vector<double> > > getTrackingEfficiencyMap(TString era) {
+  std::map<TString, std::map<TString, std::vector<double> > > trackEffMap;
+  
+  if(era.Contains("era2016")) {
+    trackEffMap["BCDEF"]["binning"] = {-2.4, -1.5, -0.8, 0.8, 1.5, 2.4};
+    trackEffMap["BCDEF"]["nominal"] = {0.93, 1.08, 1.01, 1.08, 0.93};
+    trackEffMap["BCDEF"]["unc"]     = {0.04, 0.04, 0.03, 0.04, 0.04};
+    for (unsigned int i = 0; i < trackEffMap["BCDEF"]["nominal"].size(); i++) {
+      trackEffMap["BCDEF"]["up"].push_back(trackEffMap["BCDEF"]["nominal"][i]+trackEffMap["BCDEF"]["unc"][i]);
+      trackEffMap["BCDEF"]["down"].push_back(trackEffMap["BCDEF"]["nominal"][i]-trackEffMap["BCDEF"]["unc"][i]);
+    }
+    trackEffMap["GH"]["binning"] = {-2.4, -1.5, -0.8, 0.8, 1.5, 2.4};
+    trackEffMap["GH"]["nominal"] = {1.12, 1.07, 1.04, 1.07, 1.12};
+    trackEffMap["GH"]["unc"]     = {0.05, 0.06, 0.03, 0.06, 0.05};
+    for (unsigned int i = 0; i < trackEffMap["GH"]["nominal"].size(); i++) {
+      trackEffMap["GH"]["up"].push_back(trackEffMap["GH"]["nominal"][i]+trackEffMap["GH"]["unc"][i]);
+      trackEffMap["GH"]["down"].push_back(trackEffMap["GH"]["nominal"][i]-trackEffMap["GH"]["unc"][i]);
+    }
+  }
+  
+  return trackEffMap;
+}
+
 void applyEtaDepTrackingEfficiencySF(MiniEvent_t &ev, std::vector<double> sfs, std::vector<double> etas) {
   if (sfs.size() != (etas.size() - 1)) std::cout << "applyEtaDepTrackingEfficiencySF error: need one more bin boundary than scale factors: " << sfs.size() << "," << etas.size() << std::endl;
   for (unsigned int i = 0; i < sfs.size(); i++) {
