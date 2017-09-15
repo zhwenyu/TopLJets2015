@@ -34,52 +34,52 @@ def main():
     (opt, args) = parser.parse_args()
 
     #read lists of samples
-    staus = ['21', '32', '43']
-    flavors = ['incl', 'bottom', 'light', 'gluon']
-    colors = {'incl': ROOT.kBlack, 'bottom': ROOT.kRed+1, 'light': ROOT.kBlue+1, 'gluon': ROOT.kGreen+1}
-    markers = {'incl': 20, 'bottom': 21, 'light': 22, 'gluon': 23}
-    fills = {'incl': 1001, 'bottom': 3254, 'light': 3245, 'gluon': 3390}
+    observables = ["m2_b1", "m2_b2", "n2_b1", "n2_b2", "n3_b1", "n3_b2"]
+    nice_observables_root = {"m2_b1": "M_{ 2}^{ (1)}", "n2_b1": "N_{ 2}^{ (1)}", "n3_b1": "N_{ 3}^{ (1)}", "m2_b2": "M_{ 2}^{ (2)}", "n2_b2": "N_{ 2}^{ (2)}", "n3_b2":"N_{ 3}^{ (2)}"}
+    
+    colors = {'all': ROOT.kBlack, 'bottom': ROOT.kRed+1, 'light': ROOT.kBlue+1, 'gluon': ROOT.kGreen+1}
+    markers = {'all': 20, 'bottom': 21, 'light': 22, 'gluon': 23}
+    fills = {'all': 1001, 'bottom': 3254, 'light': 3245, 'gluon': 3390}
     infiles = {}
     hists = {}
     unchists = {}
     
-    dataUnfolded = ROOT.TH1F('dataUnfolded', 'dataUnfolded', 12, 0, 12)
-    dataUnfoldedSys = ROOT.TH1F('dataUnfoldedSys', 'dataUnfoldedSys', 12, 0, 12)
-    nominalGen = ROOT.TH1F('nominalGen', 'nominalGen', 12, 0, 12)
-    FSRUpGen = ROOT.TH1F('FSRUpGen', 'FSRUpGen',       12, 0, 12)
-    FSRDownGen = ROOT.TH1F('FSRDownGen', 'FSRDownGen', 12, 0, 12)
-    herwigGen = ROOT.TH1F('herwigGen', 'herwigGen',    12, 0, 12)
+    dataUnfolded = ROOT.TH1F('dataUnfolded', 'dataUnfolded', len(observables), 0, len(observables))
+    dataUnfoldedSys = ROOT.TH1F('dataUnfoldedSys', 'dataUnfoldedSys', len(observables), 0, len(observables))
+    nominalGen = ROOT.TH1F('nominalGen', 'nominalGen', len(observables), 0, len(observables))
+    FSRUpGen = ROOT.TH1F('FSRUpGen', 'FSRUpGen',       len(observables), 0, len(observables))
+    FSRDownGen = ROOT.TH1F('FSRDownGen', 'FSRDownGen', len(observables), 0, len(observables))
+    herwigGen = ROOT.TH1F('herwigGen', 'herwigGen',    len(observables), 0, len(observables))
     
     counter = 0
-    for flavor in flavors:
-        for stau in staus:
-            counter += 1
-            infile = ROOT.TFile.Open('%s/tau%s_charged_%s_result.root'%(opt.inDir, stau, flavor))
-            
-            inhist = infile.Get('mean')
-            dataUnfolded.SetBinContent(counter, inhist.GetBinContent(1))
-            dataUnfolded.SetBinError(counter, inhist.GetBinError(1))
-            
-            inhistErr = infile.Get('meanErr')
-            dataUnfoldedSys.SetBinContent(counter, inhistErr.GetBinContent(1))
-            dataUnfoldedSys.SetBinError(counter, inhistErr.GetBinError(1))
-            dataUnfoldedSys.GetXaxis().SetBinLabel(counter, '#tau_{%s}'%(stau))
-            
-            innominalGen = infile.Get('nominalGen')
-            nominalGen.SetBinContent(counter, innominalGen.GetMean())
-            nominalGen.SetBinError(counter, innominalGen.GetMeanError())
-            
-            inFSRUpGen = infile.Get('FSRUpGen')
-            FSRUpGen.SetBinContent(counter, inFSRUpGen.GetMean())
-            FSRUpGen.SetBinError(counter, inFSRUpGen.GetMeanError())
-            
-            inFSRDownGen = infile.Get('FSRDownGen')
-            FSRDownGen.SetBinContent(counter, inFSRDownGen.GetMean())
-            FSRDownGen.SetBinError(counter, inFSRDownGen.GetMeanError())
-            
-            inHerwigGen = infile.Get('herwigGen')
-            herwigGen.SetBinContent(counter, inHerwigGen.GetMean())
-            herwigGen.SetBinError(counter, inHerwigGen.GetMeanError())
+    for obs in observables:
+        counter += 1
+        infile = ROOT.TFile.Open('%s/%s_charged_%s_result.root'%(opt.inDir, obs, opt.flavor))
+        
+        inhist = infile.Get('mean')
+        dataUnfolded.SetBinContent(counter, inhist.GetBinContent(1))
+        dataUnfolded.SetBinError(counter, inhist.GetBinError(1))
+        
+        inhistErr = infile.Get('meanErr')
+        dataUnfoldedSys.SetBinContent(counter, inhistErr.GetBinContent(1))
+        dataUnfoldedSys.SetBinError(counter, inhistErr.GetBinError(1))
+        dataUnfoldedSys.GetXaxis().SetBinLabel(counter, nice_observables_root[obs])
+        
+        innominalGen = infile.Get('nominalGen')
+        nominalGen.SetBinContent(counter, innominalGen.GetMean())
+        nominalGen.SetBinError(counter, innominalGen.GetMeanError())
+        
+        inFSRUpGen = infile.Get('FSRUpGen')
+        FSRUpGen.SetBinContent(counter, inFSRUpGen.GetMean())
+        FSRUpGen.SetBinError(counter, inFSRUpGen.GetMeanError())
+        
+        inFSRDownGen = infile.Get('FSRDownGen')
+        FSRDownGen.SetBinContent(counter, inFSRDownGen.GetMean())
+        FSRDownGen.SetBinError(counter, inFSRDownGen.GetMeanError())
+        
+        inHerwigGen = infile.Get('herwigGen')
+        herwigGen.SetBinContent(counter, inHerwigGen.GetMean())
+        herwigGen.SetBinError(counter, inHerwigGen.GetMeanError())
     
     #plot
     ROOT.gStyle.SetOptStat(0)
@@ -99,11 +99,13 @@ def main():
     p1.cd()
     
     dataUnfolded.SetTitle('')
-    dataUnfolded.SetXTitle('')
+    flavor = opt.flavor
+    if flavor in ['light', 'gluon']: flavor += '-enriched'
+    dataUnfolded.SetXTitle(flavor+' jets')
     dataUnfolded.GetXaxis().SetTitleSize(0.045)
     dataUnfolded.GetXaxis().SetLabelSize(0.04)
-    dataUnfolded.SetYTitle('<#tau_{NM}>')
-    dataUnfolded.GetYaxis().SetRangeUser(0.48, 0.74)
+    dataUnfolded.SetYTitle('<X_{N}^{(#beta)}>')
+    dataUnfolded.GetYaxis().SetRangeUser(0.0001, 1.3*dataUnfolded.GetMaximum())
     dataUnfolded.GetYaxis().SetTitleSize(0.05)
     dataUnfolded.GetYaxis().SetLabelSize(0.045)
     dataUnfolded.GetYaxis().SetTitleOffset(1.1)
@@ -176,23 +178,6 @@ def main():
     txt.DrawLatex(inix,0.88,cmsLabel)
     txt.DrawLatex(0.7,0.97,'#scale[0.8]{%3.1f fb^{-1} (%s)}' % (opt.lumi/1000.,opt.com) )
     
-    lineHeight = 0.63
-    txt.DrawLatex(0.175,0.05,'all jets')
-    divider1 = ROOT.TLine(3, 0., 3, lineHeight)
-    divider1.SetLineColor(ROOT.kBlack)
-    divider1.Draw()
-    txt.DrawLatex(0.375,0.05,'bottom')
-    divider2 = ROOT.TLine(6, 0., 6, lineHeight)
-    divider2.SetLineColor(ROOT.kBlack)
-    divider2.Draw()
-    txt.DrawLatex(0.6,0.10,'light')
-    txt.DrawLatex(0.57,0.05,'enriched')
-    divider4 = ROOT.TLine(9, 0., 9, lineHeight)
-    divider4.SetLineColor(ROOT.kBlack)
-    divider4.Draw()
-    txt.DrawLatex(0.8,0.10,'gluon')
-    txt.DrawLatex(0.775,0.05,'enriched')
-    
     c.cd()
     p2 = ROOT.TPad('p2','p2',0.0,0.0,1.0,0.2)
     p2.Draw()
@@ -215,12 +200,11 @@ def main():
     dataUnfoldedSysRatio.SetFillColor(ROOT.kGray)
     dataUnfoldedSysRatio.GetXaxis().SetTitleSize(0.2)
     dataUnfoldedSysRatio.GetXaxis().SetTitleOffset(0.8)
-    dataUnfoldedSysRatio.GetXaxis().SetLabelSize(0.275)
-    dataUnfoldedSysRatio.GetXaxis().SetLabelOffset(0.05)
+    dataUnfoldedSysRatio.GetXaxis().SetLabelSize(0.18)
     dataUnfoldedSysRatio.GetYaxis().SetTitleSize(0.2)
     dataUnfoldedSysRatio.GetYaxis().SetTitleOffset(0.3)
     dataUnfoldedSysRatio.GetYaxis().SetLabelSize(0.18)
-    dataUnfoldedSysRatio.GetYaxis().SetRangeUser(0.96,1.11)
+    dataUnfoldedSysRatio.GetYaxis().SetRangeUser(0.95,1.15)
     dataUnfoldedSysRatio.GetYaxis().SetNdivisions(503)
     
     nominalGenRatio=nominalGen.Clone('nominalGenRatio')
@@ -246,21 +230,9 @@ def main():
     FSRUpGenRatio.Draw  ('SAME P X0 E1')
     FSRDownGenRatio.Draw('SAME P X0 E1')
     herwigGenRatio.Draw ('SAME H')
-    
-    lineStart = 0.94
-    lineHeight = 2.
-    ratio_divider1 = ROOT.TLine(3, lineStart, 3, lineHeight)
-    ratio_divider1.SetLineColor(ROOT.kBlack)
-    ratio_divider1.Draw()
-    ratio_divider2 = ROOT.TLine(6, lineStart, 6, lineHeight)
-    ratio_divider2.SetLineColor(ROOT.kBlack)
-    ratio_divider2.Draw()
-    ratio_divider4 = ROOT.TLine(9, lineStart, 9, lineHeight)
-    ratio_divider4.SetLineColor(ROOT.kBlack)
-    ratio_divider4.Draw()
             
-    c.Print(opt.outDir+'/meanTau.pdf')
-    c.Print(opt.outDir+'/meanTau.png')
+    c.Print(opt.outDir+'/meanECF_'+opt.flavor+'.pdf')
+    c.Print(opt.outDir+'/meanECF_'+opt.flavor+'.png')
         
 def normalizeAndDivideByBinWidth(hist):
     hist.Scale(1./hist.Integral())

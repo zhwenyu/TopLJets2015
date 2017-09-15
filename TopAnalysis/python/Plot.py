@@ -25,7 +25,21 @@ def fixExtremities(h,addOverflow=True,addUnderflow=True):
 	h.SetBinContent(nbins+1,0)
 	h.SetBinError(nbins+1,0)
 
-
+"""
+Adapt plots to limited range
+(Useful for ratio plots! Otherwise, they are not drawn when the central point is outside the range.)
+"""
+def limitToRange(h, ratiorange):
+    for i in xrange(1,h.GetNbinsX()+1):
+        up = h.GetBinContent(i) + h.GetBinError(i)
+        if (up > ratiorange[1]):
+            up = ratiorange[1]
+        dn = h.GetBinContent(i) - h.GetBinError(i)
+        if (dn < ratiorange[0]):
+            dn = ratiorange[0]
+        h.SetBinContent(i, (up + dn)/2.)
+        h.SetBinError(i, (up - dn)/2.)
+        
 
 """
 A wrapper to store data and MC histograms for comparison
@@ -136,6 +150,8 @@ class Plot(object):
             outDir.cd()
         for m in self.mc :
             self.mc[m].Write(self.mc[m].GetName(), ROOT.TObject.kOverwrite)
+        for m in self.mcsyst :
+            self.mcsyst[m].Write(self.mcsyst[m].GetName(), ROOT.TObject.kOverwrite)
         if self.totalMCUnc:
             self.totalMCUnc.Write(self.totalMCUnc.GetName(), ROOT.TObject.kOverwrite)
         for m in self.spimpose:
@@ -197,7 +213,7 @@ class Plot(object):
 
         # legend
         iniy=0.9 if self.wideCanvas else 0.85
-        dy=0.05
+        dy=0.06
         ndy= max(len(self.mc),1)
         inix,dx =0.65,0.4
         if noRatio: inix=0.6
@@ -365,6 +381,8 @@ class Plot(object):
                 if (len(self.mcsyst)>0):
                     totalMCUnc.Draw('e2 same')
                     totalMCUncShape.Draw('e2 same')
+                    leg.AddEntry(totalMCUnc, "Total unc.", 'f')
+                    leg.AddEntry(totalMCUncShape, "Shape unc.", 'f')
         for m in self.spimpose:
             self.spimpose[m].Draw('histsame')
             leg.AddEntry(self.spimpose[m],self.spimpose[m].GetTitle(),'l')
@@ -375,7 +393,9 @@ class Plot(object):
             inix = 0.15
             leg.SetX1(inix)
             leg.SetX2(inix+dx)
+        
         leg.Draw()
+        
         txt=ROOT.TLatex()
         txt.SetNDC(True)
         txt.SetTextFont(42)
@@ -473,7 +493,7 @@ class Plot(object):
                 self._garbageList.append(totalMCnoUnc)
                 for xbin in xrange(1,totalMC.GetNbinsX()+1):
                     ratioframe.SetBinContent(xbin,1)
-                    val=totalMC.GetBinContent(xbin)
+                    val=self.dataH.GetBinContent(xbin)
                     totalMCnoUnc.SetBinError(xbin,0.)
                     if val==0 : continue
                     if (len(self.mcsyst)>0):
@@ -481,28 +501,46 @@ class Plot(object):
                         totalUncShape=ROOT.TMath.Sqrt((totalMCUncShape.GetBinError(xbin)/val)**2+self.mcUnc**2)
                         ratioframeshape.SetBinContent(xbin,totalMCUncShape.GetBinContent(xbin)/val)
                         ratioframeshape.SetBinError(xbin,totalUncShape)
+                        limitToRange(ratioframeshape, self.ratiorange)
                     else: totalUnc=ROOT.TMath.Sqrt((totalMC.GetBinError(xbin)/val)**2+self.mcUnc**2)
                     ratioframe.SetBinContent(xbin,totalMCnoUnc.GetBinContent(xbin)/val)
                     ratioframe.SetBinError(xbin,totalUnc)
+                    limitToRange(ratioframe, self.ratiorange)
                 ratioframe.Draw('e2')
                 if (len(self.mcsyst)>0): ratioframeshape.Draw('e2 same')
-                try:
-                    ratio=self.dataH.Clone('ratio')
-                    ratio.SetDirectory(0)
-                    self._garbageList.append(ratio)
-                    ratio.Divide(totalMCnoUnc)
-                    gr=ROOT.TGraphAsymmErrors(ratio)
-                    gr.SetMarkerStyle(self.data.GetMarkerStyle())
-                    gr.SetMarkerSize(self.data.GetMarkerSize())
-                    gr.SetMarkerColor(self.data.GetMarkerColor())
-                    gr.SetLineColor(self.data.GetLineColor())
-                    gr.SetLineWidth(self.data.GetLineWidth())
-                    for ip in xrange(0,gr.GetN()):
-                        gr.SetPointEXhigh(ip,0.)
-                        gr.SetPointEXlow(ip,0.)
-                    gr.Draw('p')
-                except:
-                    pass
+
+                #try:
+                ratio=self.dataH.Clone('ratio')
+                ratio.SetDirectory(0)
+                self._garbageList.append(ratio)
+                for xbin in xrange(1,ratio.GetNbinsX()+1):
+                    if ratio.GetBinContent(xbin) > 0.:
+                        ratio.SetBinError(xbin, ratio.GetBinError(xbin)/ratio.GetBinContent(xbin))
+                        ratio.SetBinContent(xbin, 1.)
+                    else:
+                        ratio.SetBinError  (xbin, 0.)
+                        ratio.SetBinContent(xbin, 0.)
+                ratio.SetMarkerSize(0)
+                ratio.SetFillStyle(3245)
+                ratio.SetFillColor(ROOT.kBlack)
+                ratio.SetLineColor(ROOT.kBlack)
+                ratio.Draw('e2 same')
+                ratio.Draw('same l')
+                #gr=ROOT.TGraphAsymmErrors(ratio)
+                #gr.SetMarkerStyle(self.data.GetMarkerStyle())
+                #gr.SetMarkerSize(self.data.GetMarkerSize())
+                #gr.SetMarkerColor(self.data.GetMarkerColor())
+                #gr.SetLineColor(self.data.GetLineColor())
+                #gr.SetLineWidth(self.data.GetLineWidth())
+                #gr.Draw('p')
+                #except:
+                #    pass
+                
+                # Let's compute a chi2 from the ratios
+                #if (len(self.mcsyst)>0):
+                #    c.cd()
+                #    txt.DrawLatex(inix,iniy-0.02,'#scale[0.5]{#chi^{2}/ndf = %0.2f}'%(ratio.Chi2Test(ratioframeshape, 'UW,CHI2/NDF')))
+
 
         #all done
         if p1: p1.RedrawAxis()
