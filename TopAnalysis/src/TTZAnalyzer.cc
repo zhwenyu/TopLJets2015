@@ -61,7 +61,7 @@ TTZEvent selectRecoEvents(SelectionTool &selector,MiniEvent_t &ev,MEzCalculator 
     std::vector<Particle> tightLeptons=selector.getSelLeptons(); 
     std::vector<Particle> looseLeptons=selector.getVetoLeptons();
     for(auto &l : tightLeptons) reco.Leptons.push_back(l);
-    for(auto &l : looseLeptons) reco.Leptons.push_back(l);
+    for(auto &l : looseLeptons) if(l.pt()>25) reco.Leptons.push_back(l);
     
     //at least one tight lepton is required
     if(tightLeptons.size()==0) return reco;

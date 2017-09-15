@@ -52,6 +52,8 @@ class Plot(object):
         self.frameMin=0.01
         self.frameMax=1.45
         self.mcUnc=0
+        self.legSize=(0.045 if self.wideCanvas else 0.04)
+        self.ratioTitle='Ratio '
 
     def add(self, h, title, color, isData, spImpose, isSyst):
 
@@ -123,7 +125,10 @@ class Plot(object):
             self.data = convertToPoissonErrorGr(self.dataH)
         else:
             self.data=ROOT.TGraphErrors(self.dataH)
-
+        for i in xrange(0,self.data.GetN()):
+            self.data.SetPointEXhigh(i,0.)
+            self.data.SetPointEXlow(i,0.)
+            
     def appendTo(self,outUrl):
         outF = ROOT.TFile.Open(outUrl,'UPDATE')
         if not outF.cd(self.name):
@@ -169,7 +174,7 @@ class Plot(object):
         c.cd()
         p1 = None
         if self.dataH and not noRatio:
-            p1=ROOT.TPad('p1','p1',0.0,0.2,1.0,1.0) if cwid!=1000 else ROOT.TPad('p1','p1',0.0,0.0,1.0,1.0)
+            p1=ROOT.TPad('p1','p1',0.0,0.22,1.0,1.0) if cwid!=1000 else ROOT.TPad('p1','p1',0.0,0.0,1.0,1.0)
             p1.SetRightMargin(0.05)
             p1.SetLeftMargin(0.12)
             p1.SetTopMargin(0.06)
@@ -205,13 +210,13 @@ class Plot(object):
         leg.SetBorderSize(0)
         leg.SetFillStyle(0)
         leg.SetTextFont(42)
-        leg.SetTextSize(0.045 if self.wideCanvas else 0.04)
+        leg.SetTextSize(self.legSize)
         if noRatio : leg.SetTextSize(0.035)
         nlegCols = 0
 
         if self.dataH is not None:
             if self.data is None: self.finalize()
-            leg.AddEntry( self.data, self.data.GetTitle(),'p')
+            leg.AddEntry( self.data, self.data.GetTitle(),'ep')
             nlegCols += 1
         for h in self.mc:
 
@@ -334,10 +339,10 @@ class Plot(object):
         frame.SetDirectory(0)
         frame.Reset('ICE')
         self._garbageList.append(frame)
-        frame.GetYaxis().SetTitleSize(0.05)
-        frame.GetYaxis().SetLabelSize(0.045)
+        frame.GetYaxis().SetTitleSize(0.055)
+        frame.GetYaxis().SetLabelSize(0.05)
         ROOT.TGaxis.SetMaxDigits(4)
-        frame.GetYaxis().SetTitleOffset(1.2)
+        frame.GetYaxis().SetTitleOffset(1.1)
         if noRatio:
             frame.GetYaxis().SetTitleOffset(1.4)
         if self.dataH:
@@ -384,10 +389,13 @@ class Plot(object):
         if not self.dataH or noRatio:
             inix=0.56
             inixlumi=0.65
+        if len(self.com)>10:
+            inixlumi=0.55
 
         txt.DrawLatex(inix,iniy,self.cmsLabel)
         if lumi<1:
-            txt.DrawLatex(inixlumi,0.97,'#scale[0.8]{%3.1f nb^{-1} (%s)}' % (lumi*1000.,self.com) )
+            inixlumi=0.55
+            txt.DrawLatex(inixlumi,0.97,'#scale[0.8]{pPb (%3.0f nb^{-1}, %s)}' % (lumi*1000.,self.com) )
         elif lumi<100:
             txt.DrawLatex(inixlumi,0.97,'#scale[0.8]{%3.1f pb^{-1} (%s)}' % (lumi,self.com) )
         else:
@@ -395,7 +403,7 @@ class Plot(object):
         try:
             extraCtr=1
             for extra in extraText.split('\\'):
-                txt.DrawLatex(inix,iniy-0.05*extraCtr,'#scale[0.8]{#it{%s}}'%extra)
+                txt.DrawLatex(inix,iniy-0.02-0.06*extraCtr,'#scale[0.9]{%s}'%extra)
                 extraCtr+=1
         except:
             pass
@@ -404,7 +412,7 @@ class Plot(object):
         #holds the ratio
         c.cd()
         if not noRatio and self.dataH and len(self.mc)>0 :
-            p2 = ROOT.TPad('p2','p2',0.0,0.0,1.0,0.2)
+            p2 = ROOT.TPad('p2','p2',0.0,0.0,1.0,0.22)
             p2.Draw()
             p2.SetBottomMargin(0.4)
             p2.SetRightMargin(0.05)
@@ -415,7 +423,7 @@ class Plot(object):
             self._garbageList.append(p2)
             p2.cd()
             ratioframe=frame.Clone('ratioframe')
-            ratioframe.GetYaxis().SetTitle('Ratio ')
+            ratioframe.GetYaxis().SetTitle(self.ratioTitle)
             ratioframe.GetYaxis().SetRangeUser(self.ratiorange[0], self.ratiorange[1])
             self._garbageList.append(ratioframe)
             ratioframe.GetYaxis().SetNdivisions(503)
@@ -424,7 +432,7 @@ class Plot(object):
             ratioframe.GetYaxis().SetTitleOffset(0.3)
             ratioframe.GetXaxis().SetLabelSize(0.18)
             ratioframe.GetXaxis().SetTitleSize(0.2)
-            ratioframe.GetXaxis().SetTitleOffset(0.8)
+            ratioframe.GetXaxis().SetTitleOffset(0.85)
             ratioframe.SetFillStyle(3254)
             ratioframe.SetFillColor(ROOT.TColor.GetColor('#99d8c9'))
 
@@ -441,6 +449,11 @@ class Plot(object):
                     self._garbageList.append(ratio)
                     ratio.Divide(self.mc[title])
                     ratioGrs.append( ROOT.TGraphAsymmErrors(ratio) )
+
+                    for i in xrange(0,ratioGrs[-1].GetN()):
+                        ratioGrs[-1].SetPointEXhigh(i,0.)
+                        ratioGrs[-1].data.SetPointEXlow(i,0.)
+
                     ratioGrs[-1].SetMarkerStyle(self.data.GetMarkerStyle())
                     ratioGrs[-1].SetMarkerSize(self.data.GetMarkerSize())
                     ci=self.mc[title].GetLineColor()
@@ -484,6 +497,9 @@ class Plot(object):
                     gr.SetMarkerColor(self.data.GetMarkerColor())
                     gr.SetLineColor(self.data.GetLineColor())
                     gr.SetLineWidth(self.data.GetLineWidth())
+                    for ip in xrange(0,gr.GetN()):
+                        gr.SetPointEXhigh(ip,0.)
+                        gr.SetPointEXlow(ip,0.)
                     gr.Draw('p')
                 except:
                     pass

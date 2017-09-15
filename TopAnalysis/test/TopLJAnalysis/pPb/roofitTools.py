@@ -47,15 +47,15 @@ def showFitResult(fitVar,data,pdf,categs,w,showComponents=[],rangeX=(0,400),outD
     c.SetLeftMargin(0)
     c.SetRightMargin(0)
     c.SetBottomMargin(0)
-    p1 = ROOT.TPad('p1','p1',0.0,0.2,1.0,1.0)
+    p1 = ROOT.TPad('p1','p1',0.0,0.25,1.0,1.0)
     p1.SetRightMargin(0.05)
     p1.SetLeftMargin(0.12)
-    p1.SetTopMargin(0.05)
+    p1.SetTopMargin(0.06)
     p1.SetBottomMargin(0.02)
     p1.Draw()
     c.cd()
-    p2 = ROOT.TPad('p2','p2',0.0,0.0,1.0,0.19)
-    p2.SetBottomMargin(0.55)
+    p2 = ROOT.TPad('p2','p2',0.0,0.0,1.0,0.25)
+    p2.SetBottomMargin(0.45)
     p2.SetRightMargin(0.05)
     p2.SetLeftMargin(0.12)
     p2.SetTopMargin(0.001)
@@ -77,12 +77,13 @@ def showFitResult(fitVar,data,pdf,categs,w,showComponents=[],rangeX=(0,400),outD
         redData.plotOn(frame,ROOT.RooFit.Name('data'),ROOT.RooFit.DrawOption('p'))
 
 
+        sigColor='#d7191c'#'#fc8d59'
         if len(tag)!=0:
           pdf.plotOn(frame,
                      ROOT.RooFit.Slice(w.cat('sample'),tag),
                      ROOT.RooFit.Name('totalpdfcont'),
                      ROOT.RooFit.ProjWData(redData),
-                     ROOT.RooFit.LineColor(ROOT.TColor.GetColor('#91bfdb')),
+                     ROOT.RooFit.LineColor(ROOT.TColor.GetColor(sigColor)), #'#fee090')),
                      ROOT.RooFit.MoveToBack())
         else:
           pdf.plotOn(frame,
@@ -107,9 +108,9 @@ def showFitResult(fitVar,data,pdf,categs,w,showComponents=[],rangeX=(0,400),outD
             for icomp in xrange(0,len(showComponents)):
                 comps = showComponents[icomp] if isinstance(showComponents[icomp], basestring) else showComponents[icomp][0]
                 if 'S_wro' in comps or 'QCD_' in comps:
-                    color=ROOT.TColor.GetColor('#4575b4')
-                    #if comps=='S_cor*,S_wro*' or comps=='S_wro*,S_cor*':color=ROOT.TColor.GetColor('#91bfdb')
-                    if comps=='QCD_*,W_*' : color=ROOT.TColor.GetColor('#ded0ef')
+                    color=ROOT.TColor.GetColor('#fdae61') #'#91bfdb') #'#fc8d59')
+                    #if comps=='S_cor*,S_wro*' or comps=='S_wro*,S_cor*':color=ROOT.TColor.GetColor('#fee090')
+                    if comps=='QCD_*,W_*' : color=ROOT.TColor.GetColor('#2b83ba') #'#f7efef') ##91bfdb')
                     if len(tag)!=0:
                         pdf.plotOn(frame,
                                    ROOT.RooFit.Components(comps),
@@ -158,9 +159,9 @@ def showFitResult(fitVar,data,pdf,categs,w,showComponents=[],rangeX=(0,400),outD
                            ROOT.RooFit.Slice(w.cat('sample'),tag),
                            ROOT.RooFit.Name('totalpdf'),
                            ROOT.RooFit.ProjWData(redData),
-                           ROOT.RooFit.FillStyle(1001),
-                           ROOT.RooFit.FillColor(ROOT.TColor.GetColor('#91bfdb')),
-                           ROOT.RooFit.LineColor(ROOT.TColor.GetColor('#91bfdb')),
+                           ROOT.RooFit.FillStyle(1001),                           
+                           ROOT.RooFit.FillColor(ROOT.TColor.GetColor(sigColor)),
+                           ROOT.RooFit.LineColor(ROOT.TColor.GetColor(sigColor)),
                            ROOT.RooFit.LineWidth(2),
                            ROOT.RooFit.DrawOption('f'),
                            ROOT.RooFit.MoveToBack())
@@ -176,10 +177,11 @@ def showFitResult(fitVar,data,pdf,categs,w,showComponents=[],rangeX=(0,400),outD
                            ROOT.RooFit.MoveToBack())
 
         frame.Draw()
+        frame.GetYaxis().SetRangeUser(0,frame.GetMaximum()*1.2)
         frame.GetYaxis().SetTitle("Events")
-        frame.GetYaxis().SetTitleOffset(0.9)
-        frame.GetYaxis().SetTitleSize(0.065)
-        frame.GetYaxis().SetLabelSize(0.055)
+        frame.GetYaxis().SetTitleOffset(1.0)
+        frame.GetYaxis().SetTitleSize(0.06)
+        frame.GetYaxis().SetLabelSize(0.05)
         frame.GetXaxis().SetTitleSize(0)#0.06)
         frame.GetXaxis().SetLabelSize(0)#0.05)
         frame.GetXaxis().SetTitleOffset(0.9)
@@ -190,16 +192,15 @@ def showFitResult(fitVar,data,pdf,categs,w,showComponents=[],rangeX=(0,400),outD
           datagr.SetPointEXhigh(i,0.)
           datagr.SetPointEXlow(i,0.)
           
-
+        ndof=datagr.GetN()
         label = ROOT.TLatex()
         label.SetNDC()
         label.SetTextFont(42)
-        label.SetTextSize(0.05)
-        label.DrawLatex(0.15,0.89,'#scale[1.2]{#bf{CMS}}') # #it{preliminary}')
-        label.DrawLatex(0.54,0.965,'#scale[0.8]{%3.0f nb^{-1} (pPb, #sqrt{s_{NN}} = 8.16 TeV)}'%lumi[0])
         label.SetTextSize(0.055)
-        label.DrawLatex(0.5,0.89,'#scale[0.9]{#it{%s}}'%(tagTitle if tagTitle!='' else 'inclusive'))
-        label.DrawLatex(0.5,0.82,'#scale[0.9]{#chi^{2}/dof = %3.2f}'%totalchisq)
+        label.DrawLatex(0.15,0.86,'#scale[1.2]{#bf{CMS}}') 
+        label.DrawLatex(0.535,0.962,'#scale[0.8]{pPb (%3.0f nb^{-1}, #sqrt{s_{NN}} = 8.16 TeV)}'%lumi[0])
+        label.DrawLatex(0.50,0.86,'#bf{%s}'%(tagTitle if tagTitle!='' else 'inclusive'))
+        label.DrawLatex(0.50,0.49,'#chi^{2}/dof = %3.1f/%d'%(totalchisq*ndof,ndof))
 
         #print the PDF parameters on the canvas
         #paramList=[('Nsig','N_{cp}(t#bar{t})'),
@@ -207,11 +208,11 @@ def showFitResult(fitVar,data,pdf,categs,w,showComponents=[],rangeX=(0,400),outD
         #                ('sig_sigma_%s'%fitVar,'#sigma'),
         #               ('eb_%s'%j,'#epsilon_{b}')]
         if paramList is None:
-            leg=ROOT.TLegend(0.49,0.79,0.8,0.5)
+            leg=ROOT.TLegend(0.49,0.83,0.8,0.56)
             leg.SetFillStyle(0)
             leg.SetBorderSize(0)
             leg.SetTextFont(42)
-            leg.SetTextSize(0.052)
+            leg.SetTextSize(0.055)
             leg.AddEntry('data','Data','ep')
             leg.AddEntry('totalpdf','t#bar{t} correct assignments','lf')
             for icomp in reversed(xrange(0,len(showComponents))):
@@ -243,12 +244,12 @@ def showFitResult(fitVar,data,pdf,categs,w,showComponents=[],rangeX=(0,400),outD
             pullFrame.addPlotable(hpull,"P") ;
             pullFrame.Draw()
             pullFrame.GetYaxis().SetTitle("#frac{Data-Fit}{Error}")
-            pullFrame.GetYaxis().SetTitleSize(0.2)
-            pullFrame.GetYaxis().SetLabelSize(0.2)
+            pullFrame.GetYaxis().SetTitleSize(0.19)
+            pullFrame.GetYaxis().SetLabelSize(0.16)
             pullFrame.GetYaxis().SetTitleOffset(0.24)
-            pullFrame.GetXaxis().SetTitleSize(0.3)
-            pullFrame.GetXaxis().SetLabelSize(0.22)
-            pullFrame.GetXaxis().SetTitleOffset(0.75)
+            pullFrame.GetXaxis().SetTitleSize(0.19)
+            pullFrame.GetXaxis().SetLabelSize(0.16)
+            pullFrame.GetXaxis().SetTitleOffset(0.85)
             pullFrame.GetYaxis().SetNdivisions(4)
             pullFrame.GetYaxis().SetRangeUser(-3.0,3.0)
 
@@ -263,12 +264,21 @@ def showFitResult(fitVar,data,pdf,categs,w,showComponents=[],rangeX=(0,400),outD
             c.SaveAs('%s/%s_%s%s.%s'%(outDir,fitVar,tagTitle if tag=='' else tag,pfix,ext))
 
         p1.cd()
-        label.DrawLatex(0.26,0.89,'#scale[1.0]{#it{preliminary}}')
+        prel=label.DrawLatex(0.26,0.89,'#scale[1.0]{#it{preliminary}}')
         c.Modified()
         c.Update()
         for ext in extsToSave:
           c.SaveAs('%s/%s_%s%s_prel.%s'%(outDir,fitVar,tagTitle if tag=='' else tag,pfix,ext))
 
+        p1.cd()
+        prel.Delete()
+        label.DrawLatex(0.26,0.86,'#scale[0.75]{#it{Supplementary}}')
+        c.Modified()
+        c.Update()
+        for ext in extsToSave:
+          c.SaveAs('%s/%s_%s%s_unpub.%s'%(outDir,fitVar,tagTitle if tag=='' else tag,pfix,ext))
+        
+        return (fitVar,tag,totalchisq)
 
 def showLikelihoods(pll,ll,var):
 

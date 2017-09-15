@@ -49,6 +49,7 @@ def main():
     compsToShow=[('S_wro*,S_cor2*','t#bar{t} wrong assignments'),('S_cor*,S_wro*','t#bar{t} correct assignments')] #,'S_cor*,S_wro*,W_*']
     compsToShow=[('QCD_*,W_*','background'),('QCD_*,W_*,S_wro*,S_cor2*','t#bar{t} wrong assignments')] #,'S_cor*,S_wro*,W_*']
     
+    results={}
     for x in EVENTCATEGORIES:
 
         xtitle  = 'e' if x[0]=='e' else '#mu'
@@ -63,20 +64,23 @@ def main():
                                  ('mtlep',(100,400),'model_combined_mtlep')
                                  ]:
             if var=='mjj' : w.var(var).SetTitle("m_{jj'} [GeV]")
-            showFitResult(fitVar=var,
-                        data=w.data('data'),
-                        pdf=w.pdf(model),
-                        categs=[x],
-                        tagTitle=xtitle,
-                        w=w,
-                        showComponents=compsToShow,
-                        rangeX=rangeX,
-                        outDir='./',
-                        paramList=None,
-                        pfix='_final',
-                        extsToSave=['png','pdf','root'])
+            res=showFitResult(fitVar=var,
+                              data=w.data('data'),
+                              pdf=w.pdf(model),
+                              categs=[x],
+                              tagTitle=xtitle,
+                              w=w,
+                              showComponents=compsToShow,
+                              rangeX=rangeX,
+                              outDir='./',
+                              paramList=None,
+                              pfix='_final',
+                              extsToSave=['png','pdf','root'])
+            results[(res[0],res[1])]=res[2]
             #raw_input()
 
+    import pickle
+    pickle.dump( results, open( "chisquare_final.pck", "wb" ) )
         
 
 if __name__ == "__main__":
