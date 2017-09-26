@@ -33,14 +33,16 @@ case $WHAT in
 	file=root://eoscms//eos/cms/store/cmst3/group/top/ReReco2016/b312177/MC13TeV_TTJets/MergedMiniEvents_0_ext0.root
         #file==root://eoscms//eos/cms/store/cmst3/group/top/ReReco2016/b312177/MC13TeV_TTJets2l2nu_amcatnlo/MergedMiniEvents_1_ext0.root
 	#file=root://eoscms//eos/cms/store/cmst3/group/top/ReReco2016/b312177/Data13TeV_MuonEG_2016D/MergedMiniEvents_0.root
-	analysisWrapper \
-	    --in ${file} \
-	    --out ue_test.root \
-	    --era ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/era2016 \
-	    --method TOP-UE::RunTopUE \
-	    --runSysts \
-	    --ch 0;
-	#python test/TopUEAnalysis/runUEanalysis.py -i ue_test.root --step 0 --ptThr 1.0,0.9 -o ./UEanalysis_test;
+	#analysisWrapper \
+	#    --in ${file} \
+	#    --out ue_test.root \
+	#    --era ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/era2016 \
+	#    --method TOP-UE::RunTopUE \
+	#    --runSysts \
+	#    --ch 0;
+        for step in 1 2; do
+	    python test/TopUEAnalysis/runUEanalysis.py -i ue_test.root --step ${step} --ptThr 1.0,0.9  --obs chmult --slice ptll=0,9999. --reg ptll=awa -o ./UEanalysis_test;
+        done
 	#python test/TopUEAnalysis/runUEanalysis.py --step 1 -o ./UEanalysis_test;
 	#python test/TopUEAnalysis/runUEanalysis.py -i ue_test.root      --step 2 -q local -o ./UEanalysis_test;
 	#python test/TopUEAnalysis/showFastFinalDistributions.py UEanalysis_test/analysis/Chunks/ue_test.root --cfg ./UEanalysis_test/analysisaxiscfg.pck
@@ -73,19 +75,102 @@ case $WHAT in
 	;;
     ANA )
 	eosprefix=root://eoscms//eos/cms
-	echo "Computing resolutions"
-	base="${eosprefix}/${summaryeosdir}/Chunks/MC13TeV_TTJets"
-	python test/TopUEAnalysis/runUEanalysis.py -i ${base}_0.root,${base}_1.root,${base}_2.root,${base}_3.root,${base}_4.root --step 0 --ptThr 0.9,0.9 -o ${outdir};
 
-	echo "Defining analysis configuration"
-	python test/TopUEAnalysis/runUEanalysis.py --step 1 -o ${outdir};
-	
-	echo "Filling the histograms"
-        #queue=local
-	python test/TopUEAnalysis/runUEanalysis.py -i ${summaryeosdir}/Chunks      --step 2 -q ${queue} -o ${outdir}; # --only TTJets;
+	base="${eosprefix}/${summaryeosdir}/Chunks/MC13TeV_TTJets"
+	baseFiles=${base}_0.root,${base}_1.root,${base}_2.root,${base}_3.root,${base}_4.root
+
+	echo "Preparing analysis configuration based on ${baseFiles}"
+        obs=("chmult" "chavgpt" "chavgpz" "chfluxz" "chflux" "sphericity" "aplanarity" "C" "D")
+        analyses=(
+            "" 
+            "--reg ptttbar=awa" 
+            "--reg ptttbar=tow" 
+            "--reg ptttbar=tra" 
+            "--reg ptll=awa" 
+            "--reg ptll=tow" 
+            "--reg ptll=tra"
+            "--slice nj=0,1 " 
+            "--slice nj=0,1 --reg ptttbar=awa" 
+            "--slice nj=0,1 --reg ptttbar=tow" 
+            "--slice nj=0,1 --reg ptttbar=tra" 
+            "--slice nj=0,1 --reg ptll=awa" 
+            "--slice nj=0,1 --reg ptll=tow" 
+            "--slice nj=0,1 --reg ptll=tra"
+            "--slice nj=1,2 " 
+            "--slice nj=1,2 --reg ptttbar=awa" 
+            "--slice nj=1,2 --reg ptttbar=tow" 
+            "--slice nj=1,2 --reg ptttbar=tra" 
+            "--slice nj=1,2 --reg ptll=awa" 
+            "--slice nj=1,2 --reg ptll=tow" 
+            "--slice nj=1,2 --reg ptll=tra"
+            "--slice nj=2,999" 
+            "--slice nj=2,999 --reg ptttbar=awa" 
+            "--slice nj=2,999 --reg ptttbar=tow" 
+            "--slice nj=2,999 --reg ptttbar=tra" 
+            "--slice nj=2,999 --reg ptll=awa" 
+            "--slice nj=2,999 --reg ptll=tow" 
+            "--slice nj=2,999 --reg ptll=tra"
+            "--slice ptttbar=0,20 " 
+            "--slice ptttbar=0,20 --reg ptttbar=awa" 
+            "--slice ptttbar=0,20 --reg ptttbar=tow" 
+            "--slice ptttbar=0,20 --reg ptttbar=tra" 
+            "--slice ptttbar=20,60" 
+            "--slice ptttbar=20,60--reg ptttbar=awa" 
+            "--slice ptttbar=20,60--reg ptttbar=tow" 
+            "--slice ptttbar=20,60--reg ptttbar=tra" 
+            "--slice ptttbar=60,120" 
+            "--slice ptttbar=60,120 --reg ptttbar=awa" 
+            "--slice ptttbar=60,120 --reg ptttbar=tow" 
+            "--slice ptttbar=60,120 --reg ptttbar=tra" 
+            "--slice ptttbar=120,9999" 
+            "--slice ptttbar=120,9999 --reg ptttbar=awa" 
+            "--slice ptttbar=120,9999 --reg ptttbar=tow" 
+            "--slice ptttbar=120,9999 --reg ptttbar=tra" 
+            "--slice ptll=0,60"
+            "--slice ptll=0,60 --reg ptll=awa" 
+            "--slice ptll=0,60 --reg ptll=tow" 
+            "--slice ptll=0,60 --reg ptll=tra"
+            "--slice ptll=60,120"
+            "--slice ptll=60,120 --reg ptll=awa" 
+            "--slice ptll=60,120 --reg ptll=tow" 
+            "--slice ptll=60,120 --reg ptll=tra"
+            "--slice ptll=120,9999"
+            "--slice ptll=120,9999 --reg ptll=awa" 
+            "--slice ptll=120,9999 --reg ptll=tow" 
+            "--slice ptll=120,9999 --reg ptll=tra"
+        )
+        for o in "${obs[@]}"; do
+            for a in "${analyses[@]}"; do
+                options="--ptThr 0.9,0.9 --obs ${o} ${a}"
+                echo $options
+	        python test/TopUEAnalysis/runUEanalysis.py -i ${baseFiles}     --step 1             ${options} -o ./UEanalysis;
+            done
+        done
+
+        queue=workday
+	echo "Filling the histograms for unfolding"
+        a=(`ls UEanalysis/*/*/analysiscfg.pck`)
+        for i in ${a[@]}; do
+            echo ${i};
+            continue
+            python test/TopUEAnalysis/runUEanalysis.py -i ${summaryeosdir}/Chunks --step 2 -q ${queue} -o `dirname ${i}`;
+        done
+        
 	;;
     MERGEANA )
-	./scripts/mergeOutputs.py UEanalysis/analysis True 
+        a=(`ls UEanalysis/*/*/analysiscfg.pck`)
+        for i in ${a[@]}; do
+            dir=`dirname ${i}`
+            if [ -f "${dir}/condor.sub" ]; then
+                echo "Checking results for ${dir}"
+                python scripts/checkAnalysisIntegrity.py ${dir}/FARM-UEANA/ ${dir}/Chunks/
+	        ./scripts/mergeOutputs.py ${dir} True 
+	        commonOpts="-l ${lumi} --mcUnc ${lumiUnc} --procSF DY:${outdir}/plots/.dyscalefactors.pck";
+	        python scripts/plotter.py -i ${dir} -j data/era2016/samples.json      ${commonOpts} --only _0;
+                python scripts/plotter.py -i ${dir} -j data/era2016/samples.json      ${commonOpts} --silent;
+	        python scripts/plotter.py -i ${dir} -j data/era2016/syst_samples.json ${commonOpts} --silent --outName syst_plotter.root;	
+            fi
+        done
 	;;
     PLOTANA )
 

@@ -22,7 +22,7 @@ case $WHAT in
 
 	    python checkMatchingDistributions.py "min#DeltaR_{jj'}":plots/${sample}/controlplots_drjj_dm2tlep.root \
 	        "leading p_{T}":plots/${sample}/controlplots_sumpt_dm2tlep.root \
-	        "min|M_{jj'}-M_{W}|":plots/${sample}/controlplots_mjj_dm2tlep.root
+	        "min|m_{jj'}-m_{W}|":plots/${sample}/controlplots_mjj_dm2tlep.root
 	    #mkdir -p plots/${sample}/w
 	    #mv *.{png,pdf} plots/${sample}/w
 
@@ -160,8 +160,10 @@ case $WHAT in
     FINALCOMP )
         python doPRLplots.py -i ~/public/forGeorgios/HIN-17-002/fit_finalworkspace_wmodel0_0.root #fit_finalworkspace_wmodel0_0.root
         for var in mjj mthad mtlep; do
-            for cat in 1l4j2b 1l4j1b1q 1l4j2q; do         
+            for cat in 1l4j2b 1l4j1b1q 1l4j2q; do                         
+                continue
                 python mergePLRplotCategs.py $var $cat;        
+                python mergePLRplotCategs.py $var $cat True;        
             done
         done
 

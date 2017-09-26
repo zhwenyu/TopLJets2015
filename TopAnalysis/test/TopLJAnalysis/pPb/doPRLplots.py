@@ -24,9 +24,9 @@ def main():
 
     fIn=ROOT.TFile.Open(opt.input)
     w=fIn.Get('w')
-    w.var('mjj').SetTitle('M(jj) [GeV]')
-    w.var('mthad').SetTitle('M_{top} [GeV]')
-    w.var('mtlep').SetTitle('M(t_{lep}) [GeV]')
+    w.var('mjj').SetTitle("m_{jj'} [GeV]")
+    w.var('mthad').SetTitle('m_{top} [GeV]')
+    w.var('mtlep').SetTitle('m_{l#nub} [GeV]')
 
     #fix all parameters related to mjj
     w.loadSnapshot('fitresult_combined')
@@ -46,8 +46,8 @@ def main():
     pdfmtlep.fitTo(w.data('data'))
 
     #compsToShow=[('S_cor*','t#bar{t} cor. perm.'),('S_cor*,S_wro*','t#bar{t} wro. perm.')] #,'S_cor*,S_wro*,W_*']
-    compsToShow=[('S_wro*,S_cor2*','t#bar{t} wrong assignments'),('S_cor*,S_wro*','t#bar{t} correct assignments')] #,'S_cor*,S_wro*,W_*']
-    compsToShow=[('QCD_*,W_*','background'),('QCD_*,W_*,S_wro*,S_cor2*','t#bar{t} wrong assignments')] #,'S_cor*,S_wro*,W_*']
+    compsToShow=[('S_wro*,S_cor2*','t#bar{t} wrong'),('S_cor*,S_wro*','t#bar{t} correct')] #,'S_cor*,S_wro*,W_*']
+    compsToShow=[('QCD_*,W_*','background'),('QCD_*,W_*,S_wro*,S_cor2*','t#bar{t} wrong')] #,'S_cor*,S_wro*,W_*']
     
     results={}
     for x in EVENTCATEGORIES:
@@ -57,25 +57,27 @@ def main():
         if '2q' in x   : xtitle += ' (=0b)'
         if '1b1q' in x : xtitle += ' (=1b)'
         if '2b' in x   : xtitle += ' (#geq2b)'
-        xtitle += ' events'
+        #xtitle += ' events'
 
         for var,rangeX,model in [('mjj',(25,300),'model_combined_mjj'),                                 
                                  ('mthad',(100,400),'model_combined_mthad'),
                                  ('mtlep',(100,400),'model_combined_mtlep')
                                  ]:
             if var=='mjj' : w.var(var).SetTitle("m_{jj'} [GeV]")
-            res=showFitResult(fitVar=var,
-                              data=w.data('data'),
-                              pdf=w.pdf(model),
-                              categs=[x],
-                              tagTitle=xtitle,
-                              w=w,
-                              showComponents=compsToShow,
-                              rangeX=rangeX,
-                              outDir='./',
-                              paramList=None,
-                              pfix='_final',
-                              extsToSave=['png','pdf','root'])
+            for noPulls in [True, False]:
+                res=showFitResult(fitVar=var,
+                                  data=w.data('data'),
+                                  pdf=w.pdf(model),
+                                  categs=[x],
+                                  tagTitle=xtitle,
+                                  w=w,
+                                  showComponents=compsToShow,
+                                  rangeX=rangeX,
+                                  outDir='./',
+                                  paramList=None,
+                                  pfix='_final',
+                                  extsToSave=['png','pdf','root'],
+                                  noPulls=noPulls)
             results[(res[0],res[1])]=res[2]
             #raw_input()
 

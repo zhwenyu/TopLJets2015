@@ -6,6 +6,7 @@ import os
 def RunLocal(script): os.system('sh %s'%script)
 
 FARMDIR,OUTDIR=sys.argv[1:]
+if FARMDIR[-1]=='/' : FARMDIR=FARMDIR[:-1]
 
 #check if there is one ROOT file per job script
 scriptFiles = [f for f in os.listdir(FARMDIR) if os.path.isfile(os.path.join(FARMDIR, f)) and os.path.splitext(f)[1]=='.sh']
@@ -27,8 +28,14 @@ print 'There are %d/%d outputs missing, will resubmit them on condor'%(len(toRun
 
 #run on condor
 #create a new condor script
-condor=open(os.path.join(FARMDIR,'condor.sub'),'r')
-newCondorName=os.path.join(FARMDIR,'condor_resub.sub')
+condorSubDir=FARMDIR 
+try:
+    condor=open(os.path.join(condorSubDir,'condor.sub'),'r')
+except:
+    condorSubDir=os.path.split(FARMDIR)[0]
+    print condorSubDir
+    condor=open(os.path.join(condorSubDir,'condor.sub'),'r')
+newCondorName=os.path.join(condorSubDir,'condor_resub.sub')
 newCondor=open(newCondorName,'w')
 for line in condor:
     if 'jobName=' in line: break

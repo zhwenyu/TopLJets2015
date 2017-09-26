@@ -62,7 +62,9 @@ class Plot(object):
         self.plotformats = ['pdf','png']
         self.savelog = False
         self.doChi2 = False
+        self.doMCOverData = True
         self.ratiorange = (0.4,1.6)
+        self.ratioFrameDrawOpt='e2'
         self.frameMin=0.01
         self.frameMax=1.45
         self.mcUnc=0
@@ -492,47 +494,80 @@ class Plot(object):
                 totalMCnoUnc=totalMC.Clone('totalMCnounc')
                 self._garbageList.append(totalMCnoUnc)
                 for xbin in xrange(1,totalMC.GetNbinsX()+1):
-                    ratioframe.SetBinContent(xbin,1)
                     val=self.dataH.GetBinContent(xbin)
                     totalMCnoUnc.SetBinError(xbin,0.)
                     if val==0 : continue
-                    if (len(self.mcsyst)>0):
-                        totalUnc=ROOT.TMath.Sqrt((totalMCUnc.GetBinError(xbin)/val)**2+self.mcUnc**2)
-                        totalUncShape=ROOT.TMath.Sqrt((totalMCUncShape.GetBinError(xbin)/val)**2+self.mcUnc**2)
-                        ratioframeshape.SetBinContent(xbin,totalMCUncShape.GetBinContent(xbin)/val)
-                        ratioframeshape.SetBinError(xbin,totalUncShape)
-                        limitToRange(ratioframeshape, self.ratiorange)
-                    else: totalUnc=ROOT.TMath.Sqrt((totalMC.GetBinError(xbin)/val)**2+self.mcUnc**2)
-                    ratioframe.SetBinContent(xbin,totalMCnoUnc.GetBinContent(xbin)/val)
-                    ratioframe.SetBinError(xbin,totalUnc)
+
+                    if self.doMCOverData:
+                        if (len(self.mcsyst)>0):
+                            totalUnc=ROOT.TMath.Sqrt((totalMCUnc.GetBinError(xbin)/val)**2+self.mcUnc**2)
+                            totalUncShape=ROOT.TMath.Sqrt((totalMCUncShape.GetBinError(xbin)/val)**2+self.mcUnc**2)
+                            ratioframeshape.SetBinContent(xbin,totalMCUncShape.GetBinContent(xbin)/val)
+                            ratioframeshape.SetBinError(xbin,totalUncShape)
+                            limitToRange(ratioframeshape, self.ratiorange)
+                        else: 
+                            totalUnc=ROOT.TMath.Sqrt((totalMC.GetBinError(xbin)/val)**2+self.mcUnc**2)
+                        ratioframe.SetBinContent(xbin,totalMCnoUnc.GetBinContent(xbin)/val)
+                        ratioframe.SetBinError(xbin,totalUnc)
+                    else:
+                        totalExp=totalMC.GetBinContent(xbin)
+                        totalUnc=totalMC.GetBinError(xbin)
+                        if totalExp>0:
+                            if (len(self.mcsyst)>0):
+                                totalUnc=ROOT.TMath.Sqrt((totalUnc/totalExp)**2+self.mcUnc**2)
+                                totalUncShape=ROOT.TMath.Sqrt((totalUnc/totalExp)**2+self.mcUnc**2)
+                                ratioframeshape.SetBinContent(xbin,1.0)
+                                ratioframeshape.SetBinError(xbin,totalUncShape)
+                                limitToRange(ratioframeshape, self.ratiorange)
+                            else:
+                                totalUnc=ROOT.TMath.Sqrt((totalUnc/val)**2+self.mcUnc**2)
+                            ratioframe.SetBinContent(xbin,1)
+                            ratioframe.SetBinError(xbin,totalUnc)
+
                     limitToRange(ratioframe, self.ratiorange)
-                ratioframe.Draw('e2')
-                if (len(self.mcsyst)>0): ratioframeshape.Draw('e2 same')
+                    ratioframe.Draw('e2') 
+                    if (len(self.mcsyst)>0): ratioframeshape.Draw('e2 same')
 
                 #try:
                 ratio=self.dataH.Clone('ratio')
                 ratio.SetDirectory(0)
                 self._garbageList.append(ratio)
                 for xbin in xrange(1,ratio.GetNbinsX()+1):
-                    if ratio.GetBinContent(xbin) > 0.:
-                        ratio.SetBinError(xbin, ratio.GetBinError(xbin)/ratio.GetBinContent(xbin))
-                        ratio.SetBinContent(xbin, 1.)
+                    if self.doMCOverData:
+                        if ratio.GetBinContent(xbin) > 0.:
+                            ratio.SetBinError(xbin, ratio.GetBinError(xbin)/ratio.GetBinContent(xbin))
+                            ratio.SetBinContent(xbin, 1.)
+                        else:
+                            ratio.SetBinError  (xbin, 0.)
+                            ratio.SetBinContent(xbin, 0.)
                     else:
-                        ratio.SetBinError  (xbin, 0.)
-                        ratio.SetBinContent(xbin, 0.)
-                ratio.SetMarkerSize(0)
-                ratio.SetFillStyle(3245)
-                ratio.SetFillColor(ROOT.kBlack)
-                ratio.SetLineColor(ROOT.kBlack)
-                ratio.Draw('e2 same')
-                ratio.Draw('same l')
-                #gr=ROOT.TGraphAsymmErrors(ratio)
-                #gr.SetMarkerStyle(self.data.GetMarkerStyle())
-                #gr.SetMarkerSize(self.data.GetMarkerSize())
-                #gr.SetMarkerColor(self.data.GetMarkerColor())
-                #gr.SetLineColor(self.data.GetLineColor())
-                #gr.SetLineWidth(self.data.GetLineWidth())
-                #gr.Draw('p')
+                        if totalMC.GetBinContent(xbin) > 0.:
+                            ratio.SetBinError(xbin, ratio.GetBinError(xbin)/totalMC.GetBinContent(xbin))
+                            ratio.SetBinContent(xbin, ratio.GetBinContent(xbin)/totalMC.GetBinContent(xbin))
+                        else:
+                            ratio.SetBinError  (xbin, 0.)
+                            ratio.SetBinContent(xbin, 0.)
+
+                if self.doMCOverData:
+                    ratio.SetMarkerSize(0)
+                    ratio.SetFillStyle(3245)
+                    ratio.SetFillColor(ROOT.kBlack)
+                    ratio.SetLineColor(ROOT.kBlack)    
+                    ratio.Draw(self.ratioFrameDrawOpt + ' same')
+                    if self.ratioFrameDrawOpt!='p' : ratio.Draw('same l')
+                else:
+                    gr=ROOT.TGraphAsymmErrors(ratio)
+                    self._garbageList.append(gr)
+                    gr.SetMarkerStyle(self.data.GetMarkerStyle())
+                    gr.SetMarkerSize(self.data.GetMarkerSize())
+                    gr.SetMarkerColor(self.data.GetMarkerColor())
+                    gr.SetLineColor(self.data.GetLineColor())
+                    gr.SetLineWidth(self.data.GetLineWidth())
+                    for ip in xrange(0,gr.GetN()):
+                        gr.SetPointEXhigh(ip,0)
+                        gr.SetPointEXlow(ip,0)
+                    gr.Draw('p')
+
                 #except:
                 #    pass
                 

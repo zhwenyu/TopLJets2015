@@ -13,8 +13,8 @@ def showPlotFor(args,var):
         for subKey in histos[key]:
             xtitle=histos[key][subKey].GetXaxis().GetTitle()
             if 'W_{jj}'  in xtitle: histos[key][subKey].GetXaxis().SetTitle("m_{jj'} [GeV]")
-            if 't_{had}' in xtitle: histos[key][subKey].GetXaxis().SetTitle("M_{top} [GeV]")
-            if 't_{lep}' in xtitle: histos[key][subKey].GetXaxis().SetTitle("M_{l#nub} [GeV]")
+            if 't_{had}' in xtitle: histos[key][subKey].GetXaxis().SetTitle("m_{top} [GeV]")
+            if 't_{lep}' in xtitle: histos[key][subKey].GetXaxis().SetTitle("m_{l#nub} [GeV]")
             histos[key][subKey].GetYaxis().SetTitle('Events')
 
     for cat in ['1l4j2q','1l4j1b1q','1l4j2b']:
@@ -56,7 +56,8 @@ def showPlotFor(args,var):
             p.add(histos['dy'][key],'DY',ROOT.TColor.GetColor('#fc8d59'),False,False,False)
             p.add(qcdHisto,'Multijets',ROOT.TColor.GetColor('#e0f3f8'),False,False,False)
             p.add(histos['data'][key],'Data',1,True,False,False)
-        
+            p.ratioFrameDrawOpt='pX0'
+            p.doMCOverData=False
             p.ratiorange=(0.4,1.7)
             p.com='8.16 TeV'
             p.show(outDir='./',lumi=174*1e-3)
@@ -73,6 +74,8 @@ def showPlotFor(args,var):
         p.ratiorange=(0.4,1.7)
         p.ratioTitle='#scale[0.9]{Data/Exp.}'
         p.legSize=0.05
+        p.ratioFrameDrawOpt='pX0'
+        p.doMCOverData=False
         p.com='#sqrt{s_{NN}} = 8.16 TeV'
         tag='e^{#pm} / #mu^{#pm} + #geq4j'
         if '1f'   in cat: tag ='non-iso '+tag

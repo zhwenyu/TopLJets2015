@@ -6,10 +6,41 @@ import optparse
 import ROOT
 from UEAnalysisHandler import *
 
-"""
-"""
-def getPurStab(h):
+def getBinForVariable(val,h):
+    """                                                                                                                                                                                  
+    return the most appropriate bin for a given value, taking into account the range available
+    """
+    xmin,xmax=h.GetXaxis().GetXmin(),h.GetXaxis().GetXmax()
+    if val>=xmax : return h.GetXaxis().GetNbins()
+    if val<xmin  : return 1
+    return h.GetXaxis().FindBin(val)
 
+
+def getConditionNumber(h):
+    """
+    compute condition number
+    """
+    result=None
+    try:
+        nx,ny=h.GetNbinsX(),h.GetNbinsY()
+        matrix=ROOT.TMatrixD(ny+1,nx)
+        for xbin in xrange(1,nx+1):
+            for ybin in xrange(0,ny+1):
+                matrix[ybin][xbin-1]=h.GetBinContent(xbin,ybin)
+        svd=ROOT.TDecompSVD(matrix)
+        sig=svd.GetSig()
+        maxSig,minSig=sig.Max(),sig.Min()
+        condK=-1 if minSig==0 else maxSig/max(0,minSig)
+        result=(maxSig,minSig,condK)
+    except:
+        pass
+    return result
+
+
+def getPurStab(h):
+    """
+    get purity, stability and efficiency of a migration matrix
+    """
     indices  = []
     diagonal = []
     gensums  = []
@@ -33,8 +64,13 @@ def getPurStab(h):
 
     
     purGr=ROOT.TGraph()
-    stabGr=ROOT.TGraph()
-    effGr=ROOT.TGraph()
+    purGr.SetLineWidth(2)
+    purGr.SetName('pur')
+    stabGr=purGr.Clone('stab')
+    stabGr.SetLineColor(2)
+    effGr=purGr.Clone('eff')
+    effGr.SetLineStyle(9)
+    effGr.SetLineColor(ROOT.kGreen+3)
 
     for i in range(len(gensums)):
         purity    = -1
@@ -51,6 +87,25 @@ def getPurStab(h):
         effGr.SetPoint(effGr.GetN(),i+1,eff)
     return purGr,stabGr,effGr
     
+def getNormalizedPerColumn(h):
+    """
+    normalize 2D histogram per x-slice
+    """
+    normH=h.Clone('%s_norm'%h.GetName())
+    normH.GetZaxis().SetRangeUser(0,100)
+    normH.GetZaxis().SetTitle('Events (%)')
+    normH.GetZaxis().SetNdivisions(5)
+    for xbin in xrange(1,h.GetNbinsX()+1):
+        tmp=h.ProjectionY('tmp',xbin,xbin)
+        total=tmp.Integral(0,tmp.GetNbinsX()+1)
+        if total==0 : continue
+        for ybin in xrange(1,h.GetNbinsY()+1):
+            val=h.GetBinContent(xbin,ybin)
+            err=h.GetBinError(xbin,ybin)
+            normH.SetBinContent(xbin,ybin,100.*val/total)
+            normH.SetBinError(xbin,ybin,100.*err/total)
+        tmp.Delete()
+    return normH
     
 
 """
