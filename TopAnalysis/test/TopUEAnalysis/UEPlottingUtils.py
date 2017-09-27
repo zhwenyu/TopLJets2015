@@ -25,34 +25,6 @@ PLOTFORMATS=[
 #b15928 Gluon move CR
 #ff7f00 FSR dn
 
-COMPARISONSETS=[
-    ('PW+PY8 CUETP8M2T4', [ ('nominal',         ['t#bar{t}']), 
-                            ('#deltaCUET8P2MT4',['t#bar{t} UEup',     't#bar{t} UEdn']),
-                            ('FSR',             ['t#bar{t} fsr up',   't#bar{t} fsr dn']),
-                            ('ISR',             ['t#bar{t} isr up',   't#bar{t} isr dn']),
-                            ('hdamp',           ['t#bar{t} hdamp up', 't#bar{t} hdamp dn']),
-                            ('CR',              ['t#bar{t} QCDbased', 't#bar{t} ERDon', 't#bar{t} gluon move']) ] 
-     ),
-    ('FSR up', [ ('nominal',         ['t#bar{t} fsr up'])]),
-    ('FSR dn', [ ('nominal',         ['t#bar{t} fsr dn'])]),
-    ('ISR up', [ ('nominal',         ['t#bar{t} isr up'])]),
-    ('ISR dn', [ ('nominal',         ['t#bar{t} isr dn'])]),
-    ('QCD based CR', [ ('nominal',         ['t#bar{t} QCDbased'])]),
-    ('ERD on CR',    [ ('nominal',         ['t#bar{t} ERDon'])]),
-    ('Gluon move CR',[ ('nominal',         ['t#bar{t} gluon move'])]),
-    ('aMC@NLO+PY8 CUETP8M2T4', [ ('nominal', ['t#bar{t} aMC@NLO']) ]),
-    ('PW+HW++ EE5C'      , [ ('nominal', ['t#bar{t} Herwig++']) ]),
-    ]
-
-PLOTTINGSETS=(
-    ['PW+PY8 CUETP8M2T4'],
-    ['QCD based CR','ERD on CR','Gluon move CR'],
-    ['ISR up','ISR dn'],
-    ['FSR up','FSR dn']
-#    ['PW+HW++ EE5C']
-)
-
-
 
 
 """

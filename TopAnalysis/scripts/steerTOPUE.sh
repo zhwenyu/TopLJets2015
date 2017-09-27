@@ -146,17 +146,21 @@ case $WHAT in
 	        python test/TopUEAnalysis/runUEanalysis.py -i ${baseFiles}     --step 1             ${options} -o ./UEanalysis;
             done
         done
-
-        queue=workday
+        
+	;;
+    SUBMITANA )
+        queue=longlunch
 	echo "Filling the histograms for unfolding"
         a=(`ls UEanalysis/*/*/analysiscfg.pck`)
         for i in ${a[@]}; do
-            echo ${i};
-            continue
-            python test/TopUEAnalysis/runUEanalysis.py -i ${summaryeosdir}/Chunks --step 2 -q ${queue} -o `dirname ${i}`;
+            if [[ ${i} == *"/inc_pt"* ]]; then
+                echo ${i};            
+                python test/TopUEAnalysis/runUEanalysis.py -i ${summaryeosdir}/Chunks --step 2 -q ${queue} -o `dirname ${i}`;
+                #sleep 60s
+            fi
         done
-        
-	;;
+        ;;
+
     MERGEANA )
         a=(`ls UEanalysis/*/*/analysiscfg.pck`)
         for i in ${a[@]}; do
@@ -172,6 +176,25 @@ case $WHAT in
             fi
         done
 	;;
+    UNFOLDANA )
+
+        a=(`ls UEanalysis/*/*/analysiscfg.pck`)
+        for i in ${a[@]}; do
+            dir=`dirname ${i}`
+            if [ -f "${dir}/condor.sub" ]; then
+                if [[ ${i} == *"chmult/inc/"* ]]; then
+                    commonOpts="-o ${dir}/unfold --plotter ${dir}/plots/plotter.root --syst ${dir}/plots/syst_plotter.root -d ${dir}/Chunks/"            
+                #python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 0;
+                #python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 1;
+                #python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 2;
+                #python test/TopUEAnalysis/showUnfoldSummary.py -i ${dir}/unfold/unfold_summary.root;
+                    python test/TopUEAnalysis/showFinalDistributions.py --cfg ${dir}/analysiscfg.pck ${dir}/unfold/unfold_summary.root \
+                        ${dir}/plots/plotter.root ${dir}/plots/syst_plotter.root;
+                fi
+            fi
+        done
+        ;;
+
     PLOTANA )
 
         mkdir -p UEanalysis/analysis/plots/rawana
@@ -199,45 +222,8 @@ case $WHAT in
         cp UEanalysis/analysis/plots/reco/*{png,pdf} ${wwwdir}/reco
         cp test/index.php ${wwwdir}/reco
 	;;
-    UNFOLD )
-        commonOpts="--plotter UEanalysis/analysis/plots/plotter.root --syst UEanalysis/analysis/plots/syst_plotter.root -d UEanalysis/analysis/Chunks/"
-        #python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 0
-
-        for ovar in chmult chflux chfluxz chavgpt chavgpz sphericity aplanarity C D; do                  
-
-            #inclusive
-            #python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 1 --histo ${ovar}_None_0_inc;            
-            #python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 2 --histo ${ovar}_None_0_inc;
-            #python test/TopUEAnalysis/showUnfoldSummary.py -i UEanalysis/unfold/${ovar}_None_0_inc.root;                                   
-        
-            #differential
-            for svar in nj chmult; do
-
-                if [ "$svar" = "$ovar" ]
-                then
-                    continue
-                fi
-
-                bins=`seq 1 3`;
-                if [ "$svar" = "chmult" ] 
-                then
-                    bins=`seq 1 9`;
-                fi
-
-                for bin in $bins; do
-                    echo $ovar $svar $bin
-                    python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 1 --histo ${ovar}_${svar}_${bin}_inc;            
-                    python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 2 --histo ${ovar}_${svar}_${bin}_inc;
-                    python test/TopUEAnalysis/showUnfoldSummary.py -i UEanalysis/unfold/${ovar}_${svar}_${bin}_inc.root;                                   
-                done
-            done
-        done
-        ;;
     PLOTUNFOLD )
-        python test/TopUEAnalysis/showFinalUnfoldedDistribution.py \
-            UEanalysis/unfold UEanalysis/analysis/plots/plotter.root \
-            UEanalysis/analysis/plots/syst_plotter.root \
-            --out UEanalysis/unfold/;
+
         ;;
     WWWUNFOLD )
         mkdir -p ${wwwdir}/unfold;

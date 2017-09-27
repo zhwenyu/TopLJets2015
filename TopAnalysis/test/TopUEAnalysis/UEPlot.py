@@ -25,17 +25,23 @@ class UEPlot:
         self.normVals=defaultdict(list)
         self.variationMeans=defaultdict(list)
         self.covMatrices=defaultdict(list)
+        self.relUncertaintyH={}
 
     def addVariation(self,varName,varType,varH):
         """Add one more variation. varType is used to signal if is nominal (None), experimental (exp) or theory (th)"""
-
-        if varH.Integral()<=0 : return
-
+        
         key=(varName,varType)
+        try:
+            if varH.Integral()<=0 : return
+        except:
+            print "Unable to evaluate integral for ",key
+            return
+        
         cloneName='%s_%s_%s_%d'%(self.name,varName,varType,len(self.variations[key]))
         self.variations[key].append(varH.Clone(cloneName))
         self.variations[key][-1].SetDirectory(0)
 
+        #compute mean of this distribution
         x,w=[],[]
         for xbin in xrange(1,self.trueAxis.GetNbins()+1):
             x.append( self.trueAxis.GetBinCenter(xbin) )
@@ -47,7 +53,13 @@ class UEPlot:
             self.variationMeans[key].append( (avg,ROOT.TMath.Sqrt(var/sum(w))) )
         except:
             self.variationMeans[key].append( None )
-            
+
+        #start a relative uncertainty histogram for a new variation
+        if varName in self.relUncertaintyH: return
+        self.relUncertaintyH[varName]=varH.Clone('%s_relunc'%cloneName)
+        self.relUncertaintyH[varName].SetDirectory(0)
+        self.relUncertaintyH[varName].Reset('ICE')
+        
         
     def clear(self):
         """Free memory of this plot"""
@@ -84,7 +96,7 @@ class UEPlot:
         #systematic covariance
         #see https://twiki.cern.ch/twiki/bin/view/CMS/TopUnfolding#Treatment_of_systematic_uncertai
         totalSyst=ROOT.TMatrixF(nbins,nbins)
-        print self.variations
+        print self.variations        
         for key in self.variations:
             if key ==nomKey : continue
             if len(self.variations[key])==0 : continue
@@ -149,7 +161,6 @@ class UEPlot:
 
         #check normalization
         if self.normVals[nomKey][0]==0: raise Exception('Null counts found in %s plot - unable to finalize'%self.name)
-
         for xbin in xrange(1,self.trueAxis.GetNbins()+1):
             cen        = self.trueAxis.GetBinCenter(xbin)
             xwid       = self.trueAxis.GetBinWidth(xbin)*0.5
@@ -162,6 +173,8 @@ class UEPlot:
             ctsStatUnc = self.variations[nomKey][0].GetBinError(xbin)
             self.plot[1][0].SetPoint(xbin-1, cen, cenVal)
             self.plot[1][0].SetPointError(xbin-1, xwid, ctsStatUnc/xwid )
+            self.relUncertaintyH[nomKey[0]].SetBinContent(xbin,ctsStatUnc/cts if cenVal>0 else 0)
+
 
             #experimental uncertainty
             ctsExpUnc=0
@@ -170,6 +183,7 @@ class UEPlot:
                 for h in self.variations[key]:
                     iCtsExpUnc=max( abs(h.GetBinContent(xbin)-cts), iCtsExpUnc )
                 ctsExpUnc += iCtsExpUnc**2
+                self.relUncertaintyH[key[0]].SetBinContent(xbin,iCtsExpUnc/cts if cenVal>0 else 0)
             ctsExpUnc=ROOT.TMath.Sqrt(ctsExpUnc)
             self.plot[1][1].SetPoint(xbin-1, cen, cenVal)
             self.plot[1][1].SetPointError(xbin-1, xwid, ctsExpUnc/xwid )
@@ -181,13 +195,13 @@ class UEPlot:
                 for h in self.variations[key]:
                     iCtsThUnc=max( abs(h.GetBinContent(xbin)-cts), iCtsThUnc )
                 ctsThUnc += iCtsThUnc**2
+                self.relUncertaintyH[key[0]].SetBinContent(xbin,iCtsThUnc/cts if cenVal>0 else 0)
             ctsThUnc=ROOT.TMath.Sqrt(ctsThUnc)
             self.plot[1][2].SetPoint(xbin-1, cen, cenVal)
             self.plot[1][2].SetPointError(xbin-1, xwid, ctsThUnc/xwid)
 
             ctsTotalUnc=ROOT.TMath.Sqrt(ctsStatUnc**2+ctsExpUnc**2+ctsThUnc**2)
             self.plot[0].SetPointError(xbin-1,xwid,ctsTotalUnc/xwid)
-
 
         #compute covariance matrcies
         #self.finalizeCovMatrices(statCov)
@@ -214,4 +228,54 @@ class UEPlot:
             meanThUnc += iMeanThUnc**2
         self.mean[1][2]=ROOT.TMath.Sqrt(meanThUnc)
 
+    def format(self,fill,color,marker,keepXUnc,shiftX):
+        """
+        Apply a common format to the plots
+        """
+        ci=ROOT.TColor.GetColor(color)
+        x,y=ROOT.Double(0),ROOT.Double(0)
+        for p in self.plot[1]+[self.plot[0]]:
+            p.SetFillStyle(fill)
+            p.SetFillColor(ci)
+            p.SetMarkerColor(ci)
+            p.SetMarkerStyle(marker)
+            p.SetLineColor(ci)            
+            p.SetLineWidth(2)
+            for i in xrange(0,p.GetN()):
+                p.GetPoint(i,x,y)
+                xval,yval=float(x),float(y)
+                ey=p.GetErrorY(i)
+                ex=p.GetErrorX(i)
+                if shiftX : xval=xval+(2*shiftX-1)*ex                
+                if not keepXUnc: ex=0
+                p.SetPoint(i,xval,yval)
+                p.SetPointError(i,ex,ey)
+        
 
+def getRatiosWithRespectTo(uePlots,refKey):
+    """
+    Compute the ratio using a given key as reference
+    """
+    uePlotRatios={}
+    x,y=ROOT.Double(0),ROOT.Double(0)
+    xref,yref=ROOT.Double(0),ROOT.Double(0)    
+    for key in uePlots:
+        uePlotRatios[key]=uePlots[key].plot[0].Clone('%s_2_%s_ratio'%(uePlots[key].name,uePlots[refKey].name))
+        for np in xrange(0,uePlots[key].plot[0].GetN()):
+
+            uePlots[key].plot[0].GetPoint(np,x,y)
+            uePlots[refKey].plot[0].GetPoint(np,xref,yref)
+            ratio=-1 if yref==0 else y/yref
+
+            ex=uePlots[key].plot[0].GetErrorX(np)
+            ey=uePlots[key].plot[0].GetErrorY(np)
+            #eyref=uePlots[refKey].plot[0].GetErrorY(np)
+                
+            ratioUnc=(ey*yref)**2
+            #if key!=refKey:ratioUnc+=(eyref*y)**2
+            ratioUnc=0 if yref==0 else ROOT.TMath.Sqrt(ratioUnc)/(yref**2)
+
+            uePlotRatios[key].SetPoint(np,x,ratio)
+            uePlotRatios[key].SetPointError(np,ex,ratioUnc)
+
+    return uePlotRatios

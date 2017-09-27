@@ -86,6 +86,23 @@ def getPurStab(h):
             eff=gensums[i]/gensumswithuf[i]
         effGr.SetPoint(effGr.GetN(),i+1,eff)
     return purGr,stabGr,effGr
+
+
+def getGraphExtremes(gr):
+    """
+    loop over the values of a graph and get the extremes
+    """
+    minY,maxY=None,None
+    x,y=ROOT.Double(0),ROOT.Double(0)
+    for ip in xrange(0,gr.GetN()):
+        gr.GetPoint(ip,x,y)
+        if not minY: 
+            minY,maxY=float(y),float(y)
+        else:
+            minY=min(minY,float(y))
+            maxY=max(maxY,float(y))
+    return minY,maxY
+
     
 def getNormalizedPerColumn(h):
     """
