@@ -135,6 +135,16 @@ class UEEventCounter:
             #reco level
             self.w[iSystVar]           = t.weight[wgtIdx]
             self.rec_passSel[iSystVar] = ((t.passSel>>varIdx)&0x1)
+
+            passExtraCuts=True
+            for cutKey in self.cuts:
+                if cutKey=='region': continue
+                cutVar=cutKey
+                cutVal=getattr(t,cutVar)[varIdx]                        
+                if cutVal<self.cuts[cutKey][0] or cutVal>=self.cuts[cutKey][1]:  passExtraCuts=False
+            if not passExtraCuts: self.rec_passSel[iSystVar] = False
+                
+
             if self.rec_passSel[iSystVar]:
 
                 #select particles
@@ -148,15 +158,11 @@ class UEEventCounter:
                     #check if particle passes slice cuts
                     failSliceCuts=False
                     for cutKey in self.cuts:
-                        if cutKey!='region':
-                            cutVar=cutKey
-                            cutVal=getattr(t,cutVar)[varIdx]                        
-                            if cutVal<self.cuts[cutKey][0] or cutVal>=self.cuts[cutKey][1]:  failSliceCuts=True
-                        else:
-                            cutVar,cutIdx=self.cuts[cutKey]
-                            phirec=getattr(t,AXISANGLE[cutVar])[varIdx]
-                            idxrec=self.getRegionFor( ROOT.TVector2.Phi_mpi_pi(t.phi[n]-phirec) )
-                            if idxrec != cutIdx : failSliceCuts=True
+                        if cutKey!='region': continue
+                        cutVar,cutIdx=self.cuts[cutKey]
+                        phirec=getattr(t,AXISANGLE[cutVar])[varIdx]
+                        idxrec=self.getRegionFor( ROOT.TVector2.Phi_mpi_pi(t.phi[n]-phirec) )
+                        if idxrec != cutIdx : failSliceCuts=True
                     if failSliceCuts: continue
 
                     #apply a tracking efficiency scale factors
@@ -242,6 +248,16 @@ class UEEventCounter:
                 
         #gen level (only one selection variation needed)
         self.gen_passSel=(t.gen_passSel&0x1)
+
+        passExtraCuts=True
+        for cutKey in self.cuts:
+            if cutKey=='region': continue
+            cutVar=cutKey
+            genCutVar='gen_'+cutVar
+            cutVal=getattr(t,genCutVar)
+            if cutVal<self.cuts[cutKey][0] or cutVal>=self.cuts[cutKey][1]:  passExtraCuts=False
+        if not passExtraCuts: self.gen_passSel=False
+
         if self.gen_passSel:
 
             selP4=[]
@@ -254,17 +270,12 @@ class UEEventCounter:
                 #check if it passes slice cuts
                 failSliceCuts=False
                 for cutKey in self.cuts:
-                    if cutKey!='region':
-                        cutVar=cutKey
-                        genCutVar='gen_'+cutVar
-                        cutVal=getattr(t,genCutVar)
-                        if cutVal<self.cuts[cutKey][0] or cutVal>=self.cuts[cutKey][1]:  failSliceCuts=True
-                    else:
-                        cutVar,cutIdx=self.cuts[cutKey]
-                        genCutVar='gen_'+cutVar
-                        phigen=getattr(t,'gen_'+AXISANGLE[cutVar])
-                        idxgen=self.getRegionFor( ROOT.TVector2.Phi_mpi_pi(t.gen_phi[n]-phigen) )
-                        if idxgen != cutIdx : failSliceCuts=True
+                    if cutKey!='region': continue
+                    cutVar,cutIdx=self.cuts[cutKey]
+                    genCutVar='gen_'+cutVar
+                    phigen=getattr(t,'gen_'+AXISANGLE[cutVar])
+                    idxgen=self.getRegionFor( ROOT.TVector2.Phi_mpi_pi(t.gen_phi[n]-phigen) )
+                    if idxgen != cutIdx : failSliceCuts=True
                 if failSliceCuts: continue
 
                 p4.SetPtEtaPhiM(t.gen_pt[n],t.gen_eta[n],t.gen_phi[n],self.piMass)

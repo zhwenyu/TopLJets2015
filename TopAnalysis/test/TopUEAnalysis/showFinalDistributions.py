@@ -28,7 +28,7 @@ COMPARISONSETS=[
     ('PW+HW++ EE5C'      , [ ('nominal', ['t#bar{t} Herwig++']) ]),
     ]
 
-PLOTTINGSETS=[
+PLOTTINGSET_1=[
     ('Data',              '2',  1001, '#26e278', 1 , True,  None),
     ('PW+PY8 CUETP8M2T4', 'ep0', 0,    '#000000', 20, False, 0.2),
     ('QCD based CR',      'ep0', 0,    '#ef8a62', 24, False, 0.5),
@@ -38,7 +38,15 @@ PLOTTINGSETS=[
     ('FSR dn',            'ep0', 0,    '#67a9cf', 23, False, 0.8)
 ]
 
-def compareUEPlots(uePlots,outDir,cuts,obs):
+
+PLOTTINGSET_2=[
+    ('Data',                   '2',   1001, '#26e278', 1 , True,  None),
+    ('PW+PY8 CUETP8M2T4',      'ep0', 0,    '#000000', 20, False, 0.2),
+    ('aMC@NLO+PY8 CUETP8M2T4', 'ep0', 0,    '#ef8a62', 24, False, 0.5),
+    ('PW+HW++ EE5C',           'ep0', 0,    '#219125', 22, False, 0.8),
+]
+
+def compareUEPlots(uePlots,outDir,cuts,obs,plottingSet=PLOTTINGSET_1,pfix=''):
     """This method dumps the formatted plots to the canvas"""
 
     #start the canvas
@@ -64,14 +72,14 @@ def compareUEPlots(uePlots,outDir,cuts,obs):
 
 
     #plot and add to the legend
-    leg=ROOT.TLegend(0.6,0.92,0.96,0.92-len(PLOTTINGSETS)*0.06) 
+    leg=ROOT.TLegend(0.6,0.92,0.96,0.92-len(plottingSet)*0.06) 
     leg.SetFillStyle(0)
     leg.SetBorderSize(0)
     leg.SetTextFont(42)
     leg.SetTextSize(0.04)
     leg.AddEntry( uePlots['Data'].plot[0], 'Data','f' )
     maxY,minY=-10,10
-    for p,drawOpt,fill,color,marker,keepXUnc,shiftX in PLOTTINGSETS:
+    for p,drawOpt,fill,color,marker,keepXUnc,shiftX in plottingSet:
         try:
             uePlots[p].format(fill,color,marker,keepXUnc,shiftX)
             uePlots[p].plot[0].Draw(drawOpt)
@@ -120,7 +128,7 @@ def compareUEPlots(uePlots,outDir,cuts,obs):
     ratioframe.Draw()
     uePlotRatios=getRatiosWithRespectTo(uePlots,'Data')
     maxY,minY=1.55,0.45
-    for p,drawOpt,fill,color,marker,keepXUnc,shiftX in PLOTTINGSETS:
+    for p,drawOpt,fill,color,marker,keepXUnc,shiftX in plottingSet:
         try:
             uePlotRatios[p].Draw(drawOpt)
             iminY,imaxY=getGraphExtremes(uePlotRatios[p])
@@ -136,7 +144,7 @@ def compareUEPlots(uePlots,outDir,cuts,obs):
     # all done
     c.Modified()
     c.Update()
-    for ext in ['pdf','png']: c.SaveAs('%s/%s_unfolded.%s'%(outDir,obs,ext))
+    for ext in ['pdf','png']: c.SaveAs('%s/%s%s_unfolded.%s'%(outDir,obs,pfix,ext))
 
 
 """
@@ -159,7 +167,7 @@ def showSystsSummary(systsH,outdir,cuts,obs):
     frame=systsH['Data'].Clone('frame')
     frame.Reset('ICE')
     frame.Draw()
-    frame.GetYaxis().SetRangeUser(0.,0.5)
+    frame.GetYaxis().SetRangeUser(0.,0.3)
     frame.GetYaxis().SetTitle('Relative uncertainty')
     frame.GetYaxis().SetTitleOffset(1.2)
     frame.GetYaxis().SetTitleSize(0.05)
@@ -186,16 +194,20 @@ def showSystsSummary(systsH,outdir,cuts,obs):
     tex.SetNDC()
     tex.DrawLatex(0.15,0.9,'#bf{CMS} #it{preliminary}')
     tex.DrawLatex(0.67,0.96,'#scale[0.7]{35.9 fb^{-1} (#sqrt{s}=13 TeV)}')
+    tex.DrawLatex(0.72,0.9,'#scale[0.7]{%s}'%VARTITLES[obs])
+    icut=0
+    for cutKey in cuts:
+        y=0.96-0.04*icut
+        cutText='inclusive'
+        if cutKey=='region': cutText='%s region=%s'%(VARTITLES[cuts[cutKey][0]],cuts[cutKey][1])
+        else               : cutText='%3.1f#leq%s<%3.1f'%(cuts[cutKey][0],VARTITLES[cutKey],cuts[cutKey][1])
+        tex.DrawLatex(0.72,y,'#scale[0.7]{%s}'%cutText)
+        icut+=1
+
     c.Modified()
     c.Update()
     for ext in ['png','pdf']:
         c.SaveAs('%s/%s_reluncertainty.%s'%(outdir,obs,ext))
-
-    #save summary to file
-    #with open('%s/%s_reluncertainty.dat'%(outdir,outname),'w') as fout:
-    #    fout.write('Source & <Rel. unc.> \\\\\n')
-    #    for s in systSummary:
-    #        fout.write('%20s & %3.1f \\\\\n'%(s,systSummary[s]))
 
 
 def readParticlePlotsFrom(args,obsAxis,cuts,obs):
@@ -399,9 +411,13 @@ def main():
 
     #show plots
     outDir=os.path.dirname(args[0])
-    compareUEPlots(uePlots=uePlots,
-                   outDir=outDir,
-                   cuts=cuts,obs=obs)
+    for p, pfix in [(PLOTTINGSET_1,''),(PLOTTINGSET_2,'_v2')]:
+        compareUEPlots(uePlots=uePlots,
+                       outDir=outDir,
+                       cuts=cuts,
+                       obs=obs,
+                       plottingSet=p,
+                       pfix=pfix)
     showSystsSummary(uePlots['Data'].relUncertaintyH,
                      outdir=outDir,
                      cuts=cuts,

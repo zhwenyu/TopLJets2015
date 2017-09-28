@@ -429,6 +429,7 @@ def main():
     parser.add_option(      '--slice', dest='slice',  help='slice',                       default=None,     type='string')
     parser.add_option(      '--reg',   dest='reg',    help='region',                      default=None,     type='string')
     parser.add_option('-j', '--jobs',  dest='jobs',   help='jobs to run in parallel',     default=1,   type=int)
+    parser.add_option(      '--dryRun',  dest='dryRun',   help='do not submit',     default=False,  action='store_true')
     parser.add_option('-o', '--out',   dest='out',    help='output',                      default='./UEanalysis',   type='string')
     parser.add_option(      '--only',  dest='only',   help='csv list of tags to process', default='',  type='string')
     parser.add_option('-q', '--queue', dest='queue',  help='Batch queue to use [default: %default]', default='local')
@@ -517,8 +518,8 @@ def main():
             with open (condorScript,'w') as condor:
 
                 condor.write('executable = {0}/$(jobName).sh\n'.format(FarmDirectory))
-                condor.write('output     = {0}/output_$(jobName).out\n'.format(FarmDirectory))
-                condor.write('error      = {0}/output_$(jobName).err\n'.format(FarmDirectory))
+                #condor.write('output     = {0}/output_$(jobName).out\n'.format(FarmDirectory))
+                #condor.write('error      = {0}/output_$(jobName).err\n'.format(FarmDirectory))
                 condor.write('+JobFlavour = "{0}"\n'.format(opt.queue))
 
                 for fileName,_,_ in tasklist:
@@ -540,7 +541,8 @@ def main():
                     condor.write('jobName=%s\n'%jobName)
                     condor.write('queue 1\n')
 
-            os.system('condor_submit %s'%condorScript)
+            if not opt.dryRun:
+                os.system('condor_submit %s'%condorScript)
 
 
 """

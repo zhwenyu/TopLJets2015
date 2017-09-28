@@ -1,11 +1,19 @@
 #!/bin/bash
 
 WHAT=$1; 
-if [ "$#" -ne 1 ]; then 
-    echo "steerTOPUE.sh <SEL/PLOTSEL/WWWSEL>";
+TAGANA=$2
+if [ "$#" -lt 1 ]; then 
+    echo "steerTOPUE.sh <OPTIONL>";
     echo "        SEL          - launches selection jobs to the batch, output will contain summary trees and control plots"; 
+    echo "        MERGESEL     - merge selection outputs";
     echo "        PLOTSEL      - runs the plotter tool on the selection";
     echo "        WWWSEL       - moves the plots to an afs-web-based area";
+    echo "        PREPAREANA   - prepares configuration files to run the analysis";
+    echo "        SUBMITANA    - submits a specific analysis (tag must be provided as extra argument e.g. chmult/inc)";
+    echo "        MERGEANA     - checks and merges analysis outputs (tag must be provided as extra argument e.g. chmult/inc)";
+    echo "        MVANA        - use to move to another area mounted under store (tag must be provided as extra argument e.g. chmult/inc)";
+    echo "        UNFOLDANA    - unfold results in a given directory (directory must be provided as extra argument e.g. store/TOP-17-015/chmult/inc)";
+    echo "        WWWANA       - move summary plots to web area (directory must be provided as extra argument e.g. store/TOP-17-015/chmult/inc)";
     exit 1; 
 fi
 
@@ -60,6 +68,7 @@ case $WHAT in
 	./scripts/mergeOutputs.py eos/cms${summaryeosdir} True ${outdir};	
 	/afs/cern.ch/project/eos/installation/0.3.84-aquamarine/bin/eos.select -b fuse umount eos;
 	;;
+
     PLOTSEL )
 	commonOpts="-i ${outdir} --puNormSF puwgtctr  -j data/era2016/samples.json -l ${lumi}  --saveLog --mcUnc ${lumiUnc}"
 	python scripts/plotter.py ${commonOpts} --only mll --outName mll_plotter.root;	
@@ -68,21 +77,23 @@ case $WHAT in
 	python scripts/plotter.py ${commonOpts} --procSF DY:${outdir}/plots/.dyscalefactors.pck;
 	python scripts/plotter.py ${commonOpts} --only nbtags,rho,nvtx,0t,1t
 	;;
+
     WWWSEL )
 	mkdir -p ${wwwdir}/sel
 	cp ${outdir}/plots/*.{png,pdf} ${wwwdir}/sel
 	cp test/index.php ${wwwdir}/sel
 	;;
-    ANA )
+
+    PREPAREANA )
 	eosprefix=root://eoscms//eos/cms
 
 	base="${eosprefix}/${summaryeosdir}/Chunks/MC13TeV_TTJets"
 	baseFiles=${base}_0.root,${base}_1.root,${base}_2.root,${base}_3.root,${base}_4.root
 
-	echo "Preparing analysis configuration based on ${baseFiles}"
+	echo "Preparing analysis configuration based on ${baseFiles} - this will take a long time..."
         obs=("chmult" "chavgpt" "chavgpz" "chfluxz" "chflux" "sphericity" "aplanarity" "C" "D")
         analyses=(
-            "" 
+#            "" 
             "--reg ptttbar=awa" 
             "--reg ptttbar=tow" 
             "--reg ptttbar=tra" 
@@ -90,54 +101,54 @@ case $WHAT in
             "--reg ptll=tow" 
             "--reg ptll=tra"
             "--slice nj=0,1 " 
-            "--slice nj=0,1 --reg ptttbar=awa" 
-            "--slice nj=0,1 --reg ptttbar=tow" 
-            "--slice nj=0,1 --reg ptttbar=tra" 
-            "--slice nj=0,1 --reg ptll=awa" 
-            "--slice nj=0,1 --reg ptll=tow" 
-            "--slice nj=0,1 --reg ptll=tra"
+#            "--slice nj=0,1 --reg ptttbar=awa" 
+#            "--slice nj=0,1 --reg ptttbar=tow" 
+#            "--slice nj=0,1 --reg ptttbar=tra" 
+#            "--slice nj=0,1 --reg ptll=awa" 
+#            "--slice nj=0,1 --reg ptll=tow" 
+#            "--slice nj=0,1 --reg ptll=tra"
             "--slice nj=1,2 " 
-            "--slice nj=1,2 --reg ptttbar=awa" 
-            "--slice nj=1,2 --reg ptttbar=tow" 
-            "--slice nj=1,2 --reg ptttbar=tra" 
-            "--slice nj=1,2 --reg ptll=awa" 
-            "--slice nj=1,2 --reg ptll=tow" 
-            "--slice nj=1,2 --reg ptll=tra"
+#            "--slice nj=1,2 --reg ptttbar=awa" 
+#            "--slice nj=1,2 --reg ptttbar=tow" 
+#            "--slice nj=1,2 --reg ptttbar=tra" 
+#            "--slice nj=1,2 --reg ptll=awa" 
+#            "--slice nj=1,2 --reg ptll=tow" 
+#            "--slice nj=1,2 --reg ptll=tra"
             "--slice nj=2,999" 
-            "--slice nj=2,999 --reg ptttbar=awa" 
-            "--slice nj=2,999 --reg ptttbar=tow" 
-            "--slice nj=2,999 --reg ptttbar=tra" 
-            "--slice nj=2,999 --reg ptll=awa" 
-            "--slice nj=2,999 --reg ptll=tow" 
-            "--slice nj=2,999 --reg ptll=tra"
-            "--slice ptttbar=0,20 " 
-            "--slice ptttbar=0,20 --reg ptttbar=awa" 
-            "--slice ptttbar=0,20 --reg ptttbar=tow" 
-            "--slice ptttbar=0,20 --reg ptttbar=tra" 
-            "--slice ptttbar=20,60" 
-            "--slice ptttbar=20,60--reg ptttbar=awa" 
-            "--slice ptttbar=20,60--reg ptttbar=tow" 
-            "--slice ptttbar=20,60--reg ptttbar=tra" 
-            "--slice ptttbar=60,120" 
-            "--slice ptttbar=60,120 --reg ptttbar=awa" 
-            "--slice ptttbar=60,120 --reg ptttbar=tow" 
-            "--slice ptttbar=60,120 --reg ptttbar=tra" 
-            "--slice ptttbar=120,9999" 
-            "--slice ptttbar=120,9999 --reg ptttbar=awa" 
-            "--slice ptttbar=120,9999 --reg ptttbar=tow" 
-            "--slice ptttbar=120,9999 --reg ptttbar=tra" 
-            "--slice ptll=0,60"
-            "--slice ptll=0,60 --reg ptll=awa" 
-            "--slice ptll=0,60 --reg ptll=tow" 
-            "--slice ptll=0,60 --reg ptll=tra"
-            "--slice ptll=60,120"
-            "--slice ptll=60,120 --reg ptll=awa" 
-            "--slice ptll=60,120 --reg ptll=tow" 
-            "--slice ptll=60,120 --reg ptll=tra"
-            "--slice ptll=120,9999"
-            "--slice ptll=120,9999 --reg ptll=awa" 
-            "--slice ptll=120,9999 --reg ptll=tow" 
-            "--slice ptll=120,9999 --reg ptll=tra"
+#            "--slice nj=2,999 --reg ptttbar=awa" 
+#            "--slice nj=2,999 --reg ptttbar=tow" 
+#            "--slice nj=2,999 --reg ptttbar=tra" 
+#            "--slice nj=2,999 --reg ptll=awa" 
+#            "--slice nj=2,999 --reg ptll=tow" 
+#            "--slice nj=2,999 --reg ptll=tra"
+#            "--slice ptttbar=0,20 " 
+#            "--slice ptttbar=0,20 --reg ptttbar=awa" 
+#            "--slice ptttbar=0,20 --reg ptttbar=tow" 
+#            "--slice ptttbar=0,20 --reg ptttbar=tra" 
+#            "--slice ptttbar=20,60" 
+#            "--slice ptttbar=20,60 --reg ptttbar=awa" 
+#            "--slice ptttbar=20,60 --reg ptttbar=tow" 
+#            "--slice ptttbar=20,60 --reg ptttbar=tra" 
+#            "--slice ptttbar=60,120" 
+#            "--slice ptttbar=60,120 --reg ptttbar=awa" 
+#            "--slice ptttbar=60,120 --reg ptttbar=tow" 
+#            "--slice ptttbar=60,120 --reg ptttbar=tra" 
+#            "--slice ptttbar=120,9999" 
+#            "--slice ptttbar=120,9999 --reg ptttbar=awa" 
+#            "--slice ptttbar=120,9999 --reg ptttbar=tow" 
+#            "--slice ptttbar=120,9999 --reg ptttbar=tra" 
+#            "--slice ptll=0,60"
+#            "--slice ptll=0,60 --reg ptll=awa" 
+#            "--slice ptll=0,60 --reg ptll=tow" 
+#            "--slice ptll=0,60 --reg ptll=tra"
+#            "--slice ptll=60,120"
+#            "--slice ptll=60,120 --reg ptll=awa" 
+#            "--slice ptll=60,120 --reg ptll=tow" 
+#            "--slice ptll=60,120 --reg ptll=tra"
+#            "--slice ptll=120,9999"
+#            "--slice ptll=120,9999 --reg ptll=awa" 
+#            "--slice ptll=120,9999 --reg ptll=tow" 
+#            "--slice ptll=120,9999 --reg ptll=tra"
         )
         for o in "${obs[@]}"; do
             for a in "${analyses[@]}"; do
@@ -151,84 +162,58 @@ case $WHAT in
     SUBMITANA )
         queue=longlunch
 	echo "Filling the histograms for unfolding"
-        a=(`ls UEanalysis/*/*/analysiscfg.pck`)
-        for i in ${a[@]}; do
-            if [[ ${i} == *"/inc_pt"* ]]; then
-                echo ${i};            
-                python test/TopUEAnalysis/runUEanalysis.py -i ${summaryeosdir}/Chunks --step 2 -q ${queue} -o `dirname ${i}`;
-                #sleep 60s
-            fi
-        done
+        python test/TopUEAnalysis/runUEanalysis.py -i ${summaryeosdir}/Chunks --step 2 -q ${queue} -o UEanalysis/${TAGANA};
+        cd UEanalysis/${TAGANA};
+        condor_submit condor.sub;
+        cd -
         ;;
 
     MERGEANA )
-        a=(`ls UEanalysis/*/*/analysiscfg.pck`)
-        for i in ${a[@]}; do
-            dir=`dirname ${i}`
-            if [ -f "${dir}/condor.sub" ]; then
-                echo "Checking results for ${dir}"
-                python scripts/checkAnalysisIntegrity.py ${dir}/FARM-UEANA/ ${dir}/Chunks/
-	        ./scripts/mergeOutputs.py ${dir} True 
-	        commonOpts="-l ${lumi} --mcUnc ${lumiUnc} --procSF DY:${outdir}/plots/.dyscalefactors.pck";
-	        python scripts/plotter.py -i ${dir} -j data/era2016/samples.json      ${commonOpts} --only _0;
-                python scripts/plotter.py -i ${dir} -j data/era2016/samples.json      ${commonOpts} --silent;
-	        python scripts/plotter.py -i ${dir} -j data/era2016/syst_samples.json ${commonOpts} --silent --outName syst_plotter.root;	
-            fi
-        done
+        dir=UEanalysis/${TAGANA}
+        echo "Checking results for ${dir}"
+        python scripts/checkAnalysisIntegrity.py ${dir}/FARM-UEANA/ ${dir}/Chunks/
+	./scripts/mergeOutputs.py ${dir} True 
+	commonOpts="-l ${lumi} --mcUnc ${lumiUnc} --procSF DY:${outdir}/plots/.dyscalefactors.pck";
+	python scripts/plotter.py -i ${dir} -j data/era2016/samples.json      ${commonOpts} --only _0;
+        python scripts/plotter.py -i ${dir} -j data/era2016/samples.json      ${commonOpts} --silent;
+	python scripts/plotter.py -i ${dir} -j data/era2016/syst_samples.json ${commonOpts} --silent --outName syst_plotter.root;	            
 	;;
+
+    MVANA)
+        mkdir -p store/TOP-17-015/${TAGANA}
+        rsync -axu --remove-source-files --delete-after --progress UEanalysis/${TAGANA}/* store/TOP-17-015/${TAGANA}/
+        rm -rf UEanalysis/${TAGANA}/
+        rm -rf store/TOP-17-015/${TAGANA}/FARM-UEANA/
+        ;;
+
     UNFOLDANA )
-
-        a=(`ls UEanalysis/*/*/analysiscfg.pck`)
-        for i in ${a[@]}; do
-            dir=`dirname ${i}`
-            if [ -f "${dir}/condor.sub" ]; then
-                if [[ ${i} == *"chmult/inc/"* ]]; then
-                    commonOpts="-o ${dir}/unfold --plotter ${dir}/plots/plotter.root --syst ${dir}/plots/syst_plotter.root -d ${dir}/Chunks/"            
-                #python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 0;
-                #python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 1;
-                #python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 2;
-                #python test/TopUEAnalysis/showUnfoldSummary.py -i ${dir}/unfold/unfold_summary.root;
-                    python test/TopUEAnalysis/showFinalDistributions.py --cfg ${dir}/analysiscfg.pck ${dir}/unfold/unfold_summary.root \
-                        ${dir}/plots/plotter.root ${dir}/plots/syst_plotter.root;
-                fi
-            fi
-        done
+        dir=$TAGANA
+        commonOpts="-o ${dir}/unfold --plotter ${dir}/plots/plotter.root --syst ${dir}/plots/syst_plotter.root -d ${dir}/Chunks/"            
+        python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 0;
+        python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 1;
+        python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 2;
+        python test/TopUEAnalysis/showUnfoldSummary.py -i ${dir}/unfold/unfold_summary.root;
+        python test/TopUEAnalysis/showFinalDistributions.py \
+            --cfg ${dir}/analysiscfg.pck \
+            ${dir}/unfold/unfold_summary.root \
+            ${dir}/plots/plotter.root \
+            ${dir}/plots/syst_plotter.root;        
         ;;
 
-    PLOTANA )
-
-        mkdir -p UEanalysis/analysis/plots/rawana
-	commonOpts="-l ${lumi} --saveLog --mcUnc ${lumiUnc} --procSF DY:${outdir}/plots/.dyscalefactors.pck";
-	python scripts/plotter.py -i UEanalysis/analysis -j data/era2016/samples.json      ${commonOpts};
-	python scripts/plotter.py -i UEanalysis/analysis -j data/era2016/syst_samples.json ${commonOpts} --silent --outName syst_plotter.root;	
-        python test/TopUEAnalysis/UETools.py -o UEanalysis/analysis/plots/ -i  UEanalysis/analysis/MC13TeV_TTJets.root
-	python test/TopUEAnalysis/showFinalRecoDistribution.py \
-            UEanalysis/analysis/plots/plotter.root \
-            UEanalysis/analysis/plots/syst_plotter.root \
-            --out UEanalysis/analysis/plots/reco;
-        #python test/TopUEAnalysis/showFinalUnfoldedDistribution.py \
-        #    UEanalysis/analysis/plots/plotter.root \
-        #    UEanalysis/analysis/plots/syst_plotter.root \
-        #    --out UEanalysis/analysis/plots/rawana \
-        #    --reco;
-	
-	;;
     WWWANA )
-	mkdir -p ${wwwdir}/rawana        
-        #cp UEanalysis/analysis/plots/*.{png,pdf,dat} ${wwwdir}/rawana
-	#cp  UEanalysis/analysis/plots/rawana/*.{png,pdf,dat} ${wwwdir}/rawana
-        #cp test/index.php ${wwwdir}/rawana
-        mkdir -p ${wwwdir}/reco
-        cp UEanalysis/analysis/plots/reco/*{png,pdf} ${wwwdir}/reco
-        cp test/index.php ${wwwdir}/reco
+        tks=(`echo $TAGANA | tr "/" "\n"`)
+        ntks=${#tks[@]}
+        tag="${tks[$ntks-2]}_${tks[$ntks-1]}"
+        tag=${tag//\=/_eq_}
+        tag=${tag//,/_}
+        tag=${tag//./p}
+        mkdir -p ${wwwdir}/ana/
+        a=(`ls $TAGANA/unfold/*.{png,pdf}`)
+        b=(`ls $TAGANA/*.{png,pdf}`)
+        a+=( "${a[@]}" "${b[@]}" )
+        for i in ${a[@]}; do            
+            cp ${i} ${wwwdir}/ana/${tag}_`basename ${i}`;
+        done
+        cp test/index.php ${wwwdir}/ana
 	;;
-    PLOTUNFOLD )
-
-        ;;
-    WWWUNFOLD )
-        mkdir -p ${wwwdir}/unfold;
-        cp UEanalysis/unfold/*.{png,pdf,dat} ${wwwdir}/unfold;
-        cp test/index.php ${wwwdir}/unfold;
-        ;;
-
 esac

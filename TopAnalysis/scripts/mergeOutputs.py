@@ -26,7 +26,7 @@ def getBaseNames(dirname):
             except:
                 pass
             basename, number = filename.rsplit('_',1)
-            print basename,number,goodFile
+            #print basename,number,goodFile
             if (not goodFile):
                 badFiles.append(dirname+'/'+item)
                 continue
