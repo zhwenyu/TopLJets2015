@@ -153,7 +153,12 @@ case $WHAT in
         for o in "${obs[@]}"; do
             for a in "${analyses[@]}"; do
                 options="--ptThr 0.9,0.9 --obs ${o} ${a}"
-                echo $options
+                if [[ $a == *"--reg"* ]]; then
+                    if [ "$o" == "sphericity" ] || [ "$o" == "aplanarity" ] || [ "$o" == "C" ] || [ "$o" == "D" ]; then
+                        echo "Skipping ${a} for ${o} as this is an inclusive observable";
+                        continue
+                    fi
+                fi
 	        python test/TopUEAnalysis/runUEanalysis.py -i ${baseFiles}     --step 1             ${options} -o ./UEanalysis;
             done
         done
