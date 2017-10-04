@@ -103,6 +103,28 @@ def getGraphExtremes(gr):
             maxY=max(maxY,float(y))
     return minY,maxY
 
+def formatGraph(p,fill,color,marker,keepXUnc,shiftX):
+    """
+    Format plot
+    """
+    ci=ROOT.TColor.GetColor(color)
+    x,y=ROOT.Double(0),ROOT.Double(0)
+    p.SetFillStyle(fill)
+    p.SetFillColor(ci)
+    p.SetMarkerColor(ci)
+    p.SetMarkerStyle(marker)
+    p.SetLineColor(ci)            
+    p.SetLineWidth(2)
+    for i in xrange(0,p.GetN()):
+        p.GetPoint(i,x,y)
+        xval,yval=float(x),float(y)
+        ey=p.GetErrorY(i)
+        ex=p.GetErrorX(i)
+        if shiftX : xval=xval+(2*shiftX-1)*ex                
+        if not keepXUnc: ex=0
+        p.SetPoint(i,xval,yval)
+        p.SetPointError(i,ex,ey)
+
     
 def getNormalizedPerColumn(h):
     """

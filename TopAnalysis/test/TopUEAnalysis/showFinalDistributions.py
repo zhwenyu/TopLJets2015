@@ -17,6 +17,8 @@ COMPARISONSETS=[
                             ('hdamp',           ['t#bar{t} hdamp up', 't#bar{t} hdamp dn']),
                             ('CR',              ['t#bar{t} QCDbased', 't#bar{t} ERDon', 't#bar{t} gluon move']) ] 
      ),
+    ('UE up',  [ ('nominal',          ['t#bar{t} UEup'])]),
+    ('UE dn',  [ ('nominal',          ['t#bar{t} UEdn'])]),
     ('FSR up', [ ('nominal',         ['t#bar{t} fsr up'])]),
     ('FSR dn', [ ('nominal',         ['t#bar{t} fsr dn'])]),
     ('ISR up', [ ('nominal',         ['t#bar{t} isr up'])]),
@@ -29,25 +31,35 @@ COMPARISONSETS=[
     ]
 
 PLOTTINGSET_1=[
-    ('Data',              '2',  1001, '#26e278', 1 , True,  None),
+    ('Data',              '2',  1001,  '#a6cee3', 1 , True,  None),
     ('PW+PY8 CUETP8M2T4', 'ep0', 0,    '#000000', 20, False, 0.2),
-    ('QCD based CR',      'ep0', 0,    '#ef8a62', 24, False, 0.5),
-    ('ERD on CR',         'ep0', 0,    '#ef8a62', 25, False, 0.5),
-    ('Gluon move CR',     'ep0', 0,    '#b2182b', 27, False, 0.5),
-    ('FSR up',            'ep0', 0,    '#67a9cf', 22, False, 0.8),
-    ('FSR dn',            'ep0', 0,    '#67a9cf', 23, False, 0.8)
+    ('ISR up',            'ep0', 0,    '#7570b3', 22, False, 0.5),
+    ('ISR dn',            'ep0', 0,    '#7570b3', 23, False, 0.5),
+    ('FSR up',            'ep0', 0,    '#d95f02', 22, False, 0.8),
+    ('FSR dn',            'ep0', 0,    '#d95f02', 23, False, 0.8)
 ]
 
-
 PLOTTINGSET_2=[
-    ('Data',                   '2',   1001, '#26e278', 1 , True,  None),
+    ('Data',              '2',  1001,  '#a6cee3', 1 , True,  None),
+    ('PW+PY8 CUETP8M2T4', 'ep0', 0,    '#000000', 20, False, 0.2),
+    ('QCD based CR',      'ep0', 0,    '#7570b3', 24, False, 0.5),
+    ('ERD on CR',         'ep0', 0,    '#7570b3', 25, False, 0.5),
+    ('Gluon move CR',     'ep0', 0,    '#b2182b', 27, False, 0.5),
+    ('UE up',             'ep0', 0,    '#d95f02', 24, False, 0.8),
+    ('UE dn',             'ep0', 0,    '#d95f02', 25, False, 0.8)
+]
+
+PLOTTINGSET_3=[
+    ('Data',                   '2',   1001, '#a6cee3', 1 , True,  None),
     ('PW+PY8 CUETP8M2T4',      'ep0', 0,    '#000000', 20, False, 0.2),
-    ('aMC@NLO+PY8 CUETP8M2T4', 'ep0', 0,    '#ef8a62', 24, False, 0.5),
+    ('aMC@NLO+PY8 CUETP8M2T4', 'ep0', 0,    '#7570b3', 24, False, 0.5),
     ('PW+HW++ EE5C',           'ep0', 0,    '#219125', 22, False, 0.8),
 ]
 
 def compareUEPlots(uePlots,outDir,cuts,obs,plottingSet=PLOTTINGSET_1,pfix=''):
     """This method dumps the formatted plots to the canvas"""
+
+    logX=True if 'chflux' in obs or 'chavg' in obs else False
 
     #start the canvas
     c=ROOT.TCanvas('c','c',600,600)
@@ -56,12 +68,15 @@ def compareUEPlots(uePlots,outDir,cuts,obs,plottingSet=PLOTTINGSET_1,pfix=''):
     c.SetLeftMargin(0.0)
     c.SetBottomMargin(0.0)
 
+
     c.cd()
     p1=ROOT.TPad('p1','p1',0,0.3,1.0,1.0)
     p1.SetTopMargin(0.06)
     p1.SetRightMargin(0.03)
     p1.SetLeftMargin(0.12)
     p1.SetBottomMargin(0.01)
+    p1.SetLogx(logX)
+    p1.SetGridx()
     p1.Draw()
     p1.cd()
     frame=ROOT.TH1F('frame','frame',uePlots['Data'].trueAxis.GetNbins(),uePlots['Data'].trueAxis.GetXbins().GetArray())
@@ -100,10 +115,15 @@ def compareUEPlots(uePlots,outDir,cuts,obs,plottingSet=PLOTTINGSET_1,pfix=''):
     tex.DrawLatex(0.15,0.87,'#bf{CMS} #it{preliminary}')
     tex.DrawLatex(0.73,0.96,'#scale[0.8]{35.9 fb^{-1} (#sqrt{s}=13 TeV)}')
     icut=0
-    for cutKey in cuts:
-        y=0.89-0.04*icut
-        if cutKey=='region': tex.DrawLatex(0.55,y,'%s region=%s'%(VARTITLES[cuts[cutKey][0]],cuts[cutKey][1]) )
-        else               : tex.DrawLatex(0.55,y,'%3.1f#leq%s<%3.1f'%(cuts[cutKey][0],VARTITLES[cutKey],cuts[cutKey][1]))
+    for cutKey in cuts:   
+        y=0.86-len(plottingSet)*0.06-0.06*icut
+        if cutKey=='region': 
+            regionName='toward'
+            if cuts[cutKey][1]==1: regionName='transverse'
+            if cuts[cutKey][1]==2: regionName='away'
+            tex.DrawLatex(0.62,y,'%s [%s]'%(regionName,VARTITLES[cuts[cutKey][0]]) )
+        else :
+            tex.DrawLatex(0.62,y,'%3.1f#leq%s<%3.1f'%(cuts[cutKey][0],VARTITLES[cutKey],cuts[cutKey][1]))
         icut+=1
 
     p1.RedrawAxis()
@@ -114,6 +134,8 @@ def compareUEPlots(uePlots,outDir,cuts,obs,plottingSet=PLOTTINGSET_1,pfix=''):
     p2.SetRightMargin(0.03)
     p2.SetLeftMargin(0.12)
     p2.SetBottomMargin(0.3)
+    p2.SetGridx()
+    p2.SetLogx(logX)
     p2.Draw()
     p2.cd()
     ratioframe=frame.Clone('ratioframe')
@@ -138,13 +160,48 @@ def compareUEPlots(uePlots,outDir,cuts,obs,plottingSet=PLOTTINGSET_1,pfix=''):
             pass
     ratioframe.GetYaxis().SetRangeUser(max(minY*0.8,0.15),min(maxY*1.25,1.95))
     ratioframe.GetYaxis().SetNdivisions(5)
-
+    if logX: ratioframe.GetXaxis().SetMoreLogLabels()
     p2.RedrawAxis()
     
     # all done
     c.Modified()
     c.Update()
     for ext in ['pdf','png']: c.SaveAs('%s/%s%s_unfolded.%s'%(outDir,obs,pfix,ext))
+
+    #only ratio
+    cratio=ROOT.TCanvas('cratio','cratio',600,180)
+    cratio.SetTopMargin(0.01)
+    cratio.SetRightMargin(0.03)
+    cratio.SetLeftMargin(0.12)
+    cratio.SetBottomMargin(0.3)
+    cratio.SetGridx()
+    cratio.SetLogx(logX)
+    cratio.Draw()
+    ratioframe.Draw()
+    leg=ROOT.TLegend(0.15,0.92,0.95,0.88)
+    leg.SetFillStyle(0)
+    leg.SetBorderSize(0)
+    leg.SetTextFont(42)
+    leg.SetTextSize(0.08)
+    leg.SetNColumns(len(plottingSet)-1)
+    for p,drawOpt,fill,color,marker,keepXUnc,shiftX in plottingSet:
+        try:
+            uePlotRatios[p].Draw(drawOpt)
+            if p!='Data': leg.AddEntry(uePlotRatios[p],p,drawOpt)
+        except:
+            pass
+    ratioframe.GetYaxis().SetRangeUser(max(minY*0.8,0.15),min(maxY*1.5,1.95))
+    ratioframe.GetYaxis().SetNdivisions(5)
+    if logX: ratioframe.GetXaxis().SetMoreLogLabels()
+    leg.Draw()
+
+    cratio.RedrawAxis()
+    cratio.Modified()
+    cratio.Update()
+    try:
+        for ext in ['pdf','png']: cratio.SaveAs('%s/%s%s_unfolded_ratio.%s'%(outDir,obs,pfix,ext))
+    except:
+        pass
 
 
 """
@@ -227,7 +284,7 @@ def readParticlePlotsFrom(args,obsAxis,cuts,obs):
         ('JES'            , 'exp') : ['jesup','jesdn'],
         ('JER'            , 'exp') : ['jerup','jerdn'],
         ('LES'            , 'exp') : ['eesup','eesdn','mesup','mesdn'],
-        ('Trk. eff.'      , 'exp') : ['tkeff','tkeffeta','tkeffdstar'],
+        ('Trk. eff.'      , 'exp') : ['tkeffeta','tkeffdstar'],
         ('UE'             , 'th')  : ['t#bar{t} UEdn',     't#bar{t} UEup'],
         ('FSR'            , 'th')  : ['t#bar{t} fsr dn',   't#bar{t} fsr up'],
         ('ME-PS'          , 'th')  : ['t#bar{t} hdamp dn', 't#bar{t} hdamp up'],
@@ -398,31 +455,37 @@ def main():
         obs         = pickle.load(cachefile)
     obsAxis=analysiscfg[('reco' if opt.reco else 'gen','axis')]
 
-
     uePlots={}
     if opt.reco:
         readRecoPlotsFrom(args,opt)
     else:
         uePlots=readParticlePlotsFrom(args,obsAxis,cuts,obs)
 
-
     #finalize the plots
     for key in uePlots: uePlots[key].finalize()
 
     #show plots
     outDir=os.path.dirname(args[0])
-    for p, pfix in [(PLOTTINGSET_1,''),(PLOTTINGSET_2,'_v2')]:
+    for p, pfix in [(PLOTTINGSET_1,''),(PLOTTINGSET_2,'_v2'),(PLOTTINGSET_3,'_v3')]:
         compareUEPlots(uePlots=uePlots,
                        outDir=outDir,
                        cuts=cuts,
                        obs=obs,
                        plottingSet=p,
                        pfix=pfix)
+    
     showSystsSummary(uePlots['Data'].relUncertaintyH,
                      outdir=outDir,
                      cuts=cuts,
                      obs=obs)
 
+    with open(os.path.join(outDir,'mean_summary.dat'),'w') as cachefile:
+        cachefile.write(uePlots['Data'].meanUncTable)
+
+    with open(os.path.join(outDir,'unfold_summary.pck'),'w') as cachefile:
+        pickle.dump( uePlots, cachefile, pickle.HIGHEST_PROTOCOL)
+
+    
 
 """
 for execution from another script

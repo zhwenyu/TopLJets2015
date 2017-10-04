@@ -127,9 +127,11 @@ def defineAnalysisBinning(opt,ptthreshold,cuts,outDir):
 
     #binning at gen level
     genBins=[min(genvarQ[0],0.)]
+    if opt.obs in ['chavgpt','chavgpz']: genBins=[1.0]
     nsd=1.5
     lastAcceptResol=resGr.GetErrorY(0)
     for xgen_i in genvarQ:        
+        if xgen_i<genBins[0] : continue
         dx=xgen_i-genBins[-1]
         if dx<0 : continue
         if dx<nsd*lastAcceptResol : continue
@@ -146,7 +148,7 @@ def defineAnalysisBinning(opt,ptthreshold,cuts,outDir):
             recBins.append(x_i)
             recBins.append(x_ii)
         else:
-            x_i=0.5*(recVarQ[-1]+recBins[-1])
+            x_i=0.5*(recvarQ[-1]+recBins[-1])
             x_ii=recvarQ[-1]
             recBins.append(x_i)
             recBins.append(x_ii)

@@ -5,18 +5,10 @@ from os.path import isfile, join
 import re
 
 #list files
-path='UEanalysis/analysis'
+path='store/TOP-17-015/chmult/inc'
 onlyfiles = [f for f in listdir(path) if 'MuonEG' in f]
 
-dist='chmult_None_inc_None_True'
-#dist='chflux_None_inc_None_True'
-#dist='chfluxz_None_inc_None_True'
-#dist='chavgpt_None_inc_None_True'
-#dist='chavgpz_None_inc_None_True'
-#dist='aplanarity_None_inc_None_True'
-#dist='sphericity_None_inc_None_True'
-#dist='C_None_inc_None_True'
-#dist='D_None_inc_None_True'
+dist='reco_0'
 
 plots={}
 total=None
@@ -45,16 +37,16 @@ ROOT.gROOT.SetBatch(True)
 ROOT.gStyle.SetOptStat(0)
 ROOT.gStyle.SetOptTitle(0)
 from TopLJets2015.TopAnalysis.Plot import Plot
-p=Plot(dist)
-colors={'B':ROOT.kOrange-8,
-        'C':ROOT.kOrange-6,
-        'D':ROOT.kOrange-4,
-        'E':ROOT.kOrange+4,
-        'F':ROOT.kBlue+2,
-        'BCDEF':ROOT.kOrange-4,
-        'G':ROOT.kBlue-4,
-        'H':ROOT.kBlue-9,
-        'GH':ROOT.kBlue-9,
+p=Plot('chmult_eras')
+colors={'B':ROOT.kRed+1,
+        'C':ROOT.kRed+2,
+        'D':ROOT.kRed+3,
+        'E':ROOT.kRed+4,
+        'F':ROOT.kRed+5,
+        'BCDEF':ROOT.kRed,
+        'G':ROOT.kCyan-1,
+        'H':ROOT.kCyan-2,
+        'GH':ROOT.kCyan,
         }
 for era in plots:
     plots[era].Scale(1./plots[era].Integral())
@@ -62,6 +54,8 @@ for era in plots:
 total.Scale(1./total.Integral())
 p.add(total,'2016',1,True,True,False)
 p.ratiorange=(0.7,1.3)
+p.cmsLabel='#bf{CMS} #it{preliminary}'
 p.doPoissonErrorBars=False
-p.show(outDir=' ~/www/TopUE_ReReco2016/eras/',lumi=35900,noStack=True,noRatio=False) #True)
+p.ratioTitle='Ratio'
+p.show(outDir=' ~/www/TOP-17-015/',lumi=35900,noStack=True,noRatio=False) #True)
 #raw_input()

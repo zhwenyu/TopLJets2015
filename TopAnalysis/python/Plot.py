@@ -139,11 +139,15 @@ class Plot(object):
     def finalize(self):
         if self.doPoissonErrorBars:
             self.data = convertToPoissonErrorGr(self.dataH)
+            for i in xrange(0,self.data.GetN()):
+                self.data.SetPointEXhigh(i,0.)
+                self.data.SetPointEXlow(i,0.)
         else:
-            self.data=ROOT.TGraphErrors(self.dataH)
-        for i in xrange(0,self.data.GetN()):
-            self.data.SetPointEXhigh(i,0.)
-            self.data.SetPointEXlow(i,0.)
+            self.data=ROOT.TGraphErrors(self.dataH)        
+            for i in xrange(0,self.data.GetN()):
+                ey=self.data.GetErrorY(i)
+                self.data.SetPointError(i,0,ey)
+
             
     def appendTo(self,outUrl):
         outF = ROOT.TFile.Open(outUrl,'UPDATE')
@@ -470,12 +474,17 @@ class Plot(object):
                     ratio.SetDirectory(0)
                     self._garbageList.append(ratio)
                     ratio.Divide(self.mc[title])
-                    ratioGrs.append( ROOT.TGraphAsymmErrors(ratio) )
-
-                    for i in xrange(0,ratioGrs[-1].GetN()):
-                        ratioGrs[-1].SetPointEXhigh(i,0.)
-                        ratioGrs[-1].data.SetPointEXlow(i,0.)
-
+                    
+                    if self.doPoissonErrorBars:
+                        ratioGrs.append( ROOT.TGraphAsymmErrors(ratio) )
+                        for i in xrange(0,ratioGrs[-1].GetN()):
+                            ratioGrs[-1].SetPointEXhigh(i,0.)
+                            ratioGrs[-1].data.SetPointEXlow(i,0.)
+                    else:
+                        ratioGrs.append( ROOT.TGraphErrors(ratio) )
+                        for i in xrange(0,ratioGrs[-1].GetN()): 
+                            ey=ratioGrs[-1].GetErrorY(i)
+                            ratioGrs[-1].SetPointError(i,0,ey)
                     ratioGrs[-1].SetMarkerStyle(self.data.GetMarkerStyle())
                     ratioGrs[-1].SetMarkerSize(self.data.GetMarkerSize())
                     ci=self.mc[title].GetLineColor()

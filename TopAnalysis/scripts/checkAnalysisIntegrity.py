@@ -40,7 +40,7 @@ newCondor=open(newCondorName,'w')
 for line in condor:
     if 'jobName=' in line: break
     newCondor.write(line)
-newCondor.write('log  = %s/resublog_$(ClusterId).log\n'%FARMDIR)
+#newCondor.write('log  = %s/resublog_$(ClusterId).log\n'%FARMDIR)
 for jobName in toRun:
     newCondor.write('jobName=%s\n'%jobName)
     newCondor.write('queue 1\n')
@@ -48,6 +48,7 @@ condor.close()
 newCondor.close()
 
 #submit jobs
-print 'Resubmitting to condor from',newCondorName
-os.system('condor_submit %s'%newCondorName)
+print 'You can resubmit to condor from',newCondorName
+#print 'Resubmitting to condor from',newCondorName
+#os.system('condor_submit %s'%newCondorName)
 

@@ -3,6 +3,7 @@
 import ROOT
 import numpy as np
 from collections import defaultdict
+from UETools import formatGraph
 
 class UEPlot:
     """A container for a graph with variations. A plot has the following properties:
@@ -14,6 +15,7 @@ class UEPlot:
         """Setup the attributes of this plot"""
         self.name=name
         self.mean=[0.,[]]
+        self.meanUncTable=''
         self.plot=[ROOT.TGraphErrors(),[]]
         self.plot[0].SetName('%s_central'%self.name)
         self.plot[0].SetTitle(title)
@@ -42,15 +44,23 @@ class UEPlot:
         self.variations[key][-1].SetDirectory(0)
 
         #compute mean of this distribution
-        x,w=[],[]
+        x,w,w2=[],[],[]
         for xbin in xrange(1,self.trueAxis.GetNbins()+1):
             x.append( self.trueAxis.GetBinCenter(xbin) )
             w.append( varH.GetBinContent(xbin) )
+            w2.append( varH.GetBinContent(xbin)**2 )
         try:
             avg=np.average(x,weights=w)
             dx2=[(k-avg)**2 for k in x]
             var = np.average(dx2, weights=w)
-            self.variationMeans[key].append( (avg,ROOT.TMath.Sqrt(var/sum(w))) )
+            neff=sum(w)
+            #neff=(sum(w)**2)/sum(w2)
+            self.variationMeans[key].append( (avg,ROOT.TMath.Sqrt(var/neff)) )
+
+            #avg2=np.average(x**2,weights=w)
+            #dx4=[(k**2-avg)**2 for k in x]
+            #var = np.average(dx4, weights=w)
+
         except:
             self.variationMeans[key].append( None )
 
@@ -80,8 +90,8 @@ class UEPlot:
             nomKey=key
             break
         if nomKey is None: return
-        nbins=self.variations[nomKey][0].GetNbinsX()
-        norm=self.variations[nomKey][0].Integral()
+        nbins = self.variations[nomKey][0].GetNbinsX()
+        norm  = self.variations[nomKey][0].Integral()
 
         #statistical covariance
         if statCov is None:
@@ -210,6 +220,8 @@ class UEPlot:
         self.mean[0]=self.variationMeans[nomKey][0][0]
         self.mean[1][0]=self.variationMeans[nomKey][0][1]
 
+        self.meanUncTable='Value & %3.3f\nStat & %3.2f\n'%(self.mean[0],self.mean[1][0]/self.mean[0]*100)
+
         #experimental uncertainty
         meanExpUnc=0
         for key in expKeys:
@@ -217,6 +229,7 @@ class UEPlot:
             for m,_ in self.variationMeans[key]:
                 iMeanExpUnc=max( abs(m-self.mean[0]), iMeanExpUnc )
             meanExpUnc += iMeanExpUnc**2
+            self.meanUncTable+='%s & %3.2f\n'%(key[0],iMeanExpUnc/self.mean[0]*100)
         self.mean[1][1]=ROOT.TMath.Sqrt(meanExpUnc)
 
         #theory uncertainty
@@ -226,31 +239,17 @@ class UEPlot:
             for m,_ in self.variationMeans[key]:
                 iMeanThUnc=max( abs(m-self.mean[0]), iMeanThUnc )
             meanThUnc += iMeanThUnc**2
+            self.meanUncTable+='%s & %3.2f\n'%(key[0],iMeanThUnc/self.mean[0]*100)
         self.mean[1][2]=ROOT.TMath.Sqrt(meanThUnc)
+
+        totalUnc=ROOT.TMath.Sqrt(meanThUnc+meanExpUnc+self.mean[1][0]**2)
+        self.meanUncTable+='Total & %3.2f'%(totalUnc/self.mean[0]*100)
 
     def format(self,fill,color,marker,keepXUnc,shiftX):
         """
         Apply a common format to the plots
         """
-        ci=ROOT.TColor.GetColor(color)
-        x,y=ROOT.Double(0),ROOT.Double(0)
-        for p in self.plot[1]+[self.plot[0]]:
-            p.SetFillStyle(fill)
-            p.SetFillColor(ci)
-            p.SetMarkerColor(ci)
-            p.SetMarkerStyle(marker)
-            p.SetLineColor(ci)            
-            p.SetLineWidth(2)
-            for i in xrange(0,p.GetN()):
-                p.GetPoint(i,x,y)
-                xval,yval=float(x),float(y)
-                ey=p.GetErrorY(i)
-                ex=p.GetErrorX(i)
-                if shiftX : xval=xval+(2*shiftX-1)*ex                
-                if not keepXUnc: ex=0
-                p.SetPoint(i,xval,yval)
-                p.SetPointError(i,ex,ey)
-        
+        for p in self.plot[1]+[self.plot[0]]: formatGraph(p,fill,color,marker,keepXUnc,shiftX)
 
 def getRatiosWithRespectTo(uePlots,refKey):
     """

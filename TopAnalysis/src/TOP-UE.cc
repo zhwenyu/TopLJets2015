@@ -608,7 +608,7 @@ void RunTopUE(TString filename,
       tue.nvtx=ev.nvtx;
    
       //all done
-      if(tue.cat==11*13) outT->Fill();
+      if(chTag=="EM" || genChTag=="EM") outT->Fill();
     }
   
   //save histos to file  

@@ -20,7 +20,8 @@ def main():
     parser.add_option('-o', '--output',      dest='cache',       help='output file',                  default='data/era2016/genweights.root',                      type='string')
     (opt, args) = parser.parse_args()
 
-    baseEOS='/eos/cms/'
+    baseEOS='/eos/cms/'+opt.inDir
+    if opt.inDir.find('/eos')==0 : baseEOS=opt.inDir
     #eos_cmd = '/afs/cern.ch/project/eos/installation/0.3.15/bin/eos.select'
     #if opt.mount:
     #    baseEOS='eos/cms'
@@ -28,19 +29,19 @@ def main():
 
     #loop over samples available
     genweights={}
-    for sample in os.listdir('%s/%s' % (baseEOS,opt.inDir)):
+    for sample in os.listdir(baseEOS):
 
         #sum weight generator level weights
         wgtCounter=None
         labelH=None
-        for f in os.listdir('%s/%s/%s' % (baseEOS,opt.inDir,sample ) ):
-            fIn=ROOT.TFile.Open('%s/%s/%s/%s' % (baseEOS,opt.inDir,sample,f ) )
+        for f in os.listdir('%s/%s' % (baseEOS,sample ) ):
+            fIn=ROOT.TFile.Open('%s/%s/%s' % (baseEOS,sample,f ) )
             if not opt.HiForest:
                 if wgtCounter is None:
                     try:
                         wgtCounter=fIn.Get('analysis/fidcounter').ProjectionX('genwgts',1,1)
                     except:
-                        print 'Check %s/%s/%s/%s probably corrupted?' % (baseEOS,opt.inDir,sample,f )
+                        print 'Check %s/%s/%s probably corrupted?' % (baseEOS,sample,f )
                         continue
                     wgtCounter.SetDirectory(0)
                     wgtCounter.Reset('ICE')
