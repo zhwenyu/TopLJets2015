@@ -113,6 +113,7 @@ def formatGraph(p,fill,color,marker,keepXUnc,shiftX):
     p.SetFillColor(ci)
     p.SetMarkerColor(ci)
     p.SetMarkerStyle(marker)
+    if marker!=1 : p.SetMarkerSize(1.3)
     p.SetLineColor(ci)            
     p.SetLineWidth(2)
     for i in xrange(0,p.GetN()):

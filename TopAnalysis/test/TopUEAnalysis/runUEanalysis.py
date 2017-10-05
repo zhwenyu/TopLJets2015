@@ -469,7 +469,7 @@ def main():
     elif opt.step==2:
 
         #tags to process
-        onlyList=opt.only.split('v')
+        onlyList=opt.only.split(',')
 
         #prepare output
         os.system('mkdir -p %s/Chunks'%opt.out)

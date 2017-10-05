@@ -10,12 +10,12 @@ from UEPlot import *
 from UETools import getGraphExtremes
 
 COMPARISONSETS=[
-    ('PW+PY8 CUETP8M2T4', [ ('nominal',         ['t#bar{t}']), 
-                            ('#deltaCUET8P2MT4',['t#bar{t} UEup',     't#bar{t} UEdn']),
-                            ('FSR',             ['t#bar{t} fsr up',   't#bar{t} fsr dn']),
-                            ('ISR',             ['t#bar{t} isr up',   't#bar{t} isr dn']),
-                            ('hdamp',           ['t#bar{t} hdamp up', 't#bar{t} hdamp dn']),
-                            ('CR',              ['t#bar{t} QCDbased', 't#bar{t} ERDon', 't#bar{t} gluon move']) ] 
+    ('PW+PY8', [ ('nominal',         ['t#bar{t}']), 
+                 ('#deltaCUET8P2MT4',['t#bar{t} UEup',     't#bar{t} UEdn']),
+                 ('FSR',             ['t#bar{t} fsr up',   't#bar{t} fsr dn']),
+                 ('ISR',             ['t#bar{t} isr up',   't#bar{t} isr dn']),
+                 ('hdamp',           ['t#bar{t} hdamp up', 't#bar{t} hdamp dn']),
+                 ('CR',              ['t#bar{t} QCDbased', 't#bar{t} ERDon', 't#bar{t} gluon move']) ] 
      ),
     ('UE up',  [ ('nominal',          ['t#bar{t} UEup'])]),
     ('UE dn',  [ ('nominal',          ['t#bar{t} UEdn'])]),
@@ -23,37 +23,42 @@ COMPARISONSETS=[
     ('FSR dn', [ ('nominal',         ['t#bar{t} fsr dn'])]),
     ('ISR up', [ ('nominal',         ['t#bar{t} isr up'])]),
     ('ISR dn', [ ('nominal',         ['t#bar{t} isr dn'])]),
-    ('QCD based CR', [ ('nominal',         ['t#bar{t} QCDbased'])]),
-    ('ERD on CR',    [ ('nominal',         ['t#bar{t} ERDon'])]),
-    ('Gluon move CR',[ ('nominal',         ['t#bar{t} gluon move'])]),
-    ('aMC@NLO+PY8 CUETP8M2T4', [ ('nominal', ['t#bar{t} aMC@NLO']) ]),
-    ('PW+HW++ EE5C'      , [ ('nominal', ['t#bar{t} Herwig++']) ]),
+    ('QCD based', [ ('nominal',         ['t#bar{t} QCDbased'])]),
+    ('ERD on',    [ ('nominal',         ['t#bar{t} ERDon'])]),
+    ('Gluon move',[ ('nominal',         ['t#bar{t} gluon move'])]),
+    ('aMC@NLO+PY8', [ ('nominal', ['t#bar{t} aMC@NLO']) ]),
+    ('PW+HW++'    , [ ('nominal', ['t#bar{t} Herwig++']) ]),
     ]
+
+EXTRASETS = [
+    ('Sherpa', 'MC13TeV_TTJets_sherpa.root'),
+    ('PW+HW7', 'MC13TeV_TTJets_herwig7.root'),
+]
 
 PLOTTINGSET_1=[
     ('Data',              '2',  1001,  '#a6cee3', 1 , True,  None),
-    ('PW+PY8 CUETP8M2T4', 'ep0', 0,    '#000000', 20, False, 0.2),
-    ('ISR up',            'ep0', 0,    '#7570b3', 22, False, 0.5),
-    ('ISR dn',            'ep0', 0,    '#7570b3', 23, False, 0.5),
+    ('PW+PY8',            'ep0', 0,    '#000000', 20, False, 0.2),
+    ('ISR up',            'ep0', 0,    '#fdc086', 22, False, 0.5),
+    ('ISR dn',            'ep0', 0,    '#fdc086', 23, False, 0.5),
     ('FSR up',            'ep0', 0,    '#d95f02', 22, False, 0.8),
     ('FSR dn',            'ep0', 0,    '#d95f02', 23, False, 0.8)
 ]
 
 PLOTTINGSET_2=[
     ('Data',              '2',  1001,  '#a6cee3', 1 , True,  None),
-    ('PW+PY8 CUETP8M2T4', 'ep0', 0,    '#000000', 20, False, 0.2),
-    ('QCD based CR',      'ep0', 0,    '#7570b3', 24, False, 0.5),
-    ('ERD on CR',         'ep0', 0,    '#7570b3', 25, False, 0.5),
-    ('Gluon move CR',     'ep0', 0,    '#b2182b', 27, False, 0.5),
-    ('UE up',             'ep0', 0,    '#d95f02', 24, False, 0.8),
-    ('UE dn',             'ep0', 0,    '#d95f02', 25, False, 0.8)
+    ('UE up',             'ep0', 0,    '#000000', 22, False, 0.2),
+    ('UE dn',             'ep0', 0,    '#000000', 23, False, 0.2),
+    ('QCD-based',         'ep0', 0,    '#fdc086', 20, False, 0.5),
+    ('Gluon move',        'ep0', 0,    '#984ea3', 21, False, 0.5),
+    ('ERD on',            'ep0', 0,    '#d95f02', 24, False, 0.8),
 ]
 
 PLOTTINGSET_3=[
-    ('Data',                   '2',   1001, '#a6cee3', 1 , True,  None),
-    ('PW+PY8 CUETP8M2T4',      'ep0', 0,    '#000000', 20, False, 0.2),
-    ('aMC@NLO+PY8 CUETP8M2T4', 'ep0', 0,    '#7570b3', 24, False, 0.5),
-    ('PW+HW++ EE5C',           'ep0', 0,    '#219125', 22, False, 0.8),
+    ('Data',        '2',   1001, '#a6cee3', 1 , True,  None),
+    ('Sherpa',      'ep0', 0,    '#000000', 20, False, 0.2),
+    ('aMC@NLO+PY8', 'ep0', 0,    '#e41a1c', 21, False, 0.5),
+    ('PW+HW++',     'ep0', 0,    '#984ea3', 22, False, 0.8),
+    ('PW+HW7',      'ep0', 0,    '#386cb0', 23, False, 0.8),
 ]
 
 def compareUEPlots(uePlots,outDir,cuts,obs,plottingSet=PLOTTINGSET_1,pfix=''):
@@ -182,7 +187,7 @@ def compareUEPlots(uePlots,outDir,cuts,obs,plottingSet=PLOTTINGSET_1,pfix=''):
     leg.SetFillStyle(0)
     leg.SetBorderSize(0)
     leg.SetTextFont(42)
-    leg.SetTextSize(0.08)
+    leg.SetTextSize(0.095)
     leg.SetNColumns(len(plottingSet)-1)
     for p,drawOpt,fill,color,marker,keepXUnc,shiftX in plottingSet:
         try:
@@ -267,7 +272,7 @@ def showSystsSummary(systsH,outdir,cuts,obs):
         c.SaveAs('%s/%s_reluncertainty.%s'%(outdir,obs,ext))
 
 
-def readParticlePlotsFrom(args,obsAxis,cuts,obs):
+def readParticlePlotsFrom(baseAnaDir,args,obsAxis,cuts,obs):
     """
     reads the results contained in the unfold summary
     """
@@ -337,6 +342,18 @@ def readParticlePlotsFrom(args,obsAxis,cuts,obs):
                 uePlots[varTitle].addVariation(mc,None if x=='nominal' else 'th',h)    
     fGen.Close()
     fSyst.Close()
+
+    #add extra sets (generator level only)
+    for varTitle,varUrl in EXTRASETS:
+        url=os.path.join( baseAnaDir, varUrl)
+        if not os.path.isfile(url): continue
+        fIn=ROOT.TFile.Open(url)
+        genH=fIn.Get('gen')
+        varName='gen_%d'%len(uePlots)
+        uePlots[varTitle]=UEPlot(varName,varTitle,obsAxis)
+        uePlots[varTitle].addVariation(varTitle,None,genH)
+        fIn.Close()
+    
 
     #all done here, return result
     return uePlots
@@ -454,12 +471,13 @@ def main():
         cuts        = pickle.load(cachefile)
         obs         = pickle.load(cachefile)
     obsAxis=analysiscfg[('reco' if opt.reco else 'gen','axis')]
+    baseAnaDir=os.path.dirname(opt.analysisCfg)
 
     uePlots={}
     if opt.reco:
         readRecoPlotsFrom(args,opt)
     else:
-        uePlots=readParticlePlotsFrom(args,obsAxis,cuts,obs)
+        uePlots=readParticlePlotsFrom(baseAnaDir,args,obsAxis,cuts,obs)
 
     #finalize the plots
     for key in uePlots: uePlots[key].finalize()

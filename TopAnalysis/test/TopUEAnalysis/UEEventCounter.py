@@ -128,13 +128,20 @@ class UEEventCounter:
         #repeat N-selections for every possible variations
         for iSystVar in xrange(0,len(self.systList)):
 
+            #ignore if not available
+            if iSystVar>=t.nw : continue
+
             #weight, variation index in tree and tk. eff flag
             _,wgtIdx,varIdx,varyTkEff = self.systList[iSystVar]
 
 
             #reco level
-            self.w[iSystVar]           = t.weight[wgtIdx]
-            self.rec_passSel[iSystVar] = ((t.passSel>>varIdx)&0x1)
+            self.w[iSystVar],self.rec_passSel[iSystVar]=1.0,False
+            try:
+                self.w[iSystVar]           = t.weight[wgtIdx]
+                self.rec_passSel[iSystVar] = ((t.passSel>>varIdx)&0x1)
+            except:
+                pass
 
             passExtraCuts=True
             for cutKey in self.cuts:

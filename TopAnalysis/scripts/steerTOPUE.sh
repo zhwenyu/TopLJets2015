@@ -59,9 +59,9 @@ case $WHAT in
 
     SEL )
         commonOpts="-q ${queue} -o ${summaryeosdir}      --era era2016 -m TOP-UE::RunTopUE --ch 0 --runSysts";
-	#python scripts/runLocalAnalysis.py -i ${eosdir}  --farmappendix TopUEMC ${commonOpts} --only MC;
-	#python scripts/runLocalAnalysis.py -i ${dataeos} --farmappendix TopUEMC ${commonOpts} --only Data;        
-        python scripts/runLocalAnalysis.py -i ${markuseos} --farmappendix TopUEMC ${commonOpts} --only TTJets;
+	python scripts/runLocalAnalysis.py -i ${eosdir}  --farmappendix TopUEMC ${commonOpts} --only MC;
+	python scripts/runLocalAnalysis.py -i ${dataeos} --farmappendix TopUEMC ${commonOpts} --only Data;        
+        python scripts/runLocalAnalysis.py -i ${markuseos} --farmappendix TopUEMC ${commonOpts} --only herwig7,sherpa,pythia8_asfsr;
 	;;
 
     MERGESEL )
@@ -99,7 +99,7 @@ case $WHAT in
 #            "--slice nj=0,1" 
 #            "--slice nj=1,2" 
 #            "--slice nj=2,999" 
-
+#
 #            "--slice nj=0,1 --reg ptttbar=awa" 
 #            "--slice nj=0,1 --reg ptttbar=tow" 
 #            "--slice nj=0,1 --reg ptttbar=tra" 
@@ -118,7 +118,7 @@ case $WHAT in
 #            "--slice nj=2,999 --reg ptll=awa" 
 #            "--slice nj=2,999 --reg ptll=tow" 
 #            "--slice nj=2,999 --reg ptll=tra"
-
+#
 #            "--reg ptttbar=awa" 
 #            "--reg ptttbar=tow" 
 #            "--reg ptttbar=tra" 
@@ -137,19 +137,19 @@ case $WHAT in
 #            "--reg ptll=awa" 
 #            "--reg ptll=tow" 
 #            "--reg ptll=tra"
-            "--slice ptll=0,20"
+#            "--slice ptll=0,20"
 #            "--slice ptll=0,20 --reg ptll=awa" 
 #            "--slice ptll=0,20 --reg ptll=tow" 
 #            "--slice ptll=0,20 --reg ptll=tra"
-            "--slice ptll=20,60"
+#            "--slice ptll=20,60"
 #            "--slice ptll=20,60 --reg ptll=awa" 
 #            "--slice ptll=20,60 --reg ptll=tow" 
 #            "--slice ptll=20,60 --reg ptll=tra"
-            "--slice ptll=60,120"
+#            "--slice ptll=60,120"
 #            "--slice ptll=60,120 --reg ptll=awa" 
 #            "--slice ptll=60,120 --reg ptll=tow" 
 #            "--slice ptll=60,120 --reg ptll=tra"
-            "--slice ptll=120,9999"
+#            "--slice ptll=120,9999"
 #            "--slice ptll=120,9999 --reg ptll=awa" 
 #            "--slice ptll=120,9999 --reg ptll=tow" 
 #            "--slice ptll=120,9999 --reg ptll=tra"
@@ -183,6 +183,26 @@ case $WHAT in
         condor_submit condor.sub;
         cd -
         ;;
+    SUBMITSPECIALANA )
+        obs=("sphericity" "aplanarity" "C" "D" "chmult" "chavgpt" "chavgpz" "chfluxz" "chflux")
+        for i in ${obs[@]}; do
+            a=(`ls store/TOP-17-015/${i}`)
+            for j in ${a[@]}; do
+                dir=store/TOP-17-015/${i}/${j};
+                if [ -d ${dir} ]; then
+                    echo "Preparing analysis cfg for $dir"
+                    mkdir -p UEanalysis/${i}/${j};
+                    cp -v ${dir}/analysis*.pck UEanalysis/${i}/${j};
+
+                    echo "Creating jobs for special MC: asfsr,sherpa,herwig7"
+                    python test/TopUEAnalysis/runUEanalysis.py -i ${summaryeosdir}/Chunks --step 2 -q ${queue} -o UEanalysis/${i}/${j} --dryRun --only asfsr,sherpa,herwig7;
+                    cd UEanalysis/${i}/${j};
+                    condor_submit condor.sub;
+                    cd -
+                fi
+            done
+        done
+        ;;
 
     CHECKANA )
         dir=UEanalysis/${TAGANA}
@@ -210,10 +230,10 @@ case $WHAT in
     UNFOLDANA )
         dir=$TAGANA
         commonOpts="-o ${dir}/unfold --plotter ${dir}/plots/plotter.root --syst ${dir}/plots/syst_plotter.root -d ${dir}/Chunks/"            
-        python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 0;
-        python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 1;
-        python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 2;
-        python test/TopUEAnalysis/showUnfoldSummary.py -i ${dir}/unfold/unfold_summary.root;
+        #python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 0;
+        #python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 1;
+        #python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 2;
+        #python test/TopUEAnalysis/showUnfoldSummary.py -i ${dir}/unfold/unfold_summary.root;
         python test/TopUEAnalysis/showFinalDistributions.py \
             --cfg ${dir}/analysiscfg.pck \
             ${dir}/unfold/unfold_summary.root \
