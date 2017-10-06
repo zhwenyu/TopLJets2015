@@ -62,7 +62,7 @@
 #include "SimDataFormats/GeneratorProducts/interface/GenEventInfoProduct.h"
 
 #include "DataFormats/EgammaCandidates/interface/GsfElectron.h"
-
+#include "FWCore/Framework/interface/Run.h"
 //#include "TopQuarkAnalysis/BFragmentationAnalyzer/interface/BFragmentationAnalyzerUtils.h"
 
 #include "KaMuCa/Calibration/interface/KalmanMuonCalibrator.h"
@@ -675,7 +675,7 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       if(!passPt || !passEta) continue;
       
       //take out id information alone
-/*      bool passVetoId(true), passLooseId(true), passMediumId(true), passTightId(true);
+      bool passVetoId(true), passLooseId(true), passMediumId(true), passTightId(true);
       vid::CutFlowResult vetoCutBits   = (*veto_cuts)[e];
       for(size_t icut = 0; icut<vetoCutBits.cutFlowSize(); icut++)  
 	{ 
@@ -808,7 +808,7 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       ev_.nl++;
       
       if( e->pt()>20 && passEta && passLooseId ) nrecleptons++;
-*/    }
+    }
 
   // JETS
   ev_.nj=0; 
