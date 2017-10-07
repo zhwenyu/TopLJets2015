@@ -36,14 +36,14 @@ std::vector<Particle> SelectionTool::getTopFlaggedLeptons(MiniEvent_t &ev){
     if(abs(ev.l_id[il])==11)
       {
 	if( pt>20 && eta<2.4 && ((pid>>7) &0x1))                                     topLeptonQualityFlagsWord |= (0x1 << PASSLLID);
-	if( pt>30 && eta<2.1 && ((pid>>4) &0x1))                                     topLeptonQualityFlagsWord |= (0x1 << PASSLID);
+	if( pt>34 && eta<2.1 && ((pid>>7) &0x1))                                     topLeptonQualityFlagsWord |= (0x1 << PASSLID);
 	if( pt>15 && eta<2.4 && ((pid>>2) &0x1))                                     topLeptonQualityFlagsWord |= (0x1 << PASSLVETO);
 	if( pt>26 && eta<2.1 && ((pid>>5) &0x1) && ((pid>>4) &0x1)==0 && relIso>0.4) topLeptonQualityFlagsWord |= (0x1 << PASSLIDNONISO);
       }
     else
       {
 	if( pt>20 && eta<2.4 && ((pid>>4) &0x1) && relIso<0.15)  topLeptonQualityFlagsWord |= (0x1 << PASSLLID);
-	if( pt>30 && eta<2.1 && ((pid>>4) &0x1) && relIso<0.15)  topLeptonQualityFlagsWord |= (0x1 << PASSLID);
+	if( pt>26 && eta<2.4 && ((pid>>4) &0x1) && relIso<0.15)  topLeptonQualityFlagsWord |= (0x1 << PASSLID);
 	if( pt>15 && eta<2.4 && ((pid>>1) &0x1) && relIso<0.25)  topLeptonQualityFlagsWord |= (0x1 << PASSLVETO);
 	if( pt>26 && eta<2.1 && ((pid>>4) &0x1) && relIso>0.25)  topLeptonQualityFlagsWord |= (0x1 << PASSLIDNONISO);
       }
@@ -101,15 +101,35 @@ std::vector<Particle> SelectionTool::getGenLeptons(MiniEvent_t &ev, double minPt
   //loop over leptons from pseudotop producer
   for (int i = 0; i < ev.ng; i++) {
     int absid(abs(ev.g_id[i]));
-    if(absid!=11 && absid!=13) continue;
 
+    if(absid!=11 && absid!=13) continue;
     bool passKin(ev.g_pt[i]>minPt && fabs(ev.g_eta[i])<maxEta);
     if(!passKin) continue;
 
     TLorentzVector lp4;
     lp4.SetPtEtaPhiM(ev.g_pt[i],ev.g_eta[i],ev.g_phi[i],ev.g_m[i]);
-    leptons.push_back( Particle(lp4, -ev.g_id[i]/abs(ev.g_id[i]), ev.g_id[i], 0, 1) );
+    leptons.push_back( Particle(lp4, -ev.g_id[i]/abs(ev.g_id[i]), ev.g_id[i], 0, i) );
   }
+  
+  return leptons;
+}
+
+//
+std::vector<Particle> SelectionTool::getFinalStateGenLeptons(MiniEvent_t &ev, double minPt, double maxEta){
+  std::vector<Particle> leptons;
+  
+  for (int i = 0; i < ev.ngpf; i++) {
+    int absid(abs(ev.gpf_id[i]));
+
+    if(absid!=11 && absid!=13) continue;
+    bool passKin(ev.gpf_pt[i]>minPt && fabs(ev.gpf_eta[i])<maxEta);
+    if(!passKin) continue;
+
+    TLorentzVector lp4;
+    lp4.SetPtEtaPhiM(ev.gpf_pt[i],ev.gpf_eta[i],ev.gpf_phi[i],ev.gpf_m[i]);
+    leptons.push_back( Particle(lp4, ev.gpf_c[i], ev.gpf_id[i], 0, i) );
+  }
+
   
   return leptons;
 }
@@ -140,13 +160,14 @@ std::vector<Jet> SelectionTool::getGoodJets(MiniEvent_t &ev, double minPt, doubl
     
     Jet jet(jp4, flavor, k);
     jet.setCSV(ev.j_csv[k]);
+    jet.setPartonFlavor(ev.j_flav[k]);
 
     //fill jet constituents
     for (int p = 0; p < ev.npf; p++) {
       if (ev.pf_j[p] == k) {
         TLorentzVector pp4;
         pp4.SetPtEtaPhiM(ev.pf_pt[p],ev.pf_eta[p],ev.pf_phi[p],ev.pf_m[p]);
-        jet.addParticle(Particle(pp4, ev.pf_c[p], ev.pf_id[p], 0, p, ev.pf_puppiWgt[p]));
+        jet.addParticle(Particle(pp4, ev.pf_c[p], ev.pf_id[p], ev.pf_svtx[p], p, ev.pf_puppiWgt[p]));
         if (ev.pf_c[p] != 0) jet.addTrack(pp4, ev.pf_id[p]);
       }
     }
@@ -204,6 +225,9 @@ std::vector<Jet> SelectionTool::getGenJets(MiniEvent_t &ev, double minPt, double
     int flavor = ev.g_id[i];
       
     Jet jet(jp4, flavor, i);
+    for (int k=0; k<ev.nj; k++) {
+      if (ev.j_g[k] == i) jet.setPartonFlavor(ev.j_flav[k]);
+    }
       
     //fill jet constituents
     for (int p = 0; p < ev.ngpf; p++) {

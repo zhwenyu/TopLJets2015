@@ -1,11 +1,19 @@
 #!/bin/bash
 
 WHAT=$1; 
-if [ "$#" -ne 1 ]; then 
-    echo "steerTOPUE.sh <SEL/PLOTSEL/WWWSEL>";
+TAGANA=$2
+if [ "$#" -lt 1 ]; then 
+    echo "steerTOPUE.sh <OPTIONL>";
     echo "        SEL          - launches selection jobs to the batch, output will contain summary trees and control plots"; 
+    echo "        MERGESEL     - merge selection outputs";
     echo "        PLOTSEL      - runs the plotter tool on the selection";
     echo "        WWWSEL       - moves the plots to an afs-web-based area";
+    echo "        PREPAREANA   - prepares configuration files to run the analysis";
+    echo "        SUBMITANA    - submits a specific analysis (tag must be provided as extra argument e.g. chmult/inc)";
+    echo "        MERGEANA     - checks and merges analysis outputs (tag must be provided as extra argument e.g. chmult/inc)";
+    echo "        MVANA        - use to move to another area mounted under store (tag must be provided as extra argument e.g. chmult/inc)";
+    echo "        UNFOLDANA    - unfold results in a given directory (directory must be provided as extra argument e.g. store/TOP-17-015/chmult/inc)";
+    echo "        WWWANA       - move summary plots to web area (directory must be provided as extra argument e.g. store/TOP-17-015/chmult/inc)";
     exit 1; 
 fi
 
@@ -40,10 +48,12 @@ case $WHAT in
 	#    --method TOP-UE::RunTopUE \
 	#    --runSysts \
 	#    --ch 0;
-	#python test/TopUEAnalysis/runUEanalysis.py -i ue_test.root --step 0 --ptThr 1.0,0.9 -o ./UEanalysis_test;
+        for step in 1 2; do
+	    python test/TopUEAnalysis/runUEanalysis.py -i ue_test.root --step ${step} --ptThr 1.0,0.9  --obs chmult --slice ptll=0,9999. --reg ptll=awa -o ./UEanalysis_test;
+        done
 	#python test/TopUEAnalysis/runUEanalysis.py --step 1 -o ./UEanalysis_test;
-	python test/TopUEAnalysis/runUEanalysis.py -i ue_test.root      --step 2 -q local -o ./UEanalysis_test;
-	python test/TopUEAnalysis/showFastFinalDistributions.py UEanalysis_test/analysis/Chunks/ue_test.root --cfg ./UEanalysis_test/analysisaxiscfg.pck
+	#python test/TopUEAnalysis/runUEanalysis.py -i ue_test.root      --step 2 -q local -o ./UEanalysis_test;
+	#python test/TopUEAnalysis/showFastFinalDistributions.py UEanalysis_test/analysis/Chunks/ue_test.root --cfg ./UEanalysis_test/analysisaxiscfg.pck
 	;;
 
     SEL )
@@ -58,6 +68,7 @@ case $WHAT in
 	./scripts/mergeOutputs.py eos/cms${summaryeosdir} True ${outdir};	
 	/afs/cern.ch/project/eos/installation/0.3.84-aquamarine/bin/eos.select -b fuse umount eos;
 	;;
+
     PLOTSEL )
 	commonOpts="-i ${outdir} --puNormSF puwgtctr  -j data/era2016/samples.json -l ${lumi}  --saveLog --mcUnc ${lumiUnc}"
 	python scripts/plotter.py ${commonOpts} --only mll --outName mll_plotter.root;	
@@ -66,98 +77,148 @@ case $WHAT in
 	python scripts/plotter.py ${commonOpts} --procSF DY:${outdir}/plots/.dyscalefactors.pck;
 	python scripts/plotter.py ${commonOpts} --only nbtags,rho,nvtx,0t,1t
 	;;
+
     WWWSEL )
 	mkdir -p ${wwwdir}/sel
 	cp ${outdir}/plots/*.{png,pdf} ${wwwdir}/sel
 	cp test/index.php ${wwwdir}/sel
 	;;
-    ANA )
+
+    PREPAREANA )
 	eosprefix=root://eoscms//eos/cms
-	echo "Computing resolutions"
+
 	base="${eosprefix}/${summaryeosdir}/Chunks/MC13TeV_TTJets"
-	python test/TopUEAnalysis/runUEanalysis.py -i ${base}_0.root,${base}_1.root,${base}_2.root,${base}_3.root,${base}_4.root --step 0 --ptThr 0.9,0.9 -o ${outdir};
+	baseFiles=${base}_0.root,${base}_1.root,${base}_2.root,${base}_3.root,${base}_4.root
 
-	echo "Defining analysis configuration"
-	python test/TopUEAnalysis/runUEanalysis.py --step 1 -o ${outdir};
-	
-	echo "Filling the histograms"
-        #queue=local
-	python test/TopUEAnalysis/runUEanalysis.py -i ${summaryeosdir}/Chunks      --step 2 -q ${queue} -o ${outdir}; # --only TTJets;
-	;;
-    MERGEANA )
-	./scripts/mergeOutputs.py UEanalysis/analysis True 
-	;;
-    PLOTANA )
-
-        mkdir -p UEanalysis/analysis/plots/rawana
-	commonOpts="-l ${lumi} --saveLog --mcUnc ${lumiUnc} --procSF DY:${outdir}/plots/.dyscalefactors.pck";
-	python scripts/plotter.py -i UEanalysis/analysis -j data/era2016/samples.json      ${commonOpts};
-	python scripts/plotter.py -i UEanalysis/analysis -j data/era2016/syst_samples.json ${commonOpts} --silent --outName syst_plotter.root;	
-        python test/TopUEAnalysis/UETools.py -o UEanalysis/analysis/plots/ -i  UEanalysis/analysis/MC13TeV_TTJets.root
-	python test/TopUEAnalysis/showFinalRecoDistribution.py \
-            UEanalysis/analysis/plots/plotter.root \
-            UEanalysis/analysis/plots/syst_plotter.root \
-            --out UEanalysis/analysis/plots/reco;
-        #python test/TopUEAnalysis/showFinalUnfoldedDistribution.py \
-        #    UEanalysis/analysis/plots/plotter.root \
-        #    UEanalysis/analysis/plots/syst_plotter.root \
-        #    --out UEanalysis/analysis/plots/rawana \
-        #    --reco;
-	
-	;;
-    WWWANA )
-	mkdir -p ${wwwdir}/rawana        
-        #cp UEanalysis/analysis/plots/*.{png,pdf,dat} ${wwwdir}/rawana
-	#cp  UEanalysis/analysis/plots/rawana/*.{png,pdf,dat} ${wwwdir}/rawana
-        #cp test/index.php ${wwwdir}/rawana
-        mkdir -p ${wwwdir}/reco
-        cp UEanalysis/analysis/plots/reco/*{png,pdf} ${wwwdir}/reco
-        cp test/index.php ${wwwdir}/reco
-	;;
-    UNFOLD )
-        commonOpts="--plotter UEanalysis/analysis/plots/plotter.root --syst UEanalysis/analysis/plots/syst_plotter.root -d UEanalysis/analysis/Chunks/"
-        #python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 0
-
-        for ovar in chmult chflux chfluxz chavgpt chavgpz sphericity aplanarity C D; do                  
-
-            #inclusive
-            #python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 1 --histo ${ovar}_None_0_inc;            
-            #python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 2 --histo ${ovar}_None_0_inc;
-            #python test/TopUEAnalysis/showUnfoldSummary.py -i UEanalysis/unfold/${ovar}_None_0_inc.root;                                   
-        
-            #differential
-            for svar in nj chmult; do
-
-                if [ "$svar" = "$ovar" ]
-                then
-                    continue
+	echo "Preparing analysis configuration based on ${baseFiles} - this will take a long time..."
+        obs=("chmult" "chavgpt" "chavgpz" "chfluxz" "chflux" "sphericity" "aplanarity" "C" "D")
+        analyses=(
+#            "" 
+            "--reg ptttbar=awa" 
+            "--reg ptttbar=tow" 
+            "--reg ptttbar=tra" 
+            "--reg ptll=awa" 
+            "--reg ptll=tow" 
+            "--reg ptll=tra"
+            "--slice nj=0,1 " 
+#            "--slice nj=0,1 --reg ptttbar=awa" 
+#            "--slice nj=0,1 --reg ptttbar=tow" 
+#            "--slice nj=0,1 --reg ptttbar=tra" 
+#            "--slice nj=0,1 --reg ptll=awa" 
+#            "--slice nj=0,1 --reg ptll=tow" 
+#            "--slice nj=0,1 --reg ptll=tra"
+            "--slice nj=1,2 " 
+#            "--slice nj=1,2 --reg ptttbar=awa" 
+#            "--slice nj=1,2 --reg ptttbar=tow" 
+#            "--slice nj=1,2 --reg ptttbar=tra" 
+#            "--slice nj=1,2 --reg ptll=awa" 
+#            "--slice nj=1,2 --reg ptll=tow" 
+#            "--slice nj=1,2 --reg ptll=tra"
+            "--slice nj=2,999" 
+#            "--slice nj=2,999 --reg ptttbar=awa" 
+#            "--slice nj=2,999 --reg ptttbar=tow" 
+#            "--slice nj=2,999 --reg ptttbar=tra" 
+#            "--slice nj=2,999 --reg ptll=awa" 
+#            "--slice nj=2,999 --reg ptll=tow" 
+#            "--slice nj=2,999 --reg ptll=tra"
+#            "--slice ptttbar=0,20 " 
+#            "--slice ptttbar=0,20 --reg ptttbar=awa" 
+#            "--slice ptttbar=0,20 --reg ptttbar=tow" 
+#            "--slice ptttbar=0,20 --reg ptttbar=tra" 
+#            "--slice ptttbar=20,60" 
+#            "--slice ptttbar=20,60 --reg ptttbar=awa" 
+#            "--slice ptttbar=20,60 --reg ptttbar=tow" 
+#            "--slice ptttbar=20,60 --reg ptttbar=tra" 
+#            "--slice ptttbar=60,120" 
+#            "--slice ptttbar=60,120 --reg ptttbar=awa" 
+#            "--slice ptttbar=60,120 --reg ptttbar=tow" 
+#            "--slice ptttbar=60,120 --reg ptttbar=tra" 
+#            "--slice ptttbar=120,9999" 
+#            "--slice ptttbar=120,9999 --reg ptttbar=awa" 
+#            "--slice ptttbar=120,9999 --reg ptttbar=tow" 
+#            "--slice ptttbar=120,9999 --reg ptttbar=tra" 
+#            "--slice ptll=0,60"
+#            "--slice ptll=0,60 --reg ptll=awa" 
+#            "--slice ptll=0,60 --reg ptll=tow" 
+#            "--slice ptll=0,60 --reg ptll=tra"
+#            "--slice ptll=60,120"
+#            "--slice ptll=60,120 --reg ptll=awa" 
+#            "--slice ptll=60,120 --reg ptll=tow" 
+#            "--slice ptll=60,120 --reg ptll=tra"
+#            "--slice ptll=120,9999"
+#            "--slice ptll=120,9999 --reg ptll=awa" 
+#            "--slice ptll=120,9999 --reg ptll=tow" 
+#            "--slice ptll=120,9999 --reg ptll=tra"
+        )
+        for o in "${obs[@]}"; do
+            for a in "${analyses[@]}"; do
+                options="--ptThr 0.9,0.9 --obs ${o} ${a}"
+                if [[ $a == *"--reg"* ]]; then
+                    if [ "$o" == "sphericity" ] || [ "$o" == "aplanarity" ] || [ "$o" == "C" ] || [ "$o" == "D" ]; then
+                        echo "Skipping ${a} for ${o} as this is an inclusive observable";
+                        continue
+                    fi
                 fi
-
-                bins=`seq 1 3`;
-                if [ "$svar" = "chmult" ] 
-                then
-                    bins=`seq 1 9`;
-                fi
-
-                for bin in $bins; do
-                    echo $ovar $svar $bin
-                    python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 1 --histo ${ovar}_${svar}_${bin}_inc;            
-                    python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 2 --histo ${ovar}_${svar}_${bin}_inc;
-                    python test/TopUEAnalysis/showUnfoldSummary.py -i UEanalysis/unfold/${ovar}_${svar}_${bin}_inc.root;                                   
-                done
+	        python test/TopUEAnalysis/runUEanalysis.py -i ${baseFiles}     --step 1             ${options} -o ./UEanalysis;
             done
         done
-        ;;
-    PLOTUNFOLD )
-        python test/TopUEAnalysis/showFinalUnfoldedDistribution.py \
-            UEanalysis/unfold UEanalysis/analysis/plots/plotter.root \
-            UEanalysis/analysis/plots/syst_plotter.root \
-            --out UEanalysis/unfold/;
-        ;;
-    WWWUNFOLD )
-        mkdir -p ${wwwdir}/unfold;
-        cp UEanalysis/unfold/*.{png,pdf,dat} ${wwwdir}/unfold;
-        cp test/index.php ${wwwdir}/unfold;
+        
+	;;
+    SUBMITANA )
+        queue=longlunch
+	echo "Filling the histograms for unfolding"
+        python test/TopUEAnalysis/runUEanalysis.py -i ${summaryeosdir}/Chunks --step 2 -q ${queue} -o UEanalysis/${TAGANA};
+        cd UEanalysis/${TAGANA};
+        condor_submit condor.sub;
+        cd -
         ;;
 
+    MERGEANA )
+        dir=UEanalysis/${TAGANA}
+        echo "Checking results for ${dir}"
+        python scripts/checkAnalysisIntegrity.py ${dir}/FARM-UEANA/ ${dir}/Chunks/
+	./scripts/mergeOutputs.py ${dir} True 
+	commonOpts="-l ${lumi} --mcUnc ${lumiUnc} --procSF DY:${outdir}/plots/.dyscalefactors.pck";
+	python scripts/plotter.py -i ${dir} -j data/era2016/samples.json      ${commonOpts} --only _0;
+        python scripts/plotter.py -i ${dir} -j data/era2016/samples.json      ${commonOpts} --silent;
+	python scripts/plotter.py -i ${dir} -j data/era2016/syst_samples.json ${commonOpts} --silent --outName syst_plotter.root;	            
+	;;
+
+    MVANA)
+        mkdir -p store/TOP-17-015/${TAGANA}
+        rsync -axu --remove-source-files --delete-after --progress UEanalysis/${TAGANA}/* store/TOP-17-015/${TAGANA}/
+        rm -rf UEanalysis/${TAGANA}/
+        rm -rf store/TOP-17-015/${TAGANA}/FARM-UEANA/
+        ;;
+
+    UNFOLDANA )
+        dir=$TAGANA
+        commonOpts="-o ${dir}/unfold --plotter ${dir}/plots/plotter.root --syst ${dir}/plots/syst_plotter.root -d ${dir}/Chunks/"            
+        python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 0;
+        python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 1;
+        python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 2;
+        python test/TopUEAnalysis/showUnfoldSummary.py -i ${dir}/unfold/unfold_summary.root;
+        python test/TopUEAnalysis/showFinalDistributions.py \
+            --cfg ${dir}/analysiscfg.pck \
+            ${dir}/unfold/unfold_summary.root \
+            ${dir}/plots/plotter.root \
+            ${dir}/plots/syst_plotter.root;        
+        ;;
+
+    WWWANA )
+        tks=(`echo $TAGANA | tr "/" "\n"`)
+        ntks=${#tks[@]}
+        tag="${tks[$ntks-2]}_${tks[$ntks-1]}"
+        tag=${tag//\=/_eq_}
+        tag=${tag//,/_}
+        tag=${tag//./p}
+        mkdir -p ${wwwdir}/ana/
+        a=(`ls $TAGANA/unfold/*.{png,pdf}`)
+        b=(`ls $TAGANA/*.{png,pdf}`)
+        a+=( "${a[@]}" "${b[@]}" )
+        for i in ${a[@]}; do            
+            cp ${i} ${wwwdir}/ana/${tag}_`basename ${i}`;
+        done
+        cp test/index.php ${wwwdir}/ana
+	;;
 esac

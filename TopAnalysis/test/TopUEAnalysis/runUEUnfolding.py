@@ -18,14 +18,13 @@ def main():
     parser.add_option(      '--syst',        dest='systPlotter',  help='syst plotter [%default]',                            default=None,                    type='string')
     parser.add_option('-d', '--dir',         dest='dir',          help='chunk directory for pseudo-experiments [%default]',  default=None,                    type='string')
     parser.add_option('-t', '--tag',         dest='tag',          help='process this tag [%default]',                        default='MC13TeV_TTJets',        type='string')
-    parser.add_option(      '--histo',       dest='histo',        help='histogram [%default]',                               default='chmult_None_inc',       type='string')
     parser.add_option(      '--sigName',     dest='sigName',      help='signal name [%default]',                             default='t#bar{t}',              type='string')
     parser.add_option('-o', '--out',         dest='out',          help='output [%default]',                                  default='./UEanalysis/unfold',   type='string')
     (opt, args) = parser.parse_args()
 
     #prepare output
     os.system('mkdir -p %s'%opt.out)
-    outName='%s/%s.root'%(opt.out,opt.histo)
+    outName='%s/unfold_summary.root'%opt.out
   
     #pre-compile the unfolding script, if needed
     ROOT.gSystem.CompileMacro('${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/TopUEAnalysis/UEUnfold.C','k')
@@ -34,7 +33,7 @@ def main():
     #unfold data
     if opt.step==1:
         print 'Unfolding data'
-        unf.unfoldData(opt.histo,opt.plotter,opt.systPlotter,opt.sigName)
+        unf.unfoldData(opt.plotter,opt.systPlotter,opt.sigName)
         results=unf.getResults()
 
         print 'Saving results in',outName
@@ -63,14 +62,14 @@ def main():
 
             #get a stat independent migration and fakes estimate
             fIn=ROOT.TFile.Open('%s/ChunkAForToys.root'%opt.out)
-            indmig=fIn.Get('%s_0_mig'%opt.histo)
+            indmig=fIn.Get('mig_0')
             indmig.SetDirectory(0)
-            indfakes=fIn.Get('%s_fakes_True'%opt.histo)
+            indfakes=fIn.Get('fakes_0')
             indfakes.SetDirectory(0)
             fIn.Close()
 
             print 'Running %d toys'%len(chunkB)
-            fOut=ROOT.TFile.Open('%s/%s.root'%(opt.out,opt.histo),'UPDATE')
+            fOut=ROOT.TFile.Open(outName,'UPDATE')
             opt_tau=fOut.Get('TVectorT<float>;1')[0]
             datasub=fOut.Get('datasub')
             fakes=fOut.Get('fakes')
@@ -83,7 +82,7 @@ def main():
             binBias,binPulls=None,None
             for itoy in xrange(0,len(chunkB)):
                 unf.reset();
-                results=unf.unfoldToy(opt.histo,chunkB[itoy],opt_tau,indmig,norm,indfakes)
+                results=unf.unfoldToy(chunkB[itoy],opt_tau,indmig,norm,indfakes)
                 
                 fOut.cd()
                 fOut.rmdir('toy_%d'%itoy)

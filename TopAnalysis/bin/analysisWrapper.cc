@@ -99,6 +99,7 @@ int main(int argc, char* argv[])
   else if(method=="FourTopsAnalyzer::RunFourTopsAnalyzer")   RunFourTopsAnalyzer(in,out,channel,charge,normH,era,debug);
   else if(method=="ExclusiveTop::RunExclusiveTop")           RunExclusiveTop(in,out,channel,charge,normH,era,debug);
   else if(method=="MttbarAnalyzer::RunMttbarAnalyzer")       RunMttbarAnalyzer(in,out,channel,charge,normH,era,debug);
+  else if(method=="TTZAnalyzer::RunTTZAnalyzer")       RunTTZAnalyzer(in,out,channel,charge,normH,era,debug);
   else if(method=="BjetChargeTreeProducer::RunBjetChargeTreeProducer") RunBjetChargeTreeProducer(in,out,debug);
   else
     {

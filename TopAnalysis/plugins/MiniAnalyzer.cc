@@ -147,7 +147,7 @@ private:
 
   std::vector<std::string> triggersToUse_,metFiltersToUse_;
 
-  bool saveTree_,savePF_;
+  bool saveTree_,savePF_,runOnGEN_;
   TTree *tree_;
   MiniEvent_t ev_;
   
@@ -177,8 +177,8 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig) :
   genLeptonsToken_(consumes<std::vector<reco::GenJet> >(edm::InputTag("pseudoTop:leptons"))),
   genJetsToken_(consumes<std::vector<reco::GenJet> >(edm::InputTag("pseudoTop:jets"))),
   genMetsToken_(consumes<reco::METCollection>(edm::InputTag("pseudoTop:mets"))),
-  genParticlesToken_(consumes<pat::PackedGenParticleCollection>(edm::InputTag("packedGenParticles"))),
-  prunedGenParticlesToken_(consumes<reco::GenParticleCollection>(edm::InputTag("prunedGenParticles"))),
+  genParticlesToken_(consumes<pat::PackedGenParticleCollection>(iConfig.getParameter<edm::InputTag>("packedGenParticles"))),
+  prunedGenParticlesToken_(consumes<reco::GenParticleCollection>(iConfig.getParameter<edm::InputTag>("prunedGenParticles"))),
   pseudoTopToken_(consumes<reco::GenParticleCollection>(edm::InputTag("pseudoTop"))),
   triggerBits_(consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("triggerBits"))),
   metFilterBits_(consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("metFilterBits"))),
@@ -207,6 +207,7 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig) :
   pfjetIDLoose_( PFJetIDSelectionFunctor::FIRSTDATA, PFJetIDSelectionFunctor::LOOSE ),  
   saveTree_( iConfig.getParameter<bool>("saveTree") ),
   savePF_( iConfig.getParameter<bool>("savePF") ),
+  runOnGEN_( iConfig.getParameter<bool>("runOnGEN") ),
   muonCor_(0),
   useRawLeptons_( iConfig.getParameter<bool>("useRawLeptons") )
 {
@@ -248,17 +249,19 @@ int MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
   //
   // PILEUP
   //
-  edm::Handle<std::vector <PileupSummaryInfo> > PupInfo;
-  iEvent.getByToken(puToken_,PupInfo);
-  std::vector<PileupSummaryInfo>::const_iterator ipu;
-  for (ipu = PupInfo->begin(); ipu != PupInfo->end(); ++ipu) 
-    {
-      if ( ipu->getBunchCrossing() != 0 ) continue; // storing detailed PU info only for BX=0
-      ev_.g_pu=ipu->getPU_NumInteractions();
-      ev_.g_putrue=ipu->getTrueNumInteractions();
-    }
-  histContainer_["pu"]->Fill(ev_.g_pu);
-  histContainer_["putrue"]->Fill(ev_.g_putrue);
+  if(!runOnGEN_) {
+    edm::Handle<std::vector <PileupSummaryInfo> > PupInfo;
+    iEvent.getByToken(puToken_,PupInfo);
+    std::vector<PileupSummaryInfo>::const_iterator ipu;
+    for (ipu = PupInfo->begin(); ipu != PupInfo->end(); ++ipu)
+      {
+        if ( ipu->getBunchCrossing() != 0 ) continue; // storing detailed PU info only for BX=0
+        ev_.g_pu=ipu->getPU_NumInteractions();
+        ev_.g_putrue=ipu->getTrueNumInteractions();
+      }
+    histContainer_["pu"]->Fill(ev_.g_pu);
+    histContainer_["putrue"]->Fill(ev_.g_putrue);
+  }
   
   //
   // GENERATOR WEIGHTS
@@ -354,38 +357,69 @@ int MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       //gen level selection
       if(genLep->pt()>20 && fabs(genLep->eta())<2.5) ngleptons++;
     }
-  
-  
-  //final state particles 
-  ev_.ngpf=0;
-  edm::Handle<pat::PackedGenParticleCollection> genParticles;
-  iEvent.getByToken(genParticlesToken_,genParticles);
-  for (size_t i = 0; i < genParticles->size(); ++i)
-    {
-      const pat::PackedGenParticle & genIt = (*genParticles)[i];
 
-      //this shouldn't be needed according to the workbook
-      //if(genIt.status()!=1) continue;
-      if(genIt.pt()<0.5 || fabs(genIt.eta())>2.5) continue;
-      
-      ev_.gpf_id[ev_.ngpf]     = genIt.pdgId();
-      ev_.gpf_c[ev_.ngpf]      = genIt.charge();
-      ev_.gpf_g[ev_.ngpf]=-1;
-      for(std::map<const reco::Candidate *,int>::iterator it=jetConstsMap.begin();
-	  it!=jetConstsMap.end();
-	  it++)
-	{
-	  if(it->first->pdgId()!=genIt.pdgId()) continue;
-	  if(deltaR( *(it->first), genIt)>0.01) continue; 
-	  ev_.gpf_g[ev_.ngpf]=it->second;
-	  break;
-	}
-      ev_.gpf_pt[ev_.ngpf]     = genIt.pt();
-      ev_.gpf_eta[ev_.ngpf]    = genIt.eta();
-      ev_.gpf_phi[ev_.ngpf]    = genIt.phi();
-      ev_.gpf_m[ev_.ngpf]      = genIt.mass();
-      ev_.ngpf++;    
-    }
+
+  //final state particles
+  ev_.ngpf=0;
+  if(!runOnGEN_) { // MINIAOD
+    edm::Handle<pat::PackedGenParticleCollection> genParticles;
+    iEvent.getByToken(genParticlesToken_,genParticles);
+    for (size_t i = 0; i < genParticles->size(); ++i)
+      {
+        const pat::PackedGenParticle & genIt = (*genParticles)[i];
+
+        //this shouldn't be needed according to the workbook
+        //if(genIt.status()!=1) continue;
+        if(genIt.pt()<0.5 || fabs(genIt.eta())>2.5) continue;
+
+        ev_.gpf_id[ev_.ngpf]     = genIt.pdgId();
+        ev_.gpf_c[ev_.ngpf]      = genIt.charge();
+        ev_.gpf_g[ev_.ngpf]=-1;
+        for(std::map<const reco::Candidate *,int>::iterator it=jetConstsMap.begin();
+            it!=jetConstsMap.end();
+            it++)
+          {
+            if(it->first->pdgId()!=genIt.pdgId()) continue;
+            if(deltaR( *(it->first), genIt)>0.01) continue;
+            ev_.gpf_g[ev_.ngpf]=it->second;
+            break;
+          }
+        ev_.gpf_pt[ev_.ngpf]     = genIt.pt();
+        ev_.gpf_eta[ev_.ngpf]    = genIt.eta();
+        ev_.gpf_phi[ev_.ngpf]    = genIt.phi();
+        ev_.gpf_m[ev_.ngpf]      = genIt.mass();
+        ev_.ngpf++;
+      }
+  }
+  else { // GEN
+    edm::Handle<reco::GenParticleCollection> genParticles;
+    iEvent.getByToken(prunedGenParticlesToken_,genParticles);
+    for (size_t i = 0; i < genParticles->size(); ++i)
+      {
+        const reco::GenParticle & genIt = (*genParticles)[i];
+
+        if(genIt.status()!=1) continue;
+        if(genIt.pt()<0.5 || fabs(genIt.eta())>2.5) continue;
+
+        ev_.gpf_id[ev_.ngpf]     = genIt.pdgId();
+        ev_.gpf_c[ev_.ngpf]      = genIt.charge();
+        ev_.gpf_g[ev_.ngpf]=-1;
+        for(std::map<const reco::Candidate *,int>::iterator it=jetConstsMap.begin();
+            it!=jetConstsMap.end();
+            it++)
+          {
+            if(it->first->pdgId()!=genIt.pdgId()) continue;
+            if(deltaR( *(it->first), genIt)>0.01) continue;
+            ev_.gpf_g[ev_.ngpf]=it->second;
+            break;
+          }
+        ev_.gpf_pt[ev_.ngpf]     = genIt.pt();
+        ev_.gpf_eta[ev_.ngpf]    = genIt.eta();
+        ev_.gpf_phi[ev_.ngpf]    = genIt.phi();
+        ev_.gpf_m[ev_.ngpf]      = genIt.mass();
+        ev_.ngpf++;
+      }
+  }
 
 
  //Bhadrons and top quarks (lastCopy)
@@ -813,7 +847,7 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
   ev_.nj=0; 
   edm::Handle<edm::View<pat::Jet> > jets;
   iEvent.getByToken(jetToken_,jets);
-  std::vector< std::pair<const reco::Candidate *,int> > clustCands;
+  std::vector< std::pair<const reco::Candidate *,std::pair<int,bool> > > clustCands;
   for(auto j = jets->begin();  j != jets->end(); ++j)
     {
       //kinematics
@@ -848,20 +882,27 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       //ev_.j_deepcsvc[ev_.nj]   = j->bDiscriminator("deepFlavourJetTags:probc")+j->bDiscriminator("deepFlavourJetTags:probcc");
       //ev_.j_deepcsvb[ev_.nj]   = j->bDiscriminator("deepFlavourJetTags:probb")+j->bDiscriminator("deepFlavourJetTags:probbb");
 
+      std::vector< const reco::Track *> tkInSvtx;
       if( j->hasTagInfo("pfInclusiveSecondaryVertexFinder") )
 	{
 	  const reco::CandSecondaryVertexTagInfo *candSVTagInfo = j->tagInfoCandSecondaryVertex("pfInclusiveSecondaryVertexFinder");
 	  if( candSVTagInfo->nVertices() >= 1 ) 
 	    {
-	      math::XYZTLorentzVectorD vp4 = candSVTagInfo->secondaryVertex(0).p4();
+              const reco::VertexCompositePtrCandidate svtx = candSVTagInfo->secondaryVertex(0);
+	      math::XYZTLorentzVectorD vp4 = svtx.p4();
 	      ev_.j_vtxpx[ev_.nj]          = vp4.px();
 	      ev_.j_vtxpy[ev_.nj]          = vp4.py();
 	      ev_.j_vtxpz[ev_.nj]          = vp4.pz();
 	      ev_.j_vtxmass[ev_.nj]        = vp4.mass();
+              ev_.j_vtxchi2[ev_.nj]        = svtx.vertexChi2();
 	      ev_.j_vtxNtracks[ev_.nj]     = candSVTagInfo->nVertexTracks(0);
 	      ev_.j_vtx3DVal[ev_.nj]       = candSVTagInfo->flightDistance(0).value();
 	      ev_.j_vtx3DSig[ev_.nj]       = candSVTagInfo->flightDistance(0).significance();
-	    }
+              
+              const std::vector<reco::CandidatePtr> & tracks = svtx.daughterPtrVector();
+              for(std::vector<reco::CandidatePtr>::const_iterator track = tracks.begin(); track != tracks.end(); ++track) 
+                tkInSvtx.push_back( (*track)->bestTrack() );
+            }
 	}
 
       ev_.j_flav[ev_.nj]       = j->partonFlavour();
@@ -874,7 +915,23 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       for(size_t ipf=0; ipf<j->numberOfDaughters(); ipf++)
 	{
 	  const reco::Candidate *pf=j->daughter(ipf);
-	  clustCands.push_back(std::pair<const reco::Candidate *,int>(pf,ev_.nj-1));
+
+          //check if it is also in secondary vertex
+          bool isInSvtx(false);
+          if(pf->charge()!=0)
+            {
+              for(size_t isvtxTk=0; isvtxTk<tkInSvtx.size(); isvtxTk++)
+                {
+                  if(pf->charge() != tkInSvtx[isvtxTk]->charge() ) continue;
+                  if( deltaR(pf->eta(),pf->phi(), tkInSvtx[isvtxTk]->eta(),tkInSvtx[isvtxTk]->phi()) > 0.05 ) continue;
+                  isInSvtx=true;
+                  break;
+                }
+            }
+          
+	  clustCands.push_back(std::pair<const reco::Candidate *,std::pair<int,bool> >(pf,
+                                                                                       std::pair<int,bool>(ev_.nj-1,isInSvtx))
+                               );
 	}
     }
       
@@ -936,7 +993,8 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
 	{
 	  if(pf->pdgId()!=clustCands[i].first->pdgId()) continue;
 	  if(deltaR(*pf,*(clustCands[i].first))>0.01) continue;
-	  ev_.pf_j[ev_.npf]=clustCands[i].second;
+	  ev_.pf_j[ev_.npf]=clustCands[i].second.first;
+          ev_.pf_svtx[ev_.npf]=clustCands[i].second.second;
 	  break;
 	}
 
@@ -1011,7 +1069,7 @@ void MiniAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
   //analyze the event
   int ngleptons(0),nrecleptons(0);
   if(!iEvent.isRealData()) ngleptons=genAnalysis(iEvent,iSetup);
-  nrecleptons=recAnalysis(iEvent,iSetup);
+  if(!runOnGEN_) nrecleptons=recAnalysis(iEvent,iSetup);
   
   //save event if at least one object at gen or reco level
   if((ngleptons==0 && nrecleptons==0) || !saveTree_) return;  

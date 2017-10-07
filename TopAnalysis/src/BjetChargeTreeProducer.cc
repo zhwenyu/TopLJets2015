@@ -10,7 +10,7 @@
 #include "TopLJets2015/TopAnalysis/interface/MiniEvent.h"
 #include "TopLJets2015/TopAnalysis/interface/CommonTools.h"
 #include "TopLJets2015/TopAnalysis/interface/BjetChargeTreeProducer.h"
-#include "TopLJets2015/TopAnalysis/interface/TOPJetShape.h"
+#include "TopQuarkAnalysis/BFragmentationAnalyzer/interface/BFragmentationAnalyzerUtils.h"
 
 #include <vector>
 #include <set>
@@ -71,77 +71,83 @@ void RunBjetChargeTreeProducer(TString filename,
       std::vector<Jet>      &jets        = selector.getJets();  
       for(size_t ij=0; ij<jets.size(); ij++)
         {
-          //select only b-jets
-          int origIdx=jets[ij].getJetIndex();
-          if(abs(ev.j_hadflav[origIdx])!=5) continue;
 
-          summary.pt=jets[ij].p4().Pt();
-          summary.eta=jets[ij].p4().Eta();
-          summary.phi=jets[ij].p4().Phi();
-          summary.m=jets[ij].p4().M();
-          summary.csv=jets[ij].getCSV();
-          summary.nch=getMult(jets[ij]);
-          summary.ptD=getPtD(jets[ij]);
-          summary.ptDs=getPtDs(jets[ij]);
-          summary.width=getWidth(jets[ij]);
-          summary.tau21=getTau(2, 1, jets[ij]);
-          summary.tau32=getTau(3, 2, jets[ij]);
-          summary.tau43=getTau(4, 3, jets[ij]);
-          std::vector<double> zgResult_charged = getZg(jets[ij]);
-          summary.zg=zgResult_charged[0];
+          //require an associated gen jet
+          int genJetIdx=ev.j_g[ij];
+          if(genJetIdx<0) continue;
 
-          summary.nch=0;
+          //require that there was a B-hadron matched to this jet
+          summary.g_bId=ev.g_bid[genJetIdx];
+          if( !IS_BHADRON_PDGID(summary.g_bId) ) continue;
+
+          //save kinematics for this jet
+          summary.pt        = jets[ij].p4().Pt();
+          summary.eta       = jets[ij].p4().Eta();
+          summary.phi       = jets[ij].p4().Phi();
+          summary.m         = jets[ij].p4().M();
+
+          //save kinematics of the generator-level jet
+          summary.g_pt=ev.g_pt[genJetIdx];
+          summary.g_eta=ev.g_eta[genJetIdx];
+          summary.g_phi=ev.g_phi[genJetIdx];
+          summary.g_m=ev.g_m[genJetIdx];
+          summary.g_bId=ev.g_bid[genJetIdx];
+          summary.g_pId=ev.g_id[genJetIdx];
+          summary.g_xb=ev.g_xb[genJetIdx];
+          
+          //secondary vertex information (if available)
+          summary.vtxmass   = ev.j_vtxmass[ jets[ij].getJetIndex() ];
+          summary.vtxchi2   = ev.j_vtxchi2[ jets[ij].getJetIndex() ];
+          summary.vtxL3d    = ev.j_vtx3DVal[ jets[ij].getJetIndex() ];
+          summary.vtxL3dSig = ev.j_vtx3DSig[ jets[ij].getJetIndex() ];
+          
+          //charge estimators
+          float alpha=1.1;
           std::vector<Particle> &pinJet=jets[ij].particles(); 
-          float avgchPow[]={0.5,0.8,1.0,1.5};
-          std::vector<float> avgch(4,0.),avgchwgts(4,0.); 
+          summary.nch=0;
+          summary.vtxnch=0;
+          summary.nmu=0;
+          summary.much=0;
+          summary.vtxnmu=0;
+          summary.vtxmuch=0;
+          float avgch(0.), avgch_wgts(0.);
+          float avgchVtx(0.), avgchVtx_wgts(0.);
           for(size_t ipinj=0; ipinj<pinJet.size(); ipinj++)
             {
-              summary.ch[summary.nch]=pinJet[ipinj].charge();
-              if(summary.ch[summary.nch]==0) continue;  
-              summary.chpt[summary.nch]=pinJet[ipinj].pt();
-              summary.cheta[summary.nch]=pinJet[ipinj].eta();
-              summary.chphi[summary.nch]=pinJet[ipinj].phi();
-              summary.chm[summary.nch]=pinJet[ipinj].m();
 
-
-              for(size_t ipow=0; ipow<4; ipow++)
-                {
-                  float chwgt=pow(summary.chpt[summary.nch],avgchPow[ipow]);
-                  avgch[ipow]     += summary.ch[summary.nch]*chwgt;
-                  avgchwgts[ipow] += chwgt;
-                }
-
-              summary.ch_05 = avgch[0]/avgchwgts[0];
-              summary.ch_08 = avgch[1]/avgchwgts[1];
-              summary.ch_1  = avgch[2]/avgchwgts[2];
-              summary.ch_15 = avgch[3]/avgchwgts[3];
-
-              //gen jet
-              int genJetIdx=ev.j_g[ij];
-              if(genJetIdx>=0)
-                {
-                  summary.g_pt=ev.g_pt[genJetIdx];
-                  summary.g_eta=ev.g_eta[genJetIdx];
-                  summary.g_phi=ev.g_phi[genJetIdx];
-                  summary.g_m=ev.g_m[genJetIdx];
-                  summary.g_bId=ev.g_bid[genJetIdx];
-                  summary.g_pId=ev.g_id[genJetIdx];
-                  summary.g_xb=ev.g_xb[genJetIdx];
-                }
-              else
-                {
-                  summary.g_pt=0;
-                  summary.g_eta=0;
-                  summary.g_phi=0;
-                  summary.g_m=0;
-                  summary.g_bId=0;
-                  summary.g_pId=0;
-                  summary.g_xb=0;
-                }
+              //require particle to have charge
+              if(pinJet[ipinj].charge()==0) continue;
 
               summary.nch++;
-            }
+              float chwgt = pow(pinJet[ipinj].pt(),alpha);
+              avgch      += pinJet[ipinj].charge()*chwgt;
+              avgch_wgts += chwgt;
 
+              //check it it's a muon
+              if( abs(pinJet[ipinj].id())==13 )
+                {
+                  summary.nmu++;
+                  summary.much+=pinJet[ipinj].charge();
+                }
+
+              //check if this track belongs to a secondary vertex
+              if(pinJet[ipinj].qualityFlags()==0) continue;
+              summary.vtxnch++;
+              avgchVtx      += pinJet[ipinj].charge()*chwgt;
+              avgchVtx_wgts += chwgt;
+
+              //check if it's a muon in the secondary vertex
+              if( abs(pinJet[ipinj].id())==13 )
+                {
+                  summary.vtxnmu++;
+                  summary.vtxmuch+=pinJet[ipinj].charge();
+                }
+            }
+          //finalize the charge estimators
+          summary.ch    = avgch_wgts==0? 0 : avgch/avgch_wgts;
+          summary.vtxch = avgchVtx_wgts==0 ? 0 : avgchVtx/avgchVtx_wgts;
+
+          //fill the tree
           tree->Fill();
         }
     }
@@ -164,24 +170,18 @@ void createBJetSummaryTree(TTree *t,BJetSummary_t &summary)
   t->Branch("eta",                 &summary.eta,           "eta/F");
   t->Branch("phi",                 &summary.phi,           "phi/F");
   t->Branch("m",                   &summary.m,             "m/F");
-  t->Branch("csv",                 &summary.csv,           "csv/F");
-  t->Branch("ptD",                 &summary.ptD,           "ptD/F");
-  t->Branch("ptDs",                &summary.ptDs,         "ptDs/F");
-  t->Branch("width",               &summary.width,         "width/F");
-  t->Branch("tau21",               &summary.tau21,         "tau21/F");
-  t->Branch("tau32",               &summary.tau32,         "tau32/F");
-  t->Branch("tau43",               &summary.tau43,         "tau43/F");
-  t->Branch("zg",                  &summary.zg,            "zg/F");
+  t->Branch("vtxmass",             &summary.vtxmass,       "vtxmass/F");
+  t->Branch("vtxchi2",             &summary.vtxchi2,       "vtxchi2/F");
+  t->Branch("vtxL3d",              &summary.vtxL3d,        "vtxL3d/F");
+  t->Branch("vtxL3dSig",           &summary.vtxL3dSig,     "vtxL3dSig/F");
   t->Branch("nch",                 &summary.nch,           "nch/I");
-  t->Branch("ch",                   summary.ch,            "ch[nch]/F");
-  t->Branch("chpt",                 summary.chpt,          "chpt[nch]/F");
-  t->Branch("cheta",                summary.cheta,         "cheta[nch]/F");
-  t->Branch("chphi",                summary.chphi,         "chphi[nch]/F");
-  t->Branch("chm",                  summary.chm,           "chm[nch]/F");
-  t->Branch("ch_05",               &summary.ch_05,         "ch_05/F");
-  t->Branch("ch_08",               &summary.ch_08,         "ch_08/F");
-  t->Branch("ch_1",                &summary.ch_1,          "ch_1/F");
-  t->Branch("ch_15",               &summary.ch_15,         "ch_15/F");
+  t->Branch("ch",                  &summary.ch,            "ch/F");
+  t->Branch("vtxnch",              &summary.vtxnch,        "vtxnch/I");
+  t->Branch("vtxch",               &summary.vtxch,         "vtxch/F");
+  t->Branch("nmu",                 &summary.nmu,           "nmu/I");
+  t->Branch("much",                &summary.much,          "much/F");
+  t->Branch("vtxnmu",              &summary.vtxnmu,        "vtxnmu/I");
+  t->Branch("vtxmuch",             &summary.vtxmuch,       "vtxmuch/F");
   
   //gen jet
   t->Branch("g_pt",                &summary.g_pt,            "g_pt/F");

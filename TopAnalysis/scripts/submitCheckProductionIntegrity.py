@@ -9,7 +9,7 @@ steer the script
 """
 def main():
 
-    eos_cmd = '/afs/cern.ch/project/eos/installation/cms/bin/eos.select'
+    #eos_cmd = '/afs/cern.ch/project/eos/installation/cms/bin/eos.select'
 
     #configuration
     usage = 'usage: %prog [options]'
@@ -46,7 +46,7 @@ def main():
                 cfg.write('eval `scram r -sh`\n')
                 cfg.write('cd ${WORKDIR}\n')
                 cfg.write('echo "Preparing output directory"\n')
-                cfg.write('%s mkdir %s\n'%(eos_cmd,opt.outDir))
+                cfg.write('mkdir /eos/cms/%s\n'%(opt.outDir))
                 cfg.write('echo "Running integrity checker"\n')
                 cfg.write('python ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/checkProductionIntegrity.py -i %s -o %s --nocheck --mount --only %s'%(opt.inDir,opt.outDir,pub))
                 

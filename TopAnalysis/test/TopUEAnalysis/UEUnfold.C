@@ -18,8 +18,8 @@ public:
     initROOTStyle(); 
     reset(); 
   }
-  void unfoldData(char *dist,char *file_name,char *syst_file_name,char *sigName);
-  void unfoldToy(char *dist,char *file_toy,float opt_tau, TH2 *mig,float norm,TH1 *fakes);
+  void unfoldData(char *file_name,char *syst_file_name,char *sigName);
+  void unfoldToy(char *file_toy,float opt_tau, TH2 *mig,float norm,TH1 *fakes);
   float doUnfold(float opt_tau, TH2 *mig, TH1 *data,TH1 *gen,bool storeFull=true,TString pfix="");
   TObjArray *getResults() { return results_; }
   void reset() 
@@ -43,7 +43,7 @@ private:
 
 
 //
-void UEUnfold::unfoldData(char *dist,char *file_name,char *syst_file_name,char *sigName)
+void UEUnfold::unfoldData(char *file_name,char *syst_file_name,char *sigName)
 {
   //
   // READ FILE WITH SUMMED UP CONTRIBUTIONS
@@ -52,7 +52,7 @@ void UEUnfold::unfoldData(char *dist,char *file_name,char *syst_file_name,char *
 
   //reconstruction level distributions
   TH1 *totalRec=0,*totalData=0,*totalBkg=0;
-  TString recDir(Form("%s_None_True",dist));
+  TString recDir(Form("reco_0"));
   TIter next( ((TDirectory *)inF->Get(recDir))->GetListOfKeys() );
   TKey *key;
   while ((key = (TKey*)next())) 
@@ -72,64 +72,63 @@ void UEUnfold::unfoldData(char *dist,char *file_name,char *syst_file_name,char *
   totalRec->SetTitle("signal");
   totalBkg->SetTitle("bkg");
 
-  //fake contributions to the data
-  TH1 *totalFakes = (TH1 *)inF->Get( Form("%s_fakes_True/%s_fakes_True_%s",dist,dist,sigName) )->Clone("fakes");
-  totalFakes->SetTitle("fakes");
-  totalFakes->SetDirectory(0);
-
-  //subtract backgrounds and fakes from data
-  TH1 *totalDataSub = (TH1 *)totalData->Clone("datasub");
-  totalDataSub->SetTitle("Data-bkg-fakes");
-  totalDataSub->Add(totalFakes,-1);
-  totalDataSub->Add(totalBkg,-1);
-  totalDataSub->SetDirectory(0);
-
   //gen level distribution
-  TH1 *totalGen   = (TH1 *)inF->Get( Form("%s_None_False/%s_None_False_%s",dist,dist,sigName) )->Clone("gen");
+  TH1 *totalGen   = (TH1 *)inF->Get( Form("gen/gen_%s",sigName) )->Clone("gen");
   totalGen->SetTitle("Gen. level");
   totalGen->SetDirectory(0);
 
-  //migration matrices (0 is the nominal)
+  //migration matrices, signal fakes, and subtracted data (0 is the nominal)
   std::map<TString, TH2 *> migMatrices;
-  for(int i=0; i<=25; i++)
+  std::map<TString, TH1 *> sigFakes, dataSub;
+  for(int i=0; i<=26; i++)
     {
       TString pfix( i==0 ? "" : Form("_%d",i) );
-      migMatrices[pfix]=(TH2 *)inF->Get( Form("%s_%d_mig/%s_%d_mig_%s",dist,i,dist,i,sigName) )->Clone("migration"+pfix);
+      migMatrices[pfix]=(TH2 *)inF->Get( Form("mig_%d/mig_%d_%s",i,i,sigName) )->Clone("migration"+pfix);
       migMatrices[pfix]->SetDirectory(0);
+
+      sigFakes[pfix]=(TH1 *)inF->Get( Form("fakes_%d/fakes_%d_%s",i,i,sigName) )->Clone("fakes"+pfix);
+      sigFakes[pfix]->SetDirectory(0);
+
+      dataSub[pfix]=(TH1 *)totalData->Clone("datasub"+pfix);
+      dataSub[pfix]->SetDirectory(0);
+      dataSub[pfix]->Add(sigFakes[pfix],-1);
+      dataSub[pfix]->Add(totalBkg,-1);
     }
   inF->Close();
-  
+
   //add simulated systematics
   TFile *systF=TFile::Open(syst_file_name);
-  TList *keys=((TDirectory *)systF->Get(Form("%s_0_mig",dist)))->GetListOfKeys();
+  TList *keys=((TDirectory *)systF->Get(Form("mig_0")))->GetListOfKeys();
   TIter nextKey(keys);
   while ((key = (TKey*)nextKey()))
     {
       TH2 *h=(TH2 *)key->ReadObj();
       if(h->Integral()==0) continue;
       TString name=h->GetName();
-      if(!name.Contains(sigName) || name.Contains("t#bar{t}t#bar{t}")) continue;
+      if(!name.Contains(sigName) || name.Contains("t#bar{t}t#bar{t}") || name.Contains("t#bar{t}+Z")) continue;
       TString pfix=h->GetTitle(); 
       migMatrices[pfix]=(TH2 *)h->Clone("migration"+pfix);
+      cout << pfix << " " << migMatrices[pfix]->Integral() << endl;
       migMatrices[pfix]->Scale(migMatrices[pfix]->Integral()/migMatrices[""]->Integral());
       migMatrices[pfix]->SetDirectory(0);
     }
   systF->Close();
 
   //save results
-  results_->Add(totalDataSub);
+  results_->Add(dataSub[""]);
   results_->Add(migMatrices[""]);
-  results_->Add(totalFakes);
-  results_->Add( ratioCanvas(totalDataSub,totalData,"datasub","Reconstructed bin","(Data-Fakes-Background)/Data",0.8,1.0) );
-  results_->Add( dataControlCanvas(totalData,totalDataSub,totalRec,"data") );
+  results_->Add(sigFakes[""]);
+  results_->Add( ratioCanvas(dataSub[""],totalData,"datasub","Reconstructed bin","(Data-Fakes-Background)/Data",0.8,1.0) );
+  results_->Add( dataControlCanvas(totalData,dataSub[""],totalRec,"data") );
   results_->Add( showNormalizedMigrationMatrix(migMatrices[""]) );
-  float opt_tau=doUnfold(-1,migMatrices[""],totalDataSub,totalGen);
+  float opt_tau=doUnfold(-1,migMatrices[""],dataSub[""],totalGen);
   cout << "After unfolding with nominal matrix tau=" << opt_tau << endl;
-  for(std::map<TString, TH2 *>::iterator it=migMatrices.begin(); it!=migMatrices.end(); it++)
+  for(auto &it : migMatrices) 
     {
-      if(it->first=="") continue;
-      cout << "Unfolding variation" << it->first << endl;
-      doUnfold(opt_tau,it->second,totalDataSub,totalGen,false,it->first);
+      if(it.first=="") continue;
+      TH1 *data=dataSub[""];
+      if(dataSub.find(it.first)!=dataSub.end()) data=dataSub[it.first];
+      doUnfold(opt_tau,it.second,data,totalGen,false,it.first);
     }
   doUnfold(opt_tau,migMatrices[""],totalData,totalGen,false,"bckpfakes");
 }
@@ -244,7 +243,7 @@ float UEUnfold::performTauScan(TH2 *mig, TH1 *data,TUnfoldDensity &unfold)
                     
 
 //
-void UEUnfold::unfoldToy(char *dist,char *file_toy,float opt_tau,TH2 *mig,float norm,TH1 *fakes)
+void UEUnfold::unfoldToy(char *file_toy,float opt_tau,TH2 *mig,float norm,TH1 *fakes)
 {
   //
   // READ TOY FILE
@@ -252,7 +251,7 @@ void UEUnfold::unfoldToy(char *dist,char *file_toy,float opt_tau,TH2 *mig,float 
   TFile *inF=TFile::Open(file_toy);
 
   //signal reconstructed
-  TH1 *toyRec   = (TH1 *)inF->Get( Form("%s_None_True",dist) )->Clone("signal_toy");;
+  TH1 *toyRec   = (TH1 *)inF->Get("reco_0")->Clone("signal_toy");;
   toyRec->SetTitle("toy data");
   toyRec->SetDirectory(0);
   float sf=norm/toyRec->Integral();
@@ -265,7 +264,7 @@ void UEUnfold::unfoldToy(char *dist,char *file_toy,float opt_tau,TH2 *mig,float 
   toyRecSub->SetDirectory(0);
 
   //MC truth for this toy
-  TH1 *toyGen   = (TH1 *)inF->Get( Form("%s_None_False",dist) )->Clone("gen_toy");
+  TH1 *toyGen   = (TH1 *)inF->Get("gen")->Clone("gen_toy");
   toyGen->SetTitle("toy MC truth");
   toyGen->SetDirectory(0);
   toyGen->Scale(sf); 
@@ -282,7 +281,7 @@ void UEUnfold::unfoldToy(char *dist,char *file_toy,float opt_tau,TH2 *mig,float 
     }
 
   //
-  // unfold toy
+  // check bin-by-bin bias and pull
   //
   TH1 *bias=(TH1 *)toyGen->Clone("toy_bias");
   bias->SetTitle("bias");

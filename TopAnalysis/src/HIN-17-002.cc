@@ -133,6 +133,8 @@ void RunHin17002(TString inFileName,
       histos["leta"+pf] = new TH1F("leta"+pf,";Pseudo-rapidity;Events",20.,0.,2.1);
     }
 
+  histos["tauctr"]=new TH1F("tauctr","tauctr",50,0,50);
+
   //per b-tag multiplicity control plots
   for(int ij=0; ij<=2; ij++)
     {
@@ -564,6 +566,7 @@ void RunHin17002(TString inFileName,
 	//assign an event weight
 	float evWeight(1.0);
         float ttevtype(0);
+        int nchlep_gen(0),ntau_gen(0);
 	if(isMC)
 	  {
 	    histos["gencounter"]->Fill(1);
@@ -571,7 +574,7 @@ void RunHin17002(TString inFileName,
 	    evWeight *= totalEvtNorm;
 
 	    //fiducial region analysis
-	    std::vector<TLorentzVector> selGenLeptons,otherLeptons;
+	    std::vector<TLorentzVector> selGenLeptons,otherLeptons;            
 	    if(channelSelection==13 || channelSelection==11)
 	      {
 		for(size_t imc=0; imc<mcPID->size(); imc++)
@@ -581,19 +584,23 @@ void RunHin17002(TString inFileName,
 		    TLorentzVector p4;
 		    p4.SetPtEtaPhiM(mcPt->at(imc),mcEta->at(imc),mcPhi->at(imc),mcMass->at(imc));
                     //hardprocess
-		    if(status==3 && (abspid<=6 || abspid==24 || abspid==11 || abspid==13))
+		    if(status==3)
                       {
-                        {
-                          ljev.gp_pdgid[ljev.ngp]=mcPID->at(imc);
-                          ljev.gp_pt[ljev.ngp]=p4.Pt();
-                          ljev.gp_eta[ljev.ngp]=p4.Eta();
-                          ljev.gp_phi[ljev.ngp]=p4.Phi();
-                          ljev.gp_m[ljev.ngp]=p4.M();
-                          ljev.ngp++;
-                          if(abspid==11 || abspid==13) ttevtype+=1;
-                        }
+                        if((abspid<=6 || abspid==24 || abspid==11 || abspid==13))
+                          {
+                            {
+                              ljev.gp_pdgid[ljev.ngp]=mcPID->at(imc);
+                              ljev.gp_pt[ljev.ngp]=p4.Pt();
+                              ljev.gp_eta[ljev.ngp]=p4.Eta();
+                              ljev.gp_phi[ljev.ngp]=p4.Phi();
+                              ljev.gp_m[ljev.ngp]=p4.M();
+                              ljev.ngp++;
+                              if(abspid==11 || abspid==13) ttevtype+=1;
+                            }
+                          }
+                        if(abspid==11 || abspid==13) nchlep_gen++;
+                        if(abspid==15) ntau_gen++;
                       }
-                    
 		    //final state leptons
 		    if(status!=1) continue;
 		    if(channelSelection==13 && abspid!=13) continue;
@@ -1271,6 +1278,7 @@ void RunHin17002(TString inFileName,
 		else
 		  {
 		    outT->Fill();
+                    if(ljev.nj>4) histos["tauctr"]->Fill(ntau_gen*10+nchlep_gen);
 		  }
 		histos["mjj_"+pf]->Fill(mjj,iweight);
 		histos["rankedmjj_"+pf]->Fill(rankedmjj,iweight);

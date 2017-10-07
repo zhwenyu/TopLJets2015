@@ -16,9 +16,9 @@ ALLPDFS={
     [
         #'RooCBShape::S_wro1mjj_{0}(mjj,mu_swromjj_{0}[25,250],sigma_swromjj_{0}[5,13],alpha_swromjj_{0}[0.01,20],n_swromjj_{0}[0])',
         #'RooGamma::S_wro2mjj_{0}(mjj,gamma_swromjj_{0}[50.,0.1,100],beta_swromjj_{0}[5,0.01,100],lambda_swromjj_{0}[1])',
-        'RooBifurGauss::S_wro1mjj_{0}(mjj,mu_swromjj_{0}[25,75],sigmaL_swromjj_{0}[15,100],sigmaR_swromjj_{0}[15,100])',
+        'RooBifurGauss::S_wro1mjj_{0}(mjj,mu_swromjj_{0}[25,100],sigmaL_swromjj_{0}[10,100],sigmaR_swromjj_{0}[10,100])',
         'RooLandau::S_wro2mjj_{0}(mjj,mpv_swromjj_{0}[25,200],width_swromjj_{0}[50,5,100])',
-        'SUM::S_wromjj_{0}( f_swromjj_{0}[0,1]*S_wro1mjj_{0}, S_wro2mjj_{0} )'
+        'SUM::S_wromjj_{0}( f_swromjj_{0}[0,1.0]*S_wro1mjj_{0}, S_wro2mjj_{0} )'
     ],
 ('B','mjj'):
     [
@@ -69,16 +69,16 @@ def parametrize(data,varName,w,pdfDef):
     #fit PDF
     pdf.fitTo(data)
 
-    #showFitResult(fitVar=varName,
-    #              data=data,
-    #              pdf=pdf,
-    #              categs=[''],
-    #              w=w,
-    #             tagTitle=data.GetName(),
-    #              rangeX=(0,500),
-    #              showComponents=[('*1*','1'),('*1*,*2*','2')],
-    #              outDir='/dev/null',
-    #              paramList=[])
+    showFitResult(fitVar=varName,
+                  data=data,
+                  pdf=pdf,
+                  categs=[''],
+                  w=w,
+                 tagTitle=data.GetName(),
+                  rangeX=(0,500),
+                  showComponents=[('*1*','1'),('*1*,*2*','2')],
+                  outDir='~/www/HIN-17-002/',
+                  paramList=[])
     #raw_input()
 
     #freeze parameters
@@ -172,7 +172,8 @@ def main():
                             paramList=[],
                             pdfAux=pdfAux)
                 else:
-
+                    
+                    cCount={}
                     for c in ['cor','wro']:
 
                         #project the data
@@ -186,6 +187,7 @@ def main():
                             if varName=='mthad' : cut += ' && corthad==0'
                             if varName=='mtlep' : cut += ' && cortlep==0'
                         redData=data.reduce(ROOT.RooFit.Cut(cut))
+                        cCount[c]=redData.sumEntries()
                         w.cat('sample').setLabel(cat)
 
                         #define the PDF
@@ -198,7 +200,10 @@ def main():
 
                     #combine correct+wrong combinations
                     redData=data.reduce(catCut)
-                    pdf=w.factory('SUM::S_{0}_{1}( f_s{0}_{1}[0,1]*S_cor{0}_{1}, S_wro{0}_{1} )'.format(varName,cat))
+                    fCor=float(cCount['cor'])/float(cCount['cor']+cCount['wro'])
+                    #print fCor,varName,cat
+                    #raw_input()
+                    pdf=w.factory('SUM::S_{0}_{1}( f_s{0}_{1}[{2}]*S_cor{0}_{1}, S_wro{0}_{1} )'.format(varName,cat,fCor))
                     pdf.fitTo(redData)
                     showFitResult(fitVar=varName,
                                 data=redData,
@@ -207,8 +212,8 @@ def main():
                                 w=w,
                                 tagTitle=cat,
                                 rangeX=(0,500),
-                                showComponents=[('S_wro*','wrong permutations'),
-                                                ('S_cor*,S_wro*','correct permutations')],                                
+                                showComponents=[('S_cor1*','correct permutations'),
+                                                ('S_wro*,S_cor*','wrong permutations')],                                                
                                 outDir='./',
                                 paramList=[])
 

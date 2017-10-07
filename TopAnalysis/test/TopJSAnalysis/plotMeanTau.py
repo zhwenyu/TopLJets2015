@@ -35,10 +35,10 @@ def main():
 
     #read lists of samples
     staus = ['21', '32', '43']
-    flavors = ['all', 'bottom', 'light', 'gluon']
-    colors = {'all': ROOT.kBlack, 'bottom': ROOT.kRed+1, 'light': ROOT.kBlue+1, 'gluon': ROOT.kGreen+1}
-    markers = {'all': 20, 'bottom': 21, 'light': 22, 'gluon': 23}
-    fills = {'all': 1001, 'bottom': 3254, 'light': 3245, 'gluon': 3390}
+    flavors = ['incl', 'bottom', 'light', 'gluon']
+    colors = {'incl': ROOT.kBlack, 'bottom': ROOT.kRed+1, 'light': ROOT.kBlue+1, 'gluon': ROOT.kGreen+1}
+    markers = {'incl': 20, 'bottom': 21, 'light': 22, 'gluon': 23}
+    fills = {'incl': 1001, 'bottom': 3254, 'light': 3245, 'gluon': 3390}
     infiles = {}
     hists = {}
     unchists = {}
@@ -103,7 +103,7 @@ def main():
     dataUnfolded.GetXaxis().SetTitleSize(0.045)
     dataUnfolded.GetXaxis().SetLabelSize(0.04)
     dataUnfolded.SetYTitle('<#tau_{NM}>')
-    dataUnfolded.GetYaxis().SetRangeUser(0.545, 0.85)
+    dataUnfolded.GetYaxis().SetRangeUser(0.48, 0.74)
     dataUnfolded.GetYaxis().SetTitleSize(0.05)
     dataUnfolded.GetYaxis().SetLabelSize(0.045)
     dataUnfolded.GetYaxis().SetTitleOffset(1.1)
@@ -148,14 +148,23 @@ def main():
     
     inix = 0.5
     if (nominalGen.GetMaximumBin() > nominalGen.GetNbinsX()/2.): inix = 0.15
-    legend = ROOT.TLegend(inix,0.625,inix+0.35,0.9)
+    legend = ROOT.TLegend(inix,0.55,inix+0.45,0.9)
     legend.SetLineWidth(0)
     legend.SetFillStyle(0)
+    dummy = dataUnfolded.Clone('dummy')
+    dummy.SetMarkerSize(0)
     legend.AddEntry(dataUnfolded, "Data", "ep")
     legend.AddEntry(nominalGen, "Powheg+Pythia 8", "pl")
-    legend.AddEntry(FSRUpGen, "#minus FSR up", "p")
-    legend.AddEntry(FSRDownGen, "#minus FSR down", "p")
+    dummy1 = legend.AddEntry(dummy, "(#alpha_{s}^{FSR}(m_{Z})=0.1365, with MEC)", "p")
+    dummy1.SetTextSize(0.0225)
+    dummy1.SetTextAlign(13)
+    legend.AddEntry(FSRUpGen, "#minus FSR up  #scale[0.65]{(#alpha_{s}^{FSR}(m_{Z})=0.1543)}", "p")
+    legend.AddEntry(FSRDownGen, "#minus FSR down  #scale[0.65]{(#alpha_{s}^{FSR}(m_{Z})=0.1224)}", "p")
+    #legend.AddEntry(qcdBasedGen, "#minus QCD-based CR", "p")
     legend.AddEntry(herwigGen, "Powheg+Herwig++", "pl")
+    dummy2 = legend.AddEntry(dummy, "(#alpha_{s}^{FSR}(m_{Z})=0.12, no MEC)", "p")
+    dummy2.SetTextSize(0.0225)
+    dummy2.SetTextAlign(13)
     legend.Draw()
     txt=ROOT.TLatex()
     txt.SetNDC(True)
@@ -167,22 +176,22 @@ def main():
     txt.DrawLatex(inix,0.88,cmsLabel)
     txt.DrawLatex(0.7,0.97,'#scale[0.8]{%3.1f fb^{-1} (%s)}' % (opt.lumi/1000.,opt.com) )
     
-    lineHeight = 0.73
-    txt.DrawLatex(0.175,0.55,'all jets')
+    lineHeight = 0.63
+    txt.DrawLatex(0.175,0.05,'all jets')
     divider1 = ROOT.TLine(3, 0., 3, lineHeight)
     divider1.SetLineColor(ROOT.kBlack)
     divider1.Draw()
-    txt.DrawLatex(0.375,0.55,'bottom')
+    txt.DrawLatex(0.375,0.05,'bottom')
     divider2 = ROOT.TLine(6, 0., 6, lineHeight)
     divider2.SetLineColor(ROOT.kBlack)
     divider2.Draw()
-    txt.DrawLatex(0.6,0.55,'light')
-    txt.DrawLatex(0.57,0.5,'enriched')
+    txt.DrawLatex(0.6,0.10,'light')
+    txt.DrawLatex(0.57,0.05,'enriched')
     divider4 = ROOT.TLine(9, 0., 9, lineHeight)
     divider4.SetLineColor(ROOT.kBlack)
     divider4.Draw()
-    txt.DrawLatex(0.8,0.55,'gluon')
-    txt.DrawLatex(0.775,0.5,'enriched')
+    txt.DrawLatex(0.8,0.10,'gluon')
+    txt.DrawLatex(0.775,0.05,'enriched')
     
     c.cd()
     p2 = ROOT.TPad('p2','p2',0.0,0.0,1.0,0.2)
@@ -202,7 +211,7 @@ def main():
     dataUnfoldedSysRatio.Divide(dataUnfolded)
     dataUnfoldedSysRatio.SetTitle('')
     dataUnfoldedSysRatio.SetXTitle(dataUnfolded.GetXaxis().GetTitle())
-    dataUnfoldedSysRatio.SetYTitle('Ratio ')
+    dataUnfoldedSysRatio.SetYTitle('MC/data')
     dataUnfoldedSysRatio.SetFillColor(ROOT.kGray)
     dataUnfoldedSysRatio.GetXaxis().SetTitleSize(0.2)
     dataUnfoldedSysRatio.GetXaxis().SetTitleOffset(0.8)
@@ -211,7 +220,7 @@ def main():
     dataUnfoldedSysRatio.GetYaxis().SetTitleSize(0.2)
     dataUnfoldedSysRatio.GetYaxis().SetTitleOffset(0.3)
     dataUnfoldedSysRatio.GetYaxis().SetLabelSize(0.18)
-    dataUnfoldedSysRatio.GetYaxis().SetRangeUser(0.94,1.06)
+    dataUnfoldedSysRatio.GetYaxis().SetRangeUser(0.96,1.11)
     dataUnfoldedSysRatio.GetYaxis().SetNdivisions(503)
     
     nominalGenRatio=nominalGen.Clone('nominalGenRatio')
@@ -238,7 +247,7 @@ def main():
     FSRDownGenRatio.Draw('SAME P X0 E1')
     herwigGenRatio.Draw ('SAME H')
     
-    lineStart = 0.93
+    lineStart = 0.94
     lineHeight = 2.
     ratio_divider1 = ROOT.TLine(3, lineStart, 3, lineHeight)
     ratio_divider1.SetLineColor(ROOT.kBlack)

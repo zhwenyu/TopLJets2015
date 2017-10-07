@@ -38,6 +38,7 @@ class SelectionTool {
 
   //gen level selection customization
   std::vector<Particle> getGenLeptons(MiniEvent_t &ev, double minPt = 30., double maxEta = 2.1);
+  std::vector<Particle> getFinalStateGenLeptons(MiniEvent_t &ev, double minPt=20., double maxEta=2.4);
   std::vector<Jet> getGenJets(MiniEvent_t &ev, double minPt = 30., double maxEta = 2.4, std::vector<Particle> *leptons = 0);
 
   //check met filter flags cf. https://twiki.cern.ch/twiki/bin/view/CMS/MissingETOptionalFiltersRun2

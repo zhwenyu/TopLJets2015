@@ -4,6 +4,7 @@ import optparse
 import json
 import sys
 import os
+import math
 from TopLJets2015.TopAnalysis.storeTools import getEOSlslist
 import MT2Calculator
 
@@ -209,6 +210,7 @@ def runTopWidthAnalysis(fileName,
         widthWeight={}
         for w in widthList:
             widthWeight[w]=weightTopWidth(tmassList,bwigner,w*smWidth,smWidth)
+            #print w,tmassList,widthWeight[w]
 
             #paranoid check for the reweighted mass based on the Breit-Wigner
             var='tmass_w%d'%int(100*w)
@@ -368,6 +370,8 @@ def runTopWidthAnalysis(fileName,
                 if s=='bfragdn'   : evWeight=puNormSF[0]*tree.weight[13]
                 if s=='petersfrag': evWeight=puNormSF[0]*tree.weight[14]
                 
+                if math.isnan(evWeight) : continue
+
                 #require two jets
                 njets=len(bjets[ijhyp])+len(otherjets[ijhyp])
                 if njets<2 : continue
@@ -453,9 +457,15 @@ def runTopWidthAnalysis(fileName,
                         s=thsysts[ith]
                         thEvWeight=evWeight
                         if s=='topptup': thEvWeight=puNormSF[0]*tree.weight[9]
-                        if s=='topptdn': thEvWeight=puNormSF[0]*tree.weight[9]
-                        if 'gen' in s  : thEvWeight=puNormSF[0]*tree.weight[10+int(s[3:])]
+                        if s=='topptdn': thEvWeight=puNormSF[0]*ROOT.TMath.Sqrt(tree.weight[9])
+                        if 'gen' in s  : 
+                            gen_idx=int(s[3:])
+                            if 10+gen_idx<tree.nw:
+                                thEvWeight=puNormSF[0]*tree.weight[10+gen_idx]
+                            else:
+                                thEvWeight=0
                         if s=='nloproddec'  : thEvWeight = evWeight*pairWeightAtNLO
+                        if math.isnan(thEvWeight) : continue
                         for w in widthList:
                             var=evcat+btagcat+ptCat+'_incmlb_w%d_gen'%int(100*w)
                             observablesH[var].Fill(mlb,ith,thEvWeight*widthWeight[w])
@@ -484,7 +494,7 @@ Create analysis tasks
 """
 def createAnalysisTasks(opt):
 
-    onlyList=opt.only.split('v')
+    onlyList=opt.only.split(',')
 
     ## Local directory
     file_list=[]
@@ -529,8 +539,8 @@ def createAnalysisTasks(opt):
             condor.write('executable = {0}/$(jobName).sh\n'.format(FarmDirectory))
             condor.write('output     = {0}/output_$(jobName).out\n'.format(FarmDirectory))
             condor.write('error      = {0}/output_$(jobName).err\n'.format(FarmDirectory))
-            condor.write('+JobFlavour = workday\n')
-            condor.write('RequestCpus = 4\n')
+            condor.write('+JobFlavour = \"workday\"\n')
+            condor.write('RequestCpus = 8\n')
 
             for fileName,_ in tasklist:
                 jobName='%s'%(os.path.splitext(os.path.basename(fileName))[0])

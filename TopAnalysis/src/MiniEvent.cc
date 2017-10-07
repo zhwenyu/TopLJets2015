@@ -94,6 +94,7 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev)
   t->Branch("j_vtxpy",    ev.j_vtxpy,   "j_vtxpy[nj]/F");
   t->Branch("j_vtxpz",    ev.j_vtxpz,   "j_vtxpz[nj]/F");
   t->Branch("j_vtxmass",  ev.j_vtxmass, "j_vtxmass[nj]/F");
+  t->Branch("j_vtxchi2",  ev.j_vtxchi2, "j_vtxchi2[nj]/F");
   t->Branch("j_vtxNtracks",  ev.j_vtxNtracks, "j_vtxNtracks[nj]/I");
   t->Branch("j_vtx3DVal",    ev.j_vtx3DVal,   "j_vtx3DVal[nj]/F");
   t->Branch("j_vtx3DSig",    ev.j_vtx3DSig,   "j_vtx3DSig[nj]/F");
@@ -104,6 +105,7 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev)
   //pf candidates (only charged if outside jets)
   t->Branch("npf",        &ev.npf,         "npf/I");
   t->Branch("pf_j",        ev.pf_j,        "pf_j[npf]/I");
+  t->Branch("pf_svtx",     ev.pf_svtx,     "pf_svtx[npf]/O");
   t->Branch("pf_id",       ev.pf_id,       "pf_id[npf]/I");
   t->Branch("pf_c",        ev.pf_c,        "pf_c[npf]/I");
   t->Branch("pf_pt",       ev.pf_pt,       "pf_pt[npf]/F");
@@ -231,6 +233,7 @@ void attachToMiniEventTree(TTree *t,MiniEvent_t &ev,bool full)
   t->SetBranchAddress("j_vtxpx",    ev.j_vtxpx);
   t->SetBranchAddress("j_vtxpy",    ev.j_vtxpy);
   t->SetBranchAddress("j_vtxpz",    ev.j_vtxpz);
+  t->SetBranchAddress("j_vtxchi2",    ev.j_vtxchi2);
   t->SetBranchAddress("j_vtxmass",  ev.j_vtxmass);
   t->SetBranchAddress("j_vtxNtracks",  ev.j_vtxNtracks);
   t->SetBranchAddress("j_vtx3DVal",    ev.j_vtx3DVal);
@@ -244,6 +247,7 @@ void attachToMiniEventTree(TTree *t,MiniEvent_t &ev,bool full)
     {
       t->SetBranchAddress("npf",        &ev.npf);
       t->SetBranchAddress("pf_j",        ev.pf_j);
+      t->SetBranchAddress("pf_svtx",     ev.pf_svtx);
       t->SetBranchAddress("pf_id",       ev.pf_id);
       t->SetBranchAddress("pf_c",        ev.pf_c);
       t->SetBranchAddress("pf_pt",       ev.pf_pt);

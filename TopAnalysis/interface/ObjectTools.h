@@ -54,7 +54,7 @@ class Jet {
     Jet(TLorentzVector p4, float csv, int idx)
       : p4_(p4), csv_(csv), idx_(idx) {}
     Jet(const Jet &j) 
-      : p4_(j.p4_), particles_(j.particles_), trks_(j.trks_), csv_(j.csv_), flavor_(j.flavor_), idx_(j.idx_), overlap_(j.overlap_) {}
+      : p4_(j.p4_), particles_(j.particles_), trks_(j.trks_), csv_(j.csv_), flavor_(j.flavor_), partonflavor_(j.partonflavor_), idx_(j.idx_), overlap_(j.overlap_) {}
     ~Jet() {}
 
     double pt()     { return p4_.Pt();  }
@@ -63,10 +63,12 @@ class Jet {
     TLorentzVector momentum() { return p4_; }
     std::vector<Particle> &particles() { return particles_; }
     int flavor()  { return flavor_; }
+    int partonflavor()  { return partonflavor_; }
     int overlap() { return overlap_; }
     
     void addParticle(Particle p) { particles_.push_back(p); }
     void setFlavor(int flavor)   { flavor_ = flavor; }
+    void setPartonFlavor(int partonflavor)   { partonflavor_ = partonflavor; }
     void setOverlap(int overlap) { overlap_ = overlap; }
     
     void addTrack(TLorentzVector p4, int pfid) { trks_.push_back( IdTrack(p4,pfid) ); }
@@ -76,7 +78,7 @@ class Jet {
     int &getJetIndex() { return idx_; }
     std::vector<IdTrack> &getTracks() { return trks_; }
     void sortTracksByPt() { sort(trks_.begin(),trks_.end(), sortIdTracksByPt); }
-    
+
     static bool sortJetsByPt(Jet i, Jet j)  { return i.getVec().Pt() > j.getVec().Pt(); }
     static bool sortJetsByCSV(Jet i, Jet j) { return i.getCSV() > j.getCSV(); }
   
@@ -88,6 +90,7 @@ class Jet {
     std::vector<IdTrack> trks_;
     float csv_;
     int flavor_;
+    int partonflavor_;
     int idx_;
     int overlap_;
 };

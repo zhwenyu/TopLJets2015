@@ -6,24 +6,20 @@ import numpy as np
 import array as array
 
 #var name, var title, use to slice phase space, use as observable, can be counted in regions, 
-VARS={
-    'ptttbar'        : ('p_{T}(t#bar{t})',  True,  False, False),
-    'ptll'           : ('p_{T}(l,l)',       True,  False, False),
-    'nj'             : ('N(jets)',          True,  False, False),
-    'chmult'         : ('N(ch)',            True,  True,  True),
-    'chflux'         : ('#Sigma p_{T}(ch)', False, True,  True),
-    'chavgpt'        : ('#bar{p}_{T}(ch)',  False, True,  True),
-    'chfluxz'        : ('#Sigma p_{z}(ch)', False, True,  False),
-    'chavgpz'        : ('#bar{p}_{z}(ch)',  False, True,  False),
-    'sphericity'     : ('Sphericity',       False, True,  False),
-    'aplanarity'     : ('Aplanarity',       False, True,  False),
-    'C'              : ('C',                False, True,  False),
-    'D'              : ('D',                False, True,  False),
+VARTITLES={
+    'ptttbar'        : 'p_{T}(t#bar{t})',
+    'ptll'           : 'p_{T}(l,l)',
+    'nj'             : 'N(jets)',
+    'chmult'         : 'N(ch)',
+    'chflux'         : '#Sigma p_{T}(ch)',
+    'chavgpt'        : '#bar{p}_{T}(ch)',
+    'chfluxz'        : '#Sigma p_{z}(ch)',
+    'chavgpz'        : '#bar{p}_{z}(ch)',
+    'sphericity'     : 'Sphericity',
+    'aplanarity'     : 'Aplanarity',
+    'C'              : 'C',
+    'D'              : 'D'
     }
-
-OBSVARS   = filter(lambda var : VARS[var][2], VARS)
-SLICEVARS = filter(lambda var : VARS[var][1], VARS)
-EVAXES    = ['ptttbar','ptll']
 
 SYSTS = [ ('',   0,0,False),
           ('puup',  1,0,False),
@@ -50,7 +46,8 @@ SYSTS = [ ('',   0,0,False),
           ('tkeff', 0,0,1),
           ('tkeffbcdef', 0,0,2),
           ('tkeffgh', 0,0,3),
-          ('tkeffeta', 0,0,4)
+          ('tkeffeta', 0,0,4),
+          ('tkeffdstar', 0,0,5)
           ]
 
 
@@ -59,61 +56,67 @@ parses the event and counts particles in each region at gen/rec levels
 """
 class UEAnalysisHandler:
 
-    def __init__(self,analysisCfg):
+    def __init__(self,analysisCfg,useSysts):
         
         with open(analysisCfg,'r') as cachefile:
-            self.axes=pickle.load(cachefile)
-            self.histos=pickle.load(cachefile)
+            self.analysisCfg = pickle.load(cachefile)
+            self.cuts        = pickle.load(cachefile)
+            self.obs         = pickle.load(cachefile)
+            self.ptthreshold = pickle.load(cachefile)
+
+        self.nVars=len(SYSTS) if useSysts else 1
+        self.histos={}
+        self.histos['gen']=self.analysisCfg[('gen','histo')].Clone('gen')
+        for i in xrange(0,self.nVars):
+            self.histos['reco_%d'%i]=self.analysisCfg[('reco','histo')].Clone('reco_%d'%i)
+            self.histos['reco_%d'%i].SetTitle(SYSTS[i][0])
+            self.histos['fakes_%d'%i]=self.analysisCfg[('reco','histo')].Clone('fakes_%d'%i)
+            self.histos['fakes_%d'%i].SetTitle(SYSTS[i][0])
+            self.histos['mig_%d'%i]=self.analysisCfg[('mig','histo')].Clone('mig_%d'%i)
+            self.histos['mig_%d'%i].SetTitle(SYSTS[i][0])
+        for key in self.histos:
+            self.histos[key].Sumw2()
+            self.histos[key].SetDirectory(0)
+
+        #print out
+        print '[UEAnalysisHandler] configured with'
+        print '\t obs=',self.obs
+        print '\t ',len(self.histos),'histos to fill, corresponding to',self.nVars,'variations'
+        print '\t cuts=',self.cuts
+        print '\t kinematics=',self.ptthreshold
 
     """
     inclusive histogram filling
     """
-    def fillHistos(self,obs,ue,sliceVarVals=None,ivar=0):
-            
-        sliceVar=None
-        recSliceBins,genSliceBins=[0],[0]
-        axes=['inc']
-        try:
-            sliceVar,genSliceVal,recSliceVal=sliceVarVals
-            recSliceBins.append( self.getBinForVariable(recSliceVal, self.axes[ (sliceVar,False) ]) )
-            genSliceBins.append( self.getBinForVariable(genSliceVal, self.axes[ (sliceVar,False) ]) )
-            if sliceVar in EVAXES and VARS[obs][3] : axes+=[0,1,2]
-        except:
-            pass
-
-        if obs==sliceVar : return
+    def fillHistos(self,ue):
         
-        #event weight
-        weight=ue.w[ivar]
+        #GEN level counting
+        genCts=getattr(ue,'gen_chmult')
+        genVal=getattr(ue,'gen_'+self.obs)  
+        genBin=self.getBinForVariable(genVal, self.analysisCfg[('gen','axis')])-1
+        if not ue.gen_passSel : genBin=-1               
+        if genCts>0 :
+            self.histos['gen'].Fill(genBin,ue.w[0])
+
+        #RECO level counting (loop over variations)
+        for i in xrange(0,self.nVars):
         
-        for axis in axes:
-
-            #GEN level counting
-            genCts=getattr(ue,'gen_chmult') if axis=='inc' else getattr(ue,'gen_chmult_wrtTo')[sliceVar][axis]
-            genVal=getattr(ue,'gen_'+obs)   if axis=='inc' else getattr(ue,'gen_%s_wrtTo'%obs)[sliceVar][axis]
-            genBin=self.getBinForVariable(genVal, self.axes[(obs,False)])-1
-            if not ue.gen_passSel : genBin=-1        
-            if ivar==0 and genCts>0 :
-                for b in genSliceBins:
-                    self.histos[(obs,sliceVar,b,axis,None,False)].Fill(genBin,weight)
-
+            #event weight
+            weight=ue.w[i]
+        
             #RECO level counting
-            recCts=getattr(ue,'rec_chmult')[ivar] if axis=='inc' else getattr(ue,'rec_chmult_wrtTo')[sliceVar][ivar][axis]
-            recVal=getattr(ue,'rec_'+obs)[ivar]   if axis=='inc' else getattr(ue,'rec_%s_wrtTo'%obs)[sliceVar][ivar][axis]
-            recBin=self.getBinForVariable( recVal,  self.axes[(obs,True)])-1
-            if not ue.rec_passSel[ivar] : recBin=-1
-            if ue.rec_passSel[ivar] and recCts>0:
-                for b in recSliceBins:
-                    if ivar==0 : 
-                        self.histos[(obs,sliceVar,b,axis,None,True)].Fill(recBin,weight)
-                        if genCts==0: self.histos[(obs,sliceVar,b,axis,'fakes',True)].Fill(recBin,weight)
-                    self.histos[(obs,sliceVar,b,'inc','syst',True)].Fill(recBin,ivar,weight)
-                
+            recCts=getattr(ue,'rec_chmult')[i]
+            recVal=getattr(ue,'rec_'+self.obs)[i]
+            recBin=self.getBinForVariable( recVal, self.analysisCfg[('reco','axis')])-1
+            if not ue.rec_passSel[i] : recBin=-1            
+            if ue.rec_passSel[i] and recCts>0:
+                self.histos['reco_%d'%i].Fill(recBin,weight)
+                if not ue.gen_passSel : 
+                    self.histos['fakes_%d'%i].Fill(recBin,weight)
+ 
             #Migration matrix
             if genCts>0:
-                for b in genSliceBins:
-                    key=(obs,sliceVar,b,axis,ivar,'mig')
-                    self.histos[key].Fill(genBin,recBin,weight)
+                self.histos['mig_%d'%i].Fill(genBin,recBin,weight)
 
 
     """
@@ -123,4 +126,5 @@ class UEAnalysisHandler:
         xmin,xmax=axis.GetXmin(),axis.GetXmax()       
         if val>=xmax : return axis.GetNbins()
         if val<xmin : return 0
-        return axis.FindBin(val)
+        xbin=axis.FindBin(val)
+        return xbin
