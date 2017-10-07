@@ -1,7 +1,7 @@
 #!/bin/bash
 
 WHAT=$1; 
-if [ "$#" -ne 1 ]; then 
+if [ "$#" -lt 1 ]; then 
     echo "steerTOP17010.sh <SEL/MERGESEL/PLOTSEL/WWWSEL/ANA/MERGE/BKG/PLOT/WWW/HYPOTEST> <ERA>";
     echo "        SEL          - launches selection jobs to the batch, output will contain summary trees and control plots"; 
     echo "        MERGESEL     - merge the output of the jobs";
@@ -94,6 +94,17 @@ case $WHAT in
         python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json       ${opts};
         python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/syst_samples.json  ${opts} -o syst_plotter.root;
         ;;
+    PLOT_P1 )
+	python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --only count --saveTeX -o count_plotter.root --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck > count2.out & 
+        exit
+	python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --only njets,ptlb -o njets_plotter.root --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck > njets2.out &
+    	python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck -o plotter.root > plotter.out &
+	python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/syst_samples.json -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --silent -o syst_plotter2.root > syst2.out &
+	mv ${outdir}/analysis/plots/syst_plotter.root ${outdir}/analysis/plots/syst_plotter_orig.root
+	python test/TopWidthAnalysis/createtWShapeUncs.py ~/work/TopWidth_era2015/analysis/plots/plotter.root ~/work/TopWidth_era2015/analysis/plots/syst_plotter.root  ${outdir}/analysis/plots/plotter.root;
+	hadd ${outdir}/analysis/plots/syst_plotter.root tW_syst_plotter.root ${outdir}/analysis/plots/syst_plotter_orig.root 
+	mv tW_syst_plotter.root ${outdir}/analysis/plots/tW_syst_plotter.root;	       
+	
     COMBPLOT )
 	#combined plots
 	python test/TopWidthAnalysis/combinePlotsForAllCategories.py ptlb       EE1b,EE2b,MM1b,MM2b,EM1b,EM2b     ${outdir}/analysis/plots/plotter.root
@@ -119,9 +130,8 @@ case $WHAT in
 	#    "EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt"
 	#    "EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt"
 	#)
-        TAGS=("inc") # "ll" "em")
-	altHypo=(100) #20 40 60 80 100 120 140 160 180 200 220 240 260 280 300 350 400)
-	#altHypo=(20 40 60 80 120 140 160 180 200 220 240 280 300 350)
+    TAGS=("inc_scan") # "ll" "em")
+	altHypo=(20 40 60 80 100 120 140 160 180 200 220 240 260 280 300 350 400)
 	#data=(-1 100 400)	
         data=(100)
 
@@ -156,19 +166,17 @@ case $WHAT in
                     
 		    echo "Submitting ($mainHypo,$h,$d,$itag,$icat)"		
 		    stdcmd="${cmd} -o ${outdir}/datacards_${itag}/"
-                    echo $stdcmd
-#		    bsub -q ${queue} ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${stdcmd};
-#		    #if [ "$itag" == "inc" ]; then
-#			#if [ "$d" == "100" ]; then
-#			#    #echo "    injecting pseudo-data from nloproddec"
-#			#    #nlocmd="${cmd} --pseudoDataFromWgt nloproddec -o ${outdir}/datacards_${itag}_nloproddec"
-#			#    #bsub -q ${queue} ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${nlocmd};   
-#			#    #echo "    injecting pseudo-data from widthx4"
-#			#    #width4cmd="${cmd} --pseudoDataFromSim=t#bar{t}_widthx4 -o ${outdir}/datacards_${itag}_widthx4"
-#			#    #bsub -q ${queue} sh ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${width4cmd};
-#			#fi
-#		    #fi
-                    
+		    bsub -q ${queue} sh ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${stdcmd};
+		    #if [ "$itag" == "inc" ]; then
+			#if [ "$d" == "100" ]; then
+			#    #echo "    injecting pseudo-data from nloproddec"
+			#    #nlocmd="${cmd} --pseudoDataFromWgt nloproddec -o ${outdir}/datacards_${itag}_nloproddec"
+			#    #bsub -q ${queue} ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${nlocmd};   
+			#    #echo "    injecting pseudo-data from widthx4"
+			#    #width4cmd="${cmd} --pseudoDataFromSim=t#bar{t}_widthx4 -o ${outdir}/datacards_${itag}_widthx4"
+			#    #bsub -q ${queue} sh ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${width4cmd};
+			#fi
+		    #fi
 		done
             done
 	done
@@ -194,5 +202,22 @@ case $WHAT in
             cp test/index.php ${wwwdir}/hypo${itag}
 	done
 	;;
+    IMPACTS )
+        echo "Starting nuisance impact estimation..."
+        cd /afs/cern.ch/work/e/ecoleman/CMSSW_7_4_7/
+        eval `scramv1 r -sh`
+        cd ${outdir}/$2/
 
+        combineTool.py -M Impacts -d workspace.root -m 172.5 --doInitialFit --robustFit 1
+        combineTool.py -M Impacts -d workspace.root -m 172.5 --robustFit 1 --doFits --job-mode lxbatch --task-name nuis-impacts --sub-opts='-q 1nw'
+    ;;
+    FINALIMP )
+        echo "Finalizing nuisance impacts..."
+        cd /afs/cern.ch/work/e/ecoleman/CMSSW_7_4_7/
+        eval `scramv1 r -sh`
+        cd ${outdir}/$2/
+       
+        combineTool.py -M Impacts -d workspace.root -m 172.5 -o impacts.json
+        plotImpacts.py -i impacts.json -o impacts
+    ;;
 esac

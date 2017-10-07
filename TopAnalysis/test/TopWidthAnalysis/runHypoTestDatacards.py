@@ -21,6 +21,7 @@ def getDistsFromDirIn(url,indir,applyFilter=''):
     return obs,exp
 
 def getRowFromTH2(tempHist2D,columnName) :
+    print tempHist2D.GetName()
     tempBinNum = tempHist2D.GetYaxis().FindBin(columnName);
     new1DProj  = tempHist2D.ProjectionX(tempHist2D.GetName()+"_"+columnName,
             tempBinNum,
@@ -90,21 +91,18 @@ def getDistsForHypoTest(cat,rawSignalList,opt,outDir="",systName="",systIsGen=Fa
 
     #add signal hypothesis to expectations
     for proc in rawSignalList:
-        if 'Singletop' in proc :
-            newProc=('Singletopw%.0f'%(opt.altHypo)).replace('.','p')
-            print exp['Singletop']
-            exp[newProc] = exp['Singletop'].Clone(newProc)
-            exp[newProc].SetDirectory(0)
+        #if 'Singletop' in proc :
+        #    newProc=('Singletopw%.0f'%(opt.altHypo)).replace('.','p')
+        #    print exp['Singletop']
+        #    exp[newProc] = exp['Singletop'].Clone(newProc)
+        #    exp[newProc].SetDirectory(0)
         try:
             newProc=('%sw%.0f'%(proc,opt.mainHypo)).replace('.','p')
             exp[newProc]=expMainHypo[proc].Clone(newProc)
             exp[newProc].SetDirectory(0)
             newProc=('%sw%.0f'%(proc,opt.altHypo)).replace('.','p')
             if opt.mainHypo==opt.altHypo: newProc+='a'
-            if 'Singletop' in proc :
-                exp[newProc]=exp[proc].Clone(newProc)
-            else :
-                exp[newProc]=expAltHypo[proc].Clone(newProc)
+            exp[newProc]=expAltHypo[proc].Clone(newProc)
             exp[newProc].SetDirectory(0)
         except:
             pass
@@ -150,13 +148,19 @@ def doCombineScript(opt,args,outDir,dataCardList):
         script.write('python ${COMBINE}/HiggsAnalysis/CombinedLimit/test/systematicsAnalyzer.py datacard.dat --all -m 172.5 -f html > systs.html\n')
     script.write('\n')
     script.write('### likelihood scans and fits\n')
-    script.write('for x in 0 1; do\n')
-    script.write('   combine workspace.root -M MultiDimFit -m 172.5 -P x --floatOtherPOI=1  --algo=grid --points=50 -t -1 --expectSignal=1 --setPhysicsModelParameters x=${x},r=1  -n x_scan_${x}_exp --saveWorkspace;\n')
-    script.write('   combine workspace.root -M MaxLikelihoodFit -m 172.5 --redefineSignalPOIs x  -t -1 --expectSignal=1 --setPhysicsModelParameters x=${x},r=1  -n x_fit_${x}_exp --saveWorkspace;\n')
-    script.write('done\n')
-    script.write('combine workspace.root -M MultiDimFit -m 172.5 -P x --floatOtherPOI=1  --algo=grid --points=50 -n x_scan_obs --minimizerTolerance 0.001 --robustFit=1 --saveWorkspace;\n')
-    script.write('combine workspace.root -M MaxLikelihoodFit -m 172.5 --redefineSignalPOIs x --minimizerTolerance 0.001   -n x_fit_obs --saveWorkspace --robustFit=1;\n')
+    #script.write('for x in 0 1; do\n')
+    #script.write('   combine workspace.root -M MultiDimFit -m 172.5 -P x --floatOtherPOI=1  --algo=grid --points=50 -t -1 --expectSignal=1 --setPhysicsModelParameters x=${x},r=1  -n x_scan_${x}_exp --saveWorkspace;\n')
+    #script.write('   combine workspace.root -M MaxLikelihoodFit -m 172.5 --redefineSignalPOIs x  -t -1 --expectSignal=1 --setPhysicsModelParameters x=${x},r=1  -n x_fit_${x}_exp --saveWorkspace;\n')
+    #script.write('done\n')
+    #script.write('combine workspace.root -M MultiDimFit -m 172.5 -P x --floatOtherPOI=1  --algo=grid --points=50 -n x_scan_obs --minimizerTolerance 0.001 --robustFit=1 --saveWorkspace;\n')
+    #script.write('combine workspace.root -M MaxLikelihoodFit -m 172.5 --redefineSignalPOIs x --minimizerTolerance 0.001   -n x_fit_obs --saveWorkspace --robustFit=1;\n')
     script.write('\n')
+    script.write('### SCAN \n')
+    script.write('\n')
+    #script.write("text2workspace.py -P HiggsAnalysis.CombinedLimit.HiggsJPC:twoHypothesisHiggs datacard.dat -o workspace.root -m 172.5  > spaceOutput.log 2>&1")
+    script.write("combine -m 172.5 -S 0 -M HybridNew --testStat=TEV --singlePoint 0 --onlyTestStat workspace.root -n scan0n --saveToys --saveHybridResult \n")
+    script.write("combine -m 172.5 -S 0 -M HybridNew --testStat=TEV --singlePoint 1 --onlyTestStat workspace.root -n scan1n --saveToys --saveHybridResult \n")
+
     script.write('### CLs\n')
     # do not write CLs -- python can't launch scripts with forking
     #script.write('combine workspace.root -M HybridNew --seed 8192 --saveHybridResult -m 172.5 --saveWorkspace --saveToys --testStat=TEV --singlePoint 1 -T %d -i 2 --fork 6 --clsAcc 0 --fullBToys  --generateExt=1 --generateNuis=0 --expectedFromGrid 0.5 -n cls_prefit_exp;\n'%opt.nToys)
@@ -297,18 +301,20 @@ def doDataCards(opt,args):
                 for sig in rawSignalList:
                     if sig==proc: accept=True
                 if not accept : continue
+                print "\t\t Including:", proc, pseudoSignal[proc].GetName()
 
                 newProc=('%sw100'%proc).replace('.','p')
                 pseudoSignalAccept.append(newProc)
-                sf=exp[newProc].Integral()/pseudoSignal[proc].Integral()
-                pseudoSignal[proc].Scale(sf)
+                #sf=exp[newProc].Integral()/pseudoSignal[proc].Integral()
+                #pseudoSignal[proc].Scale(sf)
                 obs.Add( pseudoSignal[proc] )
 
             if len(opt.pseudoDataFromWgt) : pseudoSignalAccept+=altSignalList
 
             for proc in exp:
+                if "%.0f"%opt.altHypo in proc : continue
                 if not proc in pseudoSignalAccept:
-                    print proc
+                    print "\t\t Including:", proc, exp[proc].GetName()
                     obs.Add( exp[proc] )
             print pseudoSignalAccept
             for xbin in xrange(0,obs.GetNbinsX()+2): obs.SetBinContent(xbin,int(obs.GetBinContent(xbin)))
@@ -635,7 +641,6 @@ def doDataCards(opt,args):
                     newProc=proc
                     if isSignal:
                         newProc=('%sw%.0f'%(proc,hypo)).replace('.','p')
-                    
                     jexpUp.values()[0].SetName(newProc)
                     iexpUp[newProc]=jexpUp.values()[0]
 
@@ -650,8 +655,9 @@ def doDataCards(opt,args):
                             nomVal=exp[newProc].GetBinContent(xbin)
                             newVal=idnHisto.GetBinContent(xbin)
                             diff=ROOT.TMath.Abs(newVal-nomVal)
-                            if newVal>nomVal: nomVal-= ROOT.TMath.Max(diff,1e-4)
-                            else: nomVal+=diff
+                            #if 'tWttInterf' not in syst :
+                            #    if newVal>nomVal: nomVal-= ROOT.TMath.Max(diff,1e-4)
+                            #    else: nomVal+=diff
                             idnHisto.SetBinContent(xbin,nomVal)
                         iexpDn[newProc]=idnHisto
 

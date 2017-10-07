@@ -20,6 +20,7 @@ parser.add_option("--lfs", type="string", dest="lfsList", default="",       help
 parser.add_option("--dist",type="string", dest="dist"   , default="incmlb", help="the observable distribution to look at")
 parser.add_option("--prep",type="string", dest="prepost", default="",       help="are we pre-fit or post-fit?")
 parser.add_option("--wid", type="string", dest="widList", default="0p5w,1p0w,1p5w,2p0w,2p5w,3p0w,3p5w,4p0w,4p5w,5p0w", help="a list of widths to look for in stats filenames")
+parser.add_option("--nwid", type="string",dest="nwidList",default="0p5w,1p0w,1p5w,2p0w,2p5w,3p0w,3p5w,4p0w,4p5w,5p0w", help="a list of wid labels")
 parser.add_option("--axisOverwrite", type="string", dest="aoverList", default="", help="Axis labels to use if desired")
 parser.add_option("--labelWidth", action="store_true", dest="labelWidth", default=False, help="Include the width in the plot information")
 parser.add_option("--unblind",    action="store_true", dest="unblind",    default=False, help="Show the data information")
@@ -32,9 +33,11 @@ axisLabels=options.aoverList.split(',')
 # get lists to loop over
 rawWidList=options.widList.split(',')
 rawLfsList=options.lfsList.split(',')
+nWidList = options.nwidList.split(',')
 
 # create base arrays for eventual tgraph
 nPoints = 2*len(rawLfsList)*len(rawWidList)
+nPoints += 0
 if options.aoverList != "" and len(axisLabels)*2 != nPoints :
     print "ERROR: axisOverwrite does not write the correct number of labels! Exiting..."
     quit()
@@ -75,10 +78,16 @@ for i in xrange(0,nPoints) :
     x[i]     = 0.25 + 0.5*i
     ex[i]    = 0.2
     eyexp[i] = 0.25
+x[nPoints-1] += 3.0
+x[nPoints-2] += 3.0
+x[nPoints-3] += 1.5
+x[nPoints-4] += 1.5
 
 for i in xrange(0,nPoints/2):
     qobsX[i] = 0.5 + i
     qobsErr[i]=0
+qobsX[nPoints/2-1] += 3.0
+qobsX[nPoints/2-2] += 1.5
 
 # loop over widths, lfs, parse array info
 i=0
@@ -130,6 +139,7 @@ for wid,lfs in [(wid,lfs) for wid in rawWidList for lfs in rawLfsList]:
             if "qobs" in line :
                 qobsY[i/2] = float(line.replace("qobs;",""))
             else : continue
+
     i+=2
 
 for i in xrange(0,nPoints) :
@@ -207,20 +217,23 @@ if options.dist in [key for key in distToTitle] :
 xax=totalGraph.GetXaxis()
 xax.SetTitle("")
 i=0
-for wid,lfs in [(wid,lfs) for wid in rawWidList for lfs in rawLfsList]:
+for nwid,lfs in [(nwid,lfs) for nwid in nWidList for lfs in rawLfsList]:
     bin_index = xax.FindBin(0.5+i)
-    label = "%s#times#Gamma_{SM} %s"%(wid.replace('p','.').replace('w',''),lfs)
+    label = "%s#times#Gamma_{SM} %s"%(nwid[0:3],lfs)
     if options.aoverList != "" and len(axisLabels) == nPoints/2 :
         label = axisLabels[i].replace('_',' ');
     xax.SetBinLabel(bin_index,label)
-    i+=1
+    if '3.00' in nwid or '3.50' in nwid :
+       i+=2.5
+    else :
+       i+=1
 
 yax=totalGraph.GetYaxis()
 yax.SetTitle("-2 #times ln(L_{alt}/L_{null})")
 yax.SetTitleOffset(1.1);
 
 # add legend
-leg=ROOT.TLegend((0.37 if options.unblind else 0.17),0.73,(0.67 if options.unblind else 0.47),0.88)
+leg=ROOT.TLegend((0.55 if options.unblind else 0.55),0.2,(0.85 if options.unblind else 0.85),0.35)
 leg.SetNColumns(2)
 leg.AddEntry(quantGraph1sigN,"Null, 1#sigma","f")
 leg.AddEntry(quantGraph1sigA,"Alt,  1#sigma","f")
@@ -251,3 +264,5 @@ c.Modified()
 c.Update()
 c.SaveAs(options.outdir+options.prepost+"quantiles_%s.pdf"%options.dist)
 c.SaveAs(options.outdir+options.prepost+"quantiles_%s.png"%options.dist)
+c.SaveAs(options.outdir+options.prepost+"quantiles_%s.root"%options.dist)
+c.SaveAs(options.outdir+options.prepost+"quantiles_%s.C"%options.dist)
