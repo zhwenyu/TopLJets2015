@@ -26,11 +26,9 @@ RooStats::HypoTestResult *readLepFile(TDirectory *toyDir,  double rValue) {
     return ret;
 }
 
-void hypoTestResultTreeTopWid(TString fOutName,
-                              double mass, 
+void hypoTestResultTreeTopWid(double mass, 
                               double rValue=1.0,
                               const char *poiName="r", 
-                              double numToys=1000,
                               const char *lfs="",
                               TString wid="1p0w", 
                               const char *dist="mlb", 
@@ -41,14 +39,19 @@ void hypoTestResultTreeTopWid(TString fOutName,
         std::cerr << "ERROR: you have to open at least one root file" << std::endl;
     }
 
-    TFile *fOut = new TFile(fOutName, "RECREATE");
     TTree *tree = new TTree("q","Test statistics");
+
+    // HACK TO GET NAMING CONVENTION TO WORK
+    TString nwid = TString("");
+    nwid.Form("%i",((int) TMath::Floor(wid.Atof()*100)));
 
     float q, 
           mh = mass,
           r = rValue, 
           weight; 
     int   type;
+    Double_t clsObs,clsbObs,clbObs,
+             clsObsErr,clsbObsErr,clbObsErr,qobs;
 
     tree->Branch("q", &q, "q/F");
     tree->Branch("mh", &mh, "mh/F");
@@ -63,7 +66,7 @@ void hypoTestResultTreeTopWid(TString fOutName,
 
     TCanvas *c = new TCanvas("","",500,500);
 
-    for (int i = 0, n = gROOT->GetListOfFiles()->GetSize()-1;  i < n; ++i) {
+    for (int i = 0, n = gROOT->GetListOfFiles()->GetSize();  i < n; ++i) {
         TDirectory *toyDir = ((TFile*) gROOT->GetListOfFiles()->At(i))->GetDirectory("toys");
 
         if (toyDir == 0) {
@@ -80,8 +83,10 @@ void hypoTestResultTreeTopWid(TString fOutName,
 
             RooStats::HypoTestResult *toy = dynamic_cast<RooStats::HypoTestResult *>(toyDir->Get(k->GetName()));
 
-            if (toy == 0) continue;
-
+            if (toy == 0) {
+                   
+                continue;
+            }
             std::cout << " - " << k->GetName() << std::endl;
             RooStats::SamplingDistribution * bDistribution = toy->GetNullDistribution(), 
                                            * sDistribution = toy->GetAltDistribution();
@@ -110,10 +115,26 @@ void hypoTestResultTreeTopWid(TString fOutName,
             q = data; 
             type = 0;
             tree->Fill();
+
+            //
+            // get CLs from file (highly specific to our analysis)
+            // 
+            if(unblind) {
+                std::cout << " - getting CLs... " << std::endl;
+
+                clsObs     = toy->CLs(); 
+                clsObsErr  = toy->CLsError();
+                clsbObs    = toy->CLsplusb();
+                clsbObsErr = toy->CLsplusbError();
+                clbObs     = toy->CLb();
+                clbObsErr  = toy->CLbError();
+                qobs       = toy->GetTestStatisticData();
+                std::cout << " - got CLs... " << std::endl;
+            }
         }
     }
 
-    tree->Write();
+    //tree->Write();
     /*
      * Outputting LaTeX table with useful statistics
      */
@@ -173,31 +194,6 @@ void hypoTestResultTreeTopWid(TString fOutName,
 
     separation = 1 - separation;
 
-    //
-    // get CLs from file (highly specific to our analysis)
-    // 
-    Double_t clsObs,clsbObs,clbObs,
-             clsObsErr,clsbObsErr,clbObsErr,qobs;
-    if(unblind) {
-        std::cout << " - getting CLs... " << std::endl;
-        TDirectory *toyDir = ((TFile*) gROOT->GetListOfFiles()->At(0))->GetDirectory("toys");
-        if (toyDir == 0) {
-            std::cerr << "Error in file " << gROOT->GetListOfFiles()->At(0)->GetName() 
-                      << ": directory /toys not found" << std::endl;
-        }
-        std::cout << " - reading lep file... " << std::endl;
-        RooStats::HypoTestResult *res = readLepFile(toyDir,rValue);
-        std::cout << " - read lep file... " << std::endl;
-
-        clsObs     = res->CLs(); 
-        clsObsErr  = res->CLsError();
-        clsbObs    = res->CLsplusb();
-        clsbObsErr = res->CLsplusbError();
-        clbObs     = res->CLb();
-        clbObsErr  = res->CLbError();
-        qobs       = res->GetTestStatisticData();
-        std::cout << " - got CLs... " << std::endl;
-    }
 
     //
     // get fluctuations past median
@@ -232,7 +228,7 @@ void hypoTestResultTreeTopWid(TString fOutName,
     //
     // store the information in a nice text file
     //
-    std::ofstream ofs(TString(prepost+TString("stats__")+wid+
+    std::ofstream ofs(TString(prepost+TString("stats__")+nwid+
                                       TString("_")+lfs+
                                       TString("_")+dist+
                                       TString(".txt")).Data(), 
@@ -308,11 +304,13 @@ void hypoTestResultTreeTopWid(TString fOutName,
     leg->AddEntry(hnull,TString("#Gamma_{SM} Hypothesis"),"F");
     leg->AddEntry(halt,TString(wid).ReplaceAll("p",".").ReplaceAll("w","")+TString("#times#Gamma_{SM} Hypothesis"),"F");
     leg->SetFillColor(kNone);
+    leg->SetFillStyle(0);
     leg->SetLineColor(kNone);
+    leg->SetLineStyle(0);
     leg->SetShadowColor(kNone);
     leg->Draw();
 
-    TString plotName = TString(lfs)+"_"+TString(wid)+"_"+TString(dist);
+    TString plotName = TString(lfs)+"_"+TString(nwid)+"_"+TString(dist);
     c->SetTitle(plotName+" Toys");
 
     relPosX=0.225;
@@ -325,9 +323,8 @@ void hypoTestResultTreeTopWid(TString fOutName,
     /* 
      * Cleanup
      */
-    fOut->Close();
     std::cout << "Saved test statistics distributions for " 
               << nS << " signal toys and " 
               << nB << " background toys to " 
-              << fOutName << "." << std::endl;
+              << "." << std::endl;
 }

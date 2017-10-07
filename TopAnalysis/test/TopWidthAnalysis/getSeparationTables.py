@@ -92,9 +92,9 @@ if not options.doAll :
                statList["CL$_s$^{\\rm obs.}$"][latexWid]=line.split('#')[0]
             else : continue
 
-        if "1.0" in latexWid : # and options.prepost != "pre" :
-            statList["Separation"][latexWid]='0'
-            statList["CL$_s$^{\\rm exp.}$"][latexWid]='1'
+        #if "1.0" in latexWid : # and options.prepost != "pre" :
+        #    statList["Separation"][latexWid]='0'
+        #    statList["CL$_s$^{\\rm exp.}$"][latexWid]='1'
 
         if not options.unblind : continue
         statsFileName="%s/obsstats__%s__%s.txt"%(options.indir,wid,options.dist)
@@ -109,11 +109,12 @@ if not options.doAll :
                obsList["CL$_s$^{\\rm exp.}$"][latexWid]=line.split('#')[0]
             elif "cls observed" in line :
                obsList["CL$_s$^{\\rm obs.}$"][latexWid]=line.split('#')[0]
+               print wid,line.split('#')[0]
             else : continue
 
-        if "1.0" in latexWid : #and options.prepost != "pre" :
-            obsList["Separation"][latexWid]='0'
-            obsList["CL$_s$^{\\rm obs.}$"][latexWid]='1 \pm 0'
+        #if "1.0" in latexWid : #and options.prepost != "pre" :
+        #    obsList["Separation"][latexWid]='0'
+        #    obsList["CL$_s$^{\\rm obs.}$"][latexWid]='1 \pm 0'
 
         if options.prepost != "post" and not options.addpre: continue
         statsFileName="%s/prestats__%s__%s.txt"%(options.indir,wid,options.dist)
@@ -126,13 +127,13 @@ if not options.doAll :
                preList["$P(q_{\\rm alt}<q_{\\rm null}^{\\rm median})$"][latexWid]=line.split('#')[0]
             elif "cls expected" in line :
                preList["CL$_s$^{\\rm exp.}$"][latexWid]=line.split('#')[0]
-            elif "cls posterved" in line :
+            elif "cls observed" in line :
                preList["CL$_s$^{\\rm obs.}$"][latexWid]=line.split('#')[0]
             else : continue
 
-        if "1.0" in latexWid : #and options.prepost != "pre" :
-            preList["Separation"][latexWid]='0'
-            preList["CL$_s$^{\\rm exp.}$"][latexWid]='1'
+        #if "1.0" in latexWid : #and options.prepost != "pre" :
+        #    preList["Separation"][latexWid]='0'
+        #    preList["CL$_s$^{\\rm exp.}$"][latexWid]='1'
 
     tabletex=open("%s/separationTable__%s.tex"%(options.outdir,options.dist), 'w')
 
@@ -164,24 +165,24 @@ if not options.doAll :
     tabletex.close()
 
     setTDRStyle()
-    xarr=[1.324*float(wid[0:3].replace('p','.').replace('w','')) for wid in sorted([key for key in statList["CL$_s$^{\\rm exp.}$"]])]
-    yarr=[float(statList["CL$_s$^{\\rm exp.}$"][wid]) for wid in sorted([key for key in statList["CL$_s$^{\\rm exp.}$"]])]
+    xarr=[1.324*float(wid) for wid in sorted([int(key) for key in statList["CL$_s$^{\\rm exp.}$"]])]
+    yarr=[float(statList["CL$_s$^{\\rm exp.}$"]["%i"%wid]) for wid in sorted([int(key) for key in statList["CL$_s$^{\\rm exp.}$"]])]
     x=ROOT.TVector(len(rawWidList))
     y=ROOT.TVector(len(rawWidList))
 
-    obsYArr=[float(obsList["CL$_s$^{\\rm obs.}$"][wid].split('\\pm')[0]) for wid in sorted([key for key in obsList["CL$_s$^{\\rm obs.}$"]])]
-    obsErrYArr=[float(obsList["CL$_s$^{\\rm obs.}$"][wid].split('\\pm')[1]) for wid in sorted([key for key in obsList["CL$_s$^{\\rm obs.}$"]])]
+    print sorted([int(key) for key in obsList["CL$_s$^{\\rm obs.}$"]])
+    obsYArr=[float(obsList["CL$_s$^{\\rm obs.}$"]["%i"%wid].split('\\pm')[0]) for wid in sorted([int(key) for key in obsList["CL$_s$^{\\rm obs.}$"]])]
+    obsErrYArr=[float(obsList["CL$_s$^{\\rm obs.}$"]["%i"%wid].split('\\pm')[1]) for wid in sorted([int(key)for key in obsList["CL$_s$^{\\rm obs.}$"]])]
     obsY=ROOT.TVector(len(rawWidList))
     obsErrY=ROOT.TVector(len(rawWidList))
     obsErrX=ROOT.TVector(len(rawWidList))
 
-    preYArr=[float(preList["CL$_s$^{\\rm exp.}$"][wid]) for wid in sorted([key for key in preList["CL$_s$^{\\rm exp.}$"]])]
+    preYArr=[float(preList["CL$_s$^{\\rm exp.}$"]["%i"%wid]) for wid in sorted([int(key) for key in preList["CL$_s$^{\\rm exp.}$"]])]
     preY=ROOT.TVector(len(rawWidList))
 
+    print xarr
     print ""
     print obsYArr
-    print ""
-    print obsErrYArr
 
     for ix in xrange(0,len(xarr)):
         x[ix] = float(xarr[ix])/100
@@ -214,7 +215,8 @@ if not options.doAll :
 
     tsp=ROOT.TMVA.TSpline2("Spline%s%s"%(options.dist,options.prepost),clsGr)
     tsp.SetName("Spline%s%s"%(options.dist,options.prepost))
-    tsp.SetLineColor(ROOT.kTeal)
+    tsp.SetLineColor(ROOT.kOrange+1)
+    tsp.SetLineStyle(ROOT.kDashed)
 
     # make graph out of spline
     tspGrX=ROOT.TVector(2000)
@@ -225,10 +227,11 @@ if not options.doAll :
         tspGrY[step]=tsp.Eval(tempX)
 
     tspSplGr=ROOT.TGraph(tspGrX,tspGrY)
-    tspSplGr.SetLineColor(ROOT.kTeal)
+    tspSplGr.SetLineColor(ROOT.kOrange+1)
     #if options.unblind :
     #    tsp.SetLineStyle(ROOT.kDashed)
     #    tspSplGr.SetLineStyle(ROOT.kDashed)
+    tspSplGr.SetLineStyle(ROOT.kDashed)
 
     tspSplGr.Draw("C")
 
@@ -245,6 +248,7 @@ if not options.doAll :
         preGr=ROOT.TGraph(x,preY)
         psp=ROOT.TMVA.TSpline2("SplinePre%s"%options.dist,preGr)
         psp.SetLineColor(ROOT.kBlue)
+        psp.SetLineStyle(ROOT.kSolid)
         psp.Write("SplinePre%s"%options.dist)
         leg.AddEntry(psp,"Pre-fit model (#mu=1)","L")
 
@@ -258,7 +262,8 @@ if not options.doAll :
 
         pspSplGr=ROOT.TGraph(pspGrX,pspGrY)
         pspSplGr.SetLineColor(ROOT.kBlue)
-        pspSplGr.Draw("C")
+        psp.SetLineStyle(ROOT.kSolid)
+        pspSplGr.Draw("C SAME")
 
     leg.AddEntry(tsp,"%s-fit model (#mu profiled)"%(options.prepost.title()),"L")
 
@@ -325,132 +330,6 @@ if not options.doAll :
 
     canvas.SaveAs("%s/%sCLsPlot__%s.png"%(options.outdir,options.prepost,options.dist))
     canvas.SaveAs("%s/%sCLsPlot__%s.pdf"%(options.outdir,options.prepost,options.dist))
-
-
-
-
-###################################################################
-# MAKE A PLOT FOR ALL STRATEGIES
-###################################################################
-
-if options.doAll :
-
-    graphs={}
-
-    for dist in options.dist.split(',') :
-
-        for wid,stat in [(w,s) for w in rawWidList for s in statList] :
-            statList[stat][wid.replace('p','.').replace('w','$\\times\\Gamma_{\\rm SM}$')] = "-1"
-
-        # loop over widths, parse array info
-        for wid in rawWidList :
-            latexWid = float(wid.replace('p','.').replace('w','$\\times\\Gamma_{\\rm SM}$'))
-
-            statsFileName="%s/stats__%s__%s.txt"%(options.indir,wid,dist)
-            for line in open(statsFileName,"r"):
-                if "separation" in line :
-                   statList["Separation"][latexWid]=line.split('#')[0]
-                elif "null exceeded density" in line :
-                   statList["$P(q_{\\rm null}>q_{\\rm alt}^{\\rm median})$"][latexWid]=line.split('#')[0]
-                elif "alt exceeded density" in line :
-                   statList["$P(q_{\\rm alt}<q_{\\rm null}^{\\rm median})$"][latexWid]=line.split('#')[0]
-                elif "cls expected" in line :
-                   statList["CL$_s$^{\\rm exp.}$"][latexWid]=line.split('#')[0]
-                elif "cls observed" in line :
-                   statList["CL$_s$^{\\rm obs.}$"][latexWid]=line.split('#')[0]
-                else : continue
-
-        tabletex=open("%s/separationTable__%s.tex"%(options.outdir,dist), 'w')
-
-        tabletex.write("\\begin{table}\n")
-        tabletex.write("\\centering\n")
-        tabletex.write("\\begin{tabular}{|l%s|} \\hline "%(len(rawWidList)*"|c"))
-
-        for wid in rawWidList :
-            last = (wid == rawWidList[-1])
-            toWrite = wid.replace('p','.').replace('w','$\\times\\Gamma_{\\rm SM}$')
-            tabletex.write("%12s %s"%(toWrite, " \\\\\\hline\n" if last else " & "))
-
-        # oh python, why do you not maintain order in maps?
-        newStatList = sorted([key for key in statList])[::-1]
-        for stat in newStatList :
-            tabletex.write("%30s "%(stat))
-            for wid in sorted(statList[stat]) :
-                value = statList[stat][wid]
-                if value == "-1" : value = ""
-                tabletex.write("& %12s "%(value))
-
-            if not stat == newStatList[-1] :
-                tabletex.write(" \\\\\\hline")
-            tabletex.write("\n")
-        tabletex.write("\\end{tabular}\n")
-        tabletex.write("\\caption{}\n")
-        tabletex.write("\\label{tab:separation%s}\n"%dist)
-        tabletex.write("\\end{table}\n")
-        tabletex.close()
-
-        xarr=[1.324*float(wid[0:3].replace('p','.').replace('w','')) for wid in sorted([key for key in statList["CL$_s$^{\\rm exp.}$"]])]
-        yarr=[float(statList["CL$_s$^{\\rm exp.}$"][wid]) for wid in sorted([key for key in statList["CL$_s$^{\\rm exp.}$"]])]
-        x=ROOT.TVector(len(rawWidList))
-        y=ROOT.TVector(len(rawWidList))
-
-        for ix in xrange(0,len(xarr)):
-            x[ix] = float(xarr[ix])
-
-        for iy in xrange(0,len(yarr)):
-            y[iy] = float(yarr[iy])
-
-        clsGr=ROOT.TGraph(x,y)
-        clsGr.GetXaxis().SetTitle("Generator-level #Gamma_{t} [GeV]")
-        clsGr.GetYaxis().SetTitle("CL_{s}^{exp.}")
-        clsGr.SetTitle("")
-        clsGr.SetName("CLsExp_%s"%dist)
-        graphs["CLsExp_%s"%dist]=clsGr
-
-    setTDRStyle()
-
-    kOrangeList=[0,1,2,4,3]
-
-    canvas.SetLogy(True)
-    i=0
-    clsLeg=ROOT.TLegend(.60,.85,.85,.60)
-    for dist in options.dist.split(',') :
-        tgr=graphs["CLsExp_%s"%dist]
-        tgr.SetLineColor(ROOT.kOrange+kOrangeList[i])
-        tgr.SetMarkerColor(ROOT.kOrange+kOrangeList[i])
-        tgr.SetMarkerStyle(ROOT.kFullCircle)
-        clsLeg.AddEntry(tgr,distToTitle[dist][0],"LP")
-
-        tf=ROOT.TF1("ClsFit_%s"%dist,"expo",1.324,1.324*3.5)
-        tf.SetLineColor(ROOT.kOrange+kOrangeList[i])
-        tgr.Fit(tf,"NQ","",1.324,1.324*3.5)
-
-
-        if i==0:
-            tgr.GetXaxis().SetRangeUser(0.5,4)
-            tgr.GetYaxis().SetRangeUser(1e-7,1)
-        tgr.Draw("P" if i>0 else "AP")
-        tf.Draw("SAME")
-
-        i+=1
-
-    ROOT.gStyle.SetOptFit(0)
-
-    l=ROOT.TLine()
-    l.SetLineColor(ROOT.kRed)
-    l.DrawLine(0.5,0.05,4.0,0.05)
-
-    l2=ROOT.TLine()
-    l2.SetLineColor(ROOT.kRed)
-    l2.DrawLine(0.5,0.01,4.0,0.01)
-    clsLeg.Draw()
-
-
-    CMS_lumi.relPosX=0.18
-    CMS_lumi.extraText="Simulation Preliminary"
-    CMS_lumi.extraOverCmsTextSize=.5
-    CMS_lumi.lumiTextSize=.7
-    CMS_lumi.CMS_lumi(canvas,4,0)
-    canvas.SaveAs("%s/CLsPlot.png"%(options.outdir))
-    canvas.SaveAs("%s/CLsPlot.pdf"%(options.outdir))
+    canvas.SaveAs("%s/%sCLsPlot__%s.C"%(options.outdir,options.prepost,options.dist))
+    canvas.SaveAs("%s/%sCLsPlot__%s.root"%(options.outdir,options.prepost,options.dist))
 
