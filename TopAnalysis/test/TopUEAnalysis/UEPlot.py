@@ -27,7 +27,7 @@ class UEPlot:
         self.normVals=defaultdict(list)
         self.variationMeans=defaultdict(list)
         self.covMatrices=defaultdict(list)
-        self.relUncertaintyH={}
+        self.relUncertaintyH={}        
 
     def addVariation(self,varName,varType,varH):
         """Add one more variation. varType is used to signal if is nominal (None), experimental (exp) or theory (th)"""
@@ -93,67 +93,79 @@ class UEPlot:
         nbins = self.variations[nomKey][0].GetNbinsX()
         norm  = self.variations[nomKey][0].Integral()
 
-        #statistical covariance
-        if statCov is None:
-            statCov=ROOT.TMatrixF(nbins,nbins)
-            for xbin in xrange(1,nbins+1):
-                statCov[xbin-1][xbin-1]=(self.variations[nomKey][0].GetBinError(xbin)/norm)**2
-            self.covMatrices[nomKey]=statCov
-        else:
-            self.covMatrices[nomKey]=statCov*((1/norm)**2)
-
-
         #systematic covariance
         #see https://twiki.cern.ch/twiki/bin/view/CMS/TopUnfolding#Treatment_of_systematic_uncertai
         totalSyst=ROOT.TMatrixF(nbins,nbins)
-        print self.variations        
         for key in self.variations:
             if key ==nomKey : continue
             if len(self.variations[key])==0 : continue
 
             varNorms=[x.Integral() for x in self.variations[key]]
-            print key,norm,varNorms
             cov=ROOT.TMatrixF(nbins,nbins)
-            for xbin in xrange(1,nbins+1):
 
-                dxList=[ 
-                    self.variations[key][i].GetBinContent(xbin)/varNorms[i]-self.variations[nomKey][0].GetBinContent(xbin)/norm 
-                    for i in xrange(0,len(self.variations[key]))
-                    ]
-                for ybin in xrange(1,nbins+1):
+            #build the arrays of differences between the variations and the nominal result
+            dyLists=[]
+            for i in xrange(0,len(self.variations[key])):
+                dyLists.append(
+                    [ self.variations[key][i].GetBinContent(xbin)/varNorms[i]-self.variations[nomKey][0].GetBinContent(xbin)/norm for xbin in xrange(1,nbins+1) ]
+                    )
 
-                    dyList=[ 
-                        self.variations[key][i].GetBinContent(ybin)/varNorms[i]-self.variations[nomKey][0].GetBinContent(ybin)/norm
-                        for i in xrange(0,len(self.variations[key]))
-                    ]
+            #loop to maximize the difference at each bin
+            for i in xrange(1,nbins+1):
 
-                    dxMax,dyMax=0,0
-                    for i in xrange(0,len(dxList)):
-                        if abs(dxMax)<abs(dxList[i]): dxMax=dxList[i]
-                        if abs(dyMax)<abs(dyList[i]): dyMax=dyList[i]
+                for j in xrange(1,nbins+1):
 
-                    cov[xbin-1][ybin-1]=dxMax*dyMax
-                    if xbin==ybin:
-                        print key,cov[xbin-1][ybin-1]
+                    #single sided
+                    maxdx,maxdy,sign=dyLists[0][i-1],dyLists[0][j-1],1.0
+                    
+                    #double sided
+                    if len(dyLists)==2:
+                        maxdx = max(abs(dyLists[0][i-1]),abs(dyLists[1][i-1]))
+                        maxdy = max(abs(dyLists[0][j-1]),abs(dyLists[1][j-1]))
+                        sign  = np.sign(dyLists[0][i-1]-dyLists[1][i-1])*np.sign(dyLists[0][j-1]-dyLists[1][j-1])
+                        
+                    #>2: take the envelope and proceed as single sided
+                    if len(dyLists)>2:
+                        maxdx,maxdy=0,0
+                        for k in xrange(0,len(dyLists)):
+                            maxdx=max(abs(dyLists[k][i-1]),maxdx)
+                            maxdy=max(abs(dyLists[k][j-1]),maxdy)
 
-            self.covMatrices[key]=cov
+                    cov[i-1][j-1]=maxdx*maxdy*sign
+
+            self.covMatrices[key[0]]=cov
             totalSyst+=cov
         self.covMatrices['syst']=totalSyst
-        self.covMatrices['total']=ROOT.TMatrixF(totalSyst)
-        self.covMatrices['total']+=self.covMatrices[nomKey]
 
-#        c=ROOT.TCanvas('c','c',500,500)
-#        c.SetRightMargin(0.2)
-#        c.Print('~/www/cov.pdf[')
-#        for key in self.covMatrices:
-#            if not key in [nomKey,'syst','total'] : continue
-#            self.covMatrices[key].Draw('colz')            
-#            c.BuildLegend(0.6,0.9,0.9,0.8,key[0])
-#            c.Print('~/www/cov.pdf')
-#        c.Print('~/www/cov.pdf]')
-#        raise Exception('ok')
+        #build the total covariance matrix
+        self.covMatrices['total']=None
+        for key in self.covMatrices:
+            if key=='total' : continue
+            if self.covMatrices['total'] is None:
+                self.covMatrices['total']=ROOT.TMatrixF(self.covMatrices[key])
+            else:
+                self.covMatrices['total']+=self.covMatrices[key]
 
-    def finalize(self,statCov=None):
+        #show for debug
+        #ROOT.gStyle.SetPalette(ROOT.kTemperatureMap)
+        #ROOT.gStyle.SetPaintTextFormat(".1g");
+        #c=ROOT.TCanvas('c','c',500,500)
+        #c.SetRightMargin(0.2)
+        #c.Print('~/www/cov.pdf[')
+        #for key in self.covMatrices:
+        #    print key
+        #    self.covMatrices[key].Draw('colztext')            
+        #    c.BuildLegend(0.6,0.9,0.9,0.8,key)
+        #    c.Print('~/www/cov.pdf')
+        #inv=self.covMatrices['total'].InvertFast()
+        #inv.Draw('colztext')
+        #c.BuildLegend(0.6,0.9,0.9,0.8,'inverse')
+        #c.Print('~/www/cov.pdf')
+        #c.Print('~/www/cov.pdf]')
+        #raise
+
+
+    def finalize(self,doCov=False):
         """To be used once all variations have been given: fills plots and computes means"""
 
         #start by organizing the keys and normalizing distributions
@@ -214,7 +226,7 @@ class UEPlot:
             self.plot[0].SetPointError(xbin-1,xwid,ctsTotalUnc/xwid)
 
         #compute covariance matrcies
-        #self.finalizeCovMatrices(statCov)
+        if doCov: self.finalizeCovMatrices()
 
         #final mean
         self.mean[0]=self.variationMeans[nomKey][0][0]

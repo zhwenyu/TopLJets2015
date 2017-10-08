@@ -147,8 +147,11 @@ class UEEventCounter:
             for cutKey in self.cuts:
                 if cutKey=='region': continue
                 cutVar=cutKey
-                cutVal=getattr(t,cutVar)[varIdx]                        
-                if cutVal<self.cuts[cutKey][0] or cutVal>=self.cuts[cutKey][1]:  passExtraCuts=False
+                try:
+                    cutVal=getattr(t,cutVar)[varIdx]                        
+                    if cutVal<self.cuts[cutKey][0] or cutVal>=self.cuts[cutKey][1]:  passExtraCuts=False
+                except:
+                    pass
             if not passExtraCuts: self.rec_passSel[iSystVar] = False
                 
 
@@ -213,14 +216,20 @@ class UEEventCounter:
                             if cutKey!='region':
                                 cutVar=cutKey
                                 genCutVar='gen_'+cutVar
-                                cutVal=getattr(t,genCutVar)
-                                if cutVal<self.cuts[cutKey][0] or cutVal>=self.cuts[cutKey][1]:  failSliceCuts=True
+                                try:
+                                    cutVal=getattr(t,genCutVar)
+                                    if cutVal<self.cuts[cutKey][0] or cutVal>=self.cuts[cutKey][1]:  failSliceCuts=True
+                                except:
+                                    pass
                             else:
                                 cutVar,cutIdx=self.cuts[cutKey]
                                 genCutVar='gen_'+cutVar
-                                phigen=getattr(t,'gen_'+AXISANGLE[cutVar])
-                                idxgen=self.getRegionFor( ROOT.TVector2.Phi_mpi_pi(t.gen_phi[n]-phigen) )
-                                if idxgen != cutIdx : failSliceCuts=True
+                                try:
+                                    phigen=getattr(t,'gen_'+AXISANGLE[cutVar])
+                                    idxgen=self.getRegionFor( ROOT.TVector2.Phi_mpi_pi(t.gen_phi[n]-phigen) )
+                                    if idxgen != cutIdx : failSliceCuts=True
+                                except:
+                                    pass
                         if failSliceCuts: continue
 
                         #tracking scale factor
@@ -252,6 +261,11 @@ class UEEventCounter:
                 self.rec_aplanarity[iSystVar]     = self.evshapes.aplanarity
                 self.rec_C[iSystVar]              = self.evshapes.C
                 self.rec_D[iSystVar]              = self.evshapes.D
+
+                #final check if chmult was given as a slicing cut
+                if 'chmult' in self.cuts:
+                    if self.rec_chmult[iSystVar]<self.cuts['chmult'][0] or self.rec_chmult[iSystVar]>=self.cuts['chmult'][1]:
+                        self.rec_passSel[iSystVar] = False
                 
         #gen level (only one selection variation needed)
         self.gen_passSel=(t.gen_passSel&0x1)
@@ -261,8 +275,11 @@ class UEEventCounter:
             if cutKey=='region': continue
             cutVar=cutKey
             genCutVar='gen_'+cutVar
-            cutVal=getattr(t,genCutVar)
-            if cutVal<self.cuts[cutKey][0] or cutVal>=self.cuts[cutKey][1]:  passExtraCuts=False
+            try:
+                cutVal=getattr(t,genCutVar)
+                if cutVal<self.cuts[cutKey][0] or cutVal>=self.cuts[cutKey][1]:  passExtraCuts=False
+            except:
+                pass
         if not passExtraCuts: self.gen_passSel=False
 
         if self.gen_passSel:
@@ -302,6 +319,11 @@ class UEEventCounter:
             self.gen_aplanarity     = self.evshapes.aplanarity
             self.gen_C              = self.evshapes.C
             self.gen_D              = self.evshapes.D
+
+             #final check if chmult was given as a slicing cut                                                                                        
+            if 'chmult' in self.cuts:
+                if self.gen_chmult<self.cuts['chmult'][0] or self.gen_chmult>=self.cuts['chmult'][1]:
+                    self.gen_passSel=False
 
         #print event if required
         if debug : self.show()

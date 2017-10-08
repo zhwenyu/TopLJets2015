@@ -42,16 +42,16 @@ case $WHAT in
 	file=root://eoscms//eos/cms/store/cmst3/group/top/ReReco2016/b312177/MC13TeV_TTJets/MergedMiniEvents_0_ext0.root
         #file==root://eoscms//eos/cms/store/cmst3/group/top/ReReco2016/b312177/MC13TeV_TTJets2l2nu_amcatnlo/MergedMiniEvents_1_ext0.root
 	#file=root://eoscms//eos/cms/store/cmst3/group/top/ReReco2016/b312177/Data13TeV_MuonEG_2016D/MergedMiniEvents_0.root
-	#analysisWrapper \
-	#    --in ${file} \
-	#    --out ue_test.root \
-	#    --era ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/era2016 \
-	#    --method TOP-UE::RunTopUE \
-	#    --runSysts \
-	#    --ch 0;
-        for step in 1 2; do
-	    python test/TopUEAnalysis/runUEanalysis.py -i ue_test.root --step ${step} --ptThr 1.0,0.9  --obs chmult --slice ptll=0,9999. --reg ptll=awa -o ./UEanalysis_test;
-        done
+	analysisWrapper \
+	    --in ${file} \
+	    --out ue_test.root \
+	    --era ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/era2016 \
+	    --method TOP-UE::RunTopUE \
+	    --runSysts \
+	    --ch 0;
+        #for step in 1 2; do
+	#    python test/TopUEAnalysis/runUEanalysis.py -i ue_test.root --step ${step} --ptThr 1.0,0.9  --obs chmult --slice ptll=0,9999. --reg ptll=awa -o ./UEanalysis_test;
+        #done
 	#python test/TopUEAnalysis/runUEanalysis.py --step 1 -o ./UEanalysis_test;
 	#python test/TopUEAnalysis/runUEanalysis.py -i ue_test.root      --step 2 -q local -o ./UEanalysis_test;
 	#python test/TopUEAnalysis/showFastFinalDistributions.py UEanalysis_test/analysis/Chunks/ue_test.root --cfg ./UEanalysis_test/analysisaxiscfg.pck
@@ -93,47 +93,20 @@ case $WHAT in
 	baseFiles=${base}_0.root,${base}_1.root,${base}_2.root,${base}_3.root,${base}_4.root
 
 	echo "Preparing analysis configuration based on ${baseFiles} - this will take a long time..."
-        obs=("sphericity" "aplanarity" "C" "D") #"sphericity" "aplanarity" "C" "D" "chmult" "chavgpt" "chavgpz" "chfluxz" "chflux")
+        obs=("chavgpt" "chavgpz") #"C" "D" "sphericity" "aplanarity" "chmult" "chavgpt" "chavgpz" "chfluxz" "chflux")
         analyses=(
 #            "" 
 #            "--slice nj=0,1" 
 #            "--slice nj=1,2" 
 #            "--slice nj=2,999" 
-#
-#            "--slice nj=0,1 --reg ptttbar=awa" 
-#            "--slice nj=0,1 --reg ptttbar=tow" 
-#            "--slice nj=0,1 --reg ptttbar=tra" 
-#            "--slice nj=0,1 --reg ptll=awa" 
-#            "--slice nj=0,1 --reg ptll=tow" 
-#            "--slice nj=0,1 --reg ptll=tra"
-#            "--slice nj=1,2 --reg ptttbar=awa" 
-#            "--slice nj=1,2 --reg ptttbar=tow" 
-#            "--slice nj=1,2 --reg ptttbar=tra" 
-#            "--slice nj=1,2 --reg ptll=awa" 
-#            "--slice nj=1,2 --reg ptll=tow" 
-#            "--slice nj=1,2 --reg ptll=tra"
-#            "--slice nj=2,999 --reg ptttbar=awa" 
-#            "--slice nj=2,999 --reg ptttbar=tow" 
-#            "--slice nj=2,999 --reg ptttbar=tra" 
-#            "--slice nj=2,999 --reg ptll=awa" 
-#            "--slice nj=2,999 --reg ptll=tow" 
-#            "--slice nj=2,999 --reg ptll=tra"
-#
-#            "--reg ptttbar=awa" 
-#            "--reg ptttbar=tow" 
-#            "--reg ptttbar=tra" 
-#            "--slice ptttbar=0,80 " 
-#            "--slice ptttbar=0,80 --reg ptttbar=awa" 
-#            "--slice ptttbar=0,80 --reg ptttbar=tow" 
-#            "--slice ptttbar=0,80 --reg ptttbar=tra" 
-#            "--slice ptttbar=80,160" 
-#            "--slice ptttbar=80,160 --reg ptttbar=awa" 
-#            "--slice ptttbar=80,160 --reg ptttbar=tow" 
-#            "--slice ptttbar=80,160 --reg ptttbar=tra" 
-#            "--slice ptttbar=120,9999" 
-#            "--slice ptttbar=120,9999 --reg ptttbar=awa" 
-#            "--slice ptttbar=120,9999 --reg ptttbar=tow" 
-#            "--slice ptttbar=120,9999 --reg ptttbar=tra" 
+#            "--slice mll=0,60" 
+#            "--slice mll=60,120" 
+#            "--slice mll=120,200" 
+#            "--slice mll=200,9999" 
+            "--slice chmult=0,15"
+            "--slice chmult=15,30"
+            "--slice chmult=30,45"
+            "--slice chmult=45,9999"
 #            "--reg ptll=awa" 
 #            "--reg ptll=tow" 
 #            "--reg ptll=tra"
@@ -162,7 +135,12 @@ case $WHAT in
                         echo "Skipping ${a} for ${o} as this is an inclusive observable";
                         continue
                     fi
-                fi            
+                fi    
+                if [[ $a == *"chmult"* ]]; then
+                    if [ "$o" == "chmult" ];then
+                        echo "Skipping ${a} for ${o} as this is the variable being sliced"
+                    fi
+                fi
 	        python test/TopUEAnalysis/runUEanalysis.py -i ${baseFiles} --step 1  ${options} -o ./UEanalysis;
             done
         done
@@ -230,10 +208,10 @@ case $WHAT in
     UNFOLDANA )
         dir=$TAGANA
         commonOpts="-o ${dir}/unfold --plotter ${dir}/plots/plotter.root --syst ${dir}/plots/syst_plotter.root -d ${dir}/Chunks/"            
-        #python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 0;
-        #python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 1;
-        #python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 2;
-        #python test/TopUEAnalysis/showUnfoldSummary.py -i ${dir}/unfold/unfold_summary.root;
+        python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 0;
+        python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 1;
+        python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 2;
+        python test/TopUEAnalysis/showUnfoldSummary.py -i ${dir}/unfold/unfold_summary.root;
         python test/TopUEAnalysis/showFinalDistributions.py \
             --cfg ${dir}/analysiscfg.pck \
             ${dir}/unfold/unfold_summary.root \

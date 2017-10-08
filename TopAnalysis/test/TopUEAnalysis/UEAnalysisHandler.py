@@ -9,6 +9,7 @@ import array as array
 VARTITLES={
     'ptttbar'        : 'p_{T}(t#bar{t})',
     'ptll'           : 'p_{T}(l,l)',
+    'mll'            : 'M(l,l)',
     'nj'             : 'N(jets)',
     'chmult'         : 'N(ch)',
     'chflux'         : '#Sigma p_{T}(ch)',

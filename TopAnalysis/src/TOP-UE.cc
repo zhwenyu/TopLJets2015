@@ -137,7 +137,7 @@ void RunTopUE(TString filename,
       if(iev%1000==0) printf("\r [%3.0f/100] done",100.*(float)(iev)/(float)(nentries));
       
       //assign a run period and correct the event accordingly
-      float puWgt(1.0),puWgtUp(1.0),puWgtDn(1.0),topptsf(1.0);
+      float puWgt(1.0),puWgtUp(1.0),puWgtDn(1.0),topptsf(1.0),gen_mttbar(0);
       if(!ev.isData)
 	{
 	  period=assignRunPeriod(runPeriods);
@@ -148,11 +148,16 @@ void RunTopUE(TString filename,
 	  //top pt weighting
 	  if(isTTbar)
 	    {
+              TLorentzVector gentt(0,0,0,0);
 	      for(Int_t igen=0; igen<ev.ngtop; igen++)
 		{
 		  if(abs(ev.gtop_id[igen])!=6) continue;
 		  topptsf *= TMath::Exp(0.156-0.00137*ev.gtop_pt[igen]);
+                  TLorentzVector p4;
+                  p4.SetPtEtaPhiM(ev.gtop_pt[igen],ev.gtop_eta[igen],ev.gtop_phi[igen],ev.gtop_m[igen]);
+                  gentt+=p4;
 		}
+              gen_mttbar=gentt.M();
 	    }
 	}
 
@@ -591,6 +596,8 @@ void RunTopUE(TString filename,
 	      if(nfs!=5) ttbar.SetPtEtaPhiM(0,0,0,0);
 	      tue.gen_ptttbar=ttbar.Pt();
 	      tue.gen_phittbar=ttbar.Phi();
+
+              tue.gen_mttbar_parton=gen_mttbar;
 	    }
 	}
       
@@ -652,6 +659,9 @@ void createTopUETree(TTree *t,TopUE_t &tue)
   t->Branch("gen_phittbar",        &tue.gen_phittbar,     "gen_phittbar/F");
   t->Branch("ptttbar",              tue.ptttbar,          "ptttbar[11]/F");
   t->Branch("phittbar",             tue.phittbar,         "phittbar[11]/F");
+
+  //mttbar (parton level)
+  t->Branch("gen_mttbar_parton",   &tue.gen_mttbar_parton,"gen_mttbar_parton/F");
 
   //leptonic quantities
   t->Branch("ptpos",      tue.ptpos ,       "ptpos[11]/F");

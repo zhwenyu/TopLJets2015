@@ -33,6 +33,20 @@ COMPARISONSETS=[
 EXTRASETS = [
     ('Sherpa', 'MC13TeV_TTJets_sherpa.root'),
     ('PW+HW7', 'MC13TeV_TTJets_herwig7.root'),
+    ('#alpha_{S}^{FSR}=0.070','MC13TeV_TTJets_pythia8_asfsr0.070_meon_crdefault.root'),
+    ('#alpha_{S}^{FSR}=0.080','MC13TeV_TTJets_pythia8_asfsr0.080_meon_crdefault.root'),
+    ('#alpha_{S}^{FSR}=0.090','MC13TeV_TTJets_pythia8_asfsr0.090_meon_crdefault.root'),
+    ('#alpha_{S}^{FSR}=0.100','MC13TeV_TTJets_pythia8_asfsr0.100_meon_crdefault.root'),
+    ('#alpha_{S}^{FSR}=0.105','MC13TeV_TTJets_pythia8_asfsr0.105_meon_crdefault.root'),
+    ('#alpha_{S}^{FSR}=0.110','MC13TeV_TTJets_pythia8_asfsr0.110_meon_crdefault.root'),
+    ('#alpha_{S}^{FSR}=0.115','MC13TeV_TTJets_pythia8_asfsr0.115_meon_crdefault.root'),
+    ('#alpha_{S}^{FSR}=0.120','MC13TeV_TTJets_pythia8_asfsr0.120_meon_crdefault.root'),
+    ('#alpha_{S}^{FSR}=0.125','MC13TeV_TTJets_pythia8_asfsr0.125_meon_crdefault.root'),
+    ('#alpha_{S}^{FSR}=0.130','MC13TeV_TTJets_pythia8_asfsr0.130_meon_crdefault.root'),
+    ('#alpha_{S}^{FSR}=0.135','MC13TeV_TTJets_pythia8_asfsr0.135_meon_crdefault.root'),
+    ('#alpha_{S}^{FSR}=0.140','MC13TeV_TTJets_pythia8_asfsr0.140_meon_crdefault.root'),
+    ('#alpha_{S}^{FSR}=0.150','MC13TeV_TTJets_pythia8_asfsr0.150_meon_crdefault.root'),
+    ('#alpha_{S}^{FSR}=0.160','MC13TeV_TTJets_pythia8_asfsr0.160_meon_crdefault.root'),
 ]
 
 PLOTTINGSET_1=[
@@ -313,10 +327,21 @@ def readParticlePlotsFrom(baseAnaDir,args,obsAxis,cuts,obs):
     #read unfolded data
     fIn=ROOT.TFile(args[0])
     uePlots['Data']=UEPlot(obs,VARTITLES[obs],obsAxis)
-    uePlots['Data'].addVariation('Data',None, fIn.Get('corrected_data') )
+    hdata=fIn.Get('corrected_data')
+    uePlots['Data'].addVariation('Data',None, hdata )
     for key in finalSystList:
         for v in finalSystList[key]:
             uePlots['Data'].addVariation(key[0],key[1],fIn.Get('corrected_data%s'%v))
+
+    #statistical covariance matrix
+    EmatTotal=fIn.Get("EmatTotal")
+    nx,ny=EmatTotal.GetNbinsX(),EmatTotal.GetNbinsY()
+    uePlots['Data'].covMatrices['stat']=ROOT.TMatrixF(nx,ny) 
+    norm=hdata.Integral()
+    for xbin in xrange(1,nx+1):
+        if norm<=0 : continue
+        for ybin in xrange(1,ny+1):
+            uePlots['Data'].covMatrices['stat'][xbin-1][ybin-1]=EmatTotal.GetBinContent(xbin,ybin)/(norm**2)            
     fIn.Close()
 
     #read sets to compare (use only the nominal one)          
@@ -480,8 +505,10 @@ def main():
         uePlots=readParticlePlotsFrom(baseAnaDir,args,obsAxis,cuts,obs)
 
     #finalize the plots
-    for key in uePlots: uePlots[key].finalize()
-
+    for key in uePlots: 
+        doCov=True
+        uePlots[key].finalize(doCov=doCov)
+            
     #show plots
     outDir=os.path.dirname(args[0])
     for p, pfix in [(PLOTTINGSET_1,''),(PLOTTINGSET_2,'_v2'),(PLOTTINGSET_3,'_v3')]:
