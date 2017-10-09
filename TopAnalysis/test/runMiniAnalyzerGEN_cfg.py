@@ -22,8 +22,10 @@ options.register('savePF', True,
                  VarParsing.varType.bool,
                  'save PF candidates'
                  )
+options.register('nevents', 10, VarParsing.multiplicity.singleton, VarParsing.varType.int, "# events to generate")
 options.register('scale', 1., VarParsing.multiplicity.singleton, VarParsing.varType.float, "factor for fsr ren scale")
 options.register('asfsr', 0.1365, VarParsing.multiplicity.singleton, VarParsing.varType.float, "alpha_s for fsr")
+options.register('asisr', 0.1180, VarParsing.multiplicity.singleton, VarParsing.varType.float, "alpha_s for isr")
 options.register('me', 'on', VarParsing.multiplicity.singleton, VarParsing.varType.string, "ME corrections")
 options.register('generator', 'pythia8', VarParsing.multiplicity.singleton, VarParsing.varType.string, "PS generator")
 options.register('cr', 'default', VarParsing.multiplicity.singleton, VarParsing.varType.string, "color reconnection mode")
@@ -50,7 +52,7 @@ randSvc = RandomNumberServiceHelper(process.RandomNumberGeneratorService)
 randSvc.populate()
 
 # set input to process
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(options.maxEvents) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(options.nevents) )
 
 process.options   = cms.untracked.PSet(
    # wantSummary = cms.untracked.bool(True),
@@ -75,11 +77,11 @@ process.options   = cms.untracked.PSet(
 
 process.source = cms.Source("EmptySource")
 process.externalLHEProducer = cms.EDProducer("ExternalLHEProducer",
-    nEvents = cms.untracked.uint32(options.maxEvents),
+    nEvents = cms.untracked.uint32(options.nevents),
     outputFile = cms.string('cmsgrid_final.lhe'),
     scriptName = cms.FileInPath('GeneratorInterface/LHEInterface/data/run_generic_tarball_cvmfs.sh'),
     numberOfParameters = cms.uint32(1),
-    args = cms.vstring('/afs/cern.ch/work/m/mseidel/generator/CMSSW_7_1_20/src/TT_hdamp_TuneT4_noweights_NNPDF30_13TeV_powheg_hvq.tgz')
+    args = cms.vstring('/eos/user/m/mseidel/ReReco2016/b312177_merged/TT_hdamp_TuneT4_noweights_NNPDF30_13TeV_powheg_hvq.tgz')
 )
 
 if (options.generator == "pythia8"):
@@ -114,6 +116,9 @@ if (options.generator == "pythia8"):
                 'TimeShower:alphaSvalue     = ' + str(options.asfsr),
                 'TimeShower:MEcorrections   = ' + options.me,
             ),
+            isrParameters = cms.vstring(
+                'SpaceShower:alphaSvalue     = ' + str(options.asisr),
+                ),
             parameterSets = cms.vstring('pythia8CommonSettings',
                 #'pythia8CUEP8M1Settings',
                 'pythia8PowhegEmissionVetoSettings',
