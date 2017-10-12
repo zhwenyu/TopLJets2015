@@ -17,7 +17,8 @@ fi
 export LSB_JOB_REPORT_MAIL=Y
 
 queue=2nw
-outdir=/afs/cern.ch/work/e/ecoleman/TOP-17-010/
+who=`whoami`
+outdir=/afs/cern.ch/work/${who:0:1}/${who}/TOP-17-010/
 extdir=${outdir}/${EXT}/
 cardsdir=${extdir}/datacards
 CMSSW_7_4_7dir=~/CMSSW_7_4_7/src/

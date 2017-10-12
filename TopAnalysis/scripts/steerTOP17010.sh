@@ -104,7 +104,7 @@ case $WHAT in
 	python test/TopWidthAnalysis/createtWShapeUncs.py ~/work/TopWidth_era2015/analysis/plots/plotter.root ~/work/TopWidth_era2015/analysis/plots/syst_plotter.root  ${outdir}/analysis/plots/plotter.root;
 	hadd ${outdir}/analysis/plots/syst_plotter.root tW_syst_plotter.root ${outdir}/analysis/plots/syst_plotter_orig.root 
 	mv tW_syst_plotter.root ${outdir}/analysis/plots/tW_syst_plotter.root;	       
-	
+	;;
     COMBPLOT )
 	#combined plots
 	python test/TopWidthAnalysis/combinePlotsForAllCategories.py ptlb       EE1b,EE2b,MM1b,MM2b,EM1b,EM2b     ${outdir}/analysis/plots/plotter.root
@@ -125,22 +125,22 @@ case $WHAT in
 	;;
     HYPOTEST ) 
 	mainHypo=100
-	CATS=(            
-            "EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt")
+	CATS=("EM2bhighpt")
+        #    "EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt")
 	#    "EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt"
 	#    "EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt"
 	#)
-    TAGS=("inc_scan") # "ll" "em")
+        TAGS=("inc_scan") # "ll" "em")
 	altHypo=(20 40 60 80 100 120 140 160 180 200 220 240 260 280 300 350 400)
 	#data=(-1 100 400)	
-        data=(100)
-
+        data=(120)
+        
 	#still to be debugged
         #cmd="${cmd} --addBinByBin 0.3" 
 	for h in ${altHypo[@]}; do
 	    for d in ${data[@]}; do
 		for i in ${!TAGS[*]}; do
-
+                    
 		    icat=${CATS[${i}]}
 		    itag=${TAGS[${i}]}
 		    
@@ -163,9 +163,12 @@ case $WHAT in
 			fi
 		    fi
                     
-                    
 		    echo "Submitting ($mainHypo,$h,$d,$itag,$icat)"		
 		    stdcmd="${cmd} -o ${outdir}/datacards_${itag}/"
+
+                    echo ${stdcmd}
+
+
 		    bsub -q ${queue} sh ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${stdcmd};
 		    #if [ "$itag" == "inc" ]; then
 			#if [ "$d" == "100" ]; then
@@ -210,7 +213,7 @@ case $WHAT in
 
         combineTool.py -M Impacts -d workspace.root -m 172.5 --doInitialFit --robustFit 1
         combineTool.py -M Impacts -d workspace.root -m 172.5 --robustFit 1 --doFits --job-mode lxbatch --task-name nuis-impacts --sub-opts='-q 1nw'
-    ;;
+        ;;
     FINALIMP )
         echo "Finalizing nuisance impacts..."
         cd /afs/cern.ch/work/e/ecoleman/CMSSW_7_4_7/
@@ -219,5 +222,5 @@ case $WHAT in
        
         combineTool.py -M Impacts -d workspace.root -m 172.5 -o impacts.json
         plotImpacts.py -i impacts.json -o impacts
-    ;;
+        ;;
 esac

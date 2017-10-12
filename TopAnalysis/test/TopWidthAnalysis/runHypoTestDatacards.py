@@ -21,7 +21,6 @@ def getDistsFromDirIn(url,indir,applyFilter=''):
     return obs,exp
 
 def getRowFromTH2(tempHist2D,columnName) :
-    print tempHist2D.GetName()
     tempBinNum = tempHist2D.GetYaxis().FindBin(columnName);
     new1DProj  = tempHist2D.ProjectionX(tempHist2D.GetName()+"_"+columnName,
             tempBinNum,
@@ -30,8 +29,11 @@ def getRowFromTH2(tempHist2D,columnName) :
 
     return new1DProj
 
-def getDistsForHypoTest(cat,rawSignalList,opt,outDir="",systName="",systIsGen=False):
 
+def getDistsForHypoTest(cat,rawSignalList,opt,outDir="",systName="",systIsGen=False):
+    """
+    readout distributions from ROOT file and prepare them to be used in the datacard
+    """
     # do we want systematics?
     systExt = ""
     if systIsGen : systExt = "_gen"
@@ -89,20 +91,26 @@ def getDistsForHypoTest(cat,rawSignalList,opt,outDir="",systName="",systIsGen=Fa
     except:
         pass
 
-    #add signal hypothesis to expectations
+    # add signal hypothesis to expectations
+    # we normalize the expectations to the standard expectation
+    # as we are looking for shape distortions due to the width
     for proc in rawSignalList:
-        #if 'Singletop' in proc :
-        #    newProc=('Singletopw%.0f'%(opt.altHypo)).replace('.','p')
-        #    print exp['Singletop']
-        #    exp[newProc] = exp['Singletop'].Clone(newProc)
-        #    exp[newProc].SetDirectory(0)
         try:
             newProc=('%sw%.0f'%(proc,opt.mainHypo)).replace('.','p')
+
+            #main hypothesis
             exp[newProc]=expMainHypo[proc].Clone(newProc)
+            nbins=exp[newProc].GetNbinsX()
+            sf=exp[proc].Integral(0,nbins+1)/exp[newProc].Integral(0,nbins+1)
+            exp[newProc].Scale(sf)
             exp[newProc].SetDirectory(0)
+
+            #alternative hypothesis
             newProc=('%sw%.0f'%(proc,opt.altHypo)).replace('.','p')
             if opt.mainHypo==opt.altHypo: newProc+='a'
             exp[newProc]=expAltHypo[proc].Clone(newProc)
+            sf=exp[proc].Integral(0,nbins+1)/exp[newProc].Integral(0,nbins+1)
+            exp[newProc].Scale(sf)
             exp[newProc].SetDirectory(0)
         except:
             pass
@@ -143,6 +151,9 @@ def doCombineScript(opt,args,outDir,dataCardList):
     script.write('\n')
     script.write('### combine datacard and start workspace\n')
     script.write('combineCards.py %s > datacard.dat\n'%dataCardList)
+    script.write('### dump systematics\n')
+    script.write('python ${CMSSW_BASE}/src/HiggsAnalysis/CombinedLimit/test/systematicsAnalyzer.py datacard.dat --all -f html > systs_summary.html;\n')
+    script.write('### convert to workspace\n')
     script.write('text2workspace.py datacard.dat -P HiggsAnalysis.CombinedLimit.TopHypoTest:twoHypothesisTest -m 172.5 --PO verbose --PO altSignal=%s --PO muFloating -o workspace.root\n'%altHypoTag)
     if opt.doValidation:
         script.write('python ${COMBINE}/HiggsAnalysis/CombinedLimit/test/systematicsAnalyzer.py datacard.dat --all -m 172.5 -f html > systs.html\n')
@@ -228,16 +239,13 @@ def doDataCards(opt,args):
     #define the SHAPE systematics from dedicated samples : syst,{procs,samples}, shapeTreatment (see above) nsigma
     fileShapeSysts = [
         ('mtop',           {'tbart':['t#bar{t} m=171.5',  't#bar{t} m=173.5'],
-                        'Singletop':['Single top m=169.5', 'Single top m=175.5']},
-                                                        0, {'tbart':1./2.,'Singletop':1./6.}),
-        ('UE',             {'tbart':['t#bar{t} UEdn',     't#bar{t} UEup']}       , 2, 1.0 ),
-        ('hdamp',          {'tbart':['t#bar{t} hdamp dn', 't#bar{t} hdamp up']}   , 2, 1.0 ),
+                            'Singletop':['Single top m=169.5', 'Single top m=175.5']}, 0, {'tbart':1./2.,'Singletop':1./6.}),
+        ('UE',             {'tbart':['t#bar{t} UEdn',     't#bar{t} UEup']}        , 2, 1.0 ),
+        ('hdamp',          {'tbart':['t#bar{t} hdamp dn', 't#bar{t} hdamp up']}    , 2, 1.0 ),
         ('ISR',            {'tbart':['t#bar{t} isr dn',   't#bar{t} isr up'],
-                        'Singletop':['Single top isr dn', 'Single top isr up']}
-                                                                                  , 2, 1.0 ),
+                            'Singletop':['Single top isr dn', 'Single top isr up']}, 2, 1.0 ),
         ('FSR',            {'tbart':['t#bar{t} fsr dn',   't#bar{t} fsr up'],
-                        'Singletop':['Single top fsr dn', 'Single top fsr up']}
-                                                                                  , 2, 1.0 ),
+                            'Singletop':['Single top fsr dn', 'Single top fsr up']} , 2, 1.0 ),
         #('ttPSScale' ,     {'tbart':['t#bar{t} scale down','t#bar{t} scale up']} , 2, 1.0  ),
         #('ttGenerator',    {'tbart':['t#bar{t} amc@nlo FxFx']},                    1, 1.0  ),
         #('ttPartonShower', {'tbart':['t#bar{t} Herwig++']},                        1, 1.0  ),
@@ -270,7 +278,6 @@ def doDataCards(opt,args):
         lfs='EE'
         if 'EM' in cat : lfs='EM'
         if 'MM' in cat : lfs='MM'
-
 
         #data and nominal shapes
         obs,exp=getDistsForHypoTest(cat,rawSignalList,opt,outDir)
@@ -430,7 +437,7 @@ def doDataCards(opt,args):
                 finalNomShape.Delete()
 
 
-        #rate systematics
+        #rate systematics: these are fixed values common to all processes
         print '\t rate systematics',len(rateSysts)
         for syst,val,pdf,whiteList,blackList in rateSysts:
             if '*CH*' in syst : syst=syst.replace('*CH*',lfs)
@@ -457,7 +464,6 @@ def doDataCards(opt,args):
                 else:
                     datacard.write('%15s'%'-')
             datacard.write('\n')
-
 
         #weighting systematics
         print '\t weighting systematics',len(weightingSysts)
@@ -600,7 +606,7 @@ def doDataCards(opt,args):
                     datacard.write('%15s'%('%3.3f'%iRateVars[sig]))
                 else:
                     datacard.write('%15s'%'-')
-            for sig in altSignalList:
+            for sig in altSignalList if opt.useAltRateUncs else mainSignalList:
                 if sig in iRateVars and ((len(whiteList)==0 and not sig in blackList) or sig in whiteList):
                     datacard.write('%15s'%('%3.3f'%iRateVars[sig]))
                 else:
@@ -717,7 +723,7 @@ def doDataCards(opt,args):
                     datacard.write('%15s'%('%3.3f'%iRateVars[sig]))
                 else:
                     datacard.write('%15s'%'-')
-            for sig in altSignalList:
+            for sig in altSignalList if opt.useAltRateUncs else mainSignalList:
                 if sig in iRateVars :
                     datacard.write('%15s'%('%3.3f'%iRateVars[sig]))
                 else:
@@ -783,6 +789,7 @@ def main():
     parser.add_option('--addBinByBin',              dest='addBinByBin', help='add bin-by-bin stat uncertainties @ threshold',      default=-1,            type=float)
     parser.add_option(      '--rebin',              dest='rebin',       help='histogram rebin factor',                             default=0,             type=int)
     parser.add_option(      '--pseudoData',         dest='pseudoData',         help='pseudo data to use (-1=real data)',           default=100,         type=float)
+    parser.add_option(      '--useAltRateUncs',     dest='useAltRateUncs',     help='use rate uncertainties specific to alt. hypothesis', default=False,       action='store_true')
     parser.add_option(      '--replaceDYshape',     dest='replaceDYshape',     help='use DY shape from syst file',                 default=False,       action='store_true')
     parser.add_option(      '--doValidation',       dest='doValidation',       help='create validation plots',                     default=False,       action='store_true')
     parser.add_option(      '--pseudoDataFromSim',  dest='pseudoDataFromSim',  help='pseudo data from dedicated sample',           default='',          type='string')
