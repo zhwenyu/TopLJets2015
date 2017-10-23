@@ -84,7 +84,10 @@ def defineAnalysisBinning(opt,ptthreshold,cuts,outDir):
         varVals[0].append( val )
         varVals[1].append( recVal )
         varVals[2].append( deltaVal )
-
+        
+#    ue.fout.cd()
+#    ue.output_tuple.Write()
+#    ue.fout.Close()
 
     #
     # GEN/RECO LEVEL BIN DEFINITION

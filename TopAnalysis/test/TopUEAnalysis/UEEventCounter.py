@@ -1,6 +1,7 @@
 #!/usr/bin/env/python
 
 import ROOT
+import array
 from TopLJets2015.TopAnalysis.eventShapeTools import *
 
 AXISANGLE = {
@@ -21,6 +22,10 @@ class UEEventCounter:
         """
         start class
         """
+
+        #self.fout = ROOT.TFile("test.root", "RECREATE")
+        #self.fout.cd()
+        #self.output_tuple = ROOT.TNtuple("tuple","tuple","phi0:eta0:deta0:dphi0:phi1:eta1:deta1:dphi1:phi2:eta2:dr2:deta2:dphi2:nj")
 
         self.ptthreshold  = ptthreshold  #pt threshold 
         self.etathreshold = etathreshold #eta threshold 
@@ -70,10 +75,14 @@ class UEEventCounter:
         self.rec_aplanarity     = [0]*nSysts
         self.rec_C              = [0]*nSysts
         self.rec_D              = [0]*nSysts
+        self.rec_rapDist        = [0]*nSysts
+        self.rec_maxRap        = [0]*nSysts
         self.gen_sphericity     = 0
         self.gen_aplanarity     = 0
         self.gen_C              = 0
         self.gen_D              = 0
+        self.gen_rapDist        = 0
+        self.gen_maxRap         = 0
 
         self.rec_chmult   = [0]*nSysts            #classic observables
         self.rec_chflux   = [0]*nSysts
@@ -261,6 +270,10 @@ class UEEventCounter:
                 self.rec_aplanarity[iSystVar]     = self.evshapes.aplanarity
                 self.rec_C[iSystVar]              = self.evshapes.C
                 self.rec_D[iSystVar]              = self.evshapes.D
+                evgRaps=[ ROOT.TVector3(self.evshapes.eigenVectors[jdir][0],self.evshapes.eigenVectors[jdir][1],self.evshapes.eigenVectors[jdir][2]).PseudoRapidity()
+                          for jdir in xrange(0,3) ]
+                self.rec_rapDist[iSystVar]=abs( max(evgRaps)-min(evgRaps) )
+                self.rec_maxRap[iSystVar]=max( [abs(x) for x in evgRaps] )
 
                 #final check if chmult was given as a slicing cut
                 if 'chmult' in self.cuts:
@@ -319,6 +332,39 @@ class UEEventCounter:
             self.gen_aplanarity     = self.evshapes.aplanarity
             self.gen_C              = self.evshapes.C
             self.gen_D              = self.evshapes.D
+            evgRaps=[ ROOT.TVector3(self.evshapes.eigenVectors[jdir][0],self.evshapes.eigenVectors[jdir][1],self.evshapes.eigenVectors[jdir][2]).PseudoRapidity()
+                      for jdir in xrange(0,3) ]
+            self.gen_rapDist=max(evgRaps)-min(evgRaps)
+            self.gen_maxRap=max( [ abs(x) for x in evgRaps ] )
+
+            #values=[]
+            #matchedDirs=[]
+            #for idir in xrange(0,3):
+            #    minTheta,minDR,minDphi,minDeta,minpzfrac=9999,9999,9999,9999,9999
+            #    p3=ROOT.TVector3(t.gen_evdirpx[idir],t.gen_evdirpy[idir],t.gen_evdirpz[idir])
+            #    matchedDirs.append(-1)
+            #    for jdir in xrange(0,3):
+            #        if jdir in matchedDirs: continue
+            #        q3=ROOT.TVector3(self.evshapes.eigenVectors[jdir][0],
+            #                         self.evshapes.eigenVectors[jdir][1],
+            #                         self.evshapes.eigenVectors[jdir][2])                   
+            #
+            #        theta=abs(q3.Angle(p3))
+            #        if theta>minTheta: continue
+            #        minTheta=theta
+            #        minDR=q3.DeltaR(p3)
+            #        minDphi=abs(q3.DeltaPhi(p3))
+            #        minDeta=abs(q3.PseudoRapidity()-p3.PseudoRapidity())
+            #        minpzfrac=q3.Pz()/q3.Mag()
+            #        matchedDirs[-1]=jdir
+            #    values.append(p3.Phi())
+            #    values.append(p3.PseudoRapidity())
+            #    values.append(minDeta)
+            #    values.append(minDphi)
+            #values.append(t.gen_nj)
+            #
+            #self.output_tuple.Fill(array.array("f",values))
+                    
 
              #final check if chmult was given as a slicing cut                                                                                        
             if 'chmult' in self.cuts:

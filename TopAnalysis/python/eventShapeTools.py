@@ -7,6 +7,7 @@ class EventShapeTool:
     def __init__(self):
         self.momentumTensor=ROOT.TMatrixDSym(3)
         self.eigenValues=ROOT.TVectorD(3)
+        self.eigenVectors=[ROOT.TVectorD(3),ROOT.TVectorD(3),ROOT.TVectorD(3)]
         self.sphericity=0
         self.aplanarity=0
         self.C=0
@@ -42,9 +43,17 @@ class EventShapeTool:
     def computeEventShapes(self):
         if not self.momentumTensor.IsSymmetric() : return
         if self.momentumTensor.NonZeros()==0: return
-        self.momentumTensor.EigenVectors(self.eigenValues)
+
+        #compute the eigen vectors
+        evm=self.momentumTensor.EigenVectors(self.eigenValues)
+        for i in xrange(0,3):
+            for j in xrange(0,3):
+                self.eigenVectors[i][j]=evm[i][j]
+
+        #make sure eigen values are sorted by decreasing value
         lambdas=sorted([self.eigenValues(i) for i in xrange(0,3)],reverse=True)
-        
+         
+        #event shapes
         self.sphericity=1.5*(lambdas[1]+lambdas[2])
         self.aplanarity=1.5*lambdas[2]
         self.C=3.*(lambdas[0]*lambdas[1] + lambdas[0]*lambdas[2] + lambdas[1]*lambdas[2])

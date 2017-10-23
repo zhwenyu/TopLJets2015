@@ -148,6 +148,7 @@ void RunTopUE(TString filename,
 	  //top pt weighting
 	  if(isTTbar)
 	    {
+              std::vector<TLorentzVector> tops;
               TLorentzVector gentt(0,0,0,0);
 	      for(Int_t igen=0; igen<ev.ngtop; igen++)
 		{
@@ -156,8 +157,21 @@ void RunTopUE(TString filename,
                   TLorentzVector p4;
                   p4.SetPtEtaPhiM(ev.gtop_pt[igen],ev.gtop_eta[igen],ev.gtop_phi[igen],ev.gtop_m[igen]);
                   gentt+=p4;
+                  tops.push_back(p4);
 		}
               gen_mttbar=gentt.M();
+              if(tops.size()==2)
+                {
+                  for(int it=0; it<2; it++)
+                    {
+                      tue.gen_evdirpx[it]=tops[it].Px();
+                      tue.gen_evdirpy[it]=tops[it].Py();
+                      tue.gen_evdirpz[it]=tops[it].Pz();
+                    }
+                }
+              tue.gen_evdirpx[2]=gentt.Px();
+              tue.gen_evdirpy[2]=gentt.Py();
+              tue.gen_evdirpz[2]=gentt.Pz();
 	    }
 	}
 
@@ -476,7 +490,7 @@ void RunTopUE(TString filename,
           for(size_t ij=0; ij<jets.size(); ij++)
             {
               if(abs(jets[ij].flavor())==5 && bJetsIdx.size()<2) bJetsIdx.push_back(ij);
-              else                          lightJetsIdx.push_back(ij);
+              else                                               lightJetsIdx.push_back(ij);
             }
           bool passPresel = passLepPresel && (bJetsIdx.size()>=2);
           if(genChTag=="EE" || genChTag=="MM") passPresel &= fabs(mll-91)>15;
@@ -569,7 +583,15 @@ void RunTopUE(TString filename,
 	  tue.gen_passSel=passPresel;
 	  tue.gen_nj=jets.size()-bJetsIdx.size();
           tue.gen_nb=bJetsIdx.size();
-	  
+
+          //add the two b-jets directions of the event
+          //for(int ibj=0; ibj<(int)min((int)bJetsIdx.size(),2); ibj++)
+          //  {
+          //    tue.gen_evdirpx[ibj]=jets[ bJetsIdx[ibj] ].p4().Px();
+          //    tue.gen_evdirpy[ibj]=jets[ bJetsIdx[ibj] ].p4().Py();
+          //    tue.gen_evdirpz[ibj]=jets[ bJetsIdx[ibj] ].p4().Pz();
+          //  }
+            
 	  int posLepton( leptons[0].charge()>0 ? 0 : 1 );
           tue.gen_mll    = mll;
           tue.gen_ptpos  = leptons[posLepton].pt();
@@ -662,6 +684,11 @@ void createTopUETree(TTree *t,TopUE_t &tue)
 
   //mttbar (parton level)
   t->Branch("gen_mttbar_parton",   &tue.gen_mttbar_parton,"gen_mttbar_parton/F");
+
+  //even directions (two b-jets and ttbar recoil)
+  t->Branch("gen_evdirpx",         tue.gen_evdirpx, "gen_evdirpx[3]/F");
+  t->Branch("gen_evdirpy",         tue.gen_evdirpy, "gen_evdirpy[3]/F");
+  t->Branch("gen_evdirpz",         tue.gen_evdirpz, "gen_evdirpz[3]/F");
 
   //leptonic quantities
   t->Branch("ptpos",      tue.ptpos ,       "ptpos[11]/F");

@@ -22,6 +22,7 @@ struct TopUE_t
   Float_t gen_ptpos, gen_phipos, gen_ptll, gen_phill, gen_mll, gen_sumpt, gen_dphill;
   Float_t ptttbar[11],     phittbar[11];  
   Float_t gen_ptttbar,    gen_phittbar, gen_mttbar_parton;  
+  Float_t gen_evdirpx[3],gen_evdirpy[3],gen_evdirpz[3];
   Int_t n,gen_n,id[1000];
   Float_t pt[1000],     eta[1000],     phi[1000]; 
   Int_t gen_id[1000],gen_rec[1000]; 

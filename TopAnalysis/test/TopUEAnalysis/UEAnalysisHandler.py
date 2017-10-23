@@ -19,7 +19,9 @@ VARTITLES={
     'sphericity'     : 'Sphericity',
     'aplanarity'     : 'Aplanarity',
     'C'              : 'C',
-    'D'              : 'D'
+    'D'              : 'D',
+    'maxRap':'max |#eta|',
+    'rapDist':'#Delta #eta'
     }
 
 SYSTS = [ ('',   0,0,False),

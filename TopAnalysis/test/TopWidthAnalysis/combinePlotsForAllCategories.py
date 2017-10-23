@@ -48,6 +48,7 @@ def doPlot(plotName,chList,extraText,url):
     plot=Plot('%s%s'%(ch,plotName))    
     plot.savelog=True
     plot.wideCanvas=False
+    plot.doMCOverData = False
     plot.ratiorange=(0.76,1.24)
     plot.plotformats=['root','pdf','png']
     for key in ['Data','t#bar{t}','Single top','W','DY','Multiboson','t#bar{t}+V']:

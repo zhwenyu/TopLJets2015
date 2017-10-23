@@ -4,7 +4,7 @@ import pickle
 """
 Takes a directory on eos (starting from /store/...) and returns a list of all files with 'prepend' prepended
 """
-def getEOSlslist(directory, mask='', prepend='root://eoscms//eos/cms/'):
+def getEOSlslist(directory, mask='', prepend='root://eoscms//eos/cms/',ignoreList=[]):
     from subprocess import Popen, PIPE
     print 'looking into: '+directory+'...'
 
@@ -23,9 +23,15 @@ def getEOSlslist(directory, mask='', prepend='root://eoscms//eos/cms/'):
         if len(out.split('\n')[0]) > 0:
             return [prepend + directory]
 
-    ## instead of only the file name append the string to open the file in ROOT
+    ## instead of only the file name append the string to open the file in ROOT    
     for line in out.split('\n'):
         if len(line.split()) == 0: continue
+        skip=False
+        for tag in ignoreList:
+            if tag in line: skip=True
+        if skip: 
+            print 'Skipping',line
+            continue
         full_list.append(prepend + directory + '/' + line)
 
     ## strip the list of files if required

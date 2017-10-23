@@ -33,6 +33,8 @@ COMPARISONSETS=[
 EXTRASETS = [
     ('Sherpa', 'MC13TeV_TTJets_sherpa.root'),
     ('PW+HW7', 'MC13TeV_TTJets_herwig7.root'),
+    ('no MPI', 'MC13TeV_TTJets_MPIoff.root'),
+    ('no CR',  'MC13TeV_TTJets_CRoff.root'),
     ('#alpha_{S}^{FSR}=0.070','MC13TeV_TTJets_pythia8_asfsr0.070_meon_crdefault.root'),
     ('#alpha_{S}^{FSR}=0.080','MC13TeV_TTJets_pythia8_asfsr0.080_meon_crdefault.root'),
     ('#alpha_{S}^{FSR}=0.090','MC13TeV_TTJets_pythia8_asfsr0.090_meon_crdefault.root'),
@@ -47,6 +49,18 @@ EXTRASETS = [
     ('#alpha_{S}^{FSR}=0.140','MC13TeV_TTJets_pythia8_asfsr0.140_meon_crdefault.root'),
     ('#alpha_{S}^{FSR}=0.150','MC13TeV_TTJets_pythia8_asfsr0.150_meon_crdefault.root'),
     ('#alpha_{S}^{FSR}=0.160','MC13TeV_TTJets_pythia8_asfsr0.160_meon_crdefault.root'),
+    ('#alpha_{S}^{ISR}=0.06','MC13TeV_TTJets_asisr006.root'),
+    ('#alpha_{S}^{ISR}=0.07','MC13TeV_TTJets_asisr007.root'),
+    ('#alpha_{S}^{ISR}=0.08','MC13TeV_TTJets_asisr008.root'),
+    ('#alpha_{S}^{ISR}=0.09','MC13TeV_TTJets_asisr009.root'),
+    ('#alpha_{S}^{ISR}=0.10','MC13TeV_TTJets_asisr010.root'),
+    ('#alpha_{S}^{ISR}=0.11','MC13TeV_TTJets_asisr011.root'),
+    ('#alpha_{S}^{ISR}=0.12','MC13TeV_TTJets_asisr012.root'),
+    ('#alpha_{S}^{ISR}=0.13','MC13TeV_TTJets_asisr013.root'),
+    ('#alpha_{S}^{ISR}=0.14','MC13TeV_TTJets_asisr014.root'),
+    ('#alpha_{S}^{ISR}=0.15','MC13TeV_TTJets_asisr015.root'),
+    ('#alpha_{S}^{ISR}=0.16','MC13TeV_TTJets_asisr016.root'),
+
 ]
 
 PLOTTINGSET_1=[
@@ -55,15 +69,17 @@ PLOTTINGSET_1=[
     ('ISR up',            'ep0', 0,    '#fdc086', 22, False, 0.5),
     ('ISR dn',            'ep0', 0,    '#fdc086', 23, False, 0.5),
     ('FSR up',            'ep0', 0,    '#d95f02', 22, False, 0.8),
-    ('FSR dn',            'ep0', 0,    '#d95f02', 23, False, 0.8)
+    ('FSR dn',            'ep0', 0,    '#d95f02', 23, False, 0.8),
 ]
 
 PLOTTINGSET_2=[
-    ('Data',              '2',  1001,  '#a6cee3', 1 , True,  None),
+    ('Data',              '2',   1001, '#a6cee3', 1 , True,  None),
+    ('no MPI',            'l',   0,    '#91b58d', 1,  False, None),
+    ('no CR',             'l',   0,    '#000000', 1,  False, None),
     ('UE up',             'ep0', 0,    '#000000', 22, False, 0.2),
     ('UE dn',             'ep0', 0,    '#000000', 23, False, 0.2),
-    ('QCD-based',         'ep0', 0,    '#fdc086', 20, False, 0.5),
-    ('Gluon move',        'ep0', 0,    '#984ea3', 21, False, 0.5),
+    ('QCD based',         'ep0', 0,    '#fdc086', 20, False, 0.4),
+    ('Gluon move',        'ep0', 0,    '#984ea3', 21, False, 0.6),
     ('ERD on',            'ep0', 0,    '#d95f02', 24, False, 0.8),
 ]
 
@@ -117,7 +133,9 @@ def compareUEPlots(uePlots,outDir,cuts,obs,plottingSet=PLOTTINGSET_1,pfix=''):
         try:
             uePlots[p].format(fill,color,marker,keepXUnc,shiftX)
             uePlots[p].plot[0].Draw(drawOpt)
-            if p!='Data': leg.AddEntry(uePlots[p].plot[0],p,drawOpt)
+            if p!='Data': 
+                legOpt=drawOpt if not drawOpt in ['c','2'] else 'l'
+                leg.AddEntry(uePlots[p].plot[0],p,legOpt)
             iminY,imaxY=getGraphExtremes(uePlots[p].plot[0])
             maxY=max(imaxY,maxY)
             minY=min(iminY,minY)
@@ -206,7 +224,9 @@ def compareUEPlots(uePlots,outDir,cuts,obs,plottingSet=PLOTTINGSET_1,pfix=''):
     for p,drawOpt,fill,color,marker,keepXUnc,shiftX in plottingSet:
         try:
             uePlotRatios[p].Draw(drawOpt)
-            if p!='Data': leg.AddEntry(uePlotRatios[p],p,drawOpt)
+            if p!='Data': 
+                legOpt=drawOpt if not drawOpt in ['c','2'] else 'l'
+                leg.AddEntry(uePlotRatios[p],p,legOpt)
         except:
             pass
     ratioframe.GetYaxis().SetRangeUser(max(minY*0.8,0.15),min(maxY*1.5,1.95))
@@ -371,7 +391,9 @@ def readParticlePlotsFrom(baseAnaDir,args,obsAxis,cuts,obs):
     #add extra sets (generator level only)
     for varTitle,varUrl in EXTRASETS:
         url=os.path.join( baseAnaDir, varUrl)
-        if not os.path.isfile(url): continue
+        if not os.path.isfile(url): 
+            print 'skip',url
+            continue
         fIn=ROOT.TFile.Open(url)
         genH=fIn.Get('gen')
         varName='gen_%d'%len(uePlots)
@@ -505,10 +527,18 @@ def main():
         uePlots=readParticlePlotsFrom(baseAnaDir,args,obsAxis,cuts,obs)
 
     #finalize the plots
+    failed=[]
     for key in uePlots: 
-        doCov=True
-        uePlots[key].finalize(doCov=doCov)
-            
+        try:
+            uePlots[key].finalize(doCov=True)
+        except:
+            print 'Failed to finalize plot for', key
+            failed.append(key)
+
+    #remove if failed
+    for key in failed: uePlots.pop(key)
+
+
     #show plots
     outDir=os.path.dirname(args[0])
     for p, pfix in [(PLOTTINGSET_1,''),(PLOTTINGSET_2,'_v2'),(PLOTTINGSET_3,'_v3')]:

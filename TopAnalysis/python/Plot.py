@@ -68,7 +68,7 @@ class Plot(object):
         self.frameMin=0.01
         self.frameMax=1.45
         self.mcUnc=0
-        self.legSize=(0.045 if self.wideCanvas else 0.04)
+        self.legSize=(0.045 if self.wideCanvas else 0.05)
         self.ratioTitle='Ratio '
 
     def add(self, h, title, color, isData, spImpose, isSyst):
@@ -405,12 +405,12 @@ class Plot(object):
         txt=ROOT.TLatex()
         txt.SetNDC(True)
         txt.SetTextFont(42)
-        txt.SetTextSize(0.05)
+        txt.SetTextSize(0.06)
         txt.SetTextAlign(12)
         iniy=0.88 if self.wideCanvas else 0.88
         inix=0.15 if noStack else 0.18
         if (totalMC is not None and totalMC.GetMaximumBin() > totalMC.GetNbinsX()/2.):
-            inix = 0.64
+            inix = 0.6
         inixlumi=0.7
         if not self.dataH or noRatio:
             inix=0.56
@@ -429,7 +429,7 @@ class Plot(object):
         try:
             extraCtr=1
             for extra in extraText.split('\\'):
-                txt.DrawLatex(inix,iniy-0.02-0.06*extraCtr,'#scale[0.9]{%s}'%extra)
+                txt.DrawLatex(inix,iniy-0.02-0.08*extraCtr,'#scale[0.8]{%s}'%extra)
                 extraCtr+=1
         except:
             pass

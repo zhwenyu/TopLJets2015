@@ -23,6 +23,7 @@ def main():
     parser.add_option('-O', '--outDir',      dest='outDir' ,     help='output directory',                default=None,              type='string')
     parser.add_option('-o', '--outName',     dest='outName' ,    help='name of the output file',        default='plotter.root',    type='string')
     parser.add_option(      '--noStack',     dest='noStack',     help='don\'t stack distributions',     default=False,             action='store_true')
+    parser.add_option(      '--doDataOverMC',     dest='doDataOverMC',     help='do data/MC ratio',     default=False,             action='store_true')
     parser.add_option(      '--saveLog',     dest='saveLog' ,    help='save log versions of the plots', default=False,             action='store_true')
     parser.add_option(      '--silent',      dest='silent' ,     help='only dump to ROOT file',         default=False,             action='store_true')
     parser.add_option(      '--onlyData',    dest='onlyData' ,   help='only plots containing data',     default=False,             action='store_true')
@@ -189,7 +190,9 @@ def main():
                             if opt.rebin>1:  hist.Rebin(opt.rebin)
 
                             #create new plot if needed
-                            if not key in plots : plots[key]=Plot(key,com=opt.com)
+                            if not key in plots : 
+                                plots[key]=Plot(key,com=opt.com)
+                                plots[key].doMCOverData=False if opt.doDataOverMC else True
 
                             #add process to plot
                             plots[key].add(h=hist,title=hist.GetTitle(),color=sp[2],isData=sample[1],spImpose=isSignal,isSyst=(isSyst or keyIsSyst))

@@ -270,7 +270,7 @@ EffCorrection_t LeptonEfficiencyWrapper::getTriggerCorrection(std::vector<Partic
             }
 
           //add a 2% uncertainty
-          corr.second=sqrt(0.02*0.02+corr.second);
+          corr.second=sqrt(0.02*0.02+corr.second*corr.second);
         }
       else 
         {
@@ -290,6 +290,9 @@ EffCorrection_t LeptonEfficiencyWrapper::getTriggerCorrection(std::vector<Partic
 
               corr.first=h->GetBinContent(etaBinForEff,ptBinForEff);
               corr.second=h->GetBinError(etaBinForEff,ptBinForEff);
+              
+              //https://twiki.cern.ch/twiki/bin/viewauth/CMS/MuonReferenceEffsRun2
+              corr.second=sqrt(0.005*0.005+corr.second*corr.second);
             }
           //electron histogram uses eta, not abs(eta)
           else if( abs(leptons[0].id())==11 and lepEffH_.find(hname)!=lepEffH_.end() )
@@ -398,7 +401,12 @@ EffCorrection_t LeptonEfficiencyWrapper::getOfflineCorrection(int pdgId,float pt
 	  
 	}
     }
-  
+
+  //additional uncertainty for id and isolation
+  //https://twiki.cern.ch/twiki/bin/viewauth/CMS/MuonReferenceEffsRun2
+  if(abs(pdgId)==13)
+    corr.second=sqrt(pow(corr.second,2)+0.01*0.01+0.005*0.005);
+    
   return corr;
 }
 

@@ -149,30 +149,38 @@ def doCombineScript(opt,args,outDir,dataCardList):
     script.write('eval `scramv1 r -sh`\n')
     script.write('cd ${SCRIPTDIR}\n')
     script.write('\n')
+
     script.write('### combine datacard and start workspace\n')
     script.write('combineCards.py %s > datacard.dat\n'%dataCardList)
-    script.write('### dump systematics\n')
-    script.write('python ${CMSSW_BASE}/src/HiggsAnalysis/CombinedLimit/test/systematicsAnalyzer.py datacard.dat --all -f html > systs_summary.html;\n')
+    script.write('\n')
+
     script.write('### convert to workspace\n')
     script.write('text2workspace.py datacard.dat -P HiggsAnalysis.CombinedLimit.TopHypoTest:twoHypothesisTest -m 172.5 --PO verbose --PO altSignal=%s --PO muFloating -o workspace.root\n'%altHypoTag)
+    script.write('\n')
+
     if opt.doValidation:
-        script.write('python ${COMBINE}/HiggsAnalysis/CombinedLimit/test/systematicsAnalyzer.py datacard.dat --all -m 172.5 -f html > systs.html\n')
-    script.write('\n')
-    script.write('### likelihood scans and fits\n')
-    #script.write('for x in 0 1; do\n')
-    #script.write('   combine workspace.root -M MultiDimFit -m 172.5 -P x --floatOtherPOI=1  --algo=grid --points=50 -t -1 --expectSignal=1 --setPhysicsModelParameters x=${x},r=1  -n x_scan_${x}_exp --saveWorkspace;\n')
-    #script.write('   combine workspace.root -M MaxLikelihoodFit -m 172.5 --redefineSignalPOIs x  -t -1 --expectSignal=1 --setPhysicsModelParameters x=${x},r=1  -n x_fit_${x}_exp --saveWorkspace;\n')
-    #script.write('done\n')
-    #script.write('combine workspace.root -M MultiDimFit -m 172.5 -P x --floatOtherPOI=1  --algo=grid --points=50 -n x_scan_obs --minimizerTolerance 0.001 --robustFit=1 --saveWorkspace;\n')
-    #script.write('combine workspace.root -M MaxLikelihoodFit -m 172.5 --redefineSignalPOIs x --minimizerTolerance 0.001   -n x_fit_obs --saveWorkspace --robustFit=1;\n')
-    script.write('\n')
+        script.write('### dump systematics\n')
+        script.write('python ${CMSSW_BASE}/src/HiggsAnalysis/CombinedLimit/test/systematicsAnalyzer.py datacard.dat --all -f html > systs_summary.html;\n')
+        script.write('\n')
+
+        commonOpts="-m 172.5 --setPhysicsModelParameters x=${x},r=1 --saveWorkspace --robustFit 1 --minimizerAlgoForMinos Minuit2,Migrad "
+        script.write('### likelihood scans and fits\n')
+        script.write('for x in 0 1; do\n')
+        script.write('   combine workspace.root -M MultiDimFit -P x --floatOtherPOI=1  --algo=grid --points=50 -t -1 --expectSignal=1 -n x_scan_${x}_exp %s;\n'%commonOpts)
+        script.write('   combine workspace.root -M MaxLikelihoodFit --redefineSignalPOIs x -t -1 --expectSignal=1 -n x_fit_${x}_exp %s;\n'%commonOpts)
+        script.write('done\n')
+        script.write('combine workspace.root -M MultiDimFit -P x --floatOtherPOI=1 --algo=grid --points=50 -n x_scan_obs %s\n'%commonOpts)
+        script.write('combine workspace.root -M MaxLikelihoodFit --redefineSignalPOIs x -n x_fit_obs %s;\n'%commonOpts)
+        script.write('\n')
+
     script.write('### SCAN \n')
     script.write('\n')
-    #script.write("text2workspace.py -P HiggsAnalysis.CombinedLimit.HiggsJPC:twoHypothesisHiggs datacard.dat -o workspace.root -m 172.5  > spaceOutput.log 2>&1")
-    script.write("combine -m 172.5 -S 0 -M HybridNew --testStat=TEV --singlePoint 0 --onlyTestStat workspace.root -n scan0n --saveToys --saveHybridResult \n")
-    script.write("combine -m 172.5 -S 0 -M HybridNew --testStat=TEV --singlePoint 1 --onlyTestStat workspace.root -n scan1n --saveToys --saveHybridResult \n")
+    commonOpts="-m 172.5 -S 0 -M HybridNew --testStat=TEV --onlyTestStat --saveToys --saveHybridResult --robustFit 1 --minimizerAlgoForMinos Minuit2,Migrad"
+    script.write("combine %s --singlePoint 0  workspace.root -n scan0n\n"%commonOpts)
+    script.write("combine %s --singlePoint 1  workspace.root -n scan1n\n"%commonOpts)
 
-    script.write('### CLs\n')
+
+    #script.write('### CLs\n')
     # do not write CLs -- python can't launch scripts with forking
     #script.write('combine workspace.root -M HybridNew --seed 8192 --saveHybridResult -m 172.5 --saveWorkspace --saveToys --testStat=TEV --singlePoint 1 -T %d -i 2 --fork 6 --clsAcc 0 --fullBToys  --generateExt=1 --generateNuis=0 --expectedFromGrid 0.5 -n cls_prefit_exp;\n'%opt.nToys)
     #script.write('combine workspace.root -M HybridNew --seed 8192 --saveHybridResult -m 172.5 --saveWorkspace --saveToys --testStat=TEV --singlePoint 1 -T %d -i 2 --fork 6 --clsAcc 0 --fullBToys  --frequentist --expectedFromGrid 0.5 -n cls_postfit_exp;\n'%opt.nToys)
@@ -234,25 +242,21 @@ def doDataCards(opt,args):
         ('ttPDF',          ['gen%d'%(11+ig) for ig in xrange(0,100) ], ttScenarioList, [],     0, 1.0)
         ]
     for ig in xrange(0,29) :
-        weightingSysts += [('jes%s'%ig,            ['jes%d'%ig],       [],             ['DY'], 1, 1.0)]
+        weightingSysts += [('jes%s'%ig,            ['jes%d'%ig],       [],             ['DY'], 2, 1.0)]
 
     #define the SHAPE systematics from dedicated samples : syst,{procs,samples}, shapeTreatment (see above) nsigma
     fileShapeSysts = [
-        ('mtop',           {'tbart':['t#bar{t} m=171.5',  't#bar{t} m=173.5'],
-                            'Singletop':['Single top m=169.5', 'Single top m=175.5']}, 0, {'tbart':1./2.,'Singletop':1./6.}),
-        ('UE',             {'tbart':['t#bar{t} UEdn',     't#bar{t} UEup']}        , 2, 1.0 ),
-        ('hdamp',          {'tbart':['t#bar{t} hdamp dn', 't#bar{t} hdamp up']}    , 2, 1.0 ),
-        ('ISR',            {'tbart':['t#bar{t} isr dn',   't#bar{t} isr up'],
-                            'Singletop':['Single top isr dn', 'Single top isr up']}, 2, 1.0 ),
-        ('FSR',            {'tbart':['t#bar{t} fsr dn',   't#bar{t} fsr up'],
-                            'Singletop':['Single top fsr dn', 'Single top fsr up']} , 2, 1.0 ),
-        #('ttPSScale' ,     {'tbart':['t#bar{t} scale down','t#bar{t} scale up']} , 2, 1.0  ),
-        #('ttGenerator',    {'tbart':['t#bar{t} amc@nlo FxFx']},                    1, 1.0  ),
-        #('ttPartonShower', {'tbart':['t#bar{t} Herwig++']},                        1, 1.0  ),
-        ('tWttInterf',     {'Singletop':   ['Single top DS']},                      2, 1.0 ),
-        ('tWMEScale',      {'Singletop':   ['Single top me dn', 'Single top me up']},
-                                                                                    2, 1.0 ),
-        #('tWQCDScale',     {'tW':   ['tW scale down','tW scale up']},              1, 1.0 )
+        ('mtop',           {'tbart':['t#bar{t} m=171.5',  't#bar{t} m=173.5']}       , 1, 1./2.),
+        ('st_wid',         {'Singletop':['Single top m=169.5', 'Single top m=175.5']}, 1, 1./6.),
+        ('UE',             {'tbart':['t#bar{t} UEdn',     't#bar{t} UEup']}          , 2, 1.0 ),
+        ('CR',             {'tbart':['t#bar{t} QCDbased', 't#bar{t} gluon move']}    , 2, 1.0 ),
+        ('hdamp',          {'tbart':['t#bar{t} hdamp dn', 't#bar{t} hdamp up']}      , 2, 1.0 ),
+        ('ISR',            {'tbart':['t#bar{t} isr dn',   't#bar{t} isr up']}        , 2, 1.0 ),
+        ('FSR',            {'tbart':['t#bar{t} fsr dn',   't#bar{t} fsr up']}        , 2, 1.0 ),
+        ('ISR_st',         {'Singletop':['Single top isr dn', 'Single top isr up']}  , 2, 1.0 ),
+        ('FSR_st',         {'Singletop':['Single top fsr dn', 'Single top fsr up']}  , 2, 1.0 ),
+        ('tWttInterf',     {'Singletop':   ['Single top DS']}                        , 2, 1.0 ),
+        ('tWMEScale',      {'Singletop':   ['Single top me dn', 'Single top me up']} , 2, 1.0 ),
         ]
 
 

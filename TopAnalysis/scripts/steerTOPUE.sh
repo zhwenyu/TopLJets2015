@@ -30,6 +30,7 @@ eosdir=/store/cmst3/group/top/ReReco2016/b312177
 dataeos=/store/cmst3/group/top/ReReco2016/be52dbe_03Feb2017
 markuseos=/eos/user/m/mseidel/ReReco2016/b312177_merged/
 efeeos=/store/group/phys_top/efe/ue_ttbar_alpha_s_isr/
+efeeos2=/store/group/phys_top/efe/
 summaryeosdir=/store/cmst3/group/top/TopUE
 outdir=${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/UEanalysis/
 wwwdir=~/www/TOP-17-015
@@ -41,18 +42,21 @@ case $WHAT in
 
     TESTSEL )
 	file=root://eoscms//eos/cms/store/cmst3/group/top/ReReco2016/b312177/MC13TeV_TTJets/MergedMiniEvents_0_ext0.root
+        file=root://eoscms//eos/cms/store/cmst3/group/top/ReReco2016/b312177/MC13TeV_TTJets2l2nu_noSC/MergedMiniEvents_0_ext0.root
         #file==root://eoscms//eos/cms/store/cmst3/group/top/ReReco2016/b312177/MC13TeV_TTJets2l2nu_amcatnlo/MergedMiniEvents_1_ext0.root
 	#file=root://eoscms//eos/cms/store/cmst3/group/top/ReReco2016/b312177/Data13TeV_MuonEG_2016D/MergedMiniEvents_0.root
-	analysisWrapper \
-	    --in ${file} \
-	    --out ue_test.root \
-	    --era ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/era2016 \
-	    --method TOP-UE::RunTopUE \
-	    --runSysts \
-	    --ch 0;
-        #for step in 1 2; do
-	#    python test/TopUEAnalysis/runUEanalysis.py -i ue_test.root --step ${step} --ptThr 1.0,0.9  --obs chmult --slice ptll=0,9999. --reg ptll=awa -o ./UEanalysis_test;
-        #done
+	outFile=ue_test_nosc.root
+        #analysisWrapper \
+	#    --in ${file} \
+	#    --out ue_test.root \
+	#    --era ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/era2016 \
+	#    --method TOP-UE::RunTopUE \
+	#    --runSysts \
+	#    --ch 0;
+        for step in 1; do
+	    #python test/TopUEAnalysis/runUEanalysis.py -i ue_test.root --step ${step} --ptThr 1.0,0.9  --obs chmult --slice ptll=0,9999. --reg ptll=awa -o ./UEanalysis_test;
+            python test/TopUEAnalysis/runUEanalysis.py -i ue_test.root  --ptThr 0.9,0.9 --step ${step} --obs chmult -o ./UEanalysis_test;
+        done
 	#python test/TopUEAnalysis/runUEanalysis.py --step 1 -o ./UEanalysis_test;
 	#python test/TopUEAnalysis/runUEanalysis.py -i ue_test.root      --step 2 -q local -o ./UEanalysis_test;
 	#python test/TopUEAnalysis/showFastFinalDistributions.py UEanalysis_test/analysis/Chunks/ue_test.root --cfg ./UEanalysis_test/analysisaxiscfg.pck
@@ -60,11 +64,12 @@ case $WHAT in
 
     SEL )
         commonOpts="-q ${queue} -o ${summaryeosdir}      --era era2016 -m TOP-UE::RunTopUE --ch 0 --runSysts";
-	#python scripts/runLocalAnalysis.py -i ${eosdir}  --farmappendix TopUEMC ${commonOpts} --only MC;
-	#python scripts/runLocalAnalysis.py -i ${dataeos} --farmappendix TopUEMC ${commonOpts} --only Data;        
+	python scripts/runLocalAnalysis.py -i ${eosdir}  --farmappendix TopUEMC ${commonOpts} --only MC;
+	python scripts/runLocalAnalysis.py -i ${dataeos} --farmappendix TopUEMC ${commonOpts} --only Data;        
         #python scripts/runLocalAnalysis.py -i ${markuseos} --farmappendix TopUEMC ${commonOpts} --only herwig7,sherpa,pythia8_asfsr;
-        commonOpts="${commonOpts} -o `pwd`/UEanalysis"
-        python scripts/runLocalAnalysis.py -i ${efeeos} --farmappendix TopUEMC ${commonOpts};
+        #commonOpts="${commonOpts} -o `pwd`/UEanalysis"
+        #python scripts/runLocalAnalysis.py -i ${efeeos} --farmappendix TopUEMCASISR  ${commonOpts} --ignore "~";
+        #python scripts/runLocalAnalysis.py -i ${efeeos2} --farmappendix TopUEMCMPICR ${commonOpts} --only mpi_off,cr_off --ignore "~";        
 	;;
 
     MERGESEL )
@@ -96,20 +101,32 @@ case $WHAT in
 	baseFiles=${base}_0.root,${base}_1.root,${base}_2.root,${base}_3.root,${base}_4.root
 
 	echo "Preparing analysis configuration based on ${baseFiles} - this will take a long time..."
-        obs=("chavgpt" "chavgpz") #"C" "D" "sphericity" "aplanarity" "chmult" "chavgpt" "chavgpz" "chfluxz" "chflux")
+        obs=("maxRap" "rapDist") #"C" "D" "sphericity" "aplanarity" "chmult" "chavgpt" "chavgpz" "chfluxz" "chflux")
         analyses=(
-#            "" 
+            "" 
 #            "--slice nj=0,1" 
 #            "--slice nj=1,2" 
 #            "--slice nj=2,999" 
+#
+#            "--slice nj=0,1   --reg ptll=tra" 
+#            "--slice nj=0,1   --reg ptll=tow" 
+#            "--slice nj=0,1   --reg ptll=awa" 
+#            "--slice nj=1,2   --reg ptll=tra" 
+#            "--slice nj=1,2   --reg ptll=tow" 
+#            "--slice nj=1,2   --reg ptll=awa" 
+#            "--slice nj=2,999 --reg ptll=tra" 
+#            "--slice nj=2,999 --reg ptll=tow" 
+#            "--slice nj=2,999 --reg ptll=awa" 
+#
+#
 #            "--slice mll=0,60" 
 #            "--slice mll=60,120" 
 #            "--slice mll=120,200" 
 #            "--slice mll=200,9999" 
-            "--slice chmult=0,15"
-            "--slice chmult=15,30"
-            "--slice chmult=30,45"
-            "--slice chmult=45,9999"
+#            "--slice chmult=0,15"
+#            "--slice chmult=15,30"
+#            "--slice chmult=30,45"
+#            "--slice chmult=45,9999"
 #            "--reg ptll=awa" 
 #            "--reg ptll=tow" 
 #            "--reg ptll=tra"
@@ -149,11 +166,12 @@ case $WHAT in
         done
         
         #create the condor submission scripts but don't send them yet
-        a=(`ls UEanalysis/*/*/*.pck`)
+        a=(`ls UEanalysis/*/inc/*.pck`)
         for i in ${a[@]}; do
             dir=`dirname ${i}`
             echo ${dir}
             python test/TopUEAnalysis/runUEanalysis.py -i ${summaryeosdir}/Chunks --step 2 -q ${queue} -o ${dir} --dryRun;
+            #cd ${dir}; condor_submit condor.sub; cd -;
         done
 
 	;;
@@ -166,8 +184,10 @@ case $WHAT in
         ;;
     SUBMITSPECIALANA )
         obs=("sphericity" "aplanarity" "C" "D" "chmult" "chavgpt" "chavgpz" "chfluxz" "chflux")
+        obs=("chavgpt" "chavgpz")
         for i in ${obs[@]}; do
             a=(`ls store/TOP-17-015/${i}`)
+            a=("nj=0,1_ptll=awa" "nj=0,1_ptll=tow" "nj=0,1_ptll=tra" "nj=1,2_ptll=awa" "nj=1,2_ptll=tow" "nj=1,2_ptll=tra" "nj=2,999_ptll=awa" "nj=2,999_ptll=tow" "nj=2,999_ptll=tra")
             for j in ${a[@]}; do
                 dir=store/TOP-17-015/${i}/${j};
                 if [ -d ${dir} ]; then
@@ -175,11 +195,12 @@ case $WHAT in
                     mkdir -p UEanalysis/${i}/${j};
                     cp -v ${dir}/analysis*.pck UEanalysis/${i}/${j};
 
-                    echo "Creating jobs for special MC: asfsr,sherpa,herwig7"
-                    python test/TopUEAnalysis/runUEanalysis.py -i ${summaryeosdir}/Chunks --step 2 -q ${queue} -o UEanalysis/${i}/${j} --dryRun --only asfsr,sherpa,herwig7;
+                    echo "Creating jobs for special MC (gen only)"
+                    python test/TopUEAnalysis/runUEanalysis.py -i /eos/cms/store/cmst3/group/top/TopUE_extra/Chunks --step 2 -q ${queue} -o UEanalysis/${i}/${j} --dryRun;
                     cd UEanalysis/${i}/${j};
                     condor_submit condor.sub;
-                    cd -
+                    cd -;
+                    #sleep 30s;
                 fi
             done
         done
@@ -211,10 +232,10 @@ case $WHAT in
     UNFOLDANA )
         dir=$TAGANA
         commonOpts="-o ${dir}/unfold --plotter ${dir}/plots/plotter.root --syst ${dir}/plots/syst_plotter.root -d ${dir}/Chunks/"            
-        python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 0;
-        python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 1;
-        python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 2;
-        python test/TopUEAnalysis/showUnfoldSummary.py -i ${dir}/unfold/unfold_summary.root;
+        #python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 0;
+        #python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 1;
+        #python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 2;
+        #python test/TopUEAnalysis/showUnfoldSummary.py -i ${dir}/unfold/unfold_summary.root;
         python test/TopUEAnalysis/showFinalDistributions.py \
             --cfg ${dir}/analysiscfg.pck \
             ${dir}/unfold/unfold_summary.root \
@@ -250,6 +271,9 @@ case $WHAT in
         for s in 1 2; do
             python test/TopUEAnalysis/showFinalProfiles.py -i ${TAGANA} -s ${s};
         done
+        if [[ $dir = *"chavgp"* ]]; then
+            python test/TopUEAnalysis/showFinalProfiles.py -i ${TAGANA} -s 3;
+        fi
         a=(`ls ${dir}/ueprofile*.{png,pdf}`)
         for i in ${a[@]}; do
             cp -v ${i} ${wwwdir}/ana_${ana}/${ana}_`basename ${i}`;

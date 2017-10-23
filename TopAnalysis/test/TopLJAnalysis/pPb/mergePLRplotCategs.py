@@ -139,7 +139,7 @@ label.DrawLatex(0.50,0.87 if noPulls else 0.86,'#bf{%s}'%catTitle)
 pullGr=plots['data'].makeResidHist(plots['totalpdf'],True,True)
 ndof=pullGr.GetN()
 #if not noPulls : 
-label.DrawLatex(0.50,0.49,'#chi^{2}/dof = %3.1f/%d'%(totalchisq*ndof,ndof))
+#label.DrawLatex(0.50,0.49,'#chi^{2}/dof = %3.1f/%d'%(totalchisq*ndof,ndof))
 
 leg=ROOT.TLegend(0.49,0.85 if noPulls else 0.83,0.8,0.56)
 leg.SetFillStyle(0)

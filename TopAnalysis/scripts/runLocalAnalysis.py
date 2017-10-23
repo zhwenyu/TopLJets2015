@@ -47,6 +47,7 @@ def main():
     parser.add_option('-m', '--method',      dest='method',      help='method to run [%default]',                   default='TOP-16-006::RunTop16006',  type='string')
     parser.add_option('-i', '--in',          dest='input',       help='input directory with files or single file [%default]',  default=None,       type='string')
     parser.add_option('-o', '--out',         dest='output',      help='output directory (or file if single file to process)  [%default]',  default='analysis', type='string')
+    parser.add_option(      '--ignore',      dest='ignoreList',  help='list of tags to ignore  [%default]',                     default=None, type='string')
     parser.add_option(      '--only',        dest='only',        help='csv list of samples to process  [%default]',             default=None,       type='string')
     parser.add_option(      '--skip',        dest='skip',        help='csv list of samples to skip  [%default]',             default=None,       type='string')
     parser.add_option(      '--runSysts',    dest='runSysts',    help='run systematics  [%default]',                            default=False,      action='store_true')
@@ -117,6 +118,9 @@ def main():
     cmsswBase=os.environ['CMSSW_BASE']
     if not cmsswBase in opt.era : opt.era=cmsswBase+'/src/TopLJets2015/TopAnalysis/data/'+opt.era
 
+    ignoreList=[]
+    if opt.ignoreList: ignoreList=opt.ignoreList.split(',')
+
     #process tasks
     task_list = []
     processedTags=[]
@@ -129,7 +133,7 @@ def main():
             task_list.append( (opt.method,inF,outF,opt.channel,opt.charge,opt.flav,opt.runSysts,systVar,opt.era,opt.tag,opt.debug) )
     else:
 
-        inputTags=getEOSlslist(directory=opt.input,prepend='')
+        inputTags=getEOSlslist(directory=opt.input,prepend='',ignoreList=ignoreList)
         for baseDir in inputTags:
 
             tag=os.path.basename(baseDir)
@@ -152,7 +156,7 @@ def main():
                         break
                 if not processThisTag : continue
 
-            input_list=getEOSlslist(directory='%s/%s' % (opt.input,tag) )
+            input_list=getEOSlslist(directory='%s/%s' % (opt.input,tag),ignoreList=ignoreList)
             
             for systVar in varList:
                 nexisting = 0
@@ -161,7 +165,9 @@ def main():
                 
                     outF=os.path.join(opt.output,'Chunks','%s_%d.root' %(tag,ifile))
                     if systVar != 'nominal' and not systVar in tag: outF=os.path.join(opt.output,'Chunks','%s_%s_%d.root' %(tag,systVar,ifile))
-                    if (opt.skipexisting and os.path.isfile(outF)):
+                    fileExists=os.path.isfile(outF)
+                    if outF.find('/store')==0 : fileExists=os.path.isfile('/eos/cms'+outF)
+                    if (opt.skipexisting and fileExists):
                         nexisting += 1
                         continue
                     if (len(outputOnlyList) > 1 and not outF in outputOnlyList):

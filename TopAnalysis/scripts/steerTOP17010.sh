@@ -11,8 +11,7 @@ if [ "$#" -lt 1 ]; then
     echo "        MERGE        - merge the output of the analysis jobs";
     echo "        BKG          - estimate DY scale factor from data";
     echo "        DY           - estimate DY scale factor from data";
-    echo "        PLOT_P1      - runs the plotter tool on the analysis outputs";
-    echo "        PLOT_P2      - runs the plotter tool on the analysis outputs";
+    echo "        PLOT         - runs the plotter tool on the analysis outputs";
     echo "        WWW          - moves the analysis plots to an afs-web-based area";
     echo "        HYPOTEST     - create the datacards, steering scripts for hypothesis testing and submit to batch";
     echo "        PLOTHYPOTEST - create summaries of the hypothesis tests";
@@ -31,33 +30,34 @@ whoami=`whoami`
 myletter=${whoami:0:1}
 eosdir=/store/cmst3/group/top/ReReco2016/b312177
 dataeosdir=/store/cmst3/group/top/ReReco2016/be52dbe_03Feb2017
-summaryeosdir=/store/cmst3/group/top/TOP-17-010/
-COMBINERELEASE=~/CMSSW_7_4_7/src/
-outdir=/afs/cern.ch/work/${myletter}/${whoami}/TOP-17-010/
+summaryeosdir=/store/cmst3/group/top/TOP-17-010-final/
+COMBINERELEASE=${HOME}/scratch0/CMSSW_7_4_7/src/
+outdir=/afs/cern.ch/work/${myletter}/${whoami}/TOP-17-010-final/
 anadir=${outdir}/$2
-wwwdir=~/www/TOP-17-010/
+wwwdir=${HOME}/www/TOP-17-010/
 
 
 RED='\e[31m'
 NC='\e[0m'
 case $WHAT in
     TEST )
-	python scripts/runLocalAnalysis.py -i root://eoscms//eos/cms/store/cmst3/group/top/ReReco2016/b312177/MC13TeV_TTJets/MergedMiniEvents_0_ext0.root \
-            -q local -o /tmp/`whoami`/test.root --era era2016 -m TOP-17-010::RunTop17010 --ch 0 --runSysts;
+        file=root://eoscms//eos/cms/store/cmst3/group/top/ReReco2016/b312177/MC13TeV_SingleTbar_tW/MergedMiniEvents_0_ext0.root
+        #file=root://eoscms//eos/cms/store/cmst3/group/top/ReReco2016/b312177/MC13TeV_TTJets/MergedMiniEvents_0_ext0.root
+	python scripts/runLocalAnalysis.py -i ${file} \
+            -q local -o /tmp/`whoami`/MC13TeV_SingleT_tW_test.root --era era2016 -m TOP-17-010::RunTop17010 --ch 0 --runSysts;
+        python scripts/runTopWidthAnalysis.py -i /tmp/`whoami`/MC13TeV_SingleT_tW_test.root -o /tmp/`whoami`/Chunks -q local;
         ;;
     SEL )
-        commonOpts="-q ${queue} -o ${summaryeosdir} --era era2016 -m TOP-17-010::RunTop17010 --ch 0 --runSysts";
+        commonOpts="-q ${queue} -o ${summaryeosdir} --era era2016 -m TOP-17-010::RunTop17010 --ch 0 --runSysts --skipexisting";
 	python scripts/runLocalAnalysis.py -i ${eosdir} ${commonOpts}     --only MC --farmappendix TOP17010MC;
 	python scripts/runLocalAnalysis.py -i ${dataeosdir} ${commonOpts} --only Data --farmappendix TOP17010Data;
 	;;
     MERGESEL )
 	mkdir -p ${outdir}
-	/afs/cern.ch/project/eos/installation/0.3.84-aquamarine/bin/eos.select -b fuse mount eos;
-	./scripts/mergeOutputs.py eos/cms${summaryeosdir} True ${outdir};	
-	/afs/cern.ch/project/eos/installation/0.3.84-aquamarine/bin/eos.select -b fuse umount eos;
+	./scripts/mergeOutputs.py /eos/cms${summaryeosdir} True ${outdir};	
 	;;
     PLOTSEL )
-        commonOpts="-i ${outdir} --puNormSF puwgtctr  -j data/era2016/samples.json -l ${lumi}  --saveLog --mcUnc ${lumiUnc}"
+        commonOpts="-i ${outdir} --puNormSF puwgtctr  -j data/era2016/samples.json -l ${lumi}  --saveLog --mcUnc ${lumiUnc} --doDataOverMC"
 	python scripts/plotter.py ${commonOpts} 
 	;;
     WWWSEL )
@@ -66,45 +66,34 @@ case $WHAT in
 	cp test/index.php ${wwwdir}/sel
 	;;
     TESTANA )
-	python scripts/runTopWidthAnalysis.py -i root://eoscms//eos/cms//store/cmst3/group/top/TOP-17-010//Chunks/MC13TeV_TTJets_12.root -o ${outdir}/analysis/Chunks -q local;
+	python scripts/runTopWidthAnalysis.py -i root://eoscms//eos/cms/${summaryeosdir}/Chunks/MC13TeV_TTJets_12.root -o ${outdir}/analysis/Chunks -q local;
         ;;
     ANA )
-	python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${outdir}/analysis/Chunks -q ${queue} --only MC;
-        python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${outdir}/analysis/Chunks -q ${queue} --only Data13TeV_SingleE --farm TOP17010DataANA;
-	python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${outdir}/analysis/Chunks -q ${queue} --only Data13TeV_SingleM --farm TOP17010DataANA;
-	python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${outdir}/analysis/Chunks -q ${queue} --only Data13TeV_Double --farm TOP17010DataANA;
+	python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${outdir}/analysis/Chunks -q ${queue} --only MC13TeV;
+        python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${outdir}/analysis/Chunks -q ${queue} --only Data13TeV_Single,Data13TeV_Double --farm TOP17010DataANA;
+        python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${outdir}/analysis/Chunks -q ${queue} --only MuonEG --farm TOP17010DataMuEGANA;
 	;;
     CHECKANA )
-        python scripts/checkAnalysisIntegrity.py ${CMSSW_BASE}/TOP17010ANA ~/work/TOP-17-010/analysis/Chunks/
-        python scripts/checkAnalysisIntegrity.py ${CMSSW_BASE}/TOP17010DataANA ~/work/TOP-17-010/analysis/Chunks/
+        for FARM in TOP17010ANA TOP17010DataANA TOP17010DataMuEGANA; do
+            python scripts/checkAnalysisIntegrity.py ${CMSSW_BASE}/${FARM} ${outdir}/analysis/Chunks;
+        done
         ;;
     MERGE )
 	./scripts/mergeOutputs.py ${outdir}/analysis;
 	;;
     BKG )
-        opts="-j data/era2016/samples.json  -l ${lumi} ${lumiSpecs} --onlyData"
+        opts="-j data/era2016/samples.json  -l ${lumi} ${lumiSpecs} --onlyData --doDataOverMC --mcUnc ${lumiUnc}"
 	python scripts/plotter.py -i ${outdir}/analysis ${opts} --only mll -o dy_plotter.root; 
 	python scripts/runDYRinRout.py --in ${outdir}/analysis/plots/dy_plotter.root --categs 1b,2b --out ${outdir}/analysis/plots/ > ${outdir}/analysis/plots/dysf.dat;
-        opts="${opts} --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck"
+        opts="${opts} --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck --doDataOverMC --mcUnc ${lumiUnc}"
 	python scripts/plotter.py -i ${outdir}/analysis ${opts} --only mll,evcount,dphilb,drlb,met,njets,ptlb,incmlb_w100 -o dysf_plotter.root; 
 	python scripts/plotter.py -i ${outdir}/analysis ${opts} --only count --saveTeX -o count_plotter.root;
 	;;
     PLOT )
         opts="-l ${lumi} ${lumiSpecs} --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck --mcUnc ${lumiUnc} --silent"
         python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json       ${opts};
-        python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/syst_samples.json  ${opts} -o syst_plotter.root;
+        #python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/syst_samples.json  ${opts} -o syst_plotter.root;
         ;;
-    PLOT_P1 )
-	python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --only count --saveTeX -o count_plotter.root --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck > count2.out & 
-        exit
-	python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --only njets,ptlb -o njets_plotter.root --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck > njets2.out &
-    	python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/samples.json      -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --procSF DY:${outdir}/analysis/plots/.dyscalefactors.pck -o plotter.root > plotter.out &
-	python scripts/plotter.py -i ${outdir}/analysis  -j data/era2016/syst_samples.json -l ${lumi} ${lumiSpecs} --mcUnc ${lumiUnc} --silent -o syst_plotter2.root > syst2.out &
-	mv ${outdir}/analysis/plots/syst_plotter.root ${outdir}/analysis/plots/syst_plotter_orig.root
-	python test/TopWidthAnalysis/createtWShapeUncs.py ~/work/TopWidth_era2015/analysis/plots/plotter.root ~/work/TopWidth_era2015/analysis/plots/syst_plotter.root  ${outdir}/analysis/plots/plotter.root;
-	hadd ${outdir}/analysis/plots/syst_plotter.root tW_syst_plotter.root ${outdir}/analysis/plots/syst_plotter_orig.root 
-	mv tW_syst_plotter.root ${outdir}/analysis/plots/tW_syst_plotter.root;	       
-	;;
     COMBPLOT )
 	#combined plots
 	python test/TopWidthAnalysis/combinePlotsForAllCategories.py ptlb       EE1b,EE2b,MM1b,MM2b,EM1b,EM2b     ${outdir}/analysis/plots/plotter.root
@@ -125,16 +114,16 @@ case $WHAT in
 	;;
     HYPOTEST ) 
 	mainHypo=100
-	CATS=("EM2bhighpt")
-        #    "EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt")
+	CATS=("EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt,EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt"
 	#    "EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt"
 	#    "EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt"
-	#)
+	)
         TAGS=("inc_scan") # "ll" "em")
-	altHypo=(20 40 60 80 100 120 140 160 180 200 220 240 260 280 300 350 400)
+	altHypo=(20 40 50 60 70 80 90 100 110 120 130 140 150 160 180 200 220 240 260 280 300 350 400)        
+
 	#data=(-1 100 400)	
-        data=(120)
-        
+        data=(100)
+        queue=8nh
 	#still to be debugged
         #cmd="${cmd} --addBinByBin 0.3" 
 	for h in ${altHypo[@]}; do
@@ -147,27 +136,26 @@ case $WHAT in
 		    cmd="python test/TopWidthAnalysis/runHypoTestDatacards.py"
 		    cmd="${cmd} --combine ${COMBINERELEASE}"
 		    cmd="${cmd} --mainHypo=${mainHypo} --altHypo ${h} --pseudoData=${d}"
-		    cmd="${cmd} -s tbart,Singletop" #tW --replaceDYshape"
+		    #cmd="${cmd} -s tbart,Singletop" #tW --replaceDYshape"
+                    cmd="${cmd} -s tbart"
 		    cmd="${cmd} --dist incmlb"		    
-		    cmd="${cmd} --nToys 2000"		    
-		    #cmd="${cmd} -i ${outdir}/analysis/plots/plotter.root"
-		    #cmd="${cmd} --systInput ${outdir}/analysis/plots/syst_plotter.root"
-		    cmd="${cmd} -i /eos/cms/store/cmst3/group/top/TOP-17-010/plotter/plotter.root"
-		    cmd="${cmd} --systInput /eos/cms/store/cmst3/group/top/TOP-17-010/plotter/syst_plotter.root"
+		    cmd="${cmd} --nToys 2000"
+		    cmd="${cmd} -i /eos/cms/${summaryeosdir}/plotter/plotter.root"
+		    cmd="${cmd} --systInput /eos/cms/${summaryeosdir}/plotter/syst_plotter.root"
 		    cmd="${cmd} -c ${icat}"
 		    cmd="${cmd} --rebin 2"            
-		    if [ "$h" == "220" ]; then
-			if [ "$d" == "-1" ]; then
-			    echo "    validation will be included"
-			    cmd="${cmd} --doValidation"
-			fi
-		    fi
+                    cmd="${cmd} --doValidation"
+		    #if [ "$h" == "220" ]; then
+		    #if [ "$d" == "-1" ]; then
+		    #echo "    validation will be included"
+		    #cmd="${cmd} --doValidation"
+		    #fi
+		    #fi
                     
 		    echo "Submitting ($mainHypo,$h,$d,$itag,$icat)"		
 		    stdcmd="${cmd} -o ${outdir}/datacards_${itag}/"
 
                     echo ${stdcmd}
-
 
 		    bsub -q ${queue} sh ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${stdcmd};
 		    #if [ "$itag" == "inc" ]; then

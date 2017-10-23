@@ -161,7 +161,6 @@ case $WHAT in
         python doPRLplots.py -i ~/public/forGeorgios/HIN-17-002/fit_finalworkspace_wmodel0_0.root #fit_finalworkspace_wmodel0_0.root
         for var in mjj mthad mtlep; do
             for cat in 1l4j2b 1l4j1b1q 1l4j2q; do                         
-                continue
                 python mergePLRplotCategs.py $var $cat;        
                 python mergePLRplotCategs.py $var $cat True;        
             done

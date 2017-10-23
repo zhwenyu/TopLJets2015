@@ -8,10 +8,20 @@ import math
 from TopLJets2015.TopAnalysis.storeTools import getEOSlslist
 import MT2Calculator
 
+#REFERENCE WIDTH
+REFWIDTH=1.31
+
+#observable
+NBINSMLB,MINMLB,MAXMLB=20,0.,200.
+
 """
 Take the ratio of two Breit-Wigner functions at fixed mass as a reweighting factor
 """
 def weightTopWidth(tmassList,bwigner,targetWidth,origWidth=1.324):
+
+    #if not available do nothing
+    if not bwigner : return 1.0
+
     bwigner.FixParameter(2,origWidth)
     origNorm=bwigner.Integral(0,300)
 
@@ -32,7 +42,7 @@ Analysis loop
 """
 def runTopWidthAnalysis(fileName,
                         outFileName,
-                        widthList=[0.2,0.4,0.6,0.8,1.0,1.2,1.4,1.6,1.8,2.0,2.2,2.4,2.6,2.8,3.0,3.5,4.0],
+                        widthList=[0.2,0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.1,1.2,1.3,1.4,1.5,1.6,1.8,2.0,2.2,2.4,2.6,2.8,3.0,3.5,4.0],
                         systs=['',
                                'puup','pudn',
                                'btagup','btagdn',
@@ -49,41 +59,6 @@ def runTopWidthAnalysis(fileName,
 
     print '....analysing',fileName,'with output @',outFileName
 
-    #open file
-    isData=False if 'MC13TeV' in fileName else True
-    puNormSF=[1.0,1.0,1.0]
-    if not isData:
-        fIn=ROOT.TFile.Open(fileName)
-        puCorrH=fIn.Get('puwgtctr')
-        nonWgt=puCorrH.GetBinContent(1)
-        for xbin in xrange(2,5):
-            wgt=puCorrH.GetBinContent(xbin)
-            if wgt>0 : puNormSF[xbin-2]=nonWgt/wgt
-        fIn.Close()
-
-    #instantiate the tree
-    tree=ROOT.TChain('twev')
-    tree.AddFile(fileName)
-
-    #check if this is data beforehand
-    if isData:
-        widthList=[1.0]
-        systs=['']
-    else:
-        
-        #add jet energy scale
-        tree.GetEntry(0)
-        for i in xrange(0,tree.j_jes[0].size()):
-            systs += ['jesup_%d'%i,'jesdn_%d'%i]
-
-        #generator level systematics for ttbar
-        if 'TTJets' in fileName or 'SingleT_tW' in fileName:
-            thsysts += ['topptup','topptdn','nloproddec']
-            ngenWgts=tree.nw-15
-            print 'Adding',ngenWgts,'gen-level weights for systs'
-            for i in xrange(1,ngenWgts):  thsysts += ['gen%d'%i]
-        else:
-            widthList=[1.0]
 
     #powheg samples have running width 2%/1GeV
     #see  https://github.com/jfernan2/genproductions/tree/8b309da3427fb5fdcc2dadc1860774f20adb517c/bin/Powheg/production
@@ -106,6 +81,48 @@ def runTopWidthAnalysis(fileName,
     bwigner.FixParameter(1,smMass)
     bwigner.SetParName(2,"#Gamma_{t}")
     bwigner.FixParameter(2,smWidth)
+
+    #open file
+    isData=False if 'MC13TeV' in fileName else True
+    puNormSF=[1.0,1.0,1.0]
+    if not isData:
+        fIn=ROOT.TFile.Open(fileName)
+        puCorrH=fIn.Get('puwgtctr')
+        nonWgt=puCorrH.GetBinContent(1)
+        for xbin in xrange(2,5):
+            wgt=puCorrH.GetBinContent(xbin)
+            if wgt>0 : puNormSF[xbin-2]=nonWgt/wgt
+        fIn.Close()
+
+
+    #instantiate the tree
+    tree=ROOT.TChain('twev')
+    tree.AddFile(fileName)
+
+    #check if this is data beforehand
+    if isData:
+        bwigner=None
+        widthList=[1.0]
+        systs=['']
+    else:
+        
+        #add jet energy scale
+        tree.GetEntry(0)
+        for i in xrange(0,tree.j_jes[0].size()):
+            systs += ['jesup_%d'%i,'jesdn_%d'%i]
+
+        #generator level systematics for ttbar
+        if 'TTJets' in fileName  or 'SingleT_tW' in fileName:
+            thsysts += ['topptup','topptdn','nloproddec']
+            ngenWgts=tree.nw-15
+            print 'Adding',ngenWgts,'gen-level weights for systs'
+            for i in xrange(1,ngenWgts):  thsysts += ['gen%d'%i]
+
+        #single top samples have no width [https://hypernews.cern.ch/HyperNews/CMS/get/top-modeling-and-generators/192.html]
+        #backgrounds also have no width
+        if not 'TTJets' in fileName:
+            bwigner=None
+            widthList=[1.0]
 
     #read the MCFM NLO(prod+dec)/NLO(prod) weights
     mcfmIn=ROOT.TFile.Open('${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/MCFM_todk2tota.root')
@@ -152,17 +169,17 @@ def runTopWidthAnalysis(fileName,
 
                 for w in widthList:
                     var=j+b+i+'_incmlb_w%d'%int(100*w)
-                    observablesH[var]=ROOT.TH1F(var,';Mass(lepton,jet) (Inclusive) [GeV];l+j pairs',30,0,300)
+                    observablesH[var]=ROOT.TH1F(var,';Mass(lepton,jet) (Inclusive) [GeV];l+j pairs',NBINSMLB,MINMLB,MAXMLB)
 
                     var=j+b+i+'_incmlb_w%d_exp'%int(100*w)
                     nsysts=len(systs)
-                    observablesH[var]=ROOT.TH2F(var,';Mass(lepton,jet) (Inclusive) [GeV];Systematics;l+j pairs',30,0,300,nsysts+1,0,nsysts+1)
+                    observablesH[var]=ROOT.TH2F(var,';Mass(lepton,jet) (Inclusive) [GeV];Systematics;l+j pairs',NBINSMLB,MINMLB,MAXMLB,nsysts+1,0,nsysts+1)
                     for isyst in xrange(0,nsysts):
                         observablesH[var].GetYaxis().SetBinLabel(isyst+1,systs[isyst])
 
                     var=j+b+i+'_incmlb_w%d_gen'%int(100*w)
                     nsysts=len(thsysts)
-                    observablesH[var]=ROOT.TH2F(var,';Mass(lepton,jet) (Inclusive) [GeV];Systematics;l+j pairs',30,0,300,nsysts+1,0,nsysts+1)
+                    observablesH[var]=ROOT.TH2F(var,';Mass(lepton,jet) (Inclusive) [GeV];Systematics;l+j pairs',NBINSMLB,MINMLB,MAXMLB,nsysts+1,0,nsysts+1)
                     for isyst in xrange(0,nsysts):
                         observablesH[var].GetYaxis().SetBinLabel(isyst+1,thsysts[isyst])
 
@@ -209,15 +226,13 @@ def runTopWidthAnalysis(fileName,
                 tmassList.append( tops[tid].M() )
         widthWeight={}
         for w in widthList:
-            widthWeight[w]=weightTopWidth(tmassList,bwigner,w*smWidth,smWidth)
-            #print w,tmassList,widthWeight[w]
+            widthWeight[w]=weightTopWidth(tmassList,bwigner,w*REFWIDTH,smWidth)
 
             #paranoid check for the reweighted mass based on the Breit-Wigner
             var='tmass_w%d'%int(100*w)
             for mtop in tmassList:
                 observablesH[var].Fill(mtop,baseEvWeight*widthWeight[w])
-
-
+                
         #preselect the b-jets (central, b-tag up, b-tag dn, l-tag up, l-tag dn, jer up, jer dn, jes_1 up, jes_1 dn, ...)
         bjets     = [ [], [], [], [], [], [], [] ]
         otherjets = [ [], [], [], [], [], [], [] ]
