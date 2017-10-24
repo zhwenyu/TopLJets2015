@@ -31,6 +31,7 @@ dataeos=/store/cmst3/group/top/ReReco2016/be52dbe_03Feb2017
 markuseos=/eos/user/m/mseidel/ReReco2016/b312177_merged/
 efeeos=/store/group/phys_top/efe/ue_ttbar_alpha_s_isr/
 efeeos2=/store/group/phys_top/efe/
+efeeos3=/store/group/phys_top/efe/output_ue_root_cp5
 summaryeosdir=/store/cmst3/group/top/TopUE
 outdir=${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/UEanalysis/
 wwwdir=~/www/TOP-17-015
@@ -64,12 +65,13 @@ case $WHAT in
 
     SEL )
         commonOpts="-q ${queue} -o ${summaryeosdir}      --era era2016 -m TOP-UE::RunTopUE --ch 0 --runSysts";
-	python scripts/runLocalAnalysis.py -i ${eosdir}  --farmappendix TopUEMC ${commonOpts} --only MC;
-	python scripts/runLocalAnalysis.py -i ${dataeos} --farmappendix TopUEMC ${commonOpts} --only Data;        
+	#python scripts/runLocalAnalysis.py -i ${eosdir}  --farmappendix TopUEMC ${commonOpts} --only MC;
+	#python scripts/runLocalAnalysis.py -i ${dataeos} --farmappendix TopUEMC ${commonOpts} --only Data;        
         #python scripts/runLocalAnalysis.py -i ${markuseos} --farmappendix TopUEMC ${commonOpts} --only herwig7,sherpa,pythia8_asfsr;
-        #commonOpts="${commonOpts} -o `pwd`/UEanalysis"
+        commonOpts="${commonOpts} -o `pwd`/UEanalysis"
         #python scripts/runLocalAnalysis.py -i ${efeeos} --farmappendix TopUEMCASISR  ${commonOpts} --ignore "~";
         #python scripts/runLocalAnalysis.py -i ${efeeos2} --farmappendix TopUEMCMPICR ${commonOpts} --only mpi_off,cr_off --ignore "~";        
+        python scripts/runLocalAnalysis.py -i ${efeeos3} --farmappendix TopUEMCMPICR ${commonOpts} --ignore "~";        
 	;;
 
     MERGESEL )

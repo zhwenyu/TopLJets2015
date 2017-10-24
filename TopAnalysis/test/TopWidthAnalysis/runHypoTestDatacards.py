@@ -163,14 +163,16 @@ def doCombineScript(opt,args,outDir,dataCardList):
         script.write('python ${CMSSW_BASE}/src/HiggsAnalysis/CombinedLimit/test/systematicsAnalyzer.py datacard.dat --all -f html > systs_summary.html;\n')
         script.write('\n')
 
-        commonOpts="-m 172.5 --setPhysicsModelParameters x=${x},r=1 --saveWorkspace --robustFit 1 --minimizerAlgoForMinos Minuit2,Migrad "
+        commonOpts="-m 172.5 --setPhysicsModelParameters x=${x},r=1 --setPhysicsModelParameterRanges r=0.8,1.2 --saveWorkspace --robustFit 1 --minimizerAlgoForMinos Minuit2,Migrad --minimizerAlgo Minuit2"
         script.write('### likelihood scans and fits\n')
-        script.write('for x in 0 1; do\n')
-        script.write('   combine workspace.root -M MultiDimFit -P x --floatOtherPOI=1  --algo=grid --points=50 -t -1 --expectSignal=1 -n x_scan_${x}_exp %s;\n'%commonOpts)
-        script.write('   combine workspace.root -M MaxLikelihoodFit --redefineSignalPOIs x -t -1 --expectSignal=1 -n x_fit_${x}_exp %s;\n'%commonOpts)
-        script.write('done\n')
+        #script.write('for x in 0 1; do\n')
+        #script.write('   combine workspace.root -M MultiDimFit -P x --floatOtherPOI=1  --algo=grid --points=50 -t -1 --expectSignal=1 -n x_scan_${x}_exp %s;\n'%commonOpts)
+        #script.write('   combine workspace.root -M MaxLikelihoodFit --redefineSignalPOIs x -t -1 --expectSignal=1 -n x_fit_${x}_exp --saveWithUncertainties %s;\n'%commonOpts)
+        #script.write('done\n')
         script.write('combine workspace.root -M MultiDimFit -P x --floatOtherPOI=1 --algo=grid --points=50 -n x_scan_obs %s\n'%commonOpts)
-        script.write('combine workspace.root -M MaxLikelihoodFit --redefineSignalPOIs x -n x_fit_obs %s;\n'%commonOpts)
+        script.write('combine workspace.root -M MultiDimFit -P r --floatOtherPOI=1 --algo=grid --points=50 -n x_scan_obs %s\n'%commonOpts)
+        script.write('combine workspace.root -M MaxLikelihoodFit --saveWithUncertainties --redefineSignalPOIs x -n x_fit_obs %s;\n'%commonOpts)
+        script.write('combine workspace.root -M MaxLikelihoodFit --saveWithUncertainties --redefineSignalPOIs r -n r_fit_obs %s;\n'%commonOpts)
         script.write('\n')
 
     script.write('### SCAN \n')
@@ -214,9 +216,9 @@ def doDataCards(opt,args):
 
     #define RATE systematics : syst,val,pdf,whiteList,blackList  (val can be a list of values [-var,+var])
     rateSysts=[
-          ('lumi_13TeV',       1.025,    'lnN',    [],                  ['DY']),
+          ('lumi_13TeV',       1.025,    'lnN',    [],                  ['DY','W']),
           ('DYnorm_*CH*',      1.30,     'lnN',    ['DY'],              []),
-          ('Wnorm_th',         1.30,     'lnN',    ['W'],               []),
+          ('Wnorm_th',         1.50,     'lnN',    ['W'],               []),
           ('tWnorm_th',        1.15,     'lnN',    tWScenarioList,      []),
           #('tnorm_th',         1.044,    'lnN',    ['tch'],             []),
           ('VVnorm_th',        1.20,     'lnN',    ['Multiboson'],      []),
@@ -225,18 +227,19 @@ def doDataCards(opt,args):
 
     #define the SHAPE systematics from weighting, varying object scales, efficiencies, etc.
     # syst,weightList,whiteList,blackList,shapeTreatement=0 (none), 1 (shape only), 2 (factorizeRate),nsigma
+    # a - in front of the process name in the black list will exclude rate uncertainties
     weightingSysts=[
-        ('ees',            ['ees'],                                    [],             ['DY'], 2, 1.0),
-        ('mes',            ['mes'],                                    [],             ['DY'], 2, 1.0),
-        ('jer',            ['jer'],                                    [],             ['DY'], 2, 1.0),
-        ('trig_*CH*',      ['trig'],                                   [],             ['DY'], 2, 1.0),
-        ('sel_E',          ['esel'],                                   [],             ['DY'], 2, 1.0),
-        ('sel_M',          ['msel'],                                   [],             ['DY'], 2, 1.0),
-        ('ltag',           ['ltag'],                                   [],             ['DY'], 2, 1.0),
-        ('btag',           ['btag'],                                   [],             ['DY'], 2, 1.0),
-        ('bfrag',          ['bfrag'],                                  [],             ['DY'], 2, 1.0),
-        ('semilep',        ['semilep'],                                [],             ['DY'], 2, 1.0),
-        ('pu',             ['pu'],                                     [],             ['DY'], 1, 1.0),
+        ('ees',            ['ees'],                                    [],             ['DY','-W'], 2, 1.0),
+        ('mes',            ['mes'],                                    [],             ['DY','-W'], 2, 1.0),
+        ('jer',            ['jer'],                                    [],             ['DY','-W'], 2, 1.0),
+        ('trig_*CH*',      ['trig'],                                   [],             ['DY','-W'], 2, 1.0),
+        ('sel_E',          ['esel'],                                   [],             ['DY','-W'], 2, 1.0),
+        ('sel_M',          ['msel'],                                   [],             ['DY','-W'], 2, 1.0),
+        ('ltag',           ['ltag'],                                   [],             ['DY','-W'], 2, 1.0),
+        ('btag',           ['btag'],                                   [],             ['DY','-W'], 2, 1.0),
+        ('bfrag',          ['bfrag'],                                  [],             ['DY','-W'], 2, 1.0),
+        ('semilep',        ['semilep'],                                [],             ['DY','-W'], 2, 1.0),
+        ('pu',             ['pu'],                                     [],             ['DY','-W'], 1, 1.0),
         ('tttoppt',        ['toppt'],                                  ttScenarioList, [],     1, 1.0),
         ('ttMEqcdscale',   ['gen%d'%ig for ig in[3,5,6,4,8,10] ],      ttScenarioList, [],     1, 1.0),
         ('ttPDF',          ['gen%d'%(11+ig) for ig in xrange(0,100) ], ttScenarioList, [],     0, 1.0)
@@ -572,7 +575,7 @@ def doDataCards(opt,args):
                     if n==0 : continue
                     nvarUp=ROOT.TMath.Abs(1-nUp/n)
                     nvarDn=ROOT.TMath.Abs(1-nDn/n )
-                    iRateVars[proc]=1.0+0.5*(nvarUp+nvarDn)
+                    iRateVars[proc]=min(1.0+0.5*(nvarUp+nvarDn),2.0)
                     if iRateVars[proc]<1.001 : del iRateVars[proc]
 
 
@@ -606,18 +609,18 @@ def doDataCards(opt,args):
             if len(iRateVars)==0: continue
             datacard.write('%32s %8s'%(syst+'Rate',pdf))
             for sig in mainSignalList:
-                if sig in iRateVars and ((len(whiteList)==0 and not sig in blackList) or sig in whiteList):
+                if sig in iRateVars and ((len(whiteList)==0 and not sig in blackList and not '-'+sig in blackList) or sig in whiteList):
                     datacard.write('%15s'%('%3.3f'%iRateVars[sig]))
                 else:
                     datacard.write('%15s'%'-')
             for sig in altSignalList if opt.useAltRateUncs else mainSignalList:
-                if sig in iRateVars and ((len(whiteList)==0 and not sig in blackList) or sig in whiteList):
+                if sig in iRateVars and ((len(whiteList)==0 and not sig in blackList and not '-'+sig in blackList) or sig in whiteList):
                     datacard.write('%15s'%('%3.3f'%iRateVars[sig]))
                 else:
                     datacard.write('%15s'%'-')
             for proc in exp:
                 if proc in mainSignalList+altSignalList : continue
-                if proc in iRateVars and ((len(whiteList)==0 and not proc in blackList) or proc in whiteList):
+                if proc in iRateVars and ((len(whiteList)==0 and not proc in blackList and not '-'+proc in blackList) or proc in whiteList):
                     datacard.write('%15s'%('%3.3f'%iRateVars[proc]))
                 else:
                     datacard.write('%15s'%'-')
