@@ -186,10 +186,9 @@ case $WHAT in
         ;;
     SUBMITSPECIALANA )
         obs=("sphericity" "aplanarity" "C" "D" "chmult" "chavgpt" "chavgpz" "chfluxz" "chflux")
-        obs=("chavgpt" "chavgpz")
         for i in ${obs[@]}; do
             a=(`ls store/TOP-17-015/${i}`)
-            a=("nj=0,1_ptll=awa" "nj=0,1_ptll=tow" "nj=0,1_ptll=tra" "nj=1,2_ptll=awa" "nj=1,2_ptll=tow" "nj=1,2_ptll=tra" "nj=2,999_ptll=awa" "nj=2,999_ptll=tow" "nj=2,999_ptll=tra")
+            #a=("nj=0,1_ptll=awa" "nj=0,1_ptll=tow" "nj=0,1_ptll=tra" "nj=1,2_ptll=awa" "nj=1,2_ptll=tow" "nj=1,2_ptll=tra" "nj=2,999_ptll=awa" "nj=2,999_ptll=tow" "nj=2,999_ptll=tra")
             for j in ${a[@]}; do
                 dir=store/TOP-17-015/${i}/${j};
                 if [ -d ${dir} ]; then
@@ -198,7 +197,7 @@ case $WHAT in
                     cp -v ${dir}/analysis*.pck UEanalysis/${i}/${j};
 
                     echo "Creating jobs for special MC (gen only)"
-                    python test/TopUEAnalysis/runUEanalysis.py -i /eos/cms/store/cmst3/group/top/TopUE_extra/Chunks --step 2 -q ${queue} -o UEanalysis/${i}/${j} --dryRun;
+                    python test/TopUEAnalysis/runUEanalysis.py -i /eos/cms/store/cmst3/group/top/TopUE_extra/Chunks --only cp5 --step 2 -q ${queue} -o UEanalysis/${i}/${j} --dryRun;
                     cd UEanalysis/${i}/${j};
                     condor_submit condor.sub;
                     cd -;

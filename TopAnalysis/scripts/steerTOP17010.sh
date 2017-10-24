@@ -114,15 +114,14 @@ case $WHAT in
 	;;
     HYPOTEST ) 
 	mainHypo=100
-	CATS=("EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt,EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt"
-	#    "EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt"
-	#    "EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt"
+	CATS=(
+            "EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt,EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt"
+	    "EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt"
+	    "EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt"
 	)
-        TAGS=("inc_scan") # "ll" "em")
+        TAGS=("inc_scan" "ll" "em")
 	altHypo=(20 40 50 60 70 80 90 100 110 120 130 140 150 160 180 200 220 240 260 280 300 350 400)        
-
-	#data=(-1 100 400)	
-        data=(100)
+	data=(-1 100 400)	
         queue=8nh
 	#still to be debugged
         #cmd="${cmd} --addBinByBin 0.3" 
@@ -177,7 +176,7 @@ case $WHAT in
 	cd ${COMBINERELEASE}/
 	eval `scramv1 r -sh`
 	cd -
-	TAGS=("inc" "ll" "em" "inc_nloproddec" "inc_widthx4")
+	TAGS=("inc") # "ll" "em" "inc_nloproddec" "inc_widthx4")
 	for i in ${!TAGS[*]}; do
 	    itag=${TAGS[${i}]}
 	    python ${summaryScript} -i ${outdir}/datacards_${itag}/ --doCLs --recreateCLsSummary --doNuisances --doFitSummary	

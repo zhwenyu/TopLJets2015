@@ -177,9 +177,11 @@ def doCombineScript(opt,args,outDir,dataCardList):
 
     script.write('### SCAN \n')
     script.write('\n')
-    commonOpts="-m 172.5 -S 0 -M HybridNew --testStat=TEV --onlyTestStat --saveToys --saveHybridResult --robustFit 1 --minimizerAlgoForMinos Minuit2,Migrad"
+    commonOpts="-m 172.5 -S 0 -M HybridNew --testStat=TEV --onlyTestStat --saveToys --saveHybridResult --minimizerAlgo Minuit2"
     script.write("combine %s --singlePoint 0  workspace.root -n scan0n\n"%commonOpts)
+    script.write("mv higgsCombinescan0n.HybridNew.mH172.5.123456.root testStat_scan0n.root\n")
     script.write("combine %s --singlePoint 1  workspace.root -n scan1n\n"%commonOpts)
+    script.write("mv higgsCombinescan1n.HybridNew.mH172.5.123456.root testStat_scan1n.root\n")
 
 
     #script.write('### CLs\n')
@@ -319,8 +321,8 @@ def doDataCards(opt,args):
 
                 newProc=('%sw100'%proc).replace('.','p')
                 pseudoSignalAccept.append(newProc)
-                #sf=exp[newProc].Integral()/pseudoSignal[proc].Integral()
-                #pseudoSignal[proc].Scale(sf)
+                sf=exp[newProc].Integral()/pseudoSignal[proc].Integral()
+                pseudoSignal[proc].Scale(sf)
                 obs.Add( pseudoSignal[proc] )
 
             if len(opt.pseudoDataFromWgt) : pseudoSignalAccept+=altSignalList
