@@ -87,6 +87,10 @@ switchOnVIDElectronIdProducer(process, dataFormat)
 
 # define which IDs we want to produce
 my_id_modules = ['RecoEgamma.ElectronIdentification.Identification.cutBasedElectronID_Summer16_80X_V1_cff']
+#                 'RecoEgamma.ElectronIdentification.Identification.cutBasedElectronHLTPreselecition_Summer16_V1_cff',
+#                 'RecoEgamma.ElectronIdentification.Identification.heepElectronID_HEEPV70_cff',
+#                 'RecoEgamma.ElectronIdentification.Identification.mvaElectronID_Spring16_GeneralPurpose_V1_cff',
+#                 'RecoEgamma.ElectronIdentification.Identification.mvaElectronID_Spring16_HZZ_V1_cff']
                  
 
 #add them to the VID producer
@@ -129,8 +133,8 @@ process.genParticles2HepMC = genParticles2HepMC.clone( genParticles = cms.InputT
 #                                                                                      engineName = cms.untracked.string('TRandom3'),
 #                                                                                     )
 #                                                   )
-
-'''process.source = cms.Source("EmptySource")
+'''
+process.source = cms.Source("EmptySource")
 process.externalLHEProducer = cms.EDProducer("ExternalLHEProducer",
     nEvents = cms.untracked.uint32(options.nevents),
     outputFile = cms.string('cmsgrid_final.lhe'),
@@ -161,7 +165,7 @@ if options.runOnData:
     process.analysis.metFilterBits = cms.InputTag("TriggerResults","","RECO")
 
 if options.runOnData:
-    process.p = cms.Path(process.analysis)
+    process.p = cms.Path(process.analysis*process.egmGsfElectronIDSequence)
 else:
     process.p = cms.Path(process.mergedGenParticles*process.genParticles2HepMC*process.particleLevel*process.egmGsfElectronIDSequence*process.analysis)
 
