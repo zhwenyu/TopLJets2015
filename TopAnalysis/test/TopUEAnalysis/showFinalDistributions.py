@@ -35,6 +35,7 @@ EXTRASETS = [
     ('PW+HW7', 'MC13TeV_TTJets_herwig7.root'),
     ('no MPI', 'MC13TeV_TTJets_MPIoff.root'),
     ('no CR',  'MC13TeV_TTJets_CRoff.root'),
+    #('CP5',    'MC13TeV_TTJets_pythia8_cp5.root'),
     ('#alpha_{S}^{FSR}=0.070','MC13TeV_TTJets_pythia8_asfsr0.070_meon_crdefault.root'),
     ('#alpha_{S}^{FSR}=0.080','MC13TeV_TTJets_pythia8_asfsr0.080_meon_crdefault.root'),
     ('#alpha_{S}^{FSR}=0.090','MC13TeV_TTJets_pythia8_asfsr0.090_meon_crdefault.root'),
@@ -66,10 +67,11 @@ EXTRASETS = [
 PLOTTINGSET_1=[
     ('Data',              '2',  1001,  '#a6cee3', 1 , True,  None),
     ('PW+PY8',            'ep0', 0,    '#000000', 20, False, 0.2),
-    ('ISR up',            'ep0', 0,    '#fdc086', 22, False, 0.5),
-    ('ISR dn',            'ep0', 0,    '#fdc086', 23, False, 0.5),
-    ('FSR up',            'ep0', 0,    '#d95f02', 22, False, 0.8),
-    ('FSR dn',            'ep0', 0,    '#d95f02', 23, False, 0.8),
+    ('ISR up',            'ep0', 0,    '#fdc086', 22, False, 0.4),
+    ('ISR dn',            'ep0', 0,    '#fdc086', 23, False, 0.4),
+    ('FSR up',            'ep0', 0,    '#d95f02', 22, False, 0.6),
+    ('FSR dn',            'ep0', 0,    '#d95f02', 23, False, 0.6),
+    #('CP5',               'ep0', 0,    '#91b58d', 24, False, 0.9),
 ]
 
 PLOTTINGSET_2=[
@@ -91,45 +93,43 @@ PLOTTINGSET_3=[
     ('PW+HW7',      'ep0', 0,    '#386cb0', 23, False, 0.8),
 ]
 
-def compareUEPlots(uePlots,outDir,cuts,obs,plottingSet=PLOTTINGSET_1,pfix=''):
+def compareUEPlots(uePlots,outDir,cuts,obs,plottingSetList=[PLOTTINGSET_1],cmsLabel='#bf{CMS}'):
     """This method dumps the formatted plots to the canvas"""
 
     logX=True if 'chflux' in obs or 'chavg' in obs else False
 
-    #start the canvas
+    #start the main canvas
     c=ROOT.TCanvas('c','c',600,600)
-    c.SetTopMargin(0.05)
-    c.SetRightMargin(0.0)
-    c.SetLeftMargin(0.0)
-    c.SetBottomMargin(0.0)
-
-
-    c.cd()
-    p1=ROOT.TPad('p1','p1',0,0.3,1.0,1.0)
-    p1.SetTopMargin(0.06)
-    p1.SetRightMargin(0.03)
-    p1.SetLeftMargin(0.12)
-    p1.SetBottomMargin(0.01)
-    p1.SetLogx(logX)
-    p1.SetGridx()
-    p1.Draw()
-    p1.cd()
+    c.SetTopMargin(0.06)
+    c.SetRightMargin(0.03)
+    c.SetLeftMargin(0.15)
+    c.SetBottomMargin(0.1)
+    c.SetLogx(logX)
+    c.SetGridx()
+    
+    #frame
     frame=ROOT.TH1F('frame','frame',uePlots['Data'].trueAxis.GetNbins(),uePlots['Data'].trueAxis.GetXbins().GetArray())
     frame.Draw()
+    xtitle=VARTITLES[obs]
+    if obs in ['chflux','chfluxz','chavgpt','chavgpt'] : xtitle += ' [GeV]'
+    frame.GetXaxis().SetTitle(xtitle)
     frame.GetYaxis().SetTitle('1/N dN/d%s'%VARTITLES[obs])
+    frame.GetYaxis().SetTitleOffset(1.5)
+    frame.GetXaxis().SetTitleOffset(0.95)
     frame.GetYaxis().SetTitleSize(0.05)
-    frame.GetYaxis().SetLabelSize(0.04)
-
+    frame.GetYaxis().SetLabelSize(0.045)
+    frame.GetXaxis().SetTitleSize(0.05)
+    frame.GetXaxis().SetLabelSize(0.045)
 
     #plot and add to the legend
-    leg=ROOT.TLegend(0.6,0.92,0.96,0.92-len(plottingSet)*0.06) 
+    leg=ROOT.TLegend(0.6,0.92,0.96,0.92-len(plottingSetList)*0.09) 
     leg.SetFillStyle(0)
     leg.SetBorderSize(0)
     leg.SetTextFont(42)
     leg.SetTextSize(0.04)
     leg.AddEntry( uePlots['Data'].plot[0], 'Data','f' )
     maxY,minY=-10,10
-    for p,drawOpt,fill,color,marker,keepXUnc,shiftX in plottingSet:
+    for p,drawOpt,fill,color,marker,keepXUnc,shiftX in plottingSetList[0]:
         try:
             uePlots[p].format(fill,color,marker,keepXUnc,shiftX)
             uePlots[p].plot[0].Draw(drawOpt)
@@ -142,6 +142,7 @@ def compareUEPlots(uePlots,outDir,cuts,obs,plottingSet=PLOTTINGSET_1,pfix=''):
         except:
             pass
     frame.GetYaxis().SetRangeUser(minY*0.8,maxY*1.25)
+    if minY>0 and maxY/minY<100: frame.GetYaxis().SetRangeUser(0.,maxY*1.25)
     leg.Draw()
 
     #standard label
@@ -149,11 +150,11 @@ def compareUEPlots(uePlots,outDir,cuts,obs,plottingSet=PLOTTINGSET_1,pfix=''):
     tex.SetTextFont(42)
     tex.SetTextSize(0.05)
     tex.SetNDC()
-    tex.DrawLatex(0.15,0.87,'#bf{CMS} #it{preliminary}')
-    tex.DrawLatex(0.73,0.96,'#scale[0.8]{35.9 fb^{-1} (#sqrt{s}=13 TeV)}')
+    tex.DrawLatex(0.18,0.87,cmsLabel)
+    tex.DrawLatex(0.64,0.96,'#scale[0.8]{35.9 fb^{-1} (#sqrt{s}=13 TeV)}')
     icut=0
     for cutKey in cuts:   
-        y=0.86-len(plottingSet)*0.06-0.06*icut
+        y=0.86-len(plottingSetList[0])*0.06-0.06*icut
         if cutKey=='region': 
             regionName='toward'
             if cuts[cutKey][1]==1: regionName='transverse'
@@ -162,90 +163,119 @@ def compareUEPlots(uePlots,outDir,cuts,obs,plottingSet=PLOTTINGSET_1,pfix=''):
         else :
             tex.DrawLatex(0.62,y,'%3.1f#leq%s<%3.1f'%(cuts[cutKey][0],VARTITLES[cutKey],cuts[cutKey][1]))
         icut+=1
-
-    p1.RedrawAxis()
-
-    c.cd()
-    p2=ROOT.TPad('p2','p2',0,0.0,1.0,0.3)
-    p2.SetTopMargin(0.01)
-    p2.SetRightMargin(0.03)
-    p2.SetLeftMargin(0.12)
-    p2.SetBottomMargin(0.3)
-    p2.SetGridx()
-    p2.SetLogx(logX)
-    p2.Draw()
-    p2.cd()
-    ratioframe=frame.Clone('ratioframe')
-    ratioframe.GetYaxis().SetTitle('Ratio to Data')
-    ratioframe.GetXaxis().SetTitle(VARTITLES[obs])
-    ratioframe.GetYaxis().SetTitleOffset(0.5)
-    ratioframe.GetYaxis().SetTitleSize(0.11)
-    ratioframe.GetXaxis().SetTitleSize(0.11)
-    ratioframe.GetYaxis().SetLabelSize(0.1)
-    ratioframe.GetXaxis().SetLabelSize(0.1)
-
-    ratioframe.Draw()
-    uePlotRatios=getRatiosWithRespectTo(uePlots,'Data')
-    maxY,minY=1.55,0.45
-    for p,drawOpt,fill,color,marker,keepXUnc,shiftX in plottingSet:
-        try:
-            uePlotRatios[p].Draw(drawOpt)
-            iminY,imaxY=getGraphExtremes(uePlotRatios[p])
-            maxY=max(imaxY,maxY)
-            minY=min(iminY,minY)
-        except:
-            pass
-    ratioframe.GetYaxis().SetRangeUser(max(minY*0.8,0.15),min(maxY*1.25,1.95))
-    ratioframe.GetYaxis().SetNdivisions(5)
-    if logX: ratioframe.GetXaxis().SetMoreLogLabels()
-    p2.RedrawAxis()
-    
-    # all done
+    c.RedrawAxis()
     c.Modified()
     c.Update()
-    for ext in ['pdf','png']: c.SaveAs('%s/%s%s_unfolded.%s'%(outDir,obs,pfix,ext))
+    for ext in ['pdf','png']: c.SaveAs('%s/%s_unfolded.%s'%(outDir,obs,ext))
 
-    #only ratio
-    cratio=ROOT.TCanvas('cratio','cratio',600,180)
-    cratio.SetTopMargin(0.01)
-    cratio.SetRightMargin(0.03)
-    cratio.SetLeftMargin(0.12)
-    cratio.SetBottomMargin(0.3)
-    cratio.SetGridx()
-    cratio.SetLogx(logX)
-    cratio.Draw()
-    ratioframe.Draw()
-    leg=ROOT.TLegend(0.15,0.92,0.95,0.88)
-    leg.SetFillStyle(0)
-    leg.SetBorderSize(0)
-    leg.SetTextFont(42)
-    leg.SetTextSize(0.095)
-    leg.SetNColumns(len(plottingSet)-1)
-    for p,drawOpt,fill,color,marker,keepXUnc,shiftX in plottingSet:
-        try:
-            uePlotRatios[p].Draw(drawOpt)
-            if p!='Data': 
-                legOpt=drawOpt if not drawOpt in ['c','2'] else 'l'
-                leg.AddEntry(uePlotRatios[p],p,legOpt)
-        except:
-            pass
-    ratioframe.GetYaxis().SetRangeUser(max(minY*0.8,0.15),min(maxY*1.5,1.95))
-    ratioframe.GetYaxis().SetNdivisions(5)
-    if logX: ratioframe.GetXaxis().SetMoreLogLabels()
-    leg.Draw()
+    #compute the ratios to data
+    uePlotRatios=getRatiosWithRespectTo(uePlots,'Data')
 
-    cratio.RedrawAxis()
+    #start the ratio canvas
+    dy_xtit=10.
+    dy_pad=180.
+    y_total=2*dy_xtit+dy_pad*len(plottingSetList)
+    rel_dy_xtit=dy_xtit/y_total
+    rel_dy_pad=dy_pad/y_total
+    cratio=ROOT.TCanvas('c','c',800,int(y_total))
+    cratio.SetTopMargin(0.0)
+    cratio.SetRightMargin(0.0)
+    cratio.SetLeftMargin(0.0)
+    cratio.SetBottomMargin(0.0)
+    sp=[]
+    rf=[]
+    lg=[]
+    y=1
+    for i in xrange(0,len(plottingSetList)):
+
+        cratio.cd()
+
+        #start new sub-pad
+        dy_ipad=rel_dy_pad
+        if i==0 or i==len(plottingSetList)-1: dy_ipad+=rel_dy_xtit
+        sp.append( ROOT.TPad('p%d'%i,'p%d'%i,0,y,1.0,max(y-dy_ipad,0.)) )
+        y=max(y-dy_ipad,0.)
+
+        #margins
+        if i==0:
+            sp[-1].SetTopMargin(0.23)
+        else:
+            sp[-1].SetTopMargin(0.11)
+        sp[-1].SetRightMargin(0.25)
+        sp[-1].SetLeftMargin(0.12)
+        if i==len(plottingSetList)-1:
+            sp[-1].SetBottomMargin(0.23) #2*dy_xtit/dy_ipad)
+        else:
+            sp[-1].SetBottomMargin(0.11)
+        sp[-1].SetGridx()
+        sp[-1].SetLogx(logX)
+        sp[-1].Draw()
+        sp[-1].cd()        
+
+        rf.append( frame.Clone('ratioframe') )
+        rf[-1].GetYaxis().SetTitle('Theory/Data')
+        rf[-1].GetXaxis().SetTitle(xtitle)
+        rf[-1].GetYaxis().SetTitleOffset(0.3)
+        rf[-1].GetYaxis().SetTitleSize(0.13)
+        rf[-1].GetYaxis().SetLabelSize(0.11)
+        if i==len(plottingSetList)-1:
+            rf[-1].GetXaxis().SetTitleSize(0.13)
+            rf[-1].GetXaxis().SetLabelSize(0.11)
+            rf[-1].GetXaxis().SetTitleOffset(0.75)
+            rf[-1].GetXaxis().SetTitle(xtitle)
+        else:
+            rf[-1].GetXaxis().SetTitleSize(0.0)
+            rf[-1].GetXaxis().SetLabelSize(0.0)
+        rf[-1].Draw()
+
+        if i==0:
+            tex=ROOT.TLatex()
+            tex.SetTextFont(42)
+            tex.SetTextSize(0.13)
+            tex.SetNDC()
+            tex.DrawLatex(0.12,0.83,cmsLabel)
+            tex.DrawLatex(0.52,0.83,'#scale[0.9]{35.9 fb^{-1} (#sqrt{s}=13 TeV)}')
+        
+        if i==0:
+            lg.append( ROOT.TLegend(0.75,0.1,0.99,0.82) )
+        elif i==len(plottingSetList)-1:
+            lg.append( ROOT.TLegend(0.75,0.23,0.99,0.95) )
+        else:
+            lg.append( ROOT.TLegend(0.75,0.1,0.99,0.95) )
+        lg[-1].SetFillStyle(0)
+        lg[-1].SetBorderSize(0)
+        lg[-1].SetTextFont(42)
+        lg[-1].SetTextSize(0.1)
+        #lg[-1].SetNColumns(len(plottingSetList[i])-1)
+    
+        maxY,minY=1.55,0.45
+        for p,drawOpt,fill,color,marker,keepXUnc,shiftX in plottingSetList[i]:
+            try:
+                formatGraph(uePlotRatios[p],fill,color,marker,keepXUnc,shiftX)
+                uePlotRatios[p].Draw(drawOpt)
+                iminY,imaxY=getGraphExtremes(uePlotRatios[p])
+                maxY=max(imaxY,maxY)
+                minY=min(iminY,minY)
+                if p!='Data': 
+                    legOpt=drawOpt if not drawOpt in ['c','2'] else 'l'
+                    lg[-1].AddEntry(uePlotRatios[p],p,legOpt)
+            except:
+                pass
+        rf[-1].GetYaxis().SetRangeUser(max(minY*0.8,0.15),min(maxY*1.25,1.95))
+        rf[-1].GetYaxis().SetNdivisions(5)
+        if logX: rf[-1].GetXaxis().SetMoreLogLabels()
+        
+        sp[-1].RedrawAxis()
+        lg[-1].Draw()
+    
+    # all done
     cratio.Modified()
     cratio.Update()
-    try:
-        for ext in ['pdf','png']: cratio.SaveAs('%s/%s%s_unfolded_ratio.%s'%(outDir,obs,pfix,ext))
-    except:
-        pass
-
+    for ext in ['pdf','png']: cratio.SaveAs('%s/%s_unfolded_ratio.%s'%(outDir,obs,ext))
 
 """
 """
-def showSystsSummary(systsH,outdir,cuts,obs):
+def showSystsSummary(systsH,outdir,cuts,obs,cmsLabel):
 
     #show systematics
     c=ROOT.TCanvas('c','c',500,500)
@@ -288,7 +318,7 @@ def showSystsSummary(systsH,outdir,cuts,obs):
     tex.SetTextFont(42)
     tex.SetTextSize(0.05)
     tex.SetNDC()
-    tex.DrawLatex(0.15,0.9,'#bf{CMS} #it{preliminary}')
+    tex.DrawLatex(0.15,0.9,cmsLabel)
     tex.DrawLatex(0.67,0.96,'#scale[0.7]{35.9 fb^{-1} (#sqrt{s}=13 TeV)}')
     tex.DrawLatex(0.72,0.9,'#scale[0.7]{%s}'%VARTITLES[obs])
     icut=0
@@ -328,7 +358,7 @@ def readParticlePlotsFrom(baseAnaDir,args,obsAxis,cuts,obs):
         ('FSR'            , 'th')  : ['t#bar{t} fsr dn',   't#bar{t} fsr up'],
         ('ME-PS'          , 'th')  : ['t#bar{t} hdamp dn', 't#bar{t} hdamp up'],
         ('ISR'            , 'th')  : ['t#bar{t} isr dn',   't#bar{t} isr up'],
-        ('m_{t}'          , 'th')  : ['t#bar{t} m=169.5',  't#bar{t} m=175.5'],
+        ('m_{t}'          , 'th')  : ['t#bar{t} m=171.5',  't#bar{t} m=173.5'],
         ('Background'     , 'exp') : ['bckpfakes'],
         #('PY8-HW++'      , 'th')  : ['t#bar{t} Herwig++'],
         }
@@ -347,8 +377,9 @@ def readParticlePlotsFrom(baseAnaDir,args,obsAxis,cuts,obs):
     #read unfolded data
     fIn=ROOT.TFile(args[0])
     uePlots['Data']=UEPlot(obs,VARTITLES[obs],obsAxis)
+
     hdata=fIn.Get('corrected_data')
-    uePlots['Data'].addVariation('Data',None, hdata )
+    uePlots['Data'].addVariation('Data',None, hdata)
     for key in finalSystList:
         for v in finalSystList[key]:
             uePlots['Data'].addVariation(key[0],key[1],fIn.Get('corrected_data%s'%v))
@@ -362,6 +393,7 @@ def readParticlePlotsFrom(baseAnaDir,args,obsAxis,cuts,obs):
         if norm<=0 : continue
         for ybin in xrange(1,ny+1):
             uePlots['Data'].covMatrices['stat'][xbin-1][ybin-1]=EmatTotal.GetBinContent(xbin,ybin)/(norm**2)            
+
     fIn.Close()
 
     #read sets to compare (use only the nominal one)          
@@ -504,6 +536,11 @@ def main():
                       help='reco flag [%default]',
                       default=False,
                       action='store_true')
+    parser.add_option('--cmsLabel',
+                      dest='cmsLabel',
+                      help='cmsLabel [%default]',
+                      default='#bf{CMS} #it{preliminary}',
+                      type='string')
     parser.add_option('--cfg',
                       dest='analysisCfg',
                       help='analysis configuration file [%default]',
@@ -541,18 +578,18 @@ def main():
 
     #show plots
     outDir=os.path.dirname(args[0])
-    for p, pfix in [(PLOTTINGSET_1,''),(PLOTTINGSET_2,'_v2'),(PLOTTINGSET_3,'_v3')]:
-        compareUEPlots(uePlots=uePlots,
-                       outDir=outDir,
-                       cuts=cuts,
-                       obs=obs,
-                       plottingSet=p,
-                       pfix=pfix)
+    compareUEPlots(uePlots=uePlots,
+                   outDir=outDir,
+                   cuts=cuts,
+                   obs=obs,
+                   plottingSetList=[PLOTTINGSET_1,PLOTTINGSET_2,PLOTTINGSET_3],
+                   cmsLabel=opt.cmsLabel)
     
     showSystsSummary(uePlots['Data'].relUncertaintyH,
                      outdir=outDir,
                      cuts=cuts,
-                     obs=obs)
+                     obs=obs,
+                     cmsLabel=opt.cmsLabel)
 
     with open(os.path.join(outDir,'mean_summary.dat'),'w') as cachefile:
         cachefile.write(uePlots['Data'].meanUncTable)

@@ -29,7 +29,8 @@ myletter=${whoami:0:1}
 eosdir=/store/cmst3/group/top/ReReco2016/b312177
 dataeos=/store/cmst3/group/top/ReReco2016/be52dbe_03Feb2017
 markuseos=/eos/user/m/mseidel/ReReco2016/b312177_merged/
-efeeos=/store/group/phys_top/efe/ue_ttbar_alpha_s_isr/
+#efeeos=/store/group/phys_top/efe/ue_ttbar_alpha_s_isr/
+efeeos=/store/group/phys_top/efe/output_ue_root_alpha_s_isr
 efeeos2=/store/group/phys_top/efe/
 efeeos3=/store/group/phys_top/efe/output_ue_root_cp5
 summaryeosdir=/store/cmst3/group/top/TopUE
@@ -69,9 +70,9 @@ case $WHAT in
 	#python scripts/runLocalAnalysis.py -i ${dataeos} --farmappendix TopUEMC ${commonOpts} --only Data;        
         #python scripts/runLocalAnalysis.py -i ${markuseos} --farmappendix TopUEMC ${commonOpts} --only herwig7,sherpa,pythia8_asfsr;
         commonOpts="${commonOpts} -o `pwd`/UEanalysis"
-        #python scripts/runLocalAnalysis.py -i ${efeeos} --farmappendix TopUEMCASISR  ${commonOpts} --ignore "~";
+        python scripts/runLocalAnalysis.py -i ${efeeos} --farmappendix TopUEMCASISR  ${commonOpts} --ignore "~";
         #python scripts/runLocalAnalysis.py -i ${efeeos2} --farmappendix TopUEMCMPICR ${commonOpts} --only mpi_off,cr_off --ignore "~";        
-        python scripts/runLocalAnalysis.py -i ${efeeos3} --farmappendix TopUEMCMPICR ${commonOpts} --ignore "~";        
+        #python scripts/runLocalAnalysis.py -i ${efeeos3} --farmappendix TopUEMCMPICR ${commonOpts} --ignore "~";        
 	;;
 
     MERGESEL )
@@ -89,7 +90,13 @@ case $WHAT in
 	python scripts/plotter.py ${commonOpts} --procSF DY:${outdir}/plots/.dyscalefactors.pck;
 	python scripts/plotter.py ${commonOpts} --only nbtags,rho,nvtx,0t,1t
 	;;
-
+    PLOTSELPAPER )
+        python scripts/plotter.py -i ${outdir} -outName paper_plotter.root \
+            --puNormSF puwgtctr  -j data/era2016/samples.json \
+            -l ${lumi} --procSF DY:${outdir}/plots/.dyscalefactors.pck --noRatio --noUncs\
+            --cmsLabel "#bf{CMS}" --only mll_EM,ptll_EM,njets_EM --formats "pdf,png,root";
+        cp -v ${outdir}/plots/{mll,ptll,njets}_EM.* ${wwwdir}/sel/
+        ;;
     WWWSEL )
 	mkdir -p ${wwwdir}/sel
 	cp ${outdir}/plots/*.{png,pdf} ${wwwdir}/sel
@@ -238,7 +245,7 @@ case $WHAT in
         #python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 2;
         #python test/TopUEAnalysis/showUnfoldSummary.py -i ${dir}/unfold/unfold_summary.root;
         python test/TopUEAnalysis/showFinalDistributions.py \
-            --cfg ${dir}/analysiscfg.pck \
+            --cfg ${dir}/analysiscfg.pck --cmsLabel "#bf{CMS}"\
             ${dir}/unfold/unfold_summary.root \
             ${dir}/plots/plotter.root \
             ${dir}/plots/syst_plotter.root;        
@@ -270,12 +277,12 @@ case $WHAT in
         ntks=${#tks[@]}
         ana="${tks[$ntks-1]}"
         for s in 1 2; do
-            python test/TopUEAnalysis/showFinalProfiles.py -i ${TAGANA} -s ${s};
+            python test/TopUEAnalysis/showFinalProfiles.py -i ${TAGANA} -s ${s} --doPull --cmsLabel "#bf{CMS}";
         done
         if [[ $dir = *"chavgp"* ]]; then
-            python test/TopUEAnalysis/showFinalProfiles.py -i ${TAGANA} -s 3;
+            python test/TopUEAnalysis/showFinalProfiles.py -i ${TAGANA} -s 3 --doPull --cmsLabel "#bf{CMS}";
         fi
-        a=(`ls ${dir}/ueprofile*.{png,pdf}`)
+        a=(`ls ${dir}/*ueprofile*.{png,pdf}`)
         for i in ${a[@]}; do
             cp -v ${i} ${wwwdir}/ana_${ana}/${ana}_`basename ${i}`;
         done

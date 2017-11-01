@@ -54,6 +54,7 @@ class Plot(object):
         self.doPoissonErrorBars=True
         self.mc = OrderedDict()
         self.mcsyst = {}
+        self.drawUnc = True
         self.totalMCUnc = None
         self.spimpose={}
         self.dataH = None
@@ -205,10 +206,8 @@ class Plot(object):
         else:
             p1=ROOT.TPad('p1','p1',0.0,0.0,1.0,1.0)
             p1.SetRightMargin(0.05)
-            p1.SetLeftMargin(0.12)
-            p1.SetTopMargin(0.08)
-            if noRatio:
-                p1.SetTopMargin(0.05)
+            p1.SetLeftMargin(0.15)
+            p1.SetTopMargin(0.06)
             p1.SetBottomMargin(0.12)
         p1.Draw()
 
@@ -233,7 +232,7 @@ class Plot(object):
         leg.SetFillStyle(0)
         leg.SetTextFont(42)
         leg.SetTextSize(self.legSize)
-        if noRatio : leg.SetTextSize(0.035)
+        if noRatio : leg.SetTextSize(0.04)
         nlegCols = 0
 
         if self.dataH is not None:
@@ -365,8 +364,6 @@ class Plot(object):
         frame.GetYaxis().SetLabelSize(0.05)
         ROOT.TGaxis.SetMaxDigits(4)
         frame.GetYaxis().SetTitleOffset(1.1)
-        if noRatio:
-            frame.GetYaxis().SetTitleOffset(1.4)
         if self.dataH:
             frame.GetXaxis().SetTitleSize(0.0)
             frame.GetXaxis().SetLabelSize(0.0)
@@ -374,8 +371,11 @@ class Plot(object):
             frame.GetXaxis().SetTitleSize(0.045)
             frame.GetXaxis().SetLabelSize(0.04)
         if noRatio:
-            frame.GetXaxis().SetTitleSize(0.045)
-            frame.GetXaxis().SetLabelSize(0.04)
+            frame.GetXaxis().SetTitleSize(0.05)
+            frame.GetXaxis().SetLabelSize(0.045)
+            frame.GetYaxis().SetTitleSize(0.05)
+            frame.GetYaxis().SetLabelSize(0.045)
+            frame.GetYaxis().SetTitleOffset(1.6)
         if self.wideCanvas and totalMC is None :
             frame.GetXaxis().SetLabelSize(0.03)
             frame.GetXaxis().SetTitleSize(0.035)
@@ -384,7 +384,7 @@ class Plot(object):
             if noStack: stack.Draw('nostack same')
             else:
                 stack.Draw('hist same')
-                if (len(self.mcsyst)>0):
+                if (len(self.mcsyst)>0) and self.drawUnc:
                     totalMCUnc.Draw('e2 same')
                     totalMCUncShape.Draw('e2 same')
                     leg.AddEntry(totalMCUnc, "Total unc.", 'f')
@@ -413,8 +413,8 @@ class Plot(object):
             inix = 0.6
         inixlumi=0.7
         if not self.dataH or noRatio:
-            inix=0.56
-            inixlumi=0.65
+            inix=0.2
+            inixlumi=0.6
         if len(self.com)>10:
             inixlumi=0.55
 

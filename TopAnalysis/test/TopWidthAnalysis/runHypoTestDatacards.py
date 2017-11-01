@@ -11,10 +11,29 @@ from subprocess import Popen, PIPE, STDOUT
 from TopLJets2015.TopAnalysis.Plot import *
 from TopLJets2015.TopAnalysis.dataCardTools import *
 
-"""
-customize getting the distributions for hypothesis testing
-"""
+
+def buildRateUncertainty(varDn,varUp):
+    """ returns a uniformized string for the datacard for the treatment of up/down rate uncertainties """
+
+    #if this is below 0.1% neglect it
+    if abs(varUp-1)<0.001 and abs(varDn-1)<0.001: return None
+
+    #distinguish same sided from double sided variations
+    toReturn=None
+    if varUp>1. and varDn>1.:
+        satUnc=min(max(varUp,varDn),2.0)
+        toReturn='%3.3f'%satUnc
+    elif varUp<1. and varDn<1.:
+        satUnc=max(min(varUp,varDn),1/2.0)
+        toReturn='%3.3f'%satUnc
+    else:
+        toReturn='%3.3f/%3.3f'%(varDn,varUp)
+
+    #all done here
+    return toReturn
+
 def getDistsFromDirIn(url,indir,applyFilter=''):
+    """customize getting the distributions for hypothesis testing"""
     fIn=ROOT.TFile.Open(url)
     obs,exp=getDistsFrom(fIn.Get(indir),applyFilter)
     fIn.Close()
@@ -163,25 +182,39 @@ def doCombineScript(opt,args,outDir,dataCardList):
         script.write('python ${CMSSW_BASE}/src/HiggsAnalysis/CombinedLimit/test/systematicsAnalyzer.py datacard.dat --all -f html > systs_summary.html;\n')
         script.write('\n')
 
-        commonOpts="-m 172.5 --setPhysicsModelParameters x=${x},r=1 --setPhysicsModelParameterRanges r=0.8,1.2 --saveWorkspace --robustFit 1 --minimizerAlgoForMinos Minuit2,Migrad --minimizerAlgo Minuit2"
         script.write('### likelihood scans and fits\n')
+        commonOpts="-m 172.5 --setPhysicsModelParameters x=${x},r=1 --setPhysicsModelParameterRanges r=0.8,1.2 --saveWorkspace --robustFit 1 --minimizerAlgoForMinos Minuit2,Migrad --minimizerAlgo Minuit2"
         #script.write('for x in 0 1; do\n')
         #script.write('   combine workspace.root -M MultiDimFit -P x --floatOtherPOI=1  --algo=grid --points=50 -t -1 --expectSignal=1 -n x_scan_${x}_exp %s;\n'%commonOpts)
         #script.write('   combine workspace.root -M MaxLikelihoodFit --redefineSignalPOIs x -t -1 --expectSignal=1 -n x_fit_${x}_exp --saveWithUncertainties %s;\n'%commonOpts)
         #script.write('done\n')
         script.write('combine workspace.root -M MultiDimFit -P x --floatOtherPOI=1 --algo=grid --points=50 -n x_scan_obs %s\n'%commonOpts)
-        script.write('combine workspace.root -M MultiDimFit -P r --floatOtherPOI=1 --algo=grid --points=50 -n x_scan_obs %s\n'%commonOpts)
+        script.write('combine workspace.root -M MultiDimFit -P r --floatOtherPOI=1 --algo=grid --points=50 -n r_scan_obs %s\n'%commonOpts)
         script.write('combine workspace.root -M MaxLikelihoodFit --saveWithUncertainties --redefineSignalPOIs x -n x_fit_obs %s;\n'%commonOpts)
         script.write('combine workspace.root -M MaxLikelihoodFit --saveWithUncertainties --redefineSignalPOIs r -n r_fit_obs %s;\n'%commonOpts)
         script.write('\n')
+        #these lines are commented out but can be useful for further local debugging
+        commonOpts="--minimizerAlgo Minuit2 --minimizerStrategy 2 --algo=saturated -m 172.5  --redefineSignalPOIs r --setPhysicsModelParameterRanges r=0.8,1.2"
+        script.write('#combine -M GoodnessOfFit workspace.root %s\n'%commonOpts)
+        script.write('#combine -M GoodnessOfFit workspace.root %s -t 100 --fixedSignalStrength=1\n'%commonOpts)
+        script.write('#mv higgsCombineTest.GoodnessOfFit.mH172.5.root        gof_r_obs.root\n')
+        script.write('#mv higgsCombineTest.GoodnessOfFit.mH172.5.123456.root gof_r_exp.root\n')
+        script.write('\n')
+        commonOpts="--minimizerAlgo Minuit2 --minimizerAlgoForMinos Minuit2,Migrad --robustFit 1 -m 172.5 --redefineSignalPOIs r --setPhysicsModelParameterRanges r=0.8,1.2"
+        script.write('#combineTool.py -M Impacts -d workspace.root %s --doInitialFit\n'%commonOpts)
+        script.write('#combineTool.py -M Impacts -d workspace.root %s --doFits\n'%commonOpts)
+        script.write('#combineTool.py -M Impacts -d workspace.root %s -o impacts.json\n'%commonOpts)
+        script.write('#plotImpacts.py -i impacts.json -o impacts\n')
+        script.write('\n')        
 
     script.write('### SCAN \n')
     script.write('\n')
-    commonOpts="-m 172.5 -S 0 -M HybridNew --testStat=TEV --onlyTestStat --saveToys --saveHybridResult --minimizerAlgo Minuit2"
-    script.write("combine %s --singlePoint 0  workspace.root -n scan0n\n"%commonOpts)
-    script.write("mv higgsCombinescan0n.HybridNew.mH172.5.123456.root testStat_scan0n.root\n")
-    script.write("combine %s --singlePoint 1  workspace.root -n scan1n\n"%commonOpts)
-    script.write("mv higgsCombinescan1n.HybridNew.mH172.5.123456.root testStat_scan1n.root\n")
+    for extra,extraName in [('-S 0','_stat'),('','')]:
+        commonOpts="-m 172.5 %s -M HybridNew --testStat=TEV --onlyTestStat --saveToys --saveHybridResult --minimizerAlgo Minuit2"%extra
+        script.write("combine %s --singlePoint 0  workspace.root -n scan0n\n"%commonOpts)
+        script.write("mv higgsCombinescan0n.HybridNew.mH172.5.123456.root testStat_scan0n%s.root\n"%extraName)
+        script.write("combine %s --singlePoint 1  workspace.root -n scan1n\n"%commonOpts)
+        script.write("mv higgsCombinescan1n.HybridNew.mH172.5.123456.root testStat_scan1n%s.root\n"%extraName)
 
 
     #script.write('### CLs\n')
@@ -242,9 +275,9 @@ def doDataCards(opt,args):
         ('bfrag',          ['bfrag'],                                  [],             ['DY','-W'], 2, 1.0),
         ('semilep',        ['semilep'],                                [],             ['DY','-W'], 2, 1.0),
         ('pu',             ['pu'],                                     [],             ['DY','-W'], 1, 1.0),
-        ('tttoppt',        ['toppt'],                                  ttScenarioList, [],     1, 1.0),
-        ('ttMEqcdscale',   ['gen%d'%ig for ig in[3,5,6,4,8,10] ],      ttScenarioList, [],     1, 1.0),
-        ('ttPDF',          ['gen%d'%(11+ig) for ig in xrange(0,100) ], ttScenarioList, [],     0, 1.0)
+        ('tttoppt',        ['toppt'],                                  ttScenarioList, [],          2, 1.0),
+        ('ttMEqcdscale',   ['gen%d'%ig for ig in[3,5,6,4,8,10] ],      ttScenarioList, [],          1, 1.0),
+        ('ttPDF',          ['gen%d'%(11+ig) for ig in xrange(0,100) ], ttScenarioList, [],          0, 1.0)
         ]
     for ig in xrange(0,29) :
         weightingSysts += [('jes%s'%ig,            ['jes%d'%ig],       [],             ['DY'], 2, 1.0)]
@@ -486,6 +519,7 @@ def doDataCards(opt,args):
 
             #get shapes and adapt them
             iexpUp,iexpDn=None,None
+            altExp,altExpUp,altExpDn=None,None,None
             if len(weightList)==1:
                 if 'jes' in weightList[0] :
                     jesNum=weightList[0].replace('jes','')
@@ -494,6 +528,16 @@ def doDataCards(opt,args):
                 else :
                     _,iexpUp=getDistsForHypoTest(cat,rawSignalList,opt,"",weightList[0]+"up",isGen)
                     _,iexpDn=getDistsForHypoTest(cat,rawSignalList,opt,"",weightList[0]+"dn",isGen)
+
+                    if syst=='tttoppt':
+                        complCat= cat.replace('lowpt','highpt') if 'lowpt' in cat else cat.replace('highpt','lowpt')
+                        _,altExp   = getDistsForHypoTest(complCat,rawSignalList,opt)
+                        _,altExpUp = getDistsForHypoTest(complCat,rawSignalList,opt,"",weightList[0]+"up",isGen)
+                        
+                        #reset the down variation to be the nominal one
+                        iexpDn=exp
+                        altExpDn=altExp
+
             else:
 
                 #put all the shapes in a 2D histogram
@@ -560,25 +604,37 @@ def doDataCards(opt,args):
                     #all done, can remove the 2D histo from memory
                     iexp2D[proc].Delete()
 
-
             #check the shapes
             iRateVars={}
             if shapeTreatment>0:
                 for proc in iexpUp:
                     nbins=iexpUp[proc].GetNbinsX()
-                    #normalize shapes to nominal expectations
+
                     n=exp[proc].Integral(0,nbins+2)
                     nUp=iexpUp[proc].Integral(0,nbins+2)
-                    if nUp>0: iexpUp[proc].Scale(n/nUp)
                     nDn=iexpDn[proc].Integral(0,nbins+2)
-                    if nDn>0: iexpDn[proc].Scale(n/nDn)
+
+                    #cases where the rate between high/low pt needs to be taken into account
+                    upSF,dnSF=1.0,1.0
+                    if altExp and altExpUp and altExpDn:
+                        ntot   = n+altExp[proc].Integral(0,nbins+2)
+                        ntotUp = nUp+altExpUp[proc].Integral(0,nbins+2)
+                        ntotDn = nDn+altExpDn[proc].Integral(0,nbins+2)
+
+                        upSF=ntot/ntotUp
+                        dnSF=ntot/ntotDn
+
+                    #normalize shapes to nominal expectations
+                    if nUp>0: iexpUp[proc].Scale(upSF*n/nUp)
+                    if nDn>0: iexpDn[proc].Scale(dnSF*n/nDn)
 
                     #save a rate systematic from the variation of the yields
                     if n==0 : continue
-                    nvarUp=ROOT.TMath.Abs(1-nUp/n)
-                    nvarDn=ROOT.TMath.Abs(1-nDn/n )
-                    iRateVars[proc]=min(1.0+0.5*(nvarUp+nvarDn),2.0)
-                    if iRateVars[proc]<1.001 : del iRateVars[proc]
+                    nvarUp=max(nUp/n,nDn/n) 
+                    nvarDn=min(nUp/n,nDn/n) 
+
+                    iRateUnc=buildRateUncertainty(nvarDn,nvarUp)
+                    if iRateUnc: iRateVars[proc]=iRateUnc
 
 
             #write the shapes to the ROOT file
@@ -612,18 +668,18 @@ def doDataCards(opt,args):
             datacard.write('%32s %8s'%(syst+'Rate',pdf))
             for sig in mainSignalList:
                 if sig in iRateVars and ((len(whiteList)==0 and not sig in blackList and not '-'+sig in blackList) or sig in whiteList):
-                    datacard.write('%15s'%('%3.3f'%iRateVars[sig]))
+                    datacard.write('%15s'%iRateVars[sig])
                 else:
                     datacard.write('%15s'%'-')
             for sig in altSignalList if opt.useAltRateUncs else mainSignalList:
                 if sig in iRateVars and ((len(whiteList)==0 and not sig in blackList and not '-'+sig in blackList) or sig in whiteList):
-                    datacard.write('%15s'%('%3.3f'%iRateVars[sig]))
+                    datacard.write('%15s'%iRateVars[sig])
                 else:
                     datacard.write('%15s'%'-')
             for proc in exp:
                 if proc in mainSignalList+altSignalList : continue
                 if proc in iRateVars and ((len(whiteList)==0 and not proc in blackList and not '-'+proc in blackList) or proc in whiteList):
-                    datacard.write('%15s'%('%3.3f'%iRateVars[proc]))
+                    datacard.write('%15s'%iRateVars[proc])
                 else:
                     datacard.write('%15s'%'-')
             datacard.write('\n')
@@ -691,10 +747,12 @@ def doDataCards(opt,args):
 
                     #save a rate systematic from the variation of the yields
                     if n==0 : continue
-                    nvarUp=ROOT.TMath.Abs(1-nUp/n)
-                    nvarDn=ROOT.TMath.Abs(1-nDn/n )
-                    iRateVars[proc]=1.0+0.5*(nvarUp+nvarDn)
-                    if iRateVars[proc]<1.001 : del iRateVars[proc]
+                    nvarUp=max(nUp/n,nDn/n) # ROOT.TMath.Abs(1-nUp/n)
+                    nvarDn=min(nUp/n,nDn/n) # ROOT.TMath.Abs(1-nDn/n)
+
+                    iRateUnc=buildRateUncertainty(nvarDn,nvarUp)
+                    if iRateUnc: iRateVars[proc]=iRateUnc
+
 
             #write the shapes to the ROOT file
             saveToShapesFile(outFile,iexpUp,('%s_%s_%sUp'%(cat,opt.dist,syst)),opt.rebin)
@@ -729,18 +787,18 @@ def doDataCards(opt,args):
             datacard.write('%32s %8s'%(syst+'Rate',pdf))
             for sig in mainSignalList:
                 if sig in iRateVars :
-                    datacard.write('%15s'%('%3.3f'%iRateVars[sig]))
+                    datacard.write('%15s'%iRateVars[sig])
                 else:
                     datacard.write('%15s'%'-')
             for sig in altSignalList if opt.useAltRateUncs else mainSignalList:
                 if sig in iRateVars :
-                    datacard.write('%15s'%('%3.3f'%iRateVars[sig]))
+                    datacard.write('%15s'%iRateVars[sig])
                 else:
                     datacard.write('%15s'%'-')
             for proc in exp:
                 if proc in mainSignalList+altSignalList : continue
                 if proc in iRateVars :
-                    datacard.write('%15s'%('%3.3f'%iRateVars[proc]))
+                    datacard.write('%15s'%iRateVars[proc])
                 else:
                     datacard.write('%15s'%'-')
             datacard.write('\n')
