@@ -20,9 +20,13 @@ def main():
     parser.add_option( '--systJson', dest='systJson', help='json with list of systematics', default=None, type='string')
     parser.add_option(      '--signalJson',  dest='signalJson',  help='signal json list',               default=None,              type='string')
     parser.add_option('-i', '--inDir',       dest='inDir' ,      help='input directory',                default=None,              type='string')
-    parser.add_option('-O', '--outDir',      dest='outDir' ,     help='output directory',                default=None,              type='string')
+    parser.add_option('-O', '--outDir',      dest='outDir' ,     help='output directory',                default=None,             type='string')
     parser.add_option('-o', '--outName',     dest='outName' ,    help='name of the output file',        default='plotter.root',    type='string')
+    parser.add_option(      '--cmsLabel',    dest='cmsLabel' ,   help='cms label',                      default='#bf{CMS} #it{preliminary}',  type='string')
+    parser.add_option(      '--formats',     dest='formats' ,    help='plot formats [%default]',        default='pdf,png',         type='string')
     parser.add_option(      '--noStack',     dest='noStack',     help='don\'t stack distributions',     default=False,             action='store_true')
+    parser.add_option(      '--noRatio',     dest='noRatio',     help='do not show ratio',              default=False,             action='store_true')
+    parser.add_option(      '--noUncs',      dest='noUncs',      help='no uncertainties',               default=False,             action='store_true')
     parser.add_option(      '--doDataOverMC',     dest='doDataOverMC',     help='do data/MC ratio',     default=False,             action='store_true')
     parser.add_option(      '--saveLog',     dest='saveLog' ,    help='save log versions of the plots', default=False,             action='store_true')
     parser.add_option(      '--silent',      dest='silent' ,     help='only dump to ROOT file',         default=False,             action='store_true')
@@ -214,7 +218,12 @@ def main():
         skipPlot=False
         if opt.onlyData and plots[p].dataH is None: skipPlot=True 
         if opt.silent : skipPlot=True
-        if not skipPlot : plots[p].show(outDir=outDir,lumi=opt.lumi,noStack=opt.noStack,saveTeX=opt.saveTeX)
+        if not skipPlot : 
+            plots[p].cmsLabel=opt.cmsLabel
+            plots[p].plotformats=opt.formats.split(',')
+            if opt.noUncs: plots[p].drawUnc=False
+            plots[p].show(outDir=outDir,lumi=opt.lumi,noStack=opt.noStack,saveTeX=opt.saveTeX,noRatio=opt.noRatio)
+            
         plots[p].appendTo('%s/%s'%(outDir,opt.outName))
         plots[p].reset()
 

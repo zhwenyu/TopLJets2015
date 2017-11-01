@@ -43,7 +43,10 @@ class UEPlot:
         self.variations[key].append(varH.Clone(cloneName))
         self.variations[key][-1].SetDirectory(0)
 
+        #
         #compute mean of this distribution
+        #
+        #uncorrelated case
         x,w,w2=[],[],[]
         for xbin in xrange(1,self.trueAxis.GetNbins()+1):
             x.append( self.trueAxis.GetBinCenter(xbin) )
@@ -56,11 +59,10 @@ class UEPlot:
             neff=sum(w)
             #neff=(sum(w)**2)/sum(w2)
             self.variationMeans[key].append( (avg,ROOT.TMath.Sqrt(var/neff)) )
-
+                
             #avg2=np.average(x**2,weights=w)
             #dx4=[(k**2-avg)**2 for k in x]
             #var = np.average(dx4, weights=w)
-
         except:
             self.variationMeans[key].append( None )
 

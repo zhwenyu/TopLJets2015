@@ -111,6 +111,9 @@ def buildChisquareReportFrom(pckSummary):
             pvalnomodelsyst=ROOT.TMath.Prob(chi2nomodelsyst,np)
             chi2report['dist'][model]=(chi2nomodelsyst,np,pvalnomodelsyst)
 
+            if '/inc/' in pckSummary:
+                print pckSummary.split('/')[2],model,(chi2,np,pval),'|',(chi2nomodelsyst,np,pvalnomodelsyst)
+
             if '#alpha_{S}' in model:
                 param,valStr=model.split('=')
                 val=float(valStr)
@@ -155,6 +158,10 @@ def main():
                       dest='input',
                       help='input directory [%default]',
                       default=None)
+    parser.add_option('--cmsLabel',
+                      dest='cmsLabel',
+                      help='cms label [%default]',
+                      default='#bf{CMS} #it{preliminary}')
     (opt, args) = parser.parse_args()
 
         
@@ -268,7 +275,7 @@ def main():
         tex.SetTextFont(42)
         tex.SetTextSize(0.05)
         tex.SetNDC()
-        tex.DrawLatex(0.1,0.96,'#bf{CMS} #it{preliminary}')
+        tex.DrawLatex(0.1,0.96,opt.cmsLabel)
         tex.DrawLatex(0.65,0.96,'#scale[0.8]{35.9 fb^{-1} (#sqrt{s}=13 TeV)}')
         c.RedrawAxis()
         c.Modified()
@@ -319,9 +326,13 @@ def main():
                 leg.AddEntry(chi2Gr,legTxt,'lp')
                 
             cSlicesList={'ptll':[('inc_ptll=awa','away'), ('inc_ptll=tow','toward'),('inc_ptll=tra','transverse')],
-                         'nj':[('nj=0,1','N_{j}=0'),('nj=1,2','N_{j}=1'),('nj=2,999','N_{j}#geq2')]}            
+                         'nj':[('nj=0,1','N_{j}=0'),('nj=1,2','N_{j}=1'),('nj=2,999','N_{j}#geq2')],
+                         'inc':[('chavgpz','#bar{p}_{z}'),('aplanarity','Aplanarity'),('sphericity','Sphericity')]
+
+                         }            
             for pfix in cSlicesList:
                 if pfix=='ptll' and v in ['C','D','sphericity','aplanarity']: continue
+                if pfix=='inc'  and v!='chavgpt': continue
                 cSlices=cSlicesList[pfix]
 
                 c.Clear()
@@ -334,43 +345,53 @@ def main():
                 gr.GetYaxis().SetTitleSize(0.05)
                 gr.GetXaxis().SetLabelSize(0.04)
                 gr.GetYaxis().SetLabelSize(0.04)
+                gr.SetLineColor(1)
+                gr.SetMarkerColor(1)
                 gr.SetLineWidth(2)
 
-                leg=ROOT.TLegend(0.16,0.76,0.45,0.32)
+                leg=ROOT.TLegend(0.16,0.8,0.45,0.54) if pfix=='inc' else ROOT.TLegend(0.16,0.76,0.45,0.32)
                 leg.SetBorderSize(0)
                 leg.SetFillStyle(0)
                 leg.SetTextFont(42)
                 leg.SetTextSize(0.045)
-
-                addToLegend(leg,paramScanResults[p][(v,psSlice)])
-                 
+                if pfix=='inc' : leg.AddEntry(gr,VARTITLES[v],'lp')
+                else : addToLegend(leg,paramScanResults[p][(v,psSlice)])
+                
                 #draw comparisons
+                compColors=['#92c5de','#f4a582','#ca0020']
                 for ic in xrange(0,len(cSlices)):
                     cSlice,cTitle=cSlices[ic]
-                    if not (v,cSlice) in paramScanResults[p] : continue
-                    paramScanResults[p][(v,cSlice)][4].SetTitle(cTitle)
-                    paramScanResults[p][(v,cSlice)][4].SetLineColor(38+ic)
-                    paramScanResults[p][(v,cSlice)][4].SetMarkerColor(38+ic)
-                    paramScanResults[p][(v,cSlice)][4].SetLineStyle(9)
-                    paramScanResults[p][(v,cSlice)][4].SetMarkerStyle(24+ic)
-                    paramScanResults[p][(v,cSlice)][4].Draw('pc')
-                    addToLegend(leg,paramScanResults[p][(v,cSlice)])
+                    v2comp=v
+                    if pfix=='inc' :
+                        v2comp=cSlice
+                        cSlice=psSlice
+                    if not (v2comp,cSlice) in paramScanResults[p] : continue
+                    paramScanResults[p][(v2comp,cSlice)][4].SetTitle(cTitle)
+                    ci=ROOT.TColor.GetColor(compColors[ic])
+                    paramScanResults[p][(v2comp,cSlice)][4].SetLineColor(ci)
+                    paramScanResults[p][(v2comp,cSlice)][4].SetMarkerColor(ci)
+                    paramScanResults[p][(v2comp,cSlice)][4].SetLineWidth(2)
+                    paramScanResults[p][(v2comp,cSlice)][4].SetMarkerStyle(24+ic)
+                    paramScanResults[p][(v2comp,cSlice)][4].Draw('pc')
+                    if pfix=='inc' : leg.AddEntry(paramScanResults[p][(v2comp,cSlice)][4],cTitle,'lp')
+                    else : addToLegend(leg,paramScanResults[p][(v2comp,cSlice)])
                 
                 leg.Draw()
             
                 #draw aux lines for the range
-                line.SetLineColor(ROOT.kRed)
-                if pmax:
-                    line.DrawLine(pmax,0,pmax,gr.Eval(pmax))
-                if pmin:
-                    line.DrawLine(pmin,0,pmin,gr.Eval(pmin))
+                if pfix!='inc':
+                    line.SetLineColor(ROOT.kRed)
+                    if pmax:
+                        line.DrawLine(pmax,0,pmax,gr.Eval(pmax))
+                    if pmin:
+                        line.DrawLine(pmin,0,pmin,gr.Eval(pmin))
                
                 tex=ROOT.TLatex()
                 tex.SetTextFont(42)
                 tex.SetTextSize(0.05)
                 tex.SetNDC()
-                tex.DrawLatex(0.16,0.88,'#bf{CMS} #it{preliminary}')
-                tex.DrawLatex(0.16,0.8,VARTITLES[v])
+                tex.DrawLatex(0.16,0.88,opt.cmsLabel)
+                if pfix!='inc' : tex.DrawLatex(0.16,0.8,VARTITLES[v])
                 tex.DrawLatex(0.65,0.96,'#scale[0.8]{35.9 fb^{-1} (#sqrt{s}=13 TeV)}')
 
                 c.RedrawAxis()
@@ -408,7 +429,7 @@ def main():
             tex.SetTextFont(42)
             tex.SetTextSize(0.05)
             tex.SetNDC()
-            tex.DrawLatex(0.16,0.88,'#bf{CMS} #it{preliminary}')
+            tex.DrawLatex(0.16,0.88,opt.cmsLabel)
             tex.DrawLatex(0.6,0.88,'#scale[0.8]{%s=%3.3f}'%(p,perc[1]))
             tex.DrawLatex(0.6,0.8,'#scale[0.8]{[%3.3f,%3.3f]}'%(perc[0],perc[2]))
             tex.DrawLatex(0.65,0.96,'#scale[0.8]{35.9 fb^{-1} (#sqrt{s}=13 TeV)}')

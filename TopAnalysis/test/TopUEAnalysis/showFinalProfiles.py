@@ -9,51 +9,71 @@ from UETools import getGraphExtremes,formatGraph
 from showFinalDistributions import PLOTTINGSET_1,PLOTTINGSET_2,PLOTTINGSET_3
 
 SLICELISTS=[
-    ('',[ 
-        ('inc',             'inclusive'),
-        ('nj=0,1',          'N_{j}=0'),
-        ('nj=1,2',          'N_{j}=1'),
-        ('nj=2,999',        'N_{j}#geq2'),
-        ('ptll=0,20',       'p_{T}(ll)<20'),
-        ('ptll=20,60',      '20<p_{T}(ll)<60'),
-        ('ptll=60,120',     '60<p_{T}(ll)<120'),
-        ('ptll=120,9999',   'p_{T}(ll)>120'),
-        ('mll=0,60',        'M(ll)<60'),
-        ('mll=60,120',      '60<M(ll)<120'),
-        ('mll=120,200',     '120<M(ll)<200'),
-        ('mll=200,9999',    'M(ll)>200'),
-        ] ),
+    ('',
+     [ 
+            ('inc',             'inclusive'),
+            ('nj=0,1',          '=0'),
+            ('nj=1,2',          '=1'),
+            ('nj=2,999',        '#geq2'),
+            ('ptll=0,20',       '[0,20['),
+            ('ptll=20,60',      '[20,60['),
+            ('ptll=60,120',     '[60,120['),
+            ('ptll=120,9999',   '>120'),
+            ('mll=0,60',        '[0,60['),
+            ('mll=60,120',      '[60,120['),
+            ('mll=120,200',     '[120,200['),
+            ('mll=200,9999',    '>200'),
+            ],
+     [ 
+            ('Extra jets',1,4),
+            ('p_{T}(ll)',4,8),
+            ('M(ll)',8,12)
+            ]
+     ),
     ('_ptll',[
-            ('inc_ptll=tow',           'toward'),
+            ('inc_ptll=tow',           'inc.'),
             ('ptll=0,20_ptll=tow',     '[0,20['),
             ('ptll=20,60_ptll=tow',    '[20,60['),
             ('ptll=60,120_ptll=tow',   '[60,120['),
             ('ptll=120,9999_ptll=tow', '#geq120'),
-            ('inc_ptll=tra',           'transverse'),
+            ('inc_ptll=tra',           'inc.'),
             ('ptll=0,20_ptll=tra',     '[0,20['),
             ('ptll=20,60_ptll=tra',    '[20,60['),
             ('ptll=60,120_ptll=tra',   '[60,120['),
             ('ptll=120,9999_ptll=tra', '#geq120'),
-            ('inc_ptll=awa',           'away'),
+            ('inc_ptll=awa',           'inc.'),
             ('ptll=0,20_ptll=awa',     '[0,20['),
             ('ptll=20,60_ptll=awa',    '[20,60['),
             ('ptll=60,120_ptll=awa',   '[60,120['),
             ('ptll=120,9999_ptll=awa', '#geq120'),
-            ]),
-    ('_ptllnj',[
-            ('inc_ptll=tow',      'toward'),
+            ],
+     [
+            ('Toward',0,5),
+            ('Transverse',5,10),
+            ('Away',10,15)
+            ]
+     ),
+    ('_ptllnj',
+     [
+            ('inc_ptll=tow',      'inc.'),
             ('nj=0,1_ptll=tow',   '=0'),
             ('nj=1,2_ptll=tow',   '=1'),
             ('nj=2,999_ptll=tow', '#geq2'),
-            ('inc_ptll=tra',      'transverse'),
+            ('inc_ptll=tra',      'inc.'),
             ('nj=0,1_ptll=tra',   '=0'),
             ('nj=1,2_ptll=tra',   '=1'),
             ('nj=2,999_ptll=tra', '#geq2'),
-            ('inc_ptll=awa',      'away'),
+            ('inc_ptll=awa',      'inc.'),
             ('nj=0,1_ptll=awa',   '=0'),
             ('nj=1,2_ptll=awa',   '=1'),
             ('nj=2,999_ptll=awa', '#geq2'),
-            ])
+            ],
+     [
+            ('Toward',0,4),
+            ('Transverse',4,8),
+            ('Away',8,12)
+            ]
+     )
     ]
 
 
@@ -94,44 +114,39 @@ def getProfileRatiosWithRespectTo(grColl,refKey):
     return grCollRatios,grCollPulls
 
 
-def showProfile(grColl,grCollComp,obs,sliceList,plottingSet,outDir,pfix='',isPull=False):
+def showProfile(grColl,grCollComp,obs,sliceList,plottingSetList=[PLOTTINGSET_1],outDir='./',cmsLabel='#bf{CMS}',isPull=False,pfix='',categList=[]):
 
     """
     build the profile plot
     """
     #start the canvas
     c=ROOT.TCanvas('c','c',800,600)
-    c.SetTopMargin(0.05)
-    c.SetRightMargin(0.0)
-    c.SetLeftMargin(0.0)
-    c.SetBottomMargin(0.0)
-
-    c.cd()
-    p1=ROOT.TPad('p1','p1',0,0.4,1.0,1.0)
-    p1.SetTopMargin(0.06)
-    p1.SetRightMargin(0.03)
-    p1.SetLeftMargin(0.12)
-    p1.SetBottomMargin(0.01)
-    p1.Draw()
-    p1.SetGridx()
-    p1.cd()
-    frame=ROOT.TH1F('frame',';Phase space region;<%s>;'%VARTITLES[obs],len(sliceList),0,len(sliceList))
+    c.SetTopMargin(0.12)
+    c.SetRightMargin(0.03)
+    c.SetLeftMargin(0.15)
+    c.SetBottomMargin(0.2)
+    c.SetGridx()
+    units=''
+    if obs in ['chflux','chfluxz','chavgpt','chavgpt'] : units = ' [GeV]'
+    frame=ROOT.TH1F('frame',';Category;<%s>%s;'%(VARTITLES[obs],units),len(sliceList),0,len(sliceList))
     for xbin in xrange(1,frame.GetNbinsX()+1): frame.GetXaxis().SetBinLabel(xbin,sliceList[xbin-1][1])
     frame.GetYaxis().SetTitleSize(0.06)
     frame.GetYaxis().SetLabelSize(0.05)
-    frame.GetXaxis().SetTitleSize(0.0)
-    frame.GetXaxis().SetLabelSize(0.0)
+    frame.GetXaxis().SetTitleSize(0.06)
+    frame.GetXaxis().SetLabelSize(0.05)
+    frame.GetXaxis().SetLabelOffset(0.01)
+    frame.GetXaxis().SetTitleOffset(1.5)
     frame.Draw()
 
     #plot and add to the legend
-    leg=ROOT.TLegend(0.67,0.92,0.94,0.92-len(plottingSet)*0.06)
+    leg=ROOT.TLegend(0.67,0.86,0.94,0.86-len(plottingSetList[0])*0.05)
     leg.SetFillStyle(0)
     leg.SetBorderSize(0)
     leg.SetTextFont(42)
-    leg.SetTextSize(0.05)
+    leg.SetTextSize(0.04)
     leg.AddEntry( grColl['Data'], 'Data','f' )
     maxY,minY=-10,10
-    for p,drawOpt,fill,color,marker,keepXUnc,shiftX in plottingSet:
+    for p,drawOpt,fill,color,marker,keepXUnc,shiftX in plottingSetList[0]:
         try:
             formatGraph(grColl[p],fill,color,marker,keepXUnc,shiftX)
             grColl[p].Draw(drawOpt)
@@ -143,99 +158,166 @@ def showProfile(grColl,grCollComp,obs,sliceList,plottingSet,outDir,pfix='',isPul
             pass
     frame.GetYaxis().SetRangeUser(minY*0.8,maxY*1.3)
     leg.Draw()
-    
+
+    #category labels
+    catTxt=ROOT.TLatex()
+    catTxt.SetTextFont(52)
+    catTxt.SetTextSize(0.035)
+    catTxt.SetTextAlign(22)
+    catTxt.SetNDC(False)
+    ar=ROOT.TArrow()
+    ar.SetNDC(False)
+    ar.SetLineWidth(2)
+    for t,xmin,xmax in categList:
+        catTxt.DrawLatex(0.5*(xmax+xmin),maxY*1.36,t)
+        ar.DrawArrow(xmin,maxY*1.325,xmax,maxY*1.325,0.01,"<>")
+
     #standard label
     tex=ROOT.TLatex()
     tex.SetTextFont(42)
     tex.SetTextSize(0.06)
     tex.SetNDC()
-    tex.DrawLatex(0.15,0.87,'#bf{CMS} #it{preliminary}')
-    tex.DrawLatex(0.79,0.955,'#scale[0.8]{35.9 fb^{-1} (#sqrt{s}=13 TeV)}')
+    tex.DrawLatex(0.16,0.95,cmsLabel)
+    tex.DrawLatex(0.66,0.95,'#scale[0.8]{35.9 fb^{-1} (#sqrt{s}=13 TeV)}')
 
-    p1.RedrawAxis()
-
-    c.cd()
-    p2=ROOT.TPad('p2','p2',0,0.0,1.0,0.4)
-    p2.SetTopMargin(0.01)
-    p2.SetRightMargin(0.03)
-    p2.SetLeftMargin(0.12)
-    p2.SetBottomMargin(0.3)
-    p2.SetGridx()
-    p2.Draw()
-    p2.cd()
-    ratioframe=frame.Clone('ratioframe')
-    ratioframe.GetYaxis().SetTitle('Ratio to Data')
-    ratioframe.GetYaxis().SetTitleOffset(0.7)
-    ratioframe.GetYaxis().SetTitleSize(0.09)
-    ratioframe.GetYaxis().SetLabelSize(0.08)
-    ratioframe.GetXaxis().SetTitleOffset(1.6)
-    ratioframe.GetXaxis().SetTitleSize(0.09)
-    ratioframe.GetXaxis().SetLabelSize(0.09)
-    ratioframe.GetXaxis().SetLabelOffset(0.02)
-    ratioframe.Draw()
-    minY,maxY=0.99,1.01
-    if isPull:
-        minY,maxY=3,-3
-        ratioframe.GetYaxis().SetTitle('Pull')
-        print 'Drawing as pull'
-    for p,drawOpt,fill,color,marker,keepXUnc,shiftX in plottingSet:
-        try:
-            formatGraph(grCollComp[p],fill,color,marker,keepXUnc,shiftX)
-            grCollComp[p].Draw(drawOpt)
-            iminY,imaxY=getGraphExtremes(grCollComp[p])
-            maxY=max(imaxY,maxY)
-            minY=min(iminY,minY)
-        except:
-            pass
-    if isPull:
-        ratioframe.GetYaxis().SetRangeUser(-5,5)
-    else:
-        ratioframe.GetYaxis().SetRangeUser(max(minY*0.8,0.15),min(maxY*1.25,1.95))
-    ratioframe.GetYaxis().SetNdivisions(5)
-
-    p2.RedrawAxis()
-
+    c.RedrawAxis()
     c.Modified()
     c.Update()
     for ext in ['png','pdf']:
         c.SaveAs('%s/ueprofile%s.%s'%(outDir,pfix,ext))
 
-    #only ratio
-    cratio=ROOT.TCanvas('cratio','cratio',800,240)
-    cratio.SetTopMargin(0.01)
-    cratio.SetRightMargin(0.03)
-    cratio.SetLeftMargin(0.12)
-    cratio.SetBottomMargin(0.3)
-    cratio.SetGridx()
-    cratio.Draw()
-    ratioframe.Draw()
-    leg=ROOT.TLegend(0.15,0.92,0.95,0.88)
-    leg.SetFillStyle(0)
-    leg.SetBorderSize(0)
-    leg.SetTextFont(42)
-    leg.SetTextSize(0.06)
-    leg.SetNColumns(len(plottingSet)-1)
-    for p,drawOpt,fill,color,marker,keepXUnc,shiftX in plottingSet:
-        try:
-            grCollComp[p].Draw(drawOpt)
-            if p!='Data': leg.AddEntry(grCollComp[p],p,drawOpt)
-        except:
-            pass
-    if isPull:
-        ratioframe.GetYaxis().SetRangeUser(-5,5)
-    else:
-        ratioframe.GetYaxis().SetRangeUser(max(minY*0.8,0.15),min(maxY*1.5,1.95))
-    ratioframe.GetYaxis().SetNdivisions(5)
-    leg.Draw()
+    #start the ratio canvas
+    dy_xtit=20.
+    dy_pad=180.
+    y_total=4*dy_xtit+dy_pad*len(plottingSetList)
+    rel_dy_xtit=dy_xtit/y_total
+    rel_dy_pad=dy_pad/y_total
+    cratio=ROOT.TCanvas('c','c',800,int(y_total))
+    cratio.SetTopMargin(0.0)
+    cratio.SetRightMargin(0.0)
+    cratio.SetLeftMargin(0.0)
+    cratio.SetBottomMargin(0.0)
+    sp=[]
+    rf=[]
+    lg=[]
+    y=1
+    ar=ROOT.TArrow()
+    ar.SetNDC(False)
+    ar.SetLineWidth(2)
+    for i in xrange(0,len(plottingSetList)):
+        cratio.cd()
+        
+        #start new sub-pad
+        dy_ipad=rel_dy_pad
+        if i==0 : dy_ipad += 3*rel_dy_xtit
+        if i==len(plottingSetList)-1: dy_ipad+=rel_dy_xtit
+        sp.append( ROOT.TPad('p%d'%i,'p%d'%i,0,y,1.0,max(y-dy_ipad,0.)) )
+        y=max(y-dy_ipad,0.)
 
-    cratio.RedrawAxis()
+        #margins
+        if i==0:
+            sp[-1].SetTopMargin(0.33)
+        else:
+            sp[-1].SetTopMargin(0.11)
+        sp[-1].SetRightMargin(0.25)
+        sp[-1].SetLeftMargin(0.12)
+        if i==len(plottingSetList)-1:
+            sp[-1].SetTopMargin(0.06)
+            sp[-1].SetBottomMargin(0.28) #2*dy_xtit/dy_ipad)
+        else:
+            sp[-1].SetBottomMargin(0.11)
+        sp[-1].SetGridx()
+        sp[-1].Draw()
+        sp[-1].cd()        
+
+        rf.append( frame.Clone('ratioframe') )
+        rf[-1].GetYaxis().SetTitle('Theory/Data')
+        rf[-1].GetYaxis().SetTitleOffset(0.3)
+        rf[-1].GetYaxis().SetTitleSize(0.12)
+        rf[-1].GetYaxis().SetLabelSize(0.11)
+        if i==len(plottingSetList)-1:
+            rf[-1].GetXaxis().SetTitleSize(0.13)
+            rf[-1].GetXaxis().SetLabelSize(0.11)
+            rf[-1].GetXaxis().SetLabelOffset(0.01)
+            rf[-1].GetXaxis().SetTitleOffset(0.9)
+            rf[-1].GetXaxis().SetTitle('Category')
+        else:
+            rf[-1].GetXaxis().SetTitle('')
+            for xbin in xrange(0,rf[-1].GetNbinsX()): rf[-1].GetXaxis().SetBinLabel(xbin+1,'')
+        if i==0:
+            rf[-1].GetYaxis().SetTitleOffset(0.4)
+            rf[-1].GetYaxis().SetTitleSize(0.095)
+            rf[-1].GetYaxis().SetLabelSize(0.088)
+        
+
+        minY,maxY=0.99,1.01
+        if isPull:
+            minY,maxY=3,-3
+            rf[-1].GetYaxis().SetTitle('#frac{(Theory-Data)}{#sigma_{Data}}')
+            print 'Drawing as pull'
+        rf[-1].Draw()
+
+        if i==0:
+            tex=ROOT.TLatex()
+            tex.SetTextFont(42)
+            tex.SetTextSize(0.13)
+            tex.SetNDC()
+            tex.DrawLatex(0.12,0.88,cmsLabel)
+            tex.DrawLatex(0.45,0.88,'#scale[0.9]{35.9 fb^{-1} (#sqrt{s}=13 TeV)}')
+        
+        if i==0:
+            lg.append( ROOT.TLegend(0.75,0.1,0.99,0.7) )
+        elif i==len(plottingSetList)-1:
+            lg.append( ROOT.TLegend(0.75,0.23,0.99,0.95) )
+        else:
+            lg.append( ROOT.TLegend(0.75,0.1,0.99,0.95) )
+        lg[-1].SetFillStyle(0)
+        lg[-1].SetBorderSize(0)
+        lg[-1].SetTextFont(42)
+        lg[-1].SetTextSize(0.085 if i==0 else 0.1)
+        #lg[-1].SetNColumns(len(plottingSetList[i])-1)
+    
+        for p,drawOpt,fill,color,marker,keepXUnc,shiftX in plottingSetList[i]:
+            try:
+                formatGraph(grCollComp[p],fill,color,marker,keepXUnc,shiftX)
+                grCollComp[p].Draw(drawOpt)
+                iminY,imaxY=getGraphExtremes(grCollComp[p])
+                maxY=max(imaxY,maxY)
+                minY=min(iminY,minY)
+                if p!='Data':
+                    legOpt=drawOpt if not drawOpt in ['c','2'] else 'l'
+                    lg[-1].AddEntry(grCollComp[p],p,legOpt)
+            except:
+                pass
+
+        #re-adapt range according to limits found
+        if isPull:
+            rf[-1].GetYaxis().SetRangeUser(-5,5)
+        else:
+            rf[-1].GetYaxis().SetRangeUser(max(minY*0.8,0.15),min(maxY*1.25,1.95))
+        rf[-1].GetYaxis().SetNdivisions(5)
+
+        sp[-1].RedrawAxis()
+        lg[-1].Draw()
+    
+        #category labels
+        if i==0:
+            catTxt=ROOT.TLatex()
+            catTxt.SetTextFont(52)
+            catTxt.SetTextSize(0.08)
+            catTxt.SetTextAlign(22)
+            catTxt.SetNDC(False)
+            maxYLabel=6.5 if isPull else maxY*1.35 
+            maxYArr=5.5 if isPull else maxY*1.125
+            for t,xmin,xmax in categList:
+                catTxt.DrawLatex(0.5*(xmax+xmin),maxYLabel,t)
+                ar.DrawArrow(xmin,maxYArr,xmax,maxYArr,0.01,"<>")
+
+    # all done
     cratio.Modified()
     cratio.Update()
-    try:
-        for ext in ['pdf','png']: cratio.SaveAs('%s/ueprofile%s_ratio.%s'%(outDir,pfix,ext))
-    except:
-        pass
-
+    pfix+='_pull' if isPull else '_ratio'
+    for ext in ['pdf','png']: cratio.SaveAs('%s/ueprofile%s.%s'%(outDir,pfix,ext))
 
 
 def main():
@@ -254,16 +336,26 @@ def main():
                       dest='input',
                       help='input directory [%default]',
                       default=None)
+    parser.add_option('--doPull',
+                      dest='doPull',
+                      help='do pulls instead of ratios [%default]',
+                      default=False,
+                      action='store_true')
     parser.add_option('-s',
                       dest='slice',
                       help='slice type [%default]',
                       default=1,
                       type=int)
+    parser.add_option('--cmsLabel',
+                      dest='cmsLabel',
+                      help='cmsLabel [%default]',
+                      default='#bf{CMS} #it{preliminary}',
+                      type='string')
     (opt, args) = parser.parse_args()
 
     #set the slices to profile
-    pfix,sliceList=SLICELISTS[opt.slice-1]
-    print sliceList
+    pfix,sliceList,categList=SLICELISTS[opt.slice-1]
+
     #fill the graphs with the mean values
     grColl={}
     finalSliceList=[]
@@ -302,13 +394,12 @@ def main():
     grCollRatio,grCollPull=getProfileRatiosWithRespectTo(grColl,'Data')
 
     #show results
-    obs=opt.input.split('/')[-1]
-    #showProfile(grColl=grColl,grCollComp=grCollRatio,obs=obs,sliceList=finalSliceList,plottingSet=PLOTTINGSET_1,outDir=opt.input,pfix=pfix)
-    #showProfile(grColl=grColl,grCollComp=grCollRatio,obs=obs,sliceList=finalSliceList,plottingSet=PLOTTINGSET_2,outDir=opt.input,pfix=pfix+'_v2')
-    #showProfile(grColl=grColl,grCollComp=grCollRatio,obs=obs,sliceList=finalSliceList,plottingSet=PLOTTINGSET_3,outDir=opt.input,pfix=pfix+'_v3')
-    showProfile(grColl=grColl,grCollComp=grCollPull,obs=obs,sliceList=finalSliceList,plottingSet=PLOTTINGSET_1,outDir=opt.input,pfix=pfix,isPull=True)
-    showProfile(grColl=grColl,grCollComp=grCollPull,obs=obs,sliceList=finalSliceList,plottingSet=PLOTTINGSET_2,outDir=opt.input,pfix=pfix+'_v2',isPull=True)
-    showProfile(grColl=grColl,grCollComp=grCollPull,obs=obs,sliceList=finalSliceList,plottingSet=PLOTTINGSET_3,outDir=opt.input,pfix=pfix+'_v3',isPull=True)
+    obs=opt.input.split('/')[-1]    
+    showProfile(grColl=grColl,grCollComp=grCollPull,obs=obs,sliceList=finalSliceList,
+                plottingSetList=[PLOTTINGSET_1,PLOTTINGSET_2,PLOTTINGSET_3],
+                outDir=opt.input,isPull=opt.doPull,cmsLabel=opt.cmsLabel,pfix=pfix,
+                categList=categList)
+
 
     
 
