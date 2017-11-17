@@ -534,8 +534,8 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
   //MUON SELECTION: cf. https://twiki.cern.ch/twiki/bin/viewauth/CMS/SWGuideMuonIdRun2
   edm::Handle<pat::MuonCollection> muons;
   iEvent.getByToken(muonToken_, muons);
-//  float maxMuPtForCor(200.);
-//  if(!useRawLeptons_ && muonCor_==0) muonCor_=new KalmanMuonCalibrator( ev_.isData? "DATA_80X_13TeV" : "MC_80X_13TeV");
+  float maxMuPtForCor(200.);
+  if(!useRawLeptons_ && muonCor_==0) muonCor_=new KalmanMuonCalibrator( ev_.isData? "DATA_80X_13TeV" : "MC_80X_13TeV");
   for (const pat::Muon &mu : *muons) 
     { 
 
@@ -549,22 +549,22 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       float eta = mu.eta();
       float phi = mu.phi();
       float ptUnc = mu.bestTrack()->ptError();
-/*      if(muonCor_ && mu.muonBestTrackType() == 1 && pt < maxMuPtForCor)
+      if(muonCor_ && mu.muonBestTrackType() == 1 && pt < maxMuPtForCor)
         {
-//	  bool corrApplied(true);
+      	  bool corrApplied(true);
           if( !ev_.isData )
-	    {
-//	      pt = muonCor_->getCorrectedPt(pt, eta, phi, mu.charge());
-//	      pt = muonCor_->smear(pt, eta);
-	    }
-	  else if (pt > 2. && fabs(eta) < 2.4)
-	    {
-//	      pt = muonCor_->getCorrectedPt(pt, eta, phi, mu.charge());
-	    }
-	  else
-	    {
-//	      corrApplied=false;
-	    }
+	        {
+    	      pt = muonCor_->getCorrectedPt(pt, eta, phi, mu.charge());
+  	        pt = muonCor_->smear(pt, eta);
+	        }
+	        else if (pt > 2. && fabs(eta) < 2.4)
+	        {
+  	      pt = muonCor_->getCorrectedPt(pt, eta, phi, mu.charge());
+	        }
+	        else
+	        {
+  	      corrApplied=false;
+	        }
           
           if(pt<0.1 || isnan(pt))
             {
@@ -575,24 +575,24 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
             }
           
           if(corrApplied)
-	    {
-//	      int n=muonCor_->getN();
-	      float uncUp(0),uncDn(0);
-	      for(int i=0; i<n; i++)
-		{
-		  muonCor_->vary(i,+1);
-		  uncUp += pow(muonCor_->getCorrectedPt(mu.pt(),eta,phi,mu.charge())-pt,2);
-		  muonCor_->vary(i,-1);
-		  uncDn += pow(muonCor_->getCorrectedPt(mu.pt(),eta,phi,mu.charge())-pt,2);
-		}
-	      muonCor_->reset();
-	      muonCor_->varyClosure(+1);
-	      float vClose=muonCor_->getCorrectedPt(mu.pt(),eta,phi,mu.charge());
-	      uncUp += pow(vClose-pt,2);
-	      uncDn += pow(vClose-pt,2);
-	      ptUnc = 0.5*(TMath::Sqrt(uncUp)+TMath::Sqrt(uncDn));
-	    }
-        }*/
+	         {
+    	      int n=muonCor_->getN();
+	          float uncUp(0),uncDn(0);
+	          for(int i=0; i<n; i++)
+		          {
+          		  muonCor_->vary(i,+1);
+		            uncUp += pow(muonCor_->getCorrectedPt(mu.pt(),eta,phi,mu.charge())-pt,2);
+		            muonCor_->vary(i,-1);
+          		  uncDn += pow(muonCor_->getCorrectedPt(mu.pt(),eta,phi,mu.charge())-pt,2);
+		          }
+    	      muonCor_->reset();
+	          muonCor_->varyClosure(+1);
+	          float vClose=muonCor_->getCorrectedPt(mu.pt(),eta,phi,mu.charge());
+    	      uncUp += pow(vClose-pt,2);
+	          uncDn += pow(vClose-pt,2);
+	          ptUnc = 0.5*(TMath::Sqrt(uncUp)+TMath::Sqrt(uncDn));
+	        }
+        }
       p4.SetPtEtaPhiM(pt,eta,phi,mu.mass());
 
       //kinematics
