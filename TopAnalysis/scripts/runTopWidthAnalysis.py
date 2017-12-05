@@ -140,6 +140,15 @@ def runTopWidthAnalysis(fileName,
         for assig in ['cor','wro']:
             var='%sgenmlbvsmtop_w%d'%(assig,int(100*w))
             observablesH[var]=ROOT.TH2F(var,';Mass(lepton,jet) [GeV];Top mass;l+j pairs',30,0,300,100,150,200)
+            if w!=1.0 : continue
+            var='%smlb'%(assig)
+            observablesH[var]=ROOT.TH1F(var,';Mass(lepton,jet) [GeV];l+j pairs',30,0,300)
+            var='%sptlb'%(assig)
+            observablesH[var]=ROOT.TH1F(var,';p_{T}(lepton,jet);l+j pairs',30,0,300)
+            var='%sdphilb'%(assig)
+            observablesH[var]=ROOT.TH1F(var,';#Delta#phi(lepton,jet);l+j pairs',30,-3.15,3.15)
+            var='%sdrlb'%(assig)
+            observablesH[var]=ROOT.TH1F(var,';#DeltaR(lepton,jet);l+j pairs',30,0,6)
 
     #RECO level histograms
     for j in ['EE','MM','EM']:
@@ -437,7 +446,11 @@ def runTopWidthAnalysis(fileName,
                         glp4.SetPtEtaPhiM(tree.gl_pt[il],tree.gl_eta[il],tree.gl_phi[il],tree.gl_m[il])
                         gjp4=ROOT.TLorentzVector()
                         gjp4.SetPtEtaPhiM(tree.gj_pt[ij],tree.gj_eta[ij],tree.gj_phi[ij],tree.gj_m[ij])
-                        genmlb=(glp4+gjp4).M()
+                        gljp4=(glp4+gjp4)
+                        genmlb=gljp4.M()
+                        genptlb=gljp4.Pt()
+                        gendphilb=glp4.DeltaPhi(gjp4)
+                        gendrlb=glp4.DeltaR(gjp4)
                         
                         for ibp in xrange(0,len(bpartonList)):
                             dR=gjp4.DeltaR(bpartonList[ibp])
@@ -457,9 +470,19 @@ def runTopWidthAnalysis(fileName,
                     #save MC truth distribution
                     if pairFullyMatchedAtGen:
                         for w in widthList:
-                            var='cor' if assignmentType==0 else 'wro'
-                            var+='genmlbvsmtop_w%d'%int(100*w)
+                            assigvar='cor' if assignmentType==0 else 'wro'
+                            var=assigvar+'genmlbvsmtop_w%d'%int(100*w)
                             observablesH[var].Fill(genmlb,tmass,evWeight*widthWeight[w])
+                            
+                            if w!=1: continue
+                            var=assigvar+'mlb'
+                            observablesH[var].Fill(genmlb,evWeight*widthWeight[w])
+                            var=assigvar+'ptlb'
+                            observablesH[var].Fill(genptlb,evWeight*widthWeight[w])
+                            var=assigvar+'dphilb'
+                            observablesH[var].Fill(gendphilb,evWeight*widthWeight[w])
+                            var=assigvar+'drlb'
+                            observablesH[var].Fill(gendrlb,evWeight*widthWeight[w])
 
                     #emulate reweighting to NLO prod+dec based on MCFM calculations
                     pairWeightAtNLO=1.0

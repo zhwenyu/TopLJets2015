@@ -43,9 +43,8 @@ def getRowFromTH2(tempHist2D,columnName) :
     tempBinNum = tempHist2D.GetYaxis().FindBin(columnName);
     new1DProj  = tempHist2D.ProjectionX(tempHist2D.GetName()+"_"+columnName,
             tempBinNum,
-            tempBinNum).Clone(tempHist2D.GetName())
+            tempBinNum) #.Clone(tempHist2D.GetName())
     new1DProj.SetDirectory(0)
-
     return new1DProj
 
 
@@ -59,7 +58,7 @@ def getDistsForHypoTest(cat,rawSignalList,opt,outDir="",systName="",systIsGen=Fa
     elif systName != "" : systExt = "_exp"
 
     # get main dists
-    obs,exp=getDistsFromDirIn(opt.input,'%s_%s_w100%s'%(cat,opt.dist,systExt))
+    obs,exp=getDistsFromDirIn(opt.input,'%s_%s_w%.0f%s'%(cat,opt.dist,opt.mainHypo,systExt))
 
     #run through exp and convert into TH1s
     if systName != "" :
@@ -68,7 +67,12 @@ def getDistsForHypoTest(cat,rawSignalList,opt,outDir="",systName="",systIsGen=Fa
 
     #signal hypothesis
     expMainHypo=exp.copy()
-    if opt.mainHypo!=1.0:  _,expMainHypo=getDistsFromDirIn(opt.input,'%s_%s_w%.0f'%(cat,opt.dist,opt.mainHypo))
+    if opt.mainHypo!=1.0:  
+        _,expMainHypo=getDistsFromDirIn(opt.input,'%s_%s_w%.0f%s'%(cat,opt.dist,opt.mainHypo,systExt))
+        if systName!="":
+            for tHist2D in exp :
+                expMainHypo[tHist2D] = getRowFromTH2(expMainHypo[tHist2D],systName)
+
     expAltHypo=None
     if len(opt.altHypoFromSim)>0 :
         _,expAltHypo=getDistsFromDirIn(opt.systInput,'%s_%s_w%.0f%s'%(cat,opt.dist,opt.altHypo,systExt),opt.expAltHypoFromSim)
@@ -841,7 +845,7 @@ steer the script
 """
 def main():
 
-    ROOT.gROOT.SetBatch()
+    #ROOT.gROOT.SetBatch()
     ROOT.gStyle.SetOptTitle(0)
     ROOT.gStyle.SetOptStat(0)
 

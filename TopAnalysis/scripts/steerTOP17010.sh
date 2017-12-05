@@ -69,9 +69,9 @@ case $WHAT in
 	python scripts/runTopWidthAnalysis.py -i root://eoscms//eos/cms/${summaryeosdir}/Chunks/MC13TeV_TTJets_12.root -o ${outdir}/analysis/Chunks -q local;
         ;;
     ANA )
-	python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${outdir}/analysis/Chunks -q ${queue} --only MC13TeV;
-        python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${outdir}/analysis/Chunks -q ${queue} --only Data13TeV_Single,Data13TeV_Double --farm TOP17010DataANA;
-        python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${outdir}/analysis/Chunks -q ${queue} --only MuonEG --farm TOP17010DataMuEGANA;
+	python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${outdir}/analysis/Chunks -q ${queue} --only MC13TeV_TTJets;
+        #python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${outdir}/analysis/Chunks -q ${queue} --only Data13TeV_Single,Data13TeV_Double --farm TOP17010DataANA;
+        #python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${outdir}/analysis/Chunks -q ${queue} --only MuonEG --farm TOP17010DataMuEGANA;
 	;;
     CHECKANA )
         for FARM in TOP17010ANA TOP17010DataANA TOP17010DataMuEGANA; do
@@ -114,15 +114,17 @@ case $WHAT in
 	;;
     HYPOTEST ) 
 	mainHypo=100
+        mainHypo=100
 	CATS=(
-            "EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt,EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt"
-	    "EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt"
-	    "EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt"
+           "EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt,EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt"
+	   "EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt"
+	   "EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt"
 	)
-        TAGS=("inc_scan" "ll" "em")
+        TAGS=("inc_scan") # "ll" "em")
 	altHypo=(20 40 50 60 70 80 90 100 110 120 130 140 150 160 180 200 220 240 260 280 300 350 400)        
-	data=(-1 100 400)	
-        queue=8nh
+	data=(-1 50 100 200 300 400)
+	TAGS=("inc_scan")
+        queue=8nh        
 	#still to be debugged
         #cmd="${cmd} --addBinByBin 0.3" 
 	for h in ${altHypo[@]}; do
@@ -134,7 +136,7 @@ case $WHAT in
 		    
 		    cmd="python test/TopWidthAnalysis/runHypoTestDatacards.py"
 		    cmd="${cmd} --combine ${COMBINERELEASE}"
-		    cmd="${cmd} --mainHypo=${mainHypo} --altHypo ${h} --pseudoData=${d}"
+		    cmd="${cmd} --mainHypo ${mainHypo} --altHypo ${h} --pseudoData ${d}"
 		    #cmd="${cmd} -s tbart,Singletop" #tW --replaceDYshape"
                     cmd="${cmd} -s tbart"
 		    cmd="${cmd} --dist incmlb"		    

@@ -62,9 +62,15 @@ class UEEventCounter:
 
     def reset(self):
         """
-        reset counters
+        reset counters and aux variables
         """
-    
+
+        self.gen_ptll=0
+        self.gen_sumpt=0
+        self.gen_mll=0
+        self.gen_ptpos=0
+        self.gen_nj=0
+
         nSysts=len(self.systList)
 
         self.w                  = [1.0]*nSysts    #event weights
@@ -125,6 +131,15 @@ class UEEventCounter:
         """
         count the particles in an event
         """
+
+        try:
+            self.gen_ptll=t.gen_ptll
+            self.gen_sumpt=t.gen_sumpt
+            self.gen_mll=t.gen_mll
+            self.gen_ptpos=t.gen_ptpos
+            self.gen_nj=t.gen_nj
+        except:
+            pass
         
         #assign an era randomly (only used for MC)
         mceraLumi=ROOT.gRandom.Uniform(35874.8)

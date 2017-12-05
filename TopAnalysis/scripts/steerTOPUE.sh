@@ -29,11 +29,9 @@ myletter=${whoami:0:1}
 eosdir=/store/cmst3/group/top/ReReco2016/b312177
 dataeos=/store/cmst3/group/top/ReReco2016/be52dbe_03Feb2017
 markuseos=/eos/user/m/mseidel/ReReco2016/b312177_merged/
-#efeeos=/store/group/phys_top/efe/ue_ttbar_alpha_s_isr/
 efeeos=/store/group/phys_top/efe/output_ue_root_alpha_s_isr
 efeeos2=/store/group/phys_top/efe/
-efeeos3=/store/group/phys_top/efe/output_ue_root_cp5
-summaryeosdir=/store/cmst3/group/top/TopUE
+summaryeosdir=/store/cmst3/group/top/TOP-17-015
 outdir=${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/UEanalysis/
 wwwdir=~/www/TOP-17-015
 
@@ -56,6 +54,7 @@ case $WHAT in
 	#    --runSysts \
 	#    --ch 0;
         for step in 1; do
+            continue
 	    #python test/TopUEAnalysis/runUEanalysis.py -i ue_test.root --step ${step} --ptThr 1.0,0.9  --obs chmult --slice ptll=0,9999. --reg ptll=awa -o ./UEanalysis_test;
             python test/TopUEAnalysis/runUEanalysis.py -i ue_test.root  --ptThr 0.9,0.9 --step ${step} --obs chmult -o ./UEanalysis_test;
         done
@@ -68,12 +67,16 @@ case $WHAT in
         commonOpts="-q ${queue} -o ${summaryeosdir}      --era era2016 -m TOP-UE::RunTopUE --ch 0 --runSysts";
 	#python scripts/runLocalAnalysis.py -i ${eosdir}  --farmappendix TopUEMC ${commonOpts} --only MC;
 	#python scripts/runLocalAnalysis.py -i ${dataeos} --farmappendix TopUEMC ${commonOpts} --only Data;        
-        #python scripts/runLocalAnalysis.py -i ${markuseos} --farmappendix TopUEMC ${commonOpts} --only herwig7,sherpa,pythia8_asfsr;
-        commonOpts="${commonOpts} -o `pwd`/UEanalysis"
-        python scripts/runLocalAnalysis.py -i ${efeeos} --farmappendix TopUEMCASISR  ${commonOpts} --ignore "~";
+        #python scripts/runLocalAnalysis.py -i ${markuseos} --farmappendix TopUEMC ${commonOpts} --only asfsr,herwig7,sherpa;
+        #python scripts/runLocalAnalysis.py -i ${efeeos} --farmappendix TopUEMCASISR  ${commonOpts} --ignore "~";
         #python scripts/runLocalAnalysis.py -i ${efeeos2} --farmappendix TopUEMCMPICR ${commonOpts} --only mpi_off,cr_off --ignore "~";        
         #python scripts/runLocalAnalysis.py -i ${efeeos3} --farmappendix TopUEMCMPICR ${commonOpts} --ignore "~";        
 	;;
+    CHECKSELINTEG )
+        for farm in TopUEMC TopUEMCASISR TopUEMCMPICR; do
+            python scripts/checkAnalysisIntegrity.py ${CMSSW_BASE}/FARMTOP-17-015${farm} /eos/cms/${summaryeosdir}/Chunks
+        done
+        ;;
 
     MERGESEL )
 	mkdir -p ${outdir}
@@ -110,51 +113,48 @@ case $WHAT in
 	baseFiles=${base}_0.root,${base}_1.root,${base}_2.root,${base}_3.root,${base}_4.root
 
 	echo "Preparing analysis configuration based on ${baseFiles} - this will take a long time..."
-        obs=("maxRap" "rapDist") #"C" "D" "sphericity" "aplanarity" "chmult" "chavgpt" "chavgpz" "chfluxz" "chflux")
+        obs=("C" "D" "sphericity" "aplanarity" "chmult" "chavgpt" "chavgpz" "chfluxz" "chflux" "maxRap" "rapDist")
         analyses=(
             "" 
-#            "--slice nj=0,1" 
-#            "--slice nj=1,2" 
-#            "--slice nj=2,999" 
-#
-#            "--slice nj=0,1   --reg ptll=tra" 
-#            "--slice nj=0,1   --reg ptll=tow" 
-#            "--slice nj=0,1   --reg ptll=awa" 
-#            "--slice nj=1,2   --reg ptll=tra" 
-#            "--slice nj=1,2   --reg ptll=tow" 
-#            "--slice nj=1,2   --reg ptll=awa" 
-#            "--slice nj=2,999 --reg ptll=tra" 
-#            "--slice nj=2,999 --reg ptll=tow" 
-#            "--slice nj=2,999 --reg ptll=awa" 
-#
-#
-#            "--slice mll=0,60" 
-#            "--slice mll=60,120" 
-#            "--slice mll=120,200" 
-#            "--slice mll=200,9999" 
-#            "--slice chmult=0,15"
-#            "--slice chmult=15,30"
-#            "--slice chmult=30,45"
-#            "--slice chmult=45,9999"
-#            "--reg ptll=awa" 
-#            "--reg ptll=tow" 
-#            "--reg ptll=tra"
-#            "--slice ptll=0,20"
-#            "--slice ptll=0,20 --reg ptll=awa" 
-#            "--slice ptll=0,20 --reg ptll=tow" 
-#            "--slice ptll=0,20 --reg ptll=tra"
-#            "--slice ptll=20,60"
-#            "--slice ptll=20,60 --reg ptll=awa" 
-#            "--slice ptll=20,60 --reg ptll=tow" 
-#            "--slice ptll=20,60 --reg ptll=tra"
-#            "--slice ptll=60,120"
-#            "--slice ptll=60,120 --reg ptll=awa" 
-#            "--slice ptll=60,120 --reg ptll=tow" 
-#            "--slice ptll=60,120 --reg ptll=tra"
-#            "--slice ptll=120,9999"
-#            "--slice ptll=120,9999 --reg ptll=awa" 
-#            "--slice ptll=120,9999 --reg ptll=tow" 
-#            "--slice ptll=120,9999 --reg ptll=tra"
+            "--slice nj=0,1" 
+            "--slice nj=1,2" 
+            "--slice nj=2,999" 
+            "--slice nj=0,1   --reg ptll=tra" 
+            "--slice nj=0,1   --reg ptll=tow" 
+            "--slice nj=0,1   --reg ptll=awa" 
+            "--slice nj=1,2   --reg ptll=tra" 
+            "--slice nj=1,2   --reg ptll=tow" 
+            "--slice nj=1,2   --reg ptll=awa" 
+            "--slice nj=2,999 --reg ptll=tra" 
+            "--slice nj=2,999 --reg ptll=tow" 
+            "--slice nj=2,999 --reg ptll=awa" 
+            "--slice mll=0,60" 
+            "--slice mll=60,120" 
+            "--slice mll=120,200" 
+            "--slice mll=200,9999" 
+            "--reg ptll=awa" 
+            "--reg ptll=tow" 
+            "--reg ptll=tra"
+            "--slice ptll=0,20"
+            "--slice ptll=0,20 --reg ptll=awa" 
+            "--slice ptll=0,20 --reg ptll=tow" 
+            "--slice ptll=0,20 --reg ptll=tra"
+            "--slice ptll=20,40"
+            "--slice ptll=20,40 --reg ptll=awa" 
+            "--slice ptll=20,40 --reg ptll=tow" 
+            "--slice ptll=20,40 --reg ptll=tra"
+            "--slice ptll=40,80"
+            "--slice ptll=40,80 --reg ptll=awa" 
+            "--slice ptll=40,80 --reg ptll=tow" 
+            "--slice ptll=40,80 --reg ptll=tra"
+            "--slice ptll=80,120"
+            "--slice ptll=80,120 --reg ptll=awa" 
+            "--slice ptll=80,120 --reg ptll=tow" 
+            "--slice ptll=80,120 --reg ptll=tra"
+            "--slice ptll=120,9999"
+            "--slice ptll=120,9999 --reg ptll=awa" 
+            "--slice ptll=120,9999 --reg ptll=tow" 
+            "--slice ptll=120,9999 --reg ptll=tra"
         )
         for o in "${obs[@]}"; do
             for a in "${analyses[@]}"; do
@@ -170,19 +170,21 @@ case $WHAT in
                         echo "Skipping ${a} for ${o} as this is the variable being sliced"
                     fi
                 fi
+
+                #configure histograms (binning etc.)
 	        python test/TopUEAnalysis/runUEanalysis.py -i ${baseFiles} --step 1  ${options} -o ./UEanalysis;
+
+                #create condor
+                dir=`cat lastUE.dat`
+                python test/TopUEAnalysis/runUEanalysis.py -i ${summaryeosdir}/Chunks --step 2 -q ${queue} -o ${dir} --dryRun;
+                
+                #submit
+                cd ${dir}
+                condor_submit condor.sub;
+                cd -
             done
         done
         
-        #create the condor submission scripts but don't send them yet
-        a=(`ls UEanalysis/*/inc/*.pck`)
-        for i in ${a[@]}; do
-            dir=`dirname ${i}`
-            echo ${dir}
-            python test/TopUEAnalysis/runUEanalysis.py -i ${summaryeosdir}/Chunks --step 2 -q ${queue} -o ${dir} --dryRun;
-            #cd ${dir}; condor_submit condor.sub; cd -;
-        done
-
 	;;
     SUBMITANA )
         queue=longlunch
@@ -204,7 +206,7 @@ case $WHAT in
                     cp -v ${dir}/analysis*.pck UEanalysis/${i}/${j};
 
                     echo "Creating jobs for special MC (gen only)"
-                    python test/TopUEAnalysis/runUEanalysis.py -i /eos/cms/store/cmst3/group/top/TopUE_extra/Chunks --only cp5 --step 2 -q ${queue} -o UEanalysis/${i}/${j} --dryRun;
+                    python test/TopUEAnalysis/runUEanalysis.py -i /eos/cms/store/cmst3/group/top/TopUE_extra/Chunks --only asfsr --step 2 -q ${queue} -o UEanalysis/${i}/${j} --dryRun;
                     cd UEanalysis/${i}/${j};
                     condor_submit condor.sub;
                     cd -;
@@ -216,7 +218,7 @@ case $WHAT in
 
     CHECKANA )
         dir=UEanalysis/${TAGANA}
-        python scripts/checkAnalysisIntegrity.py ${dir}/FARM-UEANA/ ${dir}/Chunks/ > ${dir}/ana_integ.dat
+        python scripts/checkAnalysisIntegrity.py ${dir}/FARM-UEANA/ ${dir}/Chunks/ #> ${dir}/ana_integ.dat
         ;;
 
     MVANA)
@@ -241,14 +243,14 @@ case $WHAT in
         dir=$TAGANA
         commonOpts="-o ${dir}/unfold --plotter ${dir}/plots/plotter.root --syst ${dir}/plots/syst_plotter.root -d ${dir}/Chunks/"            
         #python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 0;
-        #python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 1;
+        python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 1;
         #python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 2;
         #python test/TopUEAnalysis/showUnfoldSummary.py -i ${dir}/unfold/unfold_summary.root;
-        python test/TopUEAnalysis/showFinalDistributions.py \
-            --cfg ${dir}/analysiscfg.pck --cmsLabel "#bf{CMS}"\
-            ${dir}/unfold/unfold_summary.root \
-            ${dir}/plots/plotter.root \
-            ${dir}/plots/syst_plotter.root;        
+        #python test/TopUEAnalysis/showFinalDistributions.py \
+        #    --cfg ${dir}/analysiscfg.pck --cmsLabel "#bf{CMS}"\
+        #    ${dir}/unfold/unfold_summary.root \
+        #    ${dir}/plots/plotter.root \
+        #    ${dir}/plots/syst_plotter.root;        
         ;;
 
     WWWANA )
