@@ -16,8 +16,9 @@ SLICELISTS=[
             ('nj=1,2',          '=1'),
             ('nj=2,999',        '#geq2'),
             ('ptll=0,20',       '[0,20['),
-            ('ptll=20,60',      '[20,60['),
-            ('ptll=60,120',     '[60,120['),
+            ('ptll=20,40',      '[20,40['),
+            ('ptll=40,80',      '[40,80['),
+            ('ptll=80,120',     '[80,120['),
             ('ptll=120,9999',   '>120'),
             ('mll=0,60',        '[0,60['),
             ('mll=60,120',      '[60,120['),
@@ -26,31 +27,34 @@ SLICELISTS=[
             ],
      [ 
             ('Extra jets',1,4),
-            ('p_{T}(ll)',4,8),
-            ('M(ll)',8,12)
+            ('p_{T}(ll)',4,9),
+            ('M(ll)',9,13)
             ]
      ),
     ('_ptll',[
             ('inc_ptll=tow',           'inc.'),
             ('ptll=0,20_ptll=tow',     '[0,20['),
-            ('ptll=20,60_ptll=tow',    '[20,60['),
-            ('ptll=60,120_ptll=tow',   '[60,120['),
+            ('ptll=20,40_ptll=tow',    '[20,40['),
+            ('ptll=40,80_ptll=tow',    '[40,80['),
+            ('ptll=80,120_ptll=tow',   '[80,120['),
             ('ptll=120,9999_ptll=tow', '#geq120'),
             ('inc_ptll=tra',           'inc.'),
             ('ptll=0,20_ptll=tra',     '[0,20['),
-            ('ptll=20,60_ptll=tra',    '[20,60['),
-            ('ptll=60,120_ptll=tra',   '[60,120['),
+            ('ptll=20,40_ptll=tra',    '[20,40['),
+            ('ptll=40,80_ptll=tra',    '[40,80['),
+            ('ptll=80,120_ptll=tra',   '[80,120['),
             ('ptll=120,9999_ptll=tra', '#geq120'),
             ('inc_ptll=awa',           'inc.'),
             ('ptll=0,20_ptll=awa',     '[0,20['),
-            ('ptll=20,60_ptll=awa',    '[20,60['),
-            ('ptll=60,120_ptll=awa',   '[60,120['),
+            ('ptll=20,40_ptll=awa',    '[20,40['),
+            ('ptll=40,80_ptll=awa',    '[40,80['),
+            ('ptll=80,120_ptll=awa',   '[80,120['),
             ('ptll=120,9999_ptll=awa', '#geq120'),
             ],
      [
-            ('Toward',0,5),
-            ('Transverse',5,10),
-            ('Away',10,15)
+            ('Toward',0,6),
+            ('Transverse',6,12),
+            ('Away',12,18)
             ]
      ),
     ('_ptllnj',
