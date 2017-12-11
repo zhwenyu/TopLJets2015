@@ -167,6 +167,9 @@ class UEEventCounter:
             except:
                 pass
 
+            #require e-mu
+            if abs(t.cat)!=11*13 : self.rec_passSel[iSystVar]=False
+
             passExtraCuts=True
             for cutKey in self.cuts:
                 if cutKey=='region': continue
@@ -295,8 +298,9 @@ class UEEventCounter:
                     if self.rec_chmult[iSystVar]<self.cuts['chmult'][0] or self.rec_chmult[iSystVar]>=self.cuts['chmult'][1]:
                         self.rec_passSel[iSystVar] = False
                 
-        #gen level (only one selection variation needed)
+        #gen level (only one selection variation needed and require e-mu final state)
         self.gen_passSel=(t.gen_passSel&0x1)
+        if isMC and abs(t.gen_cat)!=11*13 : self.gen_passSel=False
 
         passExtraCuts=True
         for cutKey in self.cuts:

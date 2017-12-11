@@ -11,7 +11,7 @@
 
 struct TopUE_t
 {
-  Int_t run,event,lumi,cat;
+  Int_t run,event,lumi,cat,gen_cat;
   Int_t nvtx;
   Int_t nw;
   Float_t weight[400];

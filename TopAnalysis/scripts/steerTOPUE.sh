@@ -65,11 +65,11 @@ case $WHAT in
 
     SEL )
         commonOpts="-q ${queue} -o ${summaryeosdir}      --era era2016 -m TOP-UE::RunTopUE --ch 0 --runSysts";
-	#python scripts/runLocalAnalysis.py -i ${eosdir}  --farmappendix TopUEMC ${commonOpts} --only MC;
-	#python scripts/runLocalAnalysis.py -i ${dataeos} --farmappendix TopUEMC ${commonOpts} --only Data;        
-        #python scripts/runLocalAnalysis.py -i ${markuseos} --farmappendix TopUEMC ${commonOpts} --only asfsr,herwig7,sherpa;
-        #python scripts/runLocalAnalysis.py -i ${efeeos} --farmappendix TopUEMCASISR  ${commonOpts} --ignore "~";
-        #python scripts/runLocalAnalysis.py -i ${efeeos2} --farmappendix TopUEMCMPICR ${commonOpts} --only mpi_off,cr_off --ignore "~";        
+	python scripts/runLocalAnalysis.py -i ${eosdir}  --farmappendix TopUEMC ${commonOpts} --only MC13TeV;
+	python scripts/runLocalAnalysis.py -i ${dataeos} --farmappendix TopUEMC ${commonOpts} --only Data;        
+        python scripts/runLocalAnalysis.py -i ${markuseos} --farmappendix TopUEMC ${commonOpts} --only asfsr,herwig7,sherpa;
+        python scripts/runLocalAnalysis.py -i ${efeeos} --farmappendix TopUEMCASISR  ${commonOpts} --ignore "~";
+        python scripts/runLocalAnalysis.py -i ${efeeos2} --farmappendix TopUEMCMPICR ${commonOpts} --only mpi_off,cr_off --ignore "~";        
         #python scripts/runLocalAnalysis.py -i ${efeeos3} --farmappendix TopUEMCMPICR ${commonOpts} --ignore "~";        
 	;;
     CHECKSELINTEG )
@@ -80,9 +80,7 @@ case $WHAT in
 
     MERGESEL )
 	mkdir -p ${outdir}
-	/afs/cern.ch/project/eos/installation/0.3.84-aquamarine/bin/eos.select -b fuse mount eos;
-	./scripts/mergeOutputs.py eos/cms${summaryeosdir} True ${outdir};	
-	/afs/cern.ch/project/eos/installation/0.3.84-aquamarine/bin/eos.select -b fuse umount eos;
+	./scripts/mergeOutputs.py /eos/cms${summaryeosdir} True ${outdir};	
 	;;
 
     PLOTSEL )
@@ -114,6 +112,7 @@ case $WHAT in
 
 	echo "Preparing analysis configuration based on ${baseFiles} - this will take a long time..."
         obs=("C" "D" "sphericity" "aplanarity" "chmult" "chavgpt" "chavgpz" "chfluxz" "chflux" "maxRap" "rapDist")
+        obs=("chavgpz")
         analyses=(
             "" 
             "--slice nj=0,1" 
@@ -156,6 +155,7 @@ case $WHAT in
             "--slice ptll=120,9999 --reg ptll=tow" 
             "--slice ptll=120,9999 --reg ptll=tra"
         )
+        analyses=("--slice ptll=40,80 --reg ptll=awa")
         for o in "${obs[@]}"; do
             for a in "${analyses[@]}"; do
                 options="--ptThr 0.9,0.9 --obs ${o} ${a}"
@@ -242,15 +242,15 @@ case $WHAT in
     UNFOLDANA )
         dir=$TAGANA
         commonOpts="-o ${dir}/unfold --plotter ${dir}/plots/plotter.root --syst ${dir}/plots/syst_plotter.root -d ${dir}/Chunks/"            
-        #python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 0;
+        python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 0;
         python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 1;
-        #python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 2;
-        #python test/TopUEAnalysis/showUnfoldSummary.py -i ${dir}/unfold/unfold_summary.root;
-        #python test/TopUEAnalysis/showFinalDistributions.py \
-        #    --cfg ${dir}/analysiscfg.pck --cmsLabel "#bf{CMS}"\
-        #    ${dir}/unfold/unfold_summary.root \
-        #    ${dir}/plots/plotter.root \
-        #    ${dir}/plots/syst_plotter.root;        
+        python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 2;
+        python test/TopUEAnalysis/showUnfoldSummary.py -i ${dir}/unfold/unfold_summary.root;
+        python test/TopUEAnalysis/showFinalDistributions.py \
+            --cfg ${dir}/analysiscfg.pck --cmsLabel "#bf{CMS}"\
+            ${dir}/unfold/unfold_summary.root \
+            ${dir}/plots/plotter.root \
+            ${dir}/plots/syst_plotter.root;        
         ;;
 
     WWWANA )

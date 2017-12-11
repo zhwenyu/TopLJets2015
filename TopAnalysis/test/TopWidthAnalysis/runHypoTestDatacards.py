@@ -6,6 +6,7 @@ import commands
 import getpass
 import pickle
 import numpy
+import copy
 from subprocess import Popen, PIPE, STDOUT
 
 from TopLJets2015.TopAnalysis.Plot import *
@@ -214,11 +215,13 @@ def doCombineScript(opt,args,outDir,dataCardList):
     script.write('### SCAN \n')
     script.write('\n')
     for extra,extraName in [('-S 0','_stat'),('','')]:
-        commonOpts="-m 172.5 %s -M HybridNew --testStat=TEV --onlyTestStat --saveToys --saveHybridResult --minimizerAlgo Minuit2"%extra
-        script.write("combine %s --singlePoint 0  workspace.root -n scan0n\n"%commonOpts)
-        script.write("mv higgsCombinescan0n.HybridNew.mH172.5.123456.root testStat_scan0n%s.root\n"%extraName)
-        script.write("combine %s --singlePoint 1  workspace.root -n scan1n\n"%commonOpts)
-        script.write("mv higgsCombinescan1n.HybridNew.mH172.5.123456.root testStat_scan1n%s.root\n"%extraName)
+        for testStat in ['LEP','TEV','LHC']:
+            extraName+='_'+testStat
+            commonOpts="-m 172.5 %s -M HybridNew --testStat=%s --onlyTestStat --saveToys --saveHybridResult --minimizerAlgo Minuit2"%(extra,testStat)
+            script.write("combine %s --singlePoint 0  workspace.root -n scan0n\n"%commonOpts)
+            script.write("mv higgsCombinescan0n.HybridNew.mH172.5.123456.root testStat_scan0n%s.root\n"%extraName)
+            script.write("combine %s --singlePoint 1  workspace.root -n scan1n\n"%commonOpts)
+            script.write("mv higgsCombinescan1n.HybridNew.mH172.5.123456.root testStat_scan1n%s.root\n"%extraName)
 
 
     #script.write('### CLs\n')
@@ -241,13 +244,13 @@ def doDataCards(opt,args):
     ttScenarioList=['tbart']
     mainSignalList,altSignalList=[],[]
     if 'tbart' in rawSignalList:
-        ttScenarioList = [('tbartw%.0f'%h).replace('.','p') for h in [opt.mainHypo,opt.altHypo]]
+        ttScenarioList = ['tbartw%d'%h for h in [opt.mainHypo,opt.altHypo]]
         if opt.mainHypo==opt.altHypo: ttScenarioList[1]+='a'
         mainSignalList += [ttScenarioList[0]]
         altSignalList  += [ttScenarioList[1]]
     tWScenarioList=['Singletop']
     if 'Singletop' in rawSignalList:
-        tWScenarioList = [('Singletopw%.0f'%h).replace('.','p') for h in [opt.mainHypo,opt.altHypo]]
+        tWScenarioList = ['Singletopw%d'%h for h in [opt.mainHypo,opt.altHypo]]
         if opt.mainHypo==opt.altHypo: tWScenarioList[1]+='a'
         mainSignalList += [tWScenarioList[0]]
         altSignalList  += [tWScenarioList[1]]
@@ -328,6 +331,19 @@ def doDataCards(opt,args):
         #data and nominal shapes
         obs,exp=getDistsForHypoTest(cat,rawSignalList,opt,outDir)
 
+        #if main hypothesis is not SM, get it along with the data
+        smExp=exp
+        if opt.mainHypo != 100:
+            smOpt=copy.deepcopy(opt)
+            smOpt.mainHypo=100
+            obs,smExp=getDistsForHypoTest(cat,rawSignalList,smOpt,outDir)
+
+            #copy the backgrounds, which will be absent in exp
+            for proc in smExp:
+                if 'w100' in proc: continue
+                exp[proc]=smExp[proc]
+
+
         #recreate data if requested
         if opt.pseudoData!=-1:
             pseudoSignal=None
@@ -344,33 +360,29 @@ def doDataCards(opt,args):
                 print pseudoSignal,'%s%s_%s_w100'%(opt.pseudoDataFromWgt,cat,opt.dist)
             else:
                 print 'injecting signal from weighted',opt.pseudoData
-                _,pseudoSignal=getDistsFromDirIn(opt.input,'%s_%s_w%.0f'%(cat,opt.dist,opt.pseudoData))
+                _,pseudoSignal=getDistsFromDirIn(opt.input,'%s_%s_w%d'%(cat,opt.dist,opt.pseudoData))
+
+            #build pseudo-expectations (reset data and add signal+backgrounds)
+            print '\t Pseudo-data composition'
             obs.Reset('ICE')
 
-            #build pseudo-expectations
-            pseudoSignalAccept=[]
+            #sm expectations are always used as the reference for the yields
             for proc in pseudoSignal:
-                accept=False
-                for sig in rawSignalList:
-                    if sig==proc: accept=True
-                if not accept : continue
-                print "\t\t Including:", proc, pseudoSignal[proc].GetName()
-
-                newProc=('%sw100'%proc).replace('.','p')
-                pseudoSignalAccept.append(newProc)
-                sf=exp[newProc].Integral()/pseudoSignal[proc].Integral()
+                if not proc in rawSignalList : continue
+                sf=smExp['%sw100'%proc].Integral()/pseudoSignal[proc].Integral()
                 pseudoSignal[proc].Scale(sf)
+                print "\t\t Including %s from %s scaled by %3.2f"%(proc, pseudoSignal[proc].GetName(),sf)
                 obs.Add( pseudoSignal[proc] )
 
-            if len(opt.pseudoDataFromWgt) : pseudoSignalAccept+=altSignalList
-
-            for proc in exp:
-                if "%.0f"%opt.altHypo in proc : continue
-                if not proc in pseudoSignalAccept:
-                    print "\t\t Including:", proc, exp[proc].GetName()
-                    obs.Add( exp[proc] )
-            print pseudoSignalAccept
+            #add the backgrounds
+            for proc in smExp:
+                if "w%d"%opt.altHypo in proc or "w%d"%opt.mainHypo in proc: continue
+                print "\t\t Including %s from %s"%(proc, smExp[proc].GetName())
+                obs.Add( smExp[proc] )
+                
+            #round up to integers
             for xbin in xrange(0,obs.GetNbinsX()+2): obs.SetBinContent(xbin,int(obs.GetBinContent(xbin)))
+            print '\t\t Total events in pseudo-data %d'%obs.Integral()
 
         #start the datacard header
         datacardname='%s/datacard_%s.dat'%(outDir,cat)
@@ -705,17 +717,20 @@ def doDataCards(opt,args):
                     isSignal=True
                     hyposToGet.append( opt.altHypo )
 
+                #use "SM" for non signal
+                if not isSignal:
+                    hyposToGet=[100]
+
                 jexpDn,jexpUp=None,None
                 for hypo in hyposToGet:
                     if len(samples)==2:
-                        _,jexpDn=getDistsFromDirIn(opt.systInput,'%s_%s_w%.0f'%(cat,opt.dist,hypo),samples[0])
-                        _,jexpUp=getDistsFromDirIn(opt.systInput,'%s_%s_w%.0f'%(cat,opt.dist,hypo),samples[1])
+                        _,jexpDn=getDistsFromDirIn(opt.systInput,'%s_%s_w%d'%(cat,opt.dist,hypo),samples[0])
+                        _,jexpUp=getDistsFromDirIn(opt.systInput,'%s_%s_w%d'%(cat,opt.dist,hypo),samples[1])
                     else:
-                        _,jexpUp=getDistsFromDirIn(opt.systInput,'%s_%s_w%.0f'%(cat,opt.dist,hypo),samples[0])
+                        _,jexpUp=getDistsFromDirIn(opt.systInput,'%s_%s_w%d'%(cat,opt.dist,hypo),samples[0])
 
                     newProc=proc
-                    if isSignal:
-                        newProc=('%sw%.0f'%(proc,hypo)).replace('.','p')
+                    if isSignal: newProc=('%sw%d'%(proc,hypo))
                     jexpUp.values()[0].SetName(newProc)
                     iexpUp[newProc]=jexpUp.values()[0]
 

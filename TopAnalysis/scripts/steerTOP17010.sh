@@ -113,8 +113,7 @@ case $WHAT in
         cp test/index.php ${wwwdir}/comb
 	;;
     HYPOTEST ) 
-	mainHypo=100
-        mainHypo=100
+        mainHypo=(20 100 400)
 	CATS=(
            "EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt,EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt"
 	   "EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt"
@@ -127,39 +126,33 @@ case $WHAT in
         queue=8nh        
 	#still to be debugged
         #cmd="${cmd} --addBinByBin 0.3" 
-	for h in ${altHypo[@]}; do
-	    for d in ${data[@]}; do
-		for i in ${!TAGS[*]}; do
-                    
-		    icat=${CATS[${i}]}
-		    itag=${TAGS[${i}]}
-		    
-		    cmd="python test/TopWidthAnalysis/runHypoTestDatacards.py"
-		    cmd="${cmd} --combine ${COMBINERELEASE}"
-		    cmd="${cmd} --mainHypo ${mainHypo} --altHypo ${h} --pseudoData ${d}"
-		    #cmd="${cmd} -s tbart,Singletop" #tW --replaceDYshape"
-                    cmd="${cmd} -s tbart"
-		    cmd="${cmd} --dist incmlb"		    
-		    cmd="${cmd} --nToys 2000"
-		    cmd="${cmd} -i /eos/cms/${summaryeosdir}/plotter/plotter.root"
-		    cmd="${cmd} --systInput /eos/cms/${summaryeosdir}/plotter/syst_plotter.root"
-		    cmd="${cmd} -c ${icat}"
-		    cmd="${cmd} --rebin 2"            
-                    cmd="${cmd} --doValidation"
-		    #if [ "$h" == "220" ]; then
-		    #if [ "$d" == "-1" ]; then
-		    #echo "    validation will be included"
-		    #cmd="${cmd} --doValidation"
-		    #fi
-		    #fi
-                    
-		    echo "Submitting ($mainHypo,$h,$d,$itag,$icat)"		
-		    stdcmd="${cmd} -o ${outdir}/datacards_${itag}/"
+        for mh in ${mainHypo[@]}; do
+	    for h in ${altHypo[@]}; do
+	        for d in ${data[@]}; do
+		    for i in ${!TAGS[*]}; do
+                        
+		        icat=${CATS[${i}]}
+		        itag=${TAGS[${i}]}
+		        
+		        cmd="python test/TopWidthAnalysis/runHypoTestDatacards.py"
+		        cmd="${cmd} --combine ${COMBINERELEASE}"
+		        cmd="${cmd} --mainHypo ${mh} --altHypo ${h} --pseudoData ${d}"
+		        #cmd="${cmd} -s tbart,Singletop" #tW --replaceDYshape"
+                        cmd="${cmd} -s tbart"
+		        cmd="${cmd} --dist incmlb"		    
+		        cmd="${cmd} --nToys 2000"
+		        cmd="${cmd} -i /eos/cms/${summaryeosdir}/plotter/plotter.root"
+		        cmd="${cmd} --systInput /eos/cms/${summaryeosdir}/plotter/syst_plotter.root"
+		        cmd="${cmd} -c ${icat}"
+		        cmd="${cmd} --rebin 2"            
+                        cmd="${cmd} --doValidation"
+		        stdcmd="${cmd} -o ${outdir}/datacards_${itag}_${mh}/"
+		    	echo "Submitting ($mh,$h,$d,$itag,$icat)"		
+                        echo ${stdcmd}
 
-                    echo ${stdcmd}
-
-		    bsub -q ${queue} sh ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${stdcmd};
-		    #if [ "$itag" == "inc" ]; then
+		        bsub -q ${queue} sh ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${stdcmd};
+		       
+                        #if [ "$itag" == "inc" ]; then
 			#if [ "$d" == "100" ]; then
 			#    #echo "    injecting pseudo-data from nloproddec"
 			#    #nlocmd="${cmd} --pseudoDataFromWgt nloproddec -o ${outdir}/datacards_${itag}_nloproddec"
@@ -169,6 +162,7 @@ case $WHAT in
 			#    #bsub -q ${queue} sh ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${width4cmd};
 			#fi
 		    #fi
+                    done
 		done
             done
 	done

@@ -178,6 +178,10 @@ void RunTopUE(TString filename,
       //the main objects of the analysis
       std::vector<Particle> recoTracks, genTracks;
 
+      float baseWgt((normH? normH->GetBinContent(1) : 1.0));
+      baseWgt *= (ev.g_nw>0 ? ev.g_w[0] : 1.0);
+      std::vector<float> selWeights(6,baseWgt);
+
       //
       //RECO LEVEL analysis
       //
@@ -200,7 +204,7 @@ void RunTopUE(TString filename,
 	  std::vector<std::pair<int,TLorentzVector> > selTracks,hpTracks;
 	  for(int ipf = 0; ipf < ev.npf; ipf++) 
 	    {
-	      //if(ev.pf_c[ipf]==0) continue;
+	      if(ev.pf_c[ipf]==0) continue;
 
 	      TLorentzVector tkP4(0,0,0,0);
 	      tkP4.SetPtEtaPhiM(ev.pf_pt[ipf],ev.pf_eta[ipf],ev.pf_phi[ipf],0.);
@@ -265,7 +269,6 @@ void RunTopUE(TString filename,
 	    }
 
 	  //event weight
-	  float wgt(1.0);
 	  ht.getPlots()["puwgtctr"]->Fill(0.,1.0);
 	  EffCorrection_t lepselSF(1.0,0.0),trigSF(1.0,0.0);
 	  if(!ev.isData) 
@@ -281,46 +284,39 @@ void RunTopUE(TString filename,
                 }
 	      trigSF=lepEffH.getTriggerCorrection(leptons,period);
 
-	      wgt  = (normH? normH->GetBinContent(1) : 1.0);
-	      wgt *= puWgt;
-	      wgt *= trigSF.first;
-	      wgt *= lepselSF.first;
-	      wgt *= (ev.g_nw>0 ? ev.g_w[0] : 1.0);
+	      selWeights[0] *= puWgt;
+	      selWeights[0] *= trigSF.first;
+	      selWeights[0] *= lepselSF.first;
 	    }
-
-	  //weights
-	  tue.nw=1;
-	  tue.weight[0]=wgt;
 
 	  if(runSysts && isTTbar && ev.g_nw>1)
 	    {
 	      //pu{up,down}
-	      tue.weight[1]=puWgt!=0 ? wgt*puWgtUp/puWgt : wgt;
-	      tue.weight[2]=puWgt!=0 ? wgt*puWgtDn/puWgt : wgt;
+	      selWeights[1]=puWgt!=0 ? selWeights[0]*puWgtUp/puWgt : selWeights[0];
+	      selWeights[2]=puWgt!=0 ? selWeights[0]*puWgtDn/puWgt : selWeights[0];
 
 	      //eff{up,down}
 	      float effCen=trigSF.first*lepselSF.first;
 	      float effUp=(trigSF.first+trigSF.second)*(lepselSF.first+lepselSF.second);
-	      tue.weight[3]=wgt*effUp/effCen;
+	      selWeights[3]=selWeights[0]*effUp/effCen;
 	      float effDn=(trigSF.first-trigSF.second)*(lepselSF.first-lepselSF.second);
-	      tue.weight[4]=wgt*effDn/effCen;
+	      selWeights[4]=selWeights[0]*effDn/effCen;
 
 	      //top pt
-	      tue.weight[5]=wgt*topptsf;
-
-	      //generator level weights
-	      for(size_t iw=1; iw<=120; iw++)
-		tue.weight[5+iw]= ev.g_w[0]!=0 ? wgt* ev.g_w[iw]/ev.g_w[0] : wgt;     
-
-	      tue.nw=126;
+	      selWeights[5]=selWeights[0]*topptsf;
 	    }
-
-	  std::vector<double>plotwgts(1,wgt);
+          else
+            for(size_t iw=1; iw<selWeights.size(); iw++) selWeights[iw]=selWeights[0];
+            
+          //include pileup, trigger and selection efficiency uncertainties in the plot
+	  std::vector<double>plotwgts(1,selWeights[0]);
 	  if(!ev.isData)
 	    {
-	      plotwgts.push_back(puWgt!=0 ? puWgtUp/puWgt : 1.0);
-	      plotwgts.push_back(puWgt!=0 ? puWgtDn/puWgt : 1.0);
-	    }
+              for(size_t iw=1; iw<selWeights.size(); iw++)
+                {
+                  plotwgts.push_back(selWeights[0]!=0 ? selWeights[iw]/selWeights[0]:1.0);
+                }
+            }
 	  
 
 	  //check the selection for different experimental variations
@@ -462,14 +458,31 @@ void RunTopUE(TString filename,
 	      ht.fill("ptpos_"+chTag,tue.ptpos[0],plotwgts);
 	      ht.fill("ptll_"+chTag,tue.ptll[0],plotwgts);	      
 	      ht.fill("nch_"+chTag,nch,plotwgts);	  
-	      ht.get2dPlots()["nchvsnvtx_"+chTag]->Fill(ev.nvtx,nch,wgt);
-	      ht.get2dPlots()["nchvsrho_"+chTag]->Fill(ev.rho,nch,wgt);
+	      ht.get2dPlots()["nchvsnvtx_"+chTag]->Fill(ev.nvtx,nch,plotwgts[0]);
+	      ht.get2dPlots()["nchvsrho_"+chTag]->Fill(ev.rho,nch,plotwgts[0]);
 	      ht.fill("chavgpt_"+chTag,nch>0 ? chSumPt/nch : -1,plotwgts);
 	      ht.fill("chsumpt_"+chTag,chSumPt,plotwgts);
 	      ht.fill("chavgpz_"+chTag,nch>0 ? chSumPz/nch : -1,plotwgts);
 	      ht.fill("chsumpz_"+chTag,chSumPz,plotwgts);
 	    }
 	}
+
+      //event weights
+      if(runSysts && isTTbar)
+        {
+          for(size_t iw=0; iw<selWeights.size(); iw++) tue.weight[iw]=selWeights[iw];          
+          if(ev.g_nw>1)
+            {
+              for(size_t iw=1; iw<=120; iw++)
+                tue.weight[selWeights.size()-1+iw]= ev.g_w[0]!=0 ? selWeights[0]* ev.g_w[iw]/ev.g_w[0] : selWeights[0];     
+            }
+          tue.nw=126;
+        }
+      else
+        {
+          tue.weight[0]=selWeights[0];
+          tue.nw=1;
+        }
 
       //
       // GEN LEVEL ANALYSIS
@@ -579,7 +592,11 @@ void RunTopUE(TString filename,
 	    }
 
 
-	  //flag if passes selection  
+	  //flag if passes selection
+          tue.gen_cat=0;
+          if(genChTag=="MM") tue.gen_cat=13*13;
+          if(genChTag=="EM") tue.gen_cat=11*13;
+          if(genChTag=="EE") tue.gen_cat=11*11;
 	  tue.gen_passSel=passPresel;
 	  tue.gen_nj=jets.size()-bJetsIdx.size();
           tue.gen_nb=bJetsIdx.size();
@@ -664,6 +681,7 @@ void createTopUETree(TTree *t,TopUE_t &tue)
   t->Branch("event",       &tue.event,       "event/I");
   t->Branch("lumi",        &tue.lumi,        "lumi/I");
   t->Branch("cat",         &tue.cat,         "cat/I");
+  t->Branch("gen_cat",     &tue.gen_cat,     "gen_cat/I");
   t->Branch("gen_passSel", &tue.gen_passSel, "gen_passSel/I");
   t->Branch("passSel",     &tue.passSel,     "passSel/I");
   t->Branch("gen_nj",      &tue.gen_nj,      "gen_nj/I");

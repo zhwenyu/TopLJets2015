@@ -121,7 +121,7 @@ class UEAnalysisHandler:
         
             #event weight
             weight=ue.w[i]
-        
+
             #RECO level counting
             recCts=getattr(ue,'rec_chmult')[i]
             recVal=getattr(ue,'rec_'+self.obs)[i]
