@@ -104,7 +104,7 @@ def getProfileRatiosWithRespectTo(grColl,refKey):
                 
             ratioUnc=(ey*yref)**2
             #if key!=refKey:ratioUnc+=(eyref*y)**2
-            ratioUnc=0 if yref==0 else ROOT.TMath.Sqrt(ratioUnc)/(yref**2)
+            ratioUnc=0 if yref**2==0 else ROOT.TMath.Sqrt(ratioUnc)/(yref**2)
             
             grCollRatios[key].SetPoint(np,x,ratio)
             grCollRatios[key].SetPointError(np,ex,ratioUnc)
@@ -369,7 +369,7 @@ def main():
         #check if summary is available
         pckSummary=os.path.join(opt.input,var,'unfold/unfold_summary.pck')
         if not os.path.isfile(pckSummary) : 
-            #print 'Skipping',var,' - failed to find',pckSummary
+            print 'Skipping',var,' - failed to find',pckSummary
             continue
 
         print 'Keeping',var,' with unfolded histos @',pckSummary

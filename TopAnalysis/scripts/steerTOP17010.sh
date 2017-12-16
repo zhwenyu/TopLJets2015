@@ -113,57 +113,30 @@ case $WHAT in
         cp test/index.php ${wwwdir}/comb
 	;;
     HYPOTEST ) 
-        mainHypo=(20 100 400)
-	CATS=(
-           "EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt,EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt"
-	   "EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt"
-	   "EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt"
-	)
-        TAGS=("inc_scan") # "ll" "em")
+        mainHypo=(20 100 400)        
 	altHypo=(20 40 50 60 70 80 90 100 110 120 130 140 150 160 180 200 220 240 260 280 300 350 400)        
-	data=(-1 50 100 200 300 400)
-	TAGS=("inc_scan")
-        queue=8nh        
-	#still to be debugged
-        #cmd="${cmd} --addBinByBin 0.3" 
+	data=(-1 50 60 70 80 90 100 110 120 130 140 150 160 180 200 220 240 260 280 300 350 400)
+        queue=2nd       
         for mh in ${mainHypo[@]}; do
 	    for h in ${altHypo[@]}; do
-	        for d in ${data[@]}; do
-		    for i in ${!TAGS[*]}; do
-                        
-		        icat=${CATS[${i}]}
-		        itag=${TAGS[${i}]}
-		        
-		        cmd="python test/TopWidthAnalysis/runHypoTestDatacards.py"
-		        cmd="${cmd} --combine ${COMBINERELEASE}"
-		        cmd="${cmd} --mainHypo ${mh} --altHypo ${h} --pseudoData ${d}"
-		        #cmd="${cmd} -s tbart,Singletop" #tW --replaceDYshape"
-                        cmd="${cmd} -s tbart"
-		        cmd="${cmd} --dist incmlb"		    
-		        cmd="${cmd} --nToys 2000"
-		        cmd="${cmd} -i /eos/cms/${summaryeosdir}/plotter/plotter.root"
-		        cmd="${cmd} --systInput /eos/cms/${summaryeosdir}/plotter/syst_plotter.root"
-		        cmd="${cmd} -c ${icat}"
-		        cmd="${cmd} --rebin 2"            
-                        cmd="${cmd} --doValidation"
-		        stdcmd="${cmd} -o ${outdir}/datacards_${itag}_${mh}/"
-		    	echo "Submitting ($mh,$h,$d,$itag,$icat)"		
-                        echo ${stdcmd}
-
-		        bsub -q ${queue} sh ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${stdcmd};
-		       
-                        #if [ "$itag" == "inc" ]; then
-			#if [ "$d" == "100" ]; then
-			#    #echo "    injecting pseudo-data from nloproddec"
-			#    #nlocmd="${cmd} --pseudoDataFromWgt nloproddec -o ${outdir}/datacards_${itag}_nloproddec"
-			#    #bsub -q ${queue} ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${nlocmd};   
-			#    #echo "    injecting pseudo-data from widthx4"
-			#    #width4cmd="${cmd} --pseudoDataFromSim=t#bar{t}_widthx4 -o ${outdir}/datacards_${itag}_widthx4"
-			#    #bsub -q ${queue} sh ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${width4cmd};
-			#fi
-		    #fi
-                    done
-		done
+	        for d in ${data[@]}; do		    		       
+		    cmd="python test/TopWidthAnalysis/runHypoTestDatacards.py"
+		    cmd="${cmd} --combine ${COMBINERELEASE}"
+		    cmd="${cmd} --mainHypo ${mh} --altHypo ${h} --pseudoData ${d}"		    
+                    cmd="${cmd} -s tbart"
+		    cmd="${cmd} --dist incmlb"		    
+		    cmd="${cmd} --nToys 2000"
+		    cmd="${cmd} -i /eos/cms/${summaryeosdir}/plotter/plotter.root"
+		    cmd="${cmd} --systInput /eos/cms/${summaryeosdir}/plotter/syst_plotter.root"
+                    cats="EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt,EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt"
+		    cmd="${cmd} -c ${cats}"
+		    cmd="${cmd} --rebin 2"            
+                    cmd="${cmd} --doValidation"
+		    stdcmd="${cmd} -o ${outdir}/datacards_${mh}/"
+		    echo "Submitting ($mh,$h,$d)"		
+                    echo ${stdcmd}
+		    bsub -q ${queue} sh ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${stdcmd};
+                done
             done
 	done
 	;;

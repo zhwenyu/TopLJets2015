@@ -41,6 +41,7 @@ def getDistsFromDirIn(url,indir,applyFilter=''):
     return obs,exp
 
 def getRowFromTH2(tempHist2D,columnName) :
+    """projects a given row in a 2D histogram relying on the y-axis label"""
     tempBinNum = tempHist2D.GetYaxis().FindBin(columnName);
     new1DProj  = tempHist2D.ProjectionX(tempHist2D.GetName()+"_"+columnName,
             tempBinNum,
@@ -50,104 +51,59 @@ def getRowFromTH2(tempHist2D,columnName) :
 
 
 def getDistsForHypoTest(cat,rawSignalList,opt,outDir="",systName="",systIsGen=False):
-    """
-    readout distributions from ROOT file and prepare them to be used in the datacard
-    """
+    """readout distributions from ROOT file and prepare them to be used in the datacard"""
+
     # do we want systematics?
     systExt = ""
-    if systIsGen : systExt = "_gen"
+    if systIsGen        : systExt = "_gen"
     elif systName != "" : systExt = "_exp"
+ 
+    # get main dists for data and backgrounds
+    obs,bkg=getDistsFromDirIn(opt.input,'%s_%s_w100%s'%(cat,opt.dist,systExt))
+    smHypo={}
+    for rawSignal in rawSignalList: 
+        smHypo[rawSignal]=bkg[rawSignal]
+        del bkg[rawSignal]
+    
+    #get main hypo
+    _,mainHypo=getDistsFromDirIn(opt.input,'%s_%s_w%.0f%s'%(cat,opt.dist,opt.mainHypo,systExt))
+    for proc in [proc for proc in mainHypo if proc in bkg]: del mainHypo[proc]
 
-    # get main dists
-    obs,exp=getDistsFromDirIn(opt.input,'%s_%s_w%.0f%s'%(cat,opt.dist,opt.mainHypo,systExt))
+    #get alternative hypo
+    _,altHypo=getDistsFromDirIn(opt.input,'%s_%s_w%.0f%s'%(cat,opt.dist,opt.altHypo,systExt))
+    for proc in [proc for proc in altHypo if proc in bkg]: del altHypo[proc]
 
-    #run through exp and convert into TH1s
-    if systName != "" :
-        for tHist2D in exp :
-            exp[tHist2D] = getRowFromTH2(exp[tHist2D],systName)
-
-    #signal hypothesis
-    expMainHypo=exp.copy()
-    if opt.mainHypo!=1.0:  
-        _,expMainHypo=getDistsFromDirIn(opt.input,'%s_%s_w%.0f%s'%(cat,opt.dist,opt.mainHypo,systExt))
-        if systName!="":
-            for tHist2D in exp :
-                expMainHypo[tHist2D] = getRowFromTH2(expMainHypo[tHist2D],systName)
-
-    expAltHypo=None
-    if len(opt.altHypoFromSim)>0 :
-        _,expAltHypo=getDistsFromDirIn(opt.systInput,'%s_%s_w%.0f%s'%(cat,opt.dist,opt.altHypo,systExt),opt.expAltHypoFromSim)
+    #force the yields to be preserved for alternative hypothesis wrt to the SM expectations
+    #if systematics were required we convert the TH2 to the corresponding row
+    exp={}
+    for proc in bkg:
         if systName != "" :
-            for tHist2D in expAltHypo :
-                expAltHypo[tHist2D] = getRowFromTH2(expAltHypo[tHist2D],systName)
-    else:
-        _,expAltHypo=getDistsFromDirIn(opt.input,'%s_%s_w%.0f%s'%(cat,opt.dist,opt.altHypo,systExt))
+            bkg[proc] = getRowFromTH2(bkg[proc],systName)
+        exp[proc]=bkg[proc]
+    for proc in smHypo:
         if systName != "" :
-            for tHist2D in expAltHypo :
-                expAltHypo[tHist2D] = getRowFromTH2(expAltHypo[tHist2D],systName)
-
-    #replace DY shape from alternative sample
-    try:
-        if opt.replaceDYshape:
-            _,altDY=getDistsFromDirIn(opt.systInput,'%s_%s_w%.0f'%(cat,opt.dist,opt.mainHypo),'DY')
-            nbins=exp['DY'].GetNbinsX()
-            sf=exp['DY'].Integral(0,nbins+1)/altDY['DY'].Integral(0,nbins+1)
-            altDY['DY'].Scale(sf)
-
-            #save a plot with the closure test
-            if outDir!="" and opt.doValidation:
-                try:
-                    plot=Plot('DY_%s_%s'%(cat,opt.dist))
-                    plot.savelog=False
-                    plot.doChi2=True
-                    plot.wideCanvas=False
-                    plot.plotformats=['pdf','png']
-                    plot.add(exp['DY'],  "MG5_aMC@NLO FxFx (NLO)", 1, False, False)
-                    plot.add(altDY['DY'],"Madgraph MLM (LO)",      2, False, False)
-                    plot.finalize()
-                    plot.show(outDir=outDir,lumi=12900,noStack=True)
-                except:
-                    pass
-
-            #all done here
-            exp['DY'].Delete()
-            exp['DY']=altDY['DY']
-    except:
-        pass
-
-    # add signal hypothesis to expectations
-    # we normalize the expectations to the standard expectation
-    # as we are looking for shape distortions due to the width
-    for proc in rawSignalList:
-        try:
-            newProc=('%sw%.0f'%(proc,opt.mainHypo)).replace('.','p')
-
-            #main hypothesis
-            exp[newProc]=expMainHypo[proc].Clone(newProc)
-            nbins=exp[newProc].GetNbinsX()
-            sf=exp[proc].Integral(0,nbins+1)/exp[newProc].Integral(0,nbins+1)
-            exp[newProc].Scale(sf)
-            exp[newProc].SetDirectory(0)
-
-            #alternative hypothesis
-            newProc=('%sw%.0f'%(proc,opt.altHypo)).replace('.','p')
-            if opt.mainHypo==opt.altHypo: newProc+='a'
-            exp[newProc]=expAltHypo[proc].Clone(newProc)
-            sf=exp[proc].Integral(0,nbins+1)/exp[newProc].Integral(0,nbins+1)
-            exp[newProc].Scale(sf)
-            exp[newProc].SetDirectory(0)
-        except:
-            pass
-
-    #delete the nominal expectations
-    for proc in rawSignalList:
-        try:
-            exp[proc].Delete()
-            del exp[proc]
-        except:
-            pass
-
-    return obs,exp
+            smHypo[proc] = getRowFromTH2(smHypo[proc],systName)
+    for proc in mainHypo:
+        if systName != "" :
+            mainHypo[proc] = getRowFromTH2(mainHypo[proc],systName)
+        nbins=smHypo[proc].GetNbinsX()
+        sf=smHypo[proc].Integral(0,nbins+1)/mainHypo[proc].Integral(0,nbins+1)
+        mainHypo[proc].Scale(sf)
+        newProc='%sw%d'%(proc,opt.mainHypo)
+        exp[newProc]=mainHypo[proc].Clone(newProc)
+        exp[newProc].SetDirectory(0)
+    for proc in altHypo:
+        if systName != "" :
+            altHypo[proc] = getRowFromTH2(altHypo[proc],systName)
+        nbins=altHypo[proc].GetNbinsX()            
+        sf=smHypo[proc].Integral(0,nbins+1)/altHypo[proc].Integral(0,nbins+1)
+        altHypo[proc].Scale(sf)
+        newProc='%sw%d'%(proc,opt.altHypo)
+        exp[newProc]=altHypo[proc].Clone(newProc)
+        exp[newProc].SetDirectory(0)
+    
+        
+    return obs,exp,bkg,smHypo
 
 
 """
@@ -212,17 +168,38 @@ def doCombineScript(opt,args,outDir,dataCardList):
         script.write('#plotImpacts.py -i impacts.json -o impacts\n')
         script.write('\n')        
 
+
+    def writeScanToScript(testStat,script):
+        extraName='_'+testStat
+        commonOpts="-m 172.5 -M HybridNew --testStat=%s --onlyTestStat --saveToys --saveHybridResult --minimizerAlgo Minuit2"%(testStat)
+        script.write("combine %s --singlePoint 0  workspace.root -n scan0n\n"%commonOpts)
+        script.write("mv higgsCombinescan0n.HybridNew.mH172.5.123456.root testStat_scan0n%s.root\n"%extraName)
+        script.write("combine %s --singlePoint 1  workspace.root -n scan1n\n"%commonOpts)
+        script.write("mv higgsCombinescan1n.HybridNew.mH172.5.123456.root testStat_scan1n%s.root\n"%extraName)
+
     script.write('### SCAN \n')
     script.write('\n')
-    for extra,extraName in [('-S 0','_stat'),('','')]:
-        for testStat in ['LEP','TEV','LHC']:
-            extraName+='_'+testStat
-            commonOpts="-m 172.5 %s -M HybridNew --testStat=%s --onlyTestStat --saveToys --saveHybridResult --minimizerAlgo Minuit2"%(extra,testStat)
-            script.write("combine %s --singlePoint 0  workspace.root -n scan0n\n"%commonOpts)
-            script.write("mv higgsCombinescan0n.HybridNew.mH172.5.123456.root testStat_scan0n%s.root\n"%extraName)
-            script.write("combine %s --singlePoint 1  workspace.root -n scan1n\n"%commonOpts)
-            script.write("mv higgsCombinescan1n.HybridNew.mH172.5.123456.root testStat_scan1n%s.root\n"%extraName)
+    for testStat in ['LEP','TEV','PL']: writeScanToScript(testStat=testStat,script=script)
+    script.write('\n\n')
 
+    #repeat fits per categories if validation is required
+    if opt.doValidation:
+        for subCat in ['highpt','lowpt','2b','1b','EM']:
+
+            subCatDataCardList=''
+            for datacardTkn in dataCardList.split():
+                cat,dc=datacardTkn.split('=')
+                if not subCat in cat: continue
+                subCatDataCardList+='%s '%datacardTkn
+
+            script.write('##### SCAN for %s \n'%subCat)
+            script.write("mkdir -p %s\n"%subCat)
+            script.write("cd %s\n"%subCat)
+            script.write('combineCards.py %s > datacard.dat\n'%subCatDataCardList.replace('=','=../'))
+            script.write('text2workspace.py datacard.dat -P HiggsAnalysis.CombinedLimit.TopHypoTest:twoHypothesisTest -m 172.5 --PO verbose --PO altSignal=%s --PO muFloating -o workspace.root\n'%altHypoTag)
+            for testStat in ['LEP','TEV','PL']: writeScanToScript(testStat=testStat,script=script)
+            script.write("cd -n\n")
+            script.write('\n')
 
     #script.write('### CLs\n')
     # do not write CLs -- python can't launch scripts with forking
@@ -306,12 +283,12 @@ def doDataCards(opt,args):
 
 
     # prepare output directory
-    outDir='%s/hypotest_%.0fvs%.0f%s'%(opt.output, opt.mainHypo,opt.altHypo,'sim' if len(opt.altHypoFromSim)!=0 else '')
-    if opt.pseudoData==-1 : outDir += '_data'
+    outDir='%s/hypotest_%.0fvs%.0f'%(opt.output, opt.mainHypo,opt.altHypo)
+    if opt.pseudoData==-1 : 
+        outDir += '_data'
     else:
         outDir += '_%.0f'%opt.pseudoData
         if len(opt.pseudoDataFromSim)!=0   : outDir+='sim_'
-        elif len(opt.pseudoDataFromWgt)!=0 : outDir+='wgt_'
         outDir += 'pseudodata'
     os.system('mkdir -p %s'%outDir)
     os.system('rm -rf %s/*'%outDir)
@@ -329,71 +306,45 @@ def doDataCards(opt,args):
         if 'MM' in cat : lfs='MM'
 
         #data and nominal shapes
-        obs,exp=getDistsForHypoTest(cat,rawSignalList,opt,outDir)
-
-        #if main hypothesis is not SM, get it along with the data
-        smExp=exp
-        if opt.mainHypo != 100:
-            smOpt=copy.deepcopy(opt)
-            smOpt.mainHypo=100
-            obs,smExp=getDistsForHypoTest(cat,rawSignalList,smOpt,outDir)
-
-            #copy the backgrounds, which will be absent in exp
-            for proc in smExp:
-                if 'w100' in proc: continue
-                exp[proc]=smExp[proc]
-
+        obs,exp,bkg,smHypo=getDistsForHypoTest(cat,rawSignalList,opt,outDir)
 
         #recreate data if requested
         if opt.pseudoData!=-1:
-            pseudoSignal=None
-            print '\t pseudo-data is being generated',
-            if len(opt.pseudoDataFromSim) and opt.systInput:
-                print 'injecting signal from',opt.pseudoDataFromSim
-                pseudoDataFromSim=opt.pseudoDataFromSim.replace('_',' ')
-                _,pseudoSignalRaw=getDistsFromDirIn(opt.systInput,'%s_%s_w100'%(cat,opt.dist),pseudoDataFromSim)
-                pseudoSignal={}
-                pseudoSignal['tbart']=pseudoSignalRaw.popitem()[1]
-            elif len(opt.pseudoDataFromWgt):
-                print 'injecting signal from',opt.pseudoDataFromWgt
-                _,pseudoSignal=getDistsFromDirIn(opt.input,'%s%s_%s_w100'%(opt.pseudoDataFromWgt,cat,opt.dist),'t#bar{t}')
-                print pseudoSignal,'%s%s_%s_w100'%(opt.pseudoDataFromWgt,cat,opt.dist)
-            else:
-                print 'injecting signal from weighted',opt.pseudoData
-                _,pseudoSignal=getDistsFromDirIn(opt.input,'%s_%s_w%d'%(cat,opt.dist,opt.pseudoData))
 
-            #build pseudo-expectations (reset data and add signal+backgrounds)
-            print '\t Pseudo-data composition'
+            print 'Recreating data from'
             obs.Reset('ICE')
+            for proc in bkg: 
+                print '\t %s %3.0f'%(proc,bkg[proc].Integral())
+                obs.Add(bkg[proc])
 
-            #sm expectations are always used as the reference for the yields
+            pseudoSignal={}
+            if len(opt.pseudoDataFromSim) and opt.systInput:                
+                pseudoDataFromSim=opt.pseudoDataFromSim.replace('_',' ')
+                pseudoSignal=getDistsFromDirIn(opt.systInput,'%s_%s_w100'%(cat,opt.dist),pseudoDataFromSim)
+            else:
+                _,pseudoSignal=getDistsFromDirIn(opt.input,'%s_%s_w%d'%(cat,opt.dist,opt.pseudoData))
             for proc in pseudoSignal:
                 if not proc in rawSignalList : continue
-                sf=smExp['%sw100'%proc].Integral()/pseudoSignal[proc].Integral()
+                nbins=smHypo[proc].GetNbinsX()
+                sf=smHypo[proc].Integral(0,nbins+1)/pseudoSignal[proc].Integral(0,nbins+1)
                 pseudoSignal[proc].Scale(sf)
-                print "\t\t Including %s from %s scaled by %3.2f"%(proc, pseudoSignal[proc].GetName(),sf)
+                print '\t %s %3.0f (sf=%3.2f)'%(proc,pseudoSignal[proc].Integral(),sf)
                 obs.Add( pseudoSignal[proc] )
-
-            #add the backgrounds
-            for proc in smExp:
-                if "w%d"%opt.altHypo in proc or "w%d"%opt.mainHypo in proc: continue
-                print "\t\t Including %s from %s"%(proc, smExp[proc].GetName())
-                obs.Add( smExp[proc] )
                 
             #round up to integers
             for xbin in xrange(0,obs.GetNbinsX()+2): obs.SetBinContent(xbin,int(obs.GetBinContent(xbin)))
-            print '\t\t Total events in pseudo-data %d'%obs.Integral()
+            print '\t Total events in pseudo-data %d'%obs.Integral()
 
         #start the datacard header
         datacardname='%s/datacard_%s.dat'%(outDir,cat)
         dataCardList+='%s=%s '%(cat,os.path.basename(datacardname))
+
         datacard=open(datacardname,'w')
         print 'Starting datacard',datacardname
         datacard.write('#\n')
         datacard.write('# Generated by %s with git hash %s for analysis category %s\n' % (getpass.getuser(),
                                                                                           commands.getstatusoutput('git log --pretty=format:\'%h\' -n 1')[1],
                                                                                           cat) )
-
         datacard.write('#\n')
         datacard.write('imax *\n')
         datacard.write('jmax *\n')
@@ -539,16 +490,16 @@ def doDataCards(opt,args):
             if len(weightList)==1:
                 if 'jes' in weightList[0] :
                     jesNum=weightList[0].replace('jes','')
-                    _,iexpUp=getDistsForHypoTest(cat,rawSignalList,opt,"","jesup_"+jesNum,isGen)
-                    _,iexpDn=getDistsForHypoTest(cat,rawSignalList,opt,"","jesdn_"+jesNum,isGen)
+                    _,iexpUp,_,_=getDistsForHypoTest(cat,rawSignalList,opt,"","jesup_"+jesNum,isGen)
+                    _,iexpDn,_,_=getDistsForHypoTest(cat,rawSignalList,opt,"","jesdn_"+jesNum,isGen)
                 else :
-                    _,iexpUp=getDistsForHypoTest(cat,rawSignalList,opt,"",weightList[0]+"up",isGen)
-                    _,iexpDn=getDistsForHypoTest(cat,rawSignalList,opt,"",weightList[0]+"dn",isGen)
+                    _,iexpUp,_,_=getDistsForHypoTest(cat,rawSignalList,opt,"",weightList[0]+"up",isGen)
+                    _,iexpDn,_,_=getDistsForHypoTest(cat,rawSignalList,opt,"",weightList[0]+"dn",isGen)
 
                     if syst=='tttoppt':
                         complCat= cat.replace('lowpt','highpt') if 'lowpt' in cat else cat.replace('highpt','lowpt')
-                        _,altExp   = getDistsForHypoTest(complCat,rawSignalList,opt)
-                        _,altExpUp = getDistsForHypoTest(complCat,rawSignalList,opt,"",weightList[0]+"up",isGen)
+                        _,altExp,_,_   = getDistsForHypoTest(complCat,rawSignalList,opt)
+                        _,altExpUp,_,_ = getDistsForHypoTest(complCat,rawSignalList,opt,"",weightList[0]+"up",isGen)
                         
                         #reset the down variation to be the nominal one
                         iexpDn=exp
@@ -560,7 +511,7 @@ def doDataCards(opt,args):
                 iexp2D={}
                 for iw in xrange(0,len(weightList)):
                     w=weightList[iw]
-                    _,kexp=getDistsForHypoTest(cat,rawSignalList,opt,"",w,isGen)
+                    _,kexp,_,_=getDistsForHypoTest(cat,rawSignalList,opt,"",w,isGen)
                     for proc in kexp:
                         nbins=kexp[proc].GetNbinsX()
                         if not proc in iexp2D:
@@ -879,10 +830,8 @@ def main():
     parser.add_option(      '--replaceDYshape',     dest='replaceDYshape',     help='use DY shape from syst file',                 default=False,       action='store_true')
     parser.add_option(      '--doValidation',       dest='doValidation',       help='create validation plots',                     default=False,       action='store_true')
     parser.add_option(      '--pseudoDataFromSim',  dest='pseudoDataFromSim',  help='pseudo data from dedicated sample',           default='',          type='string')
-    parser.add_option(      '--pseudoDataFromWgt',  dest='pseudoDataFromWgt',  help='pseudo data from weighting',                  default='',          type='string')
-    parser.add_option(      '--mainHypo',           dest='mainHypo',  help='main hypothesis',                                      default=100,         type=float)
-    parser.add_option(      '--altHypo',            dest='altHypo',   help='alternative hypothesis',                               default=400,         type=float)
-    parser.add_option(      '--altHypoFromSim',     dest='altHypoFromSim',   help='alternative hypothesis from dedicated sample',  default='',          type='string')
+    parser.add_option(      '--mainHypo',           dest='mainHypo',           help='main hypothesis',                             default=100,         type=float)
+    parser.add_option(      '--altHypo',            dest='altHypo',            help='alternative hypothesis',                      default=400,         type=float)
     parser.add_option('-s', '--signal',             dest='signal',             help='signal (csv)',                                default='tbart,Singletop',  type='string')
     parser.add_option('-c', '--cat',                dest='cat',                help='categories (csv)',
                       default='EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt',

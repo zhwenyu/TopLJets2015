@@ -112,7 +112,6 @@ case $WHAT in
 
 	echo "Preparing analysis configuration based on ${baseFiles} - this will take a long time..."
         obs=("C" "D" "sphericity" "aplanarity" "chmult" "chavgpt" "chavgpz" "chfluxz" "chflux" "maxRap" "rapDist")
-        obs=("chavgpz")
         analyses=(
             "" 
             "--slice nj=0,1" 
@@ -155,7 +154,22 @@ case $WHAT in
             "--slice ptll=120,9999 --reg ptll=tow" 
             "--slice ptll=120,9999 --reg ptll=tra"
         )
-        analyses=("--slice ptll=40,80 --reg ptll=awa")
+        obs=("chavgpz")
+        analyses=("--slice ptll=80,120"
+            "--slice ptll=40,80 --reg ptll=tow"
+            "--slice ptll=40,80 --reg ptll=tra"
+        )
+        
+        obs=("chavgpt")
+        analyses=("--slice ptll=0,20"
+            "--slice ptll=20,40"
+            "--slice ptll=0,20 --reg ptll=tow"
+            "--slice ptll=0,20 --reg ptll=tra"
+            "--slice ptll=0,20 --reg ptll=awa"
+            "--reg ptll=tow"
+            "--reg ptll=tra"
+        )
+
         for o in "${obs[@]}"; do
             for a in "${analyses[@]}"; do
                 options="--ptThr 0.9,0.9 --obs ${o} ${a}"
