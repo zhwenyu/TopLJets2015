@@ -93,7 +93,7 @@ void RunTopUE(TString filename,
 
   //BOOK CONTROL HISTOGRAMS
   HistTool ht; 
-  ht.setNsyst(isDataFile ? 0 : 3);
+  ht.setNsyst(isDataFile ? 0 : 7);
   ht.addHist("puwgtctr", new TH1F("puwgtctr","Weight sums",4,0,4) );  
   std::vector<TString> lfsVec = { "EE", "EM", "MM" };
   for(size_t ilfs=0; ilfs<lfsVec.size(); ilfs++)   

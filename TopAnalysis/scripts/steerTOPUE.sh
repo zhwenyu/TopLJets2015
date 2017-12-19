@@ -42,25 +42,16 @@ case $WHAT in
 
     TESTSEL )
 	file=root://eoscms//eos/cms/store/cmst3/group/top/ReReco2016/b312177/MC13TeV_TTJets/MergedMiniEvents_0_ext0.root
-        file=root://eoscms//eos/cms/store/cmst3/group/top/ReReco2016/b312177/MC13TeV_TTJets2l2nu_noSC/MergedMiniEvents_0_ext0.root
-        #file==root://eoscms//eos/cms/store/cmst3/group/top/ReReco2016/b312177/MC13TeV_TTJets2l2nu_amcatnlo/MergedMiniEvents_1_ext0.root
-	#file=root://eoscms//eos/cms/store/cmst3/group/top/ReReco2016/b312177/Data13TeV_MuonEG_2016D/MergedMiniEvents_0.root
-	outFile=ue_test_nosc.root
-        #analysisWrapper \
-	#    --in ${file} \
-	#    --out ue_test.root \
-	#    --era ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/era2016 \
-	#    --method TOP-UE::RunTopUE \
-	#    --runSysts \
-	#    --ch 0;
-        for step in 1; do
-            continue
-	    #python test/TopUEAnalysis/runUEanalysis.py -i ue_test.root --step ${step} --ptThr 1.0,0.9  --obs chmult --slice ptll=0,9999. --reg ptll=awa -o ./UEanalysis_test;
-            python test/TopUEAnalysis/runUEanalysis.py -i ue_test.root  --ptThr 0.9,0.9 --step ${step} --obs chmult -o ./UEanalysis_test;
-        done
-	#python test/TopUEAnalysis/runUEanalysis.py --step 1 -o ./UEanalysis_test;
-	#python test/TopUEAnalysis/runUEanalysis.py -i ue_test.root      --step 2 -q local -o ./UEanalysis_test;
-	#python test/TopUEAnalysis/showFastFinalDistributions.py UEanalysis_test/analysis/Chunks/ue_test.root --cfg ./UEanalysis_test/analysisaxiscfg.pck
+        analysisWrapper \
+	    --in ${file} \
+	    --out ue_test.root \
+	    --era ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/era2016 \
+	    --method TOP-UE::RunTopUE \
+	    --runSysts \
+	    --ch 0;
+        python test/TopUEAnalysis/runUEanalysis.py -i ue_test.root  --ptThr 0.9,0.9 --step 1 --obs chmult -o ./UEanalysis_test;
+        #python test/TopUEAnalysis/runUEanalysis.py -i ue_test.root                  --step 2 -q local     -o ./UEanalysis_test;
+	
 	;;
 
     SEL )
