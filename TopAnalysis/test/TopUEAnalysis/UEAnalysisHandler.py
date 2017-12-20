@@ -116,6 +116,7 @@ class UEAnalysisHandler:
             if genCts>0:
                 self.histos['gen'].Fill(genBin,ue.w[0])
 
+
         #RECO level counting (loop over variations)
         for i in xrange(0,self.nVars):
         

@@ -132,6 +132,9 @@ class UEEventCounter:
         count the particles in an event
         """
 
+        self.reset()
+
+        #basic distributions for synch with RIVET
         try:
             self.gen_ptll=t.gen_ptll
             self.gen_sumpt=t.gen_sumpt
@@ -144,8 +147,6 @@ class UEEventCounter:
         #assign an era randomly (only used for MC)
         mceraLumi=ROOT.gRandom.Uniform(35874.8)
         mcera='BCDEF' if mceraLumi < 19323.4 else 'GH'
-
-        self.reset()
 
         p4=ROOT.TLorentzVector(0,0,0,0)
 
