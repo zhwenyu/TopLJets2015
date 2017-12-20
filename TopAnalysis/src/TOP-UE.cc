@@ -498,7 +498,7 @@ void RunTopUE(TString filename,
                              && (fabs(leptons[0].eta())<2.5 && fabs(leptons[1].eta())<2.5) );
 
 	  //divide jets                                                                                                                              
-	  std::vector<Jet> &jets=evsel.getGenJets() ;
+	  std::vector<Jet> &jets=evsel.getGenJets();
 	  std::vector<size_t> lightJetsIdx, bJetsIdx;
           for(size_t ij=0; ij<jets.size(); ij++)
             {

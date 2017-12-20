@@ -56,7 +56,7 @@ case $WHAT in
             if [ "$i" -eq "0" ]; then
                 python test/TopUEAnalysis/runUEanalysis.py -i ${outf}  --ptThr 0.9,0.9 --step 1 --obs chmult -o ./UEanalysis_test;
             fi
-            python test/TopUEAnalysis/runUEanalysis.py -i ${outf} --step 2 -q local     -o UEanalysis_test/chmult/inc;
+            python test/TopUEAnalysis/runUEanalysis.py -i ${outf} --step 2 -q local     -o UEanalysis_test/chmult/inc &
 	done
 
 	./scripts/mergeOutputs.py UEanalysis_test/chmult/inc True
