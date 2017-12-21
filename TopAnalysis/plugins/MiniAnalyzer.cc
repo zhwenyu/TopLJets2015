@@ -43,8 +43,8 @@
 #include "FWCore/Framework/interface/TriggerNamesService.h"
 #include "DataFormats/PatCandidates/interface/PackedTriggerPrescales.h"
 #include "DataFormats/PatCandidates/interface/PackedGenParticle.h"
-#include "DataFormats/CTPPSReco/interface/CTPPSLocalTrackLite.h"
-#include "DataFormats/CTPPSDetId/interface/CTPPSDetId.h"
+//#include "DataFormats/CTPPSReco/interface/CTPPSLocalTrackLite.h"
+//#include "DataFormats/CTPPSDetId/interface/CTPPSDetId.h"
 
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 #include "TopLJets2015/TopAnalysis/interface/MiniEvent.h"
@@ -79,6 +79,8 @@
 #include <cmath>
 #include <iostream>
 #include <string>
+
+#include "TNtuple.h"
 
 using namespace edm;
 using namespace std;
@@ -130,7 +132,7 @@ private:
   edm::EDGetTokenT<edm::View<pat::Jet> > jetToken_;
   edm::EDGetTokenT<pat::METCollection> metToken_, puppiMetToken_;
   edm::EDGetTokenT<pat::PackedCandidateCollection> pfToken_;
-  edm::EDGetTokenT<std::vector<CTPPSLocalTrackLite> > ctppsToken_;
+  //edm::EDGetTokenT<std::vector<CTPPSLocalTrackLite> > ctppsToken_;
   
   //Electron Decisions
   edm::EDGetTokenT<edm::ValueMap<float> > eleMvaIdMapToken_;
@@ -149,6 +151,7 @@ private:
 
   bool saveTree_,savePF_,runOnGEN_;
   TTree *tree_;
+  TNtuple *rivet_;
   MiniEvent_t ev_;
   
   KalmanMuonCalibrator *muonCor_;
@@ -190,7 +193,7 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig) :
   metToken_(consumes<pat::METCollection>(iConfig.getParameter<edm::InputTag>("mets"))),
   puppiMetToken_(consumes<pat::METCollection>(iConfig.getParameter<edm::InputTag>("puppimets"))),
   pfToken_(consumes<pat::PackedCandidateCollection>(iConfig.getParameter<edm::InputTag>("pfCands"))),
-  ctppsToken_(consumes<std::vector<CTPPSLocalTrackLite> >(iConfig.getParameter<edm::InputTag>("ctppsLocalTracks"))),
+  //ctppsToken_(consumes<std::vector<CTPPSLocalTrackLite> >(iConfig.getParameter<edm::InputTag>("ctppsLocalTracks"))),
   eleMvaIdMapToken_(consumes<edm::ValueMap<float> >(iConfig.getParameter<edm::InputTag>("eleMvaIdMap"))),
   eleVetoIdMapToken_(consumes<edm::ValueMap<bool> >(iConfig.getParameter<edm::InputTag>("eleVetoIdMap"))),
   eleLooseIdMapToken_(consumes<edm::ValueMap<bool> >(iConfig.getParameter<edm::InputTag>("eleLooseIdMap"))),
@@ -229,6 +232,8 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig) :
     {
       tree_ = fs->make<TTree>("data","data");
       createMiniEventTree(tree_,ev_);
+
+      rivet_ = fs->make<TNtuple>("cmssw","cmssw","l1pt:l2pt:b1pt:b2pt:j1pt:j2pt:j3pt:nch");
     }
 }
 
@@ -306,6 +311,7 @@ int MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
   //edm::Handle<edm::ValueMap<float> > petersonFrag;
   //iEvent.getByToken(petersonFragToken_,petersonFrag);
   int ngjets(0),ngbjets(0);
+  std::vector<float> ptb,ptj;
   for(auto genJet=genJets->begin(); genJet!=genJets->end(); ++genJet)
     {
 
@@ -334,13 +340,19 @@ int MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
 	{
 	  ngjets++;	
 	  if(abs(genJet->pdgId())==5) ngbjets++;
-	}
+          if(genJet->pt()>30 && fabs(genJet->eta())<2.4)
+            {
+              if(abs(genJet->pdgId())==5) ptb.push_back(genJet->pt()); 
+              else                        ptj.push_back(genJet->pt()); 
+            }
+        }
     }
 
   //leptons
   int ngleptons(0);
   edm::Handle<std::vector<reco::GenJet> > dressedLeptons;  
   iEvent.getByToken(genLeptonsToken_,dressedLeptons);
+  std::vector<float> ptl;
   for(auto genLep = dressedLeptons->begin();  genLep != dressedLeptons->end(); ++genLep)
     {
       //map the gen particles which are clustered in this lepton
@@ -355,12 +367,13 @@ int MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       ev_.ng++;
 
       //gen level selection
-      if(genLep->pt()>20 && fabs(genLep->eta())<2.5) ngleptons++;
+      if(genLep->pt()>20 && fabs(genLep->eta())<2.5) { ngleptons++; ptl.push_back(genLep->pt()); }
     }
 
 
   //final state particles
   ev_.ngpf=0;
+  int nch(0);
   if(!runOnGEN_) { // MINIAOD
     edm::Handle<pat::PackedGenParticleCollection> genParticles;
     iEvent.getByToken(genParticlesToken_,genParticles);
@@ -371,7 +384,7 @@ int MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
         //this shouldn't be needed according to the workbook
         //if(genIt.status()!=1) continue;
         if(genIt.pt()<0.5 || fabs(genIt.eta())>2.5) continue;
-
+        if(genIt.pt()>0.9 && fabs(genIt.eta())<2.1 && genIt.charge()!=0) nch++;
         ev_.gpf_id[ev_.ngpf]     = genIt.pdgId();
         ev_.gpf_c[ev_.ngpf]      = genIt.charge();
         ev_.gpf_g[ev_.ngpf]=-1;
@@ -400,7 +413,7 @@ int MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
 
         if(genIt.status()!=1) continue;
         if(genIt.pt()<0.5 || fabs(genIt.eta())>2.5) continue;
-
+        if(genIt.pt()>0.9 && fabs(genIt.eta())<2.1 && genIt.charge()!=0) nch++;
         ev_.gpf_id[ev_.ngpf]     = genIt.pdgId();
         ev_.gpf_c[ev_.ngpf]      = genIt.charge();
         ev_.gpf_g[ev_.ngpf]=-1;
@@ -421,8 +434,16 @@ int MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       }
   }
 
+  rivet_->Fill(ptl.size()>0 ? ptl[0] : 0,
+               ptl.size()>1 ? ptl[1] : 0,
+               ptb.size()>0 ? ptb[0] : 0,
+               ptb.size()>1 ? ptb[1] : 0,
+               ptj.size()>0 ? ptj[0] : 0,
+               ptj.size()>1 ? ptj[1] : 0,
+               ptj.size()>2 ? ptj[2] : 0,
+               nch);
 
- //Bhadrons and top quarks (lastCopy)
+  //Bhadrons and top quarks (lastCopy)
   edm::Handle<reco::GenParticleCollection> prunedGenParticles;
   iEvent.getByToken(prunedGenParticlesToken_,prunedGenParticles);
   ev_.ngtop=0; 
@@ -537,6 +558,7 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
   //CTPPS local tracks (only present in data)
   //
   ev_.nfwdtrk=0;
+  /*
   if(iEvent.isRealData()) {
     try{
       edm::Handle<std::vector<CTPPSLocalTrackLite> > ctppslocaltracks;
@@ -557,7 +579,7 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
     catch(...){
     }
   }
-
+  */
   //
   //LEPTON SELECTION
   //
