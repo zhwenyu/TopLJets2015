@@ -233,7 +233,7 @@ case $WHAT in
         cd -
         ;;
     SUBMITSPECIALANA )
-        obs=("sphericity" "aplanarity" "C" "D" "chmult" "chavgpt" "chavgpz" "chfluxz" "chflux")
+        obs=("chrecoil" "sphericity" "aplanarity" "C" "D" "chmult" "chavgpt" "chavgpz" "chfluxz" "chflux")
         for i in ${obs[@]}; do
             a=(`ls store/TOP-17-015/${i}`)
             #a=("nj=0,1_ptll=awa" "nj=0,1_ptll=tow" "nj=0,1_ptll=tra" "nj=1,2_ptll=awa" "nj=1,2_ptll=tow" "nj=1,2_ptll=tra" "nj=2,999_ptll=awa" "nj=2,999_ptll=tow" "nj=2,999_ptll=tra")
