@@ -147,7 +147,7 @@ private:
 
   std::vector<std::string> triggersToUse_,metFiltersToUse_;
 
-  bool saveTree_,savePF_,runOnGEN_;
+  bool skim_,saveTree_,savePF_,runOnGEN_;
   TTree *tree_;
   MiniEvent_t ev_;
   
@@ -205,6 +205,7 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig) :
   BadPFMuonFilterToken_(consumes<bool>(iConfig.getParameter<edm::InputTag>("badPFMuonFilter"))),
   //petersonFragToken_(consumes<edm::ValueMap<float> >(edm::InputTag("bfragWgtProducer:PetersonFrag"))),
   pfjetIDLoose_( PFJetIDSelectionFunctor::FIRSTDATA, PFJetIDSelectionFunctor::LOOSE ),  
+  skim_( iConfig.getParameter<bool>("skim") ),
   saveTree_( iConfig.getParameter<bool>("saveTree") ),
   savePF_( iConfig.getParameter<bool>("savePF") ),
   runOnGEN_( iConfig.getParameter<bool>("runOnGEN") ),
@@ -306,6 +307,7 @@ int MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
   //edm::Handle<edm::ValueMap<float> > petersonFrag;
   //iEvent.getByToken(petersonFragToken_,petersonFrag);
   int ngjets(0),ngbjets(0);
+  int ngbjetsrivet(0);
   for(auto genJet=genJets->begin(); genJet!=genJets->end(); ++genJet)
     {
 
@@ -333,12 +335,16 @@ int MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       if(genJet->pt()>25 && fabs(genJet->eta())<2.5)
 	{
 	  ngjets++;	
-	  if(abs(genJet->pdgId())==5) ngbjets++;
-	}
+	  bool isBJet(abs(genJet->pdgId())==5);
+          if(isBJet) ngbjets++;
+          if(genJet->pt()>30) ngbjetsrivet+=isBJet;
+        }
     }
+
 
   //leptons
   int ngleptons(0);
+  std::vector<const reco::GenJet *> selLep;
   edm::Handle<std::vector<reco::GenJet> > dressedLeptons;  
   iEvent.getByToken(genLeptonsToken_,dressedLeptons);
   for(auto genLep = dressedLeptons->begin();  genLep != dressedLeptons->end(); ++genLep)
@@ -355,12 +361,16 @@ int MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       ev_.ng++;
 
       //gen level selection
-      if(genLep->pt()>20 && fabs(genLep->eta())<2.5) ngleptons++;
+      if(genLep->pt()>20 && fabs(genLep->eta())<2.5) 
+        {
+          ngleptons++;
+          selLep.push_back( &(*genLep) );
+        }
     }
-
 
   //final state particles
   ev_.ngpf=0;
+  int totalCh(0);
   if(!runOnGEN_) { // MINIAOD
     edm::Handle<pat::PackedGenParticleCollection> genParticles;
     iEvent.getByToken(genParticlesToken_,genParticles);
@@ -417,6 +427,7 @@ int MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
         ev_.gpf_eta[ev_.ngpf]    = genIt.eta();
         ev_.gpf_phi[ev_.ngpf]    = genIt.phi();
         ev_.gpf_m[ev_.ngpf]      = genIt.mass();
+        if(genIt.pt()>0.9 && fabs(genIt.eta())<2.1 && genIt.charge()!=0) totalCh++;
         ev_.ngpf++;
       }
   }
@@ -1067,12 +1078,22 @@ void MiniAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
   histContainer_["counter"]->Fill(0);
 
   //analyze the event
-  int ngleptons(0),nrecleptons(0);
-  if(!iEvent.isRealData()) ngleptons=genAnalysis(iEvent,iSetup);
-  if(!runOnGEN_) nrecleptons=recAnalysis(iEvent,iSetup);
+
+  if(skim_)
+    {
+      int ngleptons(0),nrecleptons(0);
+      if(!iEvent.isRealData()) ngleptons=genAnalysis(iEvent,iSetup);
+      if(!runOnGEN_) nrecleptons=recAnalysis(iEvent,iSetup);
   
-  //save event if at least one object at gen or reco level
-  if((ngleptons==0 && nrecleptons==0) || !saveTree_) return;  
+      //save event if at least one object at gen or reco level
+      if((ngleptons==0 && nrecleptons==0) || !saveTree_) return;  
+    }
+  else
+    {
+      if(!iEvent.isRealData()) genAnalysis(iEvent,iSetup); 
+      if(!runOnGEN_)           recAnalysis(iEvent,iSetup);  
+    }
+
   ev_.run     = iEvent.id().run();
   ev_.lumi    = iEvent.luminosityBlock();
   ev_.event   = iEvent.id().event(); 

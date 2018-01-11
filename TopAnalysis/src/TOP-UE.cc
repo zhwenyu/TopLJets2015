@@ -599,7 +599,9 @@ void RunTopUE(TString filename,
           if(genChTag=="EE") tue.gen_cat=11*11;
 	  tue.gen_passSel=passPresel;
 	  tue.gen_nj=jets.size()-bJetsIdx.size();
+          for(size_t ij=0; ij<min(lightJetsIdx.size(),size_t(10)); ij++) tue.gen_ptj[ij]=jets[ lightJetsIdx[ij] ].p4().Pt();
           tue.gen_nb=bJetsIdx.size();
+          for(size_t ij=0; ij<min(bJetsIdx.size(),size_t(2)); ij++) tue.gen_ptb[ij]=jets[ bJetsIdx[ij] ].p4().Pt();
 
           //add the two b-jets directions of the event
           //for(int ibj=0; ibj<(int)min((int)bJetsIdx.size(),2); ibj++)
@@ -686,6 +688,8 @@ void createTopUETree(TTree *t,TopUE_t &tue)
   t->Branch("passSel",     &tue.passSel,     "passSel/I");
   t->Branch("gen_nj",      &tue.gen_nj,      "gen_nj/I");
   t->Branch("gen_nb",      &tue.gen_nb,      "gen_nb/I");
+  t->Branch("gen_ptj",      tue.gen_ptj,     "gen_ptj[10]/F");
+  t->Branch("gen_ptb",      tue.gen_ptb,     "gen_ptb[2]/F");
   t->Branch("nj",           tue.nj,          "nj[11]/I");
   t->Branch("nb",           tue.nb,          "nb[11]/I");
   t->Branch("nvtx",        &tue.nvtx,        "nvtx/I");
@@ -750,6 +754,9 @@ void resetTopUE(TopUE_t &tue)
   tue.cat=0;   
   tue.gen_passSel=0;       
   tue.passSel=0; 
+
+  for(size_t i=0; i<2; i++)  tue.gen_ptb[i]=0;
+  for(size_t i=0; i<10; i++) tue.gen_ptj[i]=0;
 
   //reset weights
   tue.nw=0;      

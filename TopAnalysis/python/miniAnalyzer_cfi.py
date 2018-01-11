@@ -1,6 +1,7 @@
 import FWCore.ParameterSet.Config as cms
 
 analysis = cms.EDAnalyzer("MiniAnalyzer",
+                          skim                   = cms.bool(True),
                           saveTree               = cms.bool(True),
                           savePF                 = cms.bool(True),
                           runOnGEN               = cms.bool(False),

@@ -18,6 +18,7 @@ struct TopUE_t
   Int_t passSel,gen_passSel;
   Int_t nj[11],  nb[11];
   Int_t gen_nj, gen_nb;
+  Float_t gen_ptj[10],gen_ptb[2];
   Float_t ptpos[11],  phipos[11],  ptll[11],  phill[11],  mll[11],  sumpt[11],  dphill[11];
   Float_t gen_ptpos, gen_phipos, gen_ptll, gen_phill, gen_mll, gen_sumpt, gen_dphill;
   Float_t ptttbar[11],     phittbar[11];  

@@ -43,7 +43,8 @@ case $WHAT in
     TESTSEL )
         testdir=UEanalysis_test/Chunks
         mkdir -p $testdir 
-        for i in `seq 0 10`; do
+        obs=chrecoil
+        for i in 0; do
             outf=${testdir}/ue_test_${i}.root
 	    file=root://eoscms//eos/cms/store/cmst3/group/top/ReReco2016/b312177/MC13TeV_TTJets/MergedMiniEvents_${i}_ext0.root
             analysisWrapper \
@@ -54,14 +55,53 @@ case $WHAT in
 	        --runSysts \
 	        --ch 0;
             if [ "$i" -eq "0" ]; then
-                python test/TopUEAnalysis/runUEanalysis.py -i ${outf}  --ptThr 0.9,0.9 --step 1 --obs chmult -o ./UEanalysis_test;
+                python test/TopUEAnalysis/runUEanalysis.py -i ${outf}  --ptThr 0.9,0.9 --step 1 --obs ${obs} -o ./UEanalysis_test;
             fi
-            python test/TopUEAnalysis/runUEanalysis.py -i ${outf} --step 2 -q local     -o UEanalysis_test/chmult/inc &
+            python test/TopUEAnalysis/runUEanalysis.py -i ${outf} --step 2 -q local     -o UEanalysis_test/${obs}/inc;
 	done
 
-	./scripts/mergeOutputs.py UEanalysis_test/chmult/inc True
-        python test/TopUEAnalysis/getBaselineSynchDistsForRIVET.py
+	#./scripts/mergeOutputs.py UEanalysis_test/${obs}/inc True
+        #python test/TopUEAnalysis/getBaselineSynchDistsForRIVET.py
 	;;
+
+
+    TESTSYNCH )
+        mkdir -p UEanalysis_synch
+        analysisWrapper \
+	    --in /eos/cms/store/cmst3/group/top/TOP-17-015/synch/MC13TeV_TTJets.root \
+	    --out UEanalysis_synch/MC13TeV_TTJets.root \
+	    --era ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/era2016 \
+	    --method TOP-UE::RunTopUE \
+	    --ch 0;
+
+        
+        for i in chmult chavgpt chavgpz chflux chfluxz C D aplanarity sphericity; do
+            anaDir=UEanalysis_synch/${i}/inc
+            mkdir -p ${anaDir}
+            cp -v store/TOP-17-015/${i}/inc/analysis*.pck UEanalysis_synch/${i}/inc/
+            python test/TopUEAnalysis/runUEanalysis.py -i UEanalysis_synch/MC13TeV_TTJets.root --step 2 -q local -o ${anaDir};
+	done
+        ;;
+    TESTSYNCHPLOT )
+
+        synchDir=UEanalysis_synch
+        selyoda=${synchDir}/MC13TeV_TTJets_selsynch.yoda
+        #python test/TopUEAnalysis/getBaselineSynchDistsForRIVET.py ${synchDir}/chmult/inc/Chunks/MC13TeV_TTJets.root ${selyoda}
+        
+        #for i in chmult chavgpt chavgpz chflux chfluxz C D aplanarity sphericity; do
+        #    mkdir -p ${synchDir}/${i}/inc/unfold
+        #    python test/TopUEAnalysis/convertDistToSummary.py ${synchDir}/${i}/inc/analysiscfg.pck ${synchDir}/${i}/inc/Chunks/MC13TeV_TTJets.root 
+        #done
+        #python test/TopUEAnalysis/saveAnalysisForHepData.py ${synchDir}/ ${synchDir}/
+        
+        cmsswyoda=${synchDir}/CMS_2017_TOP_17_015.yoda
+        cat ${selyoda} > ${cmsswyoda}
+        cat ${synchDir}/CMS_2017_TOP_17_015_MC.yoda >> ${cmsswyoda}
+
+        rivetyoda=/eos/cms/store/cmst3/group/top/TOP-17-015/synch/MC13TeV_TTJets_RIVET.yoda
+        rivet-mkhtml -s -o ~/www/TOP-17-015/rivet_synch --times --mc-errs ${cmsswyoda}:"CMSSW" ${rivetyoda}:"Rivet" --config ../../Rivet/TOP/data/CMS_2017_TOP_17_015.plot 
+	;;
+
 
     SEL )
         commonOpts="-q ${queue} -o ${summaryeosdir}      --era era2016 -m TOP-UE::RunTopUE --ch 0 --runSysts";
@@ -111,7 +151,7 @@ case $WHAT in
 	baseFiles=${base}_0.root,${base}_1.root,${base}_2.root,${base}_3.root,${base}_4.root
 
 	echo "Preparing analysis configuration based on ${baseFiles} - this will take a long time..."
-        obs=("C" "D" "sphericity" "aplanarity" "chmult" "chavgpt" "chavgpz" "chfluxz" "chflux" "maxRap" "rapDist")
+        obs=("chrecoil") #"C" "D" "sphericity" "aplanarity" "chmult" "chavgpt" "chavgpz" "chfluxz" "chflux" "maxRap" "rapDist")
         analyses=(
             "" 
             "--slice nj=0,1" 
@@ -154,27 +194,12 @@ case $WHAT in
             "--slice ptll=120,9999 --reg ptll=tow" 
             "--slice ptll=120,9999 --reg ptll=tra"
         )
-        obs=("chavgpz")
-        analyses=("--slice ptll=80,120"
-            "--slice ptll=40,80 --reg ptll=tow"
-            "--slice ptll=40,80 --reg ptll=tra"
-        )
-        
-        obs=("chavgpt")
-        analyses=("--slice ptll=0,20"
-            "--slice ptll=20,40"
-            "--slice ptll=0,20 --reg ptll=tow"
-            "--slice ptll=0,20 --reg ptll=tra"
-            "--slice ptll=0,20 --reg ptll=awa"
-            "--reg ptll=tow"
-            "--reg ptll=tra"
-        )
 
         for o in "${obs[@]}"; do
             for a in "${analyses[@]}"; do
                 options="--ptThr 0.9,0.9 --obs ${o} ${a}"
                 if [[ $a == *"--reg"* ]]; then
-                    if [ "$o" == "sphericity" ] || [ "$o" == "aplanarity" ] || [ "$o" == "C" ] || [ "$o" == "D" ]; then
+                    if [ "$o" == "sphericity" ] || [ "$o" == "aplanarity" ] || [ "$o" == "C" ] || [ "$o" == "D" ] || [  "$o" == "chrecoil" ]; then
                         echo "Skipping ${a} for ${o} as this is an inclusive observable";
                         continue
                     fi

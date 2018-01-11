@@ -16,6 +16,7 @@ VARTITLES={
     'chavgpt'        : '#bar{p}_{T}(ch)',
     'chfluxz'        : '#Sigma p_{z}(ch)',
     'chavgpz'        : '#bar{p}_{z}(ch)',
+    'chrecoil'       : '|vec{p}_{T}(ch)|',
     'sphericity'     : 'Sphericity',
     'aplanarity'     : 'Aplanarity',
     'C'              : 'C',
@@ -76,6 +77,8 @@ class UEAnalysisHandler:
         self.histos['gen_mll']=ROOT.TH1F('gen_mll',";Dilepton invariant mass [GeV];Events",50,0,400)
         self.histos['gen_ptpos']=ROOT.TH1F("gen_ptpos",";l^{+} transverse momentum [GeV];Events",50,0,200)
         self.histos['gen_nj']=ROOT.TH1F('gen_nj',";Extra jet multiplicity;Events",7,0,7)
+        self.histos['gen_bpt']=ROOT.TH1F('gen_bpt',";b p_{T};Events",50,0,250)        
+        self.histos['gen_jpt']=ROOT.TH1F('gen_jpt',";Extra jet p_{T};Events",50,0,250)
   
         self.histos['gen']=self.analysisCfg[('gen','histo')].Clone('gen')
         for i in xrange(0,self.nVars):
@@ -113,6 +116,11 @@ class UEAnalysisHandler:
             self.histos['gen_mll'].Fill(ue.gen_mll)
             self.histos['gen_ptpos'].Fill(ue.gen_ptpos)
             self.histos['gen_nj'].Fill(ue.gen_nj)
+            for pt in ue.gen_jpt:
+                if pt==0 : continue
+                self.histos['gen_jpt'].Fill(pt)
+            for pt in ue.gen_bpt:
+                self.histos['gen_bpt'].Fill(pt)            
             if genCts>0:
                 self.histos['gen'].Fill(genBin,ue.w[0])
 

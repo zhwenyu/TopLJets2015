@@ -70,6 +70,8 @@ class UEEventCounter:
         self.gen_mll=0
         self.gen_ptpos=0
         self.gen_nj=0
+        self.gen_jpt=[]
+        self.gen_bpt=[]
 
         nSysts=len(self.systList)
 
@@ -95,11 +97,13 @@ class UEEventCounter:
         self.rec_chavgpt  = [0]*nSysts
         self.rec_chfluxz  = [0]*nSysts
         self.rec_chavgpz  = [0]*nSysts
+        self.rec_chrecoil = [0]*nSysts
         self.gen_chmult   = 0 
         self.gen_chflux   = 0
         self.gen_chavgpt  = 0
         self.gen_chfluxz  = 0
         self.gen_chavgpz  = 0
+        self.gen_chrecoil = 0
 
 
     def show(self):
@@ -141,6 +145,8 @@ class UEEventCounter:
             self.gen_mll=t.gen_mll
             self.gen_ptpos=t.gen_ptpos
             self.gen_nj=t.gen_nj
+            self.gen_bpt=[ t.gen_ptb[i] for i in xrange(0,2) ]
+            self.gen_jpt=[ t.gen_ptj[i] for i in xrange(0,10) ]
         except:
             pass
         
@@ -226,7 +232,7 @@ class UEEventCounter:
                     self.rec_chmult[iSystVar]  +=1
                     self.rec_chflux[iSystVar]  += p4.Pt()
                     self.rec_chfluxz[iSystVar] += abs(p4.Pz())
-
+                                        
                 #loop over gen particles and bring unmatched to reco-level if tracking scale factor >1
                 if isMC:
                     for n in xrange(0,t.gen_n):
@@ -283,6 +289,11 @@ class UEEventCounter:
                 self.rec_chavgpt[iSystVar] = self.rec_chflux[iSystVar]/self.rec_chmult[iSystVar]  if self.rec_chmult[iSystVar]>0 else 0.
                 self.rec_chavgpz[iSystVar] = self.rec_chfluxz[iSystVar]/self.rec_chmult[iSystVar] if self.rec_chmult[iSystVar]>0 else 0.
                 
+                #recoil
+                chrecoil=ROOT.TLorentzVector(0,0,0,0)
+                for p4 in selP4: chrecoil += p4
+                self.rec_chrecoil[iSystVar] = chrecoil.Pt()
+
                 #event shapes
                 self.evshapes.analyseNewEvent(selP4)
                 self.rec_sphericity[iSystVar]     = self.evshapes.sphericity
@@ -341,10 +352,15 @@ class UEEventCounter:
                 self.gen_chmult +=1
                 self.gen_chflux += p4.Pt()
                 self.gen_chfluxz += abs(p4.Pz())
-
+            
             #average pt/pz
             self.gen_chavgpt = self.gen_chflux/self.gen_chmult  if self.gen_chmult>0 else 0.
             self.gen_chavgpz = self.gen_chfluxz/self.gen_chmult if self.gen_chmult>0 else 0.
+
+            #recoil
+            chrecoil=ROOT.TLorentzVector(0,0,0,0)
+            for p4 in selP4: chrecoil += p4
+            self.gen_chrecoil = chrecoil.Pt()
 
             #event shapes
             self.evshapes.analyseNewEvent(selP4)

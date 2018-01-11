@@ -1,6 +1,7 @@
 import os
 import pickle
 import ROOT
+import sys
 
 plotList=[
     ('chmult/inc',     'd01-x01-y01'),
@@ -15,9 +16,12 @@ plotList=[
     ]
 
 baseDir='/afs/cern.ch/user/p/psilva/work/Top/CMSSW_8_0_28/src/TopLJets2015/TopAnalysis/store/TOP-17-015'
+outDir='./'
+if len(sys.argv)>1:  baseDir=sys.argv[1]
+if len(sys.argv)>2: outDir=sys.argv[2]
 
-fOut={'data' : open('CMS_2017_TOP_17_015.yoda','w'),
-      'mc'   : open('CMS_2017_TOP_17_015_MC.yoda','w')}
+fOut={'data' : open(os.path.join(outDir,'CMS_2017_TOP_17_015.yoda'),'w'),
+      'mc'   : open(os.path.join(outDir,'CMS_2017_TOP_17_015_MC.yoda'),'w')}
 
 for p,pname in plotList:
 
@@ -25,26 +29,28 @@ for p,pname in plotList:
     gr={'data':None,'mc':None}
     with open(os.path.join(baseDir,p,'unfold/unfold_summary.pck'),'r') as cachefile:
         uePlots=pickle.load(cachefile)
-        gr['data']=uePlots['Data'].plot[0]
-        gr['mc']=uePlots['PW+PY8'].plot[1][0] #stat unc. only
-
-    if not gr:
-        print 'Skipping',p
-        continue
+        if 'data' in uePlots   : gr['data']=uePlots['Data'].plot[0]
+        if 'PW+PY8' in uePlots : gr['mc']=uePlots['PW+PY8'].plot[1][0] #stat unc. only
 
     #dump plot in yoda format
     for t in ['data','mc']:
+
+        if not gr[t]:
+            print 'Skipping',p,'for',t
+            continue
 
         fOut[t].write('BEGIN YODA_SCATTER2D /CMS_2017_TOP_17_015/%s\n'%pname)
         fOut[t].write('Path=/CMS_2017_TOP_17_015/%s\n'%pname)
         fOut[t].write('Type=Scatter2D\n')
         fOut[t].write('# xval xerr- xerr+ yval yerr- yerr+\n')
         x,xref,y=ROOT.Double(0),ROOT.Double(0),ROOT.Double(0)
+        print gr[t],gr[t].GetN()
         for i in xrange(0,gr[t].GetN()):
-            #mc has no error and was probably shifted: use data
-            gr['data'].GetPoint(i,xref,y)
-            exhi,exlo=gr['data'].GetErrorXhigh(i),gr['data'].GetErrorXlow(i) 
-
+            #mc has no error and was probably shifted: use data (if available)
+            grRef=gr['data'] if gr['data'] else gr[t]
+            grRef.GetPoint(i,xref,y)
+            exhi,exlo=grRef.GetErrorXhigh(i),grRef.GetErrorXlow(i) 
+            
             #take y values and error from model/data
             gr[t].GetPoint(i,x,y)
             eyhi,eylo=gr[t].GetErrorYhigh(i),gr[t].GetErrorYlow(i),
