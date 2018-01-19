@@ -173,6 +173,11 @@ def main():
 
         fulld=os.path.join(opt.input,var)
         if not os.path.isdir(fulld) : continue
+        
+        if var in ['maxRap','rapDist']: 
+            print 'Skipping',var
+            continue
+    
 
         varList.append(var)
         varKey='evshape' if var in ['C','D','sphericity','aplanarity'] else 'flux'

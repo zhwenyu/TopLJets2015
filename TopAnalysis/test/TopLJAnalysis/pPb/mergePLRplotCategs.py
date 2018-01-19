@@ -132,9 +132,9 @@ label = ROOT.TLatex()
 label.SetNDC()
 label.SetTextFont(42)
 label.SetTextSize(0.05 if noPulls else 0.06)
-label.DrawLatex(0.17 if noPulls else 0.18,0.87 if noPulls else 0.85,'#scale[1.2]{#bf{CMS}}') # #it{preliminary}')                                                                     
-label.DrawLatex(0.33 if noPulls else 0.37,0.955 if noPulls else 0.95,'pPb (%3.0f nb^{-1}, #sqrt{s_{NN}} = 8.16 TeV)'%lumi[0])
-label.DrawLatex(0.50,0.87 if noPulls else 0.86,'#bf{%s}'%catTitle)
+cmstex=label.DrawLatex(0.17 if noPulls else 0.18,0.87 if noPulls else 0.85,'#scale[1.2]{#bf{CMS}}') # #it{preliminary}')    
+lumitex=label.DrawLatex(0.33 if noPulls else 0.37,0.955 if noPulls else 0.95,'pPb (%3.0f nb^{-1}, #sqrt{s_{NN}} = 8.16 TeV)'%lumi[0])
+cattex=label.DrawLatex(0.50,0.87 if noPulls else 0.86,'#bf{%s}'%catTitle)
 
 pullGr=plots['data'].makeResidHist(plots['totalpdf'],True,True)
 ndof=pullGr.GetN()
@@ -191,8 +191,44 @@ c.Update()
 for ext in ['png','pdf','root']:
     c.SaveAs('%s_comb_%s%s.%s'%(var,cat,pullpf,ext))      
 p1.cd()
-label.DrawLatex(0.17 if noPulls else 0.18,0.8,'#scale[1.0]{#it{preliminary}}')
-c.Modified()
-c.Update()
-for ext in ['png','pdf','root']:
-    c.SaveAs('%s_comb_%s_prel%s.%s'%(var,cat,pullpf,ext))   
+
+#label.DrawLatex(0.17 if noPulls else 0.18,0.8,'#scale[1.0]{#it{preliminary}}')
+#c.Modified()
+#c.Update()
+#for ext in ['png','pdf','root']:
+#    c.SaveAs('%s_comb_%s_prel%s.%s'%(var,cat,pullpf,ext))   
+
+if noPulls:
+    ci=ROOT.TColor.GetColor('#edf8b1')
+    ci=plots['pdfcomp1'].GetFillColor()
+    plots['totalpdf'].SetFillColor(ci)
+    plots['pdfcomp1'].SetFillColor(ci)
+    plots['totalpdf'].GetYaxis().SetTitleOffset(1.03)
+
+    cmstex.Delete()
+    label.DrawLatex(0.17,0.87,'#scale[1.2]{#bf{CMS}}')
+    #lumitex.Delete()
+    #label.DrawLatex(0.33 if noPulls else 0.37,0.955 if noPulls else 0.95,'pPb (%3.0f nb^{-1}, #sqrt{s_{NN}} = 8.16 TeV)'%lumi[0])
+    cattex.Delete()
+    label.DrawLatex(0.50,0.88,'#bf{%s}'%catTitle)
+    leg.Delete()
+
+    imgpad=ROOT.TPad('p1','p1',0.5,0.45,0.94,0.85)
+    imgpad.SetFillStyle(0)    
+    imgpad.SetTopMargin(0)
+    imgpad.SetBottomMargin(0)
+    imgpad.SetLeftMargin(0)
+    imgpad.SetRightMargin(0)
+    imgpad.Draw()
+    imgpad.cd()
+    img = ROOT.TImage.Open("ttsystem.png")
+    img.SetImageQuality(ROOT.TAttImage.kImgBest)
+    img.Draw();
+    
+    c.cd()
+    c.RedrawAxis()
+    c.Modified()
+    c.Update()
+    for ext in ['png','pdf','root']:
+        c.SaveAs('%s_comb_singlecat_%s%s.%s'%(var,cat,pullpf,ext))
+    

@@ -47,8 +47,7 @@ for jobName in toRun:
 condor.close()
 newCondor.close()
 
-#submit jobs
-print 'You can resubmit to condor from',newCondorName
-#print 'Resubmitting to condor from',newCondorName
-#os.system('condor_submit %s'%newCondorName)
-
+####submit jobs
+#print 'You can resubmit to condor from',newCondorName
+print 'Resubmitting to condor from',newCondorName
+os.system('cd %s && condor_submit condor_resub.sub && cd -'%condorSubDir)

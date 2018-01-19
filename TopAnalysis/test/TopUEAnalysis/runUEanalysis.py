@@ -467,6 +467,10 @@ def main():
         ptthreshold=[float(x) for x in opt.ptThr.split(',')]
     
         defineAnalysisBinning(opt,ptthreshold,cuts,outDir)
+        
+        with open('lastUE.dat','w') as logF:
+            logF.write(outDir)
+
 
     #run the analysis
     elif opt.step==2:
@@ -525,6 +529,9 @@ def main():
                 condor.write('executable = {0}/$(jobName).sh\n'.format(FarmDirectory))
                 #condor.write('output     = {0}/output_$(jobName).out\n'.format(FarmDirectory))
                 #condor.write('error      = {0}/output_$(jobName).err\n'.format(FarmDirectory))
+                condor.write('output = /dev/null\n')
+                condor.write('error  = /dev/null\n')
+                condor.write('log    = /dev/null\n')
                 condor.write('+JobFlavour = "{0}"\n'.format(opt.queue))
 
                 for fileName,_,_ in tasklist:

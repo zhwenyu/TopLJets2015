@@ -41,6 +41,7 @@ def getBaseNames(dirname):
         except ValueError:
             print filename,'is single'
             names.add(filename)
+            counters[filename]=[dirname+'/'+item]
     return names
 
 try:

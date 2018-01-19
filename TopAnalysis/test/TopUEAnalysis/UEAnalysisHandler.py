@@ -16,6 +16,7 @@ VARTITLES={
     'chavgpt'        : '#bar{p}_{T}(ch)',
     'chfluxz'        : '#Sigma p_{z}(ch)',
     'chavgpz'        : '#bar{p}_{z}(ch)',
+    'chrecoil'       : '|vec{p}_{T}(ch)|',
     'sphericity'     : 'Sphericity',
     'aplanarity'     : 'Aplanarity',
     'C'              : 'C',
@@ -69,6 +70,16 @@ class UEAnalysisHandler:
 
         self.nVars=len(SYSTS) if useSysts else 1
         self.histos={}
+
+        #control gen-level distributions for synchronization with RIVET
+        self.histos['gen_ptll']=ROOT.TH1F("gen_ptll",";Dilepton transverse momentum [GeV];Events",50,0,200)
+        self.histos['gen_ptlsum']=ROOT.TH1F('gen_ptlsum',";Transverse momentum sum [GeV];Events",50,40,300) 
+        self.histos['gen_mll']=ROOT.TH1F('gen_mll',";Dilepton invariant mass [GeV];Events",50,0,400)
+        self.histos['gen_ptpos']=ROOT.TH1F("gen_ptpos",";l^{+} transverse momentum [GeV];Events",50,0,200)
+        self.histos['gen_nj']=ROOT.TH1F('gen_nj',";Extra jet multiplicity;Events",7,0,7)
+        self.histos['gen_bpt']=ROOT.TH1F('gen_bpt',";b p_{T};Events",50,0,250)        
+        self.histos['gen_jpt']=ROOT.TH1F('gen_jpt',";Extra jet p_{T};Events",50,0,250)
+  
         self.histos['gen']=self.analysisCfg[('gen','histo')].Clone('gen')
         for i in xrange(0,self.nVars):
             self.histos['reco_%d'%i]=self.analysisCfg[('reco','histo')].Clone('reco_%d'%i)
@@ -97,16 +108,29 @@ class UEAnalysisHandler:
         genCts=getattr(ue,'gen_chmult')
         genVal=getattr(ue,'gen_'+self.obs)  
         genBin=self.getBinForVariable(genVal, self.analysisCfg[('gen','axis')])-1
-        if not ue.gen_passSel : genBin=-1               
-        if genCts>0 :
-            self.histos['gen'].Fill(genBin,ue.w[0])
+        if not ue.gen_passSel : 
+            genBin=-1
+        else:
+            self.histos['gen_ptll'].Fill(ue.gen_ptll)
+            self.histos['gen_ptlsum'].Fill(ue.gen_sumpt)
+            self.histos['gen_mll'].Fill(ue.gen_mll)
+            self.histos['gen_ptpos'].Fill(ue.gen_ptpos)
+            self.histos['gen_nj'].Fill(ue.gen_nj)
+            for pt in ue.gen_jpt:
+                if pt==0 : continue
+                self.histos['gen_jpt'].Fill(pt)
+            for pt in ue.gen_bpt:
+                self.histos['gen_bpt'].Fill(pt)            
+            if genCts>0:
+                self.histos['gen'].Fill(genBin,ue.w[0])
+
 
         #RECO level counting (loop over variations)
         for i in xrange(0,self.nVars):
         
             #event weight
             weight=ue.w[i]
-        
+
             #RECO level counting
             recCts=getattr(ue,'rec_chmult')[i]
             recVal=getattr(ue,'rec_'+self.obs)[i]
@@ -118,7 +142,7 @@ class UEAnalysisHandler:
                     self.histos['fakes_%d'%i].Fill(recBin,weight)
  
             #Migration matrix
-            if genCts>0:
+            if ue.gen_passSel and genCts>0:
                 self.histos['mig_%d'%i].Fill(genBin,recBin,weight)
 
 

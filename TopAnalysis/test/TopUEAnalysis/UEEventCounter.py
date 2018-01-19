@@ -62,9 +62,17 @@ class UEEventCounter:
 
     def reset(self):
         """
-        reset counters
+        reset counters and aux variables
         """
-    
+
+        self.gen_ptll=0
+        self.gen_sumpt=0
+        self.gen_mll=0
+        self.gen_ptpos=0
+        self.gen_nj=0
+        self.gen_jpt=[]
+        self.gen_bpt=[]
+
         nSysts=len(self.systList)
 
         self.w                  = [1.0]*nSysts    #event weights
@@ -89,11 +97,13 @@ class UEEventCounter:
         self.rec_chavgpt  = [0]*nSysts
         self.rec_chfluxz  = [0]*nSysts
         self.rec_chavgpz  = [0]*nSysts
+        self.rec_chrecoil = [0]*nSysts
         self.gen_chmult   = 0 
         self.gen_chflux   = 0
         self.gen_chavgpt  = 0
         self.gen_chfluxz  = 0
         self.gen_chavgpz  = 0
+        self.gen_chrecoil = 0
 
 
     def show(self):
@@ -125,12 +135,24 @@ class UEEventCounter:
         """
         count the particles in an event
         """
+
+        self.reset()
+
+        #basic distributions for synch with RIVET
+        try:
+            self.gen_ptll=t.gen_ptll
+            self.gen_sumpt=t.gen_sumpt
+            self.gen_mll=t.gen_mll
+            self.gen_ptpos=t.gen_ptpos
+            self.gen_nj=t.gen_nj
+            self.gen_bpt=[ t.gen_ptb[i] for i in xrange(0,2) ]
+            self.gen_jpt=[ t.gen_ptj[i] for i in xrange(0,10) ]
+        except:
+            pass
         
         #assign an era randomly (only used for MC)
         mceraLumi=ROOT.gRandom.Uniform(35874.8)
         mcera='BCDEF' if mceraLumi < 19323.4 else 'GH'
-
-        self.reset()
 
         p4=ROOT.TLorentzVector(0,0,0,0)
 
@@ -151,6 +173,9 @@ class UEEventCounter:
                 self.rec_passSel[iSystVar] = ((t.passSel>>varIdx)&0x1)
             except:
                 pass
+
+            #require e-mu
+            if abs(t.cat)!=11*13 : self.rec_passSel[iSystVar]=False
 
             passExtraCuts=True
             for cutKey in self.cuts:
@@ -207,7 +232,7 @@ class UEEventCounter:
                     self.rec_chmult[iSystVar]  +=1
                     self.rec_chflux[iSystVar]  += p4.Pt()
                     self.rec_chfluxz[iSystVar] += abs(p4.Pz())
-
+                                        
                 #loop over gen particles and bring unmatched to reco-level if tracking scale factor >1
                 if isMC:
                     for n in xrange(0,t.gen_n):
@@ -264,6 +289,11 @@ class UEEventCounter:
                 self.rec_chavgpt[iSystVar] = self.rec_chflux[iSystVar]/self.rec_chmult[iSystVar]  if self.rec_chmult[iSystVar]>0 else 0.
                 self.rec_chavgpz[iSystVar] = self.rec_chfluxz[iSystVar]/self.rec_chmult[iSystVar] if self.rec_chmult[iSystVar]>0 else 0.
                 
+                #recoil
+                chrecoil=ROOT.TLorentzVector(0,0,0,0)
+                for p4 in selP4: chrecoil += p4
+                self.rec_chrecoil[iSystVar] = chrecoil.Pt()
+
                 #event shapes
                 self.evshapes.analyseNewEvent(selP4)
                 self.rec_sphericity[iSystVar]     = self.evshapes.sphericity
@@ -280,8 +310,9 @@ class UEEventCounter:
                     if self.rec_chmult[iSystVar]<self.cuts['chmult'][0] or self.rec_chmult[iSystVar]>=self.cuts['chmult'][1]:
                         self.rec_passSel[iSystVar] = False
                 
-        #gen level (only one selection variation needed)
+        #gen level (only one selection variation needed and require e-mu final state)
         self.gen_passSel=(t.gen_passSel&0x1)
+        if isMC and abs(t.gen_cat)!=11*13 : self.gen_passSel=False
 
         passExtraCuts=True
         for cutKey in self.cuts:
@@ -321,10 +352,15 @@ class UEEventCounter:
                 self.gen_chmult +=1
                 self.gen_chflux += p4.Pt()
                 self.gen_chfluxz += abs(p4.Pz())
-
+            
             #average pt/pz
             self.gen_chavgpt = self.gen_chflux/self.gen_chmult  if self.gen_chmult>0 else 0.
             self.gen_chavgpz = self.gen_chfluxz/self.gen_chmult if self.gen_chmult>0 else 0.
+
+            #recoil
+            chrecoil=ROOT.TLorentzVector(0,0,0,0)
+            for p4 in selP4: chrecoil += p4
+            self.gen_chrecoil = chrecoil.Pt()
 
             #event shapes
             self.evshapes.analyseNewEvent(selP4)

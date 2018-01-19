@@ -121,6 +121,10 @@ void UEUnfold::unfoldData(char *file_name,char *syst_file_name,char *sigName)
   results_->Add( ratioCanvas(dataSub[""],totalData,"datasub","Reconstructed bin","(Data-Fakes-Background)/Data",0.8,1.0) );
   results_->Add( dataControlCanvas(totalData,dataSub[""],totalRec,"data") );
   results_->Add( showNormalizedMigrationMatrix(migMatrices[""]) );
+  cout << totalGen->GetNbinsX() <<  " " << totalGen->Integral() << " | "
+       << totalRec->GetNbinsX() << " " << totalRec->Integral() << " | "
+       << dataSub[""]->GetNbinsX() << " " << dataSub[""]->Integral()<< " | "
+       << migMatrices[""]->GetNbinsX() << "," << migMatrices[""]->GetNbinsY() << " " << migMatrices[""]->Integral() << endl;
   float opt_tau=doUnfold(-1,migMatrices[""],dataSub[""],totalGen);
   cout << "After unfolding with nominal matrix tau=" << opt_tau << endl;
   for(auto &it : migMatrices) 

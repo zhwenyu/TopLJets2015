@@ -49,19 +49,15 @@ EXTRASETS = [
     ('#alpha_{S}^{FSR}=0.135','MC13TeV_TTJets_pythia8_asfsr0.135_meon_crdefault.root'),
     ('#alpha_{S}^{FSR}=0.140','MC13TeV_TTJets_pythia8_asfsr0.140_meon_crdefault.root'),
     ('#alpha_{S}^{FSR}=0.150','MC13TeV_TTJets_pythia8_asfsr0.150_meon_crdefault.root'),
-    ('#alpha_{S}^{FSR}=0.160','MC13TeV_TTJets_pythia8_asfsr0.160_meon_crdefault.root'),
-    ('#alpha_{S}^{ISR}=0.06','MC13TeV_TTJets_asisr006.root'),
-    ('#alpha_{S}^{ISR}=0.07','MC13TeV_TTJets_asisr007.root'),
-    ('#alpha_{S}^{ISR}=0.08','MC13TeV_TTJets_asisr008.root'),
-    ('#alpha_{S}^{ISR}=0.09','MC13TeV_TTJets_asisr009.root'),
-    ('#alpha_{S}^{ISR}=0.10','MC13TeV_TTJets_asisr010.root'),
-    ('#alpha_{S}^{ISR}=0.11','MC13TeV_TTJets_asisr011.root'),
-    ('#alpha_{S}^{ISR}=0.12','MC13TeV_TTJets_asisr012.root'),
-    ('#alpha_{S}^{ISR}=0.13','MC13TeV_TTJets_asisr013.root'),
-    ('#alpha_{S}^{ISR}=0.14','MC13TeV_TTJets_asisr014.root'),
-    ('#alpha_{S}^{ISR}=0.15','MC13TeV_TTJets_asisr015.root'),
-    ('#alpha_{S}^{ISR}=0.16','MC13TeV_TTJets_asisr016.root'),
-
+    ('#alpha_{S}^{FSR}=0.160','MC13TeV_TTJets_pythia8_asfsr0.160_meon_crdefault.root'),                              
+    ('#alpha_{S}^{ISR}=0.09', 'MC13TeV_TTJets_pythia8_asisr0.09.root'),
+    ('#alpha_{S}^{ISR}=0.10', 'MC13TeV_TTJets_pythia8_asisr0.10.root'),
+    ('#alpha_{S}^{ISR}=0.11', 'MC13TeV_TTJets_pythia8_asisr0.11.root'),
+    ('#alpha_{S}^{ISR}=0.12', 'MC13TeV_TTJets_pythia8_asisr0.12.root'),
+    ('#alpha_{S}^{ISR}=0.13', 'MC13TeV_TTJets_pythia8_asisr0.13.root'),
+    ('#alpha_{S}^{ISR}=0.14', 'MC13TeV_TTJets_pythia8_asisr0.14.root'),
+    ('#alpha_{S}^{ISR}=0.15', 'MC13TeV_TTJets_pythia8_asisr0.15.root'),
+    ('#alpha_{S}^{ISR}=0.16', 'MC13TeV_TTJets_pythia8_asisr0.16.root'),
 ]
 
 PLOTTINGSET_1=[

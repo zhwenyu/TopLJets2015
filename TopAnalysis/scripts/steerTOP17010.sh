@@ -70,9 +70,9 @@ case $WHAT in
 	python scripts/runTopWidthAnalysis.py -i root://eoscms//eos/cms/${summaryeosdir}/Chunks/MC13TeV_TTJets_12.root -o ${outdir}/analysis/Chunks -q local;
         ;;
     ANA )
-	python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${outdir}/analysis/Chunks -q ${queue} --only MC13TeV;
-        python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${outdir}/analysis/Chunks -q ${queue} --only Data13TeV_Single,Data13TeV_Double --farm TOP17010DataANA;
-        python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${outdir}/analysis/Chunks -q ${queue} --only MuonEG --farm TOP17010DataMuEGANA;
+	python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${outdir}/analysis/Chunks -q ${queue} --only MC13TeV_TTJets;
+        #python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${outdir}/analysis/Chunks -q ${queue} --only Data13TeV_Single,Data13TeV_Double --farm TOP17010DataANA;
+        #python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${outdir}/analysis/Chunks -q ${queue} --only MuonEG --farm TOP17010DataMuEGANA;
 	;;
     CHECKANA )
         for FARM in TOP17010ANA TOP17010DataANA TOP17010DataMuEGANA; do
@@ -114,21 +114,30 @@ case $WHAT in
         cp test/index.php ${wwwdir}/comb
 	;;
     HYPOTEST ) 
-	mainHypo=100
-	CATS=(
-        "EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt,EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt"
-        )
+
+    #mainHypo=(20 100 400)        
+    mainHypo=(100)
+
 	#    "EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt"
 	#    "EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt"
 	#    "EM1bhighpt,EM2bhighpt"
 	#    "EM2bhighpt"
-	#)
-    TAGS=("inc_scan_preAppFrz")
+	CATS=(
+        "EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt,EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt"
+        )
+
     #TAGS=("inc_scan_preApp_step4" "inc_scan_preApp_step3"  "inc_scan_preApp_step2" "inc_scan_preApp_step1")
+    TAGS=("inc_scan_preAppFrz")
+
 	altHypo=(20 40 50 60 70 80 90 100 110 120 130 140 150 160 180 200 220 240 260 280 300 350 400)        
+
+	#data=(-1 50 60 70 80 90 100 110 120 130 140 150 160 180 200 220 240 260 280 300 350 400)
     data=(100)
+
     expAltHypo=("nan") #"meq166p5" "meq169p5" "meq171p5" "meq173p5" "meq175p5" "meq178p5")
+
     #nuisanceGroups=("nan")
+    #nuisanceGroups=("sel,trig_*CH*,lumi_13TeV,DYnorm_*CH*,Wnorm_th,tWnorm_th,VVnorm_th,tbartVnorm_th,ees,mes,jer,ltag,btag,bfrag,semilep,pu,tttoppt,ttMEqcdscale,ttPDF,jes,st_wid,UE,CR,hdamp,ISR,FSR,mtop,tWttInterf,tWMEScale") 
     nuisanceGroups=("sel,trig_*CH*" "lumi_13TeV" "DYnorm_*CH*" "Wnorm_th" 
                 "tWnorm_th" "VVnorm_th" "tbartVnorm_th" 
                 "ees" "mes" "jer" "ltag" "btag" "bfrag" "semilep"
@@ -136,11 +145,11 @@ case $WHAT in
                 "jes" "st_wid" "UE" "CR" 
                 "hdamp" "ISR" "FSR" "mtop" 
                 "tWttInterf" "tWMEScale") 
-    #nuisanceGroups=("sel,trig_*CH*,lumi_13TeV,DYnorm_*CH*,Wnorm_th,tWnorm_th,VVnorm_th,tbartVnorm_th,ees,mes,jer,ltag,btag,bfrag,semilep,pu,tttoppt,ttMEqcdscale,ttPDF,jes,st_wid,UE,CR,hdamp,ISR,FSR,mtop,tWttInterf,tWMEScale") 
+
     queue=1nd
-	#still to be debugged
-        #cmd="${cmd} --addBinByBin 0.3" 
+    
 	for h in ${altHypo[@]}; do
+    for mh in ${mainHypo[@]}; do
 	    for f in ${nuisanceGroups[@]}; do
 	    for e in ${expAltHypo[@]}; do
 	    for d in ${data[@]}; do
@@ -151,8 +160,7 @@ case $WHAT in
 		    
 		    cmd="python test/TopWidthAnalysis/runHypoTestDatacards.py"
 		    cmd="${cmd} --combine ${COMBINERELEASE}"
-		    cmd="${cmd} --mainHypo=${mainHypo} --altHypo ${h} --pseudoData=${d}"
-		   #cmd="${cmd} -s tbart,Singletop" #tW --replaceDYshape"
+		    cmd="${cmd} --mainHypo=${mh} --altHypo ${h} --pseudoData=${d}"
             cmd="${cmd} -s tbart"
             #cmd="${cmd} --rndmPseudoSF"
             if [[ "${e}" != "nan" ]] ; then 
@@ -165,7 +173,8 @@ case $WHAT in
 		    cmd="${cmd} --nToys 2000"
 		    cmd="${cmd} -i /eos/cms/${summaryeosdir}/plotter/plotter.root"
 		    cmd="${cmd} --systInput /eos/cms/${summaryeosdir}/plotter/syst_plotter.root"
-		    cmd="${cmd} -c ${icat}"
+                    cats="EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt,EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt"
+		    cmd="${cmd} -c ${cats}"
 		    cmd="${cmd} --rebin 2"            
             #cmd="${cmd} --doValidation"
 		    #if [ "$h" == "220" ]; then
@@ -175,15 +184,22 @@ case $WHAT in
 		    #fi
 		    #fi
                     
-		    echo "Submitting ($mainHypo,$h,$d,$itag,$icat)"		
+		    echo "Submitting ($mh,$h,$d,$itag,$icat)"		
 		    stdcmd="${cmd} -o ${outdir}/datacards_${itag}"
+
+            # add name for frozen syst
             if [[ "${f}" != "nan" ]] ; then 
     		    stdcmd="${stdcmd}_${f}"		    
             fi
+
+            # add name for alternate mainHypo
+            if [[ "${mh}" != "100" ]] ; then 
+    		    stdcmd="${stdcmd}_${h}"		    
+            fi
+
+            # submit job
     		stdcmd="${stdcmd}/"		    
-
             echo ${stdcmd}
-
     	    bsub -q ${queue} sh ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${stdcmd};
            
 		    #if [ "$itag" == "inc" ]; then
@@ -200,7 +216,8 @@ case $WHAT in
         done
         done
         done
-	done
+        done
+	    done
 	;;
     PLOTHYPOTEST )
 	summaryScript=${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/summarizeHypoTestResults.py;
