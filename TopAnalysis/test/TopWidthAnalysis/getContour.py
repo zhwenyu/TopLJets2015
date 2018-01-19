@@ -1,8 +1,13 @@
 #!/usr/bin/env python
 import re
 from sys import argv
+from array import array
 import os.path
 import ROOT
+
+def interact():
+    import code
+    code.InteractiveConsole(locals=globals()).interact()
 
 ROOT.gROOT.SetBatch(True)
 
@@ -11,7 +16,7 @@ from optparse import OptionParser
 from tdrStyle import setTDRStyle
 import CMS_lumi
 parser = OptionParser()
-parser.add_option("-i",    type="string", dest="indir"  , default="/afs/cern.ch/work/e/ecoleman/TOP-17-010-final/datacards_inc_scan_propmeeting/",         help="combine output file")
+parser.add_option("-i",    type="string", dest="indir"  , default="/afs/cern.ch/work/e/ecoleman/TOP-17-010-final/datacards_inc_scan/",         help="combine output file")
 parser.add_option("-e",    type="string", dest="extname", default="_100pseudodata",         help="combine output file")
 parser.add_option("-n",    type="string", dest="outnm"  , default="contournosyst",    help="the filename for the plot")
 parser.add_option("-o",    type="string", dest="outdir" , default="./",         help="the base filename for the plot")
@@ -43,10 +48,15 @@ y    = ROOT.TVector(nPoints)
 z    = ROOT.TVector(nPoints)
 
 # two dimensional scan if >1 mass
-if TwoDim :
+def get2DContour() :
     # create graphs
-    nPoints = nPoints * len(mass)
+    nPoints = len(wids) * len(mass)
     pullGraph = ROOT.TGraph2D(nPoints);
+
+    h=ROOT.TH2D("","",300,0.25*1.324,3.8*1.324,100,172.44,172.54)
+    contours = array('d',[2.30,4.61,5.99,6.18,9.21,11.83])
+
+    h.SetDirectory(0)
 
     iPoint=0
     for i in xrange(0,len(wids)) :
@@ -65,49 +75,97 @@ if TwoDim :
 
             x     = 1.324*float(wids[i])/100
             y     = float(tmas)
-            z     = 2 * ( tree0.GetV1()[0] - tree1.GetV1()[0] )
+            z     = ( tree0.GetV1()[0] - tree1.GetV1()[0] )
             pullGraph.SetPoint(iPoint,x,y,z)
 
-            print x,y,z
+            #print x,y,z
             fIn0.Close()
             fIn1.Close()
             iPoint += 1
+
+    pullGraph.SetTitle("")
+    pullGraph.SetHistogram(h)
+    h.SetTitle("")
 
     # create canvas
     c.cd()
     setTDRStyle()
     c.SetGrid(1,1)
-    c.SetRightMargin(0.1)
-    c.SetLeftMargin(0.1)
+    c.SetRightMargin(0.15)
+    c.SetLeftMargin(0.14)
     c.SetBottomMargin(0.125)
     c.cd()
 
-    # format all graphs: color
-    pullGraph.SetMarkerStyle(20)
-    pullGraph.SetMarkerSize(1)
-    pullGraph.SetTitle("")
+    # fill histo
+    pullGraph.Draw("SURF")
+    ROOT.gPad.Update()
+    h.Draw("COLZ")
 
-    # set the bin and axis labels
+    # set minimum to 0
+    minVal=h.GetMinimum()
+    for xbin in xrange(1,h.GetNbinsX()+1):
+        for ybin in xrange(1,h.GetNbinsY()+1):
+            h.SetBinContent(xbin,ybin,h.GetBinContent(xbin,ybin)-minVal)
+    h.GetZaxis().SetRangeUser(0,20)
 
-    pullGraph.GetXaxis().SetTitle("Top quark width, #Gamma_{t} (GeV)")
-    pullGraph.GetYaxis().SetTitle("Top quark mass, m_{t} (GeV)")
-    pullGraph.GetZaxis().SetRangeUser(0,10)
-    pullGraph.Draw("COLZ")
-    #xax.SetTitleOffset(1);
-    #yax=pullGraph.GetYaxis()
-    #yax.SetTitleOffset(1);
-    #yax.SetLabelSize(0.035);
-    #zax=pullGraph.GetZaxis()
-    #zax.SetTitle("-2 #times ln(L_{alt.} / L_{SM})")
-    #zax.SetTitleOffset(1);
-    #zax.SetLabelSize(0.035);
+    # set contours
+    h.SetContour(len(contours),contours)
+    h.Draw("CONTZ LIST")
+    ROOT.gPad.Update()
+
+    contList = ROOT.gROOT.GetListOfSpecials().FindObject("contours")
+    contGrs  = []
+    h.Draw("COLZ")
+    for i in range(0,len(contours)) :
+        x = contList.At(i).At(0).Clone()
+        contGrs.append(x)
+        x.SetLineWidth(2)
+        x.Draw('same l')
+    xmin=ROOT.TMath.MinElement(contGrs[0].GetN(),contGrs[0].GetX())
+    xmax=ROOT.TMath.MaxElement(contGrs[0].GetN(),contGrs[0].GetX())
+    ymin=ROOT.TMath.MinElement(contGrs[0].GetN(),contGrs[0].GetY())
+    ymax=ROOT.TMath.MaxElement(contGrs[0].GetN(),contGrs[0].GetY())
+    h.GetXaxis().SetRangeUser(0.6*xmin,1.4*xmax)
+
+    xx, yy, zz = ROOT.Long(0), ROOT.Long(0), ROOT.Long(0)
+    h.GetMinimumBin(xx,yy,zz)
+    print h.GetXaxis().GetBinCenter(xx),h.GetYaxis().GetBinCenter(yy)
+
+    h.GetXaxis().SetTitle("Top quark width, #Gamma_{t} [GeV/c^{2}]")
+    h.GetYaxis().SetTitle("Top quark mass, m_{t} [GeV/c^{2}]")
+    h.GetZaxis().SetTitle("-2 #Delta log(L_{alt.}/L_{ref.})")
+    h.GetXaxis().SetTitleOffset(1.15)
+    h.GetYaxis().SetTitleOffset(1.275)
+    h.GetZaxis().SetTitleOffset(0.9)
+    h.GetXaxis().SetTitleSize(0.05)
+    h.GetYaxis().SetTitleSize(0.05)
+    h.GetZaxis().SetTitleSize(0.05)
+
+    #interact()
+
+    # format and print
+    CMS_lumi.relPosX = 0.17
+    CMS_lumi.extraText = "Preliminary"
+    CMS_lumi.lumiTextSize = 0.55
+    CMS_lumi.extraOverCmsTextSize=0.80
+    CMS_lumi.CMS_lumi(c,4,0)
+
+    ltx = ROOT.TLatex(0.6,0.935,options.exText)
+    ltx.SetNDC(ROOT.kTRUE)
+    ltx.SetTextSize(0.05)
+    ltx.Draw()
+
+    # save plots
+    c.SaveAs(options.outdir+"%s.pdf"%options.outnm)
+    c.SaveAs(options.outdir+"%s.png"%options.outnm)
+
 
 # one dimensional contour if only one mass
-else :
+def get1DContour() :
     # initialize standard arrays
     for i in xrange(0,nPoints) :
-        fIn0 = ROOT.TFile(options.indir+"/hypotest_100vs"+wids[i]+options.extname+"/testStat_scan0n.root")
-        fIn1 = ROOT.TFile(options.indir+"/hypotest_100vs"+wids[i]+options.extname+"/testStat_scan1n.root")
+        fIn0 = ROOT.TFile(options.indir+"/hypotest_100vs"+wids[i]+massMap[options.mass]+options.extname+"/testStat_scan0n.root")
+        fIn1 = ROOT.TFile(options.indir+"/hypotest_100vs"+wids[i]+massMap[options.mass]+options.extname+"/testStat_scan1n.root")
         tree0 = fIn0.Get("limit")
         tree1 = fIn1.Get("limit")
 
@@ -116,7 +174,7 @@ else :
 
         x[i]     = 1.324*float(wids[i])/100
         y[i]     = tree0.GetV1()[0] - tree1.GetV1()[0]
-        print x[i],y[i]
+        #print x[i],y[i]
         fIn0.Close()
         fIn1.Close()
 
@@ -140,28 +198,68 @@ else :
     pullGraph.SetTitle("")
     pullGraph.Draw("ALP")
 
+    widGuess = 1.324
+    widStep  = 0.0001
+    foundMin = False
+    print "Computing minimum"
+    while not foundMin :
+        nomVal = pullGraph.Eval(widGuess,0,"S")
+        upVal  = pullGraph.Eval(widGuess+widStep,0,"S")
+        dnVal  = pullGraph.Eval(widGuess-widStep,0,"S")
+
+        if upVal >= nomVal and dnVal >= nomVal : foundMin = True
+
+        if upVal <= nomVal : widGuess += widStep
+        elif dnVal <= nomVal : widGuess -= widStep
+
+    upLim = 1.324
+    foundUp = False
+    dnLim = 1.324
+    foundDn = False
+    print "Computing upper limit"
+    while not foundUp :
+        if pullGraph.Eval(upLim,0,"S") >= 1.0: foundUp = True
+        else : upLim += widStep
+    print "Computing lower limit"
+    while not foundDn :
+        if pullGraph.Eval(dnLim,0,"S") >= 1.0: foundDn = True
+        else : dnLim -= widStep
+
+    print "Width: ",widGuess,"  | (",dnLim,",",upLim,")"
+    print widGuess,",",dnLim,",",upLim
+
+
     # set the bin and axis labels
     xax=pullGraph.GetXaxis()
-    xax.SetTitle("Top width (GeV)")
+    xax.SetTitle("Top quark decay width, #Gamma_{t} (GeV)")
     xax.SetTitleOffset(0.9);
+    xax.SetRangeUser(0,2*upLim)
     yax=pullGraph.GetYaxis()
-    yax.SetTitle("-ln(L_{alt.} / L_{SM})")
+    yax.SetTitle("-2 ln(L_{alt.} / L_{SM})")
     yax.SetTitleOffset(1.0);
     yax.SetLabelSize(0.035);
+    yax.SetRangeUser(0,10)
+
+    # format and print
+    CMS_lumi.relPosX = 0.165
+    CMS_lumi.extraText = "Preliminary"
+    CMS_lumi.lumiTextSize = 0.55
+    CMS_lumi.extraOverCmsTextSize=0.80
+    CMS_lumi.CMS_lumi(c,4,0)
+
+    ltx = ROOT.TLatex(0.6,0.935,options.exText)
+    ltx.SetNDC(ROOT.kTRUE)
+    ltx.SetTextSize(0.05)
+    ltx.Draw()
 
 
-# format and print
-CMS_lumi.relPosX = 0.165
-CMS_lumi.extraText = "Preliminary"
-CMS_lumi.lumiTextSize = 0.55
-CMS_lumi.extraOverCmsTextSize=0.80
-CMS_lumi.CMS_lumi(c,4,0)
+    # save plots
+    c.SaveAs(options.outdir+"%s.pdf"%options.outnm)
+    c.SaveAs(options.outdir+"%s.png"%options.outnm)
+    c.SaveAs(options.outdir+"%s.root"%options.outnm)
+    pullGraph.SaveAs(options.outdir+"%s_plot.root"%options.outnm)
 
-ltx = ROOT.TLatex(0.6,0.935,options.exText)
-ltx.SetNDC(ROOT.kTRUE)
-ltx.SetTextSize(0.05)
-ltx.Draw()
-
-# save plots
-c.SaveAs(options.outdir+"%s.pdf"%options.outnm)
-c.SaveAs(options.outdir+"%s.png"%options.outnm)
+if TwoDim :
+    get2DContour(0,0,0,0)
+else :
+    get1DContour()

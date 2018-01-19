@@ -18,21 +18,17 @@ export LSB_JOB_REPORT_MAIL=Y
 
 queue=2nw
 who=`whoami`
-outdir=/afs/cern.ch/work/${who:0:1}/${who}/TOP-17-010/
-extdir=${outdir}/${EXT}/
-cardsdir=${extdir}/datacards
+outdir=/afs/cern.ch/work/${who:0:1}/${who}/TOP-17-010-final/
+extdir=${outdir}/${EXT}
 CMSSW_7_4_7dir=~/CMSSW_7_4_7/src/
 CMSSW_7_6_3dir=~/CMSSW_8_0_26_patch1/src/
 
 unblind=true
 nPseudo=1000
 
-wid=(20 40 60 80
-    100 120 140 160 
-    180 200 220 240 
-    260 280 300 350 400)
-widNs=("0.20" "0.40" "0.60" "0.80"
-       "1.00" "1.20" "1.40" "1.60" "1.80"
+wid=(20 40 50 60 70 80 90 100 110 120 130 140 150 160 180 200 220 240 260 280 300 350 400)        
+widNs=("0.20" "0.40" "0.50" "0.60" "0.70" "0.80" "0.90" 
+       "1.00" "1.10" "1.20" "1.30" "1.40" "1.50" "1.60" "1.80"
        "2.00" "2.20" "2.40" "2.60" "2.80"
        "3.00" "3.50" "4.00") 
 
@@ -57,6 +53,40 @@ nwidSt="$(join ${widNs[@]})"
 mkdir -p $extdir
 
 case $WHAT in
+############################# LIMITS #####################################
+    LIMITS )
+        cd ${CMSSW_7_4_7dir}
+        eval `scramv1 runtime -sh`
+        cd -
+
+       # nuisanceGroups=("sel,trig_*CH*" "lumi_13TeV" "DYnorm_*CH*" "Wnorm_th" 
+       #         "tWnorm_th" "VVnorm_th" "tbartVnorm_th" 
+       #         "ees" "mes" "jer" "ltag" "btag" "bfrag" "semilep"
+       #         "pu" "tttoppt" "ttMEqcdscale" "ttPDF"
+       #         "jes" "st_wid" "UE" "CR" 
+       #         "hdamp" "ISR" "FSR" "mtop" 
+       #         "tWttInterf" "tWMEScale") 
+        nuisanceGroups=("all")
+
+        #echo "------------------------"
+        #python test/TopWidthAnalysis/getContour.py \
+        #    --mass 172.5 -n Contour1D_main \
+        #    -i ${extdir}/
+
+        #for i in 1 2 3 4 ; do
+        #    python test/TopWidthAnalysis/getContour.py \
+        #        --mass 172.5 -n Contour1D_main_step${i} \
+        #        -i ${extdir}_step${i}/
+        #done
+
+        for nuisGroup in ${nuisanceGroups[@]} ; do
+            echo "------------------------"
+            echo "Limits for ${nuisGroup}:"
+            python test/TopWidthAnalysis/getContour.py \
+                --mass 172.5 -n Contour1D_${nuisGroup} \
+                -i ${extdir}Frz/
+        done
+    ;;
 ############################### CLs #######################################
     CLs ) # get CLs statistics from combine
         cd ${CMSSW_7_4_7dir}
@@ -274,27 +304,25 @@ case $WHAT in
         catList="${catList}EM1bhighpt,EM2bhighpt,EM1blowpt,EM2blowpt,"
         catList="${catList}MM1bhighpt,MM2bhighpt,MM1blowpt,MM2blowpt"
 
-        #python test/TopWidthAnalysis/getShapeUncPlots.py \
-        #    --input ${outdir}/analysis/plots/plotter.root \
-        #    --tag exp \
-        #    --wid $3 \
-        #    --cats ${catList} \
-        #    --proc "t#bar{t},Single top"
-        #python test/TopWidthAnalysis/getShapeUncPlots.py \
-        #    --input ${outdir}/analysis/plots/plotter.root \
-        #    --wid $3 \
-        #    --tag gen \
-        #    --cats ${catList} \
-        #    --proc "t#bar{t}"
         python test/TopWidthAnalysis/getShapeUncPlots.py \
-            --input ${outdir}/analysis/plots/plotter.root \
-            --systInput ${outdir}/analysis/plots/syst_plotter.root \
+            --input root://eoscms//eos/cms/store/cmst3/group/top/TOP-17-010-final/plotter/plotter.root \
+            --tag exp \
+            --wid $3 \
+            --cats ${catList} \
+            --proc "t#bar{t},Single top"
+        python test/TopWidthAnalysis/getShapeUncPlots.py \
+            --input root://eoscms//eos/cms/store/cmst3/group/top/TOP-17-010-final/plotter/plotter.root \
+            --wid $3 \
+            --tag gen \
+            --cats ${catList} \
+            --proc "t#bar{t}"
+        python test/TopWidthAnalysis/getShapeUncPlots.py \
+            --input root://eoscms//eos/cms/store/cmst3/group/top/TOP-17-010-final/plotter/plotter.root \
+            --systInput root://eoscms//eos/cms/store/cmst3/group/top/TOP-17-010-final/plotter/syst_plotter.root \
             --wid $3 \
             --tag sys \
             --cats ${catList} \
             --proc "t#bar{t},Single top"
-
-        mv SystMap* ~/www/TOP-17-010/
 
     ;;
 esac

@@ -11,6 +11,8 @@ from subprocess import Popen, PIPE, STDOUT
 from TopLJets2015.TopAnalysis.Plot import *
 from TopLJets2015.TopAnalysis.dataCardTools import *
 
+def noPartIn(a,b) :
+        return 0 == len([c for c in b if (a in c or c in a)])
 
 def buildRateUncertainty(varDn,varUp):
     """ returns a uniformized string for the datacard for the treatment of up/down rate uncertainties """
@@ -68,10 +70,12 @@ def getDistsForHypoTest(cat,rawSignalList,opt,outDir="",systName="",systIsGen=Fa
 
     #signal hypothesis
     expMainHypo=exp.copy()
-    if opt.mainHypo!=1.0:  _,expMainHypo=getDistsFromDirIn(opt.input,'%s_%s_w%.0f'%(cat,opt.dist,opt.mainHypo))
+    if opt.mainHypo!=100.0:
+        _,expMainHypo=getDistsFromDirIn(opt.input,'%s_%s_w%.0f'%(cat,opt.dist,opt.mainHypo))
     expAltHypo=None
     if len(opt.altHypoFromSim)>0 :
-        _,expAltHypo=getDistsFromDirIn(opt.systInput,'%s_%s_w%.0f%s'%(cat,opt.dist,opt.altHypo,systExt),opt.expAltHypoFromSim)
+        _,expAltHypo=getDistsFromDirIn(opt.systInput,'%s_%s_w%.0f%s'%(cat,opt.dist,opt.altHypo,systExt))
+        expAltHypo = {k.replace(opt.altHypoFromSim,""): v for k, v in expAltHypo.items() if opt.altHypoFromSim in v.GetName()}
         if systName != "" :
             for tHist2D in expAltHypo :
                 expAltHypo[tHist2D] = getRowFromTH2(expAltHypo[tHist2D],systName)
@@ -205,12 +209,14 @@ def doCombineScript(opt,args,outDir,dataCardList):
         script.write('#combineTool.py -M Impacts -d workspace.root %s --doFits\n'%commonOpts)
         script.write('#combineTool.py -M Impacts -d workspace.root %s -o impacts.json\n'%commonOpts)
         script.write('#plotImpacts.py -i impacts.json -o impacts\n')
-        script.write('\n')        
+        script.write('\n')
 
     script.write('### SCAN \n')
     script.write('\n')
     for extra,extraName in [('-S 0','_stat'),('','')]:
         commonOpts="-m 172.5 %s -M HybridNew --testStat=TEV --onlyTestStat --saveToys --saveHybridResult --minimizerAlgo Minuit2"%extra
+        if opt.frzString != "" :
+            commonOpts += " --freezeNuisances %s"%opt.frzString
         script.write("combine %s --singlePoint 0  workspace.root -n scan0n\n"%commonOpts)
         script.write("mv higgsCombinescan0n.HybridNew.mH172.5.123456.root testStat_scan0n%s.root\n"%extraName)
         script.write("combine %s --singlePoint 1  workspace.root -n scan1n\n"%commonOpts)
@@ -248,6 +254,18 @@ def doDataCards(opt,args):
         mainSignalList += [tWScenarioList[0]]
         altSignalList  += [tWScenarioList[1]]
 
+    if opt.rmvNuisances != "" :
+        rmvNuisances = True
+        nuisanceRMV = opt.rmvNuisances.split(',')
+    else :
+        rmvNuisances = False
+
+    if opt.frzNuisances != "" :
+        frzNuisances = True
+        nuisanceFRZ = opt.frzNuisances.split(',')
+    else :
+        frzNuisances = False
+
 
     #define RATE systematics : syst,val,pdf,whiteList,blackList  (val can be a list of values [-var,+var])
     rateSysts=[
@@ -255,7 +273,6 @@ def doDataCards(opt,args):
           ('DYnorm_*CH*',      1.30,     'lnN',    ['DY'],              []),
           ('Wnorm_th',         1.50,     'lnN',    ['W'],               []),
           ('tWnorm_th',        1.15,     'lnN',    tWScenarioList,      []),
-          #('tnorm_th',         1.044,    'lnN',    ['tch'],             []),
           ('VVnorm_th',        1.20,     'lnN',    ['Multiboson'],      []),
           ('tbartVnorm_th',    1.30,     'lnN',    ['tbartV'],          []),
     ]
@@ -289,17 +306,76 @@ def doDataCards(opt,args):
         ('UE',             {'tbart':['t#bar{t} UEdn',     't#bar{t} UEup']}          , 2, 1.0 ),
         ('CR',             {'tbart':['t#bar{t} QCDbased', 't#bar{t} gluon move']}    , 2, 1.0 ),
         ('hdamp',          {'tbart':['t#bar{t} hdamp dn', 't#bar{t} hdamp up']}      , 2, 1.0 ),
-        ('ISR',            {'tbart':['t#bar{t} isr dn',   't#bar{t} isr up']}        , 2, 1.0 ),
-        ('FSR',            {'tbart':['t#bar{t} fsr dn',   't#bar{t} fsr up']}        , 2, 1.0 ),
+        ('ISR_tt',         {'tbart':['t#bar{t} isr dn',   't#bar{t} isr up']}        , 2, 1.0 ),
+        ('FSR_tt',         {'tbart':['t#bar{t} fsr dn',   't#bar{t} fsr up']}        , 2, 1.0 ),
         ('ISR_st',         {'Singletop':['Single top isr dn', 'Single top isr up']}  , 2, 1.0 ),
         ('FSR_st',         {'Singletop':['Single top fsr dn', 'Single top fsr up']}  , 2, 1.0 ),
         ('tWttInterf',     {'Singletop':   ['Single top DS']}                        , 2, 1.0 ),
         ('tWMEScale',      {'Singletop':   ['Single top me dn', 'Single top me up']} , 2, 1.0 ),
         ]
 
+    if rmvNuisances:
+        rateSysts      = [a for a in rateSysts      if noPartIn(a[0],nuisanceRMV)]
+        weightingSysts = [a for a in weightingSysts if noPartIn(a[0],nuisanceRMV)]
+        fileShapeSysts = [a for a in fileShapeSysts if noPartIn(a[0],nuisanceRMV)]
+        print "\n"
+        print rateSysts
+        print "\n"
+        print weightingSysts
+        print "\n"
+        print fileShapeSysts
+
+    # really convoluted, but this was the best way, I promise
+    if frzNuisances and "all" not in nuisanceFRZ:
+
+        # collect all correct systematic names, including %sRate
+        frzString=",".join([",".join([a[0] for a in rateSysts      if not noPartIn(a[0],nuisanceFRZ)]),
+                            ",".join([a[0] for a in weightingSysts if not noPartIn(a[0],nuisanceFRZ)]),
+                            ",".join([a[0] for a in fileShapeSysts if not noPartIn(a[0],nuisanceFRZ)])])
+        frzString+=","
+        frzString+=",".join([",".join([a[0]+"Rate" for a in weightingSysts if not noPartIn(a[0],nuisanceFRZ) and a[4]==2]),
+                             ",".join([a[0]+"Rate" for a in fileShapeSysts if not noPartIn(a[0],nuisanceFRZ) and a[2]==2])])
+        frzString=frzString.replace(',,,',',')
+        frzString=frzString.replace(',,',',')
+        frzString=frzString[1:] if frzString[0] == "," else frzString
+        frzString=frzString[:-1] if frzString[-1] == "," else frzString
+
+        # add in more if splitting by channel
+        if "*CH*" in frzString :
+            catList = opt.cat.split(',')
+            frzString = frzString.split(',')
+
+            for elem in frzString :
+                if "*CH*" in elem :
+                    newelem=[]
+                    if len([x for x in catList if "EE" in x]):
+                        newelem += [elem.replace('*CH*','EE')]
+                    if len([x for x in catList if "EM" in x]):
+                        newelem += [elem.replace('*CH*','EM')]
+                    if len([x for x in catList if "MM" in x]):
+                        newelem += [elem.replace('*CH*','MM')]
+
+                    newelem   = ','.join(newelem)
+                    frzString.remove(elem)
+                    frzString += [newelem]
+
+            frzString = ','.join(frzString)
+
+        opt.frzString=frzString
+        print "\n"
+        print frzString
+        print "\n"
+    elif "all" in nuisanceFRZ :
+        frzString = "all"
+
+        opt.frzString=frzString
+        print "\n"
+        print frzString
+        print "\n"
+
 
     # prepare output directory
-    outDir='%s/hypotest_%.0fvs%.0f%s'%(opt.output, opt.mainHypo,opt.altHypo,'sim' if len(opt.altHypoFromSim)!=0 else '')
+    outDir='%s/hypotest_%.0fvs%.0f%s'%(opt.output, opt.mainHypo,opt.altHypo,'sim'+opt.altHypoFromSim if len(opt.altHypoFromSim)!=0 else '')
     if opt.pseudoData==-1 : outDir += '_data'
     else:
         outDir += '_%.0f'%opt.pseudoData
@@ -331,13 +407,13 @@ def doDataCards(opt,args):
             if len(opt.pseudoDataFromSim) and opt.systInput:
                 print 'injecting signal from',opt.pseudoDataFromSim
                 pseudoDataFromSim=opt.pseudoDataFromSim.replace('_',' ')
-                _,pseudoSignalRaw=getDistsFromDirIn(opt.systInput,'%s_%s_w100'%(cat,opt.dist),pseudoDataFromSim)
+                _,pseudoSignalRaw=getDistsFromDirIn(opt.systInput,'%s_%s_w%.0f'%(cat,opt.dist,opt.mainHypo),pseudoDataFromSim)
                 pseudoSignal={}
                 pseudoSignal['tbart']=pseudoSignalRaw.popitem()[1]
             elif len(opt.pseudoDataFromWgt):
                 print 'injecting signal from',opt.pseudoDataFromWgt
-                _,pseudoSignal=getDistsFromDirIn(opt.input,'%s%s_%s_w100'%(opt.pseudoDataFromWgt,cat,opt.dist),'t#bar{t}')
-                print pseudoSignal,'%s%s_%s_w100'%(opt.pseudoDataFromWgt,cat,opt.dist)
+                _,pseudoSignal=getDistsFromDirIn(opt.input,'%s%s_%s_w%.0f'%(opt.pseudoDataFromWgt,cat,opt.dist,opt.mainHypo),'t#bar{t}')
+                print pseudoSignal,'%s%s_%s_w%.0f'%(opt.pseudoDataFromWgt,cat,opt.dist,opt.mainHypo)
             else:
                 print 'injecting signal from weighted',opt.pseudoData
                 _,pseudoSignal=getDistsFromDirIn(opt.input,'%s_%s_w%.0f'%(cat,opt.dist,opt.pseudoData))
@@ -352,10 +428,13 @@ def doDataCards(opt,args):
                 if not accept : continue
                 print "\t\t Including:", proc, pseudoSignal[proc].GetName()
 
-                newProc=('%sw100'%proc).replace('.','p')
+                newProc=('%sw%.0f'%(proc,opt.mainHypo)).replace('.','p')
                 pseudoSignalAccept.append(newProc)
                 sf=exp[newProc].Integral()/pseudoSignal[proc].Integral()
                 pseudoSignal[proc].Scale(sf)
+                if opt.rndmPseudoSF :
+                    from random import uniform
+                    pseudoSignal[proc].Scale(uniform(0.99,1.01))
                 obs.Add( pseudoSignal[proc] )
 
             if len(opt.pseudoDataFromWgt) : pseudoSignalAccept+=altSignalList
@@ -533,7 +612,7 @@ def doDataCards(opt,args):
                         complCat= cat.replace('lowpt','highpt') if 'lowpt' in cat else cat.replace('highpt','lowpt')
                         _,altExp   = getDistsForHypoTest(complCat,rawSignalList,opt)
                         _,altExpUp = getDistsForHypoTest(complCat,rawSignalList,opt,"",weightList[0]+"up",isGen)
-                        
+
                         #reset the down variation to be the nominal one
                         iexpDn=exp
                         altExpDn=altExp
@@ -630,8 +709,8 @@ def doDataCards(opt,args):
 
                     #save a rate systematic from the variation of the yields
                     if n==0 : continue
-                    nvarUp=max(nUp/n,nDn/n) 
-                    nvarDn=min(nUp/n,nDn/n) 
+                    nvarUp=max(nUp/n,nDn/n)
+                    nvarDn=min(nUp/n,nDn/n)
 
                     iRateUnc=buildRateUncertainty(nvarDn,nvarUp)
                     if iRateUnc: iRateVars[proc]=iRateUnc
@@ -695,7 +774,7 @@ def doDataCards(opt,args):
             for proc in procsAndSamples:
                 samples=procsAndSamples[proc]
 
-                hyposToGet=[opt.mainHypo]
+                hyposToGet=[(opt.mainHypo if proc in rawSignalList else 100.0)]
                 isSignal=False
                 if proc in rawSignalList:
                     isSignal=True
@@ -859,12 +938,15 @@ def main():
     parser.add_option(      '--useAltRateUncs',     dest='useAltRateUncs',     help='use rate uncertainties specific to alt. hypothesis', default=False,       action='store_true')
     parser.add_option(      '--replaceDYshape',     dest='replaceDYshape',     help='use DY shape from syst file',                 default=False,       action='store_true')
     parser.add_option(      '--doValidation',       dest='doValidation',       help='create validation plots',                     default=False,       action='store_true')
+    parser.add_option(      '--rndmPseudoSF',       dest='rndmPseudoSF',       help='multiply pseudodate by random SF?',           default=False,       action='store_true')
     parser.add_option(      '--pseudoDataFromSim',  dest='pseudoDataFromSim',  help='pseudo data from dedicated sample',           default='',          type='string')
     parser.add_option(      '--pseudoDataFromWgt',  dest='pseudoDataFromWgt',  help='pseudo data from weighting',                  default='',          type='string')
     parser.add_option(      '--mainHypo',           dest='mainHypo',  help='main hypothesis',                                      default=100,         type=float)
     parser.add_option(      '--altHypo',            dest='altHypo',   help='alternative hypothesis',                               default=400,         type=float)
     parser.add_option(      '--altHypoFromSim',     dest='altHypoFromSim',   help='alternative hypothesis from dedicated sample',  default='',          type='string')
     parser.add_option('-s', '--signal',             dest='signal',             help='signal (csv)',                                default='tbart,Singletop',  type='string')
+    parser.add_option(      '--removeNuisances',    dest='rmvNuisances',       help='nuisance group to remove (csv)',              default='',  type='string')
+    parser.add_option(      '--freezeNuisances',    dest='frzNuisances',       help='nuisance group to freeze (csv)',              default='',  type='string')
     parser.add_option('-c', '--cat',                dest='cat',                help='categories (csv)',
                       default='EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt',
                       type='string')
