@@ -121,40 +121,44 @@ case $WHAT in
 	#    "EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt"
 	#    "EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt"
 	#    "EM1bhighpt,EM2bhighpt"
-	#    "EM2bhighpt"
+    #     "EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt,EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt"
 	CATS=(
-        "EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt,EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt"
+	    "EM2bhighpt"
         )
 
     #TAGS=("inc_scan_preApp_step4" "inc_scan_preApp_step3"  "inc_scan_preApp_step2" "inc_scan_preApp_step1")
-    TAGS=("inc_scan_preAppFrz")
+    TAGS=("inc_scan_onlyEM2bhighpt")
 
-	altHypo=(20 40 50 60 70 80 90 100 110 120 130 140 150 160 180 200 220 240 260 280 300 350 400)        
+    altHypo=(20 40 50 60 70 80 90 100 110 120 130 140 150 160 180 200 220 240 260 280 300 350 400)        
 
 	#data=(-1 50 60 70 80 90 100 110 120 130 140 150 160 180 200 220 240 260 280 300 350 400)
     data=(100)
 
     expAltHypo=("nan") #"meq166p5" "meq169p5" "meq171p5" "meq173p5" "meq175p5" "meq178p5")
 
-    #nuisanceGroups=("nan")
-    #nuisanceGroups=("sel,trig_*CH*,lumi_13TeV,DYnorm_*CH*,Wnorm_th,tWnorm_th,VVnorm_th,tbartVnorm_th,ees,mes,jer,ltag,btag,bfrag,semilep,pu,tttoppt,ttMEqcdscale,ttPDF,jes,st_wid,UE,CR,hdamp,ISR,FSR,mtop,tWttInterf,tWMEScale") 
-    nuisanceGroups=("sel,trig_*CH*" "lumi_13TeV" "DYnorm_*CH*" "Wnorm_th" 
-                "tWnorm_th" "VVnorm_th" "tbartVnorm_th" 
-                "ees" "mes" "jer" "ltag" "btag" "bfrag" "semilep"
-                "pu" "tttoppt" "ttMEqcdscale" "ttPDF"
-                "jes" "st_wid" "UE" "CR" 
-                "hdamp" "ISR" "FSR" "mtop" 
-                "tWttInterf" "tWMEScale") 
+    #nuisanceFreeze=("nan")
+    #nuisanceFreeze=("sel,trig_*CH*,lumi_13TeV,DYnorm_*CH*,Wnorm_th,tWnorm_th,VVnorm_th,tbartVnorm_th,ees,mes,jer,ltag,btag,bfrag,semilep,pu,tttoppt,ttMEqcdscale,ttPDF,jes,st_wid,UE,CR,hdamp,ISR,FSR,mtop,tWttInterf,tWMEScale") 
+    #nuisanceFreeze=("sel,trig_*CH*" "lumi_13TeV" "DYnorm_*CH*" "Wnorm_th" 
+    #            "tWnorm_th" "VVnorm_th" "tbartVnorm_th" 
+    #            "ees" "mes" "jer" "ltag" "btag" "bfrag" "semilep"
+    #            "pu" "tttoppt" "ttMEqcdscale" "ttPDF"
+    #            "jes" "st_wid" "UE" "CR" 
+    #            "hdamp" "ISR" "FSR" "mtop" 
+    #            "tWttInterf" "tWMEScale") 
+    nuisanceFreeze=("nan")
+    nuisanceRemove=("all")
 
     queue=1nd
     
 	for h in ${altHypo[@]}; do
     for mh in ${mainHypo[@]}; do
-	    for f in ${nuisanceGroups[@]}; do
+	    for f in ${!nuisanceRemove[*]}; do
 	    for e in ${expAltHypo[@]}; do
 	    for d in ${data[@]}; do
 		for i in ${!TAGS[*]}; do
                     
+            iNuisRmv=${nuisanceRemove[${f}]}
+            iNuisFrz=${nuisanceFreeze[${f}]}
 		    icat=${CATS[${i}]}
 		    itag=${TAGS[${i}]}
 		    
@@ -166,14 +170,17 @@ case $WHAT in
             if [[ "${e}" != "nan" ]] ; then 
     		    cmd="${cmd} --altHypoFromSim ${e}"		    
             fi
-            if [[ "${f}" != "nan" ]] ; then 
-    		    cmd="${cmd} --freezeNuisances ${f}"		    
+            if [[ "${iNuisFrz}" != "nan" ]] ; then 
+    		    cmd="${cmd} --freezeNuisances ${iNuisFrz}"		    
+            fi
+            if [[ "${iNuisRmv}" != "nan" ]] ; then 
+    		    cmd="${cmd} --removeNuisances ${iNuisRmv}"		    
             fi
 		    cmd="${cmd} --dist incmlb"		    
 		    cmd="${cmd} --nToys 2000"
 		    cmd="${cmd} -i /eos/cms/${summaryeosdir}/plotter/plotter.root"
 		    cmd="${cmd} --systInput /eos/cms/${summaryeosdir}/plotter/syst_plotter.root"
-                    cats="EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt,EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt"
+            cats="EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt,EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt"
 		    cmd="${cmd} -c ${cats}"
 		    cmd="${cmd} --rebin 2"            
             #cmd="${cmd} --doValidation"
@@ -187,10 +194,10 @@ case $WHAT in
 		    echo "Submitting ($mh,$h,$d,$itag,$icat)"		
 		    stdcmd="${cmd} -o ${outdir}/datacards_${itag}"
 
-            # add name for frozen syst
-            if [[ "${f}" != "nan" ]] ; then 
-    		    stdcmd="${stdcmd}_${f}"		    
-            fi
+            ## add name for frozen syst
+            #if [[ "${f}" != "nan" ]] ; then 
+    		#    stdcmd="${stdcmd}_${f}"		    
+            #fi
 
             # add name for alternate mainHypo
             if [[ "${mh}" != "100" ]] ; then 

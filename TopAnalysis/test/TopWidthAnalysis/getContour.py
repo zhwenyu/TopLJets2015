@@ -21,7 +21,7 @@ parser.add_option("-e",    type="string", dest="extname", default="_100pseudodat
 parser.add_option("-n",    type="string", dest="outnm"  , default="contournosyst",    help="the filename for the plot")
 parser.add_option("-o",    type="string", dest="outdir" , default="./",         help="the base filename for the plot")
 parser.add_option("--mass", type="string", dest="mass"  , default="")
-parser.add_option("--wids", type="string", dest="wids"  , default="20,40,50,60,70,80,90,100,110,120,130,140,160,200,220,240,280,300,350,400")
+parser.add_option("--wids", type="string", dest="wids"  , default="20,40,50,60,70,80,90,100,110,120,130,160,200,220,240,280,300,350,400")
 parser.add_option("--extraText", type="string", dest="exText" , default="",     help="additional text to plot")
 
 (options, args) = parser.parse_args()
@@ -61,8 +61,8 @@ def get2DContour() :
     iPoint=0
     for i in xrange(0,len(wids)) :
         for tmas in mass :
-            fIn0 = ROOT.TFile(options.indir+"/hypotest_100vs"+wids[i]+massMap[tmas]+options.extname+"/testStat_scan0n.root")
-            fIn1 = ROOT.TFile(options.indir+"/hypotest_100vs"+wids[i]+massMap[tmas]+options.extname+"/testStat_scan1n.root")
+            fIn0 = ROOT.TFile(options.indir+"/hypotest_100vs"+wids[i]+massMap[tmas]+options.extname+"/testStat_scan0n_TEV.root")
+            fIn1 = ROOT.TFile(options.indir+"/hypotest_100vs"+wids[i]+massMap[tmas]+options.extname+"/testStat_scan1n_TEV.root")
             if fIn1 is None or fIn0 is None :
                 iPoint += 1
                 continue
@@ -164,8 +164,8 @@ def get2DContour() :
 def get1DContour() :
     # initialize standard arrays
     for i in xrange(0,nPoints) :
-        fIn0 = ROOT.TFile(options.indir+"/hypotest_100vs"+wids[i]+massMap[options.mass]+options.extname+"/testStat_scan0n.root")
-        fIn1 = ROOT.TFile(options.indir+"/hypotest_100vs"+wids[i]+massMap[options.mass]+options.extname+"/testStat_scan1n.root")
+        fIn0 = ROOT.TFile(options.indir+"/hypotest_100vs"+wids[i]+massMap[options.mass]+options.extname+"/testStat_scan0n_TEV.root")
+        fIn1 = ROOT.TFile(options.indir+"/hypotest_100vs"+wids[i]+massMap[options.mass]+options.extname+"/testStat_scan1n_TEV.root")
         tree0 = fIn0.Get("limit")
         tree1 = fIn1.Get("limit")
 
@@ -224,6 +224,9 @@ def get1DContour() :
     while not foundDn :
         if pullGraph.Eval(dnLim,0,"S") >= 1.0: foundDn = True
         else : dnLim -= widStep
+        if dnLim < -5 :
+            print "Couldn't find lower limit"
+            break
 
     print "Width: ",widGuess,"  | (",dnLim,",",upLim,")"
     print widGuess,",",dnLim,",",upLim

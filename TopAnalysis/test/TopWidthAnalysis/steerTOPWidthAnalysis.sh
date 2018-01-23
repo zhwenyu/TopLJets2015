@@ -66,12 +66,12 @@ case $WHAT in
        #         "jes" "st_wid" "UE" "CR" 
        #         "hdamp" "ISR" "FSR" "mtop" 
        #         "tWttInterf" "tWMEScale") 
-        nuisanceGroups=("all")
+        nuisanceGroups=("noFSR" "noFSRtt" "noFSRst")
 
-        #echo "------------------------"
-        #python test/TopWidthAnalysis/getContour.py \
-        #    --mass 172.5 -n Contour1D_main \
-        #    -i ${extdir}/
+        echo "------------------------"
+        python test/TopWidthAnalysis/getContour.py \
+            --mass 172.5 -n Contour1D_main \
+            -i ${extdir}/
 
         #for i in 1 2 3 4 ; do
         #    python test/TopWidthAnalysis/getContour.py \
@@ -79,13 +79,13 @@ case $WHAT in
         #        -i ${extdir}_step${i}/
         #done
 
-        for nuisGroup in ${nuisanceGroups[@]} ; do
-            echo "------------------------"
-            echo "Limits for ${nuisGroup}:"
-            python test/TopWidthAnalysis/getContour.py \
-                --mass 172.5 -n Contour1D_${nuisGroup} \
-                -i ${extdir}Frz/
-        done
+        #for nuisGroup in ${nuisanceGroups[@]} ; do
+        #    echo "------------------------"
+        #    echo "Limits for ${nuisGroup}:"
+        #    python test/TopWidthAnalysis/getContour.py \
+        #        --mass 172.5 -n Contour1D_${nuisGroup} \
+        #        -i ${extdir}_${nuisGroup}/
+        #done
     ;;
 ############################### CLs #######################################
     CLs ) # get CLs statistics from combine

@@ -109,8 +109,10 @@ def getDistsForHypoTest(cat,rawSignalList,opt,outDir="",systName="",systIsGen=Fa
         sf=smHypo[proc].Integral(0,nbins+1)/altHypo[proc].Integral(0,nbins+1)
         altHypo[proc].Scale(sf)
         newProc='%sw%d'%(proc,opt.altHypo)
+        if opt.altHypo==opt.mainHypo : newProc+='a'
         exp[newProc]=altHypo[proc].Clone(newProc)
         exp[newProc].SetDirectory(0)
+
 
 
     return obs,exp,bkg,smHypo
@@ -181,7 +183,7 @@ def doCombineScript(opt,args,outDir,dataCardList):
     def writeScanToScript(testStat,script):
         extraName='_'+testStat
         commonOpts="-m 172.5 -M HybridNew --testStat=%s --onlyTestStat --saveToys --saveHybridResult --minimizerAlgo Minuit2"%(testStat)
-        if opt.frzString != "" :
+        if hasattr(opt,"frzString") and opt.frzString != "" :
             commonOpts += " --freezeNuisances %s"%opt.frzString
         script.write("combine %s --singlePoint 0  workspace.root -n scan0n\n"%commonOpts)
         script.write("mv higgsCombinescan0n.HybridNew.mH172.5.123456.root testStat_scan0n%s.root\n"%extraName)
@@ -303,7 +305,7 @@ def doDataCards(opt,args):
         ('tWMEScale',      {'Singletop':   ['Single top me dn', 'Single top me up']} , 2, 1.0 ),
         ]
 
-    if rmvNuisances:
+    if rmvNuisances and "all" not in nuisanceRMV:
         rateSysts      = [a for a in rateSysts      if noPartIn(a[0],nuisanceRMV)]
         weightingSysts = [a for a in weightingSysts if noPartIn(a[0],nuisanceRMV)]
         fileShapeSysts = [a for a in fileShapeSysts if noPartIn(a[0],nuisanceRMV)]
@@ -313,6 +315,10 @@ def doDataCards(opt,args):
         print weightingSysts
         print "\n"
         print fileShapeSysts
+    elif rmvNuisances and "all" in nuisanceRMV :
+        rateSysts=[]
+        weightingSysts=[]
+        fileShapeSysts=[]
 
     # really convoluted, but this was the best way, I promise
     if frzNuisances and "all" not in nuisanceFRZ:
@@ -354,7 +360,7 @@ def doDataCards(opt,args):
         print "\n"
         print frzString
         print "\n"
-    elif "all" in nuisanceFRZ :
+    elif frzNuisances and "all" in nuisanceFRZ :
         frzString = "all"
 
         opt.frzString=frzString
@@ -733,7 +739,7 @@ def doDataCards(opt,args):
             #write the rate systematics as well
             if shapeTreatment!=2: continue
             if len(iRateVars)==0: continue
-            datacard.write('%32s %8s'%(syst+'Rate',pdf))
+            datacard.write('%32s %8s'%(syst+'Rate','lnN'))
             for sig in mainSignalList:
                 if sig in iRateVars and ((len(whiteList)==0 and not sig in blackList and not '-'+sig in blackList) or sig in whiteList):
                     datacard.write('%15s'%iRateVars[sig])
@@ -855,7 +861,7 @@ def doDataCards(opt,args):
             #write the rate systematics as well
             if shapeTreatment!=2: continue
             if len(iRateVars)==0 : continue
-            datacard.write('%32s %8s'%(syst+'Rate',pdf))
+            datacard.write('%32s %8s'%(syst+'Rate','lnN'))
             for sig in mainSignalList:
                 if sig in iRateVars :
                     datacard.write('%15s'%iRateVars[sig])
