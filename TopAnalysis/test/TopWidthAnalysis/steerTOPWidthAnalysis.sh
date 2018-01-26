@@ -59,14 +59,13 @@ case $WHAT in
         eval `scramv1 runtime -sh`
         cd -
 
-       # nuisanceGroups=("sel,trig_*CH*" "lumi_13TeV" "DYnorm_*CH*" "Wnorm_th" 
-       #         "tWnorm_th" "VVnorm_th" "tbartVnorm_th" 
-       #         "ees" "mes" "jer" "ltag" "btag" "bfrag" "semilep"
-       #         "pu" "tttoppt" "ttMEqcdscale" "ttPDF"
-       #         "jes" "st_wid" "UE" "CR" 
-       #         "hdamp" "ISR" "FSR" "mtop" 
-       #         "tWttInterf" "tWMEScale") 
-        nuisanceGroups=("noFSR" "noFSRtt" "noFSRst")
+        nuisanceGroups=("sel,trig_*CH*" "lumi_13TeV" "DYnorm_*CH*" "Wnorm_th" 
+               "tWnorm_th" "VVnorm_th" "tbartVnorm_th" 
+               "ees" "mes" "jer" "ltag" "btag" "bfrag" "semilep"
+               "pu" "tttoppt" "ttMEqcdscale" "ttPDF"
+               "jes" "st_wid" "UE" "CR" 
+               "hdamp" "ISR" "FSR" "mtop" 
+               "tWttInterf" "tWMEScale") 
 
         echo "------------------------"
         python test/TopWidthAnalysis/getContour.py \
@@ -79,13 +78,13 @@ case $WHAT in
         #        -i ${extdir}_step${i}/
         #done
 
-        #for nuisGroup in ${nuisanceGroups[@]} ; do
-        #    echo "------------------------"
-        #    echo "Limits for ${nuisGroup}:"
-        #    python test/TopWidthAnalysis/getContour.py \
-        #        --mass 172.5 -n Contour1D_${nuisGroup} \
-        #        -i ${extdir}_${nuisGroup}/
-        #done
+        for nuisGroup in ${nuisanceGroups[@]} ; do
+            echo "------------------------"
+            echo "Limits for ${nuisGroup}:"
+            python test/TopWidthAnalysis/getContour.py \
+                --mass 172.5 -n Contour1D_${nuisGroup} \
+                -i ${extdir}Frz_${nuisGroup}/
+        done
     ;;
 ############################### CLs #######################################
     CLs ) # get CLs statistics from combine

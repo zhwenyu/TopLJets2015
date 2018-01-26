@@ -121,13 +121,13 @@ case $WHAT in
 	#    "EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt"
 	#    "EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt"
 	#    "EM1bhighpt,EM2bhighpt"
-    #     "EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt,EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt"
+    # EM2bhighpt
 	CATS=(
-	    "EM2bhighpt"
+         "EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt,EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt"
         )
 
     #TAGS=("inc_scan_preApp_step4" "inc_scan_preApp_step3"  "inc_scan_preApp_step2" "inc_scan_preApp_step1")
-    TAGS=("inc_scan_onlyEM2bhighpt")
+    TAGS=("inc_scan_preAppFrz")
 
     altHypo=(20 40 50 60 70 80 90 100 110 120 130 140 150 160 180 200 220 240 260 280 300 350 400)        
 
@@ -145,19 +145,19 @@ case $WHAT in
     #            "jes" "st_wid" "UE" "CR" 
     #            "hdamp" "ISR" "FSR" "mtop" 
     #            "tWttInterf" "tWMEScale") 
-    nuisanceFreeze=("nan")
-    nuisanceRemove=("all")
+    nuisanceFreeze=("all")
+    #nuisanceRemove=("nan")
 
     queue=1nd
     
 	for h in ${altHypo[@]}; do
     for mh in ${mainHypo[@]}; do
-	    for f in ${!nuisanceRemove[*]}; do
+	    for f in ${!nuisanceFreeze[*]}; do
 	    for e in ${expAltHypo[@]}; do
 	    for d in ${data[@]}; do
 		for i in ${!TAGS[*]}; do
                     
-            iNuisRmv=${nuisanceRemove[${f}]}
+            #iNuisRmv=${nuisanceRemove[${f}]}
             iNuisFrz=${nuisanceFreeze[${f}]}
 		    icat=${CATS[${i}]}
 		    itag=${TAGS[${i}]}
@@ -173,15 +173,15 @@ case $WHAT in
             if [[ "${iNuisFrz}" != "nan" ]] ; then 
     		    cmd="${cmd} --freezeNuisances ${iNuisFrz}"		    
             fi
-            if [[ "${iNuisRmv}" != "nan" ]] ; then 
-    		    cmd="${cmd} --removeNuisances ${iNuisRmv}"		    
-            fi
+            #if [[ "${iNuisRmv}" != "nan" ]] ; then 
+    		#    cmd="${cmd} --removeNuisances ${iNuisRmv}"		    
+            #fi
 		    cmd="${cmd} --dist incmlb"		    
+		    #cmd="${cmd} --dist tmass"		    
 		    cmd="${cmd} --nToys 2000"
 		    cmd="${cmd} -i /eos/cms/${summaryeosdir}/plotter/plotter.root"
 		    cmd="${cmd} --systInput /eos/cms/${summaryeosdir}/plotter/syst_plotter.root"
-            cats="EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt,EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt"
-		    cmd="${cmd} -c ${cats}"
+		    cmd="${cmd} -c ${icat}"
 		    cmd="${cmd} --rebin 2"            
             #cmd="${cmd} --doValidation"
 		    #if [ "$h" == "220" ]; then
@@ -194,10 +194,10 @@ case $WHAT in
 		    echo "Submitting ($mh,$h,$d,$itag,$icat)"		
 		    stdcmd="${cmd} -o ${outdir}/datacards_${itag}"
 
-            ## add name for frozen syst
-            #if [[ "${f}" != "nan" ]] ; then 
-    		#    stdcmd="${stdcmd}_${f}"		    
-            #fi
+            # add name for frozen syst
+            if [[ "${iNuisFrz}" != "nan" ]] ; then 
+    		    stdcmd="${stdcmd}_${iNuisFrz}"		    
+            fi
 
             # add name for alternate mainHypo
             if [[ "${mh}" != "100" ]] ; then 

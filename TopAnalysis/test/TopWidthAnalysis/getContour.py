@@ -164,8 +164,8 @@ def get2DContour() :
 def get1DContour() :
     # initialize standard arrays
     for i in xrange(0,nPoints) :
-        fIn0 = ROOT.TFile(options.indir+"/hypotest_100vs"+wids[i]+massMap[options.mass]+options.extname+"/testStat_scan0n_TEV.root")
-        fIn1 = ROOT.TFile(options.indir+"/hypotest_100vs"+wids[i]+massMap[options.mass]+options.extname+"/testStat_scan1n_TEV.root")
+        fIn0 = ROOT.TFile(options.indir+"/hypotest_100vs"+wids[i]+massMap[options.mass]+options.extname+"/testStat_scan0n_PL.root")
+        fIn1 = ROOT.TFile(options.indir+"/hypotest_100vs"+wids[i]+massMap[options.mass]+options.extname+"/testStat_scan1n_PL.root")
         tree0 = fIn0.Get("limit")
         tree1 = fIn1.Get("limit")
 
@@ -173,7 +173,7 @@ def get1DContour() :
         tree1.Draw("limit","quantileExpected==-1")
 
         x[i]     = 1.324*float(wids[i])/100
-        y[i]     = tree0.GetV1()[0] - tree1.GetV1()[0]
+        y[i]     = -tree0.GetV1()[0] + tree1.GetV1()[0]
         #print x[i],y[i]
         fIn0.Close()
         fIn1.Close()
