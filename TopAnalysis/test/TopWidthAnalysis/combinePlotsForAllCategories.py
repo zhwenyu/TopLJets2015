@@ -39,13 +39,13 @@ def doPlot(plotName,chList,extraText,url):
                 plotsPerProc[title].Reset('ICE')
                 plotsPerProc[title].SetTitle(title)
                 plotsPerProc[title].SetDirectory(0)
-                plotsPerProc[title].SetFillColor(h.GetFillColor())                        
-                plotsPerProc[title].SetLineColor(h.GetLineColor())                        
-                plotsPerProc[title].SetMarkerColor(h.GetMarkerColor())   
+                plotsPerProc[title].SetFillColor(h.GetFillColor())
+                plotsPerProc[title].SetLineColor(h.GetLineColor())
+                plotsPerProc[title].SetMarkerColor(h.GetMarkerColor())
             plotsPerProc[title].Add(h)
-                    
+
     #show
-    plot=Plot('%s%s'%(ch,plotName))    
+    plot=Plot('%s%s'%(ch,plotName))
     plot.savelog=True
     plot.wideCanvas=False
     plot.doMCOverData = False
@@ -65,7 +65,7 @@ def doPlot(plotName,chList,extraText,url):
 
     plot.show(outDir="plots/",lumi=35922,extraText=extraText)
 
-                     
+
 def main():
 
     os.system('mkdir -p plots')
@@ -74,10 +74,9 @@ def main():
     chList='EE1b,EE2b,MM1b,MM2b,EM1b,EM2b'
     if len(sys.argv)>2: chList=sys.argv[2]
 
-
-    plotter='/afs/cern.ch/work/e/ecoleman/public/TopWidth/TopWidth_era2016/analysis/plots/plotter.root'
+    plotter='root://eoscms//eos/cms/store/cmst3/group/top/TOP-17-010-final/plotter/plotter.root'
     if len(sys.argv)>3: plotter=sys.argv[3]
-    for p in plots : 
+    for p in plots :
 
         extraText=''
         if 'EM' in chList and not 'EE' in chList and not 'MM' in chList : extraText='e#mu\\'
@@ -89,7 +88,7 @@ def main():
         if '2b' in chList and not '1b' in chList : extraText += '#geq2 b-tags'
         if '1b' in chList and     '2b' in chList : extraText += '#geq1 b-tags'
         doPlot(p,chList.split(','),extraText,plotter)
-    
+
 """
 for execution from another script
 """

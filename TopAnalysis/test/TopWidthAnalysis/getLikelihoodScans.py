@@ -1,9 +1,5 @@
 #!/usr/bin/env python
-import re
-from sys import argv
-import os.path
 import ROOT
-from pprint import pprint
 from optparse import OptionParser
 from tdrStyle import setTDRStyle
 
@@ -17,7 +13,6 @@ parser = OptionParser(
 parser.add_option("-i",    type="string", dest="indir"  , default="./", help="directory to look for stats files in")
 parser.add_option("--lfs", type="string", dest="lfsList", default="step1,step2,step3,step4,step5", help="a list of lepton final states to look for in stats filenames")
 parser.add_option("-o",    type="string", dest="outdir" , default="./", help="the base filename for the quantiles plot")
-parser.add_option("--scanType",    type="string", dest="scanType" , default="scan_Asimov", help="the base filename for the quantiles plot")
 parser.add_option("--dist",    type="string", dest="dist" , default="", help="the observable distribution this scan is for")
 parser.add_option("--wid", type="string", dest="widList",
         default="0p2w,0p4w,0p6w,0p8w,1p0w,1p2w,1p4w,1p6w,1p8w,2p0w,2p2w,2p4w,2p6w,2p8w,3p0w,3p5w,4p0w",
@@ -32,7 +27,7 @@ rawLfsList=options.lfsList.split(',')
 blueShift = [1,2,3,0,6]
 orngShift = [1,3,0,2,9]
 distToTitle={
-        "mlb": ("Inclusive M_{lb}",0.73,0.83),
+        "mlb": ("Inclusive M_{lb}",0.65,0.83),
         "minmlb": ("Minimum M_{lb}",0.725,0.83),
         "mdrmlb": ("#DeltaR-Filtered M_{lb}",0.7,0.83),
         "incmlb": ("Inclusive M_{lb}",0.73,0.83),
@@ -55,8 +50,8 @@ for wid in rawWidList :
 
     lfsPlotList=[]
     for lfs in rawLfsList :
-        f0=ROOT.TFile("%s/higgsCombinex0_%s_%s_%s.MultiDimFit.mH172.5.root"%(options.indir,options.scanType,wid,lfs))
-        f1=ROOT.TFile("%s/higgsCombinex1_%s_%s_%s.MultiDimFit.mH172.5.root"%(options.indir,options.scanType,wid,lfs))
+        f0=ROOT.TFile("%s/higgsCombinescan_x0_%s.MultiDimFit.mH172.5.root"%(options.indir,lfs))
+        f1=ROOT.TFile("%s/higgsCombinescan_x1_%s.MultiDimFit.mH172.5.root"%(options.indir,lfs))
 
         tf0=ROOT.TF1("x0_%s"%lfs, "pol2",0,1)
         tf1=ROOT.TF1("x1_%s"%lfs, "pol2",0,1)
@@ -79,6 +74,7 @@ for wid in rawWidList :
             xax.SetTitle("Hypothesis sample fraction (x)")
             yax=lfsPlot.GetYaxis()
             yax.SetTitle("-2 #times ln(L_{alt}/L_{null})")
+            yax.SetTitleOffset(0.9)
             lfsPlot.SetTitle("")
 
         lfsPlot.SetLineColor((ROOT.kOrange - orngShift[i/2] if i%2==0 else ROOT.kBlue - blueShift[(i-1)/2]))
@@ -90,13 +86,14 @@ for wid in rawWidList :
         DistInfo,xpos,ypos=distToTitle[options.dist]
         DistLaTeX=ROOT.TLatex(xpos,ypos, DistInfo)
         DistLaTeX.SetNDC(ROOT.kTRUE)
-        DistLaTeX.SetTextSize(0.04)
+        DistLaTeX.SetTextSize(0.05)
         DistLaTeX.Draw()
 
-        widthInfo=", #Gamma_{t}=%s#times#Gamma_{SM}"%(wid.replace('p','.').replace('w',''))
-        TMassInfo=ROOT.TLatex(.185,.185,"m_{t} = 172.5 GeV%s"(widthInfo))
+        widthInfo=", #Gamma_{t}=%.1f#times#Gamma_{SM}"%(float(wid.replace('w',''))/100)
+        print widthInfo
+        TMassInfo=ROOT.TLatex(.185,.825,"m_{t} = 172.5 GeV%s"%(widthInfo))
         TMassInfo.SetNDC(ROOT.kTRUE)
-        TMassInfo.SetTextSize(0.03)
+        TMassInfo.SetTextSize(0.045)
         TMassInfo.Draw()
 
     # add legend
@@ -107,6 +104,10 @@ for wid in rawWidList :
     CMS_lumi.extraText = "Simulation Preliminary"
     CMS_lumi.extraOverCmsTextSize = 0.6
     CMS_lumi.CMS_lumi(c,4,0)
+
+    c.SetRightMargin(0.02)
+    c.SetLeftMargin(0.12)
+    c.SetBottomMargin(0.125)
 
     # save plots
     c.Modified()

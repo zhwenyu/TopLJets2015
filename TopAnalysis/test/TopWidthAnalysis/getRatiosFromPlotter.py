@@ -17,17 +17,20 @@ def main():
     parser.add_option('-d', '--divideFile',  dest='inDiv' ,      help='comparison input plotter',       default="./syst_plotter.root",  type='string')
     parser.add_option('-l', '--lumi',        dest='lumi' ,       help='lumi to print out',              default=35.9,                   type=float)
     parser.add_option(      '--saveLog',     dest='saveLog' ,    help='save log versions of the plots', default=False,             action='store_true')
-    parser.add_option('--wids',  dest='wids'  , help='widths to compare to nominal in div', default="8.0",                   type='string')
-    parser.add_option('--obs',   dest='obs'   , help='observables to process', default="incmlb", type='string')
-    parser.add_option('--dists', dest='dists' , help='non-observable distributions to process', default="tmass",             type='string')
-    parser.add_option('--sigs',  dest='sigs'  , help='signal processes to plot ratios for',     default="t#bar{t}",          type='string')
-    parser.add_option('--ptCh',  dest='ptchs' , help='pt categories to consider',               default="highpt,lowpt",      type='string')
-    parser.add_option('--ch',    dest='chs'   , help='final states to consider',                default="EE,EM,MM",          type='string')
-    parser.add_option('--bcat',  dest='bcats' , help='b categories to consider',                default="1b,2b",             type='string')
+    parser.add_option('--wids',  dest='wids'  , help='widths to compare to nominal in div', default="400",              type='string')
+    parser.add_option('--obs',   dest='obs'   , help='observables to process',                  default="incmlb",       type='string')
+    parser.add_option('--dists', dest='dists' , help='non-observable distributions to process', default="tmass",        type='string')
+    parser.add_option('--sigs',  dest='sigs'  , help='signal processes to plot ratios for',     default="t#bar{t}",     type='string')
+    parser.add_option('--ptCh',  dest='ptchs' , help='pt categories to consider',               default="highpt,lowpt", type='string')
+    parser.add_option('--ch',    dest='chs'   , help='final states to consider',                default="EE,EM,MM",     type='string')
+    parser.add_option('--bcat',  dest='bcats' , help='b categories to consider',                default="1b,2b",        type='string')
     (opt, args) = parser.parse_args()
 
     wgtFin=ROOT.TFile(opt.inDir)
     divFin=ROOT.TFile(opt.inDiv)
+
+    print wgtFin
+    print divFin
 
 
     # get lists for distribution collection
@@ -40,23 +43,23 @@ def main():
     sigList =opt.sigs.split(',')
 
     # useful settings
-    divWid="1.0"
+    divWid="100"
 
     #show plots
     ROOT.gStyle.SetOptTitle(0)
     ROOT.gStyle.SetOptStat(0)
     ROOT.gROOT.SetBatch(True)
-    outDir='./genvalidation'
+    outDir='./plots/'
     os.system('mkdir -p %s' % outDir)
 
     # collect a list of all distributions to plot
-    plots = [("%s_%sw/%s_%sw_%s"%(dist,wid,dist,wid,sig),
-        "%s_%sw/%s_%sw_%s widthx8"%(dist,divWid,dist,divWid,sig))
+    plots = [("%s_w%s/%s_w%s_%s"%(dist,wid,dist,wid,sig),
+                "%s_w%s/%s_w%s_%s widthx4"%(dist,divWid,dist,divWid,sig))
                 for dist in distList
                 for wid in widList
                 for sig in sigList]
-    plots+= [("%s%s%s_%s_%sw/%s%s%s_%s_%sw_%s"%(ptC,ch,bc,obs,wid,ptC,ch,bc,obs,wid,sig),
-        "%s%s%s_%s_%sw/%s%s%s_%s_%sw_%s widthx8"%(ptC,ch,bc,obs,divWid,ptC,ch,bc,obs,divWid,sig))
+    plots+= [("%s%s%s_%s_w%s/%s%s%s_%s_w%s_%s"%(ch,bc,ptC,obs,wid,ch,bc,ptC,obs,wid,sig),
+                "%s%s%s_%s_w%s/%s%s%s_%s_w%s_%s widthx4"%(ch,bc,ptC,obs,divWid,ch,bc,ptC,obs,divWid,sig))
                 for ptC in ptChList
                 for ch in chList
                 for bc in bcatList
@@ -75,6 +78,7 @@ def main():
 
 
     for p in plots :
+        print p
         canvas=ROOT.TCanvas()
         if opt.saveLog : canvas.SetLogy()
         canvas.cd()
@@ -131,10 +135,10 @@ def main():
             ch  = chList[ich]
             bc  = bcatList[ibc]
 
-            wgtHist=wgtFin.Get("%s%s%s_%s_%sw/%s%s%s_%s_%sw_%s"%(ptC,ch,bc,obs,wid,ptC,ch,bc,obs,wid,sig)).Clone()
-            divHists["%i %i %i"%(iptC,ich,ibc)]=divFin.Get("%s%s%s_%s_%sw/%s%s%s_%s_%sw_%s widthx8"%(ptC,ch,bc,obs,divWid,ptC,ch,bc,obs,divWid,sig)).Clone()
+            wgtHist=wgtFin.Get("%s%s%s_%s_w%s/%s%s%s_%s_w%s_%s"%(ch,bc,ptC,obs,wid,ch,bc,ptC,obs,wid,sig)).Clone()
+            divHists["%i %i %i"%(ich,ibc,iptC)]=divFin.Get("%s%s%s_%s_w%s/%s%s%s_%s_w%s_%s widthx4"%(ch,bc,ptC,obs,divWid,ch,bc,ptC,obs,divWid,sig)).Clone()
 
-            divHist=divHists["%i %i %i"%(iptC,ich,ibc)]
+            divHist=divHists["%i %i %i"%(ich,ibc,iptC)]
             divHist.Divide(wgtHist)
 
             divHist.GetYaxis().SetTitle("Events / Reweighted Events")
@@ -147,15 +151,15 @@ def main():
             divHist.Draw()
 
 
-            fits["%i %i %i"%(iptC,ich,ibc)]=ROOT.TF1("%i %i %i"%(iptC,ich,ibc),"pol1",0,300)
-            fits["%i %i %i"%(iptC,ich,ibc)].SetLineColor(ROOT.kRed)
-            divHist.Fit(fits["%i %i %i"%(iptC,ich,ibc)],"NQ")
+            fits["%i %i %i"%(ich,ibc,iptC)]=ROOT.TF1("%i %i %i"%(ich,ibc,iptC),"pol1",0,300)
+            fits["%i %i %i"%(ich,ibc,iptC)].SetLineColor(ROOT.kRed)
+            divHist.Fit(fits["%i %i %i"%(ich,ibc,iptC)],"NQ")
 
-            fits["%i %i %i"%(iptC,ich,ibc)].Draw("SAME")
+            fits["%i %i %i"%(ich,ibc,iptC)].Draw("SAME")
 
 
             info.SetTextSize(0.06)
-            info.DrawLatexNDC(0.20,0.95,"%s %s %s"%(ptC,ch,bc))
+            info.DrawLatexNDC(0.20,0.95,"%s %s %s"%(ch,bc,ptC))
 
             #CMS_lumi.CMS_lumi(miniCanvas,4,0)
 
@@ -193,9 +197,9 @@ def main():
                 ch  = chList[ich]
                 bc  = bcatList[ibc]
 
-                wgtHist=wgtFin.Get("%s%s%s_%s_%sw/%s%s%s_%s_%sw_%s"%(ptC,ch,bc,obs,wid,ptC,ch,bc,obs,wid,sig)).Clone()
-                xHist=wgtFin.Get("%s%s%s_%s_1.0w/%s%s%s_%s_1.0w_%s"%(ptC,ch,bc,obs,ptC,ch,bc,obs,sig)).Clone()
-                divHist=divFin.Get("%s%s%s_%s_%sw/%s%s%s_%s_%sw_%s widthx8"%(ptC,ch,bc,obs,divWid,ptC,ch,bc,obs,divWid,sig)).Clone()
+                wgtHist=wgtFin.Get("%s%s%s_%s_w%s/%s%s%s_%s_w%s_%s"%(ch,bc,ptC,obs,wid,ch,bc,ptC,obs,wid,sig)).Clone()
+                xHist=wgtFin.Get("%s%s%s_%s_w100/%s%s%s_%s_w100_%s"%(ch,bc,ptC,obs,ch,bc,ptC,obs,sig)).Clone()
+                divHist=divFin.Get("%s%s%s_%s_w%s/%s%s%s_%s_w%s_%s widthx4"%(ch,bc,ptC,obs,divWid,ch,bc,ptC,obs,divWid,sig)).Clone()
 
                 wgtHist.SetDirectory(0)
                 xHist.SetDirectory(0)
@@ -223,7 +227,7 @@ def main():
             totObsHist=obsHists[obs]["1x"]
             totObsHist.SetDirectory(0)
             totObsHist.Divide(obsHists[obs]["4x"])
-            totObsHist.GetYaxis().SetTitle("1#timesSM Events / 8.0#times Events")
+            totObsHist.GetYaxis().SetTitle("1#timesSM Events / 4 #times Events")
             totObsHist.GetYaxis().SetTitleSize(0.065)
             totObsHist.GetYaxis().SetRangeUser(0.7,1.3)
             totObsHist.GetXaxis().SetTitleSize(0.065)

@@ -21,6 +21,7 @@ if [ "$#" -lt 1 ]; then
     exit 1; 
 fi
 
+export LSB_JOB_REPORT_MAIL=N
 
 queue=workday
 lumi=35922
@@ -31,7 +32,7 @@ myletter=${whoami:0:1}
 eosdir=/store/cmst3/group/top/ReReco2016/b312177
 dataeosdir=/store/cmst3/group/top/ReReco2016/be52dbe_03Feb2017
 summaryeosdir=/store/cmst3/group/top/TOP-17-010-final/
-COMBINERELEASE=${HOME}/scratch0/CMSSW_7_4_7/src/
+COMBINERELEASE=${HOME}/CMSSW_7_4_7/src/
 outdir=/afs/cern.ch/work/${myletter}/${whoami}/TOP-17-010-final/
 anadir=${outdir}/$2
 wwwdir=${HOME}/www/TOP-17-010/
@@ -96,13 +97,13 @@ case $WHAT in
         ;;
     COMBPLOT )
 	#combined plots
-	python test/TopWidthAnalysis/combinePlotsForAllCategories.py ptlb       EE1b,EE2b,MM1b,MM2b,EM1b,EM2b     ${outdir}/analysis/plots/plotter.root
-	python test/TopWidthAnalysis/combinePlotsForAllCategories.py ptlb       EE1b,MM1b,EM1b                    ${outdir}/analysis/plots/plotter.root
-	python test/TopWidthAnalysis/combinePlotsForAllCategories.py ptlb       EE2b,MM2b,EM2b                    ${outdir}/analysis/plots/plotter.root
-	python test/TopWidthAnalysis/combinePlotsForAllCategories.py incmlb_w100 EE1blowpt,MM1blowpt,EM1blowpt    ${outdir}/analysis/plots/plotter.root
-	python test/TopWidthAnalysis/combinePlotsForAllCategories.py incmlb_w100 EE2blowpt,MM2blowpt,EM2blowpt    ${outdir}/analysis/plots/plotter.root
-	python test/TopWidthAnalysis/combinePlotsForAllCategories.py incmlb_w100 EE1bhighpt,MM1bhighpt,EM1bhighpt ${outdir}/analysis/plots/plotter.root
-	python test/TopWidthAnalysis/combinePlotsForAllCategories.py incmlb_w100 EE2bhighpt,MM2bhighpt,EM2bhighpt ${outdir}/analysis/plots/plotter.root
+	#python test/TopWidthAnalysis/combinePlotsForAllCategories.py ptlb       EE1b,EE2b,MM1b,MM2b,EM1b,EM2b     #${outdir}/analysis/plots/plotter.root
+	python test/TopWidthAnalysis/combinePlotsForAllCategories.py ptlb       EE1b,MM1b,EM1b                    #${outdir}/analysis/plots/plotter.root
+	python test/TopWidthAnalysis/combinePlotsForAllCategories.py ptlb       EE2b,MM2b,EM2b                    #${outdir}/analysis/plots/plotter.root
+	python test/TopWidthAnalysis/combinePlotsForAllCategories.py incmlb_w100 EE1blowpt,MM1blowpt,EM1blowpt    #${outdir}/analysis/plots/plotter.root
+	python test/TopWidthAnalysis/combinePlotsForAllCategories.py incmlb_w100 EE2blowpt,MM2blowpt,EM2blowpt    #${outdir}/analysis/plots/plotter.root
+	python test/TopWidthAnalysis/combinePlotsForAllCategories.py incmlb_w100 EE1bhighpt,MM1bhighpt,EM1bhighpt #${outdir}/analysis/plots/plotter.root
+	python test/TopWidthAnalysis/combinePlotsForAllCategories.py incmlb_w100 EE2bhighpt,MM2bhighpt,EM2bhighpt #${outdir}/analysis/plots/plotter.root
         ;;
     WWW )
         mkdir -p ${wwwdir}/ana
@@ -113,32 +114,117 @@ case $WHAT in
         cp test/index.php ${wwwdir}/comb
 	;;
     HYPOTEST ) 
-        mainHypo=(20 100 400)        
-	altHypo=(20 40 50 60 70 80 90 100 110 120 130 140 150 160 180 200 220 240 260 280 300 350 400)        
-	data=(-1 50 60 70 80 90 100 110 120 130 140 150 160 180 200 220 240 260 280 300 350 400)
-        queue=2nd       
-        for mh in ${mainHypo[@]}; do
-	    for h in ${altHypo[@]}; do
-	        for d in ${data[@]}; do		    		       
+
+    #mainHypo=(20 100 400)        
+    mainHypo=(100)
+
+	#    "EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt"
+	#    "EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt"
+	#    "EM1bhighpt,EM2bhighpt"
+    # EM2bhighpt
+	CATS=(
+         "EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt,EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt"
+        )
+
+    #TAGS=("inc_scan_preApp_step4" "inc_scan_preApp_step3"  "inc_scan_preApp_step2" "inc_scan_preApp_step1")
+    TAGS=("inc_scan_preAppFrz")
+
+    altHypo=(20 40 50 60 70 80 90 100 110 120 130 140 150 160 180 200 220 240 260 280 300 350 400)        
+
+	#data=(-1 50 60 70 80 90 100 110 120 130 140 150 160 180 200 220 240 260 280 300 350 400)
+    data=(100)
+
+    expAltHypo=("nan") #"meq166p5" "meq169p5" "meq171p5" "meq173p5" "meq175p5" "meq178p5")
+
+    #nuisanceFreeze=("nan")
+    #nuisanceFreeze=("sel,trig_*CH*,lumi_13TeV,DYnorm_*CH*,Wnorm_th,tWnorm_th,VVnorm_th,tbartVnorm_th,ees,mes,jer,ltag,btag,bfrag,semilep,pu,tttoppt,ttMEqcdscale,ttPDF,jes,st_wid,UE,CR,hdamp,ISR,FSR,mtop,tWttInterf,tWMEScale") 
+    #nuisanceFreeze=("sel,trig_*CH*" "lumi_13TeV" "DYnorm_*CH*" "Wnorm_th" 
+    #            "tWnorm_th" "VVnorm_th" "tbartVnorm_th" 
+    #            "ees" "mes" "jer" "ltag" "btag" "bfrag" "semilep"
+    #            "pu" "tttoppt" "ttMEqcdscale" "ttPDF"
+    #            "jes" "st_wid" "UE" "CR" 
+    #            "hdamp" "ISR" "FSR" "mtop" 
+    #            "tWttInterf" "tWMEScale") 
+    nuisanceFreeze=("all")
+    #nuisanceRemove=("nan")
+
+    queue=1nd
+    
+	for h in ${altHypo[@]}; do
+    for mh in ${mainHypo[@]}; do
+	    for f in ${!nuisanceFreeze[*]}; do
+	    for e in ${expAltHypo[@]}; do
+	    for d in ${data[@]}; do
+		for i in ${!TAGS[*]}; do
+                    
+            #iNuisRmv=${nuisanceRemove[${f}]}
+            iNuisFrz=${nuisanceFreeze[${f}]}
+		    icat=${CATS[${i}]}
+		    itag=${TAGS[${i}]}
+		    
 		    cmd="python test/TopWidthAnalysis/runHypoTestDatacards.py"
 		    cmd="${cmd} --combine ${COMBINERELEASE}"
-		    cmd="${cmd} --mainHypo ${mh} --altHypo ${h} --pseudoData ${d}"		    
-                    cmd="${cmd} -s tbart"
+		    cmd="${cmd} --mainHypo=${mh} --altHypo ${h} --pseudoData=${d}"
+            cmd="${cmd} -s tbart"
+            #cmd="${cmd} --rndmPseudoSF"
+            if [[ "${e}" != "nan" ]] ; then 
+    		    cmd="${cmd} --altHypoFromSim ${e}"		    
+            fi
+            if [[ "${iNuisFrz}" != "nan" ]] ; then 
+    		    cmd="${cmd} --freezeNuisances ${iNuisFrz}"		    
+            fi
+            #if [[ "${iNuisRmv}" != "nan" ]] ; then 
+    		#    cmd="${cmd} --removeNuisances ${iNuisRmv}"		    
+            #fi
 		    cmd="${cmd} --dist incmlb"		    
+		    #cmd="${cmd} --dist tmass"		    
 		    cmd="${cmd} --nToys 2000"
 		    cmd="${cmd} -i /eos/cms/${summaryeosdir}/plotter/plotter.root"
 		    cmd="${cmd} --systInput /eos/cms/${summaryeosdir}/plotter/syst_plotter.root"
-                    cats="EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt,EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt"
-		    cmd="${cmd} -c ${cats}"
+		    cmd="${cmd} -c ${icat}"
 		    cmd="${cmd} --rebin 2"            
-                    cmd="${cmd} --doValidation"
-		    stdcmd="${cmd} -o ${outdir}/datacards_${mh}/"
-		    echo "Submitting ($mh,$h,$d)"		
-                    echo ${stdcmd}
-		    bsub -q ${queue} sh ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${stdcmd};
-                done
-            done
-	done
+            #cmd="${cmd} --doValidation"
+		    #if [ "$h" == "220" ]; then
+		    #if [ "$d" == "-1" ]; then
+		    #echo "    validation will be included"
+		    #cmd="${cmd} --doValidation"
+		    #fi
+		    #fi
+                    
+		    echo "Submitting ($mh,$h,$d,$itag,$icat)"		
+		    stdcmd="${cmd} -o ${outdir}/datacards_${itag}"
+
+            # add name for frozen syst
+            if [[ "${iNuisFrz}" != "nan" ]] ; then 
+    		    stdcmd="${stdcmd}_${iNuisFrz}"		    
+            fi
+
+            # add name for alternate mainHypo
+            if [[ "${mh}" != "100" ]] ; then 
+    		    stdcmd="${stdcmd}_${h}"		    
+            fi
+
+            # submit job
+    		stdcmd="${stdcmd}/"		    
+            echo ${stdcmd}
+    	    bsub -q ${queue} sh ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${stdcmd};
+           
+		    #if [ "$itag" == "inc" ]; then
+			#if [ "$d" == "100" ]; then
+			#    #echo "    injecting pseudo-data from nloproddec"
+			#    #nlocmd="${cmd} --pseudoDataFromWgt nloproddec -o ${outdir}/datacards_${itag}_nloproddec"
+			#    #bsub -q ${queue} ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${nlocmd};   
+			#    #echo "    injecting pseudo-data from widthx4"
+			#    #width4cmd="${cmd} --pseudoDataFromSim=t#bar{t}_widthx4 -o ${outdir}/datacards_${itag}_widthx4"
+			#    #bsub -q ${queue} sh ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${width4cmd};
+			#fi
+		    #fi
+		done
+        done
+        done
+        done
+        done
+	    done
 	;;
     PLOTHYPOTEST )
 	summaryScript=${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/summarizeHypoTestResults.py;

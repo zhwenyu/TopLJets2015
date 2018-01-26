@@ -95,7 +95,7 @@ void hypoTestResultTreeTopWid(double mass,
             for (int j = 0, nj = bdist.size(); j < nj; ++j) {
                 q = bdist[j]; 
                 weight = bweight[j]; 
-                type = -1;
+                type = 1;
                 tree->Fill(); 
                 nB++;
             }
@@ -105,7 +105,7 @@ void hypoTestResultTreeTopWid(double mass,
             for (int j = 0, nj = sdist.size(); j < nj; ++j) {
                 q = sdist[j]; 
                 weight = sweight[j]; 
-                type = 1;
+                type = -1;
                 tree->Fill(); 
                 nS++;
             }
@@ -281,8 +281,8 @@ void hypoTestResultTreeTopWid(double mass,
     tree->Draw("-2*q>>halt" ,"type<0","goff");
 
 
-    hnull->SetLineColor(kBlue-7);
-    hnull->SetFillColor(kBlue-7);
+    hnull->SetLineColor(kOrange);
+    hnull->SetFillColor(kOrange);
     hnull->SetStats(false);
     hnull->GetXaxis()->SetTitle("-2 ln [ L(alt) #/ L(SM) ]");
     hnull->GetXaxis()->SetTitleSize(0.04);
@@ -294,8 +294,8 @@ void hypoTestResultTreeTopWid(double mass,
     hnull->GetYaxis()->SetLabelSize(0.03);
     hnull->GetXaxis()->SetLabelSize(0.03);
     hnull->SetMaximum(hnull->GetMaximum()*1.3);
-    halt->SetLineColor(kOrange);
-    halt->SetFillColor(kOrange);
+    halt->SetLineColor(kBlue-7);
+    halt->SetFillColor(kBlue-7);
     halt->SetStats(false);
     hnull->Draw();
     halt->Draw("SAME");

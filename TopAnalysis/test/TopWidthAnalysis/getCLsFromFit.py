@@ -19,7 +19,7 @@ parser.add_option("--iname",type="string", dest="iname"  , default="statsPlots.r
 parser.add_option("--dist", type="string", dest="dist"   , default="incmlb",    help="the observable distribution to look at")
 parser.add_option("--nomWid", type="string", dest="inwid"   , default="1.324",    help="the observable distribution to look at")
 parser.add_option("--prep", type="string", dest="prepost"   , default="post",    help="the observable distribution to look at")
-parser.add_option("--lims", type="string", dest="limList"   , default="0.05,0.01",    help="the observable distribution to look at")
+parser.add_option("--lims", type="string", dest="limList"   , default="0.32,0.05,0.01",    help="the observable distribution to look at")
 parser.add_option("--unblind", dest="unblind", default=False, action='store_true',  help="the observable distribution to look at")
 parser.add_option("--splineVersion", dest="splineV", type="string", default='2',  help="the tspline type to use")
 
