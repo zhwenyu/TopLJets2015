@@ -844,6 +844,8 @@ def doDataCards(opt,args):
                 else:
                     datacard.write('%15s'%'-')
             for sig in altSignalList:
+                if 'w%.0fa'%opt.mainHypo in sig :
+                    sig=sig.replace('w%.0fa'%opt.mainHypo,'w%.0f'%opt.mainHypo)
                 if sig in iexpUp:
                     entryTxt='%15s'%('%3.3f'%(nsigma if not isinstance(nsigma,dict) else nsigma[sig.split('w')[0]]))
                     datacard.write(entryTxt)
