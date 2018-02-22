@@ -6,10 +6,10 @@ import commands
 """
 creates the crab cfg and submits the job
 """
-def submitProduction(tag,lfnDirBase,dataset,isData,cfg,workDir,lumiMask,submit=False):
+def submitProduction(tag,lfnDirBase,dataset,isData,cfg,workDir,lumiMask,era='era2017',submit=False):
     
-    jecDB="Fall15_25nsV2_DATA.db" if isData else "Fall15_25nsV2_MC.db"
-    os.system('ln -s ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/%s' % jecDB)
+    from TopLJets2015.TopAnalysis.EraConfig import getEraConfiguration
+    globalTag, jecTag, jecDB = getEraConfiguration(era=era,isData=bool(isData))
 
     os.system("rm -rvf %s/*%s* "%(workDir,tag))
     crabConfigFile=workDir+'/'+tag+'_cfg.py'
@@ -28,22 +28,22 @@ def submitProduction(tag,lfnDirBase,dataset,isData,cfg,workDir,lumiMask,submit=F
     config_file.write('config.JobType.pluginName = "Analysis"\n')
     config_file.write('config.JobType.psetName = "'+cfg+'"\n')
     config_file.write('config.JobType.disableAutomaticOutputCollection = False\n')
-    config_file.write('config.JobType.pyCfgParams = [\'runOnData=%s\']\n' % bool(isData))    
-    config_file.write('config.JobType.inputFiles = [\'%s\']\n'%jecDB)
+    config_file.write('config.JobType.pyCfgParams = [\'runOnData=%s\',\'era=%s\']\n' % (bool(isData), era))
+    config_file.write('config.JobType.inputFiles = [\'%s\']\n'%(jecDB))
     config_file.write('\n')
     config_file.write('config.section_("Data")\n')
     config_file.write('config.Data.inputDataset = "%s"\n' % dataset)
     config_file.write('config.Data.inputDBS = "global"\n')
     if isData : 
         config_file.write('config.Data.splitting = "LumiBased"\n')
-        config_file.write('config.Data.unitsPerJob = 5\n')
+        config_file.write('config.Data.unitsPerJob = 100\n')
         config_file.write('config.Data.lumiMask = \'%s\'\n' %lumiMask)
     else : 
         config_file.write('config.Data.splitting = "FileBased"\n')
-        config_file.write('config.Data.unitsPerJob = 2\n')
-    config_file.write('config.Data.publication = True\n')
-    config_file.write('config.Data.ignoreLocality = False\n')
-    config_file.write('config.Data.outLFNDirBase = \'%s\'\n' % lfnDirBase)
+        config_file.write('config.Data.unitsPerJob = 4\n')
+    config_file.write('config.Data.ignoreLocality = False\n')    
+    config_file.write('config.Data.publication = False\n')
+    config_file.write('config.Data.outLFNDirBase = \"%s\"\n' % lfnDirBase)
     config_file.write('\n')
     config_file.write('config.section_("Site")\n')
     config_file.write('config.Site.storageSite = "T2_CH_CERN"\n')
@@ -62,10 +62,11 @@ def main():
     parser.add_option('-c', '--cfg',         dest='cfg'   ,      help='cfg to be sent to grid',       default=None,    type='string')
     parser.add_option('-j', '--json',        dest='json'  ,      help='json with list of files',      default=None,    type='string')
     parser.add_option('-o', '--only',        dest='only'  ,      help='submit only these (csv)',      default=None,    type='string')
-    parser.add_option('-l', '--lumi',        dest='lumiMask',    help='json with list of good lumis', default='/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions15/13TeV/Cert_246908-260627_13TeV_PromptReco_Collisions15_25ns_JSON.txt')
-    parser.add_option('-w', '--workDir',     dest='workDir',     help='working directory',            default='grid',  type='string')
-    parser.add_option(      '--lfn',         dest='lfn',         help='base lfn to store outputs',    default='/store/group/phys_top/psilva/', type='string')
-    parser.add_option('-s', '--submit',      dest='submit',      help='submit jobs',                  default=False,   action='store_true')
+    parser.add_option('-l', '--lumi',        dest='lumiMask',    help='json with list of good lumis', default='/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/PromptReco/Cert_294927-299649_13TeV_PromptReco_Collisions17_JSON.txt')
+    parser.add_option(      '--era',         dest='era',         help='era to use (sub-dir in data/)', default='era2017',  type='string')
+    parser.add_option('-w', '--workDir',     dest='workDir',     help='working directory',             default='grid',     type='string')
+    parser.add_option(      '--lfn',         dest='lfn',         help='base lfn to store outputs',     default='/store/group/cmst3/group/top/psilva', type='string')
+    parser.add_option('-s', '--submit',      dest='submit',      help='submit jobs',                   default=False,   action='store_true')
     (opt, args) = parser.parse_args()
 
     #read list of samples
@@ -90,12 +91,14 @@ def main():
             if filtTag in tag :
                 submit=True
         if not submit : continue
+        print tag,sample
         submitProduction(tag=tag,
                          lfnDirBase=lfnDirBase,
                          dataset=sample[2],
                          isData=sample[1],
                          lumiMask=opt.lumiMask,
                          cfg=opt.cfg,
+                         era=opt.era,
                          workDir=opt.workDir,
                          submit=opt.submit)
 
