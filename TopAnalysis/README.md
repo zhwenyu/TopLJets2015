@@ -6,31 +6,12 @@ These installation instructions correspond to the 2016 data/MC Moriond17 re-reco
 To install execute the following in your work area.
 
 ```
-cmsrel CMSSW_8_0_28
-cd CMSSW_8_0_28/src 
+cmsrel CMSSW_9_2_4/src
+cd CMSSW_9_2_4/src 
 cmsenv
 
-#EGM electron regression+smearer
-git cms-init
-git cms-merge-topic cms-egamma:EGM_gain_v1
-cd EgammaAnalysis/ElectronTools/data
-git clone -b Moriond17_gainSwitch_unc https://github.com/ECALELFS/ScalesSmearings.git
-
-#MET
-git cms-merge-topic cms-met:METRecipe_8020 -u
-git cms-merge-topic cms-met:METRecipe_80X_part2 -u
-
-#pseudo-top rivet based and b-frag utils
-git cms-merge-topic -u intrepid42:pseudotoprivet_80x
-cd TopQuarkAnalysis
-git clone ssh://git@gitlab.cern.ch:7999/CMS-TOPPAG/BFragmentationAnalyzer.git
-cd -
-
-#muon calibration
-git clone -o Analysis https://github.com/bachtis/analysis.git -b KaMuCa_V4 KaMuCa
-
 #ntuplizer
-git clone -b 80x_rereco_rev git@github.com:pfs/TopLJets2015.git
+git clone git@github.com:pfs/TopLJets2015.git
 
 #compile
 scram b -j 8
