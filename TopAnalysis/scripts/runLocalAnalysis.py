@@ -3,23 +3,33 @@ import sys
 import optparse
 import ROOT
 import pickle
+from collections import OrderedDict
 import json
+import re
+import commands
 from TopLJets2015.TopAnalysis.storeTools import *
+from TopLJets2015.TopAnalysis.batchTools import *
 
 """
 Wrapper to be used when run in parallel
 """
 def RunMethodPacked(args):
 
-    method,inF,outF,channel,charge,wgtH,flav,runSysts=args
-    method=method if method.find('::')<0 else method.split('::')[1]
+    method,inF,outF,channel,charge,flav,runSysts,systVar,era,tag,debug=args
     print 'Running ',method,' on ',inF
     print 'Output file',outF
     print 'Selection ch=',channel,' charge=',charge,' flavSplit=',flav,' systs=',runSysts
-    if wgtH : print 'Weight histogram is available'
+    print 'Normalization applied from tag=',tag
+    print 'Corrections will be retrieved for era=',era
 
     try:
-        getattr(ROOT,method)(str(inF),str(outF),channel,charge,flav,wgtH,runSysts)
+        cmd='analysisWrapper --era %s --normTag %s --in %s --out %s --method %s --charge %d --channel %d --flav %d --systVar %s'\
+            %(era, tag, inF, outF, method, charge, channel, flav, systVar)
+        if runSysts : cmd += ' --runSysts'
+        if debug : cmd += ' --debug'
+        print(cmd)
+        os.system(cmd)
+
     except :
         print 50*'<'
         print "  Problem  (%s) with %s continuing without"%(sys.exc_info()[1],inF)
@@ -38,52 +48,85 @@ def main():
     parser.add_option('-i', '--in',          dest='input',       help='input directory with files or single file [%default]',  default=None,       type='string')
     parser.add_option('-o', '--out',         dest='output',      help='output directory (or file if single file to process)  [%default]',  default='analysis', type='string')
     parser.add_option(      '--only',        dest='only',        help='csv list of samples to process  [%default]',             default=None,       type='string')
+    parser.add_option(      '--skip',        dest='skip',        help='csv list of samples to skip  [%default]',             default=None,       type='string')
     parser.add_option(      '--runSysts',    dest='runSysts',    help='run systematics  [%default]',                            default=False,      action='store_true')
-    parser.add_option(      '--cache',       dest='cache',       help='use this cache file  [%default]',                        default='data/genweights.pck', type='string')
+    parser.add_option(      '--systVar',     dest='systVar',     help='single systematic variation  [%default]',   default='nominal',       type='string')
+    parser.add_option(      '--debug',       dest='debug',      help='debug mode  [%default]',                            default=False,      action='store_true')
     parser.add_option(      '--flav',        dest='flav',        help='split according to heavy flavour content  [%default]',   default=0,          type=int)
     parser.add_option(      '--ch',          dest='channel',     help='channel  [%default]',                                    default=13,         type=int)
     parser.add_option(      '--charge',      dest='charge',      help='charge  [%default]',                                     default=0,          type=int)
+    parser.add_option(      '--era',         dest='era',         help='era to use for corrections/uncertainties  [%default]',   default='era2016',       type='string')
     parser.add_option(      '--tag',         dest='tag',         help='normalize from this tag  [%default]',                    default=None,       type='string')
-    parser.add_option('-q', '--queue',       dest='queue',       help='submit to this queue  [%default]',                       default='local',    type='string')
-    parser.add_option('-n', '--njobs',       dest='njobs',       help='# jobs to run in parallel  [%default]',                                default=0,    type='int')
+    parser.add_option('-q', '--queue',       dest='queue',       help='if not local send to batch with condor. queues are now called flavours, see http://batchdocs.web.cern.ch/batchdocs/local/submit.html#job-flavours   [%default]',     default='local',    type='string')    
+    parser.add_option('-n', '--njobs',       dest='njobs',       help='# jobs to run in parallel  [%default]',                  default=0,    type='int')
+    parser.add_option(      '--skipexisting',dest='skipexisting',help='skip jobs with existing output files  [%default]',       default=False,      action='store_true')
+    parser.add_option(      '--exactonly',   dest='exactonly',   help='match only exact sample tags to process  [%default]',    default=False,      action='store_true')
+    parser.add_option(      '--outputonly',        dest='outputonly',        help='filter job submission for a csv list of output files  [%default]',             default=None,       type='string')
+    parser.add_option(      '--farmappendix',        dest='farmappendix',        help='Appendix to condor FARM directory [%default]',             default=None,       type='string')
     (opt, args) = parser.parse_args()
 
-    #compile macro
-    ROOT.FWLiteEnabler.enable()
-    ROOT.gSystem.Load('libTopLJets2015TopAnalysis.so')
-    srcCode=opt.method.split('::')[0]
-    ROOT.gROOT.LoadMacro('src/%s.cc+'%srcCode)
-    
-    #parse selection list
+    #parse selection lists
     onlyList=[]
     try:
-        onlyList=opt.only.split(',')
+        for t in opt.only.split(','):
+            if '.json' in t:
+                jsonFile = open(t,'r')
+                samplesList = json.load(jsonFile, encoding='utf-8', object_pairs_hook=OrderedDict).items()
+                for s,_ in samplesList: onlyList.append(s)
+                jsonFile.close()
+            else:
+                onlyList.append(t)
     except:
         pass
+    skipList=[]
+    try:
+        skipList=opt.skip.split(',')
+    except:
+        pass
+    outputOnlyList=[]
+    try:
+        outputOnlyList=opt.outputonly.split(',')
+    except:
+        pass
+    #parse list of systematic variations
+    varList=[]
+    if opt.systVar == 'all':
+        allSystVars = ['jec_CorrelationGroupMPFInSitu', 'jec_RelativeFSR',
+                       'jec_CorrelationGroupUncorrelated', 'jec_FlavorPureGluon', 'jec_FlavorPureQuark',
+                       'jec_FlavorPureCharm', 'jec_FlavorPureBottom', 'jer',
+                       'btag_heavy', 'btag_light', 'csv_heavy', 'csv_light', 'tracking']
+        for var in allSystVars:
+            varList.append(var+'_up')
+            varList.append(var+'_down')
+    else:
+        try:
+            varList=opt.systVar.split(',')
+        except:
+            pass
+    print 'Running following variations: ', varList
 
     #prepare output if a directory
-    if not '.root' in opt.output:
-        os.system('mkdir -p %s'%opt.output)
+    if not '.root' in opt.output :
+        print opt.output
+        if not '/store/' in opt.output:
+            os.system('mkdir -p %s/Chunks'%opt.output)
+        else:
+            os.system('eos mkdir %s'%opt.output)
+            os.system('eos mkdir %s/Chunks'%opt.output)
+    #correct location of corrections to be used using cmsswBase, if needed
+    cmsswBase=os.environ['CMSSW_BASE']
+    if not cmsswBase in opt.era : opt.era=cmsswBase+'/src/TopLJets2015/TopAnalysis/data/'+opt.era
 
-    #read normalization
-    cachefile = open(opt.cache, 'r')
-    genWgts   = pickle.load(cachefile)
-    cachefile.close()        
-    print 'Normalization read from cache (%s)' % opt.cache
-    
     #process tasks
     task_list = []
     processedTags=[]
     if '.root' in opt.input:
         inF=opt.input
         if '/store/' in inF and not 'root:' in inF : inF='root://eoscms//eos/cms'+opt.input        
-        outF=opt.output
-        wgt=None
-        if opt.tag :
-            if opt.tag in genWgts:
-                wgtH=genWgts[opt.tag]
-        print inF,outF,opt.channel,opt.charge,wgtH,opt.flav,opt.runSysts
-        task_list.append( (opt.method,inF,outF,opt.channel,opt.charge,wgtH,opt.flav,opt.runSysts) )
+        for systVar in varList:
+            outF=opt.output
+            if systVar != 'nominal' and not systVar in opt.output: outF=opt.output[:-5]+'_'+systVar+'.root'
+            task_list.append( (opt.method,inF,outF,opt.channel,opt.charge,opt.flav,opt.runSysts,systVar,opt.era,opt.tag,opt.debug) )
     else:
 
         inputTags=getEOSlslist(directory=opt.input,prepend='')
@@ -96,21 +139,35 @@ def main():
             if len(onlyList)>0:
                 processThisTag=False
                 for itag in onlyList:
-                    if itag in tag:
+                    if ((opt.exactonly and itag == tag) or 
+                        (not opt.exactonly and itag in tag)):
                         processThisTag=True
+                        break
+                if not processThisTag : continue
+            if len(skipList)>0:
+                processThisTag=True
+                for itag in skipList:
+                    if itag in tag:
+                        processThisTag=False
+                        break
                 if not processThisTag : continue
 
-            wgtH=genWgts[tag] if opt.queue=='local' else tag
             input_list=getEOSlslist(directory='%s/%s' % (opt.input,tag) )
-            for ifile in xrange(0,len(input_list)):
-                inF=input_list[ifile]
-                outF=os.path.join(opt.output,'%s_%d.root' %(tag,ifile))
-                #doFlavourSplitting=True if ('MC13TeV_WJets' in tag or 'MC13TeV_DY50toInf' in tag) else False
-                #if doFlavourSplitting:
-                #    for flav in [0,1,4,5]:
-                #        task_list.append( (method,inF,outF,opt.channel,opt.charge,wgtH,flav,opt.runSysts) )
-                #else:
-                task_list.append( (opt.method,inF,outF,opt.channel,opt.charge,wgtH,0,opt.runSysts) )
+            
+            for systVar in varList:
+                nexisting = 0
+                for ifile in xrange(0,len(input_list)):
+                    inF=input_list[ifile]
+                
+                    outF=os.path.join(opt.output,'Chunks','%s_%d.root' %(tag,ifile))
+                    if systVar != 'nominal' and not systVar in tag: outF=os.path.join(opt.output,'Chunks','%s_%s_%d.root' %(tag,systVar,ifile))
+                    if (opt.skipexisting and os.path.isfile(outF)):
+                        nexisting += 1
+                        continue
+                    if (len(outputOnlyList) > 1 and not outF in outputOnlyList):
+                        continue
+                    task_list.append( (opt.method,inF,outF,opt.channel,opt.charge,opt.flav,opt.runSysts,systVar,opt.era,tag,opt.debug) )
+                if (opt.skipexisting and nexisting): print '--skipexisting: %s - skipping %d of %d tasks as files already exist'%(systVar,nexisting,len(input_list))
 
     #run the analysis jobs
     if opt.queue=='local':
@@ -122,13 +179,54 @@ def main():
             pool = Pool(opt.njobs)
             pool.map(RunMethodPacked, task_list)
     else:
-        print 'launching %d tasks to submit to the %s queue'%(len(task_list),opt.queue)
-        cmsswBase=os.environ['CMSSW_BASE']
-        for method,inF,outF,channel,charge,tag,flav,runSysts in task_list:
-            localRun='python %s/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py -i %s -o %s --charge %d --ch %d --tag %s --flav %d --method %s' % (cmsswBase,inF,outF,charge,channel,tag,flav,method)
-            if runSysts : localRun += ' --runSysts'            
-            cmd='bsub -q %s %s/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh \"%s\"' % (opt.queue,cmsswBase,localRun)
-            os.system(cmd)
+        
+        FarmDirectory = '%s/FARM%s%s'%(cmsswBase,os.path.basename(opt.output),opt.farmappendix)
+        os.system('mkdir -p %s'%FarmDirectory)
+        
+        print 'Preparing %d tasks to submit to the batch'%len(task_list)
+        print 'Executables and condor wrapper are stored in %s'%FarmDirectory
+
+        with open ('%s/condor.sub'%FarmDirectory,'w') as condor:
+
+            condor.write('executable = {0}/$(cfgFile).sh\n'.format(FarmDirectory))
+            condor.write('output     = {0}/output_$(cfgFile).out\n'.format(FarmDirectory))
+            condor.write('error      = {0}/output_$(cfgFile).err\n'.format(FarmDirectory))
+            condor.write('+JobFlavour = "{0}"\n'.format(opt.queue))
+
+            jobNb=0
+            for method,inF,outF,channel,charge,flav,runSysts,systVar,era,tag,debug in task_list:
+
+                jobNb+=1
+                cfgFile='%s'%(os.path.splitext(os.path.basename(outF))[0])
+
+                condor.write('cfgFile=%s\n'%cfgFile)
+                condor.write('queue 1\n')
+                
+                with open('%s/%s.sh'%(FarmDirectory,cfgFile),'w') as cfg:
+
+                    cfg.write('#!/bin/bash\n')
+                    cfg.write('WORKDIR=`pwd`\n')
+                    cfg.write('echo "Working directory is ${WORKDIR}"\n')
+                    cfg.write('cd %s\n'%cmsswBase)
+                    cfg.write('eval `scram r -sh`\n')
+                    cfg.write('cd ${WORKDIR}\n')
+                    localOutF=os.path.basename(outF)
+                    runOpts='-i %s -o ${WORKDIR}/%s --charge %d --ch %d --era %s --tag %s --flav %d --method %s --systVar %s'\
+                        %(inF, localOutF, charge, channel, era, tag, flav, method, systVar)
+                    if runSysts : runOpts += ' --runSysts'
+                    if debug :    runOpts += ' --debug'
+                    cfg.write('python %s/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py %s\n'%(cmsswBase,runOpts))
+                    if '/store' in outF:
+                        cfg.write('xrdcp ${WORKDIR}/%s root://eoscms//eos/cms/%s\n'%(localOutF,outF))
+                        cfg.write('rm ${WORKDIR}/%s'%localOutF)
+                    elif outF!=localOutF:
+                        cfg.write('  mv -v ${WORKDIR}/%s %s\n'%(localOutF,outF))
+
+                os.system('chmod u+x %s/%s.sh'%(FarmDirectory,cfgFile))
+
+        print 'Submitting jobs to condor, flavour "%s"'%(opt.queue)
+        os.system('condor_submit %s/condor.sub'%FarmDirectory)
+        
 
 """
 for execution from another script

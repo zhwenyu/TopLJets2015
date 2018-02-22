@@ -6,6 +6,7 @@ import commands
 import getpass
 import pickle
 
+<<<<<<< HEAD
 """
 test if variation is significant enough i.e. if sum_{bins} |var-nom| > tolerance
 """
@@ -99,6 +100,10 @@ def saveToShapesFile(outFile,shapeColl,directory='',rebin=0):
         shapeColl[key].Write(key,ROOT.TObject.kOverwrite)
     fOut.Close()
 
+=======
+from TopLJets2015.TopAnalysis.dataCardTools import *
+from TopLJets2015.TopAnalysis.xsecSystSpecs import *
+>>>>>>> 9058e3898a0b728430a2f63a9c409bf903ecdb62
 
 """
 steer the script
@@ -112,10 +117,14 @@ def main():
     parser.add_option(      '--systInput',      dest='systInput',   help='input plotter for systs from alternative samples',   default=None,          type='string')
     parser.add_option('-d', '--dist',           dest='dist',        help='distribution',                                       default='nbtags',      type='string')
     parser.add_option('-s', '--signal',         dest='signal',      help='signal (csv)',                                       default='tbart',       type='string')
+    parser.add_option('--signalSub',            dest='signalSub',   help='subtract this component out of signal',              default=None,          type='string')
+    parser.add_option(      '--specs',          dest='specs',       help='specifications [%default]',                          default='TOP-16-006',       type='string')
     parser.add_option('-m', '--mass',           dest='mass',        help='signal mass',                                        default=0,             type=float)
     parser.add_option('-c', '--cat',            dest='cat',         help='categories (csv)',                                   default='1j,2j,3j,4j', type='string')
     parser.add_option('-q', '--qcd',            dest='qcd',         help='qcd normalization file',                             default=None,          type='string')
     parser.add_option('-w', '--wjets',          dest='wjets',       help='wjets normalization file',                           default=None,          type='string')
+    parser.add_option('--addBinByBin',          dest='addBinByBin', help='add bin-by-bin stat uncertainties @ threshold',      default=-1,            type=float)
+    parser.add_option(      '--rebin',          dest='rebin',       help='histogram rebin factor',                             default=0,             type=int)
     parser.add_option('-o', '--output',         dest='output',      help='output directory',                                   default='datacards',   type='string')
     parser.add_option(      '--rebin',          dest='rebin',       help='histogram rebin factor',                             default=0,             type=int)
     (opt, args) = parser.parse_args()
@@ -160,9 +169,16 @@ def main():
 
         print 'Initiating %s datacard for %s'%(opt.dist,cat)
 
+<<<<<<< HEAD
         #nominal expectations
+=======
+        #get syst specifications
+        rateSysts,sampleSysts=xsecSystSpecs(opt.specs)
+
+        #nomimal expectations
+>>>>>>> 9058e3898a0b728430a2f63a9c409bf903ecdb62
         obs,exp=getDistsFrom(directory=fIn.Get('%s_%s'%(opt.dist,cat)))
-        exp=filterShapeList(exp,signalList,rawSignalList)
+        exp=filterShapeList(exp,signalList,rawSignalList,opt.signalSub)
 
         #prepare output ROOT file
         outFile='%s/shapes_%s.root'%(opt.output,cat)
@@ -215,6 +231,7 @@ def main():
 
         nomShapes=exp.copy()
         nomShapes['data_obs']=obs
+<<<<<<< HEAD
         saveToShapesFile(outFile,nomShapes,'nom',rebin=opt.rebin)
 
         #experimental systematics
@@ -229,17 +246,28 @@ def main():
             ybin=2*(isyst-1)+1
             systVar=''
             upShapes,downShapes={},{}
+=======
+        saveToShapesFile(outFile,nomShapes,'nom',opt.rebin)
+
+        #MC stats systematics for bins with large stat uncertainty
+        if opt.addBinByBin>0:
+>>>>>>> 9058e3898a0b728430a2f63a9c409bf903ecdb62
             for proc in exp:
 
-                if proc in expVarShapes:
-                    
-                    systVarDown = expVarShapes[proc].GetYaxis().GetBinLabel(ybin)
-                    systVarUp   = expVarShapes[proc].GetYaxis().GetBinLabel(ybin+1)
-                    systVar     = systVarUp[:-2]
+                #qcd is handled separately
+                if proc=='Multijetsdata' : continue
 
-                    downShapeH  = expVarShapes[proc].ProjectionX('%s%dDown'%(proc,isyst), ybin,   ybin)
-                    upShapeH    = expVarShapes[proc].ProjectionX('%s%dUp'%(proc,isyst),   ybin+1, ybin+1)
+                finalNomShape=exp[proc].Clone('tmp')
+                if opt.rebin>0 : finalNomShape.Rebin(opt.rebin)
+                for xbin in xrange(1,finalNomShape.GetXaxis().GetNbins()+1):
+                    val,unc=finalNomShape.GetBinContent(xbin),finalNomShape.GetBinError(xbin)
+                    if val==0 : continue
+                    if ROOT.TMath.Abs(unc/val)<opt.addBinByBin: continue
 
+                    binShapes={}
+                    systVar='%sbin%d%s'%(proc,xbin,cat)
+
+<<<<<<< HEAD
                     #set as shape only if in the list
                     if systVar in shapeOnlyExpSysts : 
                         downShapeH.Scale(exp[proc].Integral()/downShapeH.Integral())
@@ -247,46 +275,137 @@ def main():
 
                     bwList[proc]     = acceptVariationForDataCard(nomH=exp[proc], upH=upShapeH, downH=downShapeH)
                     if not bwList[proc]: continue
+=======
+                    binShapes[proc]=finalNomShape.Clone('%sUp'%systVar)
+                    binShapes[proc].SetBinContent(xbin,val+unc)
+                    saveToShapesFile(outFile,binShapes,binShapes[proc].GetName(),False)
+>>>>>>> 9058e3898a0b728430a2f63a9c409bf903ecdb62
 
-                    downShapes[proc] = downShapeH
-                    upShapes[proc]   = upShapeH
+                    binShapes[proc]=finalNomShape.Clone('%sDown'%systVar)
+                    binShapes[proc].SetBinContent(xbin,ROOT.TMath.Max(val-unc,1e-3))
+                    saveToShapesFile(outFile,binShapes,binShapes[proc].GetName(),False)
                     
-            #test if at least one process has been white listed
-            if len(upShapes)+len(downShapes)==0:
-                print '\t skipping',systVar,'for %s'%cat
-                continue
+                    #write to datacard
+                    datacard.write('%32s shape'%systVar)        
+                    for sig in signalList: 
+                        if proc==sig:
+                            datacard.write('%15s'%'1') 
+                        else:
+                            datacard.write('%15s'%'-')
+                    for iproc in exp: 
+                        if iproc in signalList: continue
+                        if iproc==proc:
+                            datacard.write('%15s'%'1')
+                        else:
+                            datacard.write('%15s'%'-')
+                    datacard.write('\n')
 
+                finalNomShape.Delete()
+                    
+
+<<<<<<< HEAD
             #export to shapes file
             saveToShapesFile(outFile,downShapes,systVar+'Down',rebin=opt.rebin)
             saveToShapesFile(outFile,upShapes,systVar+'Up',rebin=opt.rebin)
+=======
+        #experimental systematics
+        try:
+            _,expVarShapes=getDistsFrom(directory=fIn.Get('%sshapes_%s_exp'%(opt.dist,cat)))
+            expVarShapes=filterShapeList(expVarShapes,signalList,rawSignalList)
+            nExpSysts=expVarShapes[signalList[0]].GetNbinsY()/2
+>>>>>>> 9058e3898a0b728430a2f63a9c409bf903ecdb62
 
-            #write to datacard
-            datacard.write('%32s shape'%systVar)        
-            for sig in signalList: 
-                if sig in bwList and bwList[sig]:
-                    datacard.write('%15s'%'1') 
-                else:
-                    datacard.write('%15s'%'-')
-            for proc in exp: 
-                if proc in signalList: continue
-                if proc in bwList and bwList[proc] :
-                    datacard.write('%15s'%'1')
-                else:
-                    datacard.write('%15s'%'-')
-            datacard.write('\n')
+            for isyst in xrange(1,nExpSysts+1):
 
-        #rate systematics
-        rateSysts=[
-            ('lumi_13TeV',       1.027,    'lnN',    []                   ,['Multijetsdata']),
-            #('DYnorm_th',        1.038,    'lnN',    ['DYl','DYc','DYb']  ,[]),
-            #('Wnorm_th',         1.037,    'lnN',    ['Wl' ,'Wc','Wb']    ,[]),
-            ('DYnorm_th',        1.038,    'lnN',    ['DY']  ,[]),
-            ('Wnorm_th',         1.037,    'lnN',    ['W']   ,[]),
-            ('tWnorm_th',        1.054,    'lnN',    ['tW']               ,[]),
-            ('tnorm_th',         1.044,    'lnN',    ['tch']              ,[]),
-            ('VVnorm_th',        1.20,     'lnN',    ['Multiboson']       ,[]),
-            ('tbartVnorm_th',    1.30,     'lnN',    ['tbartV']           ,[]),
-            ]
+                #test which variations are significant
+                bwList={}
+                ybin=2*(isyst-1)+1
+                systVar=''
+                upShapes,downShapes={},{}
+                iRateVars={}
+                for proc in exp:
+
+                    nbins=exp[proc].GetNbinsX()
+                    n=exp[proc].Integral(0,nbins+1)
+                    if n==0 : continue
+
+                    if proc in expVarShapes:
+                    
+                        systVarDown = expVarShapes[proc].GetYaxis().GetBinLabel(ybin)
+                        systVarUp   = expVarShapes[proc].GetYaxis().GetBinLabel(ybin+1)
+                        systVar     = systVarUp[:-2]
+                    
+                        downShapeH  = expVarShapes[proc].ProjectionX('%s%dDown'%(proc,isyst), ybin,   ybin)
+                        upShapeH    = expVarShapes[proc].ProjectionX('%s%dUp'%(proc,isyst),   ybin+1, ybin+1)
+
+                        #normalize varied shapes to nominal expectations
+                        nUp=upShapeH.Integral(0,nbins+1)
+                        nDn=downShapeH.Integral(0,nbins+1)
+                        if nUp>0: upShapeH.Scale(n/nUp)
+                        if nDn>0: downShapeH.Scale(n/nDn)
+
+                        #save a rate systematic from the variation of the yields
+                        iRateVars[proc]=(nUp/n,nDn/n)
+                        if iRateVars[proc][0]<1.001 and iRateVars[proc][1]<1.001 : del iRateVars[proc]
+
+                        bwList[proc]     = acceptVariationForDataCard(nomH=exp[proc], upH=upShapeH, downH=downShapeH)
+                        if not bwList[proc]: continue
+                        
+                        downShapes[proc] = downShapeH
+                        upShapes[proc]   = upShapeH
+                    
+                #test if at least one process has been white listed
+                if len(upShapes)+len(downShapes)==0 and len(iRateVars)==0:
+                    print '\t skipping',systVar,'for %s (no significant shapes of rate variations found)'%(anCat+cat)
+                    continue
+                
+                if 'eeff' in systVar or 'meff' in systVar:
+                    print 'will decouple %s for category %s%s'%(systVar,cat,anCat)
+                    systVar += cat+anCat
+            
+                #export to shapes file     
+                if len(upShapes)+len(downShapes)>0:
+                    
+                    saveToShapesFile(outFile,downShapes,systVar+'Down',opt.rebin)
+                    saveToShapesFile(outFile,upShapes,systVar+'Up',opt.rebin)
+                    
+                    #shape variations
+                    datacard.write('%32s shape'%systVar)        
+                    for sig in signalList: 
+                        if sig in bwList and bwList[sig]:
+                            datacard.write('%15s'%'1') 
+                        else:
+                            datacard.write('%15s'%'-')
+                    for proc in exp: 
+                        if proc in signalList: continue
+                        if proc in bwList and bwList[proc] :
+                            datacard.write('%15s'%'1')
+                        else:
+                            datacard.write('%15s'%'-')
+                    datacard.write('\n')
+                    
+
+                #rate variations written separately
+                if len(iRateVars)>0:
+                    
+                    datacard.write('%32s %8s'%(systVar+'Rate','lnN'))
+                    for sig in signalList:
+                        if sig in iRateVars :                            
+                            datacard.write('%15s'%'%3.3f/%3.3f'%(iRateVars[sig][0],iRateVars[sig][1]))
+                        else:
+                            datacard.write('%15s'%'-')
+                    for proc in exp:
+                        if proc in  signalList: continue
+                        if proc in iRateVars :                            
+                            datacard.write('%15s'%'%3.3f/%3.3f'%(iRateVars[proc][0],iRateVars[proc][1]))
+                        else:
+                            datacard.write('%15s'%'-')
+                    datacard.write('\n')
+                    
+        except:
+            pass
+
+        #rate systematics for QCD
         try:
             jetCat=cat[:-2] if cat.endswith('t') else cat
             rateSysts.append( ('MultiJetsNorm%s%s'%(cat,anCat),  ROOT.TMath.Min(1+2*ROOT.TMath.Abs(qcdNorm[jetCat][1]),1.5),                       'lnN',    ['Multijetsdata']    ,[]) )
@@ -318,6 +437,7 @@ def main():
 
         #generator level systematics 
         if systfIn is None: continue
+<<<<<<< HEAD
         sampleSysts=[
 
             #ttbar modelling
@@ -353,10 +473,12 @@ def main():
             ('ttRenScale',           { 'tbart': ['muR0.5muF1hdampmt172.5',  'muR2muF1hdampmt172.5'] },     True , False, False),
             ('ttCombScale',          { 'tbart': ['muR0.5muF0.5hdampmt172.5','muR2muF2hdampmt172.5'] },     True , False, False),
             ]
+=======
+>>>>>>> 9058e3898a0b728430a2f63a9c409bf903ecdb62
 
         _,genVarShapes = getDistsFrom(directory=fIn.Get('%sshapes_%s_gen'%(opt.dist,cat)))
         genVarShapes=filterShapeList(genVarShapes,signalList,rawSignalList)
-        _,altExp       = getDistsFrom(directory=systfIn.Get('%s_%s'%(opt.dist,cat)))
+        _,altExp       = getDistsFrom(directory=systfIn.Get('%s_%s'%(opt.dist,cat)))        
         if signalList[0]!=rawSignalList[0]:
             altExp=filterShapeList(altExp,signalList,rawSignalList)
         for systVar, procsToApply, normalize, useAltShape, projectRelToNom in sampleSysts:
@@ -387,12 +509,12 @@ def main():
                     ybinUp, ybinDown = -1, -1
                     for ybin in xrange(1,genVarShapes[ iproc ].GetNbinsY()+1):
                         label = genVarShapes[ iproc ].GetYaxis().GetBinLabel(ybin)
-                        if procsToApply[iproc][0] in label : ybinDown=ybin
-                        if procsToApply[iproc][1] in label : ybinUp=ybin
+                        if procsToApply[iproc][0] in label and ybinDown<0 : ybinDown=ybin
+                        if procsToApply[iproc][1] in label and ybinUp<0   : ybinUp=ybin
 
                     downH = genVarShapes[ iproc ].ProjectionX('%s%sDown'%(iproc,systVar), ybinDown, ybinDown)
                     upH   = genVarShapes[ iproc ].ProjectionX('%s%sUp'%(iproc,systVar),   ybinUp,   ybinUp)
-                
+
                 # use do down/up x nom to generate the variation, then mirror it
                 if projectRelToNom:
                     ratioH=downH.Clone()
@@ -420,8 +542,13 @@ def main():
             if len(upShapes)==0 : continue
 
             #export to shapes file
+<<<<<<< HEAD
             saveToShapesFile(outFile,downShapes,systVar+'Down',rebin=opt.rebin)
             saveToShapesFile(outFile,upShapes,systVar+'Up',rebin=opt.rebin)
+=======
+            saveToShapesFile(outFile,downShapes,systVar+'Down',opt.rebin)
+            saveToShapesFile(outFile,upShapes,systVar+'Up',opt.rebin)
+>>>>>>> 9058e3898a0b728430a2f63a9c409bf903ecdb62
 
             #write to datacard
             datacard.write('%32s shape'%systVar)
@@ -460,11 +587,19 @@ def main():
 
             _,qcdShapesUp = getDistsFrom(directory=fIn.Get('%s_%s_QCD%sUp'%(opt.dist,cat,jetCat)))
             qcdShapesUp['Multijetsdata'].Scale( qcdExp/qcdShapesUp['Multijetsdata'].Integral() ) 
+<<<<<<< HEAD
             saveToShapesFile(outFile,qcdShapesUp,systName+'Up',rebin=opt.rebin)
 
             _,qcdShapesDown = getDistsFrom(directory=fIn.Get('%s_%s_QCD%sDown'%(opt.dist,cat,jetCat)))
             qcdShapesDown['Multijetsdata'].Scale( qcdExp/qcdShapesDown['Multijetsdata'].Integral() ) 
             saveToShapesFile(outFile,qcdShapesDown,systName+'Down',rebin=opt.rebin)
+=======
+            saveToShapesFile(outFile,qcdShapesUp,systName+'Up',opt.rebin)
+
+            _,qcdShapesDown = getDistsFrom(directory=fIn.Get('%s_%s_QCD%sDown'%(opt.dist,cat,jetCat)))
+            qcdShapesDown['Multijetsdata'].Scale( qcdExp/qcdShapesDown['Multijetsdata'].Integral() ) 
+            saveToShapesFile(outFile,qcdShapesDown,systName+'Down',opt.rebin)
+>>>>>>> 9058e3898a0b728430a2f63a9c409bf903ecdb62
 
         #all done
         datacard.close()

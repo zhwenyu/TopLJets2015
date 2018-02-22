@@ -21,6 +21,7 @@ def projectShapeUncs(url,proc,systList):
     nomH.SetFillStyle(0)
     nomH.Draw('hist')
     nomH.GetYaxis().SetTitleOffset(1.2)
+    nomH.GetYaxis().SetRangeUser(1e-3,nomH.GetMaximum()*2.0)
 
     leg= ROOT.TLegend(0.65,0.5,0.85,0.95)
     leg.SetFillStyle(0)
@@ -71,13 +72,14 @@ def projectShapeUncs(url,proc,systList):
     c.Modified()
     c.Update()
     outName=os.path.splitext( os.path.basename(url) )[0]
-    c.SaveAs('%s_%s_unc.pdf'%(outName,key))
-    raw_input()
-    
+    dirName=os.path.dirname(url)
+    for ext in ['pdf','png']:
+        c.SaveAs(os.path.join(dirName,'%s_%s_unc.%s'%(outName,key,ext)))
     fIn.Close()
 
 def main():
 
+    ROOT.gROOT.SetBatch(True)
     url = sys.argv[1]
     systList=sys.argv[2]
     proc='tbart' if len(sys.argv)<4 else sys.argv[3]
