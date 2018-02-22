@@ -1043,7 +1043,6 @@ void MiniAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 
   //analyze the event
   int ngleptons(0),nrecleptons(0);
-  cout << iEvent.isRealData() << endl;
   if(!iEvent.isRealData()) ngleptons=genAnalysis(iEvent,iSetup);
   nrecleptons=recAnalysis(iEvent,iSetup);
   
