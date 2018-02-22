@@ -823,10 +823,40 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       if(j->pt()<20 || fabs(j->eta())>4.7) continue;
       
       // PF jet ID
-      pat::strbitset retpf = pfjetIDLoose_.getBitTemplate();
-      retpf.set(false);
-      bool passLoose=pfjetIDLoose_( *j, retpf );
-      if(!passLoose) continue;
+      //pat::strbitset retpf = pfjetIDLoose_.getBitTemplate();
+      //retpf.set(false);
+      //bool passLoose=pfjetIDLoose_( *j, retpf );
+      //if(!passLoose) continue;
+
+      //pass tightlepveto cf. https://twiki.cern.ch/twiki/bin/view/CMS/JetID13TeVRun2017
+      bool tightLepVeto(true);
+      if(fabs(j->eta())>3)
+        {
+          if( j->neutralHadronEnergyFraction()<=0.02 ||
+              j->neutralMultiplicity()<=10 ||
+              j->neutralEmEnergyFraction()>=0.9 ) tightLepVeto=false;
+        }
+      else if(fabs(j->eta()>2.7))
+        {
+          if(j->neutralEmEnergyFraction()<=0.02 ||
+             j->neutralEmEnergyFraction()>=0.99 ||
+             j->neutralMultiplicity()<=2 ) tightLepVeto=false;
+        }
+      else
+        {
+          if(j->neutralHadronEnergyFraction()>=0.9 ||
+             j->neutralEmEnergyFraction()>=0.9 ||
+             j->chargedMultiplicity()+j->neutralMultiplicity()<=1 ||
+             j->muonEnergyFraction() >= 0.8) tightLepVeto=false;
+          if(fabs(j->eta())<2.4)
+            {
+              if(j->chargedHadronEnergyFraction()<=0 ||
+                 j->chargedMultiplicity()==0 ||
+                 j->chargedEmEnergyFraction()>=0.8)
+                tightLepVeto=false;
+            }
+        }
+      if(!tightLepVeto) continue;
      
       //save jet
       const reco::Candidate *genParton = j->genParton();
@@ -1013,6 +1043,7 @@ void MiniAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 
   //analyze the event
   int ngleptons(0),nrecleptons(0);
+  cout << iEvent.isRealData() << endl;
   if(!iEvent.isRealData()) ngleptons=genAnalysis(iEvent,iSetup);
   nrecleptons=recAnalysis(iEvent,iSetup);
   

@@ -39,8 +39,8 @@ It takes several options from command line (see cfg for details).
 To run locally the ntuplizer, for testing purposes do something like:
 
 ```
-cmsRun test/runMiniAnalyzer_cfg.py runOnData=False era=era2016 outFilename=MC13TeV_TTJets.root
-cmsRun test/runMiniAnalyzer_cfg.py runOnData=True  era=era2016 outFilename=Data13TeV_MuonEG.root
+cmsRun test/runMiniAnalyzer_cfg.py runOnData=False era=era2017 outFilename=MC13TeV_TTJets.root
+cmsRun test/runMiniAnalyzer_cfg.py runOnData=True  era=era2017 outFilename=Data13TeV_MuonEG.root
 ```
 
 The default files point to the ones used in the TOP synchronization exercise
