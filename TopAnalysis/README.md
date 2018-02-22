@@ -2,13 +2,28 @@
 
 ## Installation instructions
 
-These installation instructions correspond to the 2016 data/MC Moriond17 re-reco.
+These installation instructions correspond to the 2017 data/MC production.
 To install execute the following in your work area.
 
 ```
-cmsrel CMSSW_9_2_4/src
-cd CMSSW_9_2_4/src 
+cmsrel CMSSW_9_4_0
+cd CMSSW_9_4_0/src
 cmsenv
+git cms-merge-topic lsoffi:CMSSW_9_4_0_pre3_TnP
+scram b -j 10
+
+#photon/electron id
+cd $CMSSW_BASE/external
+cd slc6_amd64_gcc630/
+git clone https://github.com/lsoffi/RecoEgamma-PhotonIdentification.git data/RecoEgamma/PhotonIdentification/data
+cd data/RecoEgamma/PhotonIdentification/data
+git checkout CMSSW_9_4_0_pre3_TnP
+cd $CMSSW_BASE/external
+cd slc6_amd64_gcc630/
+git clone https://github.com/lsoffi/RecoEgamma-ElectronIdentification.git data/RecoEgamma/ElectronIdentification/data
+cd data/RecoEgamma/ElectronIdentification/data
+git checkout CMSSW_9_4_0_pre3_TnP
+cd $CMSSW_BASE/src
 
 #ntuplizer
 git clone git@github.com:pfs/TopLJets2015.git
