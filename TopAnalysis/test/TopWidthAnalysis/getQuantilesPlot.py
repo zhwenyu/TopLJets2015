@@ -167,12 +167,12 @@ c.SetGrid(1,1)
 c.cd()
 
 # format all graphs: color
-quantGraph1sigN.SetFillColor(ROOT.kBlue)
-quantGraph1sigA.SetFillColor(ROOT.kOrange+7)
-quantGraph2sigN.SetFillColor(ROOT.kBlue-7)
-quantGraph2sigA.SetFillColor(ROOT.kOrange+1)
-quantGraph3sigN.SetFillColor(ROOT.kBlue-9)
-quantGraph3sigA.SetFillColor(ROOT.kOrange)
+quantGraph1sigA.SetFillColor(ROOT.kBlue)
+quantGraph1sigN.SetFillColor(ROOT.kOrange+7)
+quantGraph2sigA.SetFillColor(ROOT.kBlue-7)
+quantGraph2sigN.SetFillColor(ROOT.kOrange+1)
+quantGraph3sigA.SetFillColor(ROOT.kBlue-9)
+quantGraph3sigN.SetFillColor(ROOT.kOrange)
 
 quantGraphExp.SetFillColor(ROOT.kBlack)
 
