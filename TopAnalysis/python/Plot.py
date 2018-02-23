@@ -64,6 +64,7 @@ class Plot(object):
         self.savelog = False
         self.doChi2 = False
         self.doMCOverData = True
+        self.normUncGr  = None #external input for normalization uncertainty
         self.relShapeGr = None #external input for relative shape
         self.ratiorange = (0.4,1.6)
         self.ratioFrameDrawOpt='e2'
@@ -256,6 +257,7 @@ class Plot(object):
 
             leg.AddEntry(self.mc[h], self.mc[h].GetTitle(), 'f')
             nlegCols += 1
+
         if nlegCols ==0 :
             print '%s is empty'%self.name
             return
@@ -392,6 +394,10 @@ class Plot(object):
                     totalMCUncShape.Draw('e2 same')
                     leg.AddEntry(totalMCUnc, "Total unc.", 'f')
                     leg.AddEntry(totalMCUncShape, "Shape unc.", 'f')
+                elif self.normUncGr:
+                    self.normUncGr.Draw('2')
+                    leg.AddEntry(self.normUncGr,self.normUncGr.GetTitle(),'f')
+            
         for m in self.spimpose:
             self.spimpose[m].Draw('histsame')
             leg.AddEntry(self.spimpose[m],self.spimpose[m].GetTitle(),'l')

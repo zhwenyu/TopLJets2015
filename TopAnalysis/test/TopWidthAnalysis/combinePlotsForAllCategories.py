@@ -119,8 +119,8 @@ def doPlot(plotName,chList,extraText,url,outpName):
     scaleUnc=[0,0]
     scaleVars['lumiup']=(1+.025)*totalExp
     scaleVars['lumidn']=(1-.025)*totalExp
-    scaleVars['xsecup']=(1+.054)*totalExp
-    scaleVars['xsecdn']=(1-.054)*totalExp
+    scaleVars['xsecup']=(1+.051)*totalExp
+    scaleVars['xsecdn']=(1-.051)*totalExp
     scaleUnc=[0,0]
     for key in scaleVars:
         sf=scaleVars[key]/totalExp
@@ -150,14 +150,14 @@ def doPlot(plotName,chList,extraText,url,outpName):
         totalMCShapeGr=ROOT.TGraphErrors()
         
         #normalize by integral
-        #totalMCShape.Scale(totalExp/totalMCShape.Integral())
+        totalMCShape.Scale(totalExp/totalMCShape.Integral())
         #normalize to first bin with non-zero counts
-        for xbin in xrange(1,nbins+1):
-            nom=sigH.GetBinContent(xbin)
-            var=totalMCShape.GetBinContent(xbin)
-            if nom==0 or var==0 : continue
-            totalMCShape.Scale(nom/var)
-            break
+        #for xbin in xrange(1,nbins+1):
+        #    nom=sigH.GetBinContent(xbin)
+        #    var=totalMCShape.GetBinContent(xbin)
+        #    if nom==0 or var==0 : continue
+        #    totalMCShape.Scale(nom/var)
+        #    break
 
         relShapeGr=ROOT.TGraphErrors()
         for xbin in xrange(1,nbins+1):
@@ -180,8 +180,8 @@ def doPlot(plotName,chList,extraText,url,outpName):
     plot.savelog=True
     plot.wideCanvas=False
     plot.doMCOverData = False
-    plot.ratioFrameFill=1001
-    plot.ratioFrameColor=ROOT.kTeal-9
+    plot.ratioFrameFill=3444
+    plot.ratioFrameColor=1
     plot.ratiorange=(0.76,1.24)
     if relShapeGr : plot.relShapeGr=relShapeGr
     plot.plotformats=['root','pdf','png']
@@ -196,6 +196,19 @@ def doPlot(plotName,chList,extraText,url,outpName):
                  False)
     plot.finalize()
     plot.mcUnc=0.0
+
+    totalMC=sigH.Clone('tmptotal')
+    totalMC.Reset('ICE')
+    for h in plot.mc: totalMC.Add(plot.mc[h])
+    plot.normUncGr=ROOT.TGraphErrors(totalMC)
+    plot.normUncGr.SetFillStyle(3444)
+    plot.normUncGr.SetFillColor(1)
+    plot.normUncGr.SetMarkerStyle(1)
+    plot.normUncGr.SetLineColor(1)
+    plot.normUncGr.SetName("normuncgr")
+    plot.normUncGr.SetTitle('Stat #oplus norm')
+    totalMC.Delete()
+
     plot.show(outDir="plots/",lumi=35922,extraText=extraText)
     
                      

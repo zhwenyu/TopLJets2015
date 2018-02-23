@@ -102,6 +102,7 @@ case $WHAT in
 	python test/TopWidthAnalysis/combinePlotsForAllCategories.py ptlb:ptlb2b             EE2b,MM2b,EM2b                    ${AnalysisDir}/plots/plotter.root
 	python test/TopWidthAnalysis/combinePlotsForAllCategories.py drlb:drlb1b             EE1b,MM1b,EM1b                    ${AnalysisDir}/plots/plotter.root
 	python test/TopWidthAnalysis/combinePlotsForAllCategories.py drlb:drlb2b             EE2b,MM2b,EM2b                    ${AnalysisDir}/plots/plotter.root
+	python test/TopWidthAnalysis/combinePlotsForAllCategories.py drlb:drlbinc            EE1b,EE2b,MM1b,MM2b,EM1b,EM2b     ${AnalysisDir}/plots/plotter.root
 	python test/TopWidthAnalysis/combinePlotsForAllCategories.py incmlb_w100:mlb1blowpt  EE1blowpt,MM1blowpt,EM1blowpt     ${AnalysisDir}/plots/plotter.root
 	python test/TopWidthAnalysis/combinePlotsForAllCategories.py incmlb_w100:mlb2blowpt  EE2blowpt,MM2blowpt,EM2blowpt     ${AnalysisDir}/plots/plotter.root
 	python test/TopWidthAnalysis/combinePlotsForAllCategories.py incmlb_w100:mlb1bhighpt EE1bhighpt,MM1bhighpt,EM1bhighpt  ${AnalysisDir}/plots/plotter.root
