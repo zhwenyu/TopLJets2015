@@ -89,7 +89,7 @@ case $WHAT in
 	python scripts/runDYRinRout.py --in ${AnalysisDir}/plots/dy_plotter.root --categs 1b,2b --out ${AnalysisDir}/plots/ > ${AnalysisDir}/plots/dysf.dat;
         opts="${opts} --procSF DY:${AnalysisDir}/plots/.dyscalefactors.pck --doDataOverMC --mcUnc ${lumiUnc}"
 	python scripts/plotter.py -i ${AnalysisDir} ${opts} --only mll,evcount,dphilb,drlb,met,njets,ptlb,incmlb_w100 -o dysf_plotter.root; 
-	python scripts/plotter.py -i ${AnalysisDir} ${opts} --only count --saveTeX -o count_plotter.root;
+	python scripts/plotter.py -i ${AnalysisDir} ${opts} --only evcount --saveTeX -o count_plotter.root;
 	;;
     PLOT )
         opts="-l ${lumi} ${lumiSpecs} --procSF DY:${AnalysisDir}/plots/.dyscalefactors.pck --mcUnc ${lumiUnc} --silent"
