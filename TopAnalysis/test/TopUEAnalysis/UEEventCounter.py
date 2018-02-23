@@ -98,12 +98,14 @@ class UEEventCounter:
         self.rec_chfluxz  = [0]*nSysts
         self.rec_chavgpz  = [0]*nSysts
         self.rec_chrecoil = [0]*nSysts
+        self.rec_mt       = [0]*nSysts
         self.gen_chmult   = 0 
         self.gen_chflux   = 0
         self.gen_chavgpt  = 0
         self.gen_chfluxz  = 0
         self.gen_chavgpz  = 0
         self.gen_chrecoil = 0
+        self.gen_mt       = 0
 
 
     def show(self):

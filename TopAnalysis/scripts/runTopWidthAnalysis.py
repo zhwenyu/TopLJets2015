@@ -173,6 +173,18 @@ def runTopWidthAnalysis(fileName,
             observablesH[var]=ROOT.TH1F(var,';Jet multiplicity;Events',6,2,8)
             var=j+b+'_njetsboost'
             observablesH[var]=ROOT.TH1F(var,';Jet multiplicity;Events',6,2,8)
+                        
+            var=j+b+'_ptlb_exp'
+            nsysts=len(systs)
+            observablesH[var]=ROOT.TH2F(var,';p_{T}(lepton,jet) [GeV];Systematics;l+j pairs',30,0,300,nsysts+1,0,nsysts+1)
+            for isyst in xrange(0,nsysts):
+                observablesH[var].GetYaxis().SetBinLabel(isyst+1,systs[isyst])
+
+            var=j+b+'_ptlb_gen'
+            nsysts=len(thsysts)
+            observablesH[var]=ROOT.TH2F(var,';p_{T}(lepton,jet) [GeV];Systematics;l+j pairs',30,0,300,nsysts+1,0,nsysts+1)
+            for isyst in xrange(0,nsysts):
+                observablesH[var].GetYaxis().SetBinLabel(isyst+1,thsysts[isyst])
 
             for i in ['lowpt','highpt']:
 
@@ -433,6 +445,11 @@ def runTopWidthAnalysis(fileName,
 
                         var=evcat+btagcat+ptCat+'_incmlb_w%d_exp'%int(100*w)
                         observablesH[var].Fill(mlb,isyst,evWeight*widthWeight[w])
+
+                        if w==1.0:
+                            var=evcat+btagcat+'_ptlb_exp'
+                            observablesH[var].Fill(ptlb,isyst,evWeight*widthWeight[w])
+
                         
                     #for the nominal variation do MC truth and the theory systematics, if available
                     if isyst!=0: continue
@@ -508,6 +525,10 @@ def runTopWidthAnalysis(fileName,
                             var=evcat+btagcat+ptCat+'_incmlb_w%d_gen'%int(100*w)
                             observablesH[var].Fill(mlb,ith,thEvWeight*widthWeight[w])
 
+                            if w==1.0:
+                                var=evcat+btagcat+'_ptlb_gen'
+                                observablesH[var].Fill(ptlb,ith,thEvWeight*widthWeight[w])
+
     #save results
     fOut=ROOT.TFile.Open(outFileName,'RECREATE')
     for var in observablesH: observablesH[var].Write()
@@ -577,6 +598,7 @@ def createAnalysisTasks(opt):
             condor.write('executable = {0}/$(jobName).sh\n'.format(FarmDirectory))
             condor.write('output     = {0}/output_$(jobName).out\n'.format(FarmDirectory))
             condor.write('error      = {0}/output_$(jobName).err\n'.format(FarmDirectory))
+            condor.write('log        = {0}/output_$(jobName).log\n'.format(FarmDirectory))
             condor.write('+JobFlavour = \"workday\"\n')
             condor.write('RequestCpus = 8\n')
 

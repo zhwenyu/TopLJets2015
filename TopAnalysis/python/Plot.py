@@ -48,7 +48,7 @@ class Plot(object):
 
     def __init__(self,name,com='13 TeV'):
         self.name = name
-        self.cmsLabel='#bf{CMS} #it{preliminary}'
+        self.cmsLabel='#bf{CMS}' # #it{preliminary}'
         self.com=com
         self.wideCanvas = True if 'ratevsrun' in self.name else False
         self.doPoissonErrorBars=True
@@ -64,11 +64,14 @@ class Plot(object):
         self.savelog = False
         self.doChi2 = False
         self.doMCOverData = True
+        self.relShapeGr = None #external input for relative shape
         self.ratiorange = (0.4,1.6)
         self.ratioFrameDrawOpt='e2'
         self.frameMin=0.01
         self.frameMax=1.45
         self.mcUnc=0
+        self.ratioFrameFill=3254
+        self.ratioFrameColor=ROOT.TColor.GetColor('#99d8c9')
         self.legSize=(0.045 if self.wideCanvas else 0.05)
         self.ratioTitle='Ratio '
 
@@ -459,9 +462,9 @@ class Plot(object):
             ratioframe.GetXaxis().SetLabelSize(0.18)
             ratioframe.GetXaxis().SetTitleSize(0.2)
             ratioframe.GetXaxis().SetTitleOffset(0.85)
-            ratioframe.SetFillStyle(3254)
-            ratioframe.SetFillColor(ROOT.TColor.GetColor('#99d8c9'))
-
+            ratioframe.SetFillStyle(self.ratioFrameFill)
+            ratioframe.SetFillColor(self.ratioFrameColor)
+            ratioframe.SetMarkerColor(self.ratioFrameColor)
 
             #in case we didn't stack compare each distribution
             ratioGrs=[]
@@ -498,7 +501,7 @@ class Plot(object):
                 if (len(self.mcsyst)>0):
                     ratioframeshape=ratioframe.Clone('ratioframeshape')
                     self._garbageList.append(ratioframeshape)
-                    ratioframeshape.SetFillColor(ROOT.TColor.GetColor('#d73027'))            
+                    ratioframeshape.SetFillColor(ROOT.TColor.GetColor('#d73027'))
                 
                 totalMCnoUnc=totalMC.Clone('totalMCnounc')
                 self._garbageList.append(totalMCnoUnc)
@@ -535,8 +538,11 @@ class Plot(object):
 
                     limitToRange(ratioframe, self.ratiorange)
                     ratioframe.Draw('e2') 
-                    if (len(self.mcsyst)>0): ratioframeshape.Draw('e2 same')
-
+                    if (len(self.mcsyst)>0): 
+                        ratioframeshape.Draw('e2 same')
+                    elif self.relShapeGr:
+                         self.relShapeGr.Draw('2')
+                        
                 #try:
                 ratio=self.dataH.Clone('ratio')
                 ratio.SetDirectory(0)

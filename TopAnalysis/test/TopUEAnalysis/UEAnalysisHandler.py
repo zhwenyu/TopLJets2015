@@ -7,22 +7,22 @@ import array as array
 
 #var name, var title, use to slice phase space, use as observable, can be counted in regions, 
 VARTITLES={
-    'ptttbar'        : 'p_{T}(t#bar{t})',
-    'ptll'           : 'p_{T}(l,l)',
+    'ptttbar'        : '|#vec{p}_{T}(t#bar{t})|',
+    'ptll'           : '|#vec{p}_{T}(ll)|',
     'mll'            : 'M(l,l)',
     'nj'             : 'N(jets)',
-    'chmult'         : 'N(ch)',
-    'chflux'         : '#Sigma p_{T}(ch)',
-    'chavgpt'        : '#bar{p}_{T}(ch)',
-    'chfluxz'        : '#Sigma p_{z}(ch)',
-    'chavgpz'        : '#bar{p}_{z}(ch)',
-    'chrecoil'       : '|vec{p}_{T}(ch)|',
+    'chmult'         : 'N_{ch}',
+    'chflux'         : '#scale[0.7]{#sum}p_{T}',
+    'chavgpt'        : '#bar{p}_{T}',
+    'chfluxz'        : '#scale[0.7]{#sum}p_{z}',
+    'chavgpz'        : '#bar{p}_{z}',
+    'chrecoil'       : '|#vec{p}_{T}|',
     'sphericity'     : 'Sphericity',
     'aplanarity'     : 'Aplanarity',
     'C'              : 'C',
     'D'              : 'D',
-    'maxRap':'max |#eta|',
-    'rapDist':'#Delta #eta'
+    'maxRap'         : 'max|#eta|',
+    'rapDist'        : '#Delta#eta'
     }
 
 SYSTS = [ ('',   0,0,False),

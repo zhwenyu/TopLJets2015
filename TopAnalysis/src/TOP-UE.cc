@@ -124,6 +124,8 @@ void RunTopUE(TString filename,
       ht.addHist("chavgpz_"+tag   , new TH1F("chavgpz_"+tag,";Charged particle average p_{z} [GeV];Events",50,0,15) );      
       ht.addHist("chsumpz_"+tag   , new TH1F("chsumpz_"+tag,";Charged particle sum p_{z} [GeV];Events",50,0,400) );
     }
+  ht.addHist("gen_chrecoilvsptttbar" , new TH2F("gen_chrecoilvsptttbar",";|#vec{p}_{T}(t#bar{t})| [GeV];|#vec{p}_{T}| [GeV];Events",15,0,150,15,0,150) );
+  
   for (auto& it : ht.getPlots() )     { it.second->Sumw2(); it.second->SetDirectory(0); }
   for (auto& it : ht.get2dPlots() )   { it.second->Sumw2(); it.second->SetDirectory(0); }
 
@@ -137,7 +139,7 @@ void RunTopUE(TString filename,
       if(iev%1000==0) printf("\r [%3.0f/100] done",100.*(float)(iev)/(float)(nentries));
       
       //assign a run period and correct the event accordingly
-      float puWgt(1.0),puWgtUp(1.0),puWgtDn(1.0),topptsf(1.0),gen_mttbar(0);
+      float puWgt(1.0),puWgtUp(1.0),puWgtDn(1.0),topptsf(1.0),gen_mttbar(0),gen_ptttbar_parton(0);
       if(!ev.isData)
 	{
 	  period=assignRunPeriod(runPeriods);
@@ -159,6 +161,7 @@ void RunTopUE(TString filename,
                   gentt+=p4;
                   tops.push_back(p4);
 		}
+              gen_ptttbar_parton=gentt.Pt();
               gen_mttbar=gentt.M();
               if(tops.size()==2)
                 {
@@ -417,12 +420,17 @@ void RunTopUE(TString filename,
 	      tue.nj[ivar]=nj;
 	      tue.nb[ivar]=nb;
 
-	      TLorentzVector rec_tt(dil);
-	      if(nb==2) rec_tt += bJets[0].first+bJets[1].first;
+              TLorentzVector rec_vis(dil);
+	      if(nb==2) rec_vis += bJets[0].first+bJets[1].first;
+	      TLorentzVector rec_tt(rec_vis);
 	      rec_tt += evsel.getMET();
-	      tue.ptttbar[ivar]=rec_tt.Pt();
-	      tue.phittbar[ivar]=rec_tt.Phi();	  
-      
+	      tue.ptttbar[ivar]  = rec_tt.Pt();
+	      tue.phittbar[ivar] = rec_tt.Phi();	  
+              tue.ptvis[ivar]    = rec_vis.Pt();
+              tue.etavis[ivar]   = rec_vis.Eta();
+              tue.phivis[ivar]   = rec_vis.Phi();
+              tue.mvis[ivar]     = rec_vis.M();
+
 	      tue.mll[ivar]    = mll;
 	      tue.ptpos[ivar]  = leptons[0].charge()>0 ? l1.Pt() : l2.Pt();
 	      tue.phipos[ivar] = leptons[0].charge()>0 ? l1.Phi() : l2.Phi();
@@ -549,6 +557,7 @@ void RunTopUE(TString filename,
 	  
 	  //save gen candidates
 	  tue.gen_n=0;
+          TLorentzVector genChRecoil(0,0,0,0);
 	  for(auto p : genTracks)
 	    {
 	      if(p.qualityFlags()!=1) continue;
@@ -573,6 +582,8 @@ void RunTopUE(TString filename,
 		    }	      
 		}
 	      tue.gen_rec[tue.gen_n] = recoMatch!=0 ? recoMatch->originalReference() : -1;
+
+              genChRecoil+=p.p4();
 
 	      //check the unmatched, high pT
 	      // if(passPresel && tue.passSel && p.pt()>10)
@@ -637,9 +648,20 @@ void RunTopUE(TString filename,
 	      if(nfs!=5) ttbar.SetPtEtaPhiM(0,0,0,0);
 	      tue.gen_ptttbar=ttbar.Pt();
 	      tue.gen_phittbar=ttbar.Phi();
-
               tue.gen_mttbar_parton=gen_mttbar;
-	    }
+
+              TLorentzVector vis(dil);
+              if(bJetsIdx.size()>=2) dil += jets[ bJetsIdx[0] ].p4()+jets[ bJetsIdx[1] ].p4(); 
+              tue.gen_ptvis=vis.Pt();
+              tue.gen_etavis=vis.Eta();
+              tue.gen_phivis=vis.Phi();
+              tue.gen_mvis=vis.M();
+
+              if(tue.gen_passSel==1)
+                ht.get2dPlots()["gen_chrecoilvsptttbar"]->Fill(TMath::Min(gen_ptttbar_parton,149.),
+                                                               TMath::Min(genChRecoil.Pt(),149.),
+                                                               1.0);                
+            }
 	}
       
       //check it if it passed at least one of b-tagging selections
@@ -693,6 +715,15 @@ void createTopUETree(TTree *t,TopUE_t &tue)
   t->Branch("nj",           tue.nj,          "nj[11]/I");
   t->Branch("nb",           tue.nb,          "nb[11]/I");
   t->Branch("nvtx",        &tue.nvtx,        "nvtx/I");
+
+  t->Branch("gen_ptvis",  &tue.gen_ptvis,  "gen_ptvis/F");
+  t->Branch("gen_etavis", &tue.gen_etavis, "gen_etavis/F");
+  t->Branch("gen_phivis", &tue.gen_phivis, "gen_phivis/F");
+  t->Branch("gen_mvis",   &tue.gen_mvis,   "gen_mvis/F");
+  t->Branch("ptvis",       tue.ptvis,      "ptvis[11]/F");
+  t->Branch("etavis",      tue.etavis,     "etavis[11]/F");
+  t->Branch("phivis",      tue.phivis,     "phivis[11]/F");
+  t->Branch("mvis",        tue.mvis,       "mvis[11]/F");
 
   //event weights
   t->Branch("nw",     &tue.nw, "nw/I");
