@@ -187,8 +187,14 @@ def showProfile(grColl,grCollComp,grCollStat,
     ar.SetNDC(False)
     ar.SetLineWidth(2)
     for t,xmin,xmax in categList:
-        catTxt.DrawLatex(0.5*(xmax+xmin),maxY*1.36,t)
-        ar.DrawArrow(xmin,maxY*1.325,xmax,maxY*1.325,0.01,"<>")
+        yarr=1.315*maxY
+        ytxt=1.36*maxY
+        if obs=='sphericity': yarr,ytxt=0.44,0.45
+        if obs=='aplanarity': yarr,ytxt=0.1238,0.1268
+        if obs=='C': yarr,ytxt=0.66,0.675
+        if obs=='D': yarr,ytxt=0.271,0.278
+        catTxt.DrawLatex(0.5*(xmax+xmin),ytxt,t)
+        ar.DrawArrow(xmin,yarr,xmax,yarr,0.01,"<>")
 
     #standard label
     tex=ROOT.TLatex()
@@ -196,7 +202,7 @@ def showProfile(grColl,grCollComp,grCollStat,
     tex.SetTextSize(0.06)
     tex.SetNDC()
     tex.DrawLatex(0.16,0.95,cmsLabel)
-    tex.DrawLatex(0.68,0.95,'#scale[0.8]{35.9 fb^{-1} (13 TeV)}')
+    tex.DrawLatex(0.7,0.95,'#scale[0.8]{35.9 fb^{-1} (13 TeV)}')
 
     c.RedrawAxis()
     c.Modified()
@@ -280,8 +286,8 @@ def showProfile(grColl,grCollComp,grCollStat,
             tex.SetTextFont(42)
             tex.SetTextSize(0.13)
             tex.SetNDC()
-            tex.DrawLatex(0.12,0.88,cmsLabel)
-            tex.DrawLatex(0.45,0.88,'#scale[0.9]{35.9 fb^{-1} (13 TeV)}')
+            tex.DrawLatex(0.12,0.84,cmsLabel)
+            tex.DrawLatex(0.5,0.84,'#scale[0.9]{35.9 fb^{-1} (13 TeV)}')
         
         if i==0:
             lg.append( ROOT.TLegend(0.75,0.1,0.99,0.7) )

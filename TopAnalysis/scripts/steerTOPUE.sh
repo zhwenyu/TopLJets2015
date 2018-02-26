@@ -141,6 +141,14 @@ case $WHAT in
             --cmsLabel "#bf{CMS}" --only mll_EM,ptll_EM,njets_EM --formats "pdf,png,root";
         cp -v ${outdir}/plots/{mll,ptll,njets}_EM.* ${wwwdir}/sel/
         ;;
+    PLOTSELPAS )
+        python scripts/plotter.py -i ${outdir} -outName paper_plotter.root \
+            --puNormSF puwgtctr  -j data/era2016/simple_samples.json \
+            -l ${lumi} --procSF DY:${outdir}/plots/.dyscalefactors.pck --noRatio --mcUnc 0.057 --noUncs\
+            --cmsLabel "#bf{CMS} #it{preliminary}" --only mll_EM,ptll_EM,njets_EM --formats "pdf,png,root";
+        mkdir -p ${wwwdir}/sel-pas/;
+        cp -v ${outdir}/plots/{mll,ptll,njets}_EM.* ${wwwdir}/sel-pas/
+        ;;
     WWWSEL )
 	mkdir -p ${wwwdir}/sel
 	cp ${outdir}/plots/*.{png,pdf} ${wwwdir}/sel
@@ -295,7 +303,7 @@ case $WHAT in
         #python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 2;
         python test/TopUEAnalysis/showUnfoldSummary.py -i ${dir}/unfold/unfold_summary.root;
         python test/TopUEAnalysis/showFinalDistributions.py \
-            --cfg ${dir}/analysiscfg.pck --cmsLabel "#bf{CMS}"\
+            --cfg ${dir}/analysiscfg.pck --cmsLabel "#bf{CMS} #it{preliminary}"\
             ${dir}/unfold/unfold_summary.root \
             ${dir}/plots/plotter.root \
             ${dir}/plots/syst_plotter.root;        
@@ -309,14 +317,14 @@ case $WHAT in
         tag=${tag//,/_}
         tag=${tag//./p}
         wwwdir="${wwwdir}/ana_${tks[$ntks-2]}"
-        mkdir -p ${wwwdir}
+        mkdir -p ${wwwdir}/pas
         a=(`ls $TAGANA/unfold/*.{png,pdf,dat}`)
         b=(`ls $TAGANA/*.{png,pdf}`)
         a+=( "${a[@]}" "${b[@]}" )
         for i in ${a[@]}; do            
-            cp ${i} ${wwwdir}/${tag}_`basename ${i}`;
+            cp ${i} ${wwwdir}/pas/${tag}_`basename ${i}`;
         done
-        cp test/index.php ${wwwdir}/
+        cp test/index.php ${wwwdir}/pas/
 
 	;;
 
@@ -326,14 +334,14 @@ case $WHAT in
         ntks=${#tks[@]}
         ana="${tks[$ntks-1]}"
         for s in 1 2; do
-            python test/TopUEAnalysis/showFinalProfiles.py -i ${TAGANA} -s ${s} --doPull --cmsLabel "#bf{CMS}";
+            python test/TopUEAnalysis/showFinalProfiles.py -i ${TAGANA} -s ${s} --doPull --cmsLabel "#bf{CMS} #it{preliminary}";
         done
         if [[ $dir = *"chavgp"* ]]; then
-            python test/TopUEAnalysis/showFinalProfiles.py -i ${TAGANA} -s 3 --doPull --cmsLabel "#bf{CMS}";
+            python test/TopUEAnalysis/showFinalProfiles.py -i ${TAGANA} -s 3 --doPull --cmsLabel "#bf{CMS} #it{preliminary}";
         fi
         a=(`ls ${dir}/*ueprofile*.{png,pdf}`)
         for i in ${a[@]}; do
-            cp -v ${i} ${wwwdir}/ana_${ana}/${ana}_`basename ${i}`;
+            cp -v ${i} ${wwwdir}/ana_${ana}/pas/${ana}_`basename ${i}`;
         done
         ;;
 esac
