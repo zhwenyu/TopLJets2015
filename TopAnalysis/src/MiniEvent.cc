@@ -76,6 +76,25 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev)
   t->Branch("l_ip3d",             ev.l_ip3d,             "l_ip3d[nl]/F");
   t->Branch("l_ip3dsig",          ev.l_ip3dsig,          "l_ip3dsig[nl]/F");
 
+  //photons
+  t->Branch("ngamma",                   &ev.ngamma,                   "ngamma/I");
+  t->Branch("gamma_isPromptFinalState",  ev.gamma_isPromptFinalState, "gamma_isPromptFinalState[ngamma]/O");
+  t->Branch("gamma_passElectronVeto",    ev.gamma_passElectronVeto,   "gamma_passElectronVeto[ngamma]/O");
+  t->Branch("gamma_hasPixelSeed",        ev.gamma_hasPixelSeed,       "gamma_hasPixelSeed[ngamma]/O");
+  t->Branch("gamma_pid",                 ev.gamma_pid,                "gamma_pid[ngamma]/I");
+  t->Branch("gamma_g",                   ev.gamma_g,                  "gamma_g[ngamma]/I");
+  t->Branch("gamma_mva",                 ev.gamma_mva,                "gamma_mva[ngamma]/F");
+  t->Branch("gamma_pt",                  ev.gamma_pt,                 "gamma_pt[ngamma]/F");
+  t->Branch("gamma_eta",                 ev.gamma_eta,                "gamma_eta[ngamma]/F");
+  t->Branch("gamma_phi",                 ev.gamma_phi,                "gamma_phi[ngamma]/F");  
+  t->Branch("gamma_scaleUnc",            ev.gamma_scaleUnc,           "gamma_scaleUnc[ngamma]/F");
+  t->Branch("gamma_chargedHadronIso",    ev.gamma_chargedHadronIso,   "gamma_chargedHadronIso[ngamma]/F");
+  t->Branch("gamma_neutralHadronIso",    ev.gamma_neutralHadronIso,   "gamma_neutralHadronIso[ngamma]/F");
+  t->Branch("gamma_photonIso",           ev.gamma_photonIso,          "gamma_photonIso[ngamma]/F");
+  t->Branch("gamma_hoe",                 ev.gamma_hoe,                "gamma_hoe[ngamma]/F");
+  t->Branch("gamma_r9",                  ev.gamma_r9,                 "gamma_r9[ngamma]/F");
+  t->Branch("gamma_sieie",               ev.gamma_sieie,              "gamma_sieie[ngamma]/F");
+
   //jet info
   t->Branch("nj",        &ev.nj,        "nj/I");
   t->Branch("j_g",        ev.j_g,       "j_g[nj]/I");

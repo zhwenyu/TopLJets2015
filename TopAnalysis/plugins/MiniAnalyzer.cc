@@ -29,6 +29,7 @@
 #include "DataFormats/VertexReco/interface/Vertex.h"
 #include "DataFormats/PatCandidates/interface/Muon.h"
 #include "DataFormats/PatCandidates/interface/Electron.h"
+#include "DataFormats/PatCandidates/interface/Photon.h"
 #include "DataFormats/PatCandidates/interface/Jet.h"
 #include "DataFormats/PatCandidates/interface/MET.h"
 #include "DataFormats/METReco/interface/METFwd.h"
@@ -127,6 +128,7 @@ private:
   edm::EDGetTokenT<double> rhoToken_;
   edm::EDGetTokenT<pat::MuonCollection> muonToken_;
   edm::EDGetTokenT<edm::View<pat::Electron>  >  electronToken_;
+  edm::EDGetTokenT<edm::View<pat::Photon>  >  photonToken_;
   edm::EDGetTokenT<edm::View<pat::Jet> > jetToken_;
   edm::EDGetTokenT<pat::METCollection> metToken_, puppiMetToken_;
   edm::EDGetTokenT<pat::PackedCandidateCollection> pfToken_;
@@ -137,6 +139,13 @@ private:
   edm::EDGetTokenT<edm::ValueMap<bool> > eleVetoIdMapToken_,eleLooseIdMapToken_,eleMediumIdMapToken_,eleTightIdMapToken_;
   edm::EDGetTokenT<edm::ValueMap<vid::CutFlowResult> > eleVetoIdFullInfoMapToken_,eleLooseIdFullInfoMapToken_,eleMediumIdFullInfoMapToken_,eleTightIdFullInfoMapToken_;
   unsigned int evetoIsoBit_, elooseIsoBit_, emediumIsoBit_, etightIsoBit_;
+
+  //Photon Decisions
+  edm::EDGetTokenT<edm::ValueMap<float> > photonMvaIdMapToken_;
+  edm::EDGetTokenT<edm::ValueMap<bool> > photonLooseIdMapToken_,photonMediumIdMapToken_,photonTightIdMapToken_;
+  edm::EDGetTokenT<edm::ValueMap<vid::CutFlowResult> > photonLooseIdFullInfoMapToken_,photonMediumIdFullInfoMapToken_,photonTightIdFullInfoMapToken_;
+
+  //
   edm::EDGetTokenT<bool> BadChCandFilterToken_,BadPFMuonFilterToken_;
 
   //  edm::EDGetTokenT<edm::ValueMap<float> > petersonFragToken_;
@@ -201,6 +210,13 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig) :
   eleMediumIdFullInfoMapToken_(consumes<edm::ValueMap<vid::CutFlowResult> >(iConfig.getParameter<edm::InputTag>("eleMediumIdFullInfoMap"))),
   eleTightIdFullInfoMapToken_(consumes<edm::ValueMap<vid::CutFlowResult> >(iConfig.getParameter<edm::InputTag>("eleTightIdFullInfoMap"))),
   evetoIsoBit_(999), elooseIsoBit_(999), emediumIsoBit_(999), etightIsoBit_(999),
+  photonMvaIdMapToken_(consumes<edm::ValueMap<float> >(iConfig.getParameter<edm::InputTag>("photonMvaIdMap"))),
+  photonLooseIdMapToken_(consumes<edm::ValueMap<bool> >(iConfig.getParameter<edm::InputTag>("photonLooseIdMap"))),
+  photonMediumIdMapToken_(consumes<edm::ValueMap<bool> >(iConfig.getParameter<edm::InputTag>("photonMediumIdMap"))),
+  photonTightIdMapToken_(consumes<edm::ValueMap<bool> >(iConfig.getParameter<edm::InputTag>("photonTightIdMap"))),
+  photonLooseIdFullInfoMapToken_(consumes<edm::ValueMap<vid::CutFlowResult> >(iConfig.getParameter<edm::InputTag>("photonLooseIdFullInfoMap"))),
+  photonMediumIdFullInfoMapToken_(consumes<edm::ValueMap<vid::CutFlowResult> >(iConfig.getParameter<edm::InputTag>("photonMediumIdFullInfoMap"))),
+  photonTightIdFullInfoMapToken_(consumes<edm::ValueMap<vid::CutFlowResult> >(iConfig.getParameter<edm::InputTag>("photonTightIdFullInfoMap"))),
   BadChCandFilterToken_(consumes<bool>(iConfig.getParameter<edm::InputTag>("badChCandFilter"))),
   BadPFMuonFilterToken_(consumes<bool>(iConfig.getParameter<edm::InputTag>("badPFMuonFilter"))),
   //petersonFragToken_(consumes<edm::ValueMap<float> >(edm::InputTag("bfragWgtProducer:PetersonFrag"))),
@@ -212,6 +228,7 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig) :
 {
   //now do what ever initialization is needed
   electronToken_      = mayConsume<edm::View<pat::Electron> >(iConfig.getParameter<edm::InputTag>("electrons"));
+  photonToken_        = mayConsume<edm::View<pat::Photon> >(iConfig.getParameter<edm::InputTag>("photons"));
   triggersToUse_      = iConfig.getParameter<std::vector<std::string> >("triggersToUse");
   metFiltersToUse_  = iConfig.getParameter<std::vector<std::string> >("metFiltersToUse");
 
@@ -811,6 +828,87 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       
       if( e->pt()>20 && passEta && passLooseId ) nrecleptons++;
     }
+
+  // PHOTON SELECTION: cf. https://twiki.cern.ch/twiki/bin/view/CMS/CutBasedPhotonIdentificationRun2
+  edm::Handle<edm::View<pat::Photon> > photons;
+  iEvent.getByToken(photonToken_, photons);    
+  edm::Handle<edm::ValueMap<bool> > photon_loose_id, photon_medium_id, photon_tight_id;
+  iEvent.getByToken(photonLooseIdMapToken_,  photon_loose_id);
+  iEvent.getByToken(photonMediumIdMapToken_, photon_medium_id);
+  iEvent.getByToken(photonTightIdMapToken_,  photon_tight_id);
+  edm::Handle<edm::ValueMap<vid::CutFlowResult> > photon_loose_cuts, photon_medium_cuts, photon_tight_cuts;
+  iEvent.getByToken(photonLooseIdFullInfoMapToken_,  photon_loose_cuts);
+  iEvent.getByToken(photonMediumIdFullInfoMapToken_, photon_medium_cuts);
+  iEvent.getByToken(photonTightIdFullInfoMapToken_,  photon_tight_cuts);
+  edm::Handle<edm::ValueMap<float> > photon_mva_id;
+  iEvent.getByToken(photonMvaIdMapToken_, photon_mva_id);
+  Int_t nphoton(0),nrecgammas(0);
+  for (const pat::Photon &g : *photons)
+    {        
+      const auto g = photons->ptrAt(nphoton); 
+      nphoton++;
+
+      //kinematics cuts
+      bool passPt(g->pt() > 15.0);
+      float eta=g->eta();
+      bool passEta(fabs(eta) < 2.5 && (fabs(eta) < 1.4442 || fabs(eta) > 1.5660));
+      if(!passPt || !passEta) continue;
+
+      //full id+iso decisions
+      bool isLoose( (*photon_loose_id)[g] );      
+      bool isMedium( (*photon_medium_id)[g] );
+      bool isTight( (*photon_tight_id)[g] );
+      if(!isLoose) continue;
+      
+      //store decisions
+      int looseIdBits(0), mediumIdBits(0),tightIdBits(0);
+      vid::CutFlowResult looseCutBits  = (*photon_loose_cuts)[g];
+      for(size_t icut = 0; icut<looseCutBits.cutFlowSize(); icut++)  
+        looseIdBits |= (looseCutBits.getCutResultByIndex(icut)<<icut);	
+      vid::CutFlowResult mediumCutBits = (*photon_medium_cuts)[g];
+      for(size_t icut = 0; icut<mediumCutBits.cutFlowSize(); icut++) 
+	{ 
+          mediumIdBits |= (mediumCutBits.getCutResultByIndex(icut)<<icut);
+	}
+      vid::CutFlowResult tightCutBits  = (*photon_tight_cuts)[g];
+      for(size_t icut = 0; icut<tightCutBits.cutFlowSize(); icut++) 
+	{
+          tightIdBits |= (tightCutBits.getCutResultByIndex(icut)<<icut);
+	}
+
+      //save the photon
+      const reco::GenParticle * gen=el.genLepton(); 
+      ev_.gamma_isPromptFinalState[ev_.ngamma] = gen ? gen->isPromptFinalState() : false;
+      ev_.gamma_g[ev_.ngamma]=-1;
+      for(int ig=0; ig<ev_.ng; ig++)
+	{
+	  if(abs(ev_.g_id[ig])!=22) continue;
+	  if(deltaR( g->eta(),g->phi(), ev_.g_eta[ig],ev_.g_phi[ig])>0.4) continue;
+	  ev_.gamma_g[ev_.ngamma]=ig;
+	  break;
+	}	      
+      ev_.gamma_mva[ev_.ngamma]=(*photon_mva_id)[g];
+      ev_.gamma_passElectronVeto[ev_.ngamma] = g->passElectronVeto();
+      ev_.gamma_hasPixelSeed[ev_.ngamma] = g->hasPixelSeed();
+      ev_.gamma_pid[ev_.ngamma]=0;
+      ev_.gamma_pid[ev_.ngamma]= ( (looseIdBits & 0x3ff)
+                                   | ((mediumIdBits & 0x3ff)<<10)
+                                   | ((tightIdBits & 0x3ff)<<20));
+      ev_.gamma_pt[ev_.ngamma]               = g->pt();
+      ev_.gamma_eta[ev_.ngamma]              = g->eta();
+      ev_.gamma_phi[ev_.ngamma]              = g->phi();
+      ev_.gamma_scaleUnc[ev_.ngamma]         = e->correctedEcalEnergyError();
+      ev_.gamma_chargedHadronIso[ev_.ngamma] = g->chargedHadronIso();
+      ev_.gamma_neutralHadronIso[ev_.ngamma] = g->neutralHadronIso();
+      ev_.gamma_photonIso[ev_.ngamma]        = g->photonIso();
+      ev_.gamma_hoe[ev_.ngamma]              = g->hadTowOverEm();
+      ev_.gamma_sieie[ev_.ngamma]            = g->full5x5_sigmaIetaIeta();
+      ev_.gamma_r9[ev_.ngamma]               = g->full5x5_r9();
+      ev_.ngamma++;
+      
+      if( g->pt()>30 && passEta && passLooseId ) nrecgammas++;
+    }
+
 
   // JETS
   ev_.nj=0; 

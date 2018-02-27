@@ -82,11 +82,13 @@ from PhysicsTools.SelectorUtils.tools.vid_id_tools import *
 # turn on VID producer, indicate data format  to be
 # DataFormat.AOD or DataFormat.MiniAOD, as appropriate 
 dataFormat = DataFormat.MiniAOD
-
 switchOnVIDElectronIdProducer(process, dataFormat)
+switchOnVIDPhotonIdProducer(process, dataFormat)
+
 
 # define which IDs we want to produce
-my_id_modules = ['RecoEgamma.ElectronIdentification.Identification.cutBasedElectronID_Fall17_94X_V1_cff']
+my_id_modules = ['RecoEgamma.ElectronIdentification.Identification.cutBasedElectronID_Fall17_94X_V1_cff',
+                 'RecoEgamma.PhotonIdentification.Identification.cutBasedPhotonID_Fall17_94X_V1_TrueVtx_cff.py']
 
 #add them to the VID producer
 for idmod in my_id_modules:

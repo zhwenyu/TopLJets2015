@@ -8,7 +8,7 @@ struct MiniEvent_t
   MiniEvent_t()
   {
     g_nw=0; ng=0; ngtop=0; ngpf=0;
-    nl=0; nj=0; nmet=0; npf=0;
+    ngamma=0; nl=0; nj=0; nmet=0; npf=0;
   }
 
   Bool_t isData;
@@ -33,10 +33,17 @@ struct MiniEvent_t
   Int_t nvtx;
   Int_t triggerBits;
   Float_t rho;
+
+  //leptons
   Int_t nl;
   Bool_t l_isPromptFinalState[50], l_isDirectPromptTauDecayProductFinalState[50];
   Int_t l_id[50],l_charge[50],l_pid[50],l_g[200];
   Float_t l_pt[50],l_eta[50],l_phi[50], l_mass[50], l_scaleUnc[50], l_miniIso[50], l_chargedHadronIso[50], l_relIso[50], l_ip3d[50], l_ip3dsig[50],l_mva[50];
+
+  Int_t ngamma;
+  Bool_t gamma_isPromptFinalState[50],gamma_passElectronVeto[50],gamma_hasPixelSeed[50];
+  Int_t gamma_pid[50],gamma_g[200];
+  Float_t gamma_pt[50],gamma_eta[50],gamma_phi[50], gamma_scaleUnc[50], gamma_mva[50], gamma_chargedHadronIso[50],gamma_neutralHadronIso[50],gamma_photonIso[50],gamma_hoe[50],gamma_r9[50],gamma_sieie[50];
 
   Int_t nj;
   Float_t j_pt[200],j_eta[200],j_phi[200],j_mass[200],j_area[200],j_rawsf[200];
