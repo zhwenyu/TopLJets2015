@@ -7,15 +7,13 @@ def getEraConfiguration(era,isData):
         }
     jecTags    = {
         'era2016':('Summer16_23Sep2016V4',  'Summer16_23Sep2016AllV4'),
-        'era2017':('Fall17_17Nov2017_V4',   'Fall17_17Nov2017_V4')
+        'era2017':('Fall17_17Nov2017_V6',   'Fall17_17Nov2017BCDEF_V6')
         }
 
     idx=1 if isData else 0
     globalTag = globalTags[era][idx]
     jecTag = jecTags[era][idx]
     jecTag_pf = 'DATA' if isData else 'MC'
-    #fixme once there are JEC for 2017 data
-    if era=='era2017': jecTag_pf='MC'
     jecDB  = 'jec_DATA.db'  if isData else 'jec_MC.db'
 
     if not os.path.isfile(jecDB) and not os.path.islink(jecDB):
