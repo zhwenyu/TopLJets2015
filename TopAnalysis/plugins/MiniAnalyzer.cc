@@ -98,8 +98,8 @@ public:
   virtual void endRun(const edm::Run&,const edm::EventSetup&);  
 private:
   virtual void beginJob() override;
-  int genAnalysis(const edm::Event& iEvent, const edm::EventSetup& iSetup);
-  int recAnalysis(const edm::Event& iEvent, const edm::EventSetup& iSetup);
+  void genAnalysis(const edm::Event& iEvent, const edm::EventSetup& iSetup);
+  void recAnalysis(const edm::Event& iEvent, const edm::EventSetup& iSetup);
   virtual void analyze(const edm::Event&, const edm::EventSetup&) override;
   virtual void endJob() override;
   float getMiniIsolation(edm::Handle<pat::PackedCandidateCollection> pfcands,
@@ -116,7 +116,7 @@ private:
   edm::EDGetTokenT<LHEEventProduct> generatorlheToken_;
   edm::EDGetTokenT<LHERunInfoProduct> generatorRunInfoToken_;
   edm::EDGetTokenT<std::vector<PileupSummaryInfo> > puToken_;
-  edm::EDGetTokenT<std::vector<reco::GenJet>  > genLeptonsToken_,   genJetsToken_;
+  edm::EDGetTokenT<std::vector<reco::GenJet>  > genLeptonsToken_, genPhotonsToken_,   genJetsToken_;
   edm::EDGetTokenT<reco::METCollection> genMetsToken_;
   edm::EDGetTokenT<pat::PackedGenParticleCollection> genParticlesToken_;
   edm::EDGetTokenT<reco::GenParticleCollection> prunedGenParticlesToken_;
@@ -163,6 +163,10 @@ private:
   //KalmanMuonCalibrator *muonCor_;
   bool useRawLeptons_;
   edm::Service<TFileService> fs;
+
+  //counters
+  int nrecleptons_,nrecphotons_,ngleptons_,ngphotons_;
+
 };
 
 //
@@ -184,6 +188,7 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig) :
   generatorRunInfoToken_(consumes<LHERunInfoProduct,edm::InRun>({"externalLHEProducer"})),
   puToken_(consumes<std::vector<PileupSummaryInfo>>(edm::InputTag("slimmedAddPileupInfo"))),  
   genLeptonsToken_(consumes<std::vector<reco::GenJet> >(edm::InputTag("particleLevel:leptons"))),
+  genPhotonsToken_(consumes<std::vector<reco::GenJet> >(edm::InputTag("particleLevel:photons"))),
   genJetsToken_(consumes<std::vector<reco::GenJet> >(edm::InputTag("particleLevel:jets"))),
   genMetsToken_(consumes<reco::METCollection>(edm::InputTag("particleLevel:mets"))),
   genParticlesToken_(consumes<pat::PackedGenParticleCollection>(edm::InputTag("packedGenParticles"))),
@@ -260,7 +265,7 @@ MiniAnalyzer::~MiniAnalyzer()
 //
 // member functions
 //
-int MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& iSetup)
+void MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
   //
   // PILEUP
@@ -353,7 +358,6 @@ int MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
     }
 
   //leptons
-  int ngleptons(0);
   edm::Handle<std::vector<reco::GenJet> > dressedLeptons;  
   iEvent.getByToken(genLeptonsToken_,dressedLeptons);
   for(auto genLep = dressedLeptons->begin();  genLep != dressedLeptons->end(); ++genLep)
@@ -370,9 +374,27 @@ int MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       ev_.ng++;
 
       //gen level selection
-      if(genLep->pt()>20 && fabs(genLep->eta())<2.5) ngleptons++;
+      if(genLep->pt()>20 && fabs(genLep->eta())<2.5) ngleptons_++;
     }
-  
+
+  edm::Handle<std::vector<reco::GenJet> > genPhotons;
+  iEvent.getByToken(genPhotonsToken_,genPhotons);
+  for(auto genPhoton = genPhotons->begin();  genPhoton != genPhotons->end(); ++genPhoton)
+    {
+      //map the gen particles which are clustered in this lepton
+      std::vector< const reco::Candidate * > jconst=genPhoton->getJetConstituentsQuick();
+      for(size_t ijc=0; ijc <jconst.size(); ijc++) jetConstsMap[ jconst[ijc] ] = ev_.ng;
+      
+      ev_.g_pt[ev_.ng]   = genPhoton->pt();
+      ev_.g_id[ev_.ng]   = genPhoton->pdgId();
+      ev_.g_eta[ev_.ng]  = genPhoton->eta();
+      ev_.g_phi[ev_.ng]  = genPhoton->phi();
+      ev_.g_m[ev_.ng]    = genPhoton->mass();       
+      ev_.ng++;
+
+      //gen level selection
+      if(genPhoton->pt()>20 && fabs(genPhoton->eta())<2.5) ngphotons_++;
+    }
   
   //final state particles 
   ev_.ngpf=0;
@@ -458,34 +480,32 @@ int MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       Double_t wgt(ev_.g_w[iw]);
       TH2F *fidCounter=(TH2F *)histContainer_["fidcounter"];
       fidCounter->Fill(x,0.,wgt);
-      if(ngleptons>0)               fidCounter->Fill(x, 1., wgt);
-      if(ngleptons>1)               fidCounter->Fill(x, 2., wgt);
-      if(ngleptons>0 && ngjets>0)   fidCounter->Fill(x, 3., wgt);
-      if(ngleptons>1 && ngjets>0)   fidCounter->Fill(x, 4., wgt);
-      if(ngleptons>0 && ngjets>1)   fidCounter->Fill(x, 5., wgt);
-      if(ngleptons>1 && ngjets>1)   fidCounter->Fill(x, 6., wgt);
-      if(ngleptons>0 && ngjets>2)   fidCounter->Fill(x, 7., wgt);
-      if(ngleptons>1 && ngjets>2)   fidCounter->Fill(x, 8., wgt);
-      if(ngleptons>0 && ngjets>3)   fidCounter->Fill(x, 9., wgt);
-      if(ngleptons>1 && ngjets>3)   fidCounter->Fill(x, 10.,wgt);
+      if(ngleptons_>0)               fidCounter->Fill(x, 1., wgt);
+      if(ngleptons_>1)               fidCounter->Fill(x, 2., wgt);
+      if(ngleptons_>0 && ngjets>0)   fidCounter->Fill(x, 3., wgt);
+      if(ngleptons_>1 && ngjets>0)   fidCounter->Fill(x, 4., wgt);
+      if(ngleptons_>0 && ngjets>1)   fidCounter->Fill(x, 5., wgt);
+      if(ngleptons_>1 && ngjets>1)   fidCounter->Fill(x, 6., wgt);
+      if(ngleptons_>0 && ngjets>2)   fidCounter->Fill(x, 7., wgt);
+      if(ngleptons_>1 && ngjets>2)   fidCounter->Fill(x, 8., wgt);
+      if(ngleptons_>0 && ngjets>3)   fidCounter->Fill(x, 9., wgt);
+      if(ngleptons_>1 && ngjets>3)   fidCounter->Fill(x, 10.,wgt);
     }
   
-  //return number of leptons in fiducial range
-  return ngleptons;
 }
 
 
 //
-int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& iSetup)
+void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
   //VERTICES
   edm::Handle<reco::VertexCollection> vertices;
   iEvent.getByToken(vtxToken_, vertices);
-  if (vertices->empty()) return 0; // skip the event if no PV found
+  if (vertices->empty()) return; // skip the event if no PV found
   const reco::Vertex &primVtx = vertices->front();
   reco::VertexRef primVtxRef(vertices,0);
    ev_.nvtx=vertices->size();
-  if(ev_.nvtx==0) return 0;
+  if(ev_.nvtx==0) return;
 
   //RHO
   edm::Handle< double > rhoH;
@@ -511,7 +531,7 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
 	}
     }
   bool passTrigger(ev_.isData ? ev_.triggerBits!=0 : true);
-  if(!passTrigger) return 0;
+  if(!passTrigger) return;
 
   //PF candidates
   edm::Handle<pat::PackedCandidateCollection> pfcands;
@@ -543,9 +563,7 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
   }
 
   //
-  //LEPTON SELECTION
-  
-  int nrecleptons(0);
+  //LEPTON SELECTION 
   ev_.nl=0; 
 
   //MUON SELECTION: cf. https://twiki.cern.ch/twiki/bin/viewauth/CMS/SWGuideMuonIdRun2
@@ -664,7 +682,7 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
 	}   */
       ev_.nl++;    
 
-      if( p4.Pt()>20 && fabs(p4.Eta())<2.5 && isLoose) nrecleptons++;
+      if( p4.Pt()>20 && fabs(p4.Eta())<2.5 && isLoose) nrecleptons_++;
     }
   
   // ELECTRON SELECTION: cf. https://twiki.cern.ch/twiki/bin/view/CMS/CutBasedElectronIdentificationRun2
@@ -826,7 +844,7 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
 	}
       ev_.nl++;
       
-      if( e->pt()>20 && passEta && passLooseId ) nrecleptons++;
+      if( e->pt()>20 && passEta && passLooseId ) nrecleptons_++;
     }
 
   // PHOTON SELECTION: cf. https://twiki.cern.ch/twiki/bin/view/CMS/CutBasedPhotonIdentificationRun2
@@ -842,8 +860,8 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
   iEvent.getByToken(photonTightIdFullInfoMapToken_,  photon_tight_cuts);
   edm::Handle<edm::ValueMap<float> > photon_mva_id;
   iEvent.getByToken(photonMvaIdMapToken_, photon_mva_id);
-  Int_t nphoton(0),nrecgammas(0);
-  for (const pat::Photon &g : *photons)
+  Int_t nphoton(0);
+  for (const pat::Photon &gref : *photons)
     {        
       const auto g = photons->ptrAt(nphoton); 
       nphoton++;
@@ -856,9 +874,9 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
 
       //full id+iso decisions
       bool isLoose( (*photon_loose_id)[g] );      
-      bool isMedium( (*photon_medium_id)[g] );
-      bool isTight( (*photon_tight_id)[g] );
-      if(!isLoose) continue;
+      //bool isMedium( (*photon_medium_id)[g] );
+      //bool isTight( (*photon_tight_id)[g] );
+      //if(!isLoose) continue;
       
       //store decisions
       int looseIdBits(0), mediumIdBits(0),tightIdBits(0);
@@ -877,7 +895,7 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
 	}
 
       //save the photon
-      const reco::GenParticle * gen=el.genLepton(); 
+      const reco::GenParticle * gen=(const reco::GenParticle *)g->genPhoton(); 
       ev_.gamma_isPromptFinalState[ev_.ngamma] = gen ? gen->isPromptFinalState() : false;
       ev_.gamma_g[ev_.ngamma]=-1;
       for(int ig=0; ig<ev_.ng; ig++)
@@ -897,7 +915,7 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       ev_.gamma_pt[ev_.ngamma]               = g->pt();
       ev_.gamma_eta[ev_.ngamma]              = g->eta();
       ev_.gamma_phi[ev_.ngamma]              = g->phi();
-      ev_.gamma_scaleUnc[ev_.ngamma]         = e->correctedEcalEnergyError();
+      ev_.gamma_scaleUnc[ev_.ngamma]         = 0.; //e->correctedEcalEnergyError();
       ev_.gamma_chargedHadronIso[ev_.ngamma] = g->chargedHadronIso();
       ev_.gamma_neutralHadronIso[ev_.ngamma] = g->neutralHadronIso();
       ev_.gamma_photonIso[ev_.ngamma]        = g->photonIso();
@@ -906,7 +924,7 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       ev_.gamma_r9[ev_.ngamma]               = g->full5x5_r9();
       ev_.ngamma++;
       
-      if( g->pt()>30 && passEta && passLooseId ) nrecgammas++;
+      if( g->pt()>30 && passEta && isLoose ) nrecphotons_++;
     }
 
 
@@ -1101,8 +1119,6 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       ev_.pf_puppiWgt[ev_.npf] = pf->puppiWeight();      
       ev_.npf++;
     }
-
-  return nrecleptons;
 }
 
 //cf. https://twiki.cern.ch/twiki/bin/viewauth/CMS/SWGuideMuonIdRun2#Soft_Muon
@@ -1139,13 +1155,15 @@ void MiniAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 {
   histContainer_["counter"]->Fill(0);
 
+  ngleptons_=0;   ngphotons_=0;
+  nrecleptons_=0; nrecphotons_=0;
+
   //analyze the event
-  int ngleptons(0),nrecleptons(0);
-  if(!iEvent.isRealData()) ngleptons=genAnalysis(iEvent,iSetup);
-  nrecleptons=recAnalysis(iEvent,iSetup);
+  if(!iEvent.isRealData()) genAnalysis(iEvent,iSetup);
+  recAnalysis(iEvent,iSetup);
   
   //save event if at least one object at gen or reco level
-  if((ngleptons==0 && nrecleptons==0) || !saveTree_) return;  
+  if((ngleptons_==0 && ngphotons_==0 && nrecleptons_==0 && nrecphotons_==0) || !saveTree_) return;  
   ev_.run     = iEvent.id().run();
   ev_.lumi    = iEvent.luminosityBlock();
   ev_.event   = iEvent.id().event(); 
