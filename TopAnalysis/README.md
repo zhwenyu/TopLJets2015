@@ -9,6 +9,7 @@ To install execute the following in your work area.
 cmsrel CMSSW_9_4_0
 cd CMSSW_9_4_0/src
 cmsenv
+git cms-merge-topic guitargeek:ElectronID_MVA2017_940pre3
 git cms-merge-topic lsoffi:CMSSW_9_4_0_pre3_TnP
 scram b -j 10
 
