@@ -70,6 +70,7 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev)
   t->Branch("l_phi",      ev.l_phi,     "l_phi[nl]/F");
   t->Branch("l_mass",     ev.l_mass,    "l_mass[nl]/F");
   t->Branch("l_scaleUnc",         ev.l_scaleUnc,         "l_scaleUnc[nl]/F");
+  t->Branch("l_smearUnc",         ev.l_smearUnc,         "l_smearUnc[nl]/F");
   t->Branch("l_chargedHadronIso", ev.l_chargedHadronIso, "l_chargedHadronIso[nl]/F");
   t->Branch("l_miniIso",          ev.l_miniIso,          "l_miniIso[nl]/F");
   t->Branch("l_relIso",           ev.l_relIso,           "l_relIso[nl]/F");
@@ -88,6 +89,7 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev)
   t->Branch("gamma_eta",                 ev.gamma_eta,                "gamma_eta[ngamma]/F");
   t->Branch("gamma_phi",                 ev.gamma_phi,                "gamma_phi[ngamma]/F");  
   t->Branch("gamma_scaleUnc",            ev.gamma_scaleUnc,           "gamma_scaleUnc[ngamma]/F");
+  t->Branch("gamma_smearUnc",            ev.gamma_smearUnc,           "gamma_smearUnc[ngamma]/F");
   t->Branch("gamma_chargedHadronIso",    ev.gamma_chargedHadronIso,   "gamma_chargedHadronIso[ngamma]/F");
   t->Branch("gamma_neutralHadronIso",    ev.gamma_neutralHadronIso,   "gamma_neutralHadronIso[ngamma]/F");
   t->Branch("gamma_photonIso",           ev.gamma_photonIso,          "gamma_photonIso[ngamma]/F");
@@ -227,6 +229,7 @@ void attachToMiniEventTree(TTree *t,MiniEvent_t &ev,bool full)
   t->SetBranchAddress("l_phi",      ev.l_phi);
   t->SetBranchAddress("l_mass",     ev.l_mass);
   t->SetBranchAddress("l_scaleUnc",         ev.l_scaleUnc);
+  t->SetBranchAddress("l_smearUnc",         ev.l_smearUnc);
   t->SetBranchAddress("l_chargedHadronIso", ev.l_chargedHadronIso);
   t->SetBranchAddress("l_miniIso",          ev.l_miniIso);
   t->SetBranchAddress("l_relIso",           ev.l_relIso);

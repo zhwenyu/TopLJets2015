@@ -729,10 +729,8 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
       ev_.l_eta[ev_.nl]      = e.eta();
       ev_.l_phi[ev_.nl]      = e.phi();
       ev_.l_mass[ev_.nl]     = e.mass();
-
-      float scaleUnc=sqrt( pow(0.5*(e.userFloat("energyScaleUp")+e.userFloat("energyScaleDown")),2)
-                           +pow(0.5*(e.userFloat("energySmearUp")+e.userFloat("energySmearDown")),2) );
-      ev_.l_scaleUnc[ev_.nl] = scaleUnc;
+      ev_.l_smearUnc[ev_.nl] = 0.5*(e.userFloat("energySmearUp")-e.userFloat("energySmearDown"));
+      ev_.l_scaleUnc[ev_.nl] = 0.5*(e.userFloat("energyScaleUp")-e.userFloat("energyScaleDown"));
       ev_.l_miniIso[ev_.nl]  = getMiniIsolation(pfcands,&e,0.05, 0.2, 10., false);
       ev_.l_relIso[ev_.nl]   = (e.chargedHadronIso()+ max(0., e.neutralHadronIso() + e.photonIso()  - 0.5*e.puChargedHadronIso()))/e.pt();     
       ev_.l_chargedHadronIso[ev_.nl] = e.chargedHadronIso();
@@ -750,12 +748,13 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
     }
 
   // PHOTON SELECTION: cf. https://twiki.cern.ch/twiki/bin/view/CMS/CutBasedPhotonIdentificationRun2
+  ev_.ngamma=0;
   edm::Handle<edm::View<pat::Photon> > photons;
   iEvent.getByToken(photonToken_, photons);    
   for (const pat::Photon &g : *photons)
     {        
       //kinematics cuts
-      bool passPt(g.pt() > 15.0);
+      bool passPt(g.pt() > 30.0);
       float eta=g.eta();
       bool passEta(fabs(eta) < 2.5 && (fabs(eta) < 1.4442 || fabs(eta) > 1.5660));
       if(!passPt || !passEta) continue;
@@ -786,16 +785,14 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
       ev_.gamma_mva[ev_.ngamma]=g.userFloat("PhotonMVAEstimatorRunIIFall17v1Values");
       ev_.gamma_passElectronVeto[ev_.ngamma] = g.passElectronVeto();
       ev_.gamma_hasPixelSeed[ev_.ngamma] = g.hasPixelSeed();
-      ev_.gamma_pid[ev_.ngamma]=0;
       ev_.gamma_pid[ev_.ngamma]= ( (looseBits & 0x3ff)
                                    | ((mediumBits & 0x3ff)<<10)
                                    | ((tightBits & 0x3ff)<<20));
       ev_.gamma_pt[ev_.ngamma]  = g.pt();
       ev_.gamma_eta[ev_.ngamma] = g.eta();
-      ev_.gamma_phi[ev_.ngamma] = g.phi();      
-      float scaleUnc=sqrt( pow(0.5*(g.userFloat("energyScaleUp")+g.userFloat("energyScaleDown")),2)
-                           +pow(0.5*(g.userFloat("energySmearUp")+g.userFloat("energySmearDown")),2) );
-      ev_.gamma_scaleUnc[ev_.ngamma]         = scaleUnc;      
+      ev_.gamma_phi[ev_.ngamma] = g.phi();   
+      ev_.gamma_smearUnc[ev_.ngamma] = 0.5*(g.userFloat("energySmearUp")-g.userFloat("energySmearDown"));
+      ev_.gamma_scaleUnc[ev_.ngamma] = 0.5*(g.userFloat("energyScaleUp")-g.userFloat("energyScaleDown"));   
       ev_.gamma_chargedHadronIso[ev_.ngamma] = g.chargedHadronIso();
       ev_.gamma_neutralHadronIso[ev_.ngamma] = g.neutralHadronIso();
       ev_.gamma_photonIso[ev_.ngamma]        = g.photonIso();
@@ -803,7 +800,7 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
       ev_.gamma_sieie[ev_.ngamma]            = g.full5x5_sigmaIetaIeta();
       ev_.gamma_r9[ev_.ngamma]               = g.full5x5_r9();
       ev_.ngamma++;
-      
+      if(ev_.ngamma>50) break;
       if( g.pt()>30 && passEta) nrecphotons_++;
     }
 
