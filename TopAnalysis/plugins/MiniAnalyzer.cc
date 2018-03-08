@@ -381,6 +381,9 @@ void MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
   iEvent.getByToken(genPhotonsToken_,genPhotons);
   for(auto genPhoton = genPhotons->begin();  genPhoton != genPhotons->end(); ++genPhoton)
     {
+      if(genPhoton->pt()<15) continue;
+      if(fabs(genPhoton->eta())>2.5) continue;
+
       //map the gen particles which are clustered in this lepton
       std::vector< const reco::Candidate * > jconst=genPhoton->getJetConstituentsQuick();
       for(size_t ijc=0; ijc <jconst.size(); ijc++) jetConstsMap[ jconst[ijc] ] = ev_.ng;
@@ -512,7 +515,7 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
   iEvent.getByToken(rhoToken_,rhoH);
   float rho=*rhoH;
   ev_.rho=rho;
-
+  cout << __LINE__ << endl;
   //TRIGGER INFORMATION
   edm::Handle<edm::TriggerResults> h_trigRes;
   iEvent.getByToken(triggerBits_, h_trigRes);
@@ -561,11 +564,11 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
     catch(...){
     }
   }
-
+  cout << __LINE__ << endl;
   //
   //LEPTON SELECTION 
   ev_.nl=0; 
-
+  cout << __LINE__ << endl;
   //MUON SELECTION: cf. https://twiki.cern.ch/twiki/bin/viewauth/CMS/SWGuideMuonIdRun2
   edm::Handle<pat::MuonCollection> muons;
   iEvent.getByToken(muonToken_, muons);
@@ -701,6 +704,8 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
   edm::Handle<edm::ValueMap<float> > emva_id;
   iEvent.getByToken(eleMvaIdMapToken_, emva_id);
   Int_t nele(0);
+  cout << __LINE__ << endl;
+  /*
   for (const pat::Electron &el : *electrons) 
     {        
       const auto e = electrons->ptrAt(nele); 
@@ -801,7 +806,7 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
 	  passIpCuts=false;
 	}
 	  
-      //cout << e->pt() << " " << e->eta() << " " << isVeto << " " << isLoose << " " << isMedium << " " << isTight << " " << passIpCuts << endl;
+      cout << e->pt() << " " << e->eta() << " " << isVeto << " " << isLoose << " " << isMedium << " " << isTight << " " << passIpCuts << endl;
 
       //save the electron
       const reco::GenParticle * gen=el.genLepton(); 
@@ -846,6 +851,7 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
       
       if( e->pt()>20 && passEta && passLooseId ) nrecleptons_++;
     }
+*/
 
   // PHOTON SELECTION: cf. https://twiki.cern.ch/twiki/bin/view/CMS/CutBasedPhotonIdentificationRun2
   edm::Handle<edm::View<pat::Photon> > photons;
@@ -865,7 +871,7 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
     {        
       const auto g = photons->ptrAt(nphoton); 
       nphoton++;
-
+      cout << g->pt() << " " << photon_loose_id.isValid() << endl;
       //kinematics cuts
       bool passPt(g->pt() > 15.0);
       float eta=g->eta();
@@ -880,6 +886,7 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
       
       //store decisions
       int looseIdBits(0), mediumIdBits(0),tightIdBits(0);
+      cout << photon_loose_cuts.isValid() << endl;
       vid::CutFlowResult looseCutBits  = (*photon_loose_cuts)[g];
       for(size_t icut = 0; icut<looseCutBits.cutFlowSize(); icut++)  
         looseIdBits |= (looseCutBits.getCutResultByIndex(icut)<<icut);	
@@ -905,6 +912,7 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
 	  ev_.gamma_g[ev_.ngamma]=ig;
 	  break;
 	}	      
+      cout << photon_mva_id.isValid() << " " << __LINE__ << endl;
       ev_.gamma_mva[ev_.ngamma]=(*photon_mva_id)[g];
       ev_.gamma_passElectronVeto[ev_.ngamma] = g->passElectronVeto();
       ev_.gamma_hasPixelSeed[ev_.ngamma] = g->hasPixelSeed();
@@ -926,7 +934,6 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
       
       if( g->pt()>30 && passEta && isLoose ) nrecphotons_++;
     }
-
 
   // JETS
   ev_.nj=0; 

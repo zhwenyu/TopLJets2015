@@ -78,23 +78,9 @@ process.MessageLogger.cerr.threshold = ''
 process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
 process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 
-from PhysicsTools.SelectorUtils.tools.vid_id_tools import *
-# turn on VID producer, indicate data format  to be
-# DataFormat.AOD or DataFormat.MiniAOD, as appropriate 
-dataFormat = DataFormat.MiniAOD
-switchOnVIDElectronIdProducer(process, dataFormat)
-switchOnVIDPhotonIdProducer(process, dataFormat)
-
-
-# define which IDs we want to produce
-my_id_modules = ['RecoEgamma.ElectronIdentification.Identification.cutBasedElectronID_Fall17_94X_V1_cff',                 
-                 'RecoEgamma.ElectronIdentification.Identification.mvaElectronID_Fall17_iso_V1_cff',
-                 'RecoEgamma.PhotonIdentification.Identification.cutBasedPhotonID_Fall17_94X_V1_TrueVtx_cff',
-                 'RecoEgamma.PhotonIdentification.Identification.mvaPhotonID_Fall17_94X_V1_cff']
-
-#add them to the VID producer
-for idmod in my_id_modules:
-      setupAllVIDIdsInModule(process,idmod,setupVIDElectronSelection)
+#EGM
+from TopLJets2015.TopAnalysis.customizeEGM_cff import customEGM
+customEGM(process=process,runOnData=options.runOnData)
 
 # set input to process
 #process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(options.maxEvents) )
@@ -115,7 +101,6 @@ process.mergedGenParticles = cms.EDProducer("MergedGenParticleProducer",
 )
 from GeneratorInterface.RivetInterface.genParticles2HepMC_cfi import genParticles2HepMC
 process.genParticles2HepMC = genParticles2HepMC.clone( genParticles = cms.InputTag("mergedGenParticles") )
-#process.load("TopQuarkAnalysis.TopEventProducers.producers.particleLevel_cfi")
 #process.load('TopQuarkAnalysis.BFragmentationAnalyzer.bfragWgtProducer_cfi')
 
 #apply lumi json, if passed in command line
@@ -126,14 +111,6 @@ if options.lumiJson:
     process.source.lumisToProcess = cms.untracked.VLuminosityBlockRange()
     process.source.lumisToProcess.extend(myLumis)
 
-#EGM
-#from TopLJets2015.TopAnalysis.customizeEGM_cff import *
-#customizeEGM(process=process,runOnData=options.runOnData)
-#process.RandomNumberGeneratorService = cms.Service("RandomNumberGeneratorService",
-#                                                   calibratedPatElectrons  = cms.PSet( initialSeed = cms.untracked.uint32(81),
-#                                                                                      engineName = cms.untracked.string('TRandom3'),
-#                                                                                     )
-#                                                   )
 
 #jet energy corrections
 process.load('JetMETCorrections.Configuration.DefaultJEC_cff')
@@ -144,7 +121,7 @@ customizeJetTools(process=process,
                   jecTag=jecTag,
                   jecDB=jecDB,
                   baseJetCollection=options.baseJetCollection,
-                  runOnData=False) #FIXME when residuals are available options.runOnData)
+                  runOnData=options.runOnData)
 
 process.TFileService = cms.Service("TFileService",
                                    fileName = cms.string(options.outFilename)
@@ -168,7 +145,10 @@ if options.runOnData:
     process.analysis.metFilterBits = cms.InputTag("TriggerResults","","RECO")
 
 if options.runOnData:
-    process.p = cms.Path(process.analysis*process.egmGsfElectronIDSequence)
+    process.p = cms.Path(process.egmGsfElectronIDSequence) #*process.analysis
 else:
-    process.p = cms.Path(process.mergedGenParticles*process.genParticles2HepMC*process.particleLevel*process.egmGsfElectronIDSequence*process.analysis)
+    process.p = cms.Path(process.mergedGenParticles*
+                         process.genParticles2HepMC*
+                         process.particleLevel*
+                         process.egmGsfElectronIDSequence*process.analysis)
 
