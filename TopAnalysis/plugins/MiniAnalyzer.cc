@@ -541,8 +541,6 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
   //MUON SELECTION: cf. https://twiki.cern.ch/twiki/bin/viewauth/CMS/SWGuideMuonIdRun2
   edm::Handle<pat::MuonCollection> muons;
   iEvent.getByToken(muonToken_, muons);
-  //float maxMuPtForCor(200.);
-  //if(!useRawLeptons_ && muonCor_==0) muonCor_=new KalmanMuonCalibrator( ev_.isData? "DATA_80X_13TeV" : "MC_80X_13TeV");
   for (const pat::Muon &mu : *muons) 
     { 
 
@@ -556,52 +554,6 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
       float eta = mu.eta();
       float phi = mu.phi();
       float ptUnc = mu.bestTrack()->ptError();
-      /*
-      if(muonCor_ && mu.muonBestTrackType() == 1 && pt < maxMuPtForCor)
-        {
-      	  bool corrApplied(true);
-          if( !ev_.isData )
-	        {
-    	      pt = muonCor_->getCorrectedPt(pt, eta, phi, mu.charge());
-  	        pt = muonCor_->smear(pt, eta);
-	        }
-	        else if (pt > 2. && fabs(eta) < 2.4)
-	        {
-  	      pt = muonCor_->getCorrectedPt(pt, eta, phi, mu.charge());
-	        }
-	        else
-	        {
-  	      corrApplied=false;
-	        }
-          
-          if(pt<0.1 || isnan(pt))
-            {
-              cout << "After correction this muon pt is " << pt << " !!" << endl
-                   << "Before correction this muon pt was " << mu.pt() << " !!" << endl
-                   << "...will be skipped" << endl;
-              continue;
-            }
-          
-          if(corrApplied)
-	         {
-    	      int n=muonCor_->getN();
-	          float uncUp(0),uncDn(0);
-	          for(int i=0; i<n; i++)
-		          {
-          		  muonCor_->vary(i,+1);
-		            uncUp += pow(muonCor_->getCorrectedPt(mu.pt(),eta,phi,mu.charge())-pt,2);
-		            muonCor_->vary(i,-1);
-          		  uncDn += pow(muonCor_->getCorrectedPt(mu.pt(),eta,phi,mu.charge())-pt,2);
-		          }
-    	      muonCor_->reset();
-	          muonCor_->varyClosure(+1);
-	          float vClose=muonCor_->getCorrectedPt(mu.pt(),eta,phi,mu.charge());
-    	      uncUp += pow(vClose-pt,2);
-	          uncDn += pow(vClose-pt,2);
-	          ptUnc = 0.5*(TMath::Sqrt(uncUp)+TMath::Sqrt(uncDn));
-	        }
-        }
-      */
       p4.SetPtEtaPhiM(pt,eta,phi,mu.mass());
 
       //kinematics
@@ -610,12 +562,8 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
       if(!passPt || !passEta) continue;
 
       //ID
-      bool isSoft(isSoftMuon(mu,primVtx));
       bool isLoose(muon::isLooseMuon(mu));
-      bool isMedium(muon::isMediumMuon(mu));
-      bool isMedium2016ReReco(isMediumMuon2016ReReco(mu));
-      bool isTight(muon::isTightMuon(mu,primVtx));
-      if(!isSoft && !isLoose) continue;
+      if(!isLoose) continue;
 
       //save info
       const reco::GenParticle * gen=mu.genLepton(); 
@@ -637,7 +585,7 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
       ev_.l_mass[ev_.nl]     = p4.M();
       ev_.l_scaleUnc[ev_.nl] = ptUnc;
       ev_.l_mva[ev_.nl]      = 0;
-      ev_.l_pid[ev_.nl]      = (isSoft | (isLoose<<1) | (isMedium<<2) | (isMedium2016ReReco<<3) | (isTight<<4));
+      ev_.l_pid[ev_.nl]      = mu.selectors();
       ev_.l_chargedHadronIso[ev_.nl] = mu.pfIsolationR04().sumChargedHadronPt;
       ev_.l_miniIso[ev_.nl]  = getMiniIsolation(pfcands,&mu,0.05,0.2, 10., false);
       ev_.l_relIso[ev_.nl]   = (
@@ -646,12 +594,12 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
 				) / p4.Pt();
       ev_.l_ip3d[ev_.nl]    = -9999.;
       ev_.l_ip3dsig[ev_.nl] = -9999;
-/*      if(mu.innerTrack().get())
+      if(mu.innerTrack().get())
 	{
 	  std::pair<bool,Measurement1D> ip3dRes = getImpactParameter<reco::TrackRef>(mu.innerTrack(), primVtxRef, iSetup, true);
 	  ev_.l_ip3d[ev_.nl]    = ip3dRes.second.value();
 	  ev_.l_ip3dsig[ev_.nl] = ip3dRes.second.significance();
-	}   */
+	}  
       ev_.nl++;    
 
       if( p4.Pt()>20 && fabs(p4.Eta())<2.5 && isLoose) nrecleptons_++;
@@ -869,10 +817,8 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
 	}	 
       ev_.j_csv[ev_.nj]=j->bDiscriminator("pfCombinedInclusiveSecondaryVertexV2BJetTags");
       ev_.j_btag[ev_.nj]       = (ev_.j_csv[ev_.nj]>0.8484);
-      //ev_.j_deepcsvl[ev_.nj]   = j->bDiscriminator("deepFlavourJetTags:probudsg");
-      //ev_.j_deepcsvc[ev_.nj]   = j->bDiscriminator("deepFlavourJetTags:probc")+j->bDiscriminator("deepFlavourJetTags:probcc");
-      //ev_.j_deepcsvb[ev_.nj]   = j->bDiscriminator("deepFlavourJetTags:probb")+j->bDiscriminator("deepFlavourJetTags:probbb");
-
+      ev_.j_deepcsv[ev_.nj]   = j->bDiscriminator("pfDeepCSVDiscriminatorsJetTags:BvsAll");
+      
       if( j->hasTagInfo("pfInclusiveSecondaryVertexFinder") )
 	{
 	  const reco::CandSecondaryVertexTagInfo *candSVTagInfo = j->tagInfoCandSecondaryVertex("pfInclusiveSecondaryVertexFinder");
