@@ -484,7 +484,7 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
   iEvent.getByToken(rhoToken_,rhoH);
   float rho=*rhoH;
   ev_.rho=rho;
-  cout << __LINE__ << endl;
+  
   //TRIGGER INFORMATION
   edm::Handle<edm::TriggerResults> h_trigRes;
   iEvent.getByToken(triggerBits_, h_trigRes);
@@ -533,11 +533,11 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
     catch(...){
     }
   }
-  cout << __LINE__ << endl;
+
   //
   //LEPTON SELECTION 
   ev_.nl=0; 
-  cout << __LINE__ << endl;
+  
   //MUON SELECTION: cf. https://twiki.cern.ch/twiki/bin/viewauth/CMS/SWGuideMuonIdRun2
   edm::Handle<pat::MuonCollection> muons;
   iEvent.getByToken(muonToken_, muons);
@@ -658,43 +658,37 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
     }
   
   // ELECTRON SELECTION: cf. https://twiki.cern.ch/twiki/bin/view/CMS/CutBasedElectronIdentificationRun2
-  Int_t nele(0);
   edm::Handle<edm::View<pat::Electron> > electrons;
   iEvent.getByToken(electronToken_, electrons);    
-  cout << __LINE__ << endl;  
-  for (const pat::Electron &el : *electrons) 
+  for (const pat::Electron &e : *electrons) 
     {        
-      const auto e = electrons->ptrAt(nele); 
-      nele++;
-
       //kinematics cuts
-      bool passPt(e->pt() > 15.0);
-      bool passEta(fabs(e->eta()) < 2.5 && (fabs(e->superCluster()->eta()) < 1.4442 || fabs(e->superCluster()->eta()) > 1.5660));
+      bool passPt(e.pt() > 15.0);
+      bool passEta(fabs(e.eta()) < 2.5 && (fabs(e.superCluster()->eta()) < 1.4442 || fabs(e.superCluster()->eta()) > 1.5660));
       if(!passPt || !passEta) continue;
       
       //full id+iso decisions
-      bool isVeto( e->electronID("cutBasedElectronID-Fall17-94X-V1-veto") );
-      int vetoBits( e->userInt("cutBasedElectronID-Fall17-94X-V1-veto")  );
-      bool passVetoId( (vetoBits | 0xc0)== 0x3ff);  //mask isolation cuts and require all bits active
-      cout << isVeto << " " << hex << vetoBits << " " << dec << passVetoId << endl;
-      bool isLoose( e->electronID("cutBasedElectronID-Fall17-94X-V1-loose") );
-      int looseBits( e->userInt("cutBasedElectronID-Fall17-94X-V1-loose")  );
+      bool isVeto( e.electronID("cutBasedElectronID-Fall17-94X-V1-veto") );
+      int vetoBits( e.userInt("cutBasedElectronID-Fall17-94X-V1-veto")  );
+      bool passVetoId( (vetoBits | 0xc0)== 0x3ff);  //mask isolation cuts and require all bits active      
+      bool isLoose( e.electronID("cutBasedElectronID-Fall17-94X-V1-loose") );
+      int looseBits( e.userInt("cutBasedElectronID-Fall17-94X-V1-loose")  );
       bool passLooseId( (looseBits | 0xc0)== 0x3ff);  //mask isolation cuts and require all bits active
-      bool isMedium( e->electronID("cutBasedElectronID-Fall17-94X-V1-medium") );
-      int mediumBits( e->userInt("cutBasedElectronID-Fall17-94X-V1-medium")  );
+      bool isMedium( e.electronID("cutBasedElectronID-Fall17-94X-V1-medium") );
+      int mediumBits( e.userInt("cutBasedElectronID-Fall17-94X-V1-medium")  );
       bool passMediumId( (mediumBits | 0xc0)== 0x3ff);  //mask isolation cuts and require all bits active
-      bool isTight( e->electronID("cutBasedElectronID-Fall17-94X-V1-tight") );
-      int tightBits( e->userInt("cutBasedElectronID-Fall17-94X-V1-tight") );
+      bool isTight( e.electronID("cutBasedElectronID-Fall17-94X-V1-tight") );
+      int tightBits( e.userInt("cutBasedElectronID-Fall17-94X-V1-tight") );
       bool passTightId( (tightBits | 0xc0)== 0x3ff);  //mask isolation cuts and require all bits active
 
       //impact parameter cuts
       //see details in https://twiki.cern.ch/twiki/bin/view/CMS/CutBasedElectronIdentificationRun2
       bool passIpCuts(true);
-      if(el.gsfTrack().isNonnull())
+      if(e.gsfTrack().isNonnull())
 	{
-	  float dxy(fabs(el.gsfTrack()->dxy(primVtx.position())));
-	  float dz(fabs(el.gsfTrack()->dz(primVtx.position())));
-	  if(fabs(e->superCluster()->eta()) < 1.4442)
+	  float dxy(fabs(e.gsfTrack()->dxy(primVtx.position())));
+	  float dz(fabs(e.gsfTrack()->dz(primVtx.position())));
+	  if(fabs(e.superCluster()->eta()) < 1.4442)
 	    {
 	      if(dxy>0.05 || dz>0.10) passIpCuts=false;
 	    }
@@ -707,11 +701,9 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
 	{
 	  passIpCuts=false;
 	}
-	  
-      cout << e->pt() << " " << e->eta() << " " << isVeto << " " << isLoose << " " << isMedium << " " << isTight << " " << passIpCuts << endl;
 
       //save the electron
-      const reco::GenParticle * gen=el.genLepton(); 
+      const reco::GenParticle * gen=e.genLepton(); 
       ev_.l_isPromptFinalState[ev_.nl] = gen ? gen->isPromptFinalState() : false;
       ev_.l_isDirectPromptTauDecayProductFinalState[ev_.nl] = gen ? gen->isDirectPromptTauDecayProductFinalState() : false;
       ev_.l_id[ev_.nl]=11;
@@ -719,11 +711,11 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
       for(int ig=0; ig<ev_.ng; ig++)
 	{
 	  if(abs(ev_.g_id[ig])!=ev_.l_id[ev_.nl]) continue;
-	  if(deltaR( el.eta(),el.phi(), ev_.g_eta[ig],ev_.g_phi[ig])>0.4) continue;
+	  if(deltaR( e.eta(),e.phi(), ev_.g_eta[ig],ev_.g_phi[ig])>0.4) continue;
 	  ev_.l_g[ev_.nl]=ig;
 	  break;
 	}	      
-      ev_.l_mva[ev_.nl]=e->userFloat("ElectronMVAEstimatorRun2Fall17IsoV1Values");
+      ev_.l_mva[ev_.nl]=e.userFloat("ElectronMVAEstimatorRun2Fall17IsoV1Values");
 
       ev_.l_pid[ev_.nl]=0;
       ev_.l_pid[ev_.nl]= (passVetoId | (isVeto<<1) 
@@ -732,104 +724,88 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
 			  | (passTightId<<6) | (isTight<<7)
 			  | (passIpCuts<<8) 
 			 );
-      ev_.l_charge[ev_.nl]   = el.charge();
-      ev_.l_pt[ev_.nl]       = e->pt();
-      ev_.l_eta[ev_.nl]      = e->eta();
-      ev_.l_phi[ev_.nl]      = e->phi();
-      ev_.l_mass[ev_.nl]     = e->mass();
+      ev_.l_charge[ev_.nl]   = e.charge();
+      ev_.l_pt[ev_.nl]       = e.pt();
+      ev_.l_eta[ev_.nl]      = e.eta();
+      ev_.l_phi[ev_.nl]      = e.phi();
+      ev_.l_mass[ev_.nl]     = e.mass();
 
-      float scaleUnc=sqrt( pow(0.5*(e->userFloat("energyScaleUp")+e->userFloat("energyScaleDown")),2)
-                           +pow(0.5*(e->userFloat("energySmearUp")+e->userFloat("energySmearDown")),2) );
+      float scaleUnc=sqrt( pow(0.5*(e.userFloat("energyScaleUp")+e.userFloat("energyScaleDown")),2)
+                           +pow(0.5*(e.userFloat("energySmearUp")+e.userFloat("energySmearDown")),2) );
       ev_.l_scaleUnc[ev_.nl] = scaleUnc;
-      ev_.l_miniIso[ev_.nl]  = getMiniIsolation(pfcands,&el,0.05, 0.2, 10., false);
-      ev_.l_relIso[ev_.nl]   = (e->chargedHadronIso()+ max(0., e->neutralHadronIso() + e->photonIso()  - 0.5*e->puChargedHadronIso()))/e->pt();     
-      ev_.l_chargedHadronIso[ev_.nl] = e->chargedHadronIso();
+      ev_.l_miniIso[ev_.nl]  = getMiniIsolation(pfcands,&e,0.05, 0.2, 10., false);
+      ev_.l_relIso[ev_.nl]   = (e.chargedHadronIso()+ max(0., e.neutralHadronIso() + e.photonIso()  - 0.5*e.puChargedHadronIso()))/e.pt();     
+      ev_.l_chargedHadronIso[ev_.nl] = e.chargedHadronIso();
       ev_.l_ip3d[ev_.nl]     = -9999.;
       ev_.l_ip3dsig[ev_.nl]  = -9999;
-      if(el.gsfTrack().get())
+      if(e.gsfTrack().get())
 	{
-	  std::pair<bool,Measurement1D> ip3dRes = getImpactParameter<reco::GsfTrackRef>(el.gsfTrack(), primVtxRef, iSetup, true);
+	  std::pair<bool,Measurement1D> ip3dRes = getImpactParameter<reco::GsfTrackRef>(e.gsfTrack(), primVtxRef, iSetup, true);
 	  ev_.l_ip3d[ev_.nl]    = ip3dRes.second.value();
 	  ev_.l_ip3dsig[ev_.nl] = ip3dRes.second.significance();
 	}
       ev_.nl++;
       
-      if( e->pt()>20 && passEta && passLooseId ) nrecleptons_++;
+      if( e.pt()>20 && passEta && passLooseId ) nrecleptons_++;
     }
 
   // PHOTON SELECTION: cf. https://twiki.cern.ch/twiki/bin/view/CMS/CutBasedPhotonIdentificationRun2
-  Int_t nphoton(0);
   edm::Handle<edm::View<pat::Photon> > photons;
   iEvent.getByToken(photonToken_, photons);    
-  /*
-  for (const pat::Photon &gref : *photons)
+  for (const pat::Photon &g : *photons)
     {        
-      const auto g = photons->ptrAt(nphoton); 
-      nphoton++;
-      cout << g->pt() << " " << photon_loose_id.isValid() << endl;
       //kinematics cuts
-      bool passPt(g->pt() > 15.0);
-      float eta=g->eta();
+      bool passPt(g.pt() > 15.0);
+      float eta=g.eta();
       bool passEta(fabs(eta) < 2.5 && (fabs(eta) < 1.4442 || fabs(eta) > 1.5660));
       if(!passPt || !passEta) continue;
 
       //full id+iso decisions
-      bool isLoose( (*photon_loose_id)[g] );      
-      //bool isMedium( (*photon_medium_id)[g] );
-      //bool isTight( (*photon_tight_id)[g] );
-      //if(!isLoose) continue;
+      //bool isLoose( g.electronID("cutBasedPhotonID-Fall17-94X-V1-loose") );
+      int looseBits( g.userInt("cutBasedPhotonID-Fall17-94X-V1-loose") );
+      //bool passLooseId( (looseBits & 0x3) == 0x3 ); //require first two bits (h/e + sihih)
+      //bool isMedium( g.electronID("cutBasedPhotonID-Fall17-94X-V1-medium") );
+      int mediumBits( g.userInt("cutBasedPhotonID-Fall17-94X-V1-medium") );
+      //bool passMediumId( (mediumBits & 0x3)== 0x3); //require first two bits (h/e + sihih)
+      //bool isTight( g.electronID("cutBasedPhotonID-Fall17-94X-V1-tight") );
+      int tightBits( g.userInt("cutBasedPhotonID-Fall17-94X-V1-tight") );
+      //bool passTightId( (tightBits & 0x3)== 0x3);  //require first two bits (h/e + sihih)
       
-      //store decisions
-      int looseIdBits(0), mediumIdBits(0),tightIdBits(0);
-      cout << photon_loose_cuts.isValid() << endl;
-      vid::CutFlowResult looseCutBits  = (*photon_loose_cuts)[g];
-      for(size_t icut = 0; icut<looseCutBits.cutFlowSize(); icut++)  
-        looseIdBits |= (looseCutBits.getCutResultByIndex(icut)<<icut);	
-      vid::CutFlowResult mediumCutBits = (*photon_medium_cuts)[g];
-      for(size_t icut = 0; icut<mediumCutBits.cutFlowSize(); icut++) 
-	{ 
-          mediumIdBits |= (mediumCutBits.getCutResultByIndex(icut)<<icut);
-	}
-      vid::CutFlowResult tightCutBits  = (*photon_tight_cuts)[g];
-      for(size_t icut = 0; icut<tightCutBits.cutFlowSize(); icut++) 
-	{
-          tightIdBits |= (tightCutBits.getCutResultByIndex(icut)<<icut);
-	}
-
       //save the photon
-      const reco::GenParticle * gen=(const reco::GenParticle *)g->genPhoton(); 
+      const reco::GenParticle * gen=(const reco::GenParticle *)g.genPhoton(); 
       ev_.gamma_isPromptFinalState[ev_.ngamma] = gen ? gen->isPromptFinalState() : false;
       ev_.gamma_g[ev_.ngamma]=-1;
       for(int ig=0; ig<ev_.ng; ig++)
 	{
 	  if(abs(ev_.g_id[ig])!=22) continue;
-	  if(deltaR( g->eta(),g->phi(), ev_.g_eta[ig],ev_.g_phi[ig])>0.4) continue;
+	  if(deltaR( g.eta(),g.phi(), ev_.g_eta[ig],ev_.g_phi[ig])>0.4) continue;
 	  ev_.gamma_g[ev_.ngamma]=ig;
 	  break;
 	}	      
-      cout << photon_mva_id.isValid() << " " << __LINE__ << endl;
-      ev_.gamma_mva[ev_.ngamma]=(*photon_mva_id)[g];
-      ev_.gamma_passElectronVeto[ev_.ngamma] = g->passElectronVeto();
-      ev_.gamma_hasPixelSeed[ev_.ngamma] = g->hasPixelSeed();
+      
+      ev_.gamma_mva[ev_.ngamma]=g.userFloat("PhotonMVAEstimatorRunIIFall17v1Values");
+      ev_.gamma_passElectronVeto[ev_.ngamma] = g.passElectronVeto();
+      ev_.gamma_hasPixelSeed[ev_.ngamma] = g.hasPixelSeed();
       ev_.gamma_pid[ev_.ngamma]=0;
-      ev_.gamma_pid[ev_.ngamma]= ( (looseIdBits & 0x3ff)
-                                   | ((mediumIdBits & 0x3ff)<<10)
-                                   | ((tightIdBits & 0x3ff)<<20));
-      ev_.gamma_pt[ev_.ngamma]               = g->pt();
-      ev_.gamma_eta[ev_.ngamma]              = g->eta();
-      ev_.gamma_phi[ev_.ngamma]              = g->phi();
-      ev_.gamma_scaleUnc[ev_.ngamma]         = 0.; //e->correctedEcalEnergyError();
-      ev_.gamma_chargedHadronIso[ev_.ngamma] = g->chargedHadronIso();
-      ev_.gamma_neutralHadronIso[ev_.ngamma] = g->neutralHadronIso();
-      ev_.gamma_photonIso[ev_.ngamma]        = g->photonIso();
-      ev_.gamma_hoe[ev_.ngamma]              = g->hadTowOverEm();
-      ev_.gamma_sieie[ev_.ngamma]            = g->full5x5_sigmaIetaIeta();
-      ev_.gamma_r9[ev_.ngamma]               = g->full5x5_r9();
+      ev_.gamma_pid[ev_.ngamma]= ( (looseBits & 0x3ff)
+                                   | ((mediumBits & 0x3ff)<<10)
+                                   | ((tightBits & 0x3ff)<<20));
+      ev_.gamma_pt[ev_.ngamma]  = g.pt();
+      ev_.gamma_eta[ev_.ngamma] = g.eta();
+      ev_.gamma_phi[ev_.ngamma] = g.phi();      
+      float scaleUnc=sqrt( pow(0.5*(g.userFloat("energyScaleUp")+g.userFloat("energyScaleDown")),2)
+                           +pow(0.5*(g.userFloat("energySmearUp")+g.userFloat("energySmearDown")),2) );
+      ev_.gamma_scaleUnc[ev_.ngamma]         = scaleUnc;      
+      ev_.gamma_chargedHadronIso[ev_.ngamma] = g.chargedHadronIso();
+      ev_.gamma_neutralHadronIso[ev_.ngamma] = g.neutralHadronIso();
+      ev_.gamma_photonIso[ev_.ngamma]        = g.photonIso();
+      ev_.gamma_hoe[ev_.ngamma]              = g.hadTowOverEm();
+      ev_.gamma_sieie[ev_.ngamma]            = g.full5x5_sigmaIetaIeta();
+      ev_.gamma_r9[ev_.ngamma]               = g.full5x5_r9();
       ev_.ngamma++;
       
-      if( g->pt()>30 && passEta && isLoose ) nrecphotons_++;
+      if( g.pt()>30 && passEta) nrecphotons_++;
     }
-  */
 
   // JETS
   ev_.nj=0; 
