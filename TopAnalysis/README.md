@@ -79,7 +79,7 @@ Partial submission can be made adding "-o csv_list" as an option.
 Adding "-s" will trigger the submission to the grid (otherwise the script only writes down the crab cfg files)
 
 ```
-python scripts/submitToGrid.py -j data/era2016/samples.json -c ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/runMiniAnalyzer_cfg.py 
+python scripts/submitToGrid.py -j data/era2017/samples.json -c ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/runMiniAnalyzer_cfg.py 
 ```
 
 As soon as ntuple production starts to finish, to move from crab output directories to a simpler directory structure which can be easily parsed by the local analysis runThe merging can be run locally if needed by using the checkProductionIntegrity.py script
@@ -112,12 +112,12 @@ The following script runs brilcalc inclusively and per trigger path, and stores 
 It takes a bit to run, depending on the number of triggers configured to use in the analysis
 ```
 export PATH=$HOME/.local/bin:/afs/cern.ch/cms/lumi/brilconda/bin:$PATH
-python scripts/convertLumiTable.py -o data/era2016/
+python scripts/convertLumiTable.py -o data/era2017/
 ```
 
 ## Preparing the analysis 
 
-Correction and uncertainty files are stored under data by era directories (e.g. data/era2015, data/era2016) in order no to mix different periods.
+Correction and uncertainty files are stored under data by era directories (e.g data/era2017) in order no to mix different periods.
 
 * Pileup weighting. To update the pileup distributions run the script below. It will store the data pileup distributions for different min.bias cross section in data/pileupWgts.root
 ```
