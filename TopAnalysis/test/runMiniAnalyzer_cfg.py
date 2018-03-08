@@ -79,8 +79,8 @@ process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
 process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 
 #EGM
-from TopLJets2015.TopAnalysis.customizeEGM_cff import customEGM
-customEGM(process=process,runOnData=options.runOnData)
+from TopLJets2015.TopAnalysis.customizeEGM_cff import customizeEGM
+customizeEGM(process=process,runOnData=options.runOnData)
 
 # set input to process
 #process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(options.maxEvents) )
@@ -145,10 +145,11 @@ if options.runOnData:
     process.analysis.metFilterBits = cms.InputTag("TriggerResults","","RECO")
 
 if options.runOnData:
-    process.p = cms.Path(process.egmGsfElectronIDSequence) #*process.analysis
+    process.p = cms.Path(process.egammaScaleSmearAndVIDSeq) #*process.analysis
 else:
     process.p = cms.Path(process.mergedGenParticles*
                          process.genParticles2HepMC*
                          process.particleLevel*
-                         process.egmGsfElectronIDSequence*process.analysis)
+                         process.egammaScaleSmearAndVIDSeq*
+                         process.analysis)
 

@@ -30,7 +30,7 @@ def customizeEGM(process,runOnData):
                         ]
 
     #add them to the VID producer
-    for idmod in ele_id_module + pho_id_modules:
+    for idmod in ele_id_modules + pho_id_modules:
         setupAllVIDIdsInModule(process,idmod,setupVIDElectronSelection)
 
     process.load('EgammaAnalysis.ElectronTools.calibratedPatElectronsRun2_cfi')
@@ -67,3 +67,11 @@ def customizeEGM(process,runOnData):
                                             modifierConfig = cms.PSet( modifications = cms.VPSet(egamma_modifications) )
                                             )
                                            
+
+    #create the task and sequences
+    process.egammaScaleSmearTask = cms.Task(process.calibratedPatElectrons,process.slimmedElectrons,
+                                            process.calibratedPatPhotons,process.slimmedPhotons)
+    process.egammaScaleSmearSeq = cms.Sequence( process.egammaScaleSmearTask)
+    process.egammaScaleSmearAndVIDSeq = cms.Sequence(process.egammaScaleSmearSeq*
+                                                     process.egmGsfElectronIDSequence*
+                                                     process.egmPhotonIDSequence)
