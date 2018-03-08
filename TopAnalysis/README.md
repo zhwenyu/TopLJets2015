@@ -9,22 +9,30 @@ To install execute the following in your work area.
 cmsrel CMSSW_9_4_0
 cd CMSSW_9_4_0/src
 cmsenv
+git cms-merge-topic lsoffi:CMSSW_9_4_0_pre3_TnP    
 git cms-merge-topic guitargeek:ElectronID_MVA2017_940pre3
-git cms-merge-topic lsoffi:CMSSW_9_4_0_pre3_TnP
-scram b -j 10
+git cms-merge-topic cms-egamma:MiniAOD2017V2_940
+scram b -j 8
 
 #photon/electron id
 cd $CMSSW_BASE/external
-cd slc6_amd64_gcc630/
+cd ${SCRAM_ARCH}/
 git clone https://github.com/lsoffi/RecoEgamma-PhotonIdentification.git data/RecoEgamma/PhotonIdentification/data
 cd data/RecoEgamma/PhotonIdentification/data
 git checkout CMSSW_9_4_0_pre3_TnP
 cd $CMSSW_BASE/external
-cd slc6_amd64_gcc630/
+cd ${SCRAM_ARCH}/
 git clone https://github.com/lsoffi/RecoEgamma-ElectronIdentification.git data/RecoEgamma/ElectronIdentification/data
 cd data/RecoEgamma/ElectronIdentification/data
 git checkout CMSSW_9_4_0_pre3_TnP
 cd $CMSSW_BASE/src
+
+#photon/electron scale and smearing
+cd $CMSSW_BASE/external
+cd ${SCRAM_ARCH}/
+git clone git@github.com:Sam-Harper/EgammaAnalysis-ElectronTools.git data/EgammaAnalysis/ElectronTools/data
+cd data/EgammaAnalysis/ElectronTools/data
+git checkout ReReco17NovScaleAndSmearing 
 
 #ntuplizer
 git clone git@github.com:pfs/TopLJets2015.git
