@@ -75,7 +75,7 @@ process.load("GeneratorInterface.RivetInterface.particleLevel_cfi")
 #message logger
 process.load("FWCore.MessageService.MessageLogger_cfi")
 process.MessageLogger.cerr.threshold = ''
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
 process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 
 #EGM
@@ -148,7 +148,7 @@ process.custom_step=cms.Path(process.egammaScaleSmearAndVIDSeq)
 process.ana_step=cms.Path(process.analysis)
 
 if options.runOnData:
-      process.schedule=cms.Schedule(process.custom_step) #,process.ana_step)
+      process.schedule=cms.Schedule(process.custom_step,process.ana_step)
 else:
       process.gen_step=cms.Path(process.mergedGenParticles*process.genParticles2HepMC*process.particleLevel)
       process.schedule=cms.Schedule(process.custom_step,process.gen_step,process.ana_step)
