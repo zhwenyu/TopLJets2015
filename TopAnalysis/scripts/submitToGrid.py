@@ -29,6 +29,7 @@ def submitProduction(tag,lfnDirBase,dataset,isData,cfg,workDir,lumiMask,era='era
     config_file.write('config.JobType.psetName = "'+cfg+'"\n')
     config_file.write('config.JobType.disableAutomaticOutputCollection = False\n')
     config_file.write('config.JobType.pyCfgParams = [\'runOnData=%s\',\'era=%s\']\n' % (bool(isData), era))
+
     config_file.write('config.JobType.inputFiles = [\'%s\']\n'%(jecDB))
     config_file.write('\n')
     config_file.write('config.section_("Data")\n')

@@ -9,6 +9,9 @@ def getEraConfiguration(era,isData):
         'era2016':('Summer16_23Sep2016V4',  'Summer16_23Sep2016AllV4'),
         'era2017':('Fall17_17Nov2017_V6',   'Fall17_17Nov2017BCDEF_V6')
         }
+    egmData={'era2017':['RecoEgamma/ElectronIdentification/data/Fall17',
+                        'RecoEgamma/PhotonIdentification/data/Fall17/',
+                        'EgammaAnalysis/ElectronTools/data/ScalesSmearings/']}
 
     idx=1 if isData else 0
     globalTag = globalTags[era][idx]
@@ -19,6 +22,16 @@ def getEraConfiguration(era,isData):
     if not os.path.isfile(jecDB) and not os.path.islink(jecDB):
         print 'Creating symbolic link to DB correction DB'
         os.system('ln -s ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/%s/%s_%s.db %s'%(era,jecTag,jecTag_pf,jecDB))
+    
+    for d in egmData[era]:
+        symbLinkDir='%s/src/%s'%(os.environ['CMSSW_BASE'],d)
+        os.system('mkdir -p %s'%symbLinkDir) 
+        ext_d='%s/external/%s/data/%s'%(os.environ['CMSSW_BASE'],os.environ['SCRAM_ARCH'],d)
+        for f in os.listdir(ext_d):
+            full_f=os.path.join(ext_d,f)
+            if not os.path.isfile(full_f): continue            
+            if os.path.isfile('%s/%s'%(symbLinkDir,f)) : continue
+            os.system('cp -v %s %s/%s'%(full_f,symbLinkDir,f))
 
     return globalTag, jecTag, jecDB
     

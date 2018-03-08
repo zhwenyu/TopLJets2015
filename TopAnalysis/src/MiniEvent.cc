@@ -234,6 +234,26 @@ void attachToMiniEventTree(TTree *t,MiniEvent_t &ev,bool full)
   t->SetBranchAddress("l_ip3d",             ev.l_ip3d);
   t->SetBranchAddress("l_ip3dsig",          ev.l_ip3dsig);
 
+  //photon info
+  t->SetBranchAddress("ngamma", &ev.ngamma);
+  t->SetBranchAddress("gamma_isPromptFinalState",  ev.gamma_isPromptFinalState);
+  t->SetBranchAddress("gamma_passElectronVeto",    ev.gamma_passElectronVeto);
+  t->SetBranchAddress("gamma_hasPixelSeed",        ev.gamma_hasPixelSeed);
+  t->SetBranchAddress("gamma_pid",                 ev.gamma_pid);
+  t->SetBranchAddress("gamma_g",                   ev.gamma_g);
+  t->SetBranchAddress("gamma_mva",                 ev.gamma_mva);
+  t->SetBranchAddress("gamma_pt",                  ev.gamma_pt);
+  t->SetBranchAddress("gamma_eta",                 ev.gamma_eta);
+  t->SetBranchAddress("gamma_phi",                 ev.gamma_phi);
+  t->SetBranchAddress("gamma_scaleUnc",            ev.gamma_scaleUnc);
+  t->SetBranchAddress("gamma_smearUnc",            ev.gamma_smearUnc);
+  t->SetBranchAddress("gamma_chargedHadronIso",    ev.gamma_chargedHadronIso);
+  t->SetBranchAddress("gamma_neutralHadronIso",    ev.gamma_neutralHadronIso);
+  t->SetBranchAddress("gamma_photonIso",           ev.gamma_photonIso);
+  t->SetBranchAddress("gamma_hoe",                 ev.gamma_hoe);
+  t->SetBranchAddress("gamma_r9",                  ev.gamma_r9);
+  t->SetBranchAddress("gamma_sieie",               ev.gamma_sieie);
+
   //jet info
   t->SetBranchAddress("nj",        &ev.nj);
   t->SetBranchAddress("j_g",        ev.j_g);
