@@ -14,7 +14,7 @@ git cms-merge-topic guitargeek:ElectronID_MVA2017_940pre3
 git cms-merge-topic cms-egamma:MiniAOD2017V2_940
 scram b -j 8
 
-#photon/electron id
+#photon/electron id+scale and smearing
 cd $CMSSW_BASE/external
 cd ${SCRAM_ARCH}/
 git clone https://github.com/lsoffi/RecoEgamma-PhotonIdentification.git data/RecoEgamma/PhotonIdentification/data
@@ -25,9 +25,6 @@ cd ${SCRAM_ARCH}/
 git clone https://github.com/lsoffi/RecoEgamma-ElectronIdentification.git data/RecoEgamma/ElectronIdentification/data
 cd data/RecoEgamma/ElectronIdentification/data
 git checkout CMSSW_9_4_0_pre3_TnP
-cd $CMSSW_BASE/src
-
-#photon/electron scale and smearing
 cd $CMSSW_BASE/external
 cd ${SCRAM_ARCH}/
 git clone git@github.com:Sam-Harper/EgammaAnalysis-ElectronTools.git data/EgammaAnalysis/ElectronTools/data
@@ -35,6 +32,7 @@ cd data/EgammaAnalysis/ElectronTools/data
 git checkout ReReco17NovScaleAndSmearing 
 
 #ntuplizer
+cd $CMSSW_BASE/src
 git clone git@github.com:pfs/TopLJets2015.git
 
 #compile
