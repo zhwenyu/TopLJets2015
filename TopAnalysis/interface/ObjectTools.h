@@ -73,6 +73,7 @@ class Jet {
     TLorentzVector &getVec() { return p4_; }
     float &getCSV() { return csv_; }
     void setCSV(float csv) { csv_=csv; }
+    void setDeepCSV(float deepcsv) { deepcsv_=deepcsv; }
     int &getJetIndex() { return idx_; }
     std::vector<IdTrack> &getTracks() { return trks_; }
     void sortTracksByPt() { sort(trks_.begin(),trks_.end(), sortIdTracksByPt); }
@@ -86,7 +87,7 @@ class Jet {
     TLorentzVector p4_;
     std::vector<Particle> particles_;
     std::vector<IdTrack> trks_;
-    float csv_;
+    float csv_,deepcsv_;
     int flavor_;
     int idx_;
     int overlap_;

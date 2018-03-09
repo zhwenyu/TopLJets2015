@@ -11,7 +11,7 @@
 #include "TopLJets2015/TopAnalysis/interface/CommonTools.h"
 #include "TopLJets2015/TopAnalysis/interface/CorrectionTools.h"
 #include "TopLJets2015/TopAnalysis/interface/ExclusiveTop.h"
-#include "TopLJets2015/TopAnalysis/interface/LeptonEfficiencyWrapper.h"
+#include "TopLJets2015/TopAnalysis/interface/EfficiencyScaleFactorsWrapper.h"
 
 #include "TopLJets2015/TopAnalysis/interface/FillNumberLUTHandler.h"
 #include "TopLJets2015/TopAnalysis/interface/AlignmentLUTHandler.h"
@@ -79,7 +79,7 @@ void RunExclusiveTop(TString filename,
   if( !isData ) puWgtGr=getPileupWeightsMap(era,genPU);
     
   //LEPTON EFFICIENCIES
-  LeptonEfficiencyWrapper lepEffH(filename.Contains("Data13TeV"),era);
+  EfficiencyScaleFactorsWrapper lepEffH(filename.Contains("Data13TeV"),era);
 
   //B-TAG CALIBRATION
   std::map<TString, std::map<BTagEntry::JetFlavor, BTagCalibrationReader *> > btvsfReaders = getBTVcalibrationReadersMap(era, BTagEntry::OP_MEDIUM);
@@ -163,7 +163,7 @@ void RunExclusiveTop(TString filename,
         
         // lepton trigger*selection weights
         EffCorrection_t trigSF = lepEffH.getTriggerCorrection(leptons, period);
-        EffCorrection_t  selSF= lepEffH.getOfflineCorrection(leptons[0], period);
+        EffCorrection_t  selSF = lepEffH.getOfflineCorrection(leptons[0], period);
 
         wgt *= puWgt*trigSF.first*selSF.first;
         

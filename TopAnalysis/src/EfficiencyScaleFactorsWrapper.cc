@@ -1,4 +1,4 @@
-#include "TopLJets2015/TopAnalysis/interface/LeptonEfficiencyWrapper.h"
+#include "TopLJets2015/TopAnalysis/interface/EfficiencyScaleFactorsWrapper.h"
 
 #include "TFile.h"
 #include "TSystem.h"
@@ -9,14 +9,14 @@
 using namespace std;
 
 //
-LeptonEfficiencyWrapper::LeptonEfficiencyWrapper(bool isData,TString era)
+EfficiencyScaleFactorsWrapper::EfficiencyScaleFactorsWrapper(bool isData,TString era)
 {
   if(isData) return;
   init(era);
 }
 
 //
-void LeptonEfficiencyWrapper::init(TString era)
+void EfficiencyScaleFactorsWrapper::init(TString era)
 {
   //2015 dataset
   if(era.Contains("era2015"))
@@ -171,7 +171,7 @@ void LeptonEfficiencyWrapper::init(TString era)
 }
 
 //
-EffCorrection_t LeptonEfficiencyWrapper::getTriggerCorrection(std::vector<Particle> &leptons,TString period)
+EffCorrection_t EfficiencyScaleFactorsWrapper::getTriggerCorrection(std::vector<Particle> &leptons,TString period)
 {
   EffCorrection_t corr(1.0,0.0);
   if(leptons.size()<1) return corr;
@@ -313,7 +313,7 @@ EffCorrection_t LeptonEfficiencyWrapper::getTriggerCorrection(std::vector<Partic
 }
 
 //
-EffCorrection_t LeptonEfficiencyWrapper::getOfflineCorrection(int pdgId,float pt,float eta,TString period)
+EffCorrection_t EfficiencyScaleFactorsWrapper::getOfflineCorrection(int pdgId,float pt,float eta,TString period)
 {
   EffCorrection_t corr(1.0,0.0);
 
@@ -403,13 +403,13 @@ EffCorrection_t LeptonEfficiencyWrapper::getOfflineCorrection(int pdgId,float pt
 }
 
 //
-EffCorrection_t LeptonEfficiencyWrapper::getOfflineCorrection(Particle lepton,TString period)
+EffCorrection_t EfficiencyScaleFactorsWrapper::getOfflineCorrection(Particle lepton,TString period)
 {
   return getOfflineCorrection(lepton.id(),lepton.pt(),lepton.eta(), period);
 }
 
 //
-EffCorrection_t LeptonEfficiencyWrapper::getTriggerCorrection(std::vector<int> &pdgId, std::vector<TLorentzVector> &leptons,TString period)
+EffCorrection_t EfficiencyScaleFactorsWrapper::getTriggerCorrection(std::vector<int> &pdgId, std::vector<TLorentzVector> &leptons,TString period)
 {
   std::vector<Particle> lepParts;
   for(size_t i=0; i<pdgId.size(); i++)
@@ -417,7 +417,7 @@ EffCorrection_t LeptonEfficiencyWrapper::getTriggerCorrection(std::vector<int> &
   return getTriggerCorrection(lepParts, period);
 }
 
-EffCorrection_t LeptonEfficiencyWrapper::getOfflineIsoHFCorrection(int pdgId,float hf)
+EffCorrection_t EfficiencyScaleFactorsWrapper::getOfflineIsoHFCorrection(int pdgId,float hf)
 {
   EffCorrection_t corr(1.0,0.0);
 
@@ -436,7 +436,7 @@ EffCorrection_t LeptonEfficiencyWrapper::getOfflineIsoHFCorrection(int pdgId,flo
 }
 
 //
-EffCorrection_t LeptonEfficiencyWrapper::getTrackingCorrection(int nvtx, TString period)
+EffCorrection_t EfficiencyScaleFactorsWrapper::getTrackingCorrection(int nvtx, TString period)
 {
   EffCorrection_t corr(1.0,0.0);
   
@@ -450,7 +450,7 @@ EffCorrection_t LeptonEfficiencyWrapper::getTrackingCorrection(int nvtx, TString
   return corr;
 }
 
-LeptonEfficiencyWrapper::~LeptonEfficiencyWrapper()
+EfficiencyScaleFactorsWrapper::~EfficiencyScaleFactorsWrapper()
 {
   //for(auto& it : lepEffH_) it.second->Delete();
 }

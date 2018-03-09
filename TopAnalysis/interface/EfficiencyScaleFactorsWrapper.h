@@ -1,5 +1,5 @@
-#ifndef _LeptonEfficiencyWrapper_h_
-#define _LeptonEfficiencyWrapper_h_
+#ifndef _EfficiencyScaleFactorsWrapper_h_
+#define _EfficiencyScaleFactorsWrapper_h_
 
 #include "TString.h"
 #include "TH2F.h"
@@ -13,17 +13,17 @@
 
 typedef std::pair<float,float> EffCorrection_t;
 
-class LeptonEfficiencyWrapper 
+class EfficiencyScaleFactorsWrapper 
 {
  public:
-  LeptonEfficiencyWrapper(bool isData,TString era);
+  EfficiencyScaleFactorsWrapper(bool isData,TString era);
   EffCorrection_t getTriggerCorrection(std::vector<int> &pdgId, std::vector<TLorentzVector> &leptons,TString period = "");
   EffCorrection_t getTriggerCorrection(std::vector<Particle> &leptons,TString period = "");
   EffCorrection_t getOfflineCorrection(int pdgId,float pt,float eta,TString period = "");
   EffCorrection_t getOfflineCorrection(Particle lepton,TString period = "");
   EffCorrection_t getOfflineIsoHFCorrection(int pdgId,float hf);
   EffCorrection_t getTrackingCorrection(int nvtx,TString period = "");
-  ~LeptonEfficiencyWrapper();  
+  ~EfficiencyScaleFactorsWrapper();  
  private:
   void init(TString era);
   int era_;
