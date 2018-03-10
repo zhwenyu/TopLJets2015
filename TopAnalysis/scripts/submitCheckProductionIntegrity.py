@@ -32,10 +32,11 @@ def main():
         shell.write('cd %s\n'%cmsswBase)
         shell.write('eval `scram r -sh`\n')
         shell.write('cd ${WORKDIR}\n')
+        shell.write('echo "CMSSW_BASE=${CMSSW_BASE}"\n')
         shell.write('echo "Preparing output directory"\n')
         shell.write('mkdir -p /eos/cms/%s\n'%opt.outDir)
         shell.write('echo "Running integrity checker"\n')
-        shell.write('python ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/checkProductionIntegrity.py -i ${0} -o ${1} --nocheck --only ${2}\n')
+        shell.write('python ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/checkProductionIntegrity.py -i ${1} -o ${2} --nocheck --only ${3}\n')
     os.system('chmod u+x %s/checkInteg.sh'%FARMDIR)
 
     condor=open('%s/condor.sub'%FARMDIR,'w')
