@@ -17,18 +17,18 @@ class EfficiencyScaleFactorsWrapper
 {
  public:
   EfficiencyScaleFactorsWrapper(bool isData,TString era);
-  EffCorrection_t getTriggerCorrection(std::vector<int> &pdgId, std::vector<TLorentzVector> &leptons,TString period = "");
-  EffCorrection_t getTriggerCorrection(std::vector<Particle> &leptons,TString period = "");
-  EffCorrection_t getOfflineCorrection(int pdgId,float pt,float eta,TString period = "");
-  EffCorrection_t getOfflineCorrection(Particle lepton,TString period = "");
-  EffCorrection_t getOfflineIsoHFCorrection(int pdgId,float hf);
-  EffCorrection_t getTrackingCorrection(int nvtx,TString period = "");
+  EffCorrection_t getTriggerCorrection(std::vector<Particle> leptons={}, 
+                                       std::vector<Particle> photons={},
+                                       std::vector<Particle> jets={},
+                                       TString period = "");
+  EffCorrection_t getOfflineCorrection(Particle p,TString period="");
+  EffCorrection_t getOfflineCorrection(int pdgId,float pt, float eta,TString period = "");
   ~EfficiencyScaleFactorsWrapper();  
  private:
   void init(TString era);
   int era_;
-  std::map<TString,TH2 *> lepEffH_;
-  std::map<TString,TGraphAsymmErrors *> lepEffGr_;
+  std::map<TString,TH2 *> scaleFactorsH_;
+  std::map<TString,TGraphAsymmErrors *> scaleFactorsGr_;
 };
 
 #endif

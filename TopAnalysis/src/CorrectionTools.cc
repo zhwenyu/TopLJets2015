@@ -40,10 +40,8 @@ std::vector<RunPeriod_t> getRunPeriods(TString era)
 {
   //init the conditons of the run
   std::vector<RunPeriod_t> periods;
-  if(era.Contains("era2016"))
+  if(era.Contains("era2017"))
     {
-      periods.push_back( RunPeriod_t("BCDEF",19323.4) ); 
-      periods.push_back( RunPeriod_t("GH",   16551.4) );
     }
   return periods;
 }
@@ -51,6 +49,8 @@ std::vector<RunPeriod_t> getRunPeriods(TString era)
 //
 TString assignRunPeriod(std::vector<RunPeriod_t> &runPeriods,TRandom *rand)
 {
+  if(runPeriods.size()==0) return "";
+
   float totalLumi(0.);
   for (auto periodLumi : runPeriods) totalLumi += periodLumi.second;
 
