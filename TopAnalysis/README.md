@@ -4,17 +4,21 @@
 
 These installation instructions correspond to the 2017 data/MC production.
 To install execute the following in your work area.
+Notice: if you are not creating the ntuples, you can skip the part of the instructions 
+marked with the `##OPTIONAL/##END OPTIONAL` markers
 
 ```
 cmsrel CMSSW_9_4_2
 cd CMSSW_9_4_2/src
 cmsenv
+
+##OPTIONAL
+
+#photon/electron id+scale and smearing
 git cms-merge-topic lsoffi:CMSSW_9_4_0_pre3_TnP    
 git cms-merge-topic guitargeek:ElectronID_MVA2017_940pre3
 git cms-merge-topic cms-egamma:MiniAOD2017V2_940
 scram b -j 8
-
-#photon/electron id+scale and smearing
 cd $CMSSW_BASE/external
 cd ${SCRAM_ARCH}/
 git clone https://github.com/lsoffi/RecoEgamma-PhotonIdentification.git data/RecoEgamma/PhotonIdentification/data
@@ -31,11 +35,11 @@ git clone git@github.com:Sam-Harper/EgammaAnalysis-ElectronTools.git data/Egamma
 cd data/EgammaAnalysis/ElectronTools/data
 git checkout ReReco17NovScaleAndSmearing 
 
-#ntuplizer
+##END OPTIONAL
+
+
 cd $CMSSW_BASE/src
 git clone git@github.com:pfs/TopLJets2015.git
-
-#compile
 scram b -j 8
 ```
 
