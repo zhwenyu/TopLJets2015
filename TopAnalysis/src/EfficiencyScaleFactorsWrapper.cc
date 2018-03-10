@@ -42,7 +42,7 @@ void EfficiencyScaleFactorsWrapper::init(TString era)
       scaleFactorsH_["m_trig"]->SetDirectory(0);
       fIn->Close();
       
-      url=era+"/MuonTracking_EfficienciesAndSF_BCDEFGH.root";
+      url=era+"/muons/MuonTracking_EfficienciesAndSF_BCDEFGH.root";
       gSystem->ExpandPathName(url);
       fIn=TFile::Open(url);
       scaleFactorsGr_["m_tk"]=(TGraphAsymmErrors *)fIn->Get("ratio_eff_aeta_dr030e030_corr");
