@@ -101,7 +101,7 @@ def main():
                         pass
                         
                     os.system('hadd -f -k %s'%toAdd)
-                    os.system('mv -v %s %s/%s'%(mergedFileName,newDir,mergedFileName))
+                    os.system('mv -v %s %s/%s/%s'%(mergedFileName,baseEOS,newDir,mergedFileName))
                         
                 #if still needed copy individual files
                 if moveIndividualFiles:
@@ -109,7 +109,7 @@ def main():
                         newF=f
                         if pubExt:
                             newF=f.replace('.root','_%s.root'%pubExt)
-                        os.system('mv -v %s %s/%s'%(f,newDir,newF))
+                        os.system('mv -v %s %s/%s/%s'%(f,baseEOS,newDir,newF))
 
             if not opt.nocheck and opt.cleanup : 
                 choice = raw_input('Will remove output directory. [y/n] ?').lower()

@@ -12,6 +12,7 @@
 #include "TopLJets2015/TopAnalysis/interface/CorrectionTools.h"
 #include "TopLJets2015/TopAnalysis/interface/ExclusiveTop.h"
 #include "TopLJets2015/TopAnalysis/interface/EfficiencyScaleFactorsWrapper.h"
+#include "TopLJets2015/TopAnalysis/interface/BtagUncertaintyComputer.h"
 
 #include "TopLJets2015/TopAnalysis/interface/FillNumberLUTHandler.h"
 #include "TopLJets2015/TopAnalysis/interface/AlignmentLUTHandler.h"
@@ -80,8 +81,7 @@ void RunExclusiveTop(TString filename,
   EfficiencyScaleFactorsWrapper lepEffH(filename.Contains("Data13TeV"),era);
 
   //B-TAG CALIBRATION
-  std::map<TString, std::map<BTagEntry::JetFlavor, BTagCalibrationReader *> > btvsfReaders = getBTVcalibrationReadersMap(era, BTagEntry::OP_MEDIUM);
-  std::map<BTagEntry::JetFlavor, TGraphAsymmErrors *>    expBtagEffPy8 = readExpectedBtagEff(era);
+  BTagSFUtil btvSF(era,"deepCSV",BTagEntry::OperatingPoint::OP_MEDIUM,"",0);
   
    //BOOK HISTOGRAMS
   HistTool ht;
@@ -112,12 +112,12 @@ void RunExclusiveTop(TString filename,
       
       //assign randomly a run period
       TString period = assignRunPeriod(runPeriods,random);
-      
+
       //////////////////
       // CORRECTIONS //
-      ////////////////
-      double csvm = 0.8484;
-      addBTagDecisions(ev, csvm, csvm);
+      ////////////////      
+      btvSF.addBTagDecisions(ev);
+      btvSF.updateBTagDecisions(ev);
       if(!ev.isData) smearJetEnergies(ev);
            
       ///////////////////////////

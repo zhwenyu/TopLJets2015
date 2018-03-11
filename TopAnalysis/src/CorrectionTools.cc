@@ -1,5 +1,6 @@
 #include "TopLJets2015/TopAnalysis/interface/CorrectionTools.h"
 #include "TH2F.h"
+#include "TRandom3.h"
 
 //
 std::map<Int_t,Float_t> lumiPerRun(TString era)
@@ -147,7 +148,7 @@ void smearJetEnergies(MiniEvent_t &ev, std::string option) {
 void smearJetEnergies(MiniEvent_t &ev, JME::JetResolution* jer, std::string option) {
   if(ev.isData) return;
 
-  TRandom* random = new TRandom3(0); // random seed
+  TRandom3* random = new TRandom3(0); // random seed
   
   for (int k = 0; k < ev.nj; k++) {
     TLorentzVector jp4;

@@ -1,4 +1,7 @@
 #include "TopLJets2015/TopAnalysis/interface/BtagUncertaintyComputer.h"
+#include "TLorentzVector.h"
+#include "TSystem.h"
+#include "TFile.h"
 
 //
 BTagSFUtil::BTagSFUtil(TString era,TString tagger,BTagEntry::OperatingPoint btagOp,TString btagExp, int seed) {
@@ -39,11 +42,11 @@ void BTagSFUtil::updateBTagDecisions(MiniEvent_t &ev,std::string optionbc, std::
       if(abs(ev.j_hadflav[k])==4) { hadFlav=BTagEntry::FLAV_C; option = optionbc; }
       if(abs(ev.j_hadflav[k])==5) { hadFlav=BTagEntry::FLAV_B; option = optionbc; }
 
-      expEff    = expBtagEff[hadFlav]->Eval(jptForBtag); 
-      jetBtagSF = btvsfReaders[hadFlav]->eval_auto_bounds( option, hadFlav, jetaForBtag, jptForBtag);
+      expEff    = expBtagEff_[hadFlav]->Eval(jptForBtag); 
+      jetBtagSF = btvCalibReaders_[hadFlav]->eval_auto_bounds( option, hadFlav, jetaForBtag, jptForBtag);
       
       //updated b-tagging decision with the data/MC scale factor
-      myBTagSFUtil->modifyBTagsWithSF(isBTagged, jetBtagSF, expEff);
+      modifyBTagsWithSF(isBTagged, jetBtagSF, expEff);
       ev.j_btag[k] = isBTagged;
     }
   }
@@ -93,9 +96,9 @@ void BTagSFUtil::startBTVcalibrationReaders(TString era, TString tagger,BTagEntr
 {
   //start the btag calibration
   TString btagUncUrl("");
-  if(era.Contains("era2017")) btagUncUrl = Form("%s/btv/%s_94XSF_V1_B_F.csv",era,tagger);
+  if(era.Contains("era2017")) btagUncUrl = Form("%s/btv/%s_94XSF_V1_B_F.csv",era.Data(),tagger.Data());
   gSystem->ExpandPathName(btagUncUrl);
-  BTagCalibration btvcalib(tagger, btagUncUrl.Data());
+  BTagCalibration btvcalib(tagger.Data(), btagUncUrl.Data());
 
   //start calibration readers for b,c and udsg separately including the up/down variations
   btvCalibReaders_[BTagEntry::FLAV_B]=new BTagCalibrationReader(btagOP, "central", {"up", "down"});
@@ -110,7 +113,7 @@ void BTagSFUtil::startBTVcalibrationReaders(TString era, TString tagger,BTagEntr
 void BTagSFUtil::readExpectedBtagEff(TString era,TString tagger,BTagEntry::OperatingPoint btagOp,TString btagExp)
 {
   //open up the ROOT file with the expected efficiencies
-  TString btagEffExpUrl(Form("%s/btv/%s_expTageff%s.root",era,tagger,btagExp));
+  TString btagEffExpUrl(Form("%s/btv/%s_expTageff%s.root",era.Data(),tagger.Data(),btagExp.Data()));
   gSystem->ExpandPathName(btagEffExpUrl);
   TFile *beffIn=TFile::Open(btagEffExpUrl);
   expBtagEff_[BTagEntry::FLAV_B]    = (TGraphAsymmErrors *)beffIn->Get("b");
