@@ -38,16 +38,15 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
   if(preselPhotons.size()==0) preselPhotons=flaggedPhotons(ev);
 
   //decide the channel based on the lepton multiplicity and set lepton collections
-  std::vector<Particle> mediumLeptons( selLeptons(preselLeptons,MEDIUM) );
   std::vector<Particle> tightLeptons( selLeptons(preselLeptons,TIGHT) );
   std::vector<Particle> tightPhotons( selPhotons(preselPhotons,TIGHT) );
   TString chTag("");
-  if(mediumLeptons.size()>=2){
-    int ch( abs(mediumLeptons[0].id()*mediumLeptons[1].id()) );
+  if(tightLeptons.size()>=2){
+    int ch( abs(tightLeptons[0].id()*tightLeptons[1].id()) );
     if      (ch==11*13) chTag = "EM";
     else if (ch==13*13) chTag = "MM";
     else if (ch==11*11) chTag = "EE";
-    leptons_=mediumLeptons;
+    leptons_=tightLeptons;
   }
   else if(tightLeptons.size()==1){
     int ch(abs(tightLeptons[0].id()) );
@@ -125,15 +124,18 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
       if(ev.isData && !isPhotonPD_) chTag="";
     }
       
-
   if(debug_) cout << "[flagFinalState] chTag=" << chTag << endl
 		  << "\t Pre-selection lepton mult." << preselLeptons.size() << endl
-		  << "\t medium lepton cands=" << mediumLeptons.size() 
                   << "\t tight lepton cands=" << tightLeptons.size()  << endl
                   << "\t Pre-selection photon mult." << preselPhotons.size()
                   << "\t photon cands=" << tightPhotons.size() << endl               
-		  << "\t Trig bits. e=" << hasETrigger << " m=" << hasMTrigger << " em=" << hasEMTrigger << " mm=" << hasMMTrigger << " ee=" << hasEETrigger << " gamma=" << hasPhotonTrigger << endl
-		  << "\t Sel mult. l=" << leptons_.size() << " vl=" << vetoLeptons_.size() << " photons=" << photons_.size() << " j=" << jets_.size() << endl;
+		  << "\t Trig bits."
+                  << " e=" << hasETrigger << " m=" << hasMTrigger 
+                  << " em=" << hasEMTrigger << " mm=" << hasMMTrigger << " ee=" << hasEETrigger 
+                  << " gamma=" << hasPhotonTrigger << endl
+		  << "\t Sel mult. l=" << leptons_.size() << " vl=" << vetoLeptons_.size() 
+                  << " photons=" << photons_.size() 
+                  << " j=" << jets_.size() << endl;
 
   //all done
   return chTag;

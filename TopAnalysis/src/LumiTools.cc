@@ -4,7 +4,7 @@
 #include "TSystem.h"
 
 //
-LumiTools::LumiTools(TString era,TH1F *genPU):
+LumiTools::LumiTools(TString era,TH1 *genPU):
   countH_(0),
   era_(era)
 {
@@ -71,7 +71,7 @@ TString LumiTools::assignRunPeriod()
 }
 
 //
-void LumiTools::parsePileupWeightsMap(TH1F *genPU)
+void LumiTools::parsePileupWeightsMap(TH1 *genPU)
 {  
   if(genPU==0) return;
   genPU->Scale(1./genPU->Integral());

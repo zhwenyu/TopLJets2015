@@ -1,49 +1,20 @@
 #ifndef _common_tools_h_
 #define _common_tools_h_
 
-
 #include "TopLJets2015/TopAnalysis/interface/MiniEvent.h"
-#include "TVector2.h"
-
-
-#include "TVector2.h"
-#include "TGraph.h"
-#include "TSystem.h"
-#include "TFile.h"
-#include "TH1.h"
-#include "TH2.h"
-#include "TString.h"
-#include "TRandom.h"
-
-#include <vector>
-
-Float_t computeMT(TLorentzVector &a, TLorentzVector &b);
-float getLeptonEnergyScaleUncertainty(int l_id,float l_pt,float l_eta);
-
-struct JetPullInfo_t
-{
-  Int_t n,nch;
-  TVector2 pull,chPull;
-};
-JetPullInfo_t getPullVector( MiniEvent_t &ev, int ijet);
-
-class HistTool {
-
- public:
-  HistTool(unsigned int nsyst = 20);
-  ~HistTool() {}
-  
-  void setNsyst(unsigned int nsyst) { nsyst_ = nsyst; }
-  void addHist(TString title, TH1* hist);
-  void fill(TString title, double value, std::vector<double> weights);
-  std::map<TString, TH1 *> &getPlots()   { return allPlots_; }
-  std::map<TString, TH2 *> &get2dPlots() { return all2dPlots_; }
-  
- private:
-  unsigned int nsyst_;
-  std::map<TString, TH1 *> allPlots_;
-  std::map<TString, TH2 *> all2dPlots_;
-
-};
+#include "TopLJets2015/TopAnalysis/interface/ObjectTools.h"
+#include "TopLJets2015/TopAnalysis/interface/SelectionTools.h"
+#include "TopLJets2015/TopAnalysis/interface/EfficiencyScaleFactorsWrapper.h"
+#include "TopLJets2015/TopAnalysis/interface/TrackingEfficiencyTools.h"
+#include "TopLJets2015/TopAnalysis/interface/JECTools.h"
+#include "TopLJets2015/TopAnalysis/interface/BtagUncertaintyComputer.h"
+#include "TopLJets2015/TopAnalysis/interface/LumiTools.h"
+#include "TopLJets2015/TopAnalysis/interface/KinematicsTools.h"
+#include "TopLJets2015/TopAnalysis/interface/Davismt2.h"
+#include "TopLJets2015/TopAnalysis/interface/HistTool.h"
+#include "TopLJets2015/TopAnalysis/interface/TemplatedFitTools.h"
+#include "TopLJets2015/TopAnalysis/interface/FillNumberLUTHandler.h"
+#include "TopLJets2015/TopAnalysis/interface/AlignmentLUTHandler.h"
+#include "TopLJets2015/TopAnalysis/interface/ProtonReconstruction.h"
 
 #endif

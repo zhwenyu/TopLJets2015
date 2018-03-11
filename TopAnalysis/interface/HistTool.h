@@ -7,6 +7,7 @@
 #include "TH2.h"
 #include "TString.h"
 
+#include <map>
 #include <vector>
 
 class HistTool {

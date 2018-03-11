@@ -1,4 +1,5 @@
 #include "TopLJets2015/TopAnalysis/interface/EfficiencyScaleFactorsWrapper.h"
+#include "TopLJets2015/TopAnalysis/interface/JSONWrapper.h"
 
 #include "TFile.h"
 #include "TSystem.h"
@@ -48,17 +49,21 @@ void EfficiencyScaleFactorsWrapper::init(TString era)
       scaleFactorsGr_["m_tk"]=(TGraphAsymmErrors *)fIn->Get("ratio_eff_aeta_dr030e030_corr");
       fIn->Close();
       
-      /*
-      url=era+"/MuonIdEfficienciesAndSF_"+period+".root";
-        gSystem->ExpandPathName(url);
-        fIn=TFile::Open(url);      
-        scaleFactorsH_["m_sel"+period]=(TH2 *)fIn->Get("MC_NUM_TightID_DEN_genTracks_PAR_pt_eta/abseta_pt_ratio")->Clone();
-        scaleFactorsH_["m_sel"+period]->SetDirectory(0);
-        fIn->Close();
+      url=era+"/RunBCDEF_SF_ID.json";
+      gSystem->ExpandPathName(url);
+      JSONWrapper::Object id_json(url.Data(), true);
+      std::vector<JSONWrapper::Object> id_json_params=id_json.daughters();
 
-        url=era+"/MuonIsoEfficienciesAndSF_"+period+".root";
-        gSystem->ExpandPathName(url);
-        fIn=TFile::Open(url);      
+      url=era+"/RunBCDEF_SF_ISO.json";
+      gSystem->ExpandPathName(url);
+      JSONWrapper::Object iso_json(url.Data(), true);
+      std::vector<JSONWrapper::Object> iso_json_params=iso_json.daughters();
+      //for(size_t i=0; i<iso_json_params.size(); i++) {
+      //  if( iso_json_params.keys[i].find("NUM_TightID") == std::string::npos ) continue;
+      //  std::vector<JSONWrapper::Object> abseta_pt=iso_json_params[i].daughters();
+      // }
+
+      /*
         TH2 *isoH=(TH2 *)fIn->Get("TightISO_TightID_pt_eta/abseta_pt_ratio");
         for(Int_t xbin=1; xbin<=(scaleFactorsH_["m_sel"+period])->GetNbinsX(); xbin++)
           for(Int_t ybin=1; ybin<=(scaleFactorsH_["m_sel"+period])->GetNbinsY(); ybin++)

@@ -3,6 +3,7 @@
 #include "TFile.h"
 #include "TString.h"
 #include "TH2F.h"
+#include <iostream>
 
 // Histogram tool for automatic creation of 2D uncertainty histograms
 HistTool::HistTool(unsigned int nsyst) :

@@ -7,16 +7,8 @@
 #include <TLorentzVector.h>
 #include <TGraphAsymmErrors.h>
 
-#include "TopLJets2015/TopAnalysis/interface/MiniEvent.h"
 #include "TopLJets2015/TopAnalysis/interface/CommonTools.h"
-#include "TopLJets2015/TopAnalysis/interface/CorrectionTools.h"
 #include "TopLJets2015/TopAnalysis/interface/ExclusiveTop.h"
-#include "TopLJets2015/TopAnalysis/interface/EfficiencyScaleFactorsWrapper.h"
-#include "TopLJets2015/TopAnalysis/interface/BtagUncertaintyComputer.h"
-
-#include "TopLJets2015/TopAnalysis/interface/FillNumberLUTHandler.h"
-#include "TopLJets2015/TopAnalysis/interface/AlignmentLUTHandler.h"
-#include "TopLJets2015/TopAnalysis/interface/ProtonReconstruction.h"
 
 #include <vector>
 #include <set>
@@ -42,14 +34,10 @@ void RunExclusiveTop(TString filename,
   /////////////////////
   // INITIALIZATION //
   ///////////////////
-  TRandom* random = new TRandom(0); // random seed for period selection
-  std::vector<RunPeriod_t> runPeriods=getRunPeriods(era);
-
   const char* CMSSW_BASE = getenv("CMSSW_BASE");
   XiInterpolator proton_reco(Form("%s/src/TopLJets2015/TopAnalysis/data/era2016/ctpps_optics_9mar2017.root", CMSSW_BASE));
 
   bool isTTbar( filename.Contains("_TTJets") or (normH and TString(normH->GetTitle()).Contains("_TTJets")));
-  bool isData( filename.Contains("Data") );
   
   //PREPARE OUTPUT
   TString baseName=gSystem->BaseName(outname); 
@@ -73,9 +61,8 @@ void RunExclusiveTop(TString filename,
   //auxiliary to solve neutrino pZ using MET
   MEzCalculator neutrinoPzComputer;
 
-  //PILEUP WEIGHTING
-  std::map<TString, std::vector<TGraph *> > puWgtGr;
-  if( !isData ) puWgtGr=getPileupWeightsMap(era,genPU);
+  //LUMINOSITY+PILEUP
+  LumiTools lumi(era,genPU);
     
   //LEPTON EFFICIENCIES
   EfficiencyScaleFactorsWrapper lepEffH(filename.Contains("Data13TeV"),era);
@@ -83,6 +70,9 @@ void RunExclusiveTop(TString filename,
   //B-TAG CALIBRATION
   BTagSFUtil btvSF(era,"deepCSV",BTagEntry::OperatingPoint::OP_MEDIUM,"",0);
   
+  //JEC/JER
+  JECTools jec(era);
+
    //BOOK HISTOGRAMS
   HistTool ht;
   ht.setNsyst(0);
@@ -111,14 +101,14 @@ void RunExclusiveTop(TString filename,
 //      proton_reco.setAlignmentConstants(pots_align.getAlignmentConstants(fill_number));
       
       //assign randomly a run period
-      TString period = assignRunPeriod(runPeriods,random);
+      TString period = lumi.assignRunPeriod();
 
       //////////////////
       // CORRECTIONS //
       ////////////////      
       btvSF.addBTagDecisions(ev);
       btvSF.updateBTagDecisions(ev);
-      if(!ev.isData) smearJetEnergies(ev);
+      jec.smearJetEnergies(ev);
            
       ///////////////////////////
       // RECO LEVEL SELECTION //
@@ -155,7 +145,7 @@ void RunExclusiveTop(TString filename,
         wgt  = (normH? normH->GetBinContent(1) : 1.0);
         
         // pu weight
-        double puWgt(puWgtGr[period][0]->Eval(ev.g_pu));
+        double puWgt(lumi.pileupWeight(ev.g_pu,period)[0]);
         std::vector<double>puPlotWgts(1,puWgt);
         ht.fill("puwgtctr",1,puPlotWgts);
         
