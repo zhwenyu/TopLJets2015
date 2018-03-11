@@ -74,7 +74,7 @@ def main():
             os.system('mkdir -p %s/%s'%(baseEOS,newDir))
     
             moveIndividualFiles=True
-            if len(file_list)>1:
+            if len(file_list)>0:
                 subgroupMerge=10 
                 if 'Data' in pub: subgroupMerge=50
                 moveIndividualFiles=False
@@ -103,13 +103,13 @@ def main():
                     os.system('hadd -f -k %s'%toAdd)
                     os.system('mv -v %s %s/%s/%s'%(mergedFileName,baseEOS,newDir,mergedFileName))
                         
-                #if still needed copy individual files
-                if moveIndividualFiles:
-                    for f in file_list : 
-                        newF=f
-                        if pubExt:
-                            newF=f.replace('.root','_%s.root'%pubExt)
-                        os.system('mv -v %s %s/%s/%s'%(f,baseEOS,newDir,newF))
+            #if still needed copy individual files
+            if moveIndividualFiles:
+                for f in file_list : 
+                    newF=f
+                    if pubExt:
+                        newF=f.replace('.root','_%s.root'%pubExt)
+                    os.system('mv -v %s %s/%s/%s'%(f,baseEOS,newDir,newF))
 
             if not opt.nocheck and opt.cleanup : 
                 choice = raw_input('Will remove output directory. [y/n] ?').lower()
