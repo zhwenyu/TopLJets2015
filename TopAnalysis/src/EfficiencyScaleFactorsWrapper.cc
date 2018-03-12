@@ -48,7 +48,8 @@ void EfficiencyScaleFactorsWrapper::init(TString era)
       fIn=TFile::Open(url);
       scaleFactorsGr_["m_tk"]=(TGraphAsymmErrors *)fIn->Get("ratio_eff_aeta_dr030e030_corr");
       fIn->Close();
-      
+
+      /*
       url=era+"/RunBCDEF_SF_ID.json";
       gSystem->ExpandPathName(url);
       JSONWrapper::Object id_json(url.Data(), true);
@@ -58,6 +59,7 @@ void EfficiencyScaleFactorsWrapper::init(TString era)
       gSystem->ExpandPathName(url);
       JSONWrapper::Object iso_json(url.Data(), true);
       std::vector<JSONWrapper::Object> iso_json_params=iso_json.daughters();
+      */
       //for(size_t i=0; i<iso_json_params.size(); i++) {
       //  if( iso_json_params.keys[i].find("NUM_TightID") == std::string::npos ) continue;
       //  std::vector<JSONWrapper::Object> abseta_pt=iso_json_params[i].daughters();

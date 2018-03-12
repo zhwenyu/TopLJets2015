@@ -68,7 +68,7 @@ void RunExclusiveTop(TString filename,
   EfficiencyScaleFactorsWrapper lepEffH(filename.Contains("Data13TeV"),era);
 
   //B-TAG CALIBRATION
-  BTagSFUtil btvSF(era,"deepCSV",BTagEntry::OperatingPoint::OP_MEDIUM,"",0);
+  BTagSFUtil btvSF(era,"DeepCSV",BTagEntry::OperatingPoint::OP_MEDIUM,"",0);
   
   //JEC/JER
   JECTools jec(era);

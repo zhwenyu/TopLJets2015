@@ -55,7 +55,7 @@ def main():
                     continue
             else:
                 if wgtCounter is None:
-                    wgtCounter=ROOT.TH1F('genwgts','genwgts',500,0,500)
+                    wgtCounter=ROOT.TH1F('genwgts','genwgts',1500,0,1500)
                     wgtCounter.SetDirectory(0)
                 hiTree=fIn.Get('hiEvtAnalyzer/HiTree')
                 for i in xrange(0,hiTree.GetEntriesFast()):
@@ -71,7 +71,7 @@ def main():
 
         if wgtCounter is None: continue
         if labelH:
-            for xbin in range(1,labelH.GetNbinsX()):
+            for xbin in range(1,wgtCounter.GetNbinsX()+1):
                 label=labelH.GetXaxis().GetBinLabel(xbin)
                 for tkn in ['<','>',' ','\"','/','weight','=','\n']: label=label.replace(tkn,'')
                 wgtCounter.GetXaxis().SetBinLabel(xbin,label)

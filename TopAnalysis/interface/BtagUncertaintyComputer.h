@@ -17,7 +17,7 @@ class BTagSFUtil{
 
  public:
     
-  BTagSFUtil(TString era="era2017", TString tagger="deepCSV", BTagEntry::OperatingPoint btagOp=BTagEntry::OperatingPoint::OP_MEDIUM, TString btagExp="", int seed=0 );
+  BTagSFUtil(TString era="era2017", TString tagger="DeepCSV", BTagEntry::OperatingPoint btagOp=BTagEntry::OperatingPoint::OP_MEDIUM, TString btagExp="", int seed=0 );
   ~BTagSFUtil();
 
   void addBTagDecisions(MiniEvent_t &ev,float wp=0.4941,float wpl=0.4941,bool deepCSV=true);

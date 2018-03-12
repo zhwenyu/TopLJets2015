@@ -113,11 +113,15 @@ void BTagSFUtil::startBTVcalibrationReaders(TString era, TString tagger,BTagEntr
 void BTagSFUtil::readExpectedBtagEff(TString era,TString tagger,BTagEntry::OperatingPoint btagOp,TString btagExp)
 {
   //open up the ROOT file with the expected efficiencies
-  TString btagEffExpUrl(Form("%s/btv/%s_expTageff%s.root",era.Data(),tagger.Data(),btagExp.Data()));
+  TString btagEffExpUrl(Form("%s/btv/expTagEff%s.root",era.Data(),btagExp.Data()));
   gSystem->ExpandPathName(btagEffExpUrl);
   TFile *beffIn=TFile::Open(btagEffExpUrl);
-  expBtagEff_[BTagEntry::FLAV_B]    = (TGraphAsymmErrors *)beffIn->Get("b");
-  expBtagEff_[BTagEntry::FLAV_C]    = (TGraphAsymmErrors *)beffIn->Get("c");
-  expBtagEff_[BTagEntry::FLAV_UDSG] = (TGraphAsymmErrors *)beffIn->Get("udsg");
+  TString baseDir(tagger+"_");
+  if(btagOp==BTagEntry::OP_LOOSE) baseDir+="loose";
+  if(btagOp==BTagEntry::OP_MEDIUM) baseDir+="medium";
+  if(btagOp==BTagEntry::OP_TIGHT) baseDir+="tight";
+  expBtagEff_[BTagEntry::FLAV_B]    = (TGraphAsymmErrors *)beffIn->Get(baseDir+"/b");
+  expBtagEff_[BTagEntry::FLAV_C]    = (TGraphAsymmErrors *)beffIn->Get(baseDir+"/c");
+  expBtagEff_[BTagEntry::FLAV_UDSG] = (TGraphAsymmErrors *)beffIn->Get(baseDir+"/udsg");
   beffIn->Close();
 }

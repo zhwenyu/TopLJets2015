@@ -10,14 +10,12 @@ if [ "$#" -ne 1 ]; then
     exit 1; 
 fi
 
-export LSB_JOB_REPORT_MAIL=N
-queue=2nd
-githash=b312177
-lumi=35922
+#to run locally use local as queue + can add "--njobs 8" to use 8 parallel jobs
+queue=workday
+githash=c29f431
+eosdir=/store/cmst3/group/top/RunIIFall17/${githash}
+lumi=41367
 lumiUnc=0.025
-whoami=`whoami`
-myletter=${whoami:0:1}
-eosdir=/store/cmst3/group/top/ReReco2016/${githash}
 outdir=${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/ExclusiveTop
 wwwdir=~/www/ExclusiveTop
 
@@ -28,18 +26,17 @@ case $WHAT in
 
     TESTSEL )
 	python scripts/runLocalAnalysis.py \
-            -i /store/cmst3/group/top/psilva/c29f431/TTJets_TuneCP5_13TeV-amcatnloFXFX-pythia8/crab_MC13TeV_TTJets/180308_222634/0000/MiniEvents_459.root \
+            -i ${eosdir}/MC13TeV_TTJets/MergedMiniEvents_0_ext0.root \
             -o MC13TeV_TTJets.root \
             --njobs 1 -q local \
             --era era2017 -m ExclusiveTop::RunExclusiveTop --ch 0 --runSysts;
         ;;
     SEL )
-        #to run locally use "--njobs 8 -q local" instead of "-q condor"
 	python scripts/runLocalAnalysis.py -i ${eosdir} \
-            --only test/summer2017/exctop_samples.json --exactonly \
+            --only data/era2017/top_samples.json --exactonly \
             -o ${outdir} \
-            --njobs 8 -q local \
-            --era era2016 -m ExclusiveTop::RunExclusiveTop --ch 0 --runSysts;
+            -q ${queue} \
+            --era era2017 -m ExclusiveTop::RunExclusiveTop --ch 0 --runSysts;
 	;;
 
     MERGE )
