@@ -43,7 +43,7 @@ case $WHAT in
 	./scripts/mergeOutputs.py ${outdir};
 	;;
     PLOT )
-	commonOpts="-i ${outdir} --puNormSF puwgtctr -j test/summer2017/exctop_samples.json -l ${lumi}  --saveLog --mcUnc ${lumiUnc} --noStack"
+	commonOpts="-i ${outdir} --puNormSF puwgtctr -j data/era2017/top_samples.json -l ${lumi}  --saveLog --mcUnc ${lumiUnc} --noStack"
 	python scripts/plotter.py ${commonOpts}; 
 	;;
     WWW )
