@@ -20,9 +20,11 @@ class SelectionTool {
   enum TOPLeptonQualityFlags { PASSLLID=0, PASSLID, PASSLVETO, PASSLIDNONISO }; 
 
   //this function will make the standard top selection
-  TString flagFinalState(MiniEvent_t &ev, std::vector<Particle> preselleptons={});
+  TString flagFinalState(MiniEvent_t &ev, std::vector<Particle> preselleptons={}, TString finalState = "Top"); /*Top, GammaJJ, ZJJ*/
+  TString flagFinalStateTop(MiniEvent_t &ev, std::vector<Particle> preselleptons={});
   std::vector<Particle> &getSelLeptons()  { return leptons_; }
   std::vector<Particle> &getVetoLeptons() { return vetoLeptons_; }
+  std::vector<Particle> &getPhotons() { return photons_; }
   std::vector<Jet>      &getJets()        { return jets_; }
   TLorentzVector        &getMET()         { return met_; }
 
@@ -47,8 +49,8 @@ class SelectionTool {
 
  private:
   bool hasTriggerBit(TString triggerName,unsigned int word);
-  bool isSingleElectronPD_,isSingleMuonPD_,isDoubleEGPD_,isDoubleMuonPD_,isMuonEGPD_;
-  std::vector<Particle> leptons_,vetoLeptons_,genLeptons_;
+  bool isSingleElectronPD_,isSingleMuonPD_,isDoubleEGPD_,isDoubleMuonPD_,isMuonEGPD_, isSinglePhotonPD_;
+  std::vector<Particle> leptons_,vetoLeptons_,genLeptons_,photons_;
   std::vector<Jet> jets_,genJets_;
   TLorentzVector met_;
   bool debug_;

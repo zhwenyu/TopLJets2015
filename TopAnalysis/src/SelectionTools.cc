@@ -9,7 +9,8 @@ SelectionTool::SelectionTool(TString dataset,bool debug,TH1 *triggerList) :
   isSingleMuonPD_(dataset.Contains("SingleMuon")), 
   isDoubleEGPD_(dataset.Contains("DoubleEG")), 
   isDoubleMuonPD_(dataset.Contains("DoubleMuon")), 
-  isMuonEGPD_(dataset.Contains("MuonEG"))
+  isMuonEGPD_(dataset.Contains("MuonEG")),
+  isSinglePhotonPD_(dataset.Contains("SinglePhoton"))
 {
   if(triggerList!=0)
     for(int xbin=0; xbin<triggerList->GetNbinsX(); xbin++)
@@ -62,6 +63,28 @@ std::vector<Particle> SelectionTool::getTopFlaggedLeptons(MiniEvent_t &ev){
   
   return leptons;
 }
+
+
+// TO BE COMPLETED -- How to use id variables? what would be the quality bit?
+std::vector<Particle> SelectionTool::getPhotons(std::vector<Particle> &photons,int qualBit,double minPt, double maxEta){
+  std::vector<Particle> selPhotons;
+
+  for(size_t i =0; i<photons.size(); i++)
+    {
+      //check quality flag
+      if( !photons[i].hasQualityFlag(qualBit) ) continue;
+
+      //check kinematics
+      if(photons[i].pt()<minPt || fabs(photons[i].eta())>maxEta) continue;
+
+      //lepton is selected
+      selPhotons.push_back(leptons[i]);
+    }
+
+  //all done here
+  return selPhotons;
+}
+
 
 //
 std::vector<Particle> SelectionTool::getLeptons(std::vector<Particle> &leptons,int qualBit,double minPt, double maxEta,std::vector<Particle> *vetoParticles){
@@ -241,8 +264,24 @@ std::vector<Jet> SelectionTool::getGenJets(MiniEvent_t &ev, double minPt, double
   return jets;
 }
 
+
+// MAKE THIS METHOD SUITABLE FOR VJJ
+
+TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> preselleptons, TString finalState) {
+	TString chTag = "";
+	if(finalState == "Top")
+		chTag =  SelectionTool::flagFinalStateTop(ev,preselleptons);
+	// TO BE COMPLETED FOR VJJ
+	else if (finalState == "GammaJJ"){
+
+	} else if (finalState == "VJJ") {
+
+	}
+	return chTag;
+}
+
 //
-TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> preselleptons) {
+TString SelectionTool::flagFinalStateTop(MiniEvent_t &ev, std::vector<Particle> preselleptons) {
 
   //clear vectors
   leptons_.clear(); 

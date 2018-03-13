@@ -35,7 +35,7 @@ class Particle {
     void setOriginalReference(int origRef) { origRef_=origRef; }
     double puppi()  { return puppi_; }
 
-  private:
+  protected:
     TLorentzVector p4_;
     int charge_, id_, qualityFlags_,origRef_;
     double puppi_;
@@ -91,4 +91,5 @@ class Jet {
     int idx_;
     int overlap_;
 };
+
 #endif
