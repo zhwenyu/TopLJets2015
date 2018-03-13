@@ -40,6 +40,9 @@ git checkout ReReco17NovScaleAndSmearing
 
 cd $CMSSW_BASE/src
 git clone git@github.com:pfs/TopLJets2015.git
+cd TopLJets2015
+git submodule init
+git submodule update
 scram b -j 8
 ```
 
