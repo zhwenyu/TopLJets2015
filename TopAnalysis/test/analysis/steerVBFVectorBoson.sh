@@ -28,12 +28,12 @@ case $WHAT in
 	python scripts/runLocalAnalysis.py \
             -i ${eosdir}/MC13TeV_GJets_HT100to200_DR04/MergedMiniEvents_0_ext0.root \
             -o MC13TeV_GJets_HT100to200_DR04.root \
-            --njobs 1 -q local --debug \
+            --njobs 1 -q local \
             --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts;
         ;;
     SEL )
 	python scripts/runLocalAnalysis.py -i ${eosdir} \
-            --only data/era2017/top_samples.json --exactonly \
+            --only data/era2017/vbf_samples.json --exactonly \
             -o ${outdir} \
             -q ${queue} \
             --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts;
@@ -43,7 +43,7 @@ case $WHAT in
 	./scripts/mergeOutputs.py ${outdir};
 	;;
     PLOT )
-	commonOpts="-i ${outdir} --puNormSF puwgtctr -j data/era2017/top_samples.json -l ${lumi}  --saveLog --mcUnc ${lumiUnc}"
+	commonOpts="-i ${outdir} --puNormSF puwgtctr -j data/era2017/vbf_samples.json -l ${lumi}  --saveLog --mcUnc ${lumiUnc}"
 	python scripts/plotter.py ${commonOpts}; 
 	;;
     WWW )

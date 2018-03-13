@@ -30,12 +30,12 @@ using namespace std;
 
 //
 void RunVBFVectorBoson(TString filename,
-                     TString outname,
-                     Int_t channelSelection, 
-                     Int_t chargeSelection, 
-                     TH1F *normH, 
-                     TString era,
-                     Bool_t debug)
+                       TString outname,
+                       Int_t channelSelection, 
+                       Int_t chargeSelection, 
+                       TH1F *normH, 
+                       TString era,
+                       Bool_t debug)
 {
   /////////////////////
   // INITIALIZATION //
