@@ -8,6 +8,7 @@ using namespace std;
 //
 SelectionTool::SelectionTool(TString dataset,bool debug,TH1 *triggerList, AnalysisType anType) :
   debug_(debug),
+  anType_(anType),
   isSingleElectronPD_(dataset.Contains("SingleElectron")), 
   isSingleMuonPD_(dataset.Contains("SingleMuon")), 
   isDoubleEGPD_(dataset.Contains("DoubleEG")), 
@@ -17,11 +18,7 @@ SelectionTool::SelectionTool(TString dataset,bool debug,TH1 *triggerList, Analys
 {
   if(triggerList!=0)
     for(int xbin=0; xbin<triggerList->GetNbinsX(); xbin++)
-      triggerBits_[ triggerList->GetXaxis()->GetBinLabel(xbin+1) ] = xbin;
-  if(anType == TOP)
-	maxJetEta = 2.4;
-  else if(anType == VBF)
-	maxJetEta = 4.7;
+      triggerBits_[ triggerList->GetXaxis()->GetBinLabel(xbin+1) ] = xbin;  
 }
 
 //
@@ -46,26 +43,40 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
   std::vector<Particle> tightLeptons( selLeptons(preselLeptons,TIGHT) );
   std::vector<Particle> tightPhotons( selPhotons(preselPhotons,TIGHT) );
   TString chTag("");
-  if(tightLeptons.size()>=2){
-    int ch( abs(tightLeptons[0].id()*tightLeptons[1].id()) );
-    if      (ch==11*13) chTag = "EM";
-    else if (ch==13*13) chTag = "MM";
-    else if (ch==11*11) chTag = "EE";
-    leptons_=tightLeptons;
-  }
-  else if(tightLeptons.size()==1){
-    int ch(abs(tightLeptons[0].id()) );
-    if      (ch==13) chTag = "M";
-    else if (ch==11) chTag = "E";
-    leptons_=tightLeptons;
-    vetoLeptons_=selLeptons(preselLeptons,VETO, 0., 99., leptons_);
-  }
-  else if(tightPhotons.size()>=1) { //Why vetoing the signal with additional leptons?
-    chTag="A";
-    photons_=tightPhotons;
-  }
+  if(anType_==TOP)
+    {
+      if(tightLeptons.size()>=2){
+        int ch( abs(tightLeptons[0].id()*tightLeptons[1].id()) );
+        if      (ch==11*13) chTag = "EM";
+        else if (ch==13*13) chTag = "MM";
+        else if (ch==11*11) chTag = "EE";
+        leptons_=tightLeptons;
+      }
+      else if(tightLeptons.size()==1){
+        int ch(abs(tightLeptons[0].id()) );
+        if      (ch==13) chTag = "M";
+        else if (ch==11) chTag = "E";
+        leptons_=tightLeptons;
+        vetoLeptons_=selLeptons(preselLeptons,VETO, 0., 99., leptons_);
+      }
+    }
+  else if(anType_==VBF)
+    {
+      if(tightLeptons.size()==2)
+        {
+          int ch( abs(tightLeptons[0].id()*tightLeptons[1].id()) );
+          float mll( (tightLeptons[0]+tightLeptons[1]).M() );
+          if( ch==13*13 && fabs(mll-91)<15) chTag="MM";          
+        }
+      if(tightPhotons.size()>=1) {
+        chTag="A";
+        photons_=tightPhotons;
+      }
+    }
 
   //select jets based on the leptons and photon candidates
+  float maxJetEta(2.4);
+  if(anType_==VBF) maxJetEta=4.7;
   jets_=getGoodJets(ev,30.,maxJetEta,leptons_,photons_);
 
   //build the met
@@ -107,9 +118,16 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
   if(chTag=="MM")
     {
       if(!hasMMTrigger && !hasMTrigger)                         chTag="";
-      if(isMuonEGPD_ || isSingleElectronPD_ || isDoubleEGPD_)   chTag="";
-      if(isSingleMuonPD_ && (hasMMTrigger || !hasMTrigger) )    chTag="";
-      if(isDoubleMuonPD_ && !hasMMTrigger)                      chTag="";
+      if(anType_==TOP)
+        {
+          if(isMuonEGPD_ || isSingleElectronPD_ || isDoubleEGPD_)   chTag="";
+          if(isSingleMuonPD_ && (hasMMTrigger || !hasMTrigger) )    chTag="";
+          if(isDoubleMuonPD_ && !hasMMTrigger)                      chTag="";
+        }
+      if(anType_==VBF)
+        {
+          if(ev.isData && !isSingleMuonPD_) chTag="";
+        }
     }
   if(chTag=="M")
     {
@@ -383,24 +401,37 @@ TString SelectionTool::flagGenFinalState(MiniEvent_t &ev, std::vector<Particle> 
   genPhotons_=photons;
   if(genLeptons_.size()==0) genLeptons_=getGenLeptons(ev,20.,2.5);
   if(genPhotons_.size()==0) genPhotons_=getGenPhotons(ev,50.,1.442);
-  genJets_=getGenJets(ev,30.,2.4,genLeptons_,genPhotons_);
+
+  float maxEta(2.4);
+  if(anType_==VBF) maxEta=4.7;
+  genJets_=getGenJets(ev,30.,maxEta,genLeptons_,genPhotons_);
 
   //decide the channel
   TString chTag("");
-  if(genLeptons_.size()>=2) {
-    int chId(abs(genLeptons_[0].id()*genLeptons_[1].id()));
-    if      (chId==11*13) chTag = "EM";
-    else if (chId==13*13) chTag = "MM";
-    else if (chId==11*11) chTag = "EE";
-  }
-  else if(genLeptons_.size()==1) {
-    int absid(abs(genLeptons_[0].id()));
-    if      (absid==13) chTag = "M";
-    else if (absid==11) chTag = "E";
-  }
-  else if(genPhotons_.size()==1) {
-    chTag="A";
-  }
+  if(anType_==TOP)
+    {
+      if(genLeptons_.size()>=2) {
+        int chId(abs(genLeptons_[0].id()*genLeptons_[1].id()));
+        if      (chId==11*13) chTag = "EM";
+        else if (chId==13*13) chTag = "MM";
+        else if (chId==11*11) chTag = "EE";
+      }
+      else if(genLeptons_.size()==1) {
+        int absid(abs(genLeptons_[0].id()));
+        if      (absid==13) chTag = "M";
+        else if (absid==11) chTag = "E";
+      }
+    }
+  if(anType_==VBF)
+    {
+      if(genLeptons_.size()>=2)
+        {
+          int chId(abs(genLeptons_[0].id()*genLeptons_[1].id()));
+          float mll((genLeptons_[0]+genLeptons_[1]).M());
+          if(chId==13*13 && fabs(mll-91)<15) chTag="MM";
+        }
+      if(genPhotons_.size()>=1) chTag="A";
+    }
   
   return chTag;
 }

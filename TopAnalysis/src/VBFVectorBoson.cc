@@ -101,7 +101,7 @@ void RunVBFVectorBoson(TString filename,
   /////////////////////
   
   //EVENT SELECTION WRAPPER
-  SelectionTool selector(filename, debug, triggerList,VBF);
+  SelectionTool selector(filename, debug, triggerList,SelectionTool::VBF);
   
   for (Int_t iev=0;iev<nentries;iev++)
     {
