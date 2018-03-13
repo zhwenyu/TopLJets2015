@@ -191,6 +191,7 @@ def main():
             condor.write('executable = {0}/$(cfgFile).sh\n'.format(FarmDirectory))
             condor.write('output     = {0}/output_$(cfgFile).out\n'.format(FarmDirectory))
             condor.write('error      = {0}/output_$(cfgFile).err\n'.format(FarmDirectory))
+            condor.write('log        = {0}/output_$(cfgFile).log\n'.format(FarmDirectory))
             condor.write('+JobFlavour = "{0}"\n'.format(opt.queue))
 
             jobNb=0

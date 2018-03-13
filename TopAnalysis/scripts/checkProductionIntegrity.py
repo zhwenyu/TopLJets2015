@@ -3,14 +3,11 @@ import ROOT
 import sys
 import optparse
 from TopLJets2015.TopAnalysis.storeTools import getEOSlslist
-from subprocess import Popen, PIPE
 
 """
 steer the script
 """
 def main():
-
-    eos_cmd = '/afs/cern.ch/project/eos/installation/cms/bin/eos.select'
 
     #configuration
     usage = 'usage: %prog [options]'
@@ -19,18 +16,14 @@ def main():
     parser.add_option('-o', '--outDir',      dest='outDir',      help='output directory with files',              default=None,   type='string')
     parser.add_option('-c', '--cleanup',     dest='cleanup',     help='removes original crab directory',          default =False, action='store_true')
     parser.add_option(      '--nocheck',     dest='nocheck',     help='do not prompt user',                       default=False,  action='store_true')
-    parser.add_option(      '--mount',       dest='mount',       help='mount eos locally',                        default=False,  action='store_true')
     parser.add_option(      '--only',        dest='only',        help='only this tag',                            default=None,   type='string')
     (opt, args) = parser.parse_args()
 
     baseEOS='/eos/cms/'
-    if opt.mount:
-        Popen([eos_cmd, ' -b fuse mount', 'eos'],stdout=PIPE).communicate()
-        baseEOS='eos/cms/'
 
     #prepare output directory
     if opt.outDir is None: opt.outDir=opt.inDir
-    Popen([eos_cmd, 'mkdir',baseEOS+opt.outDir],stdout=PIPE).communicate()
+    os.system('mkdir -p %s/%s'%(baseEOS,opt.outDir))
 
     dset_list=getEOSlslist(directory=opt.inDir,prepend='')
     for dset in dset_list:
@@ -78,65 +71,53 @@ def main():
                 choice = raw_input('Will move to %s current output directory. [y/n] ?' % newDir ).lower()
                 if not 'y' in choice : continue
             
-            Popen([eos_cmd, 'mkdir', baseEOS+newDir],stdout=PIPE).communicate()
+            os.system('mkdir -p %s/%s'%(baseEOS,newDir))
     
             moveIndividualFiles=True
             if len(file_list)>0:
-                #subgroupMerge = int( raw_input('This set has %d files. Merge into groups? (enter 0 if no merging)' % len(file_list)) )
                 subgroupMerge=10 
-                if 'Data' in pub:
-                    if 'ext' in pub : subgroupMerge=50
-                if 'TTJets' in pub : subgroupMerge=4
-                if '/store/cmst3/group/hintt' in opt.inDir: 
-                    subgroupMerge=10 if '/data' in dsetname else 3
+                if 'Data' in pub: subgroupMerge=50
+                moveIndividualFiles=False
 
-                if subgroupMerge>0:
-                    moveIndividualFiles=False
-
-                    splitFunc = lambda A, n=subgroupMerge: [A[i:i+n] for i in range(0, len(A), n)]
-                    split_file_lists = splitFunc( file_list )
+                splitFunc = lambda A, n=subgroupMerge: [A[i:i+n] for i in range(0, len(A), n)]
+                split_file_lists = splitFunc( file_list )
                 
-                    for ilist in xrange(0,len(split_file_lists)):
-                        if pubExt:
-                            mergedFileName='MergedMiniEvents_%d_%s.root '%(ilist,pubExt)
-                        else:
-                            mergedFileName='MergedMiniEvents_%d.root '%ilist
-                        toAdd='%s ' % mergedFileName
-                        for f in split_file_lists[ilist]:                            
-                            toAdd += 'eos/cms/%s '%f 
-
-                        finalOutput='eos/cms/%s/%s'%(newDir,mergedFileName)
-                        fIn=ROOT.TFile.Open(finalOutput)
-                        try:
-                            if fIn or not fIn.IsZombie():
-                                print '%s already in EOS, skipping'%finalOutput
-                                fIn.Close()
-                                continue
-                        except:
-                            pass
+                for ilist in xrange(0,len(split_file_lists)):
+                    if pubExt:
+                        mergedFileName='MergedMiniEvents_%d_%s.root '%(ilist,pubExt)
+                    else:
+                        mergedFileName='MergedMiniEvents_%d.root '%ilist
+                    toAdd='%s ' % mergedFileName                    
+                    for f in split_file_lists[ilist]:                            
+                        toAdd += '%s/%s '%(baseEOS,f) 
+                    finalOutput='%s/%s/%s'%(baseEOS,newDir,mergedFileName)
+                    fIn=ROOT.TFile.Open(finalOutput)
+                    try:
+                        if fIn or not fIn.IsZombie():
+                            print '%s already in EOS, skipping'%finalOutput
+                            fIn.Close()
+                            continue
+                    except:
+                        pass
                         
-                        os.system('hadd -f -k %s'%toAdd)
-                        os.system('xrdcp  -f %s root://eoscms//eos/cms/%s/%s' %(mergedFileName,newDir,mergedFileName))
-                        os.system('rm %s'%mergedFileName)
+                    os.system('hadd -f -k %s'%toAdd)
+                    os.system('mv -v %s %s/%s/%s'%(mergedFileName,baseEOS,newDir,mergedFileName))
                         
-                #if still needed copy individual files
-                if moveIndividualFiles:
-                    for f in file_list : 
-                        newF=f
-                        if pubExt:
-                            newF=f.replace('.root','_%s.root'%pubExt)
-                        os.system('xrdcp  -f %s root://eoscms//eos/cms/%s/%s' %(f,newDir,newF))
-                        
+            #if still needed copy individual files
+            if moveIndividualFiles:
+                for f in file_list : 
+                    newF=f
+                    if pubExt:
+                        newF=f.replace('.root','_%s.root'%pubExt)
+                    os.system('mv -v %s %s/%s/%s'%(f,baseEOS,newDir,newF))
 
             if not opt.nocheck and opt.cleanup : 
                 choice = raw_input('Will remove output directory. [y/n] ?').lower()
                 if 'y' in choice: 
-                    Popen([eos_cmd, 'rm', '-r %s/%s'%(baseEOS,dset)],stdout=PIPE).communicate()
+                    os.system('rm -r %s/%s'%(baseEOS,dset))
 
             print 'Crab outputs may now be found in %s' % newDir
 
-    if opt.mount:
-        Popen([eos_cmd, ' -b fuse umount', 'eos'],stdout=PIPE).communicate()
     print '-'*50
     print 'All done. In case errors were found check that the crab output structure is '
     print '<outLFNDirBase>/<primary-dataset>/<publication-name>/<time-stamp>/<counter>/<file-name>'

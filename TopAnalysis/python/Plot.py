@@ -579,7 +579,7 @@ def convertToPoissonErrorGr(h):
     #check https://twiki.cern.ch/twiki/bin/view/CMS/PoissonErrorBars
     alpha = 1 - 0.6827;
     grpois = ROOT.TGraphAsymmErrors(h);
-    for i in xrange(0,grpois.GetN()+1) :
+    for i in xrange(0,grpois.GetN()) :
         N = grpois.GetY()[i]
         if N<200 :
             L = 0

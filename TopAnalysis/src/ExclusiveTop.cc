@@ -7,15 +7,8 @@
 #include <TLorentzVector.h>
 #include <TGraphAsymmErrors.h>
 
-#include "TopLJets2015/TopAnalysis/interface/MiniEvent.h"
 #include "TopLJets2015/TopAnalysis/interface/CommonTools.h"
-#include "TopLJets2015/TopAnalysis/interface/CorrectionTools.h"
 #include "TopLJets2015/TopAnalysis/interface/ExclusiveTop.h"
-#include "TopLJets2015/TopAnalysis/interface/LeptonEfficiencyWrapper.h"
-
-#include "TopLJets2015/TopAnalysis/interface/FillNumberLUTHandler.h"
-#include "TopLJets2015/TopAnalysis/interface/AlignmentLUTHandler.h"
-#include "TopLJets2015/TopAnalysis/interface/ProtonReconstruction.h"
 
 #include <vector>
 #include <set>
@@ -41,16 +34,10 @@ void RunExclusiveTop(TString filename,
   /////////////////////
   // INITIALIZATION //
   ///////////////////
-  TRandom* random = new TRandom(0); // random seed for period selection
-  std::vector<RunPeriod_t> runPeriods=getRunPeriods(era);
-
   const char* CMSSW_BASE = getenv("CMSSW_BASE");
-//  CTPPSAlCa::AlignmentLUTHandler pots_align(Form("%s/src/TopLJets2015/TopAnalysis/data/era2016/alignment_collection_v2.out", CMSSW_BASE));
-//  CTPPSAlCa::FillNumberLUTHandler run_to_fill(Form("%s/src/TopLJets2015/TopAnalysis/data/era2016/fill_run_lut_v2.dat", CMSSW_BASE));
   XiInterpolator proton_reco(Form("%s/src/TopLJets2015/TopAnalysis/data/era2016/ctpps_optics_9mar2017.root", CMSSW_BASE));
 
   bool isTTbar( filename.Contains("_TTJets") or (normH and TString(normH->GetTitle()).Contains("_TTJets")));
-  bool isData( filename.Contains("Data") );
   
   //PREPARE OUTPUT
   TString baseName=gSystem->BaseName(outname); 
@@ -74,17 +61,18 @@ void RunExclusiveTop(TString filename,
   //auxiliary to solve neutrino pZ using MET
   MEzCalculator neutrinoPzComputer;
 
-  //PILEUP WEIGHTING
-  std::map<TString, std::vector<TGraph *> > puWgtGr;
-  if( !isData ) puWgtGr=getPileupWeightsMap(era,genPU);
+  //LUMINOSITY+PILEUP
+  LumiTools lumi(era,genPU);
     
   //LEPTON EFFICIENCIES
-  LeptonEfficiencyWrapper lepEffH(filename.Contains("Data13TeV"),era);
+  EfficiencyScaleFactorsWrapper lepEffH(filename.Contains("Data13TeV"),era);
 
   //B-TAG CALIBRATION
-  std::map<TString, std::map<BTagEntry::JetFlavor, BTagCalibrationReader *> > btvsfReaders = getBTVcalibrationReadersMap(era, BTagEntry::OP_MEDIUM);
-  std::map<BTagEntry::JetFlavor, TGraphAsymmErrors *>    expBtagEffPy8 = readExpectedBtagEff(era);
+  BTagSFUtil btvSF(era,"DeepCSV",BTagEntry::OperatingPoint::OP_MEDIUM,"",0);
   
+  //JEC/JER
+  JECTools jec(era);
+
    //BOOK HISTOGRAMS
   HistTool ht;
   ht.setNsyst(0);
@@ -113,14 +101,14 @@ void RunExclusiveTop(TString filename,
 //      proton_reco.setAlignmentConstants(pots_align.getAlignmentConstants(fill_number));
       
       //assign randomly a run period
-      TString period = assignRunPeriod(runPeriods,random);
-      
+      TString period = lumi.assignRunPeriod();
+
       //////////////////
       // CORRECTIONS //
-      ////////////////
-      double csvm = 0.8484;
-      addBTagDecisions(ev, csvm, csvm);
-      if(!ev.isData) smearJetEnergies(ev);
+      ////////////////      
+      btvSF.addBTagDecisions(ev);
+      btvSF.updateBTagDecisions(ev);
+      jec.smearJetEnergies(ev);
            
       ///////////////////////////
       // RECO LEVEL SELECTION //
@@ -157,13 +145,13 @@ void RunExclusiveTop(TString filename,
         wgt  = (normH? normH->GetBinContent(1) : 1.0);
         
         // pu weight
-        double puWgt(puWgtGr[period][0]->Eval(ev.g_pu));
+        double puWgt(lumi.pileupWeight(ev.g_pu,period)[0]);
         std::vector<double>puPlotWgts(1,puWgt);
         ht.fill("puwgtctr",1,puPlotWgts);
         
         // lepton trigger*selection weights
-        EffCorrection_t trigSF = lepEffH.getTriggerCorrection(leptons, period);
-        EffCorrection_t  selSF= lepEffH.getOfflineCorrection(leptons[0], period);
+        EffCorrection_t trigSF = lepEffH.getTriggerCorrection(leptons,{},{},period);
+        EffCorrection_t  selSF = lepEffH.getOfflineCorrection(leptons[0], period);
 
         wgt *= puWgt*trigSF.first*selSF.first;
         

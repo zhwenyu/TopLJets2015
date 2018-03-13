@@ -4,17 +4,21 @@
 
 These installation instructions correspond to the 2017 data/MC production.
 To install execute the following in your work area.
+Notice: if you are not creating the ntuples, you can skip the part of the instructions 
+marked with the `##OPTIONAL/##END OPTIONAL` markers
 
 ```
 cmsrel CMSSW_9_4_2
 cd CMSSW_9_4_2/src
 cmsenv
+
+##OPTIONAL
+
+#photon/electron id+scale and smearing
 git cms-merge-topic lsoffi:CMSSW_9_4_0_pre3_TnP    
 git cms-merge-topic guitargeek:ElectronID_MVA2017_940pre3
 git cms-merge-topic cms-egamma:MiniAOD2017V2_940
 scram b -j 8
-
-#photon/electron id+scale and smearing
 cd $CMSSW_BASE/external
 cd ${SCRAM_ARCH}/
 git clone https://github.com/lsoffi/RecoEgamma-PhotonIdentification.git data/RecoEgamma/PhotonIdentification/data
@@ -31,11 +35,11 @@ git clone git@github.com:Sam-Harper/EgammaAnalysis-ElectronTools.git data/Egamma
 cd data/EgammaAnalysis/ElectronTools/data
 git checkout ReReco17NovScaleAndSmearing 
 
-#ntuplizer
+##END OPTIONAL
+
+
 cd $CMSSW_BASE/src
 git clone git@github.com:pfs/TopLJets2015.git
-
-#compile
 scram b -j 8
 ```
 
@@ -49,24 +53,6 @@ To run locally the ntuplizer, for testing purposes do something like:
 cmsRun test/runMiniAnalyzer_cfg.py runOnData=False era=era2017 outFilename=MC13TeV_TTJets.root
 cmsRun test/runMiniAnalyzer_cfg.py runOnData=True  era=era2017 outFilename=Data13TeV_SingleMuon.root
 ```
-
-The default files point to the ones used in the TOP synchronization exercise
-(see details in )
-The output files can be analyzed with a simple executable (also a skeleton for the implementation of new analysis) as detailed below.
-The output file will contain cutflow histograms which can be used to check the selection against the synchronization twiki.
-Check the implementation of this analysis in src/TOPSynchExercise.cc. 
-Other analysis should also be implemented there.
-
-```
-analysisWrapper --in MC13TeV_TTJets.root   --out mc_synch.root   --method TOPSynchExercise::RunTOPSynchExercise
-analysisWrapper --in Data13TeV_MuonEG.root --out data_synch.root --method TOPSynchExercise::RunTOPSynchExercise
-```
-
-A wrapper script is also provided to run over directories with trees or single files and allowing to schedule the execution to the job.
-See examples under scripts/ in ```steer*Analysis.sh```.
-
-
-## Submitting ntuple creation through the grid
 
 To submit the ntuplizer to the grid start by setting the environment for crab3.
 More details can be found in [CRAB3CheatSheet](https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3CheatSheet#Environment_setup)
@@ -85,7 +71,7 @@ python scripts/submitToGrid.py -j data/era2017/samples.json -c ${CMSSW_BASE}/src
 As soon as ntuple production starts to finish, to move from crab output directories to a simpler directory structure which can be easily parsed by the local analysis runThe merging can be run locally if needed by using the checkProductionIntegrity.py script
 
 ```
-python scripts/submitCheckProductionIntegrity.py -i /store/cmst3/group/top/psilva/b312177 -o /store/cmst3/group/top/ReReco2016/b312177
+python scripts/submitCheckProductionIntegrity.py -i /store/cmst3/group/top/psilva/c29f431 -o /store/cmst3/group/top/RunIIFall17/c29f431
 ```
 
 ## Luminosity
@@ -125,21 +111,15 @@ python scripts/runPileupEstimation.py --json /afs/cern.ch/cms/CAF/CMSCOMM/COMM_D
 ```
 * B-tagging. To apply corrections to the simulation one needs the expected efficiencies stored somwewhere. The script below will project the jet pT spectrum from the TTbar sample before and after applying b-tagging, to compute the expecte efficiencies. The result will be stored in data/expTageff.root
 ```
-python scripts/saveExpectedBtagEff.py -i /store/cmst3/group/top/ReReco2016/b32c02e/MC13TeV_TTJets -o data/era2016/expTageff.root;
+python scripts/saveExpectedBtagEff.py -i /store/cmst3/group/top/RunIIFall17/c29f431/MC13TeV_TTJets -o data/era2017/expTageff.root;
 ```
 * MC normalization. This will loop over all the samples available in EOS and produce a normalization cache (weights to normalize MC). The file will be available in data/genweights.pck
 ```
-python scripts/produceNormalizationCache.py -i /store/cmst3/group/top/ReReco2016/b312177 -o data/era2016/genweights.root
+python scripts/produceNormalizationCache.py -i /store/cmst3/group/top/RunIIFall17/c29f431 -o data/era2017/genweights.root
 ```
-The lepton trigger/id/iso efficiencies should also be placed under data/era2016. 
-The src/LeptonEfficiencyWrapper.cc  should then be updated to handle the reading of the ROOT files and the application of the scale factors
+The lepton/photon trigger/id/iso efficiencies should also be placed under data/era2017. 
+The src/EfficiencyScaleFactorsWrapper.cc  should then be updated to handle the reading of the ROOT files and the application of the scale factors
 event by event.
-
-## Plotting
-To plot the output of the local analysis you can run the following:
-```
-python scripts/plotter.py -i analysis_muplus/   -j data/era2016/samples.json  -l 12870
-```
 
 ## Updating the code
 
@@ -152,3 +132,15 @@ Push to your forked repository
 git push git@github.com:MYGITHUBLOGIN/TopLJets2015.git
 ```
 From the github area of the repository cleak on the green button "Compare,review and create a pull request" to create the PR to merge with your colleagues.
+
+# Local analyses
+
+The ROOT trees created by MiniAnalyzer.cc can be analyzed with a simple executable.
+See some examples under `src`.
+The new executable should be included in `bin/analysisWrapper.cc` so that it can be used with the runLocalAnalysis.py script
+which allows to run over single files or full directories.
+See examples under test/ in ```steer*Analysis.sh```.
+To plot the output of the local analysis you can run the following:
+```
+python scripts/plotter.py -i analysis/   -j data/era2017/samples.json  -l 12870
+```

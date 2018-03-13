@@ -55,16 +55,13 @@ except IndexError:
 noTrees=False
 if len(sys.argv)>2 and sys.argv[2]=='True': noTrees=True
 
-<<<<<<< HEAD
 
-basenames = getBaseNames(inputdir)
-=======
+
 outputdir = inputdir
 if len(sys.argv)>3 : outputdir=sys.argv[3]
-
 chunkdir  = os.path.join(inputdir, 'Chunks')
 basenames = getBaseNames(chunkdir)
->>>>>>> 9058e3898a0b728430a2f63a9c409bf903ecdb62
+
 print '-----------------------'
 print 'Will process the following samples:', basenames
 
