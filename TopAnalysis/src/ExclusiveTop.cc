@@ -18,6 +18,9 @@
 #include "TMath.h"
 #include "TopQuarkAnalysis/TopTools/interface/MEzCalculator.h"
 
+#include "TopLJets2015/CTPPSAnalysisTools/interface/LHCConditionsFactory.h"
+#include "TopLJets2015/CTPPSAnalysisTools/interface/AlignmentsFactory.h"
+#include "TopLJets2015/CTPPSAnalysisTools/interface/XiReconstructor.h"
 
 using namespace std;
 
@@ -35,7 +38,16 @@ void RunExclusiveTop(TString filename,
   // INITIALIZATION //
   ///////////////////
   const char* CMSSW_BASE = getenv("CMSSW_BASE");
-  XiInterpolator proton_reco(Form("%s/src/TopLJets2015/TopAnalysis/data/era2016/ctpps_optics_9mar2017.root", CMSSW_BASE));
+  // CTPPS reconstruction part
+  ctpps::XiReconstructor proton_reco;
+  proton_reco.feedDispersions(Form("%s/src/TopLJets2015/CTPPSAnalysisTools/data/2017/dispersions.txt", CMSSW_BASE));
+
+  ctpps::AlignmentsFactory ctpps_aligns;
+  ctpps_aligns.feedAlignments(Form("%s/src/TopLJets/CTPPSAnalysisTools/data/2017/alignments_30jan2017.txt", CMSSW_BASE));
+
+  ctpps::LHCConditionsFactory lhc_conds;
+  lhc_conds.feedConditions(Form("%s/src/TopLJets/CTPPSAnalysisTools/data/2017/xangle_tillTS2.csv", CMSSW_BASE));
+  lhc_conds.feedConditions(Form("%s/src/TopLJets/CTPPSAnalysisTools/data/2017/xangle_afterTS2.csv", CMSSW_BASE));
 
   bool isTTbar( filename.Contains("_TTJets") or (normH and TString(normH->GetTitle()).Contains("_TTJets")));
   
@@ -172,9 +184,16 @@ void RunExclusiveTop(TString filename,
       }
 
       if (ev.isData) {
+        const edm::EventID ev_id( ev.run, ev.event, ev.lumi );
+        // LHC information retrieval from LUT
+        const ctpps::conditions_t lhc_cond = lhc_conds.get( ev_id );
+        const double xangle = lhc_cond.crossing_angle;
         for (int ift=0; ift<ev.nfwdtrk; ift++) {
-          float xi, xi_error;
-          proton_reco.computeXiSpline(ev.fwdtrk_arm[ift], ev.fwdtrk_pot[ift], ev.fwdtrk_x[ift], xi, xi_error);
+          // only look at strips!
+          const unsigned short pot_raw_id = 100*ev.fwdtrk_arm[ift]+/*10*ev.fwdtrk_station[ift]+*/ev.fwdtrk_pot[ift];
+          const ctpps::alignment_t align = ctpps_aligns.get( ev_id, pot_raw_id );
+          double xi, xi_error;
+          proton_reco.reconstruct(xangle, pot_raw_id, ev.fwdtrk_x[ift]/10.+align.x_align, xi, xi_error);
         }
       }
 
