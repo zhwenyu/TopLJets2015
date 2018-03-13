@@ -28,7 +28,7 @@ case $WHAT in
 	python scripts/runLocalAnalysis.py \
             -i ${eosdir}/MC13TeV_GJets_HT100to200_DR04/MergedMiniEvents_0_ext0.root \
             -o MC13TeV_GJets_HT100to200_DR04.root \
-            --njobs 1 -q local \
+            --njobs 1 -q local --debug \
             --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts;
         ;;
     SEL )

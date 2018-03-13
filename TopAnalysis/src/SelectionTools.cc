@@ -7,6 +7,7 @@ using namespace std;
 
 //
 SelectionTool::SelectionTool(TString dataset,bool debug,TH1 *triggerList, AnalysisType anType) :
+  debug_(debug),
   isSingleElectronPD_(dataset.Contains("SingleElectron")), 
   isSingleMuonPD_(dataset.Contains("SingleMuon")), 
   isDoubleEGPD_(dataset.Contains("DoubleEG")), 
@@ -122,7 +123,7 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
       if(isMuonEGPD_ || isDoubleMuonPD_ || isDoubleEGPD_ || isSingleMuonPD_)   chTag="";
       if(isSingleElectronPD_ && !hasETrigger) chTag="";
     }
-  if(chTag="A")
+  if(chTag=="A")
     {
       if(!hasPhotonTrigger) chTag="";
       if(ev.isData && !isPhotonPD_) chTag="";
@@ -249,15 +250,22 @@ std::vector<Particle> SelectionTool::flaggedPhotons(MiniEvent_t &ev)
     int qualityFlagsWord(0);
     if( pt>50 && eta<2.4)
       {
-        if( (pid&0x3ff)==0x3ff )       qualityFlagsWord |= (0x1 << LOOSE);
-        if( ((pid>>10)&0x3ff)==0x3ff ) qualityFlagsWord |= (0x1 << MEDIUM);
-        if( ((pid>>10)&0x3ff)==0x3ff ) qualityFlagsWord |= (0x1 << TIGHT);
+        if( (pid&0x7f)==0x7f )       qualityFlagsWord |= (0x1 << LOOSE);
+        if( ((pid>>10)&0x7f)==0x7f ) qualityFlagsWord |= (0x1 << MEDIUM);
+        if( ((pid>>10)&0x7f)==0x7f ) qualityFlagsWord |= (0x1 << TIGHT);
       }
     if(qualityFlagsWord==0) continue;
 
     TLorentzVector p4;
     p4.SetPtEtaPhiM(ev.gamma_pt[ig],ev.gamma_eta[ig],ev.gamma_phi[ig],0);
     photons.push_back(Particle(p4, 0, 22, qualityFlagsWord, ig, 1.0));
+
+    if(debug_) std::cout << "Photon #"<< photons.size() 
+                         << " pt=" << p4.Pt() << " eta=" << p4.Eta()
+                         << hex << " raw particle id bits=" << pid 
+                         << " quality bits=" << qualityFlagsWord 
+                         << dec << endl;
+
   }
   
   return photons;
@@ -334,7 +342,7 @@ std::vector<Jet> SelectionTool::getGoodJets(MiniEvent_t &ev, double minPt, doubl
     }
 
     if(debug_) cout << "Jet #" << jets.size() 
-		    << " pt=" << jp4.Pt() << " eta=" << jp4.Eta() << " csv=" << ev.j_csv[k] << endl;
+		    << " pt=" << jp4.Pt() << " eta=" << jp4.Eta() << " deepCSV=" << ev.j_deepcsv[k] << endl;
 
     
     jets.push_back(jet);

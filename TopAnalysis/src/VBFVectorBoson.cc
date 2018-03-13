@@ -101,7 +101,7 @@ void RunVBFVectorBoson(TString filename,
   /////////////////////
   
   //EVENT SELECTION WRAPPER
-  SelectionTool selector(filename, false, triggerList,VBF);
+  SelectionTool selector(filename, debug, triggerList,VBF);
   
   for (Int_t iev=0;iev<nentries;iev++)
     {
@@ -110,7 +110,7 @@ void RunVBFVectorBoson(TString filename,
 
       
       //assign randomly a run period
-	  TString period = lumi.assignRunPeriod();
+      TString period = lumi.assignRunPeriod();
       
       //////////////////
       // CORRECTIONS //
