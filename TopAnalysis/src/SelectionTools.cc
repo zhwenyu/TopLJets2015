@@ -44,6 +44,7 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
   //decide the channel based on the lepton multiplicity and set lepton collections
   std::vector<Particle> tightLeptons( selLeptons(preselLeptons,TIGHT) );
   std::vector<Particle> tightPhotons( selPhotons(preselPhotons,TIGHT) );
+
   TString chTag("");
   if(tightLeptons.size()>=2){
     int ch( abs(tightLeptons[0].id()*tightLeptons[1].id()) );
@@ -240,7 +241,6 @@ std::vector<Particle> SelectionTool::flaggedPhotons(MiniEvent_t &ev)
   //leptons
   std::vector<Particle> photons;
   for (int ig=0; ig<ev.ngamma; ig++) {
-
     float pt(ev.gamma_pt[ig]);
     float eta(fabs(ev.gamma_eta[ig]));
     int pid(ev.gamma_pid[ig]);
@@ -252,6 +252,7 @@ std::vector<Particle> SelectionTool::flaggedPhotons(MiniEvent_t &ev)
         if( (pid&0x3ff)==0x3ff )       qualityFlagsWord |= (0x1 << LOOSE);
         if( ((pid>>10)&0x3ff)==0x3ff ) qualityFlagsWord |= (0x1 << MEDIUM);
         if( ((pid>>10)&0x3ff)==0x3ff ) qualityFlagsWord |= (0x1 << TIGHT);
+		
       }
     if(qualityFlagsWord==0) continue;
 

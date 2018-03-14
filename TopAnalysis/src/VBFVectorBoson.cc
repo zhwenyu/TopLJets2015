@@ -128,6 +128,8 @@ void RunVBFVectorBoson(TString filename,
 
 
       //require one good photon
+	  std::cout<<"Photon size: "<<photons.size()<<endl;
+	  std::cout<<"Jet size: "<<jets.size()<<endl;	
       if(photons.size()!=1) continue;
       bool passJets(jets.size()>=2);
 
