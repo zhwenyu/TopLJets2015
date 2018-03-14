@@ -65,7 +65,7 @@ struct MiniEvent_t
   Float_t pf_dxy[5000],pf_dz[5000]; //pf_dxyUnc[5000],pf_dzUnc[5000];
 
   //CTPPS leaves
-  Int_t nfwdtrk,fwdtrk_arm[50],fwdtrk_pot[50];
+  Int_t nfwdtrk,fwdtrk_arm[50],fwdtrk_station[50],fwdtrk_pot[50];
   Float_t fwdtrk_x[50],fwdtrk_x_unc[50];
   Float_t fwdtrk_y[50],fwdtrk_y_unc[50];
 };
