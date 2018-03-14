@@ -10,12 +10,12 @@
 #include "TopLJets2015/TopAnalysis/interface/MiniEvent.h"
 #include "TopLJets2015/TopAnalysis/interface/ObjectTools.h"
 
-  enum AnalysisType	{TOP=0,VBF=1}; //For the VBF analysis we need jet eta < 4.7. Better not to base this on the chTag because e.g. chTag=MM can be used for VBF Z analysis ....
-  								   // Shall we do the same for genJets? apparently in the ntuples genJets are with 2.5 eta cut
-
 class SelectionTool {
 
  public:
+
+  enum AnalysisType	{TOP=0,VBF=1};
+
   SelectionTool(TString dataset="",bool debug=false,TH1 *triggerList=0, AnalysisType analysisType = TOP);
   ~SelectionTool() {}
 
@@ -62,9 +62,9 @@ class SelectionTool {
 
  private:
   bool debug_;
+  AnalysisType anType_;
   bool isSingleElectronPD_,isSingleMuonPD_,isDoubleEGPD_,isDoubleMuonPD_,isMuonEGPD_,isPhotonPD_;
   std::map<TString,unsigned int> triggerBits_;
-  float maxJetEta;
 };
 
 #endif
