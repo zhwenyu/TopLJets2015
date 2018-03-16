@@ -519,7 +519,6 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
       iEvent.getByToken(ctppsToken_, ctppslocaltracks);
       for (const CTPPSLocalTrackLite& lt : *ctppslocaltracks) {
         const CTPPSDetId detid(lt.getRPId());
-        if (detid.station()!=0) continue; // only keep the 210m horizontal stations
         ev_.fwdtrk_arm[ev_.nfwdtrk] = detid.arm(); // 0 = sector 4-5 ; 1 = sector 5-6
         ev_.fwdtrk_station[ev_.nfwdtrk] = detid.station();
         ev_.fwdtrk_pot[ev_.nfwdtrk] = detid.rp(); // 2 = near pot ; 3 = far pot
