@@ -74,18 +74,18 @@ void RunVBFVectorBoson(TString filename,
   //BOOK HISTOGRAMS
   HistTool ht;
   ht.setNsyst(0);
-  TString cats[]={"VBFA","HighPtA","MM"};
-  ht.addHist("puwgtctr",     new TH1F("puwgtctr",      ";Weight sums;Events",2,0,2));  
-  ht.addHist("category",     new TH1F("category",      ";Category;Events",6,0,6));  
-  ht.addHist("qscale",       new TH1F("qscale",        ";Q^{2} scale;Events",100,0,2000));  
-  for(size_t i=0; i<3; i++)
+  ht.addHist("puwgtctr", new TH1F("puwgtctr", ";Weight sums;Events",2,0,2));  
+  ht.addHist("category", new TH1F("category", ";Category;Events",3,0,3));  
+  ht.addHist("qscale",   new TH1F("qscale",   ";Q^{2} scale;Events",100,0,2000));  
+  TString cats[]={"VBFA","HighPtA","VBFMM","HighPtMM"};
+  for(size_t i=0; i<4; i++)
     {
       ht.addHist(cats[i]+"_nvtx",         new TH1F(cats[i]+"_nvtx",             ";Vertex multiplicity;Events",100,-0.5,101.5));
       ht.addHist(cats[i]+"_vpt", 	  new TH1F(cats[i]+"_vectorbosonPt",    ";Boson p_{T}[GeV];Events",25,50,500));
       ht.addHist(cats[i]+"_vy", 	  new TH1F(cats[i]+"_vectorbosony",     ";Boson rapidity;Events",25,0,3));
       ht.addHist(cats[i]+"_vystar", 	  new TH1F(cats[i]+"_vectorbosonystar", ";y-(1/2)(y_{j1}+y_{j2});Events",25,0,3));
       ht.addHist(cats[i]+"_njets",        new TH1F(cats[i]+"_njets",            ";Jet multiplicity;Events",15,-0.5,14.5));
-      ht.addHist(cats[i]+"_mjj", 	  new TH1F(cats[i]+"_mjj",              ";Dijet invariant mass [GeV];Events",80,400,2000));
+      ht.addHist(cats[i]+"_mjj", 	  new TH1F(cats[i]+"_mjj",              ";Dijet invariant mass [GeV];Events",40,400,2400));
       ht.addHist(cats[i]+"_leadpt",       new TH1F(cats[i]+"_leadpt",           ";Leading jet p_{T} [GeV];Events",25,50,500));
       ht.addHist(cats[i]+"_subleadpt",    new TH1F(cats[i]+"_subleadpt"   ,     ";Sub-leading jet p_{T} [GeV];Events",25,50,500));
       ht.addHist(cats[i]+"_centraleta",   new TH1F(cats[i]+"_centraleta",       ";Most central jet |#eta|;Events",25,0,5));
@@ -93,6 +93,7 @@ void RunVBFVectorBoson(TString filename,
       ht.addHist(cats[i]+"_dijetpt",      new TH1F(cats[i]+"_dijetpt",          ";Dijet p_{T} [GeV];Events",25,50,500));
       ht.addHist(cats[i]+"_detajj", 	  new TH1F(cats[i]+"_detajj" ,          ";#Delta#eta(J,J);Events",20,-5,5));
       ht.addHist(cats[i]+"_ht", 	  new TH1F(cats[i]+"_ht",               ";H_{T} [GeV];Events",50,0,500));
+      ht.addHist(cats[i]+"_balance", 	  new TH1F(cats[i]+"_balance",          ";System p_{T} balance [GeV];Events",25,0,250));
     }
 
   std::cout << "init done" << std::endl;
@@ -107,11 +108,9 @@ void RunVBFVectorBoson(TString filename,
   for (Int_t iev=0;iev<nentries;iev++)
     {
       t->GetEntry(iev);
-      if(iev%10==0) printf ("\r [%3.0f%%] done", 100.*(float)iev/(float)nentries);
-
+      if(iev%10000==0) printf ("\r [%3.0f%%] done", 100.*(float)iev/(float)nentries);
 
       std::vector<double>plotwgts(1,1.0);
-      ht.fill("puwgtctr",0,plotwgts);
       ht.fill("qscale",ev.g_qscale,plotwgts);
       
       //assign randomly a run period
@@ -131,29 +130,43 @@ void RunVBFVectorBoson(TString filename,
       std::vector<Particle> &leptons     = selector.getSelLeptons(); 
       std::vector<Jet>      &jets        = selector.getJets();  
 
-      //boson kinematics
-      //for the photon refine also the category according to the bit
-      bool isHighPtA(false),isVBFA(false);
+      //jet related variables and selection
+      float mjj(jets.size()>=2 ?  (jets[0]+jets[1]).M() : 0.);
+      float scalarht(0.);
+      for(auto j : jets) scalarht += j.Pt();
+      bool passJets(jets.size()>=2 && mjj>400);
+
+      //categorize the event according to the boson kinematics
+      //for the photon refine also the category according to the trigger  bit
       TLorentzVector boson(0,0,0,0);
+      bool isHighPt(false),isVBF(false);
       if(chTag=="A") {
-        isVBFA=(selector.hasTriggerBit("HLT_Photon75_R9Id90_HE10_IsoM_EBOnly_PFJetsMJJ300DEta3_v", ev.triggerBits) && photons[0].Pt()>75);
-        isHighPtA=( selector.hasTriggerBit("HLT_Photon200_v", ev.triggerBits) && photons[0].Pt()>200 );
         boson += photons[0];
+        isVBF    = (selector.hasTriggerBit("HLT_Photon75_R9Id90_HE10_IsoM_EBOnly_PFJetsMJJ300DEta3_v", ev.triggerBits) 
+                    && photons[0].Pt()>75 
+                    && fabs(photons[0].Eta())<1.442
+                    && mjj>400);
+        isHighPt = ( selector.hasTriggerBit("HLT_Photon200_v", ev.triggerBits) 
+                     && photons[0].Pt()>200 );       
       }
       else {
         boson += leptons[0];
         boson += leptons[1];
+        isVBF    = boson.Pt()>75 && fabs(boson.Rapidity())<1.442 && mjj>400;
+        isHighPt = boson.Pt()>200;
       }
+      if(!isVBF && !isHighPt) continue;      
+      std::vector<TString> chTags;      
+      if(isVBF)    chTags.push_back("VBF"+chTag);
+      if(isHighPt) chTags.push_back("HighPt"+chTag);
       
-      //further selection
-      bool passBoson(boson.Pt()>75 && fabs(boson.Rapidity())<1.442);
-      bool passJets(jets.size()>=2);
+      //system variables
+      float ystar(0),balance(0);
+      if(passJets) {
+        ystar=boson.Rapidity()-0.5*(jets[0].Rapidity()+jets[1].Rapidity());
+        balance=(boson+jets[0]+jets[1]).Pt();
+      }
 
-      //jet related variables
-      float ystar(0),scalarht(0);
-      for(auto j : jets) scalarht += j.Pt();
-      if(passJets) ystar=boson.Rapidity()-0.5*(jets[0].Rapidity()+jets[1].Rapidity());
-      
       ////////////////////
       // EVENT WEIGHTS //
       //////////////////
@@ -164,6 +177,7 @@ void RunVBFVectorBoson(TString filename,
         wgt  = (normH? normH->GetBinContent(1) : 1.0);
         
         // pu weight
+        ht.fill("puwgtctr",0,plotwgts);
         double puWgt(lumi.pileupWeight(ev.g_pu,period)[0]);
         std::vector<double>puPlotWgts(1,puWgt);
         ht.fill("puwgtctr",1,puPlotWgts);
@@ -192,36 +206,30 @@ void RunVBFVectorBoson(TString filename,
       }
 
       //control histograms
-      TString c(chTag);
       if(chTag=="A") {
-
-        if(isHighPtA) c="HighPtA";
-        if(isVBFA)    c="VBFA";
-
-        ht.fill("category",0,plotwgts);
-        if(isHighPtA) ht.fill("category",1,plotwgts);
-        if(isHighPtA && isVBFA) ht.fill("category",2,plotwgts);
-        if(passBoson && passJets) {
-          ht.fill("category",3,plotwgts);
-          if(isHighPtA) ht.fill("category",4,plotwgts);
-          if(isHighPtA &&isVBFA)ht.fill("category",5,plotwgts);
-        }
+        std::vector<int> acats;
+        if(isVBF)                         acats.push_back(0);
+        if(isHighPt)                      acats.push_back(1);
+        if(isHighPt && !isVBF && mjj>400) acats.push_back(2);
+        for(auto bin : acats) ht.fill("category",bin,plotwgts);
       }
-
-      ht.fill(c+"_nvtx",  ev.nvtx,          plotwgts);
-      ht.fill(c+"_njets", jets.size(),      plotwgts);
-      ht.fill(c+"_ht",    scalarht,         plotwgts);
-      ht.fill(c+"_vpt",   boson.Pt(),       plotwgts);
-      ht.fill(c+"_vy",    boson.Rapidity(), plotwgts);   
-      if(passBoson && passJets) {
-        ht.fill(c+"_vystar",     ystar, plotwgts);
-        ht.fill(c+"_mjj", 	 (jets[0]+jets[1]).M(),	plotwgts);
-        ht.fill(c+"_leadpt",     jets[0].Pt(),	plotwgts);
-        ht.fill(c+"_subleadpt",  jets[1].Pt(),	plotwgts);
-        ht.fill(c+"_centraleta", min(fabs(jets[0].Eta()),fabs(jets[1].Eta())),	plotwgts);
-        ht.fill(c+"_forwardeta", max(fabs(jets[0].Eta()),fabs(jets[1].Eta())),	plotwgts);
-        ht.fill(c+"_dijetpt",    (jets[0]+jets[1]).Pt(),plotwgts);
-        ht.fill(c+"_detajj",     jets[0].Eta()-jets[1].Eta(),plotwgts);
+      for( auto c : chTags) {
+        ht.fill(c+"_nvtx",  ev.nvtx,          plotwgts);
+        ht.fill(c+"_njets", jets.size(),      plotwgts);
+        ht.fill(c+"_ht",    scalarht,         plotwgts);
+        ht.fill(c+"_vpt",   boson.Pt(),       plotwgts);
+        ht.fill(c+"_vy",    boson.Rapidity(), plotwgts);   
+        if(passJets) {
+          ht.fill(c+"_vystar",     ystar, plotwgts);
+          ht.fill(c+"_mjj", 	     mjj,	plotwgts);
+          ht.fill(c+"_leadpt",     jets[0].Pt(),	plotwgts);
+          ht.fill(c+"_subleadpt",  jets[1].Pt(),	plotwgts);
+          ht.fill(c+"_centraleta", min(fabs(jets[0].Eta()),fabs(jets[1].Eta())),	plotwgts);
+          ht.fill(c+"_forwardeta", max(fabs(jets[0].Eta()),fabs(jets[1].Eta())),	plotwgts);
+          ht.fill(c+"_dijetpt",    (jets[0]+jets[1]).Pt(),plotwgts);
+          ht.fill(c+"_detajj",     jets[0].Eta()-jets[1].Eta(),plotwgts);
+          ht.fill(c+"_balance",    balance,plotwgts);
+        }
       }
     }
   

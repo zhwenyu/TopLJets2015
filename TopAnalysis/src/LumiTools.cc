@@ -78,7 +78,9 @@ TString LumiTools::assignRunPeriod()
 void LumiTools::parsePileupWeightsMap(TH1 *genPU)
 {  
   if(genPU==0) return;
-  genPU->Scale(1./genPU->Integral());
+  float totalExp(genPU->Integral());
+  if(totalExp<=0) return;
+  genPU->Scale(1./totalExp);
   for (auto period : runPeriods_) {
 
     puWgtGr_[period.first]=std::vector<TGraph *>(3,0);
@@ -100,7 +102,9 @@ void LumiTools::parsePileupWeightsMap(TH1 *genPU)
             Float_t yexp=genPU->GetBinContent(xbin);
             Double_t xobs,yobs;
             puData->GetPoint(xbin-1,xobs,yobs);
-            tmp->SetBinContent(xbin, yexp>0 ? yobs/(totalData*yexp) : 0. );
+            float wgt(yexp>0 ? float(yobs)/(totalData*yexp) : 0.);
+            if(isinf(wgt)) wgt=0.;
+            tmp->SetBinContent(xbin,wgt);
           }
         TGraph *gr=new TGraph(tmp);
         grName.ReplaceAll("pu","puwgts");
