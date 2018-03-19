@@ -12,10 +12,6 @@
 #include "TopLJets2015/TopAnalysis/interface/VBFVectorBoson.h"
 #include "TopLJets2015/TopAnalysis/interface/EfficiencyScaleFactorsWrapper.h"
 
-#include "TopLJets2015/TopAnalysis/interface/FillNumberLUTHandler.h"
-#include "TopLJets2015/TopAnalysis/interface/AlignmentLUTHandler.h"
-#include "TopLJets2015/TopAnalysis/interface/ProtonReconstruction.h"
-
 #include <vector>
 #include <set>
 #include <iostream>
