@@ -1,5 +1,8 @@
 {
 "MC13TeV_TTJets"        : [832, 0,     "/TTJets_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIIFall17MiniAOD-94X_mc2017_realistic_v10-v1/MINIAODSIM", "t#bar{t}", 920, true, false, 1],
+"MC13TeV_TTGJets"       : [832, 0,     "/TTGJets_TuneCP5_13TeV-amcatnloFXFX-madspin-pythia8/RunIIFall17MiniAOD-94X_mc2017_realistic_v10-v1/MINIAODSIM", "t#bar{t}#gamma", 920, true, false, 1],
+"MC13TeV_ggHGG"       : [832, 0,     "/GluGluHToGG_M125_13TeV_amcatnloFXFX_pythia8/RunIIFall17MiniAOD-94X_mc2017_realistic_v10-v1/MINIAODSIM", "H#rightarrow#gamma#gamma", 920, true, false, 1],
+"MC13TeV_vbfHGG"      : [832, 0,     "/VHToGG_M125_13TeV_amcatnloFXFX_madspin_pythia8/RunIIFall17MiniAOD-94X_mc2017_realistic_v10-v1/MINIAODSIM", "H#rightarrow#gamma#gamma", 920, true, false, 1],
 "MC13TeV_ZZ"            : [0.5644, 0,  "/ZZTo2L2Nu_13TeV_powheg_pythia8/RunIIFall17MiniAOD-94X_mc2017_realistic_v10-v1/MINIAODSIM", "Multiboson", 815, false, false, 1],
 "MC13TeV_WZ"            : [47.13, 0,  "/WZ_TuneCP5_13TeV-pythia8/RunIIFall17MiniAOD-94X_mc2017_realistic_v10-v1/MINIAODSIM", "Multiboson", 815, false, false, 1],
 "MC13TeV_WW"            : [12.178, 0,   "/WWTo2L2Nu_NNPDF31_TuneCP5_13TeV-powheg-pythia8/RunIIFall17MiniAOD-94X_mc2017_realistic_v10-v1/MINIAODSIM", "Multiboson", 815, false, false, 1],
@@ -8,6 +11,18 @@
 "MC13TeV_SingleTbar_tW" : [35.85, 0,    "/ST_tW_antitop_5f_NoFullyHadronicDecays_TuneCP5_13TeV-powheg-pythia8/RunIIFall17MiniAOD-94X_mc2017_realistic_v10-v1/MINIAODSIM", "tW", 865, false, false, 1],
 "MC13TeV_SingleT_tW"    : [35.85, 0,    "/ST_tW_top_5f_inclusiveDecays_TuneCP5_13TeV-powheg-pythia8/RunIIFall17MiniAOD-94X_mc2017_realistic_v10-v1/MINIAODSIM", "tW", 865, false, false, 1],
 "MC13TeV_DY50toInf"     : [5765.4, 0,  "/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIIFall17MiniAOD-94X_mc2017_realistic_v10-v1/MINIAODSIM", "DY", 41, false, false, 1],
+"MC13TeV_DY50toInf_ext"     : [5765.4, 0,  "/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIIFall17MiniAOD-94X_mc2017_realistic_v10_ext1-v1/MINIAODSIM", "DY", 41, false, false, 1],
+
+"MC13TeV_DY50toInf_HT100to200"     : [5765.4, 0,  "/DYJetsToLL_M-50_HT-100to200_TuneCP5_13TeV-madgraphMLM-pythia8/RunIIFall17MiniAOD-94X_mc2017_realistic_v10-v1/MINIAODSIM", "DY", 41, false, false, 1],
+"MC13TeV_DY50toInf_HT100to200_ext"     : [5765.4, 0,  "/DYJetsToLL_M-50_HT-100to200_TuneCP5_13TeV-madgraphMLM-pythia8/RunIIFall17MiniAOD-94X_mc2017_realistic_v10_ext1-v1/MINIAODSIM", "DY", 41, false, false, 1],
+"MC13TeV_DY50toInf_HT200to400"     : [5765.4, 0,  "/DYJetsToLL_M-50_HT-200to400_TuneCP5_13TeV-madgraphMLM-pythia8/RunIIFall17MiniAOD-94X_mc2017_realistic_v10-v1/MINIAODSIM", "DY", 41, false, false, 1],
+"MC13TeV_DY50toInf_HT200to400_ext"     : [5765.4, 0,  "/DYJetsToLL_M-50_HT-200to400_TuneCP5_13TeV-madgraphMLM-pythia8/RunIIFall17MiniAOD-94X_mc2017_realistic_v10_ext1-v1/MINIAODSIM", "DY", 41, false, false, 1],
+"MC13TeV_DY50toInf_HT400to600"     : [5765.4, 0,  "/DYJetsToLL_M-50_HT-400to600_TuneCP5_13TeV-madgraphMLM-pythia8/RunIIFall17MiniAOD-94X_mc2017_realistic_v10-v1/MINIAODSIM", "DY", 41, false, false, 1],
+"MC13TeV_DY50toInf_HT400to600_ext"     : [5765.4, 0,  "/DYJetsToLL_M-50_HT-400to600_TuneCP5_13TeV-madgraphMLM-pythia8/RunIIFall17MiniAOD-94X_mc2017_realistic_v10_ext1-v1/MINIAODSIM", "DY", 41, false, false, 1],
+"MC13TeV_DY50toInf_HT600to800"     : [5765.4, 0,  "/DYJetsToLL_M-50_HT-600to800_TuneCP5_13TeV-madgraphMLM-pythia8/RunIIFall17MiniAOD-94X_mc2017_realistic_v10-v1/MINIAODSIM", "DY", 41, false, false, 1],
+"MC13TeV_DY50toInf_HT800to1200"     : [5765.4, 0,  "/DYJetsToLL_M-50_HT-800to1200_TuneCP5_13TeV-madgraphMLM-pythia8/RunIIFall17MiniAOD-94X_mc2017_realistic_v10-v1/MINIAODSIM", "DY", 41, false, false, 1],
+"MC13TeV_DY50toInf_HT2500toInf"     : [5765.4, 0,  "/DYJetsToLL_M-50_HT-2500toInf_TuneCP5_13TeV-madgraphMLM-pythia8/RunIIFall17MiniAOD-94X_mc2017_realistic_v10-v1/MINIAODSIM", "DY", 41, false, false, 1],
+
 "MC13TeV_QCDEM_15to20"  : [2302200, 0,  "/QCD_Pt-15to20_EMEnriched_TuneCP5_13TeV_pythia8/RunIIFall17MiniAOD-94X_mc2017_realistic_v10-v1/MINIAODSIM", "QCD", 41, false, false, 1],
 "MC13TeV_QCDEM_20to30"  : [5352960, 0,  "/QCD_Pt-20to30_EMEnriched_TuneCP5_13TeV_pythia8/RunIIFall17MiniAOD-94X_mc2017_realistic_v10-v1/MINIAODSIM", "QCD", 41, false, false, 1],
 "MC13TeV_QCDEM_30to50"  : [9928000, 0,  "/QCD_Pt-30to50_EMEnriched_TuneCP5_13TeV_pythia8/RunIIFall17MiniAOD-94X_mc2017_realistic_v10-v1/MINIAODSIM", "QCD", 41, false, false, 1],
