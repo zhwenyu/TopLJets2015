@@ -77,6 +77,7 @@ void RunVBFVectorBoson(TString filename,
   TString cats[]={"VBFA","HighPtA","MM"};
   ht.addHist("puwgtctr",     new TH1F("puwgtctr",      ";Weight sums;Events",2,0,2));  
   ht.addHist("category",     new TH1F("category",      ";Category;Events",6,0,6));  
+  ht.addHist("qscale",       new TH1F("qscale",        ";Q^{2} scale;Events",100,0,2000));  
   for(size_t i=0; i<3; i++)
     {
       ht.addHist(cats[i]+"_nvtx",         new TH1F(cats[i]+"_nvtx",             ";Vertex multiplicity;Events",100,-0.5,101.5));
@@ -108,6 +109,10 @@ void RunVBFVectorBoson(TString filename,
       t->GetEntry(iev);
       if(iev%10==0) printf ("\r [%3.0f%%] done", 100.*(float)iev/(float)nentries);
 
+
+      std::vector<double>plotwgts(1,1.0);
+      ht.fill("puwgtctr",0,plotwgts);
+      ht.fill("qscale",ev.g_qscale,plotwgts);
       
       //assign randomly a run period
       TString period = lumi.assignRunPeriod();
@@ -153,8 +158,6 @@ void RunVBFVectorBoson(TString filename,
       // EVENT WEIGHTS //
       //////////////////
       float wgt(1.0);
-      std::vector<double>plotwgts(1,wgt);
-      ht.fill("puwgtctr",0,plotwgts);
       if (!ev.isData) {
 
         // norm weight
@@ -191,7 +194,6 @@ void RunVBFVectorBoson(TString filename,
       //control histograms
       TString c(chTag);
       if(chTag=="A") {
-
 
         if(isHighPtA) c="HighPtA";
         if(isVBFA)    c="VBFA";

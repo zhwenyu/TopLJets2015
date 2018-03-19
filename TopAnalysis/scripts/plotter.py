@@ -70,6 +70,7 @@ def main():
         for spec in opt.lumiSpecs.split(','):
             tag,lumi=spec.split(':')
             lumiSpecs[tag]=float(lumi)
+        print lumiSpecs
 
     #proc SF
     procSF={}
@@ -182,7 +183,7 @@ def main():
                                 #scale by lumi
                                 lumi=opt.lumi
                                 for tag in lumiSpecs:
-                                    if not tag in key: continue
+                                    if not tag+'_' in key: continue
                                     lumi=lumiSpecs[tag]
                                     break
                                             
@@ -214,7 +215,12 @@ def main():
         skipPlot=False
         if opt.onlyData and plots[p].dataH is None: skipPlot=True 
         if opt.silent : skipPlot=True
-        if not skipPlot : plots[p].show(outDir=outDir,lumi=opt.lumi,noStack=opt.noStack,saveTeX=opt.saveTeX)
+        lumi=opt.lumi
+        for tag in lumiSpecs:
+            if not tag+'_' in key: continue
+            lumi=lumiSpecs[tag]
+            break
+        if not skipPlot : plots[p].show(outDir=outDir,lumi=lumi,noStack=opt.noStack,saveTeX=opt.saveTeX)
         plots[p].appendTo('%s/%s'%(outDir,opt.outName))
         plots[p].reset()
 

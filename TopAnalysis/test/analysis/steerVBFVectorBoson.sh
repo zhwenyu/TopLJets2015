@@ -50,12 +50,13 @@ case $WHAT in
 	;;
     PLOT )
 	commonOpts="-i ${outdir} --puNormSF puwgtctr -j data/era2017/vbf_samples.json -l ${fulllumi}  --saveLog --mcUnc ${lumiUnc}"
-        commonOpts="${commonOpts} --lumiSpecs A:${vbflumi},HighPtA:${fulllumi},MM:${fulllumi}"
+        commonOpts="${commonOpts} --lumiSpecs VBFA:${vbflumi},HighPtA:${fulllumi},MM:${fulllumi}"
 	python scripts/plotter.py ${commonOpts}; 
 	;;
     WWW )
 	mkdir -p ${wwwdir}/sel
 	cp ${outdir}/plots/*.{png,pdf} ${wwwdir}/sel
 	cp test/index.php ${wwwdir}/sel
+        echo "Check plots in ${wwwdir}/sel"
 	;;
 esac
