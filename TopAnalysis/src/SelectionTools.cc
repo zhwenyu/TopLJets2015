@@ -6,7 +6,9 @@
 using namespace std;
 
 //
-SelectionTool::SelectionTool(TString dataset,bool debug,TH1 *triggerList) :
+SelectionTool::SelectionTool(TString dataset,bool debug,TH1 *triggerList, AnalysisType anType) :
+  debug_(debug),
+  anType_(anType),
   isSingleElectronPD_(dataset.Contains("SingleElectron")), 
   isSingleMuonPD_(dataset.Contains("SingleMuon")), 
   isDoubleEGPD_(dataset.Contains("DoubleEG")), 
@@ -16,7 +18,7 @@ SelectionTool::SelectionTool(TString dataset,bool debug,TH1 *triggerList) :
 {
   if(triggerList!=0)
     for(int xbin=0; xbin<triggerList->GetNbinsX(); xbin++)
-      triggerBits_[ triggerList->GetXaxis()->GetBinLabel(xbin+1) ] = xbin;
+      triggerBits_[ triggerList->GetXaxis()->GetBinLabel(xbin+1) ] = xbin;  
 }
 
 //
@@ -40,28 +42,43 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
   //decide the channel based on the lepton multiplicity and set lepton collections
   std::vector<Particle> tightLeptons( selLeptons(preselLeptons,TIGHT) );
   std::vector<Particle> tightPhotons( selPhotons(preselPhotons,TIGHT) );
+
   TString chTag("");
-  if(tightLeptons.size()>=2){
-    int ch( abs(tightLeptons[0].id()*tightLeptons[1].id()) );
-    if      (ch==11*13) chTag = "EM";
-    else if (ch==13*13) chTag = "MM";
-    else if (ch==11*11) chTag = "EE";
-    leptons_=tightLeptons;
-  }
-  else if(tightLeptons.size()==1){
-    int ch(abs(tightLeptons[0].id()) );
-    if      (ch==13) chTag = "M";
-    else if (ch==11) chTag = "E";
-    leptons_=tightLeptons;
-    vetoLeptons_=selLeptons(preselLeptons,VETO, 0., 99., leptons_);
-  }
-  else if(tightPhotons.size()>=1) {
-    chTag="A";
-    photons_=tightPhotons;
-  }
+  if(anType_==TOP)
+    {
+      if(tightLeptons.size()>=2){
+        int ch( abs(tightLeptons[0].id()*tightLeptons[1].id()) );
+        if      (ch==11*13) chTag = "EM";
+        else if (ch==13*13) chTag = "MM";
+        else if (ch==11*11) chTag = "EE";
+        leptons_=tightLeptons;
+      }
+      else if(tightLeptons.size()==1){
+        int ch(abs(tightLeptons[0].id()) );
+        if      (ch==13) chTag = "M";
+        else if (ch==11) chTag = "E";
+        leptons_=tightLeptons;
+        vetoLeptons_=selLeptons(preselLeptons,VETO, 0., 99., leptons_);
+      }
+    }
+  else if(anType_==VBF)
+    {
+      if(tightLeptons.size()==2)
+        {
+          int ch( abs(tightLeptons[0].id()*tightLeptons[1].id()) );
+          float mll( (tightLeptons[0]+tightLeptons[1]).M() );
+          if( ch==13*13 && fabs(mll-91)<15 && (tightLeptons[0].pt()>30 || tightLeptons[1].pt()>30)) chTag="MM";          
+        }
+      if(tightPhotons.size()>=1) {
+        chTag="A";
+        photons_=tightPhotons;
+      }
+    }
 
   //select jets based on the leptons and photon candidates
-  jets_=getGoodJets(ev,30.,2.4,leptons_,photons_);
+  float maxJetEta(2.4);
+  if(anType_==VBF) maxJetEta=4.7;
+  jets_=getGoodJets(ev,30.,maxJetEta,leptons_,photons_);
 
   //build the met
   met_.SetPtEtaPhiM( ev.met_pt[0], 0, ev.met_phi[0], 0. );
@@ -70,7 +87,7 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
   bool hasETrigger(  hasTriggerBit("HLT_Ele35_eta2p1_WPTight_Gsf_v",           ev.triggerBits) ||
                      hasTriggerBit("HLT_Ele28_eta2p1_WPTight_Gsf_HT150_v",     ev.triggerBits) ||
                      hasTriggerBit("HLT_Ele30_eta2p1_WPTight_Gsf_CentralPFJet35_EleCleaned_v",     ev.triggerBits) );
-  bool hasMTrigger(  hasTriggerBit("HLT_IsoMu24_2p1_v",                                        ev.triggerBits) || 
+  bool hasMTrigger(  //hasTriggerBit("HLT_IsoMu24_2p1_v",                                        ev.triggerBits) || 
 		     hasTriggerBit("HLT_IsoMu27_v",                                            ev.triggerBits) );
   bool hasEMTrigger( hasTriggerBit("HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_v",     ev.triggerBits) ||
                      hasTriggerBit("HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ_v",  ev.triggerBits) ||
@@ -102,9 +119,16 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
   if(chTag=="MM")
     {
       if(!hasMMTrigger && !hasMTrigger)                         chTag="";
-      if(isMuonEGPD_ || isSingleElectronPD_ || isDoubleEGPD_)   chTag="";
-      if(isSingleMuonPD_ && (hasMMTrigger || !hasMTrigger) )    chTag="";
-      if(isDoubleMuonPD_ && !hasMMTrigger)                      chTag="";
+      if(anType_==TOP)
+        {
+          if(isMuonEGPD_ || isSingleElectronPD_ || isDoubleEGPD_)   chTag="";
+          if(isSingleMuonPD_ && (hasMMTrigger || !hasMTrigger) )    chTag="";
+          if(isDoubleMuonPD_ && !hasMMTrigger)                      chTag="";
+        }
+      if(anType_==VBF)
+        {
+          if(ev.isData && !isSingleMuonPD_) chTag="";
+        }
     }
   if(chTag=="M")
     {
@@ -118,7 +142,7 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
       if(isMuonEGPD_ || isDoubleMuonPD_ || isDoubleEGPD_ || isSingleMuonPD_)   chTag="";
       if(isSingleElectronPD_ && !hasETrigger) chTag="";
     }
-  if(chTag="A")
+  if(chTag=="A")
     {
       if(!hasPhotonTrigger) chTag="";
       if(ev.isData && !isPhotonPD_) chTag="";
@@ -188,17 +212,19 @@ std::vector<Particle> SelectionTool::flaggedLeptons(MiniEvent_t &ev)
     if(debug_) cout << "Lepton #" << il << " id=" << ev.l_id[il] 
 		    << " pt=" << pt << " eta=" << eta << " relIso=" << relIso 
 		    << " charge=" << ev.l_charge[il]
-		    << " flag=0x" << std::hex << qualityFlagsWord << std::dec << endl;
+                    << " rawId = 0x" << std::hex << pid
+		    << " quality flag=0x" << qualityFlagsWord << std::dec << endl;
 
     if(qualityFlagsWord==0) continue;
 
     TLorentzVector lp4;
     lp4.SetPtEtaPhiM(ev.l_pt[il],ev.l_eta[il],ev.l_phi[il],ev.l_mass[il]);
-    leptons.push_back(Particle(lp4, ev.l_charge[il], ev.l_id[il], qualityFlagsWord, il, 1.0) );
+    leptons.push_back(Particle(lp4, ev.l_charge[il], ev.l_id[il], qualityFlagsWord, il, 1.0));
   }
   
   return leptons;
 }
+
 
 //
 std::vector<Particle> SelectionTool::selLeptons(std::vector<Particle> &leptons,int qualBit,double minPt, double maxEta,std::vector<Particle> veto){
@@ -235,7 +261,6 @@ std::vector<Particle> SelectionTool::flaggedPhotons(MiniEvent_t &ev)
   //leptons
   std::vector<Particle> photons;
   for (int ig=0; ig<ev.ngamma; ig++) {
-
     float pt(ev.gamma_pt[ig]);
     float eta(fabs(ev.gamma_eta[ig]));
     int pid(ev.gamma_pid[ig]);
@@ -244,15 +269,22 @@ std::vector<Particle> SelectionTool::flaggedPhotons(MiniEvent_t &ev)
     int qualityFlagsWord(0);
     if( pt>50 && eta<2.4)
       {
-        if( (pid&0x3ff)==0x3ff )       qualityFlagsWord |= (0x1 << LOOSE);
-        if( ((pid>>10)&0x3ff)==0x3ff ) qualityFlagsWord |= (0x1 << MEDIUM);
-        if( ((pid>>10)&0x3ff)==0x3ff ) qualityFlagsWord |= (0x1 << TIGHT);
+        if( (pid&0x7f)==0x7f )       qualityFlagsWord |= (0x1 << LOOSE);
+        if( ((pid>>10)&0x7f)==0x7f ) qualityFlagsWord |= (0x1 << MEDIUM);
+        if( ((pid>>10)&0x7f)==0x7f ) qualityFlagsWord |= (0x1 << TIGHT);
       }
     if(qualityFlagsWord==0) continue;
 
     TLorentzVector p4;
     p4.SetPtEtaPhiM(ev.gamma_pt[ig],ev.gamma_eta[ig],ev.gamma_phi[ig],0);
-    photons.push_back(Particle(p4, 0, 22, qualityFlagsWord, ig, 1.0) );
+    photons.push_back(Particle(p4, 0, 22, qualityFlagsWord, ig, 1.0));
+
+    if(debug_) std::cout << "Photon #"<< photons.size() 
+                         << " pt=" << p4.Pt() << " eta=" << p4.Eta()
+                         << hex << " raw particle id bits=" << pid 
+                         << " quality bits=" << qualityFlagsWord 
+                         << dec << endl;
+
   }
   
   return photons;
@@ -329,7 +361,7 @@ std::vector<Jet> SelectionTool::getGoodJets(MiniEvent_t &ev, double minPt, doubl
     }
 
     if(debug_) cout << "Jet #" << jets.size() 
-		    << " pt=" << jp4.Pt() << " eta=" << jp4.Eta() << " csv=" << ev.j_csv[k] << endl;
+		    << " pt=" << jp4.Pt() << " eta=" << jp4.Eta() << " deepCSV=" << ev.j_deepcsv[k] << endl;
 
     
     jets.push_back(jet);
@@ -370,24 +402,37 @@ TString SelectionTool::flagGenFinalState(MiniEvent_t &ev, std::vector<Particle> 
   genPhotons_=photons;
   if(genLeptons_.size()==0) genLeptons_=getGenLeptons(ev,20.,2.5);
   if(genPhotons_.size()==0) genPhotons_=getGenPhotons(ev,50.,1.442);
-  genJets_=getGenJets(ev,30.,2.4,genLeptons_,genPhotons_);
+
+  float maxEta(2.4);
+  if(anType_==VBF) maxEta=4.7;
+  genJets_=getGenJets(ev,30.,maxEta,genLeptons_,genPhotons_);
 
   //decide the channel
   TString chTag("");
-  if(genLeptons_.size()>=2) {
-    int chId(abs(genLeptons_[0].id()*genLeptons_[1].id()));
-    if      (chId==11*13) chTag = "EM";
-    else if (chId==13*13) chTag = "MM";
-    else if (chId==11*11) chTag = "EE";
-  }
-  else if(genLeptons_.size()==1) {
-    int absid(abs(genLeptons_[0].id()));
-    if      (absid==13) chTag = "M";
-    else if (absid==11) chTag = "E";
-  }
-  else if(genPhotons_.size()==1) {
-    chTag="A";
-  }
+  if(anType_==TOP)
+    {
+      if(genLeptons_.size()>=2) {
+        int chId(abs(genLeptons_[0].id()*genLeptons_[1].id()));
+        if      (chId==11*13) chTag = "EM";
+        else if (chId==13*13) chTag = "MM";
+        else if (chId==11*11) chTag = "EE";
+      }
+      else if(genLeptons_.size()==1) {
+        int absid(abs(genLeptons_[0].id()));
+        if      (absid==13) chTag = "M";
+        else if (absid==11) chTag = "E";
+      }
+    }
+  if(anType_==VBF)
+    {
+      if(genLeptons_.size()>=2)
+        {
+          int chId(abs(genLeptons_[0].id()*genLeptons_[1].id()));
+          float mll((genLeptons_[0]+genLeptons_[1]).M());
+          if(chId==13*13 && fabs(mll-91)<15) chTag="MM";
+        }
+      if(genPhotons_.size()>=1) chTag="A";
+    }
   
   return chTag;
 }
@@ -406,7 +451,7 @@ std::vector<Particle> SelectionTool::getGenLeptons(MiniEvent_t &ev, double minPt
 
     TLorentzVector lp4;
     lp4.SetPtEtaPhiM(ev.g_pt[i],ev.g_eta[i],ev.g_phi[i],ev.g_m[i]);
-    leptons.push_back( Particle(lp4, -ev.g_id[i]/abs(ev.g_id[i]), ev.g_id[i], 0, 1) );
+    leptons.push_back( Particle(lp4, -ev.g_id[i]/abs(ev.g_id[i]), ev.g_id[i], 0, 1));
   }
   
   return leptons;
@@ -426,7 +471,7 @@ std::vector<Particle> SelectionTool::getGenPhotons(MiniEvent_t &ev, double minPt
 
     TLorentzVector p4;
     p4.SetPtEtaPhiM(ev.g_pt[i],ev.g_eta[i],ev.g_phi[i],ev.g_m[i]);
-    photons.push_back( Particle(p4, 0, 22, 0, 1) );
+	photons.push_back( Particle(p4, 0, 22, 0, 1));
   }
   
   return photons;
@@ -465,7 +510,6 @@ std::vector<Jet> SelectionTool::getGenJets(MiniEvent_t &ev, double minPt, double
       if (ev.gpf_g[p] == i) {
 	TLorentzVector pp4;
 	pp4.SetPtEtaPhiM(ev.gpf_pt[p],ev.gpf_eta[p],ev.gpf_phi[p],ev.gpf_m[p]);
-	//if(pp4.DeltaR(jp4)<0.4){
 	jet.addParticle(Particle(pp4, ev.gpf_c[p], ev.gpf_id[p], 0, p, 1.));
 	if (ev.gpf_c[p] != 0) jet.addTrack(pp4, ev.gpf_id[p]);
       }
@@ -494,3 +538,6 @@ std::vector<Jet> SelectionTool::getGenJets(MiniEvent_t &ev, double minPt, double
   
   return jets;
 }
+
+
+

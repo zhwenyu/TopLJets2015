@@ -6,27 +6,27 @@
 
 #include "TLorentzVector.h"
 
-class Particle {
+class Particle : public TLorentzVector {
   
   public:
     Particle(TLorentzVector p4, int charge, int id, int qualityFlags, int origRef, double puppi = 1)
-      : p4_(p4), charge_(charge), id_(id), qualityFlags_(qualityFlags), origRef_(origRef), puppi_(puppi) {}
+      : TLorentzVector(p4), charge_(charge), id_(id), qualityFlags_(qualityFlags), origRef_(origRef), puppi_(puppi) {}
    
     Particle( const Particle &p) 
-      : p4_(p.p4_), charge_(p.charge_), id_(p.id_), qualityFlags_(p.qualityFlags_), origRef_(p.origRef_), puppi_(p.puppi_) {}
+      : TLorentzVector(p.px(),p.py(),p.pz(),p.e()), charge_(p.charge_), id_(p.id_), qualityFlags_(p.qualityFlags_), origRef_(p.origRef_), puppi_(p.puppi_) {}
 
-    double px()     { return p4_.Px();  }
-    double py()     { return p4_.Py();  }
-    double pz()     { return p4_.Pz();  }
-    double e()      { return p4_.E();   }
-    double pt()     { return p4_.Pt();  }
-    double eta()    { return p4_.Eta(); }
-    double phi()    { return p4_.Phi(); }
-    double energy() { return p4_.E(); }
-    double m()      { return p4_.M(); }
-    double mass()   { return p4_.M(); }
-    TLorentzVector p4()       { return p4_; }
-    TLorentzVector momentum() { return p4_; }
+    double px() const    { return TLorentzVector::Px();  }
+    double py() const    { return TLorentzVector::Py();  }
+    double pz() const    { return TLorentzVector::Pz();  }
+    double e()  const    { return TLorentzVector::E();   }
+    double pt()     { return TLorentzVector::Pt();  }
+    double eta()    { return TLorentzVector::Eta(); }
+    double phi()    { return TLorentzVector::Phi(); }
+    double energy() { return TLorentzVector::E(); }
+    double m()      { return TLorentzVector::M(); }
+    double mass()   { return TLorentzVector::M(); }
+    TLorentzVector p4()       { return TLorentzVector(TLorentzVector::Px(),TLorentzVector::Py(),TLorentzVector::Pz(),TLorentzVector::E()); }
+    TLorentzVector momentum() { return TLorentzVector(TLorentzVector::Px(),TLorentzVector::Py(),TLorentzVector::Pz(),TLorentzVector::E()); }
     int charge()    { return charge_; }
     int id()        { return id_; }
     int qualityFlags() { return qualityFlags_; }
@@ -36,7 +36,7 @@ class Particle {
     double puppi()  { return puppi_; }
 
   private:
-    TLorentzVector p4_;
+    //TLorentzVector p4_;
     int charge_, id_, qualityFlags_,origRef_;
     double puppi_;
 };
@@ -46,21 +46,21 @@ class Particle {
  */
 typedef std::pair<TLorentzVector,int> IdTrack;
 
-class Jet {
+class Jet : public TLorentzVector {
 
   public:
     Jet(TLorentzVector p4, int flavor, int idx)
-      : p4_(p4), flavor_(flavor), idx_(idx), overlap_(0) {}
+      : TLorentzVector(p4), flavor_(flavor), idx_(idx), overlap_(0) {}
     Jet(TLorentzVector p4, float csv, int idx)
-      : p4_(p4), csv_(csv), idx_(idx) {}
+      : TLorentzVector(p4), csv_(csv), idx_(idx) {}
     Jet(const Jet &j) 
-      : p4_(j.p4_), particles_(j.particles_), trks_(j.trks_), csv_(j.csv_), flavor_(j.flavor_), idx_(j.idx_), overlap_(j.overlap_) {}
+      : TLorentzVector(j.Px(),j.Py(),j.Pz(),j.E()), particles_(j.particles_), trks_(j.trks_), csv_(j.csv_), flavor_(j.flavor_), idx_(j.idx_), overlap_(j.overlap_) {}
     ~Jet() {}
 
-    double pt()     { return p4_.Pt();  }
-    double eta()    { return p4_.Eta();  }
-    TLorentzVector p4()       { return p4_; }
-    TLorentzVector momentum() { return p4_; }
+    double pt()     { return TLorentzVector::Pt();  }
+    double eta()    { return TLorentzVector::Eta();  }
+    TLorentzVector p4()       { return TLorentzVector(TLorentzVector::Px(),TLorentzVector::Py(),TLorentzVector::Pz(),TLorentzVector::E()); }
+    TLorentzVector momentum() { return TLorentzVector(TLorentzVector::Px(),TLorentzVector::Py(),TLorentzVector::Pz(),TLorentzVector::E()); }
     std::vector<Particle> &particles() { return particles_; }
     int flavor()  { return flavor_; }
     int overlap() { return overlap_; }
@@ -70,7 +70,7 @@ class Jet {
     void setOverlap(int overlap) { overlap_ = overlap; }
     
     void addTrack(TLorentzVector p4, int pfid) { trks_.push_back( IdTrack(p4,pfid) ); }
-    TLorentzVector &getVec() { return p4_; }
+    //TLorentzVector &getVec() { return p4_; }
     float &getCSV() { return csv_; }
     void setCSV(float csv) { csv_=csv; }
     void setDeepCSV(float deepcsv) { deepcsv_=deepcsv; }
@@ -78,13 +78,13 @@ class Jet {
     std::vector<IdTrack> &getTracks() { return trks_; }
     void sortTracksByPt() { sort(trks_.begin(),trks_.end(), sortIdTracksByPt); }
     
-    static bool sortJetsByPt(Jet i, Jet j)  { return i.getVec().Pt() > j.getVec().Pt(); }
+    static bool sortJetsByPt(Jet i, Jet j)  { return i.Pt() > j.Pt(); }
     static bool sortJetsByCSV(Jet i, Jet j) { return i.getCSV() > j.getCSV(); }
   
   private:
     static bool sortIdTracksByPt(IdTrack i, IdTrack j)  { return i.first.Pt() > j.first.Pt(); }
     
-    TLorentzVector p4_;
+    //TLorentzVector p4_;
     std::vector<Particle> particles_;
     std::vector<IdTrack> trks_;
     float csv_,deepcsv_;
@@ -92,4 +92,5 @@ class Jet {
     int idx_;
     int overlap_;
 };
+
 #endif

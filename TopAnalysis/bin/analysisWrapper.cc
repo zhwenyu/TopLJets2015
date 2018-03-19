@@ -2,6 +2,7 @@
 
 #include "TopLJets2015/TopAnalysis/interface/CommonTools.h"
 #include "TopLJets2015/TopAnalysis/interface/ExclusiveTop.h"
+#include "TopLJets2015/TopAnalysis/interface/VBFVectorBoson.h"
 
 #include "TH1F.h"
 #include "TFile.h"
@@ -81,9 +82,9 @@ int main(int argc, char* argv[])
     }
 
   //check method to run
-  if(method=="ExclusiveTop::RunExclusiveTop")           RunExclusiveTop(in,out,channel,charge,normH,era,debug);
-  else
-    {
+  if(method=="ExclusiveTop::RunExclusiveTop")          RunExclusiveTop(in,out,channel,charge,normH,era,debug);
+  else if(method=="VBFVectorBoson::RunVBFVectorBoson") RunVBFVectorBoson(in,out,channel,charge,normH,era,debug);
+  else {
       cout << "Check method=" << method <<endl;
       printHelp();
       return -1;
