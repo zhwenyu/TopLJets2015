@@ -66,7 +66,7 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
         {
           int ch( abs(tightLeptons[0].id()*tightLeptons[1].id()) );
           float mll( (tightLeptons[0]+tightLeptons[1]).M() );
-          if( ch==13*13 && fabs(mll-91)<15) chTag="MM";          
+          if( ch==13*13 && fabs(mll-91)<15 && (tightLeptons[0].pt()>30 || tightLeptons[1].pt()>30)) chTag="MM";          
         }
       if(tightPhotons.size()>=1) {
         chTag="A";
@@ -86,7 +86,7 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
   bool hasETrigger(  hasTriggerBit("HLT_Ele35_eta2p1_WPTight_Gsf_v",           ev.triggerBits) ||
                      hasTriggerBit("HLT_Ele28_eta2p1_WPTight_Gsf_HT150_v",     ev.triggerBits) ||
                      hasTriggerBit("HLT_Ele30_eta2p1_WPTight_Gsf_CentralPFJet35_EleCleaned_v",     ev.triggerBits) );
-  bool hasMTrigger(  hasTriggerBit("HLT_IsoMu24_2p1_v",                                        ev.triggerBits) || 
+  bool hasMTrigger(  //hasTriggerBit("HLT_IsoMu24_2p1_v",                                        ev.triggerBits) || 
 		     hasTriggerBit("HLT_IsoMu27_v",                                            ev.triggerBits) );
   bool hasEMTrigger( hasTriggerBit("HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_v",     ev.triggerBits) ||
                      hasTriggerBit("HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ_v",  ev.triggerBits) ||
@@ -211,7 +211,8 @@ std::vector<Particle> SelectionTool::flaggedLeptons(MiniEvent_t &ev)
     if(debug_) cout << "Lepton #" << il << " id=" << ev.l_id[il] 
 		    << " pt=" << pt << " eta=" << eta << " relIso=" << relIso 
 		    << " charge=" << ev.l_charge[il]
-		    << " flag=0x" << std::hex << qualityFlagsWord << std::dec << endl;
+                    << " rawId = 0x" << std::hex << pid
+		    << " quality flag=0x" << qualityFlagsWord << std::dec << endl;
 
     if(qualityFlagsWord==0) continue;
 

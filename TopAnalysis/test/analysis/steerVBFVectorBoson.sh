@@ -14,7 +14,8 @@ fi
 queue=workday
 githash=c29f431
 eosdir=/store/cmst3/group/top/RunIIFall17/${githash}
-lumi=41367
+#lumi=41367
+lumi=7661
 lumiUnc=0.025
 outdir=${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBFVectorBoson
 wwwdir=~/www/VBFVectorBoson
@@ -25,10 +26,13 @@ NC='\e[0m'
 case $WHAT in
 
     TESTSEL )
+        #input=${eosdir}/MC13TeV_GJets_HT100to200_DR04/MergedMiniEvents_0_ext0.root
+        #output=MC13TeV_GJets_HT100to200_DR04.root \
+        input=${eosdir}/Data13TeV_SingleMuon_2017C/MergedMiniEvents_0_ext0.root
+        output=Data13TeV_SingleMuon_2017C.root
 	python scripts/runLocalAnalysis.py \
-            -i ${eosdir}/MC13TeV_GJets_HT100to200_DR04/MergedMiniEvents_0_ext0.root \
-            -o MC13TeV_GJets_HT100to200_DR04.root \
-            --njobs 1 -q local \
+            -i ${input} -o ${output} \
+            --njobs 1 -q local --debug \
             --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts;
         ;;
     SEL )
