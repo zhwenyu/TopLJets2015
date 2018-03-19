@@ -26,10 +26,10 @@ NC='\e[0m'
 case $WHAT in
 
     TESTSEL )
-        #input=${eosdir}/MC13TeV_GJets_HT100to200_DR04/MergedMiniEvents_0_ext0.root
-        #output=MC13TeV_GJets_HT100to200_DR04.root \
-        input=${eosdir}/Data13TeV_SingleMuon_2017C/MergedMiniEvents_0_ext0.root
-        output=Data13TeV_SingleMuon_2017C.root
+        input=${eosdir}/MC13TeV_GJets_HT100to200_DR04/MergedMiniEvents_0_ext0.root
+        output=MC13TeV_GJets_HT100to200_DR04.root \
+        #input=${eosdir}/Data13TeV_SingleMuon_2017C/MergedMiniEvents_0_ext0.root
+        #output=Data13TeV_SingleMuon_2017C.root
 	python scripts/runLocalAnalysis.py \
             -i ${input} -o ${output} \
             --njobs 1 -q local --debug \

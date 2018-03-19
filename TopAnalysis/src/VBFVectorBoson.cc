@@ -67,7 +67,7 @@ void RunVBFVectorBoson(TString filename,
 
   //LUMINOSITY+PILEUP
   LumiTools lumi(era,genPU);
-    
+  
   //LEPTON EFFICIENCIES
   EfficiencyScaleFactorsWrapper gammaEffWR(filename.Contains("Data13TeV"),era);
 
@@ -76,22 +76,19 @@ void RunVBFVectorBoson(TString filename,
   
   //JEC/JER
   JECTools jec(era);
-
   
-   //BOOK HISTOGRAMS
+  //BOOK HISTOGRAMS
   HistTool ht;
   ht.setNsyst(0);
-  ht.addHist("puwgtctr",     new TH1F("puwgtctr",    ";Weight sums;Events",2,0,2));
-  ht.addHist("nvtx",         new TH1F("nvtx",        ";Vertex multiplicity;Events",55,-0.5,49.5));
-  ht.addHist("njets",        new TH1F("njets",       ";Jet multiplicity;Events",15,-0.5,14.5));
-  ht.addHist("mjj", 		 new TH1F("dijet_mass",  ";M_{jj} [GeV];Events",80,400,2000));
-  ht.addHist("vpt", 		 new TH1F("vectorbosonPt",  "p_{T}(V) [GeV];Events",25,50,500));
-  ht.addHist("leadjetpt", 		 new TH1F("leadjetPt",  "p_{T}(lead. J) [GeV];Events",25,50,500));
-  ht.addHist("subleadjetpt", 		 new TH1F("subleadjetPt",  "p_{T}(sublead. J) [GeV];Events",25,50,500));
-  ht.addHist("dijetpt", 		 new TH1F("dijetPt",  "p_{T}(JJ) [GeV];Events",25,50,500));
-  ht.addHist("detajj", 		 new TH1F("DEta_jj",  "#Delta#eta(J,J);Events",20,-5,5));
-
-
+  ht.addHist("puwgtctr",     new TH1F("puwgtctr",      ";Weight sums;Events",2,0,2));
+  ht.addHist("nvtx",         new TH1F("nvtx",          ";Vertex multiplicity;Events",100,-0.5,101.5));
+  ht.addHist("njets",        new TH1F("njets",         ";Jet multiplicity;Events",15,-0.5,14.5));
+  ht.addHist("mjj", 	     new TH1F("dijet_mass",    ";M_{jj} [GeV];Events",80,400,2000));
+  ht.addHist("vpt", 	     new TH1F("vectorbosonPt", "p_{T}(V) [GeV];Events",25,50,500));
+  ht.addHist("leadjetpt",    new TH1F("leadjetPt",     "p_{T}(lead. J) [GeV];Events",25,50,500));
+  ht.addHist("subleadjetpt", new TH1F("subleadjetPt",  "p_{T}(sublead. J) [GeV];Events",25,50,500));
+  ht.addHist("dijetpt",      new TH1F("dijetPt",       "p_{T}(JJ) [GeV];Events",25,50,500));
+  ht.addHist("detajj", 	     new TH1F("DEta_jj",       "#Delta#eta(J,J);Events",20,-5,5));
 
   std::cout << "init done" << std::endl;
 

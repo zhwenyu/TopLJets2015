@@ -3,6 +3,8 @@
 #include "TH2F.h"
 #include "TSystem.h"
 
+#include <iostream>
+
 //
 LumiTools::LumiTools(TString era,TH1 *genPU):
   countH_(0),
@@ -42,9 +44,10 @@ void LumiTools::parseLumiInfo()
 //
 void LumiTools::defineRunPeriods()
 {
+  runPeriods_.clear();
   if(era_.Contains("era2017"))
     {
-      runPeriods_.clear();
+      runPeriods_.push_back(std::pair<TString,float> ("",1.0));
     }
 }
 
@@ -52,6 +55,7 @@ void LumiTools::defineRunPeriods()
 TString LumiTools::assignRunPeriod()
 {
   if(runPeriods_.size()==0) return "";
+  if(runPeriods_.size()==1) return runPeriods_[0].first;
 
   float totalLumi(0.);
   for (auto periodLumi : runPeriods_) totalLumi += periodLumi.second;
