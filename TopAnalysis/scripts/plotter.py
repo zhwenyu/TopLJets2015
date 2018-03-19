@@ -217,7 +217,7 @@ def main():
         if opt.silent : skipPlot=True
         lumi=opt.lumi
         for tag in lumiSpecs:
-            if not tag+'_' in key: continue
+            if not tag+'_' in p: continue
             lumi=lumiSpecs[tag]
             break
         if not skipPlot : plots[p].show(outDir=outDir,lumi=lumi,noStack=opt.noStack,saveTeX=opt.saveTeX)

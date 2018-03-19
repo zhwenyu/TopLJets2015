@@ -40,7 +40,7 @@ case $WHAT in
     SEL )
         #--only data/era2017/vbf_samples.json --exactonly \
 	python scripts/runLocalAnalysis.py -i ${eosdir} \
-            --only MC \
+            --only Data \
             -o ${outdir} \
             -q ${queue} \
             --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts;
@@ -50,14 +50,17 @@ case $WHAT in
 	./scripts/mergeOutputs.py ${outdir};
 	;;
     PLOT )
-	commonOpts="-i ${outdir} --puNormSF puwgtctr -j data/era2017/vbf_samples.json -l ${fulllumi}  --saveLog --mcUnc ${lumiUnc}"
-        commonOpts="${commonOpts} --lumiSpecs VBFA:${vbflumi},HighPtA:${fulllumi},MM:${fulllumi}"
-	python scripts/plotter.py ${commonOpts}; 
+	commonOpts="-i ${outdir} --puNormSF puwgtctr -l ${fulllumi}  --saveLog --mcUnc ${lumiUnc} --lumiSpecs VBFA:${vbflumi}"
+	python scripts/plotter.py ${commonOpts} -j data/era2017/vbf_samples.json; 
+        python scripts/plotter.py ${commonOpts} -j data/era2017/vbf_samples_dr04.json -O ${outdir}/plots_dr04;
+        python scripts/plotter.py ${commonOpts} -j data/era2017/gjets_samples.json --noStack -O ${outdir}/plots_gjets;
 	;;
     WWW )
-	mkdir -p ${wwwdir}/sel
-	cp ${outdir}/plots/*.{png,pdf} ${wwwdir}/sel
-	cp test/index.php ${wwwdir}/sel
-        echo "Check plots in ${wwwdir}/sel"
+        for p in plots plots_dr04 plots_gjets; do
+	    mkdir -p ${wwwdir}/${p}
+	    cp ${outdir}/${p}/*.{png,pdf} ${wwwdir}/${p};
+	    cp test/index.php ${wwwdir}/${p};
+            echo "Check plots in ${wwwdir}/${p}"
+        done
 	;;
 esac
