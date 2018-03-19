@@ -18,11 +18,8 @@
 #include <algorithm>
 
 #include "TMath.h"
-#include "TopQuarkAnalysis/TopTools/interface/MEzCalculator.h"
-
 
 using namespace std;
-
 
 //
 void RunVBFVectorBoson(TString filename,
@@ -54,10 +51,9 @@ void RunVBFVectorBoson(TString filename,
   if (debug) nentries = 10000; //restrict number of entries for testing
   t->GetEntry(0);
 
+  bool isQCDEMEnriched( filename.Contains("MC13TeV_QCDEM") );
+
   cout << "...producing " << outname << " from " << nentries << " events" << endl;
-  
-  //auxiliary to solve neutrino pZ using MET
-  MEzCalculator neutrinoPzComputer;
 
   //LUMINOSITY+PILEUP
   LumiTools lumi(era,genPU);
@@ -141,6 +137,7 @@ void RunVBFVectorBoson(TString filename,
       TLorentzVector boson(0,0,0,0);
       bool isHighPt(false),isVBF(false);
       if(chTag=="A") {
+        
         boson += photons[0];
         isVBF    = (selector.hasTriggerBit("HLT_Photon75_R9Id90_HE10_IsoM_EBOnly_PFJetsMJJ300DEta3_v", ev.triggerBits) 
                     && photons[0].Pt()>75 
@@ -148,6 +145,13 @@ void RunVBFVectorBoson(TString filename,
                     && mjj>400);
         isHighPt = ( selector.hasTriggerBit("HLT_Photon200_v", ev.triggerBits) 
                      && photons[0].Pt()>200 );       
+
+        //veto prompt photons on the QCDEM enriched sample
+        if( isQCDEMEnriched && ev.gamma_isPromptFinalState[ photons[0].originalReference() ] ) {
+          isVBF=false;
+          isHighPt=false;
+        }
+          
       }
       else {
         boson += leptons[0];
