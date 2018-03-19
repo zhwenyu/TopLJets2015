@@ -14,8 +14,8 @@ fi
 queue=workday
 githash=c29f431
 eosdir=/store/cmst3/group/top/RunIIFall17/${githash}
-#lumi=41367
-lumi=7661
+fulllumi=41367
+vbflumi=7661
 lumiUnc=0.025
 outdir=${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBFVectorBoson
 wwwdir=~/www/VBFVectorBoson
@@ -26,8 +26,10 @@ NC='\e[0m'
 case $WHAT in
 
     TESTSEL )
-        input=${eosdir}/MC13TeV_GJets_HT100to200_DR04/MergedMiniEvents_0_ext0.root
-        output=MC13TeV_GJets_HT100to200_DR04.root \
+        input=${eosdir}/Data13TeV_SingleMuon_2017D/MergedMiniEvents_0_ext0.root
+        output=Data13TeV_SingleMuon_2017D.root
+        #input=${eosdir}/MC13TeV_GJets_HT100to200_DR04/MergedMiniEvents_0_ext0.root
+        #output=MC13TeV_GJets_HT100to200_DR04.root \
         #input=${eosdir}/Data13TeV_SingleMuon_2017C/MergedMiniEvents_0_ext0.root
         #output=Data13TeV_SingleMuon_2017C.root
 	python scripts/runLocalAnalysis.py \
@@ -47,7 +49,8 @@ case $WHAT in
 	./scripts/mergeOutputs.py ${outdir};
 	;;
     PLOT )
-	commonOpts="-i ${outdir} --puNormSF puwgtctr -j data/era2017/vbf_samples.json -l ${lumi}  --saveLog --mcUnc ${lumiUnc}"
+	commonOpts="-i ${outdir} --puNormSF puwgtctr -j data/era2017/vbf_samples.json -l ${fulllumi}  --saveLog --mcUnc ${lumiUnc}"
+        commonOpts="${commonOpts} --lumiSpecs A:${vbflumi},HighPtA:${fulllumi},MM:${fulllumi}"
 	python scripts/plotter.py ${commonOpts}; 
 	;;
     WWW )

@@ -68,6 +68,7 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
           int ch( abs(tightLeptons[0].id()*tightLeptons[1].id()) );
           float mll( (tightLeptons[0]+tightLeptons[1]).M() );
           if( ch==13*13 && fabs(mll-91)<15 && (tightLeptons[0].pt()>30 || tightLeptons[1].pt()>30)) chTag="MM";          
+          leptons_=tightLeptons;
         }
       if(tightPhotons.size()>=1) {
         chTag="A";
@@ -98,7 +99,8 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
                      hasTriggerBit("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8_v",         ev.triggerBits) );
   bool hasEETrigger( hasTriggerBit("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_v",              ev.triggerBits) ||
                      hasTriggerBit("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ_v",           ev.triggerBits) );
-  bool hasPhotonTrigger( hasTriggerBit("HLT_Photon75_R9Id90_HE10_IsoM_EBOnly_PFJetsMJJ300DEta3_v", ev.triggerBits) );
+  bool hasPhotonTrigger( hasTriggerBit("HLT_Photon75_R9Id90_HE10_IsoM_EBOnly_PFJetsMJJ300DEta3_v", ev.triggerBits) ||
+                         hasTriggerBit("HLT_Photon200_v", ev.triggerBits) );
 
   //check consistency with data
   if(chTag=="EM")
@@ -127,7 +129,7 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
         }
       if(anType_==VBF)
         {
-          if(ev.isData && !isSingleMuonPD_) chTag="";
+          if(ev.isData && !isSingleMuonPD_ && !hasMTrigger) chTag="";
         }
     }
   if(chTag=="M")

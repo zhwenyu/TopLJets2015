@@ -113,15 +113,18 @@ def main():
                 puNormSF=1
                 if opt.puNormSF and not isData:
                     puCorrH=fIn.Get(opt.puNormSF)
-                    nonWgt=puCorrH.GetBinContent(1)
-                    wgt=puCorrH.GetBinContent(2)
-                    if wgt>0 :
-                        puNormSF=nonWgt/wgt
-                        if puNormSF>1.3 or puNormSF<0.7 : 
-                            puNormSF=1
-                            report += '%s wasn\'t be scaled as too large SF was found (probably low stats)\n' % sp[0]
-                        else :
-                            report += '%s was scaled by %3.3f for pileup normalization\n' % (sp[0],puNormSF)
+                    try:
+                        nonWgt=puCorrH.GetBinContent(1)
+                        wgt=puCorrH.GetBinContent(2)
+                        if wgt>0 :
+                            puNormSF=nonWgt/wgt
+                            if puNormSF>1.3 or puNormSF<0.7 : 
+                                puNormSF=1
+                                report += '%s wasn\'t be scaled as too large SF was found (probably low stats)\n' % sp[0]
+                            else :
+                                report += '%s was scaled by %3.3f for pileup normalization\n' % (sp[0],puNormSF)
+                    except:
+                        print 'Check pu weight control histo',opt.puNormSF,'for',sp[0]
 
                 for tkey in fIn.GetListOfKeys():
                     keyIsSyst=False
