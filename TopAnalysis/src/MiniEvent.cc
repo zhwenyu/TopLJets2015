@@ -106,6 +106,8 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev)
   t->Branch("j_eta",      ev.j_eta,     "j_eta[nj]/F");
   t->Branch("j_phi",      ev.j_phi,     "j_phi[nj]/F");
   t->Branch("j_mass",     ev.j_mass,    "j_mass[nj]/F");
+  t->Branch("j_pumva",    ev.j_pumva,   "j_pumva[nj]/F");
+  t->Branch("j_pid",      ev.j_pid,     "j_pid[nj]/I");
   t->Branch("j_csv",      ev.j_csv,     "j_csv[nj]/F");
   t->Branch("j_btag",     ev.j_btag,    "j_btag[nj]/O");
   t->Branch("j_deepcsv",     ev.j_deepcsv,    "j_deepcsv[nj]/F");

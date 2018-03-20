@@ -47,10 +47,10 @@ struct MiniEvent_t
 
   Int_t nj;
   Float_t j_pt[200],j_eta[200],j_phi[200],j_mass[200],j_area[200],j_rawsf[200];
-  Float_t j_csv[200],j_deepcsv[200];
+  Float_t j_csv[200],j_deepcsv[200],j_pumva[200];
   Float_t j_vtxmass[200],j_vtx3DVal[200],j_vtx3DSig[200],j_vtxpx[200],j_vtxpy[200],j_vtxpz[200];
   Bool_t j_btag[200];
-  Int_t j_vtxNtracks[200],j_flav[200],j_pid[200],j_hadflav[200],j_g[200];
+  Int_t j_vtxNtracks[200],j_flav[200],j_id[200],j_pid[200],j_hadflav[200],j_g[200];
 
   //met
   Int_t nmet;

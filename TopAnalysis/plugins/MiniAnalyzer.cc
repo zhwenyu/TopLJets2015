@@ -806,6 +806,8 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
       ev_.j_mass[ev_.nj]  = j->mass();
       ev_.j_eta[ev_.nj]   = j->eta();
       ev_.j_phi[ev_.nj]   = j->phi();
+      ev_.j_pumva[ev_.nj] = j->userFloat("pileupJetId:fullDiscriminant");
+      ev_.j_id[ev_.nj]    = j->userInt("pileupJetId:fullId");
       ev_.j_g[ev_.nj]     = -1;
       for(int ig=0; ig<ev_.ng; ig++)
 	{
