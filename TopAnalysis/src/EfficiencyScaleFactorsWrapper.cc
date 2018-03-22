@@ -48,36 +48,19 @@ void EfficiencyScaleFactorsWrapper::init(TString era)
       fIn=TFile::Open(url);
       scaleFactorsGr_["m_tk"]=(TGraphAsymmErrors *)fIn->Get("ratio_eff_aeta_dr030e030_corr");
       fIn->Close();
-
-      /*
-      url=era+"/RunBCDEF_SF_ID.json";
+      
+      url=era+"/muons/RunBCDEF_SF_ID.root";
       gSystem->ExpandPathName(url);
-      JSONWrapper::Object id_json(url.Data(), true);
-      std::vector<JSONWrapper::Object> id_json_params=id_json.daughters();
+      fIn=TFile::Open(url);
+      scaleFactorsH_["m_id"]=(TH2F *)fIn->Get("NUM_TightID_DEN_genTracks")->Clone();
+      scaleFactorsH_["m_id"]->SetDirectory(0);
 
-      url=era+"/RunBCDEF_SF_ISO.json";
+      url=era+"/muons/RunBCDEF_SF_ISO.root";
       gSystem->ExpandPathName(url);
-      JSONWrapper::Object iso_json(url.Data(), true);
-      std::vector<JSONWrapper::Object> iso_json_params=iso_json.daughters();
-      */
-      //for(size_t i=0; i<iso_json_params.size(); i++) {
-      //  if( iso_json_params.keys[i].find("NUM_TightID") == std::string::npos ) continue;
-      //  std::vector<JSONWrapper::Object> abseta_pt=iso_json_params[i].daughters();
-      // }
+      fIn=TFile::Open(url);
+      scaleFactorsH_["m_iso"]=(TH2F *)fIn->Get("NUM_TightRelIso_DEN_TightIDandIPCut")->Clone();
+      scaleFactorsH_["m_iso"]->SetDirectory(0);
 
-      /*
-        TH2 *isoH=(TH2 *)fIn->Get("TightISO_TightID_pt_eta/abseta_pt_ratio");
-        for(Int_t xbin=1; xbin<=(scaleFactorsH_["m_sel"+period])->GetNbinsX(); xbin++)
-          for(Int_t ybin=1; ybin<=(scaleFactorsH_["m_sel"+period])->GetNbinsY(); ybin++)
-            {
-              float sfid(scaleFactorsH_["m_sel"+period]->GetBinContent(xbin,ybin)), sfiso(isoH->GetBinContent(xbin,ybin));
-              float sfidUnc(scaleFactorsH_["m_sel"+period]->GetBinError(xbin,ybin)), sfisoUnc(isoH->GetBinError(xbin,ybin));
-              float sf(sfid*sfiso), sfUnc(sqrt(pow(sfid*sfisoUnc,2)+pow(sfidUnc*sfiso,2)));
-              scaleFactorsH_["m_sel"+period]->SetBinContent(xbin,ybin,sf);
-              scaleFactorsH_["m_sel"+period]->SetBinError(xbin,ybin,sfUnc);
-            }
-        fIn->Close();
-      */
 
         //ELECTRONS
       /*
@@ -185,14 +168,12 @@ EffCorrection_t EfficiencyScaleFactorsWrapper::getOfflineCorrection(int pdgId,fl
       else //axis is signed eta
         etaForEff=TMath::Max(TMath::Min(float(eta),maxEtaForEff),minEtaForEff);
       Int_t etaBinForEff=h->GetXaxis()->FindBin(etaForEff);
-
       float minPtForEff( h->GetYaxis()->GetXmin() ), maxPtForEff( h->GetYaxis()->GetXmax()-0.01 );
       float ptForEff=TMath::Max(TMath::Min(pt,maxPtForEff),minPtForEff);
       Int_t ptBinForEff=h->GetYaxis()->FindBin(ptForEff);
-      
       corr.first=h->GetBinContent(etaBinForEff,ptBinForEff);
       corr.second=h->GetBinError(etaBinForEff,ptBinForEff);
-      
+
       //isolation (if available separately)
       hname=idstr+"_iso";
       if(scaleFactorsH_.find(hname)!=scaleFactorsH_.end() )
@@ -208,7 +189,7 @@ EffCorrection_t EfficiencyScaleFactorsWrapper::getOfflineCorrection(int pdgId,fl
 	  float ptForEff=TMath::Max(TMath::Min(pt,maxPtForEff),minPtForEff);
 	  Int_t ptBinForEff=h->GetYaxis()->FindBin(ptForEff);
 	  
-	  corr.second = sqrt(pow(h->GetBinError(etaBinForEff,ptBinForEff)*corr.first,2)+pow(h->GetBinError(etaBinForEff,ptBinForEff)*corr.second,2));
+	  corr.second = sqrt(pow(h->GetBinError(etaBinForEff,ptBinForEff)*corr.first,2)+pow(h->GetBinContent(etaBinForEff,ptBinForEff)*corr.second,2));
 	  corr.first  = corr.first*h->GetBinContent(etaBinForEff,ptBinForEff);
 	}
 
