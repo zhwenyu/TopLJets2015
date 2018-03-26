@@ -2,33 +2,49 @@
 import os,sys
 import ROOT
 from optparse import OptionParser
+from collections import defaultdict
 
 COLORS=[1, ROOT.kOrange,  ROOT.kRed+1, ROOT.kMagenta-9, ROOT.kBlue-7]
 
 """
 compare prefit and postfit nuisances
 """
-def compareNuisances(args,out):
+def compareNuisances(args,toys,out):
 
 
-    varList={}
+    varList=defaultdict(dict)
     for i in xrange(0,len(args)):
-        title,url=args[i].split('=')
+        title,url=args[i].split(':')
 
         inF=ROOT.TFile.Open(url)
-        fit_s=inF.Get('w').getSnapshot("MultiDimFit")
+        if toys:
+            for key in inF.GetListOfKeys():
+                kname=key.GetName()
+                if 'n_exp' in kname: continue
+                pname=kname.replace('tree_fit_sb_','')
+                pname=kname.replace('tree_fit_sb_','')
+                if pname[-2:]=='In' : continue
+                if pname in ['fit_status','r','rErr','x','xErr','rLoErr','rHiErr','numbadnll','nll_min','nll_nll0']: continue
+                pname=pname.replace('_',' ')
+                pad=key.ReadObj().GetListOfPrimitives().At(0)
+                h=pad.GetListOfPrimitives().At(1)
+                mean,rms=h.GetMean(),h.GetRMS()
+                varList[pname][title]=(mean,rms,rms)
 
-        varNames=[]
-        iter = fit_s.createIterator()
-        var = iter.Next()
-        while var :   
-            pname=var.GetName()
-            if not 'CMS_th1' in pname and not '_In' in pname :
-                if not pname in ['x','r'] :
-                    if not pname in varList: 
-                        varList[pname]={}
-                    varList[pname][title]=(var.getVal(),var.getErrorLo(),var.getErrorHi())
-            var=iter.Next()
+        else:
+            fit_s=inF.Get('w').getSnapshot("MultiDimFit")
+
+            varNames=[]
+            iter = fit_s.createIterator()
+            var = iter.Next()
+            while var :   
+                pname=var.GetName()
+                if not 'CMS_th1' in pname and not '_In' in pname :
+                    if not pname in ['x','r'] :
+                        if not pname in varList: 
+                            varList[pname]={}
+                        varList[pname][title]=(var.getVal(),var.getErrorLo(),var.getErrorHi())
+                    var=iter.Next()
     
     keyCtr=0
     keyLists=[]
@@ -164,10 +180,11 @@ def main():
         usage="%prog -o nuisances label1=MultDimFit_1.root label2=MultiDimFit_2.root",
         epilog="Summarizes the post-fit results"
         )
-    parser.add_option("-o",    type="string", dest="out"  ,          default='nuisances',  help="name of the output file")
+    parser.add_option("-o",    type="string",       dest="out"  ,  default='nuisances',  help="name of the output file")
+    parser.add_option("-t",    action='store_true', dest="toys"  , default=False,  help="is toys file")
     (opt, args) = parser.parse_args()
     
-    compareNuisances(args,opt.out)
+    compareNuisances(args,opt.toys,opt.out)
 
 """
 for execution from another script

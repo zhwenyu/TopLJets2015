@@ -143,7 +143,7 @@ def buildChisquareReportFrom(pckSummary):
                 for j in xrange(0,np):
                     chi2            += diffVec[i]*invTotalCov[i][j]*diffVec[j]            
                     chi2nomodelsyst += diffVec[i]*invNoModelSystCov[i][j]*diffVec[j]            
-            pval=ROOT.TMath.Prob(chi2,np)
+            pval=ROOT.TMath.Prob(chi2,np-1)
             chi2report['dist'][model +'*']=(chi2,np,pval)
             pvalnomodelsyst=ROOT.TMath.Prob(chi2nomodelsyst,np)
             chi2report['dist'][model]=(chi2nomodelsyst,np,pvalnomodelsyst)
@@ -189,7 +189,14 @@ def main():
     ROOT.gStyle.SetOptStat(0)
     ROOT.gStyle.SetOptTitle(0)
     ROOT.gROOT.SetBatch(True)
-    ROOT.gStyle.SetPalette(ROOT.kLightTemperature)
+    #ROOT.gStyle.SetPalette(ROOT.kLightTemperature)
+    # Viridis palette reversed + white
+    from array import array
+    stops = array('d', [0.0, 0.05, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0000])
+    red   = array('d', [26./255., 51./255.,  43./255.,  33./255.,  28./255.,  35./255.,  74./255., 144./255., 246./255., 1., 1.])
+    green = array('d', [9./255., 24./255.,  55./255.,  87./255., 118./255., 150./255., 180./255., 200./255., 222./255., 1., 1.])
+    blue  = array('d', [30./255., 96./255., 112./255., 114./255., 112./255., 101./255.,  72./255.,  35./255.,   0./255., 1., 1.])
+    ROOT.TColor.CreateGradientColorTable(11, stops, red[::-1], green[::-1], blue[::-1], 255)
 
     #configuration
     usage = 'usage: %prog [options]'
@@ -263,12 +270,14 @@ def main():
         ztitle='event shape' if varKey=='evshape' else 'flux'
         if ana=='dist':
             summaryH=ROOT.TH2F('pvalSummary', 
-                               ';p-value;;Number of '+ztitle+' analysis', 
+                               #';p-value;;Number of '+ztitle+' analysis', 
+                               ';p-value;;Number of distributions*',
                                20,1e-3,1.0, 
                                len(models2Plot),0,len(models2Plot))        
         else:
             summaryH=ROOT.TH2F('pullSummary', 
-                               ';Pull;;Number of '+ztitle+' analysis', 
+                               #';Pull;;Number of '+ztitle+' analysis', 
+                               ';Pull;;Number of distributions*',
                                20,-5,5, 
                                len(models2Plot),0,len(models2Plot))        
 
@@ -288,6 +297,7 @@ def main():
         summaryH.GetXaxis().SetLabelSize(0.04)
         summaryH.GetXaxis().SetTitleSize(0.05)
         summaryH.GetXaxis().SetTitleOffset(0.88)
+        summaryH.GetZaxis().SetTitleOffset(1.3)
         summaryH.GetYaxis().SetLabelSize(0.05)
         if ana=='mean':
             line=ROOT.TLine()
@@ -322,6 +332,10 @@ def main():
         tex.SetNDC()
         tex.DrawLatex(0.1,0.96,opt.cmsLabel)
         tex.DrawLatex(0.67,0.96,'#scale[0.8]{35.9 fb^{-1} (13 TeV)}')
+        varList=', '.join( [VARTITLES['chmult'],VARTITLES['chflux'],VARTITLES['chavgpt'],VARTITLES['chfluxz'],VARTITLES['chavgpz'],VARTITLES['chrecoil']] )
+        if not 'flux' in varKey:
+            varList=', '.join([VARTITLES['sphericity'],VARTITLES['aplanarity'],VARTITLES['C'],VARTITLES['D']])
+        tex.DrawLatex(0.25,0.91,'#scale[0.6]{* - %s}'%varList)
         c.RedrawAxis()
         c.Modified()
         c.Update()
