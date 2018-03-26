@@ -184,7 +184,7 @@ void RunExclusiveTop(TString filename,
       }
 
       if (ev.isData) {
-        const edm::EventID ev_id( ev.run, ev.event, ev.lumi );
+        const edm::EventID ev_id( ev.run, ev.lumi, ev.event );
         // LHC information retrieval from LUT
         const ctpps::conditions_t lhc_cond = lhc_conds.get( ev_id );
         const double xangle = lhc_cond.crossing_angle;
