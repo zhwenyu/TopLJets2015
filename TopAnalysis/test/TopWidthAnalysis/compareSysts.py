@@ -24,11 +24,13 @@ COLORS=[ROOT.kBlack, ROOT.kMagenta, ROOT.kMagenta+2, ROOT.kMagenta-9,ROOT.kRed+1
 STYLES=[1,2,3,7,9]
 
 
-def getVariationRatios(url,cat,systs,proc='tbartw400'):
+def getVariationRatios(url,cat,systs,proc='tbartw100'):
     """computes the ratios for each shape variation"""
     fIn=ROOT.TFile.Open(url)
 
     central=fIn.Get(cat+'_incmlb/'+proc)
+    for xbin in xrange(1,central.GetNbinsX()+1):
+        central.SetBinError(xbin,0)
 
     histos=[]
     for s in systs:
@@ -38,10 +40,12 @@ def getVariationRatios(url,cat,systs,proc='tbartw400'):
 
         try:
             upVar=fIn.Get('%s_incmlb_%sUp/%s'%(cat,s,proc))
+            upVar.Sumw2()
             upVar.Divide(central)
             upVar.SetName('%sUp'%s)
             upVar.SetLineColor(color)
             upVar.SetMarkerColor(color)
+            upVar.SetMarkerStyle(20+len(histos)%len(COLORS))
             upVar.SetFillStyle(0)
             upVar.SetLineStyle(style)
             upVar.SetTitle(s)
@@ -52,11 +56,13 @@ def getVariationRatios(url,cat,systs,proc='tbartw400'):
 
         try:
             downVar=fIn.Get('%s_incmlb_%sDown/%s'%(cat,s,proc))
+            downVar.Sumw2()
             downVar.Divide(central)
             downVar.SetName('%sDown'%s)
             downVar.SetDirectory(0)
             downVar.SetLineColor(color)
             downVar.SetMarkerColor(color)
+            downVar.SetMarkerStyle(20+len(histos)%len(COLORS))
             downVar.SetFillStyle(0)
             downVar.SetLineStyle(style)
             downVar.SetTitle(s)
@@ -108,7 +114,7 @@ for s in SYSTLIST:
     for i in xrange(0,len(histos)):
         for h in histos[i]:
             if h is None: continue
-            h.Draw('histsame' if filled else 'hist')
+            h.Draw('e2same' if filled else 'e2')
             filled=True
             if 'Up' in h.GetName(): leg.AddEntry(h,h.GetTitle(),'l')
             h.GetXaxis().SetTitle('Mass(lepton,b) [GeV]')
