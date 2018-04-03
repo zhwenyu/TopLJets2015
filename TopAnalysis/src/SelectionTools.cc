@@ -67,7 +67,8 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
         {
           int ch( abs(tightLeptons[0].id()*tightLeptons[1].id()) );
           float mll( (tightLeptons[0]+tightLeptons[1]).M() );
-          if( ch==13*13 && fabs(mll-91)<15) chTag="MM";          
+          if( ch==13*13 && fabs(mll-91)<15 && (tightLeptons[0].pt()>30 || tightLeptons[1].pt()>30)) chTag="MM";          
+          leptons_=tightLeptons;
         }
       if(tightPhotons.size()>=1) {
         chTag="A";
@@ -87,7 +88,7 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
   bool hasETrigger(  hasTriggerBit("HLT_Ele35_eta2p1_WPTight_Gsf_v",           ev.triggerBits) ||
                      hasTriggerBit("HLT_Ele28_eta2p1_WPTight_Gsf_HT150_v",     ev.triggerBits) ||
                      hasTriggerBit("HLT_Ele30_eta2p1_WPTight_Gsf_CentralPFJet35_EleCleaned_v",     ev.triggerBits) );
-  bool hasMTrigger(  hasTriggerBit("HLT_IsoMu24_2p1_v",                                        ev.triggerBits) || 
+  bool hasMTrigger(  //hasTriggerBit("HLT_IsoMu24_2p1_v",                                        ev.triggerBits) || 
 		     hasTriggerBit("HLT_IsoMu27_v",                                            ev.triggerBits) );
   bool hasEMTrigger( hasTriggerBit("HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_v",     ev.triggerBits) ||
                      hasTriggerBit("HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ_v",  ev.triggerBits) ||
@@ -98,7 +99,8 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
                      hasTriggerBit("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8_v",         ev.triggerBits) );
   bool hasEETrigger( hasTriggerBit("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_v",              ev.triggerBits) ||
                      hasTriggerBit("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ_v",           ev.triggerBits) );
-  bool hasPhotonTrigger( hasTriggerBit("HLT_Photon75_R9Id90_HE10_IsoM_EBOnly_PFJetsMJJ300DEta3_v", ev.triggerBits) );
+  bool hasPhotonTrigger( hasTriggerBit("HLT_Photon75_R9Id90_HE10_IsoM_EBOnly_PFJetsMJJ300DEta3_v", ev.triggerBits) ||
+                         hasTriggerBit("HLT_Photon200_v", ev.triggerBits) );
 
   //check consistency with data
   if(chTag=="EM")
@@ -127,7 +129,7 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
         }
       if(anType_==VBF)
         {
-          if(ev.isData && !isSingleMuonPD_) chTag="";
+          if(ev.isData && !isSingleMuonPD_ && !hasMTrigger) chTag="";
         }
     }
   if(chTag=="M")
@@ -212,7 +214,8 @@ std::vector<Particle> SelectionTool::flaggedLeptons(MiniEvent_t &ev)
     if(debug_) cout << "Lepton #" << il << " id=" << ev.l_id[il] 
 		    << " pt=" << pt << " eta=" << eta << " relIso=" << relIso 
 		    << " charge=" << ev.l_charge[il]
-		    << " flag=0x" << std::hex << qualityFlagsWord << std::dec << endl;
+                    << " rawId = 0x" << std::hex << pid
+		    << " quality flag=0x" << qualityFlagsWord << std::dec << endl;
 
     if(qualityFlagsWord==0) continue;
 
@@ -348,6 +351,7 @@ std::vector<Jet> SelectionTool::getGoodJets(MiniEvent_t &ev, double minPt, doubl
     Jet jet(jp4, flavor, k);
     jet.setCSV(ev.j_csv[k]);
     jet.setDeepCSV(ev.j_deepcsv[k]);
+    jet.setPUMVA(ev.j_pumva[k]);
 
     //fill jet constituents
     for (int p = 0; p < ev.npf; p++) {

@@ -12,36 +12,28 @@
 #include "TopLJets2015/TopAnalysis/interface/VBFVectorBoson.h"
 #include "TopLJets2015/TopAnalysis/interface/EfficiencyScaleFactorsWrapper.h"
 
-#include "TopLJets2015/TopAnalysis/interface/FillNumberLUTHandler.h"
-#include "TopLJets2015/TopAnalysis/interface/AlignmentLUTHandler.h"
-#include "TopLJets2015/TopAnalysis/interface/ProtonReconstruction.h"
-
 #include <vector>
 #include <set>
 #include <iostream>
 #include <algorithm>
 
 #include "TMath.h"
-#include "TopQuarkAnalysis/TopTools/interface/MEzCalculator.h"
-
 
 using namespace std;
-
 
 //
 void RunVBFVectorBoson(TString filename,
                        TString outname,
                        Int_t channelSelection, 
                        Int_t chargeSelection, 
-                       TH1F *normH, 
+                       TH1F *normH,
+                       TH1F *genPU,
                        TString era,
                        Bool_t debug)
 {
   /////////////////////
   // INITIALIZATION //
   ///////////////////
-
-
   
   //PREPARE OUTPUT
   TString baseName=gSystem->BaseName(outname); 
@@ -52,7 +44,6 @@ void RunVBFVectorBoson(TString filename,
   //READ TREE FROM FILE
   MiniEvent_t ev;
   TFile *f = TFile::Open(filename);
-  TH1 *genPU=(TH1 *)f->Get("analysis/putrue");
   TH1 *triggerList=(TH1 *)f->Get("analysis/triggerList");
   TTree *t = (TTree*)f->Get("analysis/data");
   attachToMiniEventTree(t,ev,true);
@@ -60,14 +51,13 @@ void RunVBFVectorBoson(TString filename,
   if (debug) nentries = 10000; //restrict number of entries for testing
   t->GetEntry(0);
 
+  bool isQCDEMEnriched( filename.Contains("MC13TeV_QCDEM") );
+
   cout << "...producing " << outname << " from " << nentries << " events" << endl;
-  
-  //auxiliary to solve neutrino pZ using MET
-  MEzCalculator neutrinoPzComputer;
 
   //LUMINOSITY+PILEUP
   LumiTools lumi(era,genPU);
-    
+  
   //LEPTON EFFICIENCIES
   EfficiencyScaleFactorsWrapper gammaEffWR(filename.Contains("Data13TeV"),era);
 
@@ -76,22 +66,31 @@ void RunVBFVectorBoson(TString filename,
   
   //JEC/JER
   JECTools jec(era);
-
   
-   //BOOK HISTOGRAMS
+  //BOOK HISTOGRAMS
   HistTool ht;
   ht.setNsyst(0);
-  ht.addHist("puwgtctr",     new TH1F("puwgtctr",    ";Weight sums;Events",2,0,2));
-  ht.addHist("nvtx",         new TH1F("nvtx",        ";Vertex multiplicity;Events",55,-0.5,49.5));
-  ht.addHist("njets",        new TH1F("njets",       ";Jet multiplicity;Events",15,-0.5,14.5));
-  ht.addHist("mjj", 		 new TH1F("dijet_mass",  ";M_{jj} [GeV];Events",80,400,2000));
-  ht.addHist("vpt", 		 new TH1F("vectorbosonPt",  "p_{T}(V) [GeV];Events",25,50,500));
-  ht.addHist("leadjetpt", 		 new TH1F("leadjetPt",  "p_{T}(lead. J) [GeV];Events",25,50,500));
-  ht.addHist("subleadjetpt", 		 new TH1F("subleadjetPt",  "p_{T}(sublead. J) [GeV];Events",25,50,500));
-  ht.addHist("dijetpt", 		 new TH1F("dijetPt",  "p_{T}(JJ) [GeV];Events",25,50,500));
-  ht.addHist("detajj", 		 new TH1F("DEta_jj",  "#Delta#eta(J,J);Events",20,-5,5));
-
-
+  ht.addHist("puwgtctr", new TH1F("puwgtctr", ";Weight sums;Events",2,0,2));  
+  ht.addHist("category", new TH1F("category", ";Category;Events",3,0,3));  
+  ht.addHist("qscale",   new TH1F("qscale",   ";Q^{2} scale;Events",100,0,2000));  
+  TString cats[]={"VBFA","HighPtA","VBFMM","HighPtMM"};
+  for(size_t i=0; i<4; i++)
+    {
+      ht.addHist(cats[i]+"_nvtx",         new TH1F(cats[i]+"_nvtx",             ";Vertex multiplicity;Events",100,-0.5,99.5));
+      ht.addHist(cats[i]+"_vpt", 	  new TH1F(cats[i]+"_vectorbosonPt",    ";Boson p_{T}[GeV];Events",25,50,500));
+      ht.addHist(cats[i]+"_vy", 	  new TH1F(cats[i]+"_vectorbosony",     ";Boson rapidity;Events",25,0,3));
+      ht.addHist(cats[i]+"_vystar", 	  new TH1F(cats[i]+"_vectorbosonystar", ";y-(1/2)(y_{j1}+y_{j2});Events",25,0,3));
+      ht.addHist(cats[i]+"_njets",        new TH1F(cats[i]+"_njets",            ";Jet multiplicity;Events",15,-0.5,14.5));
+      ht.addHist(cats[i]+"_mjj", 	  new TH1F(cats[i]+"_mjj",              ";Dijet invariant mass [GeV];Events",40,400,2400));
+      ht.addHist(cats[i]+"_leadpt",       new TH1F(cats[i]+"_leadpt",           ";Leading jet p_{T} [GeV];Events",25,50,500));
+      ht.addHist(cats[i]+"_subleadpt",    new TH1F(cats[i]+"_subleadpt"   ,     ";Sub-leading jet p_{T} [GeV];Events",25,50,500));
+      ht.addHist(cats[i]+"_centraleta",   new TH1F(cats[i]+"_centraleta",       ";Most central jet |#eta|;Events",25,0,5));
+      ht.addHist(cats[i]+"_forwardeta",   new TH1F(cats[i]+"_forwardeta",       ";Most forward jet |#eta|;Events",25,0,5));
+      ht.addHist(cats[i]+"_dijetpt",      new TH1F(cats[i]+"_dijetpt",          ";Dijet p_{T} [GeV];Events",25,50,500));
+      ht.addHist(cats[i]+"_detajj", 	  new TH1F(cats[i]+"_detajj" ,          ";#Delta#eta(J,J);Events",20,0,6));
+      ht.addHist(cats[i]+"_ht", 	  new TH1F(cats[i]+"_ht",               ";H_{T} [GeV];Events",50,0,8300));
+      ht.addHist(cats[i]+"_balance", 	  new TH1F(cats[i]+"_balance",          ";System p_{T} balance [GeV];Events",25,0,250));
+    }
 
   std::cout << "init done" << std::endl;
 
@@ -105,8 +104,10 @@ void RunVBFVectorBoson(TString filename,
   for (Int_t iev=0;iev<nentries;iev++)
     {
       t->GetEntry(iev);
-      if(iev%10==0) printf ("\r [%3.0f%%] done", 100.*(float)iev/(float)nentries);
+      if(iev%10000==0) printf ("\r [%3.0f%%] done", 100.*(float)iev/(float)nentries);
 
+      std::vector<double>plotwgts(1,1.0);
+      ht.fill("qscale",ev.g_qscale,plotwgts);
       
       //assign randomly a run period
       TString period = lumi.assignRunPeriod();
@@ -115,47 +116,92 @@ void RunVBFVectorBoson(TString filename,
       // CORRECTIONS //
       ////////////////      
       jec.smearJetEnergies(ev);
-           
-           
+             
       ///////////////////////////
       // RECO LEVEL SELECTION //
       /////////////////////////
       TString chTag = selector.flagFinalState(ev);
-      if(chTag=="") continue;
+      if(chTag!="A" && chTag!="MM") continue;
       std::vector<Particle> &photons     = selector.getSelPhotons(); 
+      std::vector<Particle> &leptons     = selector.getSelLeptons(); 
       std::vector<Jet>      &jets        = selector.getJets();  
 
+      //jet related variables and selection
+      float mjj(jets.size()>=2 ?  (jets[0]+jets[1]).M() : 0.);
+      float scalarht(0.);
+      for(auto j : jets) scalarht += j.Pt();
+      bool passJets(jets.size()>=2 && mjj>400);
 
-      //require one good photon
-	  std::cout<<"Photon size: "<<photons.size()<<endl;
-	  std::cout<<"Jet size: "<<jets.size()<<endl;	
-      if(photons.size()!=1) continue;
-      bool passJets(jets.size()>=2);
+      //categorize the event according to the boson kinematics
+      //for the photon refine also the category according to the trigger  bit
+      TLorentzVector boson(0,0,0,0);
+      bool isHighPt(false),isVBF(false);
+      if(chTag=="A") {
+        
+        boson += photons[0];
+        isVBF    = (selector.hasTriggerBit("HLT_Photon75_R9Id90_HE10_IsoM_EBOnly_PFJetsMJJ300DEta3_v", ev.triggerBits) 
+                    && photons[0].Pt()>75 
+                    && fabs(photons[0].Eta())<1.442
+                    && mjj>400);
+        isHighPt = ( selector.hasTriggerBit("HLT_Photon200_v", ev.triggerBits) 
+                     && photons[0].Pt()>200 );       
 
+        //veto prompt photons on the QCDEM enriched sample
+        if( isQCDEMEnriched && ev.gamma_isPromptFinalState[ photons[0].originalReference() ] ) {
+          isVBF=false;
+          isHighPt=false;
+        }
+          
+      }
+      else {
+        boson += leptons[0];
+        boson += leptons[1];
+        isVBF    = boson.Pt()>75 && fabs(boson.Rapidity())<1.442 && mjj>400;
+        isHighPt = boson.Pt()>200;
+      }
+      if(!isVBF && !isHighPt) continue;      
+      std::vector<TString> chTags;      
+      if(isVBF)    chTags.push_back("VBF"+chTag);
+      if(isHighPt) chTags.push_back("HighPt"+chTag);
       
+      //system variables
+      float ystar(0),balance(0);
+      if(passJets) {
+        ystar=boson.Rapidity()-0.5*(jets[0].Rapidity()+jets[1].Rapidity());
+        balance=(boson+jets[0]+jets[1]).Pt();
+      }
+
       ////////////////////
       // EVENT WEIGHTS //
       //////////////////
       float wgt(1.0);
-      std::vector<double>plotwgts(1,wgt);
-      ht.fill("puwgtctr",0,plotwgts);
       if (!ev.isData) {
 
         // norm weight
         wgt  = (normH? normH->GetBinContent(1) : 1.0);
         
         // pu weight
+        ht.fill("puwgtctr",0,plotwgts);
         double puWgt(lumi.pileupWeight(ev.g_pu,period)[0]);
         std::vector<double>puPlotWgts(1,puWgt);
         ht.fill("puwgtctr",1,puPlotWgts);
         
         // photon trigger*selection weights
-        EffCorrection_t trigSF = gammaEffWR.getTriggerCorrection({},photons,{}, period);
-        EffCorrection_t  selSF= gammaEffWR.getOfflineCorrection(photons[0], period);
-
-        wgt *= puWgt*trigSF.first*selSF.first;
+        float trigSF(1.0), selSF(1.0);
+        if(chTag=="A")
+          {
+            trigSF *= gammaEffWR.getTriggerCorrection({},photons,{}, period).first;
+            selSF  *= gammaEffWR.getOfflineCorrection(photons[0], period).first;
+          }
+        else
+          {
+            trigSF *=gammaEffWR.getTriggerCorrection(leptons,{},{}, period).first;
+            selSF  *=gammaEffWR.getOfflineCorrection(leptons[0], period).first;
+            selSF  *=gammaEffWR.getOfflineCorrection(leptons[1], period).first;
+          }
+        wgt *= puWgt*trigSF*selSF;
         
-        
+       
         // generator level weights
         wgt *= (ev.g_nw>0 ? ev.g_w[0] : 1.0);
 
@@ -163,21 +209,32 @@ void RunVBFVectorBoson(TString filename,
         plotwgts[0]=wgt;
       }
 
-
-
       //control histograms
-      ht.fill("nvtx",     ev.nvtx,        plotwgts);
-	  ht.fill("njets",    jets.size(),    plotwgts);
-      if(passJets){
-  		ht.fill("mjj", 	(jets[0]+jets[1]).M(),	plotwgts);
-  		ht.fill("vpt", 	photons[0].Pt(),		plotwgts);
-  		ht.fill("leadjetpt", jets[0].Pt(),		plotwgts);
-  		ht.fill("subleadjetpt", jets[1].Pt(),	plotwgts);
-  		ht.fill("dijetpt",(jets[0]+jets[1]).Pt(),plotwgts);
-  		ht.fill("detajj", jets[0].Eta()-jets[1].Eta(),plotwgts);
-	  }
-
-
+      if(chTag=="A") {
+        std::vector<int> acats;
+        if(isVBF)                         acats.push_back(0);
+        if(isHighPt)                      acats.push_back(1);
+        if(isHighPt && !isVBF && mjj>400) acats.push_back(2);
+        for(auto bin : acats) ht.fill("category",bin,plotwgts);
+      }
+      for( auto c : chTags) {
+        ht.fill(c+"_nvtx",  ev.nvtx,          plotwgts);
+        ht.fill(c+"_njets", jets.size(),      plotwgts);
+        ht.fill(c+"_ht",    scalarht,         plotwgts);
+        ht.fill(c+"_vpt",   boson.Pt(),       plotwgts);
+        ht.fill(c+"_vy",    boson.Rapidity(), plotwgts);   
+        if(passJets) {
+          ht.fill(c+"_vystar",     ystar, plotwgts);
+          ht.fill(c+"_mjj", 	     mjj,	plotwgts);
+          ht.fill(c+"_leadpt",     jets[0].Pt(),	plotwgts);
+          ht.fill(c+"_subleadpt",  jets[1].Pt(),	plotwgts);
+          ht.fill(c+"_centraleta", min(fabs(jets[0].Eta()),fabs(jets[1].Eta())),	plotwgts);
+          ht.fill(c+"_forwardeta", max(fabs(jets[0].Eta()),fabs(jets[1].Eta())),	plotwgts);
+          ht.fill(c+"_dijetpt",    (jets[0]+jets[1]).Pt(),plotwgts);
+          ht.fill(c+"_detajj",     fabs(jets[0].Eta()-jets[1].Eta()),plotwgts);
+          ht.fill(c+"_balance",    balance,plotwgts);
+        }
+      }
     }
   
   //close input file

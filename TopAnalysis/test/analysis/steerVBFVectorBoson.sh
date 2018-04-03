@@ -12,9 +12,10 @@ fi
 
 #to run locally use local as queue + can add "--njobs 8" to use 8 parallel jobs
 queue=workday
-githash=c29f431
+githash=c29f431 #fbc74ae
 eosdir=/store/cmst3/group/top/RunIIFall17/${githash}
-lumi=41367
+fulllumi=41367
+vbflumi=7661
 lumiUnc=0.025
 outdir=${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBFVectorBoson
 wwwdir=~/www/VBFVectorBoson
@@ -25,15 +26,23 @@ NC='\e[0m'
 case $WHAT in
 
     TESTSEL )
+        input=${eosdir}/MC13TeV_DY50toInf/MergedMiniEvents_0_ext0.root
+        output=MC13TeV_DY.root
+        tag="--tag MC13TeV_DY50toInf"
+        #input=${eosdir}/Data13TeV_SingleMuon_2017D/MergedMiniEvents_0_ext0.root
+        #output=Data13TeV_SingleMuon_2017D.root
+        #input=${eosdir}/MC13TeV_GJets_HT100to200_DR04/MergedMiniEvents_0_ext0.root
+        #output=MC13TeV_GJets_HT100to200_DR04.root \
+        #input=${eosdir}/Data13TeV_SingleMuon_2017C/MergedMiniEvents_0_ext0.root
+        #output=Data13TeV_SingleMuon_2017C.root
 	python scripts/runLocalAnalysis.py \
-            -i ${eosdir}/MC13TeV_GJets_HT100to200_DR04/MergedMiniEvents_0_ext0.root \
-            -o MC13TeV_GJets_HT100to200_DR04.root \
-            --njobs 1 -q local \
-            --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --debug --runSysts;
+            -i ${input} -o ${output} ${tag} \
+            --njobs 1 -q local --debug \
+            --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts;
         ;;
     SEL )
+        #--only data/era2017/vbf_samples.json --exactonly \
 	python scripts/runLocalAnalysis.py -i ${eosdir} \
-            --only data/era2017/vbf_samples.json --exactonly \
             -o ${outdir} \
             -q ${queue} \
             --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts;
@@ -43,12 +52,17 @@ case $WHAT in
 	./scripts/mergeOutputs.py ${outdir};
 	;;
     PLOT )
-	commonOpts="-i ${outdir} --puNormSF puwgtctr -j data/era2017/vbf_samples.json -l ${lumi}  --saveLog --mcUnc ${lumiUnc}"
-	python scripts/plotter.py ${commonOpts}; 
+	commonOpts="-i ${outdir} --puNormSF puwgtctr -l ${fulllumi}  --saveLog --mcUnc ${lumiUnc} --lumiSpecs VBFA:${vbflumi}"
+	python scripts/plotter.py ${commonOpts} -j data/era2017/vbf_samples.json; 
+        python scripts/plotter.py ${commonOpts} -j data/era2017/vbf_samples_dr04.json -O ${outdir}/plots_dr04;
+        python scripts/plotter.py ${commonOpts} -j data/era2017/gjets_samples.json --noStack -O ${outdir}/plots_gjets;
 	;;
     WWW )
-	mkdir -p ${wwwdir}/sel
-	cp ${outdir}/plots/*.{png,pdf} ${wwwdir}/sel
-	cp test/index.php ${wwwdir}/sel
+        for p in plots plots_dr04 plots_gjets; do
+	    mkdir -p ${wwwdir}/${p}
+	    cp ${outdir}/${p}/*.{png,pdf} ${wwwdir}/${p};
+	    cp test/index.php ${wwwdir}/${p};
+            echo "Check plots in ${wwwdir}/${p}"
+        done
 	;;
 esac

@@ -70,6 +70,7 @@ def main():
         for spec in opt.lumiSpecs.split(','):
             tag,lumi=spec.split(':')
             lumiSpecs[tag]=float(lumi)
+        print lumiSpecs
 
     #proc SF
     procSF={}
@@ -113,15 +114,18 @@ def main():
                 puNormSF=1
                 if opt.puNormSF and not isData:
                     puCorrH=fIn.Get(opt.puNormSF)
-                    nonWgt=puCorrH.GetBinContent(1)
-                    wgt=puCorrH.GetBinContent(2)
-                    if wgt>0 :
-                        puNormSF=nonWgt/wgt
-                        if puNormSF>1.3 or puNormSF<0.7 : 
-                            puNormSF=1
-                            report += '%s wasn\'t be scaled as too large SF was found (probably low stats)\n' % sp[0]
-                        else :
-                            report += '%s was scaled by %3.3f for pileup normalization\n' % (sp[0],puNormSF)
+                    try:
+                        nonWgt=puCorrH.GetBinContent(1)
+                        wgt=puCorrH.GetBinContent(2)
+                        if wgt>0 :
+                            puNormSF=nonWgt/wgt
+                            if puNormSF>1.3 or puNormSF<0.7 : 
+                                puNormSF=1
+                                report += '%s wasn\'t be scaled as too large SF was found (probably low stats)\n' % sp[0]
+                            else :
+                                report += '%s was scaled by %3.3f for pileup normalization\n' % (sp[0],puNormSF)
+                    except:
+                        print 'Check pu weight control histo',opt.puNormSF,'for',sp[0]
 
                 for tkey in fIn.GetListOfKeys():
                     keyIsSyst=False
@@ -179,7 +183,7 @@ def main():
                                 #scale by lumi
                                 lumi=opt.lumi
                                 for tag in lumiSpecs:
-                                    if not tag in key: continue
+                                    if not tag+'_' in key: continue
                                     lumi=lumiSpecs[tag]
                                     break
                                             
@@ -211,7 +215,12 @@ def main():
         skipPlot=False
         if opt.onlyData and plots[p].dataH is None: skipPlot=True 
         if opt.silent : skipPlot=True
-        if not skipPlot : plots[p].show(outDir=outDir,lumi=opt.lumi,noStack=opt.noStack,saveTeX=opt.saveTeX)
+        lumi=opt.lumi
+        for tag in lumiSpecs:
+            if not tag+'_' in p: continue
+            lumi=lumiSpecs[tag]
+            break
+        if not skipPlot : plots[p].show(outDir=outDir,lumi=lumi,noStack=opt.noStack,saveTeX=opt.saveTeX)
         plots[p].appendTo('%s/%s'%(outDir,opt.outName))
         plots[p].reset()
 
