@@ -12,7 +12,7 @@ fi
 
 #to run locally use local as queue + can add "--njobs 8" to use 8 parallel jobs
 queue=workday
-githash=c29f431 #fbc74ae
+githash=fbc74ae
 eosdir=/store/cmst3/group/top/RunIIFall17/${githash}
 fulllumi=41367
 vbflumi=7661
@@ -43,6 +43,7 @@ case $WHAT in
     SEL )
         #--only data/era2017/vbf_samples.json --exactonly \
 	python scripts/runLocalAnalysis.py -i ${eosdir} \
+            --only GJets_HT,QCDEM \
             -o ${outdir} \
             -q ${queue} \
             --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts;

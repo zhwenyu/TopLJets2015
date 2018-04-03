@@ -84,6 +84,8 @@ void RunVBFVectorBoson(TString filename,
       ht.addHist(cats[i]+"_mjj", 	  new TH1F(cats[i]+"_mjj",              ";Dijet invariant mass [GeV];Events",40,400,2400));
       ht.addHist(cats[i]+"_leadpt",       new TH1F(cats[i]+"_leadpt",           ";Leading jet p_{T} [GeV];Events",25,50,500));
       ht.addHist(cats[i]+"_subleadpt",    new TH1F(cats[i]+"_subleadpt"   ,     ";Sub-leading jet p_{T} [GeV];Events",25,50,500));
+      ht.addHist(cats[i]+"_leadpumva",    new TH1F(cats[i]+"_leadpumva",        ";Pileup MVA;Events",25,-1,1));
+      ht.addHist(cats[i]+"_subleadpumva", new TH1F(cats[i]+"_subleadpumva"   ,  ";Pileup MVA;Events",25,-1,1));
       ht.addHist(cats[i]+"_centraleta",   new TH1F(cats[i]+"_centraleta",       ";Most central jet |#eta|;Events",25,0,5));
       ht.addHist(cats[i]+"_forwardeta",   new TH1F(cats[i]+"_forwardeta",       ";Most forward jet |#eta|;Events",25,0,5));
       ht.addHist(cats[i]+"_dijetpt",      new TH1F(cats[i]+"_dijetpt",          ";Dijet p_{T} [GeV];Events",25,50,500));
@@ -226,8 +228,10 @@ void RunVBFVectorBoson(TString filename,
         if(passJets) {
           ht.fill(c+"_vystar",     ystar, plotwgts);
           ht.fill(c+"_mjj", 	     mjj,	plotwgts);
-          ht.fill(c+"_leadpt",     jets[0].Pt(),	plotwgts);
-          ht.fill(c+"_subleadpt",  jets[1].Pt(),	plotwgts);
+          ht.fill(c+"_leadpt",     jets[0].Pt(), plotwgts);
+          ht.fill(c+"_subleadpt",  jets[1].Pt(), plotwgts);
+          ht.fill(c+"_leadpumva",    jets[0].getPUMVA(),  plotwgts);
+          ht.fill(c+"_subleadpumva",  jets[1].getPUMVA(),  plotwgts);
           ht.fill(c+"_centraleta", min(fabs(jets[0].Eta()),fabs(jets[1].Eta())),	plotwgts);
           ht.fill(c+"_forwardeta", max(fabs(jets[0].Eta()),fabs(jets[1].Eta())),	plotwgts);
           ht.fill(c+"_dijetpt",    (jets[0]+jets[1]).Pt(),plotwgts);
