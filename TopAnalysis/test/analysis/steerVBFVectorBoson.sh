@@ -43,8 +43,7 @@ case $WHAT in
     SEL )
         #--only data/era2017/vbf_samples.json --exactonly \
 	python scripts/runLocalAnalysis.py -i ${eosdir} \
-            --only GJets_HT,QCDEM \
-            -o ${outdir} \
+            -o ${outdir}/raw \
             -q ${queue} \
             --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts;
 	;;
@@ -55,11 +54,12 @@ case $WHAT in
     PLOT )
 	commonOpts="-i ${outdir} --puNormSF puwgtctr -l ${fulllumi}  --saveLog --mcUnc ${lumiUnc} --lumiSpecs VBFA:${vbflumi}"
 	python scripts/plotter.py ${commonOpts} -j data/era2017/vbf_samples.json; 
-        python scripts/plotter.py ${commonOpts} -j data/era2017/vbf_samples_dr04.json -O ${outdir}/plots_dr04;
-        python scripts/plotter.py ${commonOpts} -j data/era2017/gjets_samples.json --noStack -O ${outdir}/plots_gjets;
+        python test/analysis/computeVBFRatios.py -i test/analysis/VBFVectorBoson/plots/plotter.root -o test/analysis/VBFVectorBoson/plots/ratio_plotter.root
+        #python scripts/plotter.py ${commonOpts} -j data/era2017/vbf_samples_dr04.json -O ${outdir}/plots_dr04;
+        #python scripts/plotter.py ${commonOpts} -j data/era2017/gjets_samples.json --noStack -O ${outdir}/plots_gjets;
 	;;
     WWW )
-        for p in plots plots_dr04 plots_gjets; do
+        for p in plots; do # plots_dr04 plots_gjets; do
 	    mkdir -p ${wwwdir}/${p}
 	    cp ${outdir}/${p}/*.{png,pdf} ${wwwdir}/${p};
 	    cp test/index.php ${wwwdir}/${p};
