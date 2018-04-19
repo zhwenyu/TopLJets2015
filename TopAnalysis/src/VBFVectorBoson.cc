@@ -24,8 +24,7 @@ using namespace std;
 //
 void RunVBFVectorBoson(TString filename,
                        TString outname,
-                       Int_t channelSelection, 
-                       Int_t chargeSelection, 
+                       Int_t anFlag,
                        TH1F *normH,
                        TH1F *genPU,
                        TString era,
@@ -40,6 +39,28 @@ void RunVBFVectorBoson(TString filename,
   TString dirName=gSystem->DirName(outname);
   TFile *fOut=TFile::Open(dirName+"/"+baseName,"RECREATE");
   fOut->cd();
+
+  //read photon/Z pT weights if required
+  std::map<TString,TGraph *> photonPtWgts;
+  std::map<TString,std::pair<double,double> > photonPtWgtCtr;
+  if(anFlag>0) {
+    TString wgtUrl("${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBFVectorBoson/raw/plots/ratio_plotter.root");
+    gSystem->ExpandPathName(wgtUrl);
+    TFile *wgtF=TFile::Open(wgtUrl);
+    if(wgtF) {
+      cout << "Reading photon/Z pT weights" << endl;
+      TString pfix(baseName.Contains("Data13TeV_") ? "" : "_mc_MC");
+      photonPtWgts["VBFA"]      = new TGraph((TH1* )wgtF->Get("VBFA_vectorbosonPt_ratio/VBFA_vectorbosonPt"+pfix));
+      photonPtWgts["HighPtA"]   = new TGraph((TH1* )wgtF->Get("HighPtA_vectorbosonPt_ratio/HighPtA_vectorbosonPt"+pfix));
+      photonPtWgtCtr["VBFA"]    = std::pair<double,double>(0.0,0.0);
+      photonPtWgtCtr["HighPtA"] = std::pair<double,double>(0.0,0.0);
+      wgtF->Close();
+    } else {
+      cout << "Requested to reweight photon spectrum but could not find " << wgtUrl << endl
+           << "Proceeding without" << endl;
+    }
+  }
+
 
   //READ TREE FROM FILE
   MiniEvent_t ev;
@@ -73,7 +94,7 @@ void RunVBFVectorBoson(TString filename,
   ht.addHist("puwgtctr", new TH1F("puwgtctr", ";Weight sums;Events",2,0,2));  
   ht.addHist("category", new TH1F("category", ";Category;Events",3,0,3));  
   ht.addHist("qscale",   new TH1F("qscale",   ";Q^{2} scale;Events",100,0,2000));  
-  TString cats[]={"VBFA","HighPtA","VBFMM","HighPtMM"};
+  TString cats[]={"VBFA","HighPtA","HighPtVBFA","VBFMM","HighPtMM"};
   for(size_t i=0; i<4; i++)
     {
       ht.addHist(cats[i]+"_nvtx",         new TH1F(cats[i]+"_nvtx",             ";Vertex multiplicity;Events",100,-0.5,99.5));
@@ -84,6 +105,8 @@ void RunVBFVectorBoson(TString filename,
       ht.addHist(cats[i]+"_mjj", 	  new TH1F(cats[i]+"_mjj",              ";Dijet invariant mass [GeV];Events",40,0,4000));
       ht.addHist(cats[i]+"_leadpt",       new TH1F(cats[i]+"_leadpt",           ";Leading jet p_{T} [GeV];Events",25,0,500));
       ht.addHist(cats[i]+"_subleadpt",    new TH1F(cats[i]+"_subleadpt"   ,     ";Sub-leading jet p_{T} [GeV];Events",25,0,500));
+      ht.addHist(cats[i]+"_drj1b",        new TH1F(cats[i]+"_drj1b",            ";#DeltaR(j_{1},boson);Events",25,0,6));
+      ht.addHist(cats[i]+"_drj2b",        new TH1F(cats[i]+"_drj2b"   ,         ";#DeltaR(j_{2},boson);Events",25,0,6));
       ht.addHist(cats[i]+"_leadpumva",    new TH1F(cats[i]+"_leadpumva",        ";Pileup MVA;Events",25,-1,1));
       ht.addHist(cats[i]+"_subleadpumva", new TH1F(cats[i]+"_subleadpumva"   ,  ";Pileup MVA;Events",25,-1,1));
       ht.addHist(cats[i]+"_centraleta",   new TH1F(cats[i]+"_centraleta",       ";Most central jet |#eta|;Events",25,0,5));
@@ -123,10 +146,18 @@ void RunVBFVectorBoson(TString filename,
       // RECO LEVEL SELECTION //
       /////////////////////////
       TString chTag = selector.flagFinalState(ev);
-      if(chTag!="A" && chTag!="MM") continue;
       std::vector<Particle> &photons     = selector.getSelPhotons(); 
       std::vector<Particle> &leptons     = selector.getSelLeptons(); 
-      std::vector<Jet>      &jets        = selector.getJets();  
+      std::vector<Jet>      &alljets     = selector.getJets();  
+      std::vector<Jet> jets;
+      for(auto j : alljets) {
+        int idx=j.getJetIndex();
+        int jid=ev.j_id[idx];
+        bool passLoosePu((jid>>2)&0x1);
+        if(!passLoosePu) continue;
+        jets.push_back(j);
+      }
+      if(chTag!="A" && chTag!="MM") continue;
 
       //jet related variables and selection
       float mjj(jets.size()>=2 ?  (jets[0]+jets[1]).M() : 0.);
@@ -165,7 +196,8 @@ void RunVBFVectorBoson(TString filename,
       std::vector<TString> chTags;      
       if(isVBF)    chTags.push_back("VBF"+chTag);
       if(isHighPt) chTags.push_back("HighPt"+chTag);
-      
+      if(isHighPt && isVBF && chTag=="A") chTags.push_back("HighPtVBF"+chTag);
+
       //system variables
       float ystar(0),balance(0);
       if(passJets) {
@@ -181,7 +213,7 @@ void RunVBFVectorBoson(TString filename,
 
         // norm weight
         wgt  = (normH? normH->GetBinContent(1) : 1.0);
-        
+            
         // pu weight
         ht.fill("puwgtctr",0,plotwgts);
         double puWgt(lumi.pileupWeight(ev.g_pu,period)[0]);
@@ -220,36 +252,72 @@ void RunVBFVectorBoson(TString filename,
         for(auto bin : acats) ht.fill("category",bin,plotwgts);
       }
       for( auto c : chTags) {
-        ht.fill(c+"_nvtx",  ev.nvtx,          plotwgts);
-        ht.fill(c+"_njets", jets.size(),      plotwgts);
-        ht.fill(c+"_ht",    scalarht,         plotwgts);
-        ht.fill(c+"_vpt",   boson.Pt(),       plotwgts);
-        ht.fill(c+"_vy",    boson.Rapidity(), plotwgts);   
+
+        std::vector<double> cplotwgts(plotwgts);
+
+        //photon pT weighting
+        if(chTag=="A") {
+          float photonPtWgt(1.0);
+          if(photonPtWgts.find(c)!=photonPtWgts.end()) {
+            photonPtWgt=photonPtWgts[c]->Eval(boson.Pt());
+            if(photonPtWgt>0) photonPtWgt = 1./photonPtWgt;
+            else              photonPtWgt = 1.0;
+          }
+          photonPtWgtCtr[c].first  += 1.0;
+          photonPtWgtCtr[c].second += photonPtWgt;
+          cplotwgts[0]*=photonPtWgt;
+        } 
+
+        ht.fill(c+"_nvtx",  ev.nvtx,          cplotwgts);
+        ht.fill(c+"_njets", jets.size(),      cplotwgts);
+        ht.fill(c+"_ht",    scalarht,         cplotwgts);
+        ht.fill(c+"_vpt",   boson.Pt(),       cplotwgts);
+        ht.fill(c+"_vy",    boson.Rapidity(), cplotwgts);   
         if(passJets) {
-          ht.fill(c+"_vystar",     ystar, plotwgts);
-          ht.fill(c+"_mjj", 	     mjj,	plotwgts);
-          ht.fill(c+"_leadpt",     jets[0].Pt(), plotwgts);
-          ht.fill(c+"_subleadpt",  jets[1].Pt(), plotwgts);
-          ht.fill(c+"_leadpumva",    jets[0].getPUMVA(),  plotwgts);
-          ht.fill(c+"_subleadpumva",  jets[1].getPUMVA(),  plotwgts);
-          ht.fill(c+"_centraleta", min(fabs(jets[0].Eta()),fabs(jets[1].Eta())),	plotwgts);
-          ht.fill(c+"_forwardeta", max(fabs(jets[0].Eta()),fabs(jets[1].Eta())),	plotwgts);
-          ht.fill(c+"_dijetpt",    (jets[0]+jets[1]).Pt(),plotwgts);
-          ht.fill(c+"_detajj",     fabs(jets[0].Eta()-jets[1].Eta()),plotwgts);
-          ht.fill(c+"_balance",    balance,plotwgts);
+          ht.fill(c+"_vystar",       ystar,               cplotwgts);
+          ht.fill(c+"_mjj", 	     mjj,         	  cplotwgts);
+          ht.fill(c+"_leadpt",       jets[0].Pt(),        cplotwgts);
+          ht.fill(c+"_subleadpt",    jets[1].Pt(),        cplotwgts);
+          ht.fill(c+"_leadpumva",    jets[0].getPUMVA(),  cplotwgts);
+          ht.fill(c+"_subleadpumva", jets[1].getPUMVA(),  cplotwgts);
+          ht.fill(c+"_drj1b",        jets[0].DeltaR(boson),  cplotwgts);
+          ht.fill(c+"_drj2b",        jets[1].DeltaR(boson),  cplotwgts);
+          ht.fill(c+"_centraleta",   min(fabs(jets[0].Eta()),fabs(jets[1].Eta())), cplotwgts);
+          ht.fill(c+"_forwardeta",   max(fabs(jets[0].Eta()),fabs(jets[1].Eta())), cplotwgts);
+          ht.fill(c+"_dijetpt",      (jets[0]+jets[1]).Pt(),                       cplotwgts);
+          ht.fill(c+"_detajj",       fabs(jets[0].Eta()-jets[1].Eta()),            cplotwgts);
+          ht.fill(c+"_balance",      balance,                                      cplotwgts);
         }
       }
     }
   
   //close input file
   f->Close();
+
+  //compute the scale factor needed to keep the normalization
+  //due to photon pT weighting
+  for(auto &wit : photonPtWgtCtr) {
+    if(wit.second.second<=0) wit.second.first=1.0;
+    else                     wit.second.first /= wit.second.second;
+  }
   
   //save histos to file  
   fOut->cd();
   for (auto& it : ht.getPlots())  { 
+    for(auto &wit : photonPtWgtCtr){
+      if(!it.first.Contains(wit.first)) continue;
+      cout << "Scaling " << it.first << " by "<< wit.second.first <<endl;
+      it.second->Scale(wit.second.first);
+      break;
+    }
     it.second->SetDirectory(fOut); it.second->Write(); 
   }
   for (auto& it : ht.get2dPlots())  { 
+    for(auto &wit : photonPtWgtCtr){
+      if(!it.first.Contains(wit.first)) continue;
+      it.second->Scale(wit.second.first);
+      break;
+    }
     it.second->SetDirectory(fOut); it.second->Write(); 
   }
   fOut->Close();

@@ -17,7 +17,7 @@ void printHelp()
        << "\t --out - output file" << endl
        << "\t --channel - channel to analyze" << endl
        << "\t --charge  - charge selection to apply" << endl
-       << "\t --flav    - flavour selection to apply" << endl
+       << "\t --flag    - job flag to apply" << endl
        << "\t --runSysts - activate running systematics" << endl
        << "\t --systVar  - specify single systematic variation" << endl
        << "\t --era      - era directory to use for corrections, uncertainties" << endl
@@ -33,7 +33,7 @@ int main(int argc, char* argv[])
   std::string systVar("");
   bool runSysts(false);
   bool debug(false);
-  int channel(0),charge(0),flav(0);
+  int channel(0),charge(0),flag(0);
   for(int i=1;i<argc;i++){
     string arg(argv[i]);
     if(arg.find("--help") !=string::npos)                     { printHelp(); return -1;} 
@@ -41,7 +41,7 @@ int main(int argc, char* argv[])
     else if(arg.find("--systVar")!=string::npos && i+1<argc)  { systVar=argv[i+1]; i++;}
     else if(arg.find("--channel")!=string::npos && i+1<argc)  { sscanf(argv[i+1],"%d",&channel); i++;}
     else if(arg.find("--charge")!=string::npos && i+1<argc)   { sscanf(argv[i+1],"%d",&charge); i++;}
-    else if(arg.find("--flav")!=string::npos && i+1<argc)     { sscanf(argv[i+1],"%d",&flav); i++;}
+    else if(arg.find("--flag")!=string::npos && i+1<argc)     { sscanf(argv[i+1],"%d",&flag); i++;}
     else if(arg.find("--in")!=string::npos && i+1<argc)       { in=argv[i+1]; i++;}
     else if(arg.find("--out")!=string::npos && i+1<argc)      { out=argv[i+1]; i++;}
     else if(arg.find("--debug")!=string::npos)                { debug=true; }
@@ -85,7 +85,7 @@ int main(int argc, char* argv[])
 
   //check method to run
   if(method=="ExclusiveTop::RunExclusiveTop")          RunExclusiveTop(in,out,channel,charge,normH,puH,era,debug);
-  else if(method=="VBFVectorBoson::RunVBFVectorBoson") RunVBFVectorBoson(in,out,channel,charge,normH,puH,era,debug);
+  else if(method=="VBFVectorBoson::RunVBFVectorBoson") RunVBFVectorBoson(in,out,flag,normH,puH,era,debug);
   else {
       cout << "Check method=" << method <<endl;
       printHelp();

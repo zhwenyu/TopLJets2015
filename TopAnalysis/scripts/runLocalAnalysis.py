@@ -15,16 +15,16 @@ Wrapper to be used when run in parallel
 """
 def RunMethodPacked(args):
 
-    method,inF,outF,channel,charge,flav,runSysts,systVar,era,tag,debug=args
+    method,inF,outF,channel,charge,flag,runSysts,systVar,era,tag,debug=args
     print 'Running ',method,' on ',inF
     print 'Output file',outF
-    print 'Selection ch=',channel,' charge=',charge,' flavSplit=',flav,' systs=',runSysts
+    print 'Selection ch=',channel,' charge=',charge,' flag=',flag,' systs=',runSysts
     print 'Normalization applied from tag=',tag
     print 'Corrections will be retrieved for era=',era
 
     try:
-        cmd='analysisWrapper --era %s --normTag %s --in %s --out %s --method %s --charge %d --channel %d --flav %d --systVar %s'\
-            %(era, tag, inF, outF, method, charge, channel, flav, systVar)
+        cmd='analysisWrapper --era %s --normTag %s --in %s --out %s --method %s --charge %d --channel %d --flag %d --systVar %s'\
+            %(era, tag, inF, outF, method, charge, channel, flag, systVar)
         if runSysts : cmd += ' --runSysts'
         if debug : cmd += ' --debug'
         print(cmd)
@@ -51,8 +51,8 @@ def main():
     parser.add_option(      '--skip',        dest='skip',        help='csv list of samples to skip  [%default]',             default=None,       type='string')
     parser.add_option(      '--runSysts',    dest='runSysts',    help='run systematics  [%default]',                            default=False,      action='store_true')
     parser.add_option(      '--systVar',     dest='systVar',     help='single systematic variation  [%default]',   default='nominal',       type='string')
-    parser.add_option(      '--debug',       dest='debug',      help='debug mode  [%default]',                            default=False,      action='store_true')
-    parser.add_option(      '--flav',        dest='flav',        help='split according to heavy flavour content  [%default]',   default=0,          type=int)
+    parser.add_option(      '--debug',       dest='debug',       help='debug mode  [%default]',                            default=False,      action='store_true')
+    parser.add_option(      '--flag',        dest='flag',        help='job specific flag  [%default]',   default=0,          type=int)
     parser.add_option(      '--ch',          dest='channel',     help='channel  [%default]',                                    default=13,         type=int)
     parser.add_option(      '--charge',      dest='charge',      help='charge  [%default]',                                     default=0,          type=int)
     parser.add_option(      '--era',         dest='era',         help='era to use for corrections/uncertainties  [%default]',   default='era2016',       type='string')
@@ -62,7 +62,7 @@ def main():
     parser.add_option(      '--skipexisting',dest='skipexisting',help='skip jobs with existing output files  [%default]',       default=False,      action='store_true')
     parser.add_option(      '--exactonly',   dest='exactonly',   help='match only exact sample tags to process  [%default]',    default=False,      action='store_true')
     parser.add_option(      '--outputonly',        dest='outputonly',        help='filter job submission for a csv list of output files  [%default]',             default=None,       type='string')
-    parser.add_option(      '--farmappendix',        dest='farmappendix',        help='Appendix to condor FARM directory [%default]',             default=None,       type='string')
+    parser.add_option(      '--farmappendix',        dest='farmappendix',        help='Appendix to condor FARM directory [%default]',             default='',       type='string')
     (opt, args) = parser.parse_args()
 
     #parse selection lists
@@ -126,7 +126,7 @@ def main():
         for systVar in varList:
             outF=opt.output
             if systVar != 'nominal' and not systVar in opt.output: outF=opt.output[:-5]+'_'+systVar+'.root'
-            task_list.append( (opt.method,inF,outF,opt.channel,opt.charge,opt.flav,opt.runSysts,systVar,opt.era,opt.tag,opt.debug) )
+            task_list.append( (opt.method,inF,outF,opt.channel,opt.charge,opt.flag,opt.runSysts,systVar,opt.era,opt.tag,opt.debug) )
     else:
 
         inputTags=getEOSlslist(directory=opt.input,prepend='')
@@ -166,7 +166,7 @@ def main():
                         continue
                     if (len(outputOnlyList) > 1 and not outF in outputOnlyList):
                         continue
-                    task_list.append( (opt.method,inF,outF,opt.channel,opt.charge,opt.flav,opt.runSysts,systVar,opt.era,tag,opt.debug) )
+                    task_list.append( (opt.method,inF,outF,opt.channel,opt.charge,opt.flag,opt.runSysts,systVar,opt.era,tag,opt.debug) )
                 if (opt.skipexisting and nexisting): print '--skipexisting: %s - skipping %d of %d tasks as files already exist'%(systVar,nexisting,len(input_list))
 
     #run the analysis jobs
@@ -195,7 +195,7 @@ def main():
             condor.write('+JobFlavour = "{0}"\n'.format(opt.queue))
 
             jobNb=0
-            for method,inF,outF,channel,charge,flav,runSysts,systVar,era,tag,debug in task_list:
+            for method,inF,outF,channel,charge,flag,runSysts,systVar,era,tag,debug in task_list:
 
                 jobNb+=1
                 cfgFile='%s'%(os.path.splitext(os.path.basename(outF))[0])
@@ -212,8 +212,8 @@ def main():
                     cfg.write('eval `scram r -sh`\n')
                     cfg.write('cd ${WORKDIR}\n')
                     localOutF=os.path.basename(outF)
-                    runOpts='-i %s -o ${WORKDIR}/%s --charge %d --ch %d --era %s --tag %s --flav %d --method %s --systVar %s'\
-                        %(inF, localOutF, charge, channel, era, tag, flav, method, systVar)
+                    runOpts='-i %s -o ${WORKDIR}/%s --charge %d --ch %d --era %s --tag %s --flag %d --method %s --systVar %s'\
+                        %(inF, localOutF, charge, channel, era, tag, flag, method, systVar)
                     if runSysts : runOpts += ' --runSysts'
                     if debug :    runOpts += ' --debug'
                     cfg.write('python %s/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py %s\n'%(cmsswBase,runOpts))
