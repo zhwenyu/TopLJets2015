@@ -70,12 +70,12 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
           if( ch==13*13 && fabs(mll-91)<15 && (tightLeptons[0].pt()>30 || tightLeptons[1].pt()>30)) chTag="MM";          
           leptons_=tightLeptons;
         }
-      if(tightPhotons.size()>=1) {
+     else if(tightPhotons.size()>=1) {
         chTag="A";
         photons_=tightPhotons;
       }
     }
-
+  
   //select jets based on the leptons and photon candidates
   float maxJetEta(2.4);
   if(anType_==VBF) maxJetEta=4.7;
@@ -147,6 +147,10 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
   if(chTag=="A")
     {
       if(!hasPhotonTrigger) chTag="";
+	  if((hasEETrigger || hasETrigger) && chTag == "A"){
+		cout<< "----------------- This is EE in fact!" <<endl;
+		chTag = "";
+	  }
       if(ev.isData && !isPhotonPD_) chTag="";
     }
       

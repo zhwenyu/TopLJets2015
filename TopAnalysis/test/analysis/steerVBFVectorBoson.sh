@@ -12,7 +12,7 @@ fi
 
 #to run locally use local as queue + can add "--njobs 8" to use 8 parallel jobs
 queue=workday
-githash=c29f431 #fbc74ae
+githash=fbc74ae
 eosdir=/store/cmst3/group/top/RunIIFall17/${githash}
 fulllumi=41367
 vbflumi=7661
@@ -26,9 +26,9 @@ NC='\e[0m'
 case $WHAT in
 
     TESTSEL )
-        input=${eosdir}/MC13TeV_DY50toInf/MergedMiniEvents_0_ext0.root
-        output=MC13TeV_DY.root
-        tag="--tag MC13TeV_DY50toInf"
+        input=${eosdir}/MC13TeV_DY4Jets50toInf_mgMLM/MergedMiniEvents_4_ext0.root
+        output=MC13TeV_DY4Jets50toInf.root
+        tag="--tag MC13TeV_DY4Jets50toInf"
         #input=${eosdir}/Data13TeV_SingleMuon_2017D/MergedMiniEvents_0_ext0.root
         #output=Data13TeV_SingleMuon_2017D.root
         #input=${eosdir}/MC13TeV_GJets_HT100to200_DR04/MergedMiniEvents_0_ext0.root
@@ -43,6 +43,7 @@ case $WHAT in
     SEL )
         #--only data/era2017/vbf_samples.json --exactonly \
 	python scripts/runLocalAnalysis.py -i ${eosdir} \
+			--only DY,EWKZJJ,GJets_HT,QCDEM \
             -o ${outdir} \
             -q ${queue} \
             --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts;
@@ -52,10 +53,12 @@ case $WHAT in
 	./scripts/mergeOutputs.py ${outdir};
 	;;
     PLOT )
-	commonOpts="-i ${outdir} --puNormSF puwgtctr -l ${fulllumi}  --saveLog --mcUnc ${lumiUnc} --lumiSpecs VBFA:${vbflumi}"
-	python scripts/plotter.py ${commonOpts} -j data/era2017/vbf_samples.json; 
-        python scripts/plotter.py ${commonOpts} -j data/era2017/vbf_samples_dr04.json -O ${outdir}/plots_dr04;
-        python scripts/plotter.py ${commonOpts} -j data/era2017/gjets_samples.json --noStack -O ${outdir}/plots_gjets;
+	commonOpts="-i ${outdir} --puNormSF puwgtctr -l 1  --saveLog"
+	#commonOpts="-i ${outdir} --puNormSF puwgtctr -l ${fulllumi}  --saveLog --mcUnc ${lumiUnc} --lumiSpecs VBFA:${vbflumi}"
+	#python scripts/plotter.py ${commonOpts} -j data/era2017/vbf_samples.json; 
+    #python scripts/plotter.py ${commonOpts} -j data/era2017/vbf_samples_dr04.json -O ${outdir}/plots_dr04;
+    #python scripts/plotter.py ${commonOpts} -j data/era2017/gjets_samples.json --noStack -O ${outdir}/plots_gjets;
+	python scripts/plotter.py ${commonOpts} -j data/era2017/vbf_samples.json  --noStack --skip TT,ZZ,WW,WZ,Single,QCD,GJets,DY1Jets,DY2Jets,DY3Jets,DY4Jets,DY50toInf_HT -O ${outdir}/plots_DY ;
 	;;
     WWW )
         for p in plots plots_dr04 plots_gjets; do

@@ -90,6 +90,41 @@ void RunVBFVectorBoson(TString filename,
       ht.addHist(cats[i]+"_detajj", 	  new TH1F(cats[i]+"_detajj" ,          ";#Delta#eta(J,J);Events",20,0,6));
       ht.addHist(cats[i]+"_ht", 	  new TH1F(cats[i]+"_ht",               ";H_{T} [GeV];Events",50,0,8300));
       ht.addHist(cats[i]+"_balance", 	  new TH1F(cats[i]+"_balance",          ";System p_{T} balance [GeV];Events",25,0,250));
+	  
+      // Study of jet variables
+	  ht.addHist(cats[i]+"_jet_c1_00", 	  new TH1F(cats[i]+"_jet_c1_00",          ";Jet shape var. c1_00;Jets",100,-1,1));
+	  ht.addHist(cats[i]+"_jet_c1_02", 	  new TH1F(cats[i]+"_jet_c1_02",          ";Jet shape var. c1_02;Jets",100,-1,1));
+	  ht.addHist(cats[i]+"_jet_c1_05", 	  new TH1F(cats[i]+"_jet_c1_05",          ";Jet shape var. c1_05;Jets",100,-1,1));
+	  ht.addHist(cats[i]+"_jet_c1_10", 	  new TH1F(cats[i]+"_jet_c1_10",          ";Jet shape var. c1_10;Jets",100,-1,1));
+	  ht.addHist(cats[i]+"_jet_c1_20", 	  new TH1F(cats[i]+"_jet_c1_20",          ";Jet shape var. c1_20;Jets",100,-1,1));
+
+	  ht.addHist(cats[i]+"_jet_c2_00", 	  new TH1F(cats[i]+"_jet_c2_00",          ";Jet shape var. c2_00;Jets",100,-1,1));
+	  ht.addHist(cats[i]+"_jet_c2_02", 	  new TH1F(cats[i]+"_jet_c2_02",          ";Jet shape var. c2_02;Jets",100,-1,1));
+	  ht.addHist(cats[i]+"_jet_c2_05", 	  new TH1F(cats[i]+"_jet_c2_05",          ";Jet shape var. c2_05;Jets",100,-1,1));
+	  ht.addHist(cats[i]+"_jet_c2_10", 	  new TH1F(cats[i]+"_jet_c2_10",          ";Jet shape var. c2_10;Jets",100,-1,1));
+	  ht.addHist(cats[i]+"_jet_c2_20", 	  new TH1F(cats[i]+"_jet_c2_20",          ";Jet shape var. c2_20;Jets",100,-1,1));
+
+	  ht.addHist(cats[i]+"_jet_c3_00", 	  new TH1F(cats[i]+"_jet_c3_00",          ";Jet shape var. c3_00;Jets",100,-1,1));
+	  ht.addHist(cats[i]+"_jet_c3_02", 	  new TH1F(cats[i]+"_jet_c3_02",          ";Jet shape var. c3_02;Jets",100,-1,1));
+	  ht.addHist(cats[i]+"_jet_c3_05", 	  new TH1F(cats[i]+"_jet_c3_05",          ";Jet shape var. c3_05;Jets",100,-1,1));
+	  ht.addHist(cats[i]+"_jet_c3_10", 	  new TH1F(cats[i]+"_jet_c3_10",          ";Jet shape var. c3_10;Jets",100,-1,1));
+	  ht.addHist(cats[i]+"_jet_c3_20", 	  new TH1F(cats[i]+"_jet_c3_20",          ";Jet shape var. c3_20;Jets",100,-1,1));
+
+	  ht.addHist(cats[i]+"_jet_zg", 	  new TH1F(cats[i]+"_jet_zg",          ";Jet shape var. zg;Jets",100,-1,1));
+	  ht.addHist(cats[i]+"_jet_gaptd", 	  new TH1F(cats[i]+"_jet_gaptd",          ";Jet shape var. gaptd;Jets",100,-1,1));
+	  ht.addHist(cats[i]+"_jet_gawidth", 	  new TH1F(cats[i]+"_jet_gawidth",          ";Jet shape var. gawidth;Jets",100,-1,1));
+	  ht.addHist(cats[i]+"_jet_gathrust", 	  new TH1F(cats[i]+"_jet_gathrust",          ";Jet shape var. gathrust;Jets",100,-1,1));
+	  ht.addHist(cats[i]+"_jet_tau21", 	  new TH1F(cats[i]+"_jet_tau21",          ";Jet shape var. #tau_{21};Jets",100,-1,1));
+	  ht.addHist(cats[i]+"_jet_tau32", 	  new TH1F(cats[i]+"_jet_tau32",          ";Jet shape var. #tau_{32};Jets",100,-1,1));
+
+      //additional variables from https://link.springer.com/content/pdf/10.1140/epjc/s10052-017-5315-6.pdf
+      ht.addHist(cats[i]+"_jjetas", 	  new TH1F(cats[i]+"_jjetas",          ";#eta_{j1}#eta_{j2};Events",200,-25,25));
+      ht.addHist(cats[i]+"_centjy", 	  new TH1F(cats[i]+"_centjy",          ";Central jet rapidity;Jets",25,0,3));
+      ht.addHist(cats[i]+"_ncentj", 	  new TH1F(cats[i]+"_ncentjj",          ";Number of central jets;Events",10,-0.5,9.5));
+      ht.addHist(cats[i]+"_dphivj0", 	  new TH1F(cats[i]+"__dphivj0",          ";#Delta#phi(V,j0);Jets",20,0,4));
+      ht.addHist(cats[i]+"_dphivj1", 	  new TH1F(cats[i]+"__dphivj1",          ";#Delta#phi(V,j1);Jets",20,0,4));
+      ht.addHist(cats[i]+"_dphivj2", 	  new TH1F(cats[i]+"__dphivj2",          ";#Delta#phi(V,j2);Jets",20,0,4));
+      ht.addHist(cats[i]+"_dphivj3", 	  new TH1F(cats[i]+"__dphivj3",          ";#Delta#phi(V,j3);Jets",20,0,4));
     }
 
   std::cout << "init done" << std::endl;
@@ -105,7 +140,7 @@ void RunVBFVectorBoson(TString filename,
     {
       t->GetEntry(iev);
       if(iev%10000==0) printf ("\r [%3.0f%%] done", 100.*(float)iev/(float)nentries);
-
+	  cout<<"Event Number "<<iev<<endl;
       std::vector<double>plotwgts(1,1.0);
       ht.fill("qscale",ev.g_qscale,plotwgts);
       
@@ -233,6 +268,53 @@ void RunVBFVectorBoson(TString filename,
           ht.fill(c+"_dijetpt",    (jets[0]+jets[1]).Pt(),plotwgts);
           ht.fill(c+"_detajj",     fabs(jets[0].Eta()-jets[1].Eta()),plotwgts);
           ht.fill(c+"_balance",    balance,plotwgts);
+
+      	  ht.fill(c+"_jjetas", 	  jets[0].Eta()*jets[1].Eta(), plotwgts);
+          ht.fill(c+"_dphivj0",  fabs(jets[0].DeltaPhi(boson)), plotwgts);
+          ht.fill(c+"_dphivj1",  fabs(jets[1].DeltaPhi(boson)), plotwgts);
+		  if(jets.size() > 2){
+          	ht.fill(c+"_dphivj2",  fabs(jets[2].DeltaPhi(boson)), plotwgts);
+			int nCent = 0;
+		  	for(unsigned int iJet = 2; iJet < jets.size(); iJet++){	
+				float dy = fabs(jets[0].Rapidity() - jets[1].Rapidity())/2;
+				float sumy = (jets[0].Rapidity() + jets[1].Rapidity())/2;
+				if(fabs(jets[iJet].Rapidity() - sumy) < dy){
+          			ht.fill(c+"_centjy", jets[iJet].Rapidity(), plotwgts);
+					nCent++;
+				}
+		  	}
+		  	ht.fill(c+"_ncentj", nCent, plotwgts);
+		  }
+		  if(jets.size() > 3)
+          	ht.fill(c+"_dphivj3",  fabs(jets[3].DeltaPhi(boson)), plotwgts);
+
+		  //Study jet variables
+		  for (unsigned int iJet = 0; iJet < 2; iJet++){
+	  	  	ht.fill(c+"_jet_c1_00", ev.j_c1_00[jets[iJet].getJetIndex()]	  , plotwgts);
+	      	ht.fill(c+"_jet_c1_02", ev.j_c1_02[jets[iJet].getJetIndex()]	  , plotwgts);
+	   	    ht.fill(c+"_jet_c1_05", ev.j_c1_05[jets[iJet].getJetIndex()]	  , plotwgts);
+		    ht.fill(c+"_jet_c1_10", ev.j_c1_10[jets[iJet].getJetIndex()]	  , plotwgts);
+		  	ht.fill(c+"_jet_c1_20", ev.j_c1_20[jets[iJet].getJetIndex()]	  , plotwgts);
+
+	  	  	ht.fill(c+"_jet_c2_00", ev.j_c2_00[jets[iJet].getJetIndex()]	  , plotwgts);
+	      	ht.fill(c+"_jet_c2_02", ev.j_c2_02[jets[iJet].getJetIndex()]	  , plotwgts);
+	  	  	ht.fill(c+"_jet_c2_05", ev.j_c2_05[jets[iJet].getJetIndex()]	  , plotwgts);
+	      	ht.fill(c+"_jet_c2_10", ev.j_c2_10[jets[iJet].getJetIndex()]	  , plotwgts);
+	  	  	ht.fill(c+"_jet_c2_20", ev.j_c2_20[jets[iJet].getJetIndex()]	  , plotwgts);
+
+	  	  	ht.fill(c+"_jet_c3_00", ev.j_c3_00[jets[iJet].getJetIndex()]	  , plotwgts);
+	      	ht.fill(c+"_jet_c3_02", ev.j_c3_02[jets[iJet].getJetIndex()]	  , plotwgts);
+	  	  	ht.fill(c+"_jet_c3_05", ev.j_c3_05[jets[iJet].getJetIndex()]	  , plotwgts);
+	      	ht.fill(c+"_jet_c3_10", ev.j_c3_10[jets[iJet].getJetIndex()]	  , plotwgts);
+	  	  	ht.fill(c+"_jet_c3_20", ev.j_c3_20[jets[iJet].getJetIndex()]	  , plotwgts);
+
+	  	  	ht.fill(c+"_jet_zg", 	ev.j_zg[jets[iJet].getJetIndex()]	  , plotwgts);
+	  	  	ht.fill(c+"_jet_gaptd", ev.j_gaptd[jets[iJet].getJetIndex()]	  , plotwgts);
+	  	  	ht.fill(c+"_jet_gawidth", ev.j_gawidth[jets[iJet].getJetIndex()]	  , plotwgts);
+	  	  	ht.fill(c+"_jet_gathrust", ev.j_gathrust[jets[iJet].getJetIndex()]	  , plotwgts);
+	  	  	ht.fill(c+"_jet_tau21", ev.j_tau21[jets[iJet].getJetIndex()]	  , plotwgts);
+	  	  	ht.fill(c+"_jet_tau32", ev.j_tau32[jets[iJet].getJetIndex()]	  , plotwgts);
+		  }
         }
       }
     }
