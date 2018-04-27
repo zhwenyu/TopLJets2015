@@ -103,10 +103,10 @@ void RunVBFVectorBoson(TString filename,
   ht.addHist("vpt", 	      new TH1F("vectorbosonPt",    ";Boson p_{T}[GeV];Events",25,0,500));
   ht.addHist("vy", 	      new TH1F("vectorbosony",     ";Boson rapidity;Events",25,0,3));
   ht.addHist("mindrl", 	      new TH1F("mindrl",           ";min #Delta R(boson,lepton);Events",25,0,6));
-  ht.addHist("sihih", 	      new TH1F("sihih",            ";#sigma(i#eta,i#eta);Events",25,0,0.1));
-  ht.addHist("hoe", 	      new TH1F("hoe",              ";h/e;Events",25,0,0.25));
+  ht.addHist("sihih", 	      new TH1F("sihih",            ";#sigma(i#eta,i#eta);Events",50,0,0.1));
+  ht.addHist("hoe", 	      new TH1F("hoe",              ";h/e;Events",25,0,0.1));
   ht.addHist("r9", 	      new TH1F("r9",               ";r9;Events",25,0,1.0));
-  ht.addHist("chiso", 	      new TH1F("chiso",            ";Charged isolation [GeV];Events",25,0,0.05));
+  ht.addHist("chiso", 	      new TH1F("chiso",            ";Charged isolation [GeV];Events",25,0,0.10));
   ht.addHist("vystar",        new TH1F("vectorbosonystar", ";y-(1/2)(y_{j1}+y_{j2});Events",25,0,5));
   ht.addHist("njets",         new TH1F("njets",            ";Jet multiplicity;Events",10,-0.5,9.5));
   ht.addHist("mjj", 	      new TH1F("mjj",              ";Dijet invariant mass [GeV];Events",40,0,4000));
