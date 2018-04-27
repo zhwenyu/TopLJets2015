@@ -26,12 +26,27 @@ void HistTool::addHist(TString title, TH1* hist) {
 }
 
 //
-void HistTool::fill(TString title, double value, std::vector<double> weights) {
+void HistTool::fill(TString title, double value, std::vector<double> weights,TString cat) {
+  
   if (not allPlots_.count(title)) {
     std::cout << "Histogram " << title << " not registered, not filling." << std::endl;
     return;
   }
+
   if(allPlots_[title]->InheritsFrom("TH2")) return;
+
+  //category specific plot, init if needed
+  if(cat!=""){
+    TString newTitle=cat+"_"+title;
+    if(not allPlots_.count(newTitle)) {
+      std::cout << "Histogram " << title << " for cat=" << cat << " not yet started, adding now." << std::endl;
+      allPlots_[newTitle]=(TH1 *)allPlots_[title]->Clone(newTitle);
+      allPlots_[newTitle]->SetDirectory(0);
+      allPlots_[newTitle]->Reset("ICE");
+    }
+    title=newTitle;
+  }
+
   allPlots_[title]->Fill(value, weights[0]);
   if (nsyst_ > 0) {
     if (weights.size() > nsyst_)

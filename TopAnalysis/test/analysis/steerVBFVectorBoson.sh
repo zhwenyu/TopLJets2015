@@ -1,12 +1,13 @@
 #!/bin/bash
 
 WHAT=$1; 
-if [ "$#" -ne 1 ]; then 
-    echo "steerVBFVectorBoson.sh <SEL/MERGE/PLOT/WWW>";
+EXTRA=$2
+if [ "$#" -lt 1 ]; then 
+    echo "steerVBFVectorBoson.sh <SEL/MERGE/PLOT/WWW> [extra]";
     echo "        SEL          - launches selection jobs to the batch, output will contain summary trees and control plots"; 
-    echo "        MERGE        - merge output"
-    echo "        PLOT         - make plots"
-    echo "        WWW          - move plots to web-based are"
+    echo "        MERGE        - merge output (if given \"extra\" is appended to the directory)"
+    echo "        PLOT         - make plots (if given \"extra\" is appended to the directory)"
+    echo "        WWW          - move plots to web-based (if given \"extra\" is appended to the directory)"
     exit 1; 
 fi
 
@@ -40,32 +41,42 @@ case $WHAT in
             --njobs 1 -q local --debug \
             --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts;
         ;;
+
     SEL )
-        #--only data/era2017/vbf_samples.json --exactonly \
 	python scripts/runLocalAnalysis.py -i ${eosdir} \
-			--only DY,EWKZJJ,GJets_HT,QCDEM \
-            -o ${outdir} \
+#			--only DY,EWKZJJ,GJets_HT,QCDEM \
+#            -o ${outdir} \
+            -o ${outdir}/raw \
             -q ${queue} \
             --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts;
 	;;
 
+    SELWEIGHTED )
+	python scripts/runLocalAnalysis.py -i ${eosdir} \
+            -o ${outdir}/weighted --flag 1 \
+            -q ${queue} \
+            --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts;
+        ;;
+
     MERGE )
-	./scripts/mergeOutputs.py ${outdir};
+	./scripts/mergeOutputs.py ${outdir}/${EXTRA};
 	;;
+
     PLOT )
-	commonOpts="-i ${outdir} --puNormSF puwgtctr -l 1  --saveLog"
-	#commonOpts="-i ${outdir} --puNormSF puwgtctr -l ${fulllumi}  --saveLog --mcUnc ${lumiUnc} --lumiSpecs VBFA:${vbflumi}"
-	#python scripts/plotter.py ${commonOpts} -j data/era2017/vbf_samples.json; 
-    #python scripts/plotter.py ${commonOpts} -j data/era2017/vbf_samples_dr04.json -O ${outdir}/plots_dr04;
-    #python scripts/plotter.py ${commonOpts} -j data/era2017/gjets_samples.json --noStack -O ${outdir}/plots_gjets;
-	python scripts/plotter.py ${commonOpts} -j data/era2017/vbf_samples.json  --noStack --skip TT,ZZ,WW,WZ,Single,QCD,GJets,DY1Jets,DY2Jets,DY3Jets,DY4Jets,DY50toInf_HT -O ${outdir}/plots_DY ;
+#	commonOpts="-i ${outdir} --puNormSF puwgtctr -l 1  --saveLog"
+#	python scripts/plotter.py ${commonOpts} -j data/era2017/vbf_samples.json  --noStack --skip TT,ZZ,WW,WZ,Single,QCD,GJets,DY1Jets,DY2Jets,DY3Jets,DY4Jets,DY50toInf_HT -O ${outdir}/plots_DY ;
+	commonOpts="-i ${outdir}/${EXTRA} --puNormSF puwgtctr -l ${fulllumi}  --saveLog --mcUnc ${lumiUnc} --lumiSpecs VBFA:${vbflumi}"
+	python scripts/plotter.py ${commonOpts} -j data/era2017/vbf_samples.json; 
+        python test/analysis/computeVBFRatios.py -t -i ${outdir}/${EXTRA}/plots/plotter.root -o ${outdir}/${EXTRA}/plots/trigger_ratio_plotter.root
+
 	;;
+
     WWW )
-        for p in plots plots_dr04 plots_gjets; do
-	    mkdir -p ${wwwdir}/${p}
-	    cp ${outdir}/${p}/*.{png,pdf} ${wwwdir}/${p};
-	    cp test/index.php ${wwwdir}/${p};
-            echo "Check plots in ${wwwdir}/${p}"
-        done
+        pdir=${outdir}/${EXTRA}/plots
+        fdir=${wwwdir}/${EXTRA}
+	mkdir -p ${fdir}
+	cp ${pdir}/*.{png,pdf} ${fdir};
+	cp test/index.php ${fdir};
+        echo "Check plots in ${fdir}"
 	;;
 esac

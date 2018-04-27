@@ -816,9 +816,10 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
 	  ev_.g_xbp[ig]  = genParton   ? ev_.g_xb[ig]*ev_.g_pt[ig]/genParton->pt() : 0.;
 	  break;
 	}	 
-      ev_.j_csv[ev_.nj]=j->bDiscriminator("pfCombinedInclusiveSecondaryVertexV2BJetTags");
-      ev_.j_btag[ev_.nj]       = (ev_.j_csv[ev_.nj]>0.8484);
-      ev_.j_deepcsv[ev_.nj]   = j->bDiscriminator("pfDeepCSVDiscriminatorsJetTags:BvsAll");
+      ev_.j_csv[ev_.nj]     = j->bDiscriminator("pfCombinedInclusiveSecondaryVertexV2BJetTags");
+      ev_.j_deepcsv[ev_.nj] = j->bDiscriminator("pfDeepCSVJetTags:probb") + j->bDiscriminator("pfDeepCSVJetTags:probbb");
+      ev_.j_btag[ev_.nj]    = (ev_.j_deepcsv[ev_.nj]>0.4941);
+
       
       //jet shape variables
       ev_.j_c1_00[ev_.nj]    = getC(1, 0.0, &(*j), true, 0.9);

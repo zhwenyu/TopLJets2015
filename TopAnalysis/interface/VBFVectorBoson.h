@@ -9,8 +9,7 @@
 
 void RunVBFVectorBoson(TString filename,
                        TString outname,
-                       Int_t channelSelection, 
-                       Int_t chargeSelection, 
+                       Int_t anFlag,
                        TH1F *normH, 
                        TH1F *genPU,
                        TString era,
