@@ -38,7 +38,7 @@ void HistTool::fill(TString title, double value, std::vector<double> weights,TSt
   //category specific plot, init if needed
   if(cat!=""){
     TString newTitle=cat+"_"+title;
-    if(not allPlots_.count(title)) {
+    if(not allPlots_.count(newTitle)) {
       std::cout << "Histogram " << title << " for cat=" << cat << " not yet started, adding now." << std::endl;
       allPlots_[newTitle]=(TH1 *)allPlots_[title]->Clone(newTitle);
       allPlots_[newTitle]->SetDirectory(0);
