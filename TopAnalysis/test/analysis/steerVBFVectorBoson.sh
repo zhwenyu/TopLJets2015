@@ -64,7 +64,8 @@ case $WHAT in
     PLOT )
 	commonOpts="-i ${outdir}/${EXTRA} --puNormSF puwgtctr -l ${fulllumi}  --saveLog --mcUnc ${lumiUnc} --lumiSpecs VBFA:${vbflumi}"
 	python scripts/plotter.py ${commonOpts} -j data/era2017/vbf_samples.json; 
-        python test/analysis/computeVBFRatios.py -i ${outdir}/${EXTRA}/plots/plotter.root -o ${outdir}/${EXTRA}/plots/ratio_plotter.root
+        #python test/analysis/computeVBFRatios.py -i ${outdir}/${EXTRA}/plots/plotter.root -o ${outdir}/${EXTRA}/plots/ratio_plotter.root
+        python test/analysis/computeVBFRatios.py -t -i ${outdir}/${EXTRA}/plots/plotter.root -o ${outdir}/${EXTRA}/plots/trigger_ratio_plotter.root
 	;;
 
     WWW )
