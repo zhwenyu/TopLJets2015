@@ -14,7 +14,7 @@ COLORS={
 
 """
 """
-def doPlot(plotName,chList,extraText,url):
+def doPlot(plotName,chList,extraText,url,outpName):
 
     ROOT.gStyle.SetOptTitle(0)
     ROOT.gStyle.SetOptStat(0)
@@ -24,6 +24,31 @@ def doPlot(plotName,chList,extraText,url):
     inF = ROOT.TFile.Open(url)
 
     plotsPerProc={}
+    systList={'toppt':False,
+              'pu':False,
+              'btag':True,
+              'ltag':True,
+              'jer':True,
+              'ees':True,
+              'mes':True,
+              'trig':True,
+              'esel':True,
+              'msel':True,
+              'bfrag':True,
+              'petersfrag':True,
+              'semilep':True,
+              'jes':True,
+              'gen3':False,
+              'gen5':False,
+              'gen6':False,
+              'gen4':False,
+              'gen8':False,
+              'gen10':False,
+              }
+    for i in xrange(0,100): systList['gen%d'%(11+i)]=False
+    altShapes={}
+    scaleVars={}
+
     for ch in chList :
         pName='%s_%s'%(ch,plotName)
         pdir=inF.GetDirectory(pName)
@@ -32,6 +57,49 @@ def doPlot(plotName,chList,extraText,url):
             if 'Graph' in keyName : continue
 
             h=pdir.Get(keyName)
+
+            if 'incmlb' in plotName:
+                h.GetXaxis().SetRangeUser(20,h.GetXaxis().GetXmax())
+            if 'drlb' in plotName:
+                h.GetXaxis().SetRangeUser(0.4,5.0)
+
+            #do systs, if available
+            if keyName==pName+'_t#bar{t}':                
+                for syst in ['gen','exp']:
+                    systH=inF.Get('{0}_{1}/{0}_{1}_t#bar{{t}}'.format(pName,syst))
+                    try:
+                        for ybin in xrange(1,systH.GetNbinsY()+1):
+
+                            #if syst is interesting project it
+                            syst=systH.GetYaxis().GetBinLabel(ybin)
+                            keep=None
+                            for s in systList: 
+                                if syst.find(s)==0: 
+                                    keep=systList[s]
+                                    break
+                            if keep is None: continue
+                            py=systH.ProjectionX('px',ybin,ybin)
+
+                            #store effect on normalization
+                            totalS=py.Integral()
+                            if keep: 
+                                if not syst in scaleVars: scaleVars[syst]=0
+                                scaleVars[syst]+=totalS
+
+                            #store effect on shape
+                            if not syst in altShapes: 
+                                altShapes[syst]=py.Clone('%suptotal'%syst)
+                                altShapes[syst].Reset('ICE')
+                                altShapes[syst].SetDirectory(0)
+                            altShapes[syst].Add(py)
+
+                            #all done
+                            py.Delete()
+
+                    except Exception,e:
+                        print e
+                        pass
+
             title=keyName.replace(pName+'_','')
             if title==keyName : title='Data'
             if not title in plotsPerProc:
@@ -43,13 +111,79 @@ def doPlot(plotName,chList,extraText,url):
                 plotsPerProc[title].SetLineColor(h.GetLineColor())
                 plotsPerProc[title].SetMarkerColor(h.GetMarkerColor())
             plotsPerProc[title].Add(h)
+ 
+    #finalize systematics
+    sigH=plotsPerProc['t#bar{t}']
+    nbins=sigH.GetNbinsX()+1
+    totalExp=sigH.Integral()
+    scaleUnc=[0,0]
+    scaleVars['lumiup']=(1+.025)*totalExp
+    scaleVars['lumidn']=(1-.025)*totalExp
+    scaleVars['xsecup']=(1+.051)*totalExp
+    scaleVars['xsecdn']=(1-.051)*totalExp
+    scaleUnc=[0,0]
+    for key in scaleVars:
+        sf=scaleVars[key]/totalExp
+        scaleUnc[1 if sf>1 else 0] += (1-sf)**2
+    scaleUnc = [ROOT.TMath.Sqrt(x) for x in scaleUnc]
+    for xbin in xrange(1,nbins+1):
+        cts=sigH.GetBinContent(xbin)
+        unc=sigH.GetBinError(xbin)
+        totalUnc=ROOT.TMath.Sqrt(unc**2+(cts*0.5*(scaleUnc[0]+scaleUnc[1]))**2)        
+        sigH.SetBinError(xbin,totalUnc)
 
+    relShapeGr=None
+    if len(altShapes):
+        systShape=[[0.]*nbins,[0.]*nbins]
+        for key in altShapes:
+            sf=totalExp/altShapes[key].Integral()
+            altShapes[key].Scale(sf)
+            for xbin in xrange(1,nbins+1):
+                diff=altShapes[key].GetBinContent(xbin)-sigH.GetBinContent(xbin)
+                systShape[1 if diff>0 else 0][xbin-1] += diff**2
+
+        totalMCShape=sigH.Clone('totalttshape')
+        for xbin in xrange(1,nbins+1):
+            cts=sigH.GetBinContent(xbin)+0.5*(ROOT.TMath.Sqrt(systShape[0][xbin-1])+ROOT.TMath.Sqrt(systShape[1][xbin-1]))        
+            totalMCShape.SetBinContent(xbin,cts)
+            totalMCShape.SetBinError(xbin,0.)
+        totalMCShapeGr=ROOT.TGraphErrors()
+        
+        #normalize by integral
+        totalMCShape.Scale(totalExp/totalMCShape.Integral())
+        #normalize to first bin with non-zero counts
+        #for xbin in xrange(1,nbins+1):
+        #    nom=sigH.GetBinContent(xbin)
+        #    var=totalMCShape.GetBinContent(xbin)
+        #    if nom==0 or var==0 : continue
+        #    totalMCShape.Scale(nom/var)
+        #    break
+
+        relShapeGr=ROOT.TGraphErrors()
+        for xbin in xrange(1,nbins+1):
+            xcen=sigH.GetXaxis().GetBinCenter(xbin)
+            xwid=sigH.GetXaxis().GetBinWidth(xbin)
+            nom=sigH.GetBinContent(xbin)
+            var=totalMCShape.GetBinContent(xbin)
+            if nom==0 : continue
+            r=abs(1-var/nom)
+            np=relShapeGr.GetN()
+            relShapeGr.SetPoint(np,xcen,1)
+            relShapeGr.SetPointError(np,0.5*xwid,r)
+        relShapeGr.SetFillStyle(3001)
+        relShapeGr.SetFillColor(ROOT.kRed)
+        relShapeGr.SetLineWidth(2)
+        totalMCShape.Delete()
+    
     #show
-    plot=Plot('%s%s'%(ch,plotName))
+    plot=Plot(outpName)
     plot.savelog=True
     plot.wideCanvas=False
     plot.doMCOverData = False
+    plot.ratioFrameFill=3444
+    plot.ratioFrameColor=1
     plot.ratiorange=(0.76,1.24)
+    if relShapeGr : plot.relShapeGr=relShapeGr
     plot.plotformats=['root','pdf','png']
     for key in ['Data','t#bar{t}','Single top','W','DY','Multiboson','t#bar{t}+V']:
         isData=True if 'Data' in plotsPerProc[key].GetTitle() else False
@@ -61,10 +195,20 @@ def doPlot(plotName,chList,extraText,url):
                  False,
                  False)
     plot.finalize()
-    plot.mcUnc=0.025
+    plot.mcUnc=0.0
 
+    totalMC=sigH.Clone('tmptotal')
+    totalMC.Reset('ICE')
+    for h in plot.mc: totalMC.Add(plot.mc[h])
+    plot.normUncGr=ROOT.TGraphErrors(totalMC)
+    plot.normUncGr.SetFillStyle(3444)
+    plot.normUncGr.SetFillColor(1)
+    plot.normUncGr.SetMarkerStyle(1)
+    plot.normUncGr.SetLineColor(1)
+    plot.normUncGr.SetName("normuncgr")
+    plot.normUncGr.SetTitle('Stat #oplus norm')
+    totalMC.Delete()
     plot.show(outDir="plots/",lumi=35922,extraText=extraText)
-
 
 def main():
 
@@ -76,8 +220,10 @@ def main():
 
     plotter='root://eoscms//eos/cms/store/cmst3/group/top/TOP-17-010-final/plotter/plotter.root'
     if len(sys.argv)>3: plotter=sys.argv[3]
-    for p in plots :
 
+    for poutp in plots:
+        p,outp=poutp.split(':')
+        print p,outp
         extraText=''
         if 'EM' in chList and not 'EE' in chList and not 'MM' in chList : extraText='e#mu\\'
         if 'EE' in chList and not 'EM' in chList and not 'MM' in chList : extraText='ee\\'
@@ -87,7 +233,7 @@ def main():
         if '1b' in chList and not '2b' in chList : extraText += '=1b-tag'
         if '2b' in chList and not '1b' in chList : extraText += '#geq2 b-tags'
         if '1b' in chList and     '2b' in chList : extraText += '#geq1 b-tags'
-        doPlot(p,chList.split(','),extraText,plotter)
+        doPlot(p,chList.split(','),extraText,plotter,outp)
 
 """
 for execution from another script

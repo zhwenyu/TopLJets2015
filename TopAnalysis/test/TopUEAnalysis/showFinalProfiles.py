@@ -6,7 +6,7 @@ import numpy as np
 import pickle
 from UEAnalysisHandler import VARTITLES,SYSTS
 from UETools import getGraphExtremes,formatGraph
-from showFinalDistributions import PLOTTINGSET_1,PLOTTINGSET_2,PLOTTINGSET_3
+from showFinalDistributions import PLOTTINGSET_1,PLOTTINGSET_2,PLOTTINGSET_3,PLOTTINGSET_4
 
 SLICELISTS=[
     ('',
@@ -27,8 +27,8 @@ SLICELISTS=[
             ],
      [ 
             ('Extra jets',1,4),
-            ('p_{T}(ll)',4,9),
-            ('M(ll)',9,13)
+            ('|#vec{p}_{T}(ll)| / GeV',4,9),
+            ('m(ll) / GeV',9,13)
             ]
      ),
     ('_ptll',[
@@ -118,7 +118,8 @@ def getProfileRatiosWithRespectTo(grColl,refKey):
     return grCollRatios,grCollPulls
 
 
-def showProfile(grColl,grCollComp,obs,sliceList,plottingSetList=[PLOTTINGSET_1],outDir='./',cmsLabel='#bf{CMS}',isPull=False,pfix='',categList=[]):
+def showProfile(grColl,grCollComp,grCollStat,
+                obs,sliceList,plottingSetList=[PLOTTINGSET_1],outDir='./',cmsLabel='#bf{CMS}',isPull=False,pfix='',categList=[]):
 
     """
     build the profile plot
@@ -132,7 +133,7 @@ def showProfile(grColl,grCollComp,obs,sliceList,plottingSetList=[PLOTTINGSET_1],
     c.SetGridx()
     units=''
     if obs in ['chflux','chfluxz','chavgpt','chavgpt'] : units = ' [GeV]'
-    frame=ROOT.TH1F('frame',';Category;<%s>%s;'%(VARTITLES[obs],units),len(sliceList),0,len(sliceList))
+    frame=ROOT.TH1F('frame',';Category;< %s >%s;'%(VARTITLES[obs],units),len(sliceList),0,len(sliceList))
     for xbin in xrange(1,frame.GetNbinsX()+1): frame.GetXaxis().SetBinLabel(xbin,sliceList[xbin-1][1])
     frame.GetYaxis().SetTitleSize(0.06)
     frame.GetYaxis().SetLabelSize(0.05)
@@ -143,7 +144,9 @@ def showProfile(grColl,grCollComp,obs,sliceList,plottingSetList=[PLOTTINGSET_1],
     frame.Draw()
 
     #plot and add to the legend
-    leg=ROOT.TLegend(0.67,0.86,0.94,0.86-len(plottingSetList[0])*0.05)
+    #leg=ROOT.TLegend(0.67,0.86,0.94,0.86-len(plottingSetList[0])*0.05)
+    leg=ROOT.TLegend(0.2,0.86,0.94,0.86-len(plottingSetList[0])*0.025)
+    leg.SetNColumns(2)
     leg.SetFillStyle(0)
     leg.SetBorderSize(0)
     leg.SetTextFont(42)
@@ -155,6 +158,9 @@ def showProfile(grColl,grCollComp,obs,sliceList,plottingSetList=[PLOTTINGSET_1],
             formatGraph(grColl[p],fill,color,marker,keepXUnc,shiftX)
             grColl[p].Draw(drawOpt)
             if p!='Data': leg.AddEntry(grColl[p],p,drawOpt)
+            else:
+                formatGraph(grCollStat[p],3104,1,marker,keepXUnc,shiftX)
+                grCollStat[p].Draw(drawOpt)
             iminY,imaxY=getGraphExtremes(grColl[p])
             maxY=max(imaxY,maxY)
             minY=min(iminY,minY)
@@ -162,6 +168,14 @@ def showProfile(grColl,grCollComp,obs,sliceList,plottingSetList=[PLOTTINGSET_1],
             pass
     frame.GetYaxis().SetRangeUser(minY*0.8,maxY*1.3)
     leg.Draw()
+
+    #stat component for data                                                                                                                                                                                                     
+    txt=ROOT.TPaveText(0.68,0.83,0.725,0.84,'brNDC')
+    txt.SetFillStyle(3004)
+    txt.SetFillColor(1)
+    txt.SetBorderSize(0)
+    txt.SetLineColor(0)
+    txt.Draw()
 
     #category labels
     catTxt=ROOT.TLatex()
@@ -173,8 +187,14 @@ def showProfile(grColl,grCollComp,obs,sliceList,plottingSetList=[PLOTTINGSET_1],
     ar.SetNDC(False)
     ar.SetLineWidth(2)
     for t,xmin,xmax in categList:
-        catTxt.DrawLatex(0.5*(xmax+xmin),maxY*1.36,t)
-        ar.DrawArrow(xmin,maxY*1.325,xmax,maxY*1.325,0.01,"<>")
+        yarr=1.315*maxY
+        ytxt=1.36*maxY
+        if obs=='sphericity': yarr,ytxt=0.44,0.45
+        if obs=='aplanarity': yarr,ytxt=0.1238,0.1268
+        if obs=='C': yarr,ytxt=0.66,0.675
+        if obs=='D': yarr,ytxt=0.271,0.278
+        catTxt.DrawLatex(0.5*(xmax+xmin),ytxt,t)
+        ar.DrawArrow(xmin,yarr,xmax,yarr,0.01,"<>")
 
     #standard label
     tex=ROOT.TLatex()
@@ -182,7 +202,7 @@ def showProfile(grColl,grCollComp,obs,sliceList,plottingSetList=[PLOTTINGSET_1],
     tex.SetTextSize(0.06)
     tex.SetNDC()
     tex.DrawLatex(0.16,0.95,cmsLabel)
-    tex.DrawLatex(0.66,0.95,'#scale[0.8]{35.9 fb^{-1} (#sqrt{s}=13 TeV)}')
+    tex.DrawLatex(0.7,0.95,'#scale[0.8]{35.9 fb^{-1} (13 TeV)}')
 
     c.RedrawAxis()
     c.Modified()
@@ -266,8 +286,8 @@ def showProfile(grColl,grCollComp,obs,sliceList,plottingSetList=[PLOTTINGSET_1],
             tex.SetTextFont(42)
             tex.SetTextSize(0.13)
             tex.SetNDC()
-            tex.DrawLatex(0.12,0.88,cmsLabel)
-            tex.DrawLatex(0.45,0.88,'#scale[0.9]{35.9 fb^{-1} (#sqrt{s}=13 TeV)}')
+            tex.DrawLatex(0.12,0.84,cmsLabel)
+            tex.DrawLatex(0.5,0.84,'#scale[0.9]{35.9 fb^{-1} (13 TeV)}')
         
         if i==0:
             lg.append( ROOT.TLegend(0.75,0.1,0.99,0.7) )
@@ -362,6 +382,7 @@ def main():
 
     #fill the graphs with the mean values
     grColl={}
+    grCollStat={}
     finalSliceList=[]
     for np in xrange(0,len(sliceList)):
         var,varTitle=sliceList[np]
@@ -384,23 +405,29 @@ def main():
                 if not key in grColl:
                     grColl[key]=uePlots[key].plot[0].Clone()
                     grColl[key].Set(0)
-                    
+                    grCollStat[key]=grColl[key].Clone( grColl[key].GetName()+'_stat')
+
                 #add mean and mean error
                 mean=uePlots[key].mean[0]
                 meanUnc=ROOT.TMath.Sqrt( sum(x*x for x in uePlots[key].mean[1]) )
                 grColl[key].SetPoint(np,np+0.5,mean)
                 grColl[key].SetPointError(np,0.5,meanUnc)
+                
+                grCollStat[key].SetPoint(np,np+0.5,mean)
+                grCollStat[key].SetPointError(np,0.5,uePlots[key].mean[1][0])
 
     #bail out if nothing found
     if len(finalSliceList)==0: return -1
 
     #compute the ratios
     grCollRatio,grCollPull=getProfileRatiosWithRespectTo(grColl,'Data')
-
+    grCollRatioStat,_=getProfileRatiosWithRespectTo(grCollStat,'Data')
+    
     #show results
     obs=opt.input.split('/')[-1]    
-    showProfile(grColl=grColl,grCollComp=grCollPull,obs=obs,sliceList=finalSliceList,
-                plottingSetList=[PLOTTINGSET_1,PLOTTINGSET_2,PLOTTINGSET_3],
+    showProfile(grColl=grColl,grCollComp=grCollPull,grCollStat=grCollStat,
+                obs=obs,sliceList=finalSliceList,
+                plottingSetList=[PLOTTINGSET_1,PLOTTINGSET_2,PLOTTINGSET_3], #PLOTTINGSET_4],
                 outDir=opt.input,isPull=opt.doPull,cmsLabel=opt.cmsLabel,pfix=pfix,
                 categList=categList)
 

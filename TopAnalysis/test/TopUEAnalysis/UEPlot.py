@@ -265,7 +265,7 @@ class UEPlot:
         """
         for p in self.plot[1]+[self.plot[0]]: formatGraph(p,fill,color,marker,keepXUnc,shiftX)
 
-def getRatiosWithRespectTo(uePlots,refKey):
+def getRatiosWithRespectTo(uePlots,refKey,uncType=''):
     """
     Compute the ratio using a given key as reference
     """
@@ -273,16 +273,23 @@ def getRatiosWithRespectTo(uePlots,refKey):
     x,y=ROOT.Double(0),ROOT.Double(0)
     xref,yref=ROOT.Double(0),ROOT.Double(0)    
     for key in uePlots:
-        uePlotRatios[key]=uePlots[key].plot[0].Clone('%s_2_%s_ratio'%(uePlots[key].name,uePlots[refKey].name))
-        for np in xrange(0,uePlots[key].plot[0].GetN()):
+        numPlot=uePlots[key].plot[0]
+        denPlot=uePlots[refKey].plot[0]
+        if uncType=='stat' : 
+            numPlot=uePlots[key].plot[1][0]
+            denPlot=uePlots[refKey].plot[1][0]
 
-            uePlots[key].plot[0].GetPoint(np,x,y)
-            uePlots[refKey].plot[0].GetPoint(np,xref,yref)
+        uePlotRatios[key]=numPlot.Clone('%s_2_%s_ratio%s'%(uePlots[key].name,uePlots[refKey].name,uncType))
+
+        for np in xrange(0,numPlot.GetN()):
+            
+            numPlot.GetPoint(np,x,y)
+            denPlot.GetPoint(np,xref,yref)
             ratio=-1 if yref==0 else y/yref
 
-            ex=uePlots[key].plot[0].GetErrorX(np)
-            ey=uePlots[key].plot[0].GetErrorY(np)
-            #eyref=uePlots[refKey].plot[0].GetErrorY(np)
+            ex=numPlot.GetErrorX(np)
+            ey=numPlot.GetErrorY(np)
+            #eyref=denPlot.GetErrorY(np)
                 
             ratioUnc=(ey*yref)**2
             #if key!=refKey:ratioUnc+=(eyref*y)**2
