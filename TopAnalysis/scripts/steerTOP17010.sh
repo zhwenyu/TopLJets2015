@@ -34,8 +34,9 @@ dataeosdir=/store/cmst3/group/top/ReReco2016/be52dbe_03Feb2017
 summaryeosdir=/store/cmst3/group/top/TOP-17-010-final-v2/
 AnalysisDir=/eos/cms/${summaryeosdir}/analysis
 ChunksDir=${AnalysisDir}/Chunks
-COMBINERELEASE=${HOME}/scratch0/CMSSW_7_4_7/src/
+COMBINERELEASE=${HOME}/scratch0/CMSSW_8_1_0/src/
 outdir=/afs/cern.ch/work/${myletter}/${whoami}/TOP-17-010-final-v2/
+anadir=${outdir}/$2
 wwwdir=${HOME}/www/TOP-17-010/final-v2
 
 
@@ -122,28 +123,48 @@ case $WHAT in
 	;;
     HYPOTEST ) 
 
-    #mainHypo=(20 100 400)        
     mainHypo=(100)
 
-	#    "EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt"
-	#    "EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt"
-	#    "EM1bhighpt,EM2bhighpt"
-    # EM2bhighpt
-	CATS=(
-         "EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt,EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt"
-        )
+	    #"EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt"
+	    #"EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt"
+	    #"EM1bhighpt"
+        #"EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt,EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt"
 
-    #TAGS=("inc_scan_preApp_step4" "inc_scan_preApp_step3"  "inc_scan_preApp_step2" "inc_scan_preApp_step1")
-    TAGS=("inc_scan_preAppFrz")
+	CATS=(
+        "EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt,EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt"
+        )
+        #"EM1blowpt"
+        #"EM1bhighpt"
+        #"EM2blowpt"
+        #"EM2bhighpt"
+        #"MM1blowpt"
+        #"MM1bhighpt"
+        #"MM2blowpt"
+        #"MM2bhighpt"
+
+    TAGS=(
+        "inc_scan_ARC_test"
+        )
+        #"inc_scan_ARC__EM1blowpt"
+        #"inc_scan_ARC__EM1bhighpt"
+        #"inc_scan_ARC__EM2blowpt"
+        #"inc_scan_ARC__EM2bhighpt"
+        #"inc_scan_ARC__MM1blowpt"
+        #"inc_scan_ARC__MM1bhighpt"
+        #"inc_scan_ARC__MM2blowpt"
+        #"inc_scan_ARC__MM2bhighpt"
 
     altHypo=(20 40 50 60 70 80 90 100 110 120 130 140 150 160 180 200 220 240 260 280 300 350 400)        
+    #altHypo=(100) 
+
+    altMass=(1710 1712 1714 1716 1718 1720 1722 1724 1725 1726 1728 1730 1732 1734 1736 1738 1740)
+    #altMass=(100) 
 
 	#data=(-1 50 60 70 80 90 100 110 120 130 140 150 160 180 200 220 240 260 280 300 350 400)
     data=(100)
 
     expAltHypo=("nan") #"meq166p5" "meq169p5" "meq171p5" "meq173p5" "meq175p5" "meq178p5")
 
-    #nuisanceFreeze=("nan")
     #nuisanceFreeze=("sel,trig_*CH*,lumi_13TeV,DYnorm_*CH*,Wnorm_th,tWnorm_th,VVnorm_th,tbartVnorm_th,ees,mes,jer,ltag,btag,bfrag,semilep,pu,tttoppt,ttMEqcdscale,ttPDF,jes,st_wid,UE,CR,hdamp,ISR,FSR,mtop,tWttInterf,tWMEScale") 
     #nuisanceFreeze=("sel,trig_*CH*" "lumi_13TeV" "DYnorm_*CH*" "Wnorm_th" 
     #            "tWnorm_th" "VVnorm_th" "tbartVnorm_th" 
@@ -151,13 +172,18 @@ case $WHAT in
     #            "pu" "tttoppt" "ttMEqcdscale" "ttPDF"
     #            "jes" "st_wid" "UE" "CR" 
     #            "hdamp" "ISR" "FSR" "mtop" 
-    #            "tWttInterf" "tWMEScale") 
-    nuisanceFreeze=("all")
+    #            "tWttInterf" "tWMEScale" "all") 
+    #nuisanceFreeze=("jes0" "jes1" "jes2" "jes3" "jes4" "jes5" "jes6" "jes7" "jes8" "jes9" "jes10" 
+    #                "jes11" "jes12" "jes13" "jes14" "jes15" "jes16" "jes17" "jes18" "jes19" 
+    #                "jes20" "jes21" "jes22" "jes23" "jes24" "jes25" "jes26" "jes27" "jes28")
+    #nuisanceFreeze=("CR,UE,ISR,FSR,hdamp,pu,ttMEqcdscale,tttoppt")
+    nuisanceFreeze=("nan")
     #nuisanceRemove=("nan")
 
-    queue=1nd
+    queue=1nw
     
 	for h in ${altHypo[@]}; do
+	for mm in ${altMass[@]}; do
     for mh in ${mainHypo[@]}; do
 	    for f in ${!nuisanceFreeze[*]}; do
 	    for e in ${expAltHypo[@]}; do
@@ -184,10 +210,15 @@ case $WHAT in
     		#    cmd="${cmd} --removeNuisances ${iNuisRmv}"		    
             #fi
 		    cmd="${cmd} --dist incmlb"		    
+		    cmd="${cmd} --tmass 1725"		    
+		    cmd="${cmd} --alttmass ${mm}"		    
 		    #cmd="${cmd} --dist tmass"		    
 		    cmd="${cmd} --nToys 2000"
-		    cmd="${cmd} -i /eos/cms/${summaryeosdir}/plotter/plotter.root"
-		    cmd="${cmd} --systInput /eos/cms/${summaryeosdir}/plotter/syst_plotter.root"
+		    #cmd="${cmd} -i /eos/cms/${summaryeosdir}/plotter/plotter.root"
+		    #cmd="${cmd} --systInput /eos/cms/${summaryeosdir}/plotter/syst_plotter.root"
+		    cmd="${cmd} -i /afs/cern.ch/work/e/ecoleman/TOP-17-010-final-v2/plotter.root"
+		    cmd="${cmd} --systInput /afs/cern.ch/work/e/ecoleman/TOP-17-010-final-v2/syst_plotter.root"
+		    #cmd="${cmd} --pseudoDataFromSim=widthx0p5"
 		    cmd="${cmd} -c ${icat}"
 		    cmd="${cmd} --rebin 2"            
             #cmd="${cmd} --doValidation"
@@ -202,19 +233,20 @@ case $WHAT in
 		    stdcmd="${cmd} -o ${outdir}/datacards_${itag}"
 
             # add name for frozen syst
-            if [[ "${iNuisFrz}" != "nan" ]] ; then 
-    		    stdcmd="${stdcmd}_${iNuisFrz}"		    
-            fi
+            #if [[ "${iNuisFrz}" != "nan" ]] ; then 
+    		#    stdcmd="${stdcmd}Frz_${iNuisFrz}"		    
+            #fi
 
             # add name for alternate mainHypo
-            if [[ "${mh}" != "100" ]] ; then 
-    		    stdcmd="${stdcmd}_${h}"		    
-            fi
+            #if [[ "${mh}" != "100" ]] ; then 
+    		#    stdcmd="${stdcmd}_${mh}"		    
+            #fi
 
             # submit job
     		stdcmd="${stdcmd}/"		    
             echo ${stdcmd}
     	    bsub -q ${queue} sh ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${stdcmd};
+            sleep 1 
            
 		    #if [ "$itag" == "inc" ]; then
 			#if [ "$d" == "100" ]; then
@@ -227,6 +259,7 @@ case $WHAT in
 			#fi
 		    #fi
 		done
+        done
         done
         done
         done
@@ -256,7 +289,7 @@ case $WHAT in
 	;;
     IMPACTS )
         echo "Starting nuisance impact estimation..."
-        cd /afs/cern.ch/work/e/ecoleman/CMSSW_7_4_7/
+        cd /afs/cern.ch/work/e/ecoleman/CMSSW_8_1_0/
         eval `scramv1 r -sh`
         cd ${outdir}/$2/
 
@@ -265,7 +298,7 @@ case $WHAT in
         ;;
     FINALIMP )
         echo "Finalizing nuisance impacts..."
-        cd /afs/cern.ch/work/e/ecoleman/CMSSW_7_4_7/
+        cd /afs/cern.ch/work/e/ecoleman/CMSSW_8_1_0/
         eval `scramv1 r -sh`
         cd ${outdir}/$2/
        
