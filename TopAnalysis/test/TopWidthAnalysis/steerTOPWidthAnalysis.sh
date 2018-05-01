@@ -18,13 +18,19 @@ export LSB_JOB_REPORT_MAIL=Y
 
 queue=2nw
 who=`whoami`
-outdir=/afs/cern.ch/work/${who:0:1}/${who}/TOP-17-010-final/
+outdir=/afs/cern.ch/work/${who:0:1}/${who}/TOP-17-010-final-v2/
 extdir=${outdir}/${EXT}
-CMSSW_7_4_7dir=~/CMSSW_7_4_7/src/
+CMSSW_7_4_7dir=~/CMSSW_8_1_0/src/
 CMSSW_7_6_3dir=~/CMSSW_8_0_26_patch1/src/
 
 unblind=true
 nPseudo=1000
+
+mas=(1710 1712 1714 1716 1718 1720 1722 1724 1725 1726 1728 1730 1732 1734 1736 1738 1740)
+masNs=("172.0" "171.2" "171.4" "171.6" "171.8" 
+       "172.0" "172.2" "172.4" "172.5" "172.6"
+       "172.8" "173.0" "173.2" "173.4" "173.6"
+       "173.8" "174.0")
 
 wid=(20 40 50 60 70 80 90 100 110 120 130 140 150 160 180 200 220 240 260 280 300 350 400)        
 widNs=("0.20" "0.40" "0.50" "0.60" "0.70" "0.80" "0.90" 
@@ -49,6 +55,7 @@ lfsStr="$(join ${lfs[@]})"
 catStr="$(join ${cat[@]})"
 widStr="$(join ${wid[@]})"
 nwidSt="$(join ${widNs[@]})"
+massSt="$(join ${mas[@]})"
 
 mkdir -p $extdir
 
@@ -65,26 +72,65 @@ case $WHAT in
                "pu" "tttoppt" "ttMEqcdscale" "ttPDF"
                "jes" "st_wid" "UE" "CR" 
                "hdamp" "ISR" "FSR" "mtop" 
-               "tWttInterf" "tWMEScale") 
+               "tWttInterf" "tWMEScale" "all") 
+        #nuisanceGroups=("jes0" "jes1" "jes2" "jes3" "jes4" "jes5" "jes6" "jes7" "jes8" "jes9" "jes10" 
+        #            "jes11" "jes12" "jes13" "jes14" "jes15" "jes16" "jes17" "jes18" "jes19" 
+        #            "jes20" "jes21" "jes22" "jes23" "jes24" "jes25" "jes26" "jes27" "jes28")
+        cats=(
+            "EM1blowpt"
+            "EM1bhighpt"
+            "EM2blowpt"
+            "EM2bhighpt"
+            "MM1blowpt"
+            "MM1bhighpt"
+            "MM2blowpt"
+            "MM2bhighpt"
+        )
 
         echo "------------------------"
         python test/TopWidthAnalysis/getContour.py \
-            --mass 172.5 -n Contour1D_main \
+            --mass 172.5 -n Contour1D_${3} \
+            -e _m1725vs1725_100pseudodata \
             -i ${extdir}/
+
+        #for i in ${cats[*]} ; do
+        #    echo ${i}
+        #    python test/TopWidthAnalysis/getContour.py \
+        #        --mass 172.5 -n Contour1D_${i} \
+        #        -e _${3}pseudodata \
+        #        -i ${extdir}__${i}/
+        #    echo "------------------------"
+        #done
+
+        #for i in 40 80 120 160 200 240 280 ; do
+        #    python test/TopWidthAnalysis/getContour.py \
+        #        --mass 172.5 -n Contour1D_${i} \
+        #        -e _${i}pseudodata \
+        #        -i ${extdir}/
+        #done
 
         #for i in 1 2 3 4 ; do
         #    python test/TopWidthAnalysis/getContour.py \
-        #        --mass 172.5 -n Contour1D_main_step${i} \
+        #        --mass 172.5 -n Contour1D_main${3}_step${i} \
+        #        -e _${3}pseudodata \
         #        -i ${extdir}_step${i}/
         #done
 
-        for nuisGroup in ${nuisanceGroups[@]} ; do
-            echo "------------------------"
-            echo "Limits for ${nuisGroup}:"
-            python test/TopWidthAnalysis/getContour.py \
-                --mass 172.5 -n Contour1D_${nuisGroup} \
-                -i ${extdir}Frz_${nuisGroup}/
-        done
+        #for nuisGroup in ${nuisanceGroups[@]} ; do
+        #    echo "------------------------"
+        #    echo "Limits for ${nuisGroup}:"
+        #    python test/TopWidthAnalysis/getContour.py \
+        #        --mass 172.5 -n Contour1D_${3}_${nuisGroup} \
+        #        -e _${3}pseudodata \
+        #        -i ${extdir}Frz_${nuisGroup}/
+        #done
+    ;;
+########################### 2D LIMITS #####################################
+    2D_LIMITS)
+        python test/TopWidthAnalysis/getContour.py \
+            --mass ${massSt} -n Contour1D_2D \
+            -e _100pseudodata \
+            -i ${extdir}/
     ;;
 ############################### CLs #######################################
     CLs ) # get CLs statistics from combine
@@ -273,26 +319,19 @@ case $WHAT in
         for dist in ${dists[*]} ; do
             iwidN=0
         for twid in ${wid[*]} ; do
+            imassN=0
+        for tmass in ${mas[*]} ; do
             nwid=${widNs[${iwidN}]}
+            nmas=${masNs[${imassN}]}
 
             python test/TopWidthAnalysis/getNuisances.py \
-                -i ${extdir}/hypotest_100vs${twid}_${3}pseudodata/higgsCombinecls_prefit_exp.HybridNew.mH172.5.8192.quant0.500.root \
+                -i ${extdir}/hypotest_100vs${twid}_m1725vs${tmass}_${3}pseudodata/higgsCombineNuisancesRun.MultiDimFit.mH172.5.123456.root \
                 -o ${extdir}/ \
-                -n preNuisances_${twid}_${dist} \
-                --extraText "#Gamma_{Alt.} = ${nwid} #times #Gamma_{SM}"
+                -n Nuisances_${twid}_${tmass}_${dist} \
+                --extraText "#Gamma_{Alt.} = ${nwid} #times #Gamma_{SM} ; m_{Alt.} = ${nmas} GeV"
 
-            python test/TopWidthAnalysis/getNuisances.py \
-                -i ${extdir}/hypotest_100vs${twid}_${3}pseudodata/higgsCombinecls_postfit_exp.HybridNew.mH172.5.8192.quant0.500.root \
-                -o ${extdir}/ \
-                -n postNuisances_${twid}_${dist} \
-                --extraText "#Gamma_{Alt.} = ${nwid} #times #Gamma_{SM}"
-
-            python test/TopWidthAnalysis/getNuisances.py \
-                -i ${extdir}/hypotest_100vs${twid}_${3}pseudodata/higgsCombinecls_postfit_obs.HybridNew.mH172.5.8192.root \
-                -o ${extdir}/ \
-                -n obsNuisances_${twid}_${dist} \
-                --extraText "#Gamma_{Alt.} = ${nwid} #times #Gamma_{SM}"
-
+            let "imassN += 1"
+        done
             let "iwidN += 1"
         done
         done
