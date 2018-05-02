@@ -27,9 +27,9 @@ NC='\e[0m'
 case $WHAT in
 
     TESTSEL )
-        input=${eosdir}/MC13TeV_DY4Jets50toInf_mgMLM/MergedMiniEvents_4_ext0.root
+        input=${eosdir}/MC13TeV_DY50toInf/MergedMiniEvents_4_ext0.root
         output=MC13TeV_DY4Jets50toInf.root
-        tag="--tag MC13TeV_DY4Jets50toInf"
+        tag="--tag MC13TeV_DY50toInf"
         #input=${eosdir}/Data13TeV_SingleMuon_2017D/MergedMiniEvents_0_ext0.root
         #output=Data13TeV_SingleMuon_2017D.root
         #input=${eosdir}/MC13TeV_GJets_HT100to200_DR04/MergedMiniEvents_0_ext0.root
@@ -38,7 +38,7 @@ case $WHAT in
         #output=Data13TeV_SingleMuon_2017C.root
 	python scripts/runLocalAnalysis.py \
             -i ${input} -o ${output} ${tag} \
-            --njobs 1 -q local --debug \
+            --njobs 1 -q local --debug --mvatree \
             --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts;
         ;;
 

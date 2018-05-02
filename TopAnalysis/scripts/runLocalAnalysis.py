@@ -15,18 +15,20 @@ Wrapper to be used when run in parallel
 """
 def RunMethodPacked(args):
 
-    method,inF,outF,channel,charge,flag,runSysts,systVar,era,tag,debug=args
+    method,inF,outF,channel,charge,flag,runSysts,systVar,era,tag,debug,mvatree=args
     print 'Running ',method,' on ',inF
     print 'Output file',outF
     print 'Selection ch=',channel,' charge=',charge,' flag=',flag,' systs=',runSysts
     print 'Normalization applied from tag=',tag
     print 'Corrections will be retrieved for era=',era
+    print 'Make the mva tree? ', mvatree
 
     try:
         cmd='analysisWrapper --era %s --normTag %s --in %s --out %s --method %s --charge %d --channel %d --flag %d --systVar %s'\
             %(era, tag, inF, outF, method, charge, channel, flag, systVar)
         if runSysts : cmd += ' --runSysts'
         if debug : cmd += ' --debug'
+        if mvatree : cmd += ' --mvatree'
         print(cmd)
         os.system(cmd)
 
@@ -63,6 +65,7 @@ def main():
     parser.add_option(      '--exactonly',   dest='exactonly',   help='match only exact sample tags to process  [%default]',    default=False,      action='store_true')
     parser.add_option(      '--outputonly',        dest='outputonly',        help='filter job submission for a csv list of output files  [%default]',             default=None,       type='string')
     parser.add_option(      '--farmappendix',        dest='farmappendix',        help='Appendix to condor FARM directory [%default]',             default='',       type='string')
+    parser.add_option(      '--mvatree',       dest='mvatree',       help='make mva tree  [%default]',                            default=False,      action='store_true')
     (opt, args) = parser.parse_args()
 
     #parse selection lists
@@ -126,7 +129,7 @@ def main():
         for systVar in varList:
             outF=opt.output
             if systVar != 'nominal' and not systVar in opt.output: outF=opt.output[:-5]+'_'+systVar+'.root'
-            task_list.append( (opt.method,inF,outF,opt.channel,opt.charge,opt.flag,opt.runSysts,systVar,opt.era,opt.tag,opt.debug) )
+            task_list.append( (opt.method,inF,outF,opt.channel,opt.charge,opt.flag,opt.runSysts,systVar,opt.era,opt.tag,opt.debug, opt.mvatree) )
     else:
 
         inputTags=getEOSlslist(directory=opt.input,prepend='')
@@ -166,7 +169,7 @@ def main():
                         continue
                     if (len(outputOnlyList) > 1 and not outF in outputOnlyList):
                         continue
-                    task_list.append( (opt.method,inF,outF,opt.channel,opt.charge,opt.flag,opt.runSysts,systVar,opt.era,tag,opt.debug) )
+                    task_list.append( (opt.method,inF,outF,opt.channel,opt.charge,opt.flag,opt.runSysts,systVar,opt.era,tag,opt.debug, opt.mvatree) )
                 if (opt.skipexisting and nexisting): print '--skipexisting: %s - skipping %d of %d tasks as files already exist'%(systVar,nexisting,len(input_list))
 
     #run the analysis jobs
@@ -195,7 +198,7 @@ def main():
             condor.write('+JobFlavour = "{0}"\n'.format(opt.queue))
 
             jobNb=0
-            for method,inF,outF,channel,charge,flag,runSysts,systVar,era,tag,debug in task_list:
+            for method,inF,outF,channel,charge,flag,runSysts,systVar,era,tag,debug,mvatree in task_list:
 
                 jobNb+=1
                 cfgFile='%s'%(os.path.splitext(os.path.basename(outF))[0])
@@ -216,6 +219,7 @@ def main():
                         %(inF, localOutF, charge, channel, era, tag, flag, method, systVar)
                     if runSysts : runOpts += ' --runSysts'
                     if debug :    runOpts += ' --debug'
+                    if mvatree :    runOpts += ' --mvatree'
                     cfg.write('python %s/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py %s\n'%(cmsswBase,runOpts))
                     if '/store' in outF:
                         cfg.write('xrdcp ${WORKDIR}/%s root://eoscms//eos/cms/%s\n'%(localOutF,outF))
