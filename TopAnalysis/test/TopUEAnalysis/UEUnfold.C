@@ -29,6 +29,10 @@ public:
   }
   ~UEUnfold() { };
 
+
+  TH1 *curToyRec_, *curToyUnf_, *curToyTruth_,*curFolded_unfolded_;
+  TH2 *curCov_;
+
 private:
   void initROOTStyle();
   float performTauScan(TH2 *mig, TH1 *data,TUnfoldDensity &unfold);
@@ -152,26 +156,34 @@ float UEUnfold::doUnfold(float opt_tau, TH2 *mig, TH1 *data,TH1 *gen,bool storeF
   //TUnfoldDensity::EDensityMode densityFlags=TUnfoldDensity::kDensityModeBinWidth;  
 
   TUnfoldDensity unfold(mig,TUnfold::kHistMapOutputHoriz,regMode,constraint,densityFlags);  
-  unfold.SetInput(data,scaleBias);
+  Int_t status=unfold.SetInput(data,scaleBias);
+  if(status!=0) {
+    cout << "[UEUnfold::doUnfold] input failed with satus=" << status << endl;
+    return opt_tau;
+  }
  
   // scan to determine optimal tau, if needed
   if(opt_tau<0) opt_tau=performTauScan(mig,data,unfold);
 
   //unfold with optimized tau  
   unfold.DoUnfold(opt_tau);
-
+  cout << __LINE__ << " " << opt_tau << endl;
   //get results
   TH1 *folded_unfolded_data = unfold.GetFoldedOutput("folded_data",0,0,"",kFALSE);
   TH1 *unfolded_data_raw = unfold.GetOutput("unfolded_data",0,0,"",kFALSE);
   TH1 *unfolded_data=(TH1 *) gen->Clone("corrected_data"+pfix);
   unfolded_data->SetTitle("Data (corrected)");
   unfolded_data->SetDirectory(0);
+  std::cout << __LINE__ << " " << folded_unfolded_data << " " << unfolded_data_raw << " " << unfolded_data << endl;
   TH2 *unfolded_ematTotal = unfold.GetEmatrixTotal("EmatTotal");
+  std::cout << __LINE__ << unfolded_ematTotal << endl;
   for(int xbin=1; xbin<=unfolded_data->GetNbinsX(); xbin++)
     {
       unfolded_data->SetBinContent(xbin,unfolded_data_raw->GetBinContent(xbin));
       unfolded_data->SetBinError(xbin,TMath::Sqrt(unfolded_ematTotal->GetBinContent(xbin,xbin)));
     }
+  curFolded_unfolded_=folded_unfolded_data;
+  curCov_=unfolded_ematTotal;
 
   //save summary
   if(storeFull)
@@ -266,6 +278,7 @@ void UEUnfold::unfoldToy(char *file_toy,float opt_tau,TH2 *mig,float norm,TH1 *f
   toyRecSub->SetTitle("toy data-fakes");
   if(fakes) toyRecSub->Add(fakes,-1);
   toyRecSub->SetDirectory(0);
+  curToyRec_=toyRecSub;
 
   //MC truth for this toy
   TH1 *toyGen   = (TH1 *)inF->Get("gen")->Clone("gen_toy");
@@ -273,7 +286,8 @@ void UEUnfold::unfoldToy(char *file_toy,float opt_tau,TH2 *mig,float norm,TH1 *f
   toyGen->SetDirectory(0);
   toyGen->Scale(sf); 
   inF->Close();
-  
+  curToyTruth_=toyGen;
+
   doUnfold(opt_tau,mig,toyRecSub,toyGen);
 
   TH1 *unfolded_toy=0;
@@ -283,6 +297,7 @@ void UEUnfold::unfoldToy(char *file_toy,float opt_tau,TH2 *mig,float norm,TH1 *f
       if(rname!="corrected_data") continue;
       unfolded_toy=(TH1 *)results_->At(i);
     }
+  curToyUnf_=unfolded_toy;
 
   //
   // check bin-by-bin bias and pull

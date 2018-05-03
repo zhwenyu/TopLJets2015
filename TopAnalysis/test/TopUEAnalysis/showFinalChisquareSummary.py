@@ -157,7 +157,7 @@ def buildChisquareReportFrom(pckSummary):
                 if val==0.1365 : continue
                 #chi2Scan[param].append( (val,chi2/np) )
                 chi2Scan[param].append( (val,chi2) )
- 
+                print model,param,valStr,chi2Scan[param]
 
             #chi^2 from mean analysis
             mean=modelPlot.mean[0]
@@ -220,19 +220,21 @@ def main():
 
         fulld=os.path.join(opt.input,var)
         if not os.path.isdir(fulld) : continue
-        
+        if not var in ['chavgpt','C','C_2'] : continue
         if var in ['maxRap','rapDist']: 
             print 'Skipping',var
             continue
     
 
         varList.append(var)
-        varKey='evshape' if var in ['C','D','sphericity','aplanarity'] else 'flux'
+        varKey='flux'
+        if var in ['C','D','sphericity','aplanarity']: varKey='evshape'
+        if var in ['C_2','D_2','sphericity_2','aplanarity_2']: varKey='evshape_2'
         for psSlice in os.listdir(fulld):
 
             #skip these ones for the moment
             if 'chmult' in psSlice: continue
-
+            if not 'inc' in psSlice: continue
             pckSummary=os.path.join(fulld,psSlice,'unfold/unfold_summary.pck')
 
             chi2report,paramScan=buildChisquareReportFrom(pckSummary)
@@ -247,13 +249,14 @@ def main():
             for param in paramScan:
                 if not param in paramScanResults: paramScanResults[param]={}
                 paramScanResults[param][(var,psSlice)]=paramScan[param]
-    
 
     #display the results
     models2Plot=['PW+PY8*','PW+PY8',
                  'ISR up','ISR dn','FSR up','FSR dn','ERD on','QCD based','Gluon move','Rope','Rope (no CR)', 'UE up','UE dn','no MPI','no CR',
                  'aMC@NLO+PY8','PW+HW++','PW+HW7','Sherpa']
-    ana2Plot=[('mean','evshape'),('dist','evshape'),('mean','flux'),('dist','flux')]
+    ana2Plot=[('mean','evshape'),('dist','evshape'),
+              ('mean','evshape_2'),('dist','evshape_2'),
+              ('mean','flux'),('dist','flux')]
 
     c=ROOT.TCanvas('c','c',550,500)
     c.SetTopMargin(0.06)
@@ -267,7 +270,9 @@ def main():
         ana,varKey=anaKey
 
         summaryH=None
-        ztitle='event shape' if varKey=='evshape' else 'flux'
+        ztitle='flux'
+        if varKey=='evshape' : ztitle='event shape'
+        if varKey=='evshape_2': ztitle='event shape (quadratic)'
         if ana=='dist':
             summaryH=ROOT.TH2F('pvalSummary', 
                                #';p-value;;Number of '+ztitle+' analysis', 
@@ -286,6 +291,9 @@ def main():
             model=models2Plot[i]
             if not model in chi2Results: continue
             summaryH.GetYaxis().SetBinLabel(ybin+1,model)
+            if not anaKey in chi2Results[model]:
+                print 'Failed to find',anaKey,'for model=',model
+                continue
             for chi2,np,pval in chi2Results[model][anaKey]:
                 if ana=='dist':
                     summaryH.Fill(min(0.999,max(pval,1e-3)),ybin)
@@ -353,7 +361,11 @@ def main():
     for p in paramScanResults:
 
         pname='asfsr'
-        if 'ISR' in p : pname='asisr'
+        if 'ISR' in p      : pname='asisr'
+        if 'CMW' in p      : pname += '_cmw2loop'
+        if '0.5M_{Z}' in p : pname +=' scale0.5'
+        if 'M_{Z}' in p    : pname +=' scale1.0'
+        if '2M_{Z}' in p   : pname +=' scale2.0'
 
         evshapeFits=ROOT.TGraphAsymmErrors()
         evshapeFits.SetMarkerStyle(20)
@@ -362,14 +374,19 @@ def main():
         evshapeFits2s.SetMarkerStyle(1)
         evshapeFits2s.SetLineColor(2)
         evshapeFits2s.SetMarkerColor(2)
+        evshape_2Fits=evshapeFits.Clone('evshapes_2')
+        evshape_2Fits2s=evshapeFits2s.Clone('evshapes_22s')
         fluxFits=evshapeFits.Clone('flux')
         fluxFits2s=evshapeFits2s.Clone('flux2s')
         for v,psSlice in paramScanResults[p]:
 
             chi20,p0,pmax,pmin,pmax2s,pmin2s,gr=paramScanResults[p][(v,psSlice)]
             if pmax and pmin:
-                summarygr=evshapeFits if v in ['C','D','sphericity','aplanarity'] else fluxFits
-                summarygr2s=evshapeFits2s if v in ['C','D','sphericity','aplanarity'] else fluxFits2s
+                summarygr,summarygr2s=fluxFits,fluxFits2s
+                if v in ['C','D','sphericity','aplanarity']:
+                    summarygr,summarygr2s=evshapeFits,evshapeFits2s
+                if v in ['C_2','D_2','sphericity_2','aplanarity_2']:
+                    summarygr,summarygr2s=evshape_2Fits,evshape_2Fits2s
                 npts=summarygr.GetN()
                 summarygr.SetPoint(npts,p0,npts)
                 summarygr.SetPointError(npts,pmax-p0,p0-pmin,0,0)
@@ -534,7 +551,9 @@ def main():
                 for ext in ['png','pdf','root']: c.SaveAs('%s/chi2scans_%s_%s_%s.%s'%(opt.input,v,pname,pfix,ext))
                 resultLog.close()
 
-        for gr,gr2s in [(evshapeFits,evshapeFits2s),(fluxFits,fluxFits2s)]:
+        for gr,gr2s in [(evshapeFits,evshapeFits2s),
+                        (evshape_2Fits,evshape_2Fits2s),
+                        (fluxFits,fluxFits2s)]:
             c.Clear()
 
             frame=ROOT.TH1F('frame','frame',30,0.05,0.25)
@@ -566,8 +585,11 @@ def main():
             tex.SetTextSize(0.05)
             tex.SetNDC()
             tex.DrawLatex(0.16,0.88,opt.cmsLabel)
-            tex.DrawLatex(0.6,0.88,'#scale[0.8]{%s=%3.3f}'%(p,perc[1]))
-            tex.DrawLatex(0.6,0.8,'#scale[0.8]{[%3.3f,%3.3f]}'%(perc[0],perc[2]))
+            try:
+                tex.DrawLatex(0.6,0.88,'#scale[0.8]{%s=%3.3f}'%(p,perc[1]))
+                tex.DrawLatex(0.6,0.8,'#scale[0.8]{[%3.3f,%3.3f]}'%(perc[0],perc[2]))
+            except:
+                pass
             tex.DrawLatex(0.67,0.96,'#scale[0.8]{35.9 fb^{-1} (13 TeV)}')
             c.RedrawAxis()
             c.Modified()

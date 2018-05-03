@@ -375,6 +375,7 @@ def runUEAnalysis(inF,outF,cfgDir):
 
     print '[runAnalysis] %s -> %s (cfg @ %s)'%(inF,outF,cfgDir)
     
+    isData=True if 'Data13TeV' in inF else False
     isTTJets=True if 'MC13TeV_TTJets' in inF else False
     ueHandler=UEAnalysisHandler(os.path.join(cfgDir,'analysiscfg.pck'),isTTJets)
 
@@ -397,6 +398,7 @@ def runUEAnalysis(inF,outF,cfgDir):
 
         #count particles
         ue.count(t=t,isMC=isTTJets)
+        if isData: ue.w[0]=1.0
         ueHandler.fillHistos(ue)
 
     #save histos to ROOT file
@@ -437,6 +439,7 @@ def main():
     parser.add_option(      '--dryRun',  dest='dryRun',   help='do not submit',     default=False,  action='store_true')
     parser.add_option('-o', '--out',   dest='out',    help='output',                      default='./UEanalysis',   type='string')
     parser.add_option(      '--only',  dest='only',   help='csv list of tags to process', default='',  type='string')
+    parser.add_option(      '--onlyExact',  dest='onlyExact',   help='set to true if only tag is to be fully matched', default=False,  action='store_true')
     parser.add_option('-q', '--queue', dest='queue',  help='Batch queue to use [default: %default]', default='local')
     (opt, args) = parser.parse_args()
 
@@ -499,8 +502,12 @@ def main():
             if len(onlyList)>0:
                 processThis=False
                 for filtTag in onlyList:
-                    if filtTag in tag:
-                        processThis=True
+                    if opt.onlyExact:
+                        if tag.replace(filtTag+'_','').isdigit():
+                            processThis=True
+                    else:
+                        if filtTag in tag:
+                            processThis=True
                 if not processThis : continue
             tasklist.append((filename,'%s/Chunks/%s'%(opt.out,baseFileName),opt.out))
 

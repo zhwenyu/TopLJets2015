@@ -190,7 +190,6 @@ class UEEventCounter:
                     pass
             if not passExtraCuts: self.rec_passSel[iSystVar] = False
                 
-
             if self.rec_passSel[iSystVar]:
 
                 #select particles
@@ -297,7 +296,7 @@ class UEEventCounter:
                 self.rec_chrecoil[iSystVar] = chrecoil.Pt()
 
                 #event shapes
-                self.evshapes.analyseNewEvent(selP4)
+                self.evshapes.analyseNewEvent(inputP4=selP4,r=1)
                 self.rec_sphericity[iSystVar]     = self.evshapes.sphericity
                 self.rec_aplanarity[iSystVar]     = self.evshapes.aplanarity
                 self.rec_C[iSystVar]              = self.evshapes.C
@@ -311,7 +310,7 @@ class UEEventCounter:
                 if 'chmult' in self.cuts:
                     if self.rec_chmult[iSystVar]<self.cuts['chmult'][0] or self.rec_chmult[iSystVar]>=self.cuts['chmult'][1]:
                         self.rec_passSel[iSystVar] = False
-                
+
         #gen level (only one selection variation needed and require e-mu final state)
         self.gen_passSel=(t.gen_passSel&0x1)
         if isMC and abs(t.gen_cat)!=11*13 : self.gen_passSel=False

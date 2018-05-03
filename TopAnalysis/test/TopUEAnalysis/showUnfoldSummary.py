@@ -55,6 +55,21 @@ def summarizeResultsFromToys(url,outDir='./'):
         cscan.Update()
         saveCanvas(c=cscan,name='%s/%s_%s'%(outDir,tag,hname))
 
+    for hname in ['pvalRatio']:
+        h=fIn.Get(hname)
+        cscan.Clear()
+        h.Draw('e1')
+        h.SetMarkerStyle(20)
+        h.GetYaxis().SetTitle('Toys')
+        txt=ROOT.TLatex()
+        txt.SetNDC()
+        txt.SetTextFont(42)
+        txt.SetTextSize(0.04)
+        txt.DrawLatex(0.15,0.90,'#bf{CMS} simulation preliminary')
+        txt.DrawLatex(0.85,0.96,'#scale[0.8]{(13 TeV)}')
+        cscan.Modified()
+        cscan.Update()
+        saveCanvas(c=cscan,name='%s/%s_%s'%(outDir,tag,hname))
 
     cscan.SetRightMargin(0.15)
     cscan.SetLeftMargin(0.15)

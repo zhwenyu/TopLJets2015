@@ -18,15 +18,15 @@ COMPARISONSETS=[
                  ('CR',              ['t#bar{t} QCDbased', 't#bar{t} ERDon', 't#bar{t} gluon move']) ] 
      ),
     ('UE up',  [ ('nominal',          ['t#bar{t} UEup'])]),
-    ('UE dn',  [ ('nominal',          ['t#bar{t} UEdn'])]),
+    ('UE down',  [ ('nominal',          ['t#bar{t} UEdn'])]),
     ('FSR up', [ ('nominal',         ['t#bar{t} fsr up'])]),
-    ('FSR dn', [ ('nominal',         ['t#bar{t} fsr dn'])]),
+    ('FSR down', [ ('nominal',         ['t#bar{t} fsr dn'])]),
     ('ISR up', [ ('nominal',         ['t#bar{t} isr up'])]),
-    ('ISR dn', [ ('nominal',         ['t#bar{t} isr dn'])]),
+    ('ISR down', [ ('nominal',         ['t#bar{t} isr dn'])]),
     ('QCD based', [ ('nominal',         ['t#bar{t} QCDbased'])]),
     ('ERD on',    [ ('nominal',         ['t#bar{t} ERDon'])]),
     ('Gluon move',[ ('nominal',         ['t#bar{t} gluon move'])]),
-    ('aMC@NLO+PY8', [ ('nominal', ['t#bar{t} aMC@NLO']) ]),
+    ('MG5_aMC', [ ('nominal', ['t#bar{t} aMC@NLO']) ]),
     ('PW+HW++'    , [ ('nominal', ['t#bar{t} Herwig++']) ]),
     ]
 
@@ -60,6 +60,44 @@ EXTRASETS = [
     ('#alpha_{S}^{ISR}=0.14', 'MC13TeV_TTJets_pythia8_asisr0.14.root'),
     ('#alpha_{S}^{ISR}=0.15', 'MC13TeV_TTJets_pythia8_asisr0.15.root'),
     ('#alpha_{S}^{ISR}=0.16', 'MC13TeV_TTJets_pythia8_asisr0.16.root'),
+    ('#alpha_{S}^{FSR}(CMW NNLO,0.5M_{Z})=0.070','MC13TeV_TTJets_pythia8_asfsr0.070_scale0.5_CMW_2loop.root'),  
+    ('#alpha_{S}^{FSR}(CMW NNLO,0.5M_{Z})=0.080','MC13TeV_TTJets_pythia8_asfsr0.080_scale0.5_CMW_2loop.root'),  
+    ('#alpha_{S}^{FSR}(CMW NNLO,0.5M_{Z})=0.090','MC13TeV_TTJets_pythia8_asfsr0.090_scale0.5_CMW_2loop.root'),  
+    ('#alpha_{S}^{FSR}(CMW NNLO,0.5M_{Z})=0.100','MC13TeV_TTJets_pythia8_asfsr0.100_scale0.5_CMW_2loop.root'),  
+    ('#alpha_{S}^{FSR}(CMW NNLO,0.5M_{Z})=0.110','MC13TeV_TTJets_pythia8_asfsr0.110_scale0.5_CMW_2loop.root'),  
+    ('#alpha_{S}^{FSR}(CMW NNLO,0.5M_{Z})=0.115','MC13TeV_TTJets_pythia8_asfsr0.115_scale0.5_CMW_2loop.root'),  
+    ('#alpha_{S}^{FSR}(CMW NNLO,0.5M_{Z})=0.120','MC13TeV_TTJets_pythia8_asfsr0.120_scale0.5_CMW_2loop.root'),  
+    ('#alpha_{S}^{FSR}(CMW NNLO,0.5M_{Z})=0.125','MC13TeV_TTJets_pythia8_asfsr0.125_scale0.5_CMW_2loop.root'),  
+    ('#alpha_{S}^{FSR}(CMW NNLO,0.5M_{Z})=0.130','MC13TeV_TTJets_pythia8_asfsr0.130_scale0.5_CMW_2loop.root'),  
+    ('#alpha_{S}^{FSR}(CMW NNLO,0.5M_{Z})=0.135','MC13TeV_TTJets_pythia8_asfsr0.135_scale0.5_CMW_2loop.root'),  
+    ('#alpha_{S}^{FSR}(CMW NNLO,0.5M_{Z})=0.140','MC13TeV_TTJets_pythia8_asfsr0.140_scale0.5_CMW_2loop.root'),
+    ('#alpha_{S}^{FSR}(CMW NNLO,0.5M_{Z})=0.150','MC13TeV_TTJets_pythia8_asfsr0.150_scale0.5_CMW_2loop.root'),
+    ('#alpha_{S}^{FSR}(CMW NNLO,M_{Z})=0.070','MC13TeV_TTJets_pythia8_asfsr0.070_scale2.0_CMW_2loop.root'),  
+    ('#alpha_{S}^{FSR}(CMW NNLO,M_{Z})=0.080','MC13TeV_TTJets_pythia8_asfsr0.080_scale2.0_CMW_2loop.root'),  
+    ('#alpha_{S}^{FSR}(CMW NNLO,M_{Z})=0.190','MC13TeV_TTJets_pythia8_asfsr0.090_scale2.0_CMW_2loop.root'),  
+    ('#alpha_{S}^{FSR}(CMW NNLO,M_{Z})=0.100','MC13TeV_TTJets_pythia8_asfsr0.100_scale2.0_CMW_2loop.root'),  
+    ('#alpha_{S}^{FSR}(CMW NNLO,M_{Z})=0.105','MC13TeV_TTJets_pythia8_asfsr0.105_scale2.0_CMW_2loop.root'),  
+    ('#alpha_{S}^{FSR}(CMW NNLO,M_{Z})=0.110','MC13TeV_TTJets_pythia8_asfsr0.110_scale2.0_CMW_2loop.root'),  
+    ('#alpha_{S}^{FSR}(CMW NNLO,M_{Z})=0.115','MC13TeV_TTJets_pythia8_asfsr0.115_scale2.0_CMW_2loop.root'),  
+    ('#alpha_{S}^{FSR}(CMW NNLO,M_{Z})=0.120','MC13TeV_TTJets_pythia8_asfsr0.120_scale2.0_CMW_2loop.root'),  
+    ('#alpha_{S}^{FSR}(CMW NNLO,M_{Z})=0.125','MC13TeV_TTJets_pythia8_asfsr0.125_scale2.0_CMW_2loop.root'),  
+    ('#alpha_{S}^{FSR}(CMW NNLO,M_{Z})=0.130','MC13TeV_TTJets_pythia8_asfsr0.130_scale2.0_CMW_2loop.root'),  
+    ('#alpha_{S}^{FSR}(CMW NNLO,M_{Z})=0.135','MC13TeV_TTJets_pythia8_asfsr0.135_scale2.0_CMW_2loop.root'),    
+    ('#alpha_{S}^{FSR}(CMW NNLO,M_{Z})=0.140','MC13TeV_TTJets_pythia8_asfsr0.140_scale2.0_CMW_2loop.root'),
+    ('#alpha_{S}^{FSR}(CMW NNLO,M_{Z})=0.150','MC13TeV_TTJets_pythia8_asfsr0.150_scale2.0_CMW_2loop.root'),
+    ('#alpha_{S}^{FSR}(CMW NNLO,2M_{Z})=0.070','MC13TeV_TTJets_pythia8_asfsr0.070_scale1.0_CMW_2loop.root'),      
+    ('#alpha_{S}^{FSR}(CMW NNLO,2M_{Z})=0.080','MC13TeV_TTJets_pythia8_asfsr0.080_scale1.0_CMW_2loop.root'),  
+    ('#alpha_{S}^{FSR}(CMW NNLO,2M_{Z})=0.090','MC13TeV_TTJets_pythia8_asfsr0.090_scale1.0_CMW_2loop.root'),  
+    ('#alpha_{S}^{FSR}(CMW NNLO,2M_{Z})=0.100','MC13TeV_TTJets_pythia8_asfsr0.100_scale1.0_CMW_2loop.root'),  
+    ('#alpha_{S}^{FSR}(CMW NNLO,2M_{Z})=0.105','MC13TeV_TTJets_pythia8_asfsr0.105_scale1.0_CMW_2loop.root'),  
+    ('#alpha_{S}^{FSR}(CMW NNLO,2M_{Z})=0.110','MC13TeV_TTJets_pythia8_asfsr0.110_scale1.0_CMW_2loop.root'),  
+    ('#alpha_{S}^{FSR}(CMW NNLO,2M_{Z})=0.115','MC13TeV_TTJets_pythia8_asfsr0.115_scale1.0_CMW_2loop.root'),  
+    ('#alpha_{S}^{FSR}(CMW NNLO,2M_{Z})=0.120','MC13TeV_TTJets_pythia8_asfsr0.120_scale1.0_CMW_2loop.root'),  
+    ('#alpha_{S}^{FSR}(CMW NNLO,2M_{Z})=0.125','MC13TeV_TTJets_pythia8_asfsr0.125_scale1.0_CMW_2loop.root'),  
+    ('#alpha_{S}^{FSR}(CMW NNLO,2M_{Z})=0.130','MC13TeV_TTJets_pythia8_asfsr0.130_scale1.0_CMW_2loop.root'),  
+    ('#alpha_{S}^{FSR}(CMW NNLO,2M_{Z})=0.135','MC13TeV_TTJets_pythia8_asfsr0.135_scale1.0_CMW_2loop.root'),
+    ('#alpha_{S}^{FSR}(CMW NNLO,2M_{Z})=0.140','MC13TeV_TTJets_pythia8_asfsr0.140_scale1.0_CMW_2loop.root'),
+    ('#alpha_{S}^{FSR}(CMW NNLO,2M_{Z})=0.150','MC13TeV_TTJets_pythia8_asfsr0.150_scale1.0_CMW_2loop.root'),
     #('Rope had.',             'MC13TeV_TTJets_pythia8_asfsr0.120_meon_crdefault_flavrope.root'),
     ('Rope',             'MC13TeV_TTJets_pythia8_asfsr0.1365_meon_crdefault_flavrope.root'),
     ('Rope (no CR)',     'MC13TeV_TTJets_pythia8_asfsr0.1365_meon_croff_flavrope.root'),
@@ -69,11 +107,11 @@ PLOTTINGSET_1=[
     ('Data',              '2',  1001,  '#a6cee3', 1 , True,  None),
     ('PW+PY8',            'ep0', 0,    '#49494c', 24, False, 0.2),
     ('ISR up',            'ep0', 0,    '#fdc086', 22, False, 0.4),
-    ('ISR dn',            'ep0', 0,    '#fdc086', 23, False, 0.4),
+    ('ISR down',            'ep0', 0,    '#fdc086', 23, False, 0.4),
     ('FSR up',            'ep0', 0,    '#d95f02', 22, False, 0.6),
-    ('FSR dn',            'ep0', 0,    '#d95f02', 23, False, 0.6),
+    ('FSR down',            'ep0', 0,    '#d95f02', 23, False, 0.6),
     ('UE up',             'ep0', 0,    '#000000', 22, False, 0.80),
-    ('UE dn',             'ep0', 0,    '#000000', 23, False, 0.80),
+    ('UE down',             'ep0', 0,    '#000000', 23, False, 0.80),
     #('CP5',               'ep0', 0,    '#91b58d', 24, False, 0.9),
 ]
 
@@ -91,7 +129,7 @@ PLOTTINGSET_2=[
 PLOTTINGSET_3=[
     ('Data',           '2',   1001, '#a6cee3', 1 , True,  None),
     ('Sherpa',         'ep0', 0,    '#49494c', 24, False, 0.2),
-    ('aMC@NLO+PY8',    'ep0', 0,    '#e41a1c', 21, False, 0.5),
+    ('MG5_aMC',    'ep0', 0,    '#e41a1c', 21, False, 0.5),
     ('PW+HW++',        'ep0', 0,    '#386cb0', 22, False, 0.8),
     ('PW+HW7',         'ep0', 0,    '#386cb0', 23, False, 0.8),
 ]
@@ -115,7 +153,7 @@ def compareUEPlots(uePlots,outDir,cuts,obs,plottingSetList=[PLOTTINGSET_1],cmsLa
     c.SetLeftMargin(0.15)
     c.SetBottomMargin(0.14)
     c.SetLogx(logX)
-    c.SetGridx()
+    #c.SetGridx()
     
     #frame
     xarr=uePlots['Data'].trueAxis.GetXbins().GetArray()
@@ -128,7 +166,7 @@ def compareUEPlots(uePlots,outDir,cuts,obs,plottingSetList=[PLOTTINGSET_1],cmsLa
     ytitle='1/N dN/d(%s)'%VARTITLES[obs]
     if obs in ['chflux','chfluxz','chavgpt','chavgpt','chrecoil','chavgpz'] : ytitle += ' [GeV^{-1}]'
     frame.GetYaxis().SetTitle(ytitle)
-    frame.GetYaxis().SetTitleOffset(1.45)
+    frame.GetYaxis().SetTitleOffset(1.48)
     frame.GetXaxis().SetTitleOffset(1.25)
     frame.GetYaxis().SetTitleSize(0.05)
     frame.GetYaxis().SetNdivisions(505)
@@ -139,7 +177,16 @@ def compareUEPlots(uePlots,outDir,cuts,obs,plottingSetList=[PLOTTINGSET_1],cmsLa
         frame.GetXaxis().SetMoreLogLabels()
 
     #plot and add to the legend
-    leg=ROOT.TLegend(0.6,0.92,0.96,0.92-len(plottingSetList)*0.09) 
+    xmin_leg,xmax_leg=0.65,0.96
+    ymin_leg,ymax_leg=0.92,0.92-len(plottingSetList)*0.10
+    if obs in ['C'] :
+        xmin_leg,xmax_leg=0.18,0.54
+        ymin_leg,ymax_leg=0.83,0.83-len(plottingSetList)*0.10
+    if obs in ['C_2']:
+        xmin_leg,xmax_leg=0.18,0.54
+        ymin_leg,ymax_leg=0.45,0.45-len(plottingSetList)*0.10
+
+    leg=ROOT.TLegend(xmin_leg,ymin_leg,xmax_leg,ymax_leg)
     leg.SetFillStyle(0)
     leg.SetBorderSize(0)
     leg.SetTextFont(42)
@@ -166,11 +213,13 @@ def compareUEPlots(uePlots,outDir,cuts,obs,plottingSetList=[PLOTTINGSET_1],cmsLa
             pass
     #frame.GetYaxis().SetRangeUser(minY*0.8,maxY*1.25)
     frame.GetYaxis().SetRangeUser(0,maxY*1.25)
-    if minY>0 and maxY/minY<100: frame.GetYaxis().SetRangeUser(0.,maxY*1.25)
+    if minY>0 and maxY/minY<100: frame.GetYaxis().SetRangeUser(0,maxY*1.25)
     leg.Draw()
 
     #stat component for data
-    txt=ROOT.TPaveText(0.615,0.905,0.675,0.89,'brNDC')
+    xmin_stat,xmax_stat=xmin_leg+0.0145,xmin_leg+0.072
+    ymin_stat,ymax_stat=ymin_leg-0.0145,ymin_leg-0.029
+    txt=ROOT.TPaveText(xmin_stat,ymin_stat,xmax_stat,ymax_stat,'brNDC')
     txt.SetFillStyle(3004)
     txt.SetFillColor(1)
     txt.SetBorderSize(0)
@@ -243,7 +292,7 @@ def compareUEPlots(uePlots,outDir,cuts,obs,plottingSetList=[PLOTTINGSET_1],cmsLa
             sp[-1].SetBottomMargin(0.11)
         else:
             sp[-1].SetBottomMargin(0.2)
-        sp[-1].SetGridx()
+        #sp[-1].SetGridx()
         sp[-1].SetLogx(logX)
         sp[-1].Draw()
         sp[-1].cd()        

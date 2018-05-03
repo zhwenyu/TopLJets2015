@@ -11,18 +11,18 @@ from showFinalDistributions import PLOTTINGSET_1,PLOTTINGSET_2,PLOTTINGSET_3,PLO
 SLICELISTS=[
     ('',
      [ 
-            ('inc',             'inclusive'),
+            ('inc',             'Inc.'),
             ('nj=0,1',          '=0'),
             ('nj=1,2',          '=1'),
             ('nj=2,999',        '#geq2'),
-            ('ptll=0,20',       '[0,20['),
-            ('ptll=20,40',      '[20,40['),
-            ('ptll=40,80',      '[40,80['),
-            ('ptll=80,120',     '[80,120['),
+            ('ptll=0,20',       ']0,20['),
+            ('ptll=20,40',      ']20,40['),
+            ('ptll=40,80',      ']40,80['),
+            ('ptll=80,120',     ']80,120['),
             ('ptll=120,9999',   '>120'),
-            ('mll=0,60',        '[0,60['),
-            ('mll=60,120',      '[60,120['),
-            ('mll=120,200',     '[120,200['),
+            ('mll=0,60',        ']0,60['),
+            ('mll=60,120',      ']60,120['),
+            ('mll=120,200',     ']120,200['),
             ('mll=200,9999',    '>200'),
             ],
      [ 
@@ -32,23 +32,23 @@ SLICELISTS=[
             ]
      ),
     ('_ptll',[
-            ('inc_ptll=tow',           'inc.'),
-            ('ptll=0,20_ptll=tow',     '[0,20['),
-            ('ptll=20,40_ptll=tow',    '[20,40['),
-            ('ptll=40,80_ptll=tow',    '[40,80['),
-            ('ptll=80,120_ptll=tow',   '[80,120['),
+            ('inc_ptll=tow',           'Inc.'),
+            ('ptll=0,20_ptll=tow',     ']0,20['),
+            ('ptll=20,40_ptll=tow',    ']20,40['),
+            ('ptll=40,80_ptll=tow',    ']40,80['),
+            ('ptll=80,120_ptll=tow',   ']80,120['),
             ('ptll=120,9999_ptll=tow', '#geq120'),
-            ('inc_ptll=tra',           'inc.'),
-            ('ptll=0,20_ptll=tra',     '[0,20['),
-            ('ptll=20,40_ptll=tra',    '[20,40['),
-            ('ptll=40,80_ptll=tra',    '[40,80['),
-            ('ptll=80,120_ptll=tra',   '[80,120['),
+            ('inc_ptll=tra',           'Inc.'),
+            ('ptll=0,20_ptll=tra',     ']0,20['),
+            ('ptll=20,40_ptll=tra',    ']20,40['),
+            ('ptll=40,80_ptll=tra',    ']40,80['),
+            ('ptll=80,120_ptll=tra',   ']80,120['),
             ('ptll=120,9999_ptll=tra', '#geq120'),
-            ('inc_ptll=awa',           'inc.'),
-            ('ptll=0,20_ptll=awa',     '[0,20['),
-            ('ptll=20,40_ptll=awa',    '[20,40['),
-            ('ptll=40,80_ptll=awa',    '[40,80['),
-            ('ptll=80,120_ptll=awa',   '[80,120['),
+            ('inc_ptll=awa',           'Inc.'),
+            ('ptll=0,20_ptll=awa',     ']0,20['),
+            ('ptll=20,40_ptll=awa',    ']20,40['),
+            ('ptll=40,80_ptll=awa',    ']40,80['),
+            ('ptll=80,120_ptll=awa',   ']80,120['),
             ('ptll=120,9999_ptll=awa', '#geq120'),
             ],
      [
@@ -59,15 +59,15 @@ SLICELISTS=[
      ),
     ('_ptllnj',
      [
-            ('inc_ptll=tow',      'inc.'),
+            ('inc_ptll=tow',      'Inc.'),
             ('nj=0,1_ptll=tow',   '=0'),
             ('nj=1,2_ptll=tow',   '=1'),
             ('nj=2,999_ptll=tow', '#geq2'),
-            ('inc_ptll=tra',      'inc.'),
+            ('inc_ptll=tra',      'Inc.'),
             ('nj=0,1_ptll=tra',   '=0'),
             ('nj=1,2_ptll=tra',   '=1'),
             ('nj=2,999_ptll=tra', '#geq2'),
-            ('inc_ptll=awa',      'inc.'),
+            ('inc_ptll=awa',      'Inc.'),
             ('nj=0,1_ptll=awa',   '=0'),
             ('nj=1,2_ptll=awa',   '=1'),
             ('nj=2,999_ptll=awa', '#geq2'),
@@ -130,9 +130,10 @@ def showProfile(grColl,grCollComp,grCollStat,
     c.SetRightMargin(0.03)
     c.SetLeftMargin(0.15)
     c.SetBottomMargin(0.2)
-    c.SetGridx()
+    #c.SetGridx()
     units=''
     if obs in ['chflux','chfluxz','chavgpt','chavgpt'] : units = ' [GeV]'
+    
     frame=ROOT.TH1F('frame',';Category;< %s >%s;'%(VARTITLES[obs],units),len(sliceList),0,len(sliceList))
     for xbin in xrange(1,frame.GetNbinsX()+1): frame.GetXaxis().SetBinLabel(xbin,sliceList[xbin-1][1])
     frame.GetYaxis().SetTitleSize(0.06)
@@ -145,7 +146,7 @@ def showProfile(grColl,grCollComp,grCollStat,
 
     #plot and add to the legend
     #leg=ROOT.TLegend(0.67,0.86,0.94,0.86-len(plottingSetList[0])*0.05)
-    leg=ROOT.TLegend(0.2,0.86,0.94,0.86-len(plottingSetList[0])*0.025)
+    leg=ROOT.TLegend(0.55,0.86,0.94,0.86-len(plottingSetList[0])*0.025)
     leg.SetNColumns(2)
     leg.SetFillStyle(0)
     leg.SetBorderSize(0)
@@ -170,7 +171,7 @@ def showProfile(grColl,grCollComp,grCollStat,
     leg.Draw()
 
     #stat component for data                                                                                                                                                                                                     
-    txt=ROOT.TPaveText(0.68,0.83,0.725,0.84,'brNDC')
+    txt=ROOT.TPaveText(0.555,0.83,0.59,0.84,'brNDC')
     txt.SetFillStyle(3004)
     txt.SetFillColor(1)
     txt.SetBorderSize(0)
@@ -189,10 +190,10 @@ def showProfile(grColl,grCollComp,grCollStat,
     for t,xmin,xmax in categList:
         yarr=1.315*maxY
         ytxt=1.36*maxY
-        if obs=='sphericity': yarr,ytxt=0.44,0.45
-        if obs=='aplanarity': yarr,ytxt=0.1238,0.1268
-        if obs=='C': yarr,ytxt=0.66,0.675
-        if obs=='D': yarr,ytxt=0.271,0.278
+        if obs=='sphericity': yarr,ytxt=0.62,0.63 #0.44,0.45
+        if obs=='aplanarity': yarr,ytxt=0.188,0.192 #0.1238,0.1268
+        if obs=='C': yarr,ytxt=0.88,0.895 #0.66,0.675
+        if obs=='D': yarr,ytxt=0.47,0.48 #0.271,0.278
         catTxt.DrawLatex(0.5*(xmax+xmin),ytxt,t)
         ar.DrawArrow(xmin,yarr,xmax,yarr,0.01,"<>")
 
@@ -207,7 +208,7 @@ def showProfile(grColl,grCollComp,grCollStat,
     c.RedrawAxis()
     c.Modified()
     c.Update()
-    for ext in ['png','pdf']:
+    for ext in ['png','pdf','root']:
         c.SaveAs('%s/ueprofile%s.%s'%(outDir,pfix,ext))
 
     #start the ratio canvas
@@ -250,7 +251,7 @@ def showProfile(grColl,grCollComp,grCollStat,
             sp[-1].SetBottomMargin(0.28) #2*dy_xtit/dy_ipad)
         else:
             sp[-1].SetBottomMargin(0.11)
-        sp[-1].SetGridx()
+        #sp[-1].SetGridx()
         sp[-1].Draw()
         sp[-1].cd()        
 
@@ -341,7 +342,7 @@ def showProfile(grColl,grCollComp,grCollStat,
     cratio.Modified()
     cratio.Update()
     pfix+='_pull' if isPull else '_ratio'
-    for ext in ['pdf','png']: cratio.SaveAs('%s/ueprofile%s.%s'%(outDir,pfix,ext))
+    for ext in ['pdf','png','root']: cratio.SaveAs('%s/ueprofile%s.%s'%(outDir,pfix,ext))
 
 
 def main():
@@ -425,6 +426,7 @@ def main():
     
     #show results
     obs=opt.input.split('/')[-1]    
+    if len(obs)==0: obs=opt.input.split('/')[-2]
     showProfile(grColl=grColl,grCollComp=grCollPull,grCollStat=grCollStat,
                 obs=obs,sliceList=finalSliceList,
                 plottingSetList=[PLOTTINGSET_1,PLOTTINGSET_2,PLOTTINGSET_3], #PLOTTINGSET_4],

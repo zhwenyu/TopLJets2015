@@ -17,10 +17,14 @@ VARTITLES={
     'chfluxz'        : '#scale[0.7]{#sum}p_{z}',
     'chavgpz'        : '#bar{p}_{z}',
     'chrecoil'       : '|#vec{p}_{T}|',
-    'sphericity'     : 'Sphericity',
-    'aplanarity'     : 'Aplanarity',
+    'sphericity'     : 'S', #'Sphericity',
+    'aplanarity'     : 'A', #'Aplanarity',
     'C'              : 'C',
     'D'              : 'D',
+    'sphericity_2'     : 'S_{2}', #'Sphericity',
+    'aplanarity_2'     : 'A_{2}', #'Aplanarity',
+    'C_2'              : 'C_{2}',
+    'D_2'              : 'D_{2}',
     'maxRap'         : 'max|#eta|',
     'rapDist'        : '#Delta#eta'
     }
