@@ -12,7 +12,7 @@ options.register('useRawLeptons', False,
                  VarParsing.varType.bool,
                  "Do not correct electrons/muons with smearing/energy scales"
                  )
-options.register('era', 'era2017',
+options.register('era', 'era2018',
                  VarParsing.multiplicity.singleton,
                  VarParsing.varType.string,
                  "era to use (configurations defined in python/EraConfig.py)"
@@ -80,8 +80,12 @@ process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 
 #EGM
 from TopLJets2015.TopAnalysis.customizeEGM_cff import customizeEGM
-customizeEGM(process=process,runOnData=options.runOnData)
-
+try:
+      customizeEGM(process=process,runOnData=options.runOnData)
+except:
+      print 'Failed to customize EGM sequence, will use default in MINIAOD'
+      options.useRawLeptons=True
+      
 # set input to process
 #process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(options.maxEvents) )
 #process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10000) )
@@ -91,9 +95,7 @@ process.source = cms.Source("PoolSource",
                             )
 
 if options.runOnData:
-      process.source.fileNames = cms.untracked.vstring('/store/data/Run2017B/SinglePhoton/MINIAOD/17Nov2017-v1/30000/10F66FEF-B7D5-E711-9003-008CFAC93F3C.root')
-      #process.source.fileNames = cms.untracked.vstring('/store/data/Run2017F/SingleElectron/MINIAOD/17Nov2017-v1/50000/FA333057-D0E0-E711-BDFB-5065F37DC062.root')
-      #process.source.fileNames = cms.untracked.vstring('/store/data/Run2017F/SingleMuon/MINIAOD/17Nov2017-v1/50000/FEED7A3F-D3E2-E711-84DD-0025905A6134.root')
+      process.source.fileNames = cms.untracked.vstring('/store/data/Run2018A/SingleMuon/MINIAOD/PromptReco-v1/000/315/252/00000/A4345B88-404B-E811-894C-FA163EECC2C3.root')
 
 if options.inputFile:
       fileList=[]
@@ -140,27 +142,44 @@ process.TFileService = cms.Service("TFileService",
                                   )
 
 process.load('TopLJets2015.TopAnalysis.miniAnalyzer_cfi')
+from TopLJets2015.TopAnalysis.miniAnalyzer_cfi import triggerLists
 print 'Ntuplizer configuration is as follows'
 process.analysis.saveTree=cms.bool(options.saveTree)
 process.analysis.savePF=cms.bool(options.savePF)
+process.analysis.useRawLeptons=cms.bool(options.useRawLeptons)
 if options.useRawLeptons:
-    process.selectedElectrons.src=cms.InputTag('slimmedElectrons')
-    process.analysis.electrons=cms.InputTag('selectedElectrons')
-    process.analysis.useRawLeptons=cms.bool(True)
-    print 'Switched off corrections for leptons'
+      print 'Switched off corrections for leptons'
+      try:
+            process.selectedElectrons.src=cms.InputTag('slimmedElectrons')
+            process.analysis.electrons=cms.InputTag('selectedElectrons')
+      except:
+            process.analysis.electrons=cms.InputTag('slimmedElectrons')
+            
 if not process.analysis.saveTree :
     print '\t Summary tree won\'t be saved'
 if not process.analysis.savePF :
     print 'Summary PF info won\'t be saved'
+eraNumber= int(filter(str.isdigit, options.era))
+process.analysis.triggersToUse=triggerLists[eraNumber]
+print 'Applying %d trigger list'%eraNumber
 
 if options.runOnData:
       process.analysis.metFilterBits = cms.InputTag("TriggerResults","","RECO")
 
-process.custom_step=cms.Path(process.egammaScaleSmearAndVIDSeq)
 process.ana_step=cms.Path(process.analysis)
 
-if options.runOnData:
-      process.schedule=cms.Schedule(process.custom_step,process.ana_step)
-else:
-      process.gen_step=cms.Path(process.mergedGenParticles*process.genParticles2HepMC*process.particleLevel)
-      process.schedule=cms.Schedule(process.custom_step,process.gen_step,process.ana_step)
+#schedule
+try:
+      process.custom_step=cms.Path(process.egammaScaleSmearAndVIDSeq)
+      if options.runOnData:
+            process.schedule=cms.Schedule(process.custom_step,process.ana_step)
+      else:
+            process.gen_step=cms.Path(process.mergedGenParticles*process.genParticles2HepMC*process.particleLevel)
+            process.schedule=cms.Schedule(process.custom_step,process.gen_step,process.ana_step)
+except:
+      print 'Failed to setup standard scheduler, will just read what is available in MINIAOD'
+      if options.runOnData:
+            process.schedule=cms.Schedule(process.ana_step)
+      else:
+            process.gen_step=cms.Path(process.mergedGenParticles*process.genParticles2HepMC*process.particleLevel)
+            process.schedule=cms.Schedule(process.gen_step,process.ana_step)

@@ -165,12 +165,13 @@ void VBFVectorBoson::RunVBFVectorBoson()
         inputVectors.push_back( math::XYZVector(jets[ij].Px(),jets[ij].Py(),jets[ij].Pz()) );
       }
       EventShapeVariables esv(inputVectors);
+      esv.set_r(1.0);
       isotropy    = esv.isotropy();
       circularity = esv.circularity();
-      sphericity  = esv.sphericity(1.);
-      aplanarity  = esv.aplanarity(1.);
-      C           = esv.C(1.);
-      D           = esv.D(1.);
+      sphericity  = esv.sphericity();
+      aplanarity  = esv.aplanarity();
+      C           = esv.C();
+      D           = esv.D();
       
       ////////////////////
       // EVENT WEIGHTS //
