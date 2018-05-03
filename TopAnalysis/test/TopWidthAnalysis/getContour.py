@@ -21,23 +21,15 @@ parser.add_option("-e",    type="string", dest="extname", default="_100pseudodat
 parser.add_option("-n",    type="string", dest="outnm"  , default="contournosyst",    help="the filename for the plot")
 parser.add_option("-o",    type="string", dest="outdir" , default="./",         help="the base filename for the plot")
 parser.add_option("--mass", type="string", dest="mass"  , default="")
-parser.add_option("--wids", type="string", dest="wids"  , default="20,40,50,60,70,80,90,100,110,120,130,160,200,220,240,280,300,350,400")
+parser.add_option("--wids", type="string", dest="wids"  , default="20,40,50,60,70,80,90,100,110,120,130,140,150,160,180,200,220,240,260,280,300,350,400")
 parser.add_option("--extraText", type="string", dest="exText" , default="",     help="additional text to plot")
 
 (options, args) = parser.parse_args()
 
 
-wids = options.wids.split(',')
-mass = options.mass.split(',')
-massMap={"172.5": "",
-        "":      "",
-        "166.5": "simmeq166p5",
-        "169.5": "simmeq169p5",
-        "171.5": "simmeq171p5",
-        "173.5": "simmeq173p5",
-        "175.5": "simmeq175p5",
-        "178.5": "simmeq178p5" }
-TwoDim= options.mass != "" and len(mass) > 1
+wids   = options.wids.split(',')
+masses = options.mass.split(',')
+TwoDim = options.mass != "" and len(masses) > 1
 
 c    = ROOT.TCanvas("","",600,400)
 
@@ -50,38 +42,48 @@ z    = ROOT.TVector(nPoints)
 # two dimensional scan if >1 mass
 def get2DContour() :
     # create graphs
-    nPoints = len(wids) * len(mass)
+    nPoints = len(wids) * len(masses)
     pullGraph = ROOT.TGraph2D(nPoints);
+    fOut=ROOT.TFile("bla.root","RECREATE")
 
-    h=ROOT.TH2D("","",300,0.25*1.324,3.8*1.324,100,172.44,172.54)
+    h=ROOT.TH2D("","",300,0.5*1.324,3.8*1.324,100,171.1,173.9)
     contours = array('d',[2.30,4.61,5.99,6.18,9.21,11.83])
 
     h.SetDirectory(0)
 
     iPoint=0
-    for i in xrange(0,len(wids)) :
-        for tmas in mass :
-            fIn0 = ROOT.TFile(options.indir+"/hypotest_100vs"+wids[i]+massMap[tmas]+options.extname+"/testStat_scan0n_TEV.root")
-            fIn1 = ROOT.TFile(options.indir+"/hypotest_100vs"+wids[i]+massMap[tmas]+options.extname+"/testStat_scan1n_TEV.root")
-            if fIn1 is None or fIn0 is None :
-                iPoint += 1
-                continue
+    for i,j in [(a,b) for a in xrange(0,len(wids)) for b in xrange(0,len(masses))]:
+        fIn0 = ROOT.TFile(options.indir+"/hypotest_100vs"+wids[i]+'_m1725vs'+masses[j]+options.extname+"/testStat_scan0n_PL.root")
+        fIn1 = ROOT.TFile(options.indir+"/hypotest_100vs"+wids[i]+'_m1725vs'+masses[j]+options.extname+"/testStat_scan1n_PL.root")
+        if fIn1 is None or fIn0 is None :
+            iPoint += 1
+            continue
 
-            tree0 = fIn0.Get("limit")
-            tree1 = fIn1.Get("limit")
-
-            tree0.Draw("limit","quantileExpected==-1")
-            tree1.Draw("limit","quantileExpected==-1")
-
-            x     = 1.324*float(wids[i])/100
-            y     = float(tmas)
-            z     = ( tree0.GetV1()[0] - tree1.GetV1()[0] )
+        tree0 = fIn0.Get("limit")
+        tree1 = fIn1.Get("limit")
+        if not tree0 :
+            x     = 0
+            y     = 0
+            z     = 1000
             pullGraph.SetPoint(iPoint,x,y,z)
-
-            #print x,y,z
             fIn0.Close()
             fIn1.Close()
             iPoint += 1
+            continue
+
+        tree0.Draw("limit","quantileExpected==-1")
+        tree1.Draw("limit","quantileExpected==-1")
+
+        x     = 1.324*float(wids[i])/100
+        y     = float(masses[j])/10
+        z     = ( -tree0.GetV1()[0] + tree1.GetV1()[0])
+        pullGraph.SetPoint(iPoint,x,y,z)
+        print x,y,z
+
+        #print x,y,z
+        fIn0.Close()
+        fIn1.Close()
+        iPoint += 1
 
     pullGraph.SetTitle("")
     pullGraph.SetHistogram(h)
@@ -159,21 +161,31 @@ def get2DContour() :
     c.SaveAs(options.outdir+"%s.pdf"%options.outnm)
     c.SaveAs(options.outdir+"%s.png"%options.outnm)
 
+    fOut.cd()
+    pullGraph.Write()
+    h.Write()
+    fOut.Close()
+
 
 # one dimensional contour if only one mass
 def get1DContour() :
     # initialize standard arrays
     for i in xrange(0,nPoints) :
-        fIn0 = ROOT.TFile(options.indir+"/hypotest_100vs"+wids[i]+massMap[options.mass]+options.extname+"/testStat_scan0n_PL.root")
-        fIn1 = ROOT.TFile(options.indir+"/hypotest_100vs"+wids[i]+massMap[options.mass]+options.extname+"/testStat_scan1n_PL.root")
+        fIn0 = ROOT.TFile(options.indir+"/hypotest_100vs"+wids[i]+options.extname+"/testStat_scan0n_PL.root")
+        fIn1 = ROOT.TFile(options.indir+"/hypotest_100vs"+wids[i]+options.extname+"/testStat_scan1n_PL.root")
         tree0 = fIn0.Get("limit")
         tree1 = fIn1.Get("limit")
 
+        #print wids[i]
         tree0.Draw("limit","quantileExpected==-1")
         tree1.Draw("limit","quantileExpected==-1")
 
         x[i]     = 1.324*float(wids[i])/100
         y[i]     = -tree0.GetV1()[0] + tree1.GetV1()[0]
+
+        #if wids[i]=="100" :
+        #    y[i]*=-1
+
         #print x[i],y[i]
         fIn0.Close()
         fIn1.Close()
@@ -198,7 +210,7 @@ def get1DContour() :
     pullGraph.SetTitle("")
     pullGraph.Draw("ALP")
 
-    widGuess = 1.324
+    widGuess = 1.33
     widStep  = 0.0001
     foundMin = False
     print "Computing minimum"
@@ -211,18 +223,22 @@ def get1DContour() :
 
         if upVal <= nomVal : widGuess += widStep
         elif dnVal <= nomVal : widGuess -= widStep
+    minNLL=pullGraph.Eval(widGuess,0,"S")
 
-    upLim = 1.324
+    upLim = widGuess
     foundUp = False
-    dnLim = 1.324
+    dnLim = widGuess
     foundDn = False
     print "Computing upper limit"
     while not foundUp :
-        if pullGraph.Eval(upLim,0,"S") >= 1.0: foundUp = True
+        if pullGraph.Eval(upLim,0,"S") >= minNLL+1.0: foundUp = True
         else : upLim += widStep
+        if upLim > 20 :
+            print "Couldn't find upper limit"
+            break
     print "Computing lower limit"
     while not foundDn :
-        if pullGraph.Eval(dnLim,0,"S") >= 1.0: foundDn = True
+        if pullGraph.Eval(dnLim,0,"S") >= minNLL+1.0: foundDn = True
         else : dnLim -= widStep
         if dnLim < -5 :
             print "Couldn't find lower limit"
@@ -231,17 +247,29 @@ def get1DContour() :
     print "Width: ",widGuess,"  | (",dnLim,",",upLim,")"
     print widGuess,",",dnLim,",",upLim
 
+    # remake graph
+    ynew = ROOT.TVector(nPoints)
+    for i in xrange(0,nPoints) :
+        ynew[i] = y[i] - minNLL
+    pullGr = ROOT.TGraph(x,ynew);
+    pullGr.SetFillColor(ROOT.kBlack)
+    pullGr.SetLineColor(ROOT.kBlack)
+    pullGr.SetMarkerStyle(20)
+    pullGr.SetMarkerSize(1)
+    pullGr.SetTitle("")
+    pullGr.Draw("ALP")
+    print minNLL,pullGr.Eval(widGuess,0,"S")
 
     # set the bin and axis labels
-    xax=pullGraph.GetXaxis()
+    xax=pullGr.GetXaxis()
     xax.SetTitle("Top quark decay width, #Gamma_{t} (GeV)")
     xax.SetTitleOffset(0.9);
     xax.SetRangeUser(0,2*upLim)
-    yax=pullGraph.GetYaxis()
+    yax=pullGr.GetYaxis()
     yax.SetTitle("-2 ln(L_{alt.} / L_{SM})")
     yax.SetTitleOffset(1.0);
     yax.SetLabelSize(0.035);
-    yax.SetRangeUser(0,10)
+    yax.SetRangeUser(minNLL,minNLL+10)
 
     # format and print
     CMS_lumi.relPosX = 0.165
@@ -260,9 +288,9 @@ def get1DContour() :
     c.SaveAs(options.outdir+"%s.pdf"%options.outnm)
     c.SaveAs(options.outdir+"%s.png"%options.outnm)
     c.SaveAs(options.outdir+"%s.root"%options.outnm)
-    pullGraph.SaveAs(options.outdir+"%s_plot.root"%options.outnm)
+    pullGr.SaveAs(options.outdir+"%s_plot.root"%options.outnm)
 
 if TwoDim :
-    get2DContour(0,0,0,0)
+    get2DContour()
 else :
     get1DContour()

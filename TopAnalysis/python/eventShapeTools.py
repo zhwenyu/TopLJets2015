@@ -12,6 +12,8 @@ class EventShapeTool:
         self.aplanarity=0
         self.C=0
         self.D=0
+        self.tmomentumTensor=ROOT.TMatrixDSym(2)
+        self.detST=0
 
     def analyseNewEvent(self,inputP4,r=1):
         self.computeMomentumTensor(inputP4,r)
@@ -22,11 +24,13 @@ class EventShapeTool:
         self.momentumTensor.Zero();
         if len(inputP4)<2: return
         norm=0
+        normT=0
         for p4 in inputP4:
             p3vec=p4.Vect()
             pR=ROOT.TMath.Power(p3vec.Mag(),r)
             pRminus2=ROOT.TMath.Power(p3vec.Mag(),r-2)
             norm += pR
+            normT=ROOT.TMath.Power(p4.Pt(),r)
             self.momentumTensor[0][0] += pRminus2*p3vec.X()*p3vec.X();
             self.momentumTensor[0][1] += pRminus2*p3vec.X()*p3vec.Y();
             self.momentumTensor[0][2] += pRminus2*p3vec.X()*p3vec.Z();
@@ -36,6 +40,10 @@ class EventShapeTool:
             self.momentumTensor[2][0] += pRminus2*p3vec.Z()*p3vec.X();
             self.momentumTensor[2][1] += pRminus2*p3vec.Z()*p3vec.Y();
             self.momentumTensor[2][2] += pRminus2*p3vec.Z()*p3vec.Z();
+
+            for i in xrange(0,2):
+            for j in xrange(0,2):
+                self.tmomentumTensor[i][j]=(1.norm)*self.momentumTensor[i][j]
         
         for i in xrange(0,3):
             for j in xrange(0,3):
@@ -59,3 +67,4 @@ class EventShapeTool:
         self.aplanarity=1.5*lambdas[2]
         self.C=3.*(lambdas[0]*lambdas[1] + lambdas[0]*lambdas[2] + lambdas[1]*lambdas[2])
         self.D=27.*lambdas[0]*lambdas[1]*lambdas[2]
+        self.detST=self.tmomentumTensor.Determinant()

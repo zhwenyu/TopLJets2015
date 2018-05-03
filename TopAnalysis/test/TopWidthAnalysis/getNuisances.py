@@ -20,55 +20,66 @@ parser.add_option("--extraText", type="string", dest="exText" , default="",     
 
 fIn  = ROOT.TFile(options.indir)
 ws   = fIn.Get("w")
-snap = ws.getSnapshot("HybridNew_mc_s__snapshot")
+snap = ws.getSnapshot("MultiDimFit")
 c    = ROOT.TCanvas("","",1000,400)
 
 # create base arrays for eventual tgraph
 nPoints = snap.getSize()
 
 x    = ROOT.TVector(nPoints)
-ex   = ROOT.TVector(nPoints)
+xx   = ROOT.TVector(4*nPoints)
+ex   = ROOT.TVector(4*nPoints)
 exs  = ROOT.TVector(nPoints)
 y    = ROOT.TVector(nPoints)
-z    = ROOT.TVector(nPoints)
+z    = ROOT.TVector(4*nPoints)
 ey   = ROOT.TVector(nPoints) # nuisance pulls
-sg1  = ROOT.TVector(nPoints) # background graphs
-sg2  = ROOT.TVector(nPoints)
+sg1  = ROOT.TVector(4*nPoints) # background graphs
+sg2  = ROOT.TVector(4*nPoints)
 
 xAxTitles=[]
 
 # initialize standard arrays
 for i in xrange(0,nPoints) :
     x[i]     = 0.25 + 0.5*i
-    ex[i]    = 0.3
-    exs[i]   = 0.25
-    y[i]     = 0
+    exs[i]   = 0 #0.25
+    y[i]     = -1
+
+for i in xrange(0,4*nPoints) :
+    xx[i]    = 0.25 + 0.5/4 * i
+    ex[i]    = 0.25 / 4 #- (0.23/100 if i % 4==0 else 0)
     z[i]     = 0
     sg1[i]   = 1
     sg2[i]   = 2
+
 
 # get pull information and errors
 it  = snap.createIterator()
 var = it.Next()
 while var :
-    xAxTitles+=[var.GetName()]
+    if var.GetName() != "CMS_th1x" and var.GetName() != "CMS_channel" and 'In' not in var.GetName() :
+        varValCrit = abs(var.getValV()) < 0.1
+        varErrCrit = abs(var.getError()-1) < 0.2
+        if not varValCrit or not varErrCrit :
+            xAxTitles+=[var.GetName()]
     var = it.Next()
 
 for i in xrange(0,len(xAxTitles)) :
     y[i]  = snap.find(xAxTitles[i]).getValV()
     ey[i] = snap.find(xAxTitles[i]).getError()
+    if xAxTitles[i] == "mtop" :
+        print "mtop:",y[i],'+/-',ey[i]
 
 # create graphs
 pullGraph = ROOT.TGraphErrors(x,y,exs,ey);
-sig1Graph = ROOT.TGraphErrors(x,z,ex,sg1);
-sig2Graph = ROOT.TGraphErrors(x,z,ex,sg2);
+sig1Graph = ROOT.TGraphErrors(xx,z,ex,sg1);
+sig2Graph = ROOT.TGraphErrors(xx,z,ex,sg2);
 
 # create canvas
 c.cd()
 setTDRStyle()
-c.SetRightMargin(0.03)
+c.SetRightMargin(0.01)
 c.SetLeftMargin(0.06)
-c.SetBottomMargin(0.25)
+c.SetBottomMargin(0.3)
 c.SetGrid(0,1)
 c.cd()
 
@@ -76,10 +87,10 @@ c.cd()
 pullGraph.SetFillColor(ROOT.kBlack)
 pullGraph.SetLineColor(ROOT.kBlack)
 pullGraph.SetMarkerStyle(20)
-pullGraph.SetMarkerSize(1)
+pullGraph.SetMarkerSize(0.75)
 
-sig1Graph.SetFillColor(15)
-sig2Graph.SetFillColor(17)
+sig1Graph.SetFillColor(42)
+sig2Graph.SetFillColor(18)
 sig1Graph.SetLineColor(ROOT.kNone)
 sig2Graph.SetLineColor(ROOT.kNone)
 
@@ -92,13 +103,14 @@ totalGraph.Draw("a2")
 
 # set the bin and axis labels
 xax=totalGraph.GetXaxis()
+xax.SetLabelSize(0.05)
 xax.SetTitle("")
 i=0
 for label in xAxTitles :
     bin_index = xax.FindBin(0.25+0.5*i)
     xax.SetBinLabel(bin_index,label)
     i+=1
-xax.SetRangeUser(0.088,0.5+0.5*(nPoints-1)-0.088)
+xax.SetRangeUser(0.088,0.25+0.5*(len(xAxTitles)-1))
 xax.SetNdivisions(0)
 
 yax=totalGraph.GetYaxis()
@@ -115,6 +127,11 @@ ltx = ROOT.TLatex(0.6,0.935,options.exText)
 ltx.SetNDC(ROOT.kTRUE)
 ltx.SetTextSize(0.05)
 ltx.Draw()
+
+line = ROOT.TLine(0,0,0.25+0.5*(len(xAxTitles)-1),0)
+line.SetLineStyle(ROOT.kSolid)
+line.SetLineColor(ROOT.kBlack)
+line.Draw()
 
 # save plots
 c.Modified()
