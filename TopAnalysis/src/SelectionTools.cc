@@ -73,6 +73,7 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
       if(tightPhotons.size()>=1) {
         chTag="A";
         photons_=tightPhotons;
+        leptons_=tightLeptons;
       }
     }
 

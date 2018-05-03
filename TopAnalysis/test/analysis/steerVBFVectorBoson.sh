@@ -46,6 +46,7 @@ case $WHAT in
     SEL )
 	python scripts/runLocalAnalysis.py -i ${eosdir} \
             -o ${outdir}/raw \
+            --only AJJ \
             -q ${queue} \
             --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts;
 	;;

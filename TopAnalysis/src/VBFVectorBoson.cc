@@ -103,10 +103,10 @@ void RunVBFVectorBoson(TString filename,
   ht.addHist("vpt", 	      new TH1F("vectorbosonPt",    ";Boson p_{T}[GeV];Events",25,0,500));
   ht.addHist("vy", 	      new TH1F("vectorbosony",     ";Boson rapidity;Events",25,0,3));
   ht.addHist("mindrl", 	      new TH1F("mindrl",           ";min #Delta R(boson,lepton);Events",25,0,6));
-  ht.addHist("sihih", 	      new TH1F("sihih",            ";#sigma(i#eta,i#eta);Events",50,0,0.1));
-  ht.addHist("hoe", 	      new TH1F("hoe",              ";h/e;Events",25,0,0.1));
-  ht.addHist("r9", 	      new TH1F("r9",               ";r9;Events",25,0,1.0));
-  ht.addHist("chiso", 	      new TH1F("chiso",            ";Charged isolation [GeV];Events",25,0,0.10));
+  ht.addHist("sihih", 	      new TH1F("sihih",            ";#sigma(i#eta,i#eta);Events",50,0,0.03));
+  ht.addHist("hoe", 	      new TH1F("hoe",              ";h/e;Events",25,0,0.05));
+  ht.addHist("r9", 	      new TH1F("r9",               ";r9;Events",25,0.4,1.0));
+  ht.addHist("chiso", 	      new TH1F("chiso",            ";Charged isolation [GeV];Events",25,0,25));
   ht.addHist("vystar",        new TH1F("vectorbosonystar", ";y-(1/2)(y_{j1}+y_{j2});Events",25,0,5));
   ht.addHist("njets",         new TH1F("njets",            ";Jet multiplicity;Events",10,-0.5,9.5));
   ht.addHist("mjj", 	      new TH1F("mjj",              ";Dijet invariant mass [GeV];Events",40,0,4000));
@@ -124,6 +124,8 @@ void RunVBFVectorBoson(TString filename,
   ht.addHist("ht",            new TH1F("ht",               ";H_{T} [GeV];Events",20,0,4000));
   ht.addHist("mht",           new TH1F("mht",              ";Missing H_{T} [GeV];Events",20,0,500));
   ht.addHist("balance",       new TH1F("balance",          ";System p_{T} balance [GeV];Events",20,0,300));
+  ht.addHist("relbpt",        new TH1F("relbpt",           ";#Sigma |p_{T}(j)|/Boson p_{T};Events",20,0,2));
+  ht.addHist("dphibjj",       new TH1F("dphibjj",          ";#Delta#phi(JJ,boson);Events",20,-3.15,3.15));
   ht.addHist("sphericity",    new TH1F("sphericity",       ";Sphericity;Events",20,0,1.0));
   ht.addHist("aplanarity",    new TH1F("aplanarity",       ";Aplanarity;Events",20,0,1.0));
   ht.addHist("C",             new TH1F("C",                ";C;Events",20,0,1.0));
@@ -227,22 +229,30 @@ void RunVBFVectorBoson(TString filename,
       }
       if(!isVBF && !isHighPt && !isBosonPlusOneJet) continue;      
 
+      //leptons and boson
+      double mindrl(9999.);
+      for(auto &l: leptons) mindrl=min(l.DeltaR(boson),mindrl);
+
       std::vector<TString> chTags;      
       if(isVBF)             chTags.push_back("VBF"+chTag);
       if(isHighPt)          chTags.push_back("HighPt"+chTag);
       if(isHighPtAndVBF)    chTags.push_back("HighPtVBF"+chTag);
       if(isBosonPlusOneJet) chTags.push_back("V1J"+chTag);
 
-      //leptons and boson
-      double mindrl(9999.);
-      for(auto &l: leptons) mindrl=min(l.DeltaR(boson),mindrl);
-
       //system variables and event shapes
-      float ystar(0),balance(0);
+      float ystar(0),balance(0),relbpt(0),dphibjj(0);
       if(passJets) {
         ystar=boson.Rapidity()-0.5*(jets[0].Rapidity()+jets[1].Rapidity());
         balance=(boson+jets[0]+jets[1]).Pt();
+        relbpt=(jets[0].Pt()+jets[1].Pt())/boson.Pt();
+        dphibjj=boson.DeltaPhi( jets[0]+jets[1] );
       }
+      else if(jets.size()>0){
+        balance=(boson+jets[0]).Pt();
+        relbpt=jets[0].Pt()/boson.Pt();
+        dphibjj=boson.DeltaPhi(jets[0]);
+      }
+        
       std::vector<math::XYZVector> inputVectors;
       inputVectors.push_back( math::XYZVector(boson.Px(),boson.Py(),boson.Pz()) );
       for(size_t ij=0; ij<min(size_t(2),jets.size());ij++) {
@@ -308,13 +318,14 @@ void RunVBFVectorBoson(TString filename,
         ht.fill("nvtx",   ev.nvtx,          cplotwgts,c);        
 
         //boson histos
+        ht.fill("mindrl", mindrl,           cplotwgts,c);   
+        if(chTag=="A" && mindrl<0.4) continue;
         ht.fill("vpt",    boson.Pt(),       cplotwgts,c);
         ht.fill("vy",     boson.Rapidity(), cplotwgts,c);   
         ht.fill("sihih",  sihih,            cplotwgts,c);   
         ht.fill("r9",     r9,               cplotwgts,c);   
-        ht.fill("hoe",    hoe,             cplotwgts,c);   
+        ht.fill("hoe",    hoe,              cplotwgts,c);   
         ht.fill("chiso",  chiso,            cplotwgts,c);   
-        ht.fill("mindrl", mindrl,           cplotwgts,c);   
 
         //jet histos
         double minEta(9999),maxEta(-9999);
@@ -322,7 +333,7 @@ void RunVBFVectorBoson(TString filename,
           TString jtype(ij==0?"lead":"sublead");
           ht.fill(jtype+"pt",       jets[ij].Pt(),        cplotwgts,c);          
           ht.fill(jtype+"pumva",    jets[ij].getPUMVA(),  cplotwgts,c);
-          ht.fill("dr"+jtype+"b",   jets[ij].DeltaR(boson),  cplotwgts,c);
+          ht.fill(Form("dr%db",(int)(ij+1)),   jets[ij].DeltaR(boson),  cplotwgts,c);
           minEta=min(minEta,fabs(jets[ij].Eta()));
           maxEta=max(maxEta,fabs(jets[ij].Eta()));
         }
@@ -339,13 +350,14 @@ void RunVBFVectorBoson(TString filename,
         //visible system histos
         ht.fill("vystar",       ystar,              cplotwgts,c);        
         ht.fill("balance",      balance,            cplotwgts,c);
+        ht.fill("relbpt",       relbpt,             cplotwgts,c);
+        ht.fill("dphibjj",      dphibjj,            cplotwgts,c);
         ht.fill("isotropy",     esv.isotropy(),     cplotwgts,c);
         ht.fill("circularity",  esv.circularity(),  cplotwgts,c);
         ht.fill("sphericity",   esv.sphericity(1.), cplotwgts,c);
         ht.fill("aplanarity",   esv.aplanarity(1.), cplotwgts,c);
         ht.fill("C",            esv.C(1.),          cplotwgts,c);
         ht.fill("D",            esv.D(1.),          cplotwgts,c);
-
         }
       }
     }
