@@ -27,24 +27,25 @@ NC='\e[0m'
 case $WHAT in
 
     TESTSEL )
-        #input=${eosdir}/MC13TeV_DY50toInf/MergedMiniEvents_0_ext0.root
-        #output=MC13TeV_DY.root
-        #tag="--tag MC13TeV_DY50toInf"
-        input=${eosdir}/MC13TeV_GJets_HT100to200/MergedMiniEvents_0_ext0.root
-        #output=MC13TeV_GJets_HT100to200.root
-        #tag="--tag MC13TeV_GJets_HT100to200 --flag 1"
-        output=MC13TeV_GJets_HT100to200_raw.root
-        tag="--tag MC13TeV_GJets_HT100to200"
+        input=${eosdir}/MC13TeV_DY50toInf/MergedMiniEvents_4_ext0.root
+        output=MC13TeV_DY4Jets50toInf.root
+        tag="--tag MC13TeV_DY50toInf"
+        #input=${eosdir}/Data13TeV_SingleMuon_2017D/MergedMiniEvents_0_ext0.root
+        #output=Data13TeV_SingleMuon_2017D.root
+        #input=${eosdir}/MC13TeV_GJets_HT100to200_DR04/MergedMiniEvents_0_ext0.root
+        #output=MC13TeV_GJets_HT100to200_DR04.root \
         #input=${eosdir}/Data13TeV_SingleMuon_2017C/MergedMiniEvents_0_ext0.root
         #output=Data13TeV_SingleMuon_2017C.root
 	python scripts/runLocalAnalysis.py \
             -i ${input} -o ${output} ${tag} \
-            --njobs 1 -q local --debug \
+            --njobs 1 -q local --debug --mvatree \
             --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts;
         ;;
 
     SEL )
 	python scripts/runLocalAnalysis.py -i ${eosdir} \
+#			--only DY,EWKZJJ,GJets_HT,QCDEM \
+#            -o ${outdir} \
             -o ${outdir}/raw \
             --only AJJ \
             -q ${queue} \
@@ -63,10 +64,12 @@ case $WHAT in
 	;;
 
     PLOT )
+#	commonOpts="-i ${outdir} --puNormSF puwgtctr -l 1  --saveLog"
+#	python scripts/plotter.py ${commonOpts} -j data/era2017/vbf_samples.json  --noStack --skip TT,ZZ,WW,WZ,Single,QCD,GJets,DY1Jets,DY2Jets,DY3Jets,DY4Jets,DY50toInf_HT -O ${outdir}/plots_DY ;
 	commonOpts="-i ${outdir}/${EXTRA} --puNormSF puwgtctr -l ${fulllumi}  --saveLog --mcUnc ${lumiUnc} --lumiSpecs VBFA:${vbflumi}"
 	python scripts/plotter.py ${commonOpts} -j data/era2017/vbf_samples.json; 
-        #python test/analysis/computeVBFRatios.py -i ${outdir}/${EXTRA}/plots/plotter.root -o ${outdir}/${EXTRA}/plots/ratio_plotter.root
         python test/analysis/computeVBFRatios.py -t -i ${outdir}/${EXTRA}/plots/plotter.root -o ${outdir}/${EXTRA}/plots/trigger_ratio_plotter.root
+
 	;;
 
     WWW )

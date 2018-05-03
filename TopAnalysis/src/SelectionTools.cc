@@ -41,7 +41,7 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
 
   //decide the channel based on the lepton multiplicity and set lepton collections
   std::vector<Particle> tightLeptons( selLeptons(preselLeptons,TIGHT) );
-  std::vector<Particle> tightPhotons( selPhotons(preselPhotons,TIGHT) );
+  std::vector<Particle> tightPhotons( selPhotons(preselPhotons,TIGHT, tightLeptons) );
 
   TString chTag("");
   if(anType_==TOP)
@@ -70,13 +70,13 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
           if( ch==13*13 && fabs(mll-91)<15 && (tightLeptons[0].pt()>30 || tightLeptons[1].pt()>30)) chTag="MM";          
           leptons_=tightLeptons;
         }
-      if(tightPhotons.size()>=1) {
+     else if(tightPhotons.size()>=1) {
         chTag="A";
         photons_=tightPhotons;
         leptons_=tightLeptons;
       }
     }
-
+  
   //select jets based on the leptons and photon candidates
   float maxJetEta(2.4);
   if(anType_==VBF) maxJetEta=4.7;
@@ -148,6 +148,10 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
   if(chTag=="A")
     {
       if(!hasPhotonTrigger) chTag="";
+	  if((hasEETrigger || hasETrigger) && chTag == "A"){
+		cout<< "----------------- This is EE in fact!" <<endl;
+		chTag = "";
+	  }
       if(ev.isData && !isPhotonPD_) chTag="";
     }
       
@@ -294,7 +298,7 @@ std::vector<Particle> SelectionTool::flaggedPhotons(MiniEvent_t &ev)
 }
 
 //
-std::vector<Particle> SelectionTool::selPhotons(std::vector<Particle> &photons,int qualBit,double minPt, double maxEta,std::vector<Particle> veto){
+std::vector<Particle> SelectionTool::selPhotons(std::vector<Particle> &photons,int qualBit, std::vector<Particle> leptons,double minPt, double maxEta,std::vector<Particle> veto){
   std::vector<Particle> selPhotons;
   for(size_t i =0; i<photons.size(); i++)
     {
@@ -313,7 +317,14 @@ std::vector<Particle> SelectionTool::selPhotons(std::vector<Particle> &photons,i
       }
       if(skipThisPhoton) continue;
             
-      //lepton is selected
+      // cross-cleaning with leptos
+      bool overlapsWithPhysicsObject(false);
+      for (auto& lepton : leptons) {
+	if(photons[i].p4().DeltaR(lepton.p4())<0.4) overlapsWithPhysicsObject=true;
+      }
+      
+      if(overlapsWithPhysicsObject) continue;
+      //photon is selected
       selPhotons.push_back(photons[i]);
     }
 
