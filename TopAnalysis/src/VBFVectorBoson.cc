@@ -67,8 +67,9 @@ void VBFVectorBoson::RunVBFVectorBoson()
       }
       //Category selection
       if(chTag!="A" && chTag!="MM") continue;
-      if(chTag == "A") cat = 20;
-      if(chTag == "MM") cat = 10;
+      float cat[6] = {0,0,0,0,0,0};
+      if(chTag == "A") cat[1] = 1;
+      if(chTag == "MM") cat[0] = 1;
 
       //jet related variables and selection
       mjj = (jets.size()>=2 ?  (jets[0]+jets[1]).M() : 0.);
@@ -126,11 +127,12 @@ void VBFVectorBoson::RunVBFVectorBoson()
       if(!isVBF && !isHighPt && !isBosonPlusOneJet) continue;      
 
       std::vector<TString> chTags;      
-      if(isVBF) {chTags.push_back("VBF"+chTag); cat+=1;}
-      if(isHighPt)	    {chTags.push_back("HighPt"+chTag); cat+=2;}
-      if(isHighPtAndVBF)    {chTags.push_back("HighPtVBF"+chTag); cat+=3;}
-      if(isBosonPlusOneJet) {chTags.push_back("V1J"+chTag); cat+=4;}
+      if(isVBF)             {chTags.push_back("VBF"+chTag); cat[2]=1;}
+      if(isHighPt)	    {chTags.push_back("HighPt"+chTag); cat[3]=1;}
+      if(isHighPtAndVBF)    {chTags.push_back("HighPtVBF"+chTag); cat[4]=1;}
+      if(isBosonPlusOneJet) {chTags.push_back("V1J"+chTag); cat[5]=1;}
 
+      category.set(cat);
       //leptons and boson
       mindrl = 9999.;
       for(auto &l: leptons) mindrl=min(l.DeltaR(boson),mindrl);
@@ -385,7 +387,7 @@ void VBFVectorBoson::addMVAvars(){
 	newTree->Branch("C",&C);
 	newTree->Branch("D",&D);
 	newTree->Branch("training",&training);
-	newTree->Branch("Category",&cat);
+	newTree->Branch("category", &category, "MM:A:VBF:HighPt:HighPtVBF:V1J");
 }
 
 void VBFVectorBoson::fill(MiniEvent_t ev, TLorentzVector boson, std::vector<Jet> jets, std::vector<double> cplotwgts, TString c){
@@ -472,5 +474,6 @@ void VBFVectorBoson::fill(MiniEvent_t ev, TLorentzVector boson, std::vector<Jet>
 	ht->fill("aplanarity",   aplanarity, cplotwgts,c);
 	ht->fill("C",            C,          cplotwgts,c);
 	ht->fill("D",            D,          cplotwgts,c);
+	cout<< "hist filling is done ... "<<endl;
 	if(skimtree) newTree->Fill();
 }

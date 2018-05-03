@@ -41,7 +41,7 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
 
   //decide the channel based on the lepton multiplicity and set lepton collections
   std::vector<Particle> tightLeptons( selLeptons(preselLeptons,TIGHT) );
-  std::vector<Particle> tightPhotons( selPhotons(preselPhotons,TIGHT) );
+  std::vector<Particle> tightPhotons( selPhotons(preselPhotons,TIGHT, tightLeptons) );
 
   TString chTag("");
   if(anType_==TOP)
@@ -297,7 +297,7 @@ std::vector<Particle> SelectionTool::flaggedPhotons(MiniEvent_t &ev)
 }
 
 //
-std::vector<Particle> SelectionTool::selPhotons(std::vector<Particle> &photons,int qualBit,double minPt, double maxEta,std::vector<Particle> veto){
+std::vector<Particle> SelectionTool::selPhotons(std::vector<Particle> &photons,int qualBit, std::vector<Particle> leptons,double minPt, double maxEta,std::vector<Particle> veto){
   std::vector<Particle> selPhotons;
   for(size_t i =0; i<photons.size(); i++)
     {
@@ -316,7 +316,14 @@ std::vector<Particle> SelectionTool::selPhotons(std::vector<Particle> &photons,i
       }
       if(skipThisPhoton) continue;
             
-      //lepton is selected
+      // cross-cleaning with leptos
+      bool overlapsWithPhysicsObject(false);
+      for (auto& lepton : leptons) {
+	if(photons[i].p4().DeltaR(lepton.p4())<0.4) overlapsWithPhysicsObject=true;
+      }
+      
+      if(overlapsWithPhysicsObject) continue;
+      //photon is selected
       selPhotons.push_back(photons[i]);
     }
 

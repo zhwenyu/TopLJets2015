@@ -29,7 +29,33 @@ using namespace std;
 
 //Vector boson will be either Z or photon at the moment
 
-
+struct Category{
+  float MM,A,VBF,HighPt,HighPtVBF,V1J;
+  Category(float * cat){
+    MM = cat[0];
+    A = cat[1];
+    VBF = cat[2];
+    HighPt = cat[3];
+    HighPtVBF = cat[4];
+    V1J = cat[5];
+  };
+  Category(){
+    MM = 0;
+    A = 0;
+    VBF = 0;
+    HighPt = 0;
+    HighPtVBF = 0; 
+    V1J = 0; 
+  };
+  void set(float * cat){
+    MM = cat[0];
+    A = cat[1];
+    VBF = cat[2];
+    HighPt = cat[3];
+    HighPtVBF = cat[4];
+    V1J = cat[5];
+  };
+};
 
 class VBFVectorBoson{
 public:
@@ -42,10 +68,8 @@ public:
                        Bool_t debug_=false, Bool_t skimtree_=false):
 	filename(filename_),outname(outname_),anFlag(anFlag_), era(era_), debug(debug_), skimtree(skimtree_)
 	{
-	  cout << normH_ <<"\t"<< genPU_ <<endl;
 	  normH = (TH1F*)normH_->Clone("normH_c");
 	  genPU = (TH1F*)genPU_->Clone("genPu_c");
-	  cout << normH <<"\t"<< genPU <<endl;
 	  fMVATree = NULL;
 	  newTree = NULL;
 	  init();
@@ -112,16 +136,11 @@ private:
 	float isotropy, circularity,sphericity,	aplanarity, C, D;
 	float scalarht,balance, mht, training;
 
-	///////////////////////////////////
-	// Categorie for VBF:            //
-	//               10 : MM         //
-	//               20 : A          //
-	//               1  : VBF        //
-        //               2  : HighPt     //
-	//               3  : HighPtVBF  //
-	//               4  : V1J        // 
-	///////////////////////////////////
-	float cat;
+	/////////////////////////////////////
+	// Categorie for VBF:              //
+	//   MM:A:VBF:HighPt:HighPtVBF:V1J // 
+	/////////////////////////////////////
+	Category category;
 
 	SelectionTool * selector;
 

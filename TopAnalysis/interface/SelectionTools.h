@@ -37,7 +37,7 @@ class SelectionTool {
   std::vector<Particle> &getSelLeptons()  { return leptons_; }
   std::vector<Particle> &getVetoLeptons() { return vetoLeptons_; }
   std::vector<Particle> flaggedPhotons(MiniEvent_t &ev);
-  std::vector<Particle> selPhotons(std::vector<Particle> &flaggedPhotons,int qualBit=LOOSE, double minPt = 30., double maxEta = 2.5, std::vector<Particle> veto = {});
+  std::vector<Particle> selPhotons(std::vector<Particle> &flaggedPhotons,int qualBit=LOOSE, std::vector<Particle> leptons = {}, double minPt = 30., double maxEta = 2.5, std::vector<Particle> veto = {});
   std::vector<Particle> &getSelPhotons()  { return photons_; }
   std::vector<Jet>      getGoodJets(MiniEvent_t &ev, double minPt = 30., double maxEta = 4.7, std::vector<Particle> leptons = {},std::vector<Particle> photons = {}); // changed for the moment to VBF
   std::vector<Jet>      &getJets()        { return jets_; }
