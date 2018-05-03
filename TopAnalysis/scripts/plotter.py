@@ -6,9 +6,11 @@ from collections import OrderedDict
 
 from TopLJets2015.TopAnalysis.Plot import *
 
+
 """
 steer the script
 """
+	
 def main():
 
     #configuration
@@ -28,7 +30,7 @@ def main():
     parser.add_option(      '--onlyData',    dest='onlyData' ,   help='only plots containing data',     default=False,             action='store_true')
     parser.add_option(      '--saveTeX',     dest='saveTeX' ,    help='save as tex file as well',       default=False,             action='store_true')
     parser.add_option(      '--rebin',       dest='rebin',       help='rebin factor',                   default=1,                 type=int)
-    parser.add_option('-l', '--lumi',        dest='lumi' ,       help='lumi to print out',              default=12900,              type=float)
+    parser.add_option('-l', '--lumi',        dest='lumi' ,       help='lumi to print out, if == 1 draw normalized',              default=12900,              type=float)
     parser.add_option(      '--lumiSpecs',   dest='lumiSpecs',   help='lumi specifications for some channels [tag:lumi,tag2:lumi2,...]', default=None,       type=str)
     parser.add_option(      '--only',        dest='only',        help='plot only these (csv)',          default='',                type='string')
     parser.add_option(      '--skip',        dest='skip',        help='skip these samples (csv)',          default='MC13TeV_TTJets_cflip',                type='string')
@@ -63,6 +65,8 @@ def main():
         pass
     
     skipList=opt.skip.split(',')
+
+
 
     #lumi specifications per tag
     lumiSpecs={}
@@ -129,7 +133,6 @@ def main():
 
                 for tkey in fIn.GetListOfKeys():
                     keyIsSyst=False
-
                     try:
                         key=tkey.GetName()
 
@@ -140,7 +143,6 @@ def main():
                                 keep=True
                                 break
                         if not keep: continue
-
                         histos = []
                         obj=fIn.Get(key)
                         if obj.InheritsFrom('TH2'):
@@ -170,7 +172,8 @@ def main():
 
                         for hist in histos:
                             if not isData and not '(data)' in sp[1]: 
-
+                                print hist.GetName()
+                                print hist.GetTitle()
                                 #check if a special scale factor needs to be applied
                                 sfVal=1.0                            
                                 for procToScale in procSF:
@@ -186,7 +189,6 @@ def main():
                                     if not tag+'_' in key: continue
                                     lumi=lumiSpecs[tag]
                                     break
-                                            
                                 hist.Scale(xsec*lumi*puNormSF*sfVal)                    
                             
                             #rebin if needed
@@ -209,7 +211,8 @@ def main():
     else:                outDir = opt.outDir
     os.system('mkdir -p %s' % outDir)
     os.system('rm %s/%s'%(outDir,opt.outName))
-    for p in plots : 
+    for p in plots:
+        print plots[p].name
         plots[p].mcUnc=opt.mcUnc
         if opt.saveLog    : plots[p].savelog=True
         skipPlot=False
@@ -220,7 +223,8 @@ def main():
             if not tag+'_' in p: continue
             lumi=lumiSpecs[tag]
             break
-        if not skipPlot : plots[p].show(outDir=outDir,lumi=lumi,noStack=opt.noStack,saveTeX=opt.saveTeX)
+        #continue
+        plots[p].show(outDir=outDir,lumi=lumi,noStack=opt.noStack,saveTeX=opt.saveTeX)
         plots[p].appendTo('%s/%s'%(outDir,opt.outName))
         plots[p].reset()
 

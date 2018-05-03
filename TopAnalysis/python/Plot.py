@@ -149,7 +149,6 @@ class Plot(object):
                 pass
 
     def show(self, outDir,lumi,noStack=False,saveTeX=False,extraText=None,noRatio=False):
-
         if len(self.mc)<1 and self.dataH is None:
             print '%s has 0 or 1 MC!' % self.name
             return
@@ -184,7 +183,6 @@ class Plot(object):
                 p1.SetTopMargin(0.05)
             p1.SetBottomMargin(0.12)
         p1.Draw()
-
         p1.SetGridx(False)
         p1.SetGridy(False) #True)
         self._garbageList.append(p1)
@@ -213,6 +211,7 @@ class Plot(object):
             if self.data is None: self.finalize()
             leg.AddEntry( self.data, self.data.GetTitle(),'p')
             nlegCols += 1
+
         for h in self.mc:
 
             #compare
@@ -224,7 +223,6 @@ class Plot(object):
                     self.mc[h].SetTitle('#splitline{%s}{#chi^{2}=%3.1f (p-val: %3.3f)}'%(self.mc[h].GetTitle(),chi2,pval))
                 else:
                     refH.SetLineWidth(2)
-
             leg.AddEntry(self.mc[h], self.mc[h].GetTitle(), 'f')
             nlegCols += 1
         if nlegCols ==0 :
@@ -238,11 +236,11 @@ class Plot(object):
         totalMC = None
         stack = ROOT.THStack('mc','mc')
         for h in reversed(self.mc):
-
+            print "Integral is %f" %self.mc[h].Integral()
             if noStack:
                 self.mc[h].SetFillStyle(0)
                 self.mc[h].SetLineColor(self.mc[h].GetFillColor())
-
+                if lumi == 1 and self.mc[h].Integral() != 1 and self.mc[h].Integral() !=0 : self.mc[h].Scale(1./self.mc[h].Integral())
             stack.Add(self.mc[h],'hist')
 
             try:
@@ -365,7 +363,6 @@ class Plot(object):
             leg.AddEntry(self.spimpose[m],self.spimpose[m].GetTitle(),'l')
         if self.data is not None : self.data.Draw('p')
 
-
         if (totalMC is not None and totalMC.GetMaximumBin() > totalMC.GetNbinsX()/2.):
             inix = 0.15
             leg.SetX1(inix)
@@ -399,7 +396,6 @@ class Plot(object):
                 extraCtr+=1
         except:
             pass
-
 
         #holds the ratio
         c.cd()
@@ -487,7 +483,6 @@ class Plot(object):
                     gr.Draw('p')
                 except:
                     pass
-
         #all done
         if p1: p1.RedrawAxis()
         c.cd()
@@ -495,10 +490,12 @@ class Plot(object):
         c.Update()
 
         #save
+        if lumi == 1: frame.GetYaxis().SetRangeUser(0,0.8)
         for ext in self.plotformats : c.SaveAs(os.path.join(outDir, self.name+'.'+ext))
         if self.savelog:
             p1.cd()
             frame.GetYaxis().SetRangeUser(1,maxY*50)
+            if lumi == 1: frame.GetYaxis().SetRangeUser(0.001,1)
             p1.SetLogy()
             c.cd()
             c.Modified()
@@ -506,6 +503,8 @@ class Plot(object):
             for ext in self.plotformats : c.SaveAs(os.path.join(outDir, self.name+'_log.'+ext))
 
         if saveTeX : self.convertToTeX(outDir=outDir)
+
+
 
 
     def convertToTeX(self, outDir):

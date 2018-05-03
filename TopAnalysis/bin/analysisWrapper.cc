@@ -22,7 +22,8 @@ void printHelp()
        << "\t --systVar  - specify single systematic variation" << endl
        << "\t --era      - era directory to use for corrections, uncertainties" << endl
        << "\t --normTag  - normalization tag" << endl
-       << "\t --method   - method to run" << endl;
+       << "\t --method   - method to run" << endl
+       << "\t --mvatree   - store selected events in a tree for mva" << endl;
 }
 
 //
@@ -32,7 +33,7 @@ int main(int argc, char* argv[])
   TString in(""),out(""),era(""),normTag(""),method("");
   std::string systVar("");
   bool runSysts(false);
-  bool debug(false);
+  bool debug(false), skimtree(false);
   int channel(0),charge(0),flag(0);
   for(int i=1;i<argc;i++){
     string arg(argv[i]);
@@ -45,6 +46,7 @@ int main(int argc, char* argv[])
     else if(arg.find("--in")!=string::npos && i+1<argc)       { in=argv[i+1]; i++;}
     else if(arg.find("--out")!=string::npos && i+1<argc)      { out=argv[i+1]; i++;}
     else if(arg.find("--debug")!=string::npos)                { debug=true; }
+    else if(arg.find("--mvatree")!=string::npos)                { skimtree=true; }
     else if(arg.find("--normTag")!=string::npos && i+1<argc)  { normTag=argv[i+1]; i++;}
     else if(arg.find("--era")!=string::npos && i+1<argc)      { era=argv[i+1]; i++;}
     else if(arg.find("--method")!=string::npos && i+1<argc)   { method=argv[i+1]; i++;}
@@ -85,7 +87,10 @@ int main(int argc, char* argv[])
 
   //check method to run
   if(method=="ExclusiveTop::RunExclusiveTop")          RunExclusiveTop(in,out,channel,charge,normH,puH,era,debug);
-  else if(method=="VBFVectorBoson::RunVBFVectorBoson") RunVBFVectorBoson(in,out,flag,normH,puH,era,debug);
+  else if(method=="VBFVectorBoson::RunVBFVectorBoson") {
+    VBFVectorBoson myVBF(in,out,flag,normH,puH,era,debug,skimtree);
+    myVBF.RunVBFVectorBoson();
+  }
   else {
       cout << "Check method=" << method <<endl;
       printHelp();
