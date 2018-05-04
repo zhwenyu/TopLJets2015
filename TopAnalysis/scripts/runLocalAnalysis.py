@@ -16,6 +16,7 @@ Wrapper to be used when run in parallel
 def RunMethodPacked(args):
 
     method,inF,outF,channel,charge,flag,runSysts,systVar,era,tag,debug,mvatree=args
+    print args
     print 'Running ',method,' on ',inF
     print 'Output file',outF
     print 'Selection ch=',channel,' charge=',charge,' flag=',flag,' systs=',runSysts

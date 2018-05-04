@@ -44,11 +44,9 @@ case $WHAT in
 
     SEL )
 	python scripts/runLocalAnalysis.py -i ${eosdir} \
-#			--only DY,EWKZJJ,GJets_HT,QCDEM \
-#            -o ${outdir} \
             -o ${outdir}/raw \
-            --only AJJ \
-            -q ${queue} \
+            --only data/era2017/vbf_samples.json \
+            -q ${queue} --mvatree \
             --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts;
 	;;
 
