@@ -103,17 +103,15 @@ public:
   }
 };
 
-const string DEFAULT_INFNAME  = "/home/hbakhshi/Desktop/tHq/nTuples/FoxWolfram2";
 
-int TMVAClassification( TString myMethodList , TString extention, BDTOptimizer* tth_bdt_options , BDTOptimizer* ttgj_bdt_options, BDTOptimizer* dig_bdt_options  )
+
+int TMVAClassification( TString myMethodList , TString extention, BDTOptimizer* bdt_options, TString infname, TString category )
 {
-  TMVA::MethodBDT* method_ttH ,* method_DiG ,* method_ttGj;
+  TMVA::MethodBDT* method;
   
    TMVA::Tools::Instance();
    std::map<std::string,int> Use;
-   Use["ttH"] = 1;
-   Use["DiG"] = 1;
-   Use["ttGj"] = 1;
+   Use["VBF"] = 1;
    
    if (myMethodList != "") {
       for (std::map<std::string,int>::iterator it = Use.begin(); it != Use.end(); it++)
@@ -140,7 +138,6 @@ int TMVAClassification( TString myMethodList , TString extention, BDTOptimizer* 
       }
    }
 
-   TString infname     = DEFAULT_INFNAME;
 
    TString outfileName( "TMVA_"+ extention  +".root" );
    TFile* outputFile = TFile::Open( outfileName, "RECREATE" );
@@ -148,117 +145,79 @@ int TMVAClassification( TString myMethodList , TString extention, BDTOptimizer* 
    TMVA::Factory *factory = new TMVA::Factory( extention , outputFile,
                                                "!V:!Silent:Color:DrawProgressBar:Transformations=D:AnalysisType=Classification" );
    
-   TFile *inputS = TFile::Open( infname + "/Signal.root" );
-   TTree *signalTree     = (TTree*)inputS->Get("tHq/Trees/Events");
+   TFile *inputS = TFile::Open( infname + "/Signal.root" ); // To be fixed
+   TTree *signalTree     = (TTree*)inputS->Get("data"); // To be fixed
    Double_t signalWeight     = 1.0;
-   TString default_w_str = "Weight.W0 * G1.w * G2.w";
+   TString default_w_str = "evtWeight";
    
-   TMVA::DataLoader *dataloader_tth = NULL;
-   TMVA::DataLoader *dataloader_dig = NULL;
-   TMVA::DataLoader *dataloader_ttgg = NULL;
+   TMVA::DataLoader *dataloader = NULL;
+
    
-   if( Use["ttH"] ){
+   if( Use["VBF"] ){
 
-     std::cout << "Loading ttH trees" << endl;
-     TFile *inputB = TFile::Open( infname + "/ttH.root" );
-     TTree *background_ttH  = (TTree*)inputB->Get("tHq/Trees/Events");
+     std::cout << "Loading VBF trees" << endl;
+     TFile *inputB = TFile::Open( infname + "/ttH.root" ); //To be fixed
+     TTree *background  = (TTree*)inputB->Get("data");
 
-     dataloader_tth =new TMVA::DataLoader(tth_bdt_options->dsName);
+     dataloader =new TMVA::DataLoader(bdt_options->dsName);
      // (please check "src/Config.h" to see all available global options)
      //
      //(TMVA::gConfig().GetVariablePlotting()).fTimesRMS = 8.0;
      //(TMVA::gConfig().GetIONames()).fWeightFileDir = "myWeightDirectory";
 
-     dataloader_tth->AddVariable( "nJets", "nJets", "", 'I' ) ;
-     dataloader_tth->AddVariable( "Max$( abs(jetsEta) )","jprimeeta" , "" , 'F' );
-     dataloader_tth->AddVariable( "met.pt", "met", "", 'F' );
-     dataloader_tth->AddVariable( "lepton.charge","LepCharge" , "" , 'I' );
-     dataloader_tth->AddVariable( "eventshapes.aplanarity" , "aplanarity" , "" , 'F' );
-     dataloader_tth->AddVariable( "foxwolf1.ONE" , "fwf1ONE" , "" , 'F' );
+     dataloader->AddVariable( "D", "D", "", 'F' ) ;
+     dataloader->AddVariable( "C", "C", "", 'F' ) ;
+     dataloader->AddVariable( "aplanarity", "aplanarity", "", 'F' ) ;
+     dataloader->AddVariable( "sphericity", "sphericity", "", 'F' ) ;
+     dataloader->AddVariable( "circularity", "circularity", "", 'F' ) ;
+     dataloader->AddVariable( "isotropty", "isotropy", "", 'F' ) ;
+     dataloader->AddVariable( "ht", "ht", "", 'F' ) ;
+     dataloader->AddVariable( "mht", "mht", "", 'F' ) ;
+     dataloader->AddVariable( "balance", "balance", "", 'F' ) ;
+     dataloader->AddVariable( "centralEta", "centralEta", "", 'F' ) ;
+     dataloader->AddVariable( "mjj", "mjj", "", 'F' ) ;
+     dataloader->AddVariable( "detajj", "detajj", "", 'F' ) ;
+     dataloader->AddVariable( "jjpt", "jjpt", "", 'F' ) ;
+     dataloader->AddVariable( "dhpijj", "dphijj", "", 'F' ) ;
+     dataloader->AddVariable( "forwardeta", "forwardeta", "", 'F' ) ;
+     dataloader->AddVariable( "jjetas", "jjetas", "", 'F' ) ;
+     dataloader->AddVariable( "centjy", "centjy", "", 'F' ) ;
+     dataloader->AddVariable( "ncentjj", "ncentjj", "", 'F' ) ;
+     dataloader->AddVariable( "dphivj0", "dphivj0", "", 'F' ) ;
+     dataloader->AddVariable( "dphivj1", "dphivj1", "", 'F' ) ;
+     dataloader->AddVariable( "dphivj2", "dphivj2", "", 'F' ) ;
+     dataloader->AddVariable( "dphivj3", "dphivj3", "", 'F' ) ;
+     dataloader->AddVariable( "j_pt[0]", "LeadJetPt", "", 'F' ) ;
+     dataloader->AddVariable( "j_pt[1]", "SubLeadJetPt", "", 'F' ) ;
      
      // dataloader->AddSignalTree( signalTrainingTree, signalTrainWeight, "Training" );
      // dataloader->AddSignalTree( signalTestTree,     signalTestWeight,  "Test" );
      
-     dataloader_tth->AddSignalTree( signalTree,     signalWeight );
-     dataloader_tth->AddBackgroundTree( background_ttH, 1 );
+     dataloader->AddSignalTree( signalTree,     signalWeight );
+     dataloader->AddBackgroundTree( background, 1 );
 
-     dataloader_tth->SetBackgroundWeightExpression( default_w_str  );
-     dataloader_tth->SetSignalWeightExpression( default_w_str );
-     TString cut_tth = "(DiG.mass > 100) && (Sum$(jetsPt>30) > 1 ) && (nMbJets==1) && (jetsPt[0] > 30)  && (LeptonType == 1 || LeptonType == 2) && (lepton.pt > 20)";
-     TCut mycuts_tth = TCut(cut_tth);
-     TCut mycutb_tth = TCut(cut_tth);
-     dataloader_tth->PrepareTrainingAndTestTree( mycuts_tth, mycutb_tth,
-						 "nTrain_Signal=3000:nTrain_Background=5000:SplitMode=Random:NormMode=NumEvents:!V");
+     dataloader->SetBackgroundWeightExpression( default_w_str  );
+     dataloader->SetSignalWeightExpression( default_w_str );
 
-     for(auto tth_bdt_option : *tth_bdt_options){
-       method_ttH = tth_bdt_option.BookMethod( factory , dataloader_tth );
-       cout << method_ttH->GetName() << endl;
+     std::vector<TString> cats = TMVA::gTools().SplitString( string(category), ':' );
+     TString cut = "";
+     for (unsigned int iCat = 0; iCat < cats.size(); iCat++){
+       cut+= "category." + cats[iCat] + " == 1 ";
+       if(iCat < cats.size() - 1)
+	 cut+= " && ";
+	 
+     }
+     TCut mycuts = TCut(cut);
+     TCut mycutb = TCut(cut);
+     dataloader->PrepareTrainingAndTestTree( mycuts, mycutb,
+					     "nTrain_Signal=3000:nTrain_Background=5000:SplitMode=Random:NormMode=NumEvents:!V");// To use the info in the Tree
+
+     for(auto bdt_option : *bdt_options){
+       method = bdt_option.BookMethod( factory , dataloader );
+       cout << method->GetName() << endl;
      }
    }
    
-   if( Use["DiG"] ){
-     std::cout << "Loading DiG trees" << endl;
-     TChain *backgroundDiG = new TChain("tHq/Trees/Events");
-     backgroundDiG->Add(infname + "/DiPhoton_Jets.root" );
-
-
-     dataloader_dig=new TMVA::DataLoader(dig_bdt_options->dsName);
-
-     dataloader_dig->AddVariable( "nJets", "nJets", "", 'I' ) ;
-     dataloader_dig->AddVariable( "met.pt", "met", "", 'F' );
-     dataloader_dig->AddVariable( "DiG.pt" , "digpt" , "" , 'F' );
-     dataloader_dig->AddVariable( "abs(DiG.eta)" , "digeta" , "" , 'F' );
-     dataloader_dig->AddVariable( "DiG.mva" , "digmva" , "" , 'F' );
-     dataloader_dig->AddVariable( "((G1.mva>G2.mva)*G2.mva +  (G1.mva<=G2.mva)*G1.mva)" , "minGmva" , "" , 'F' );
-     dataloader_dig->AddSignalTree( signalTree,     signalWeight );
-     dataloader_dig->AddBackgroundTree( backgroundDiG, 1 );
-
-     dataloader_dig->SetBackgroundWeightExpression( default_w_str  );
-     dataloader_dig->SetSignalWeightExpression( default_w_str );
-     TString cut_dig = "(DiG.mass > 100)"; // && (met > 30)";
-     TCut mycuts_dig = TCut(cut_dig);
-     TCut mycutb_dig = TCut(cut_dig);
-     dataloader_dig->PrepareTrainingAndTestTree( mycuts_dig, mycutb_dig,
-						 "nTrain_Signal=10000:nTrain_Background=10000:SplitMode=Random:NormMode=NumEvents:!V");
-     
-     for(auto dig_bdt_option : *dig_bdt_options){
-       method_DiG = dig_bdt_option.BookMethod( factory , dataloader_dig );
-       cout << method_DiG->GetName() << endl;
-     }
-   }
-
-   if( Use["ttGj"] ){
-     std::cout << "Loading ttGj trees" << endl;
-     TChain *backgroundTTGG = new TChain("tHq/Trees/Events");
-     backgroundTTGG->Add( infname + "/TTGJ.root" );
-     backgroundTTGG->Add( infname + "/TGJ.root" );
-
-     dataloader_ttgg=new TMVA::DataLoader(ttgj_bdt_options->dsName);
-
-     dataloader_ttgg->AddVariable( "nJets", "nJets", "", 'I' ) ;
-     dataloader_ttgg->AddVariable( "met.pt", "met", "", 'F' );
-     dataloader_ttgg->AddVariable( "DiG.pt" , "digpt" , "" , 'F' );
-     dataloader_ttgg->AddVariable( "abs(DiG.eta)" , "digeta" , "" , 'F' );
-     dataloader_ttgg->AddVariable( "DiG.mva" , "digmva" , "" , 'F' );
-     dataloader_ttgg->AddVariable( "((G1.mva>G2.mva)*G2.mva +  (G1.mva<=G2.mva)*G1.mva)" , "minGmva" , "" , 'F' );
-     
-     dataloader_ttgg->AddSignalTree( signalTree,     signalWeight );
-     dataloader_ttgg->AddBackgroundTree( backgroundTTGG, 1 );
-
-     dataloader_ttgg->SetBackgroundWeightExpression( default_w_str  );
-     dataloader_ttgg->SetSignalWeightExpression( default_w_str );
-     TString cut_ttgg = "(DiG.mass > 100) && (nMbJets==1)" ;//&& (LeptonType == 1 || LeptonType == 2) && (lepton.pt > 20)"; && (jetsPt[0] > 30) && (met > 30) 
-     TCut mycuts_ttgg = TCut(cut_ttgg);
-     TCut mycutb_ttgg = TCut(cut_ttgg);
-     dataloader_ttgg->PrepareTrainingAndTestTree( mycuts_ttgg, mycutb_ttgg,
-						  "nTrain_Signal=10000:nTrain_Background=3000:SplitMode=Random:NormMode=NumEvents:!V");
-
-
-     for(auto ttgj_bdt_option : *ttgj_bdt_options){
-       method_ttGj = ttgj_bdt_option.BookMethod( factory , dataloader_ttgg );
-       cout << method_ttGj->GetName() << endl;
-     } 
-   }
      
 
    
@@ -285,9 +244,8 @@ int TMVAClassification( TString myMethodList , TString extention, BDTOptimizer* 
    // --------------------------------------------------------------
 
    // Save the output
-   tth_bdt_options->EvaluateAll( factory , outputFile );
-   ttgj_bdt_options->EvaluateAll( factory , outputFile );
-   dig_bdt_options->EvaluateAll( factory , outputFile );
+   bdt_options->EvaluateAll( factory , outputFile );
+   
    
    outputFile->Close();
 
@@ -507,9 +465,10 @@ TMVA::MethodBDT* BDTOptions::BookMethod( Factory* factory , DataLoader* dataload
 int main( int argc, char** argv )
 {
    // Select methods (don't look at this code - not of interest)
-  BDTOptimizer* tth_bdt_options,* ttgj_bdt_options , * dig_bdt_options;
-  tth_bdt_options = ttgj_bdt_options = dig_bdt_options = NULL;
-  TString methodList,ext;
+  BDTOptimizer* bdt_options;
+  bdt_options = NULL;
+  TString methodList,ext,category;
+  TString DEFAULT_INFNAME  = "";
   for (int i=1; i<argc; i++) {
     TString regMethod(argv[i]);
     if( regMethod=="--ext"){
@@ -517,27 +476,29 @@ int main( int argc, char** argv )
 	ext = TString(argv[i]);
 	continue;
     }
-    if( regMethod=="--tth"){
+    if( regMethod=="--vbf"){
       i++;
-      tth_bdt_options = new BDTOptimizer("ttH" , "BDT_TTH" , string(argv[i] ) );
-      for( auto i : *tth_bdt_options)
+      bdt_options = new BDTOptimizer("vbf" , "BDT_VBF" , string(argv[i] ) );
+      for( auto i : *bdt_options)
 	i.PrintAll(cout);
-      methodList += "ttH";
+      methodList += "VBF";
       continue;
     }
-    if( regMethod=="--dig"){
+    if( regMethod=="--indir"){
       i++;
-      dig_bdt_options = new BDTOptimizer("DiG" , "BDT_DiG" , string(argv[i] ) );
-      methodList += "DiG";
+      DEFAULT_INFNAME = std::string (*(argv + i)).c_str();
       continue;
     }
-    if( regMethod=="--ttgj"){
+    if( regMethod=="--cat"){
       i++;
-      ttgj_bdt_options = new BDTOptimizer("ttGj" , "BDT_ttGj" , string(argv[i] ) );
-      methodList += "ttGj";
+      category = std::string (*(argv + i)).c_str();
+      if(!category.Contains(":")){
+	std::cout<<"Provide \"P:Q\" with P in {MM, A} and Q in {VBF, HighPt, HighPtVBF, V1J} " << std::endl;
+	return -1;
+      }
       continue;
     }
   }
   
-  return TMVAClassification(methodList , ext , tth_bdt_options , ttgj_bdt_options , dig_bdt_options);
+  return TMVAClassification(methodList , ext , bdt_options, DEFAULT_INFNAME, category);
 }
