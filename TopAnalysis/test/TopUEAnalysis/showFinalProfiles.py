@@ -190,6 +190,7 @@ def showProfile(grColl,grCollComp,grCollStat,
     for t,xmin,xmax in categList:
         yarr=1.315*maxY
         ytxt=1.36*maxY
+        if obs=='detST': yarr,ytxt=0.0415,0.042 #0.44,0.45
         if obs=='sphericity': yarr,ytxt=0.62,0.63 #0.44,0.45
         if obs=='aplanarity': yarr,ytxt=0.188,0.192 #0.1238,0.1268
         if obs=='C': yarr,ytxt=0.88,0.895 #0.66,0.675

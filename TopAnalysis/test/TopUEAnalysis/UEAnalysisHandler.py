@@ -21,12 +21,13 @@ VARTITLES={
     'aplanarity'     : 'A', #'Aplanarity',
     'C'              : 'C',
     'D'              : 'D',
-    'sphericity_2'     : 'S_{2}', #'Sphericity',
-    'aplanarity_2'     : 'A_{2}', #'Aplanarity',
-    'C_2'              : 'C_{2}',
-    'D_2'              : 'D_{2}',
+    'sphericity_2'   : 'S_{2}', #'Sphericity',
+    'aplanarity_2'   : 'A_{2}', #'Aplanarity',
+    'C_2'            : 'C_{2}',
+    'D_2'            : 'D_{2}',
     'maxRap'         : 'max|#eta|',
-    'rapDist'        : '#Delta#eta'
+    'rapDist'        : '#Delta#eta',
+    'detST'          : 'det S_{T}'
     }
 
 SYSTS = [ ('',   0,0,False),

@@ -19,7 +19,7 @@ public:
     reset(); 
   }
   void unfoldData(char *file_name,char *syst_file_name,char *sigName);
-  void unfoldToy(char *file_toy,float opt_tau, TH2 *mig,float norm,TH1 *fakes);
+  bool unfoldToy(char *file_toy,float opt_tau, TH2 *mig,float norm,TH1 *fakes);
   float doUnfold(float opt_tau, TH2 *mig, TH1 *data,TH1 *gen,bool storeFull=true,TString pfix="");
   TObjArray *getResults() { return results_; }
   void reset() 
@@ -158,8 +158,8 @@ float UEUnfold::doUnfold(float opt_tau, TH2 *mig, TH1 *data,TH1 *gen,bool storeF
   TUnfoldDensity unfold(mig,TUnfold::kHistMapOutputHoriz,regMode,constraint,densityFlags);  
   Int_t status=unfold.SetInput(data,scaleBias);
   if(status!=0) {
-    cout << "[UEUnfold::doUnfold] input failed with satus=" << status << endl;
-    return opt_tau;
+    cout << "[UEUnfold::doUnfold] input failed with status=" << status << endl;
+    return -1;
   }
  
   // scan to determine optimal tau, if needed
@@ -259,12 +259,14 @@ float UEUnfold::performTauScan(TH2 *mig, TH1 *data,TUnfoldDensity &unfold)
                     
 
 //
-void UEUnfold::unfoldToy(char *file_toy,float opt_tau,TH2 *mig,float norm,TH1 *fakes)
+bool UEUnfold::unfoldToy(char *file_toy,float opt_tau,TH2 *mig,float norm,TH1 *fakes)
 {
   //
   // READ TOY FILE
   //
   TFile *inF=TFile::Open(file_toy);
+  if(inF==0) return false;
+  if(inF->IsZombie()) return false;
 
   //signal reconstructed
   TH1 *toyRec   = (TH1 *)inF->Get("reco_0")->Clone("signal_toy");;
@@ -288,8 +290,11 @@ void UEUnfold::unfoldToy(char *file_toy,float opt_tau,TH2 *mig,float norm,TH1 *f
   inF->Close();
   curToyTruth_=toyGen;
 
-  doUnfold(opt_tau,mig,toyRecSub,toyGen);
-
+  float tauStat=doUnfold(opt_tau,mig,toyRecSub,toyGen);
+  if(tauStat<0) {
+    cout << "[UEUnfold::unfoldToy] ignoring this toy" << endl;
+    return false;
+  }
   TH1 *unfolded_toy=0;
   for(int i=0; i<results_->GetEntriesFast(); i++)
     {
@@ -324,6 +329,7 @@ void UEUnfold::unfoldToy(char *file_toy,float opt_tau,TH2 *mig,float norm,TH1 *f
   
   //  results_->Add(bottomLineTest(totalDataSub,toyRecSub,unfolded_data,toyGen,unfolded_ematTotal));
 
+  return true;
 }
 
 //

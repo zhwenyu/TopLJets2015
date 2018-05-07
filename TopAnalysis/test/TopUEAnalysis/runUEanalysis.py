@@ -160,8 +160,9 @@ def defineAnalysisBinning(opt,ptthreshold,cuts,outDir):
     #final tweaks
     #if opt.obs in ['chavgpt','chavgpz']  : genBins[0],recBins[0]=0.9,0.9
     #if opt.obs in ['chflux','chfluxz']   : genBins[0],recBins[0]=0.9,0.9
-    if opt.obs in ['C','D','sphericity'] : genBins[-1],recBins[-1]=1,1
-    if opt.obs in ['aplanarity']         : genBins[-1],recBins[-1]=0.5,0.5
+    if opt.obs in ['C','D','sphericity','C_2','D_2','sphericity_2'] : genBins[-1],recBins[-1]=1,1
+    if opt.obs in ['aplanarity','aplanarity_2']                     : genBins[-1],recBins[-1]=0.5,0.5
+    if opt.obs in ['detST']                                         : genBins[-1],recBins[-1]=0.25,0.25
 
     #migration matrix and reco/gen level distributions
     migH  = ROOT.TH2F('mig',';Generator level;Reconstruction level;Events (a.u.)',len(genBins)-1,array.array('d',genBins),len(recBins)-1,array.array('d',recBins))

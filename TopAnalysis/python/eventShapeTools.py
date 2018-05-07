@@ -41,9 +41,9 @@ class EventShapeTool:
             self.momentumTensor[2][1] += pRminus2*p3vec.Z()*p3vec.Y();
             self.momentumTensor[2][2] += pRminus2*p3vec.Z()*p3vec.Z();
 
-            for i in xrange(0,2):
+        for i in xrange(0,2):
             for j in xrange(0,2):
-                self.tmomentumTensor[i][j]=(1.norm)*self.momentumTensor[i][j]
+                self.tmomentumTensor[i][j]=(1./norm)*self.momentumTensor[i][j]
         
         for i in xrange(0,3):
             for j in xrange(0,3):

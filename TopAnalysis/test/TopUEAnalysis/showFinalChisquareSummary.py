@@ -25,6 +25,7 @@ def performChisquareFitTo(paramScan,bySpline=False):
             minchi2=chi2
             minpval=pval
     gr.Sort()
+    rawGr=gr.Clone()
 
     #finer scan with TSpline3 or pol4 fit
     xy=[]
@@ -85,7 +86,7 @@ def performChisquareFitTo(paramScan,bySpline=False):
 
 
     #return the result
-    return (y0,x0,xmax,xmin,xmin_2,xmax_2,gr)
+    return (y0,x0,xmax,xmin,xmin_2,xmax_2,gr,rawGr)
 
 
 def buildChisquareReportFrom(pckSummary):
@@ -205,6 +206,10 @@ def main():
                       dest='input',
                       help='input directory [%default]',
                       default=None)
+    parser.add_option('--col',
+                      dest='collection',
+                      help='collection of variables (flux,evshape,evshape_2) [%default]',
+                      default='flux')
     parser.add_option('--cmsLabel',
                       dest='cmsLabel',
                       help='cms label [%default]',
@@ -216,25 +221,26 @@ def main():
     chi2Results={}
     paramScanResults={}
     varList=[]
+    varKey=opt.collection
     for var in os.listdir(opt.input):
-
+        
+        if varKey=='flux':
+            if not var in ['chavgpt','chavgpz','chflux','chfluxz','chmult','chrecoil'] :
+                continue
+        if varKey=='evshape':
+            if not var in ['C','D','sphericity','aplanarity']:
+                continue
+        if varKey=='evshape_2':
+            if not var in ['C_2','D_2','sphericity_2','aplanarity_2']:
+                continue
         fulld=os.path.join(opt.input,var)
         if not os.path.isdir(fulld) : continue
-        if not var in ['chavgpt','C','C_2'] : continue
-        if var in ['maxRap','rapDist']: 
-            print 'Skipping',var
-            continue
-    
-
         varList.append(var)
-        varKey='flux'
-        if var in ['C','D','sphericity','aplanarity']: varKey='evshape'
-        if var in ['C_2','D_2','sphericity_2','aplanarity_2']: varKey='evshape_2'
+
         for psSlice in os.listdir(fulld):
 
             #skip these ones for the moment
             if 'chmult' in psSlice: continue
-            if not 'inc' in psSlice: continue
             pckSummary=os.path.join(fulld,psSlice,'unfold/unfold_summary.pck')
 
             chi2report,paramScan=buildChisquareReportFrom(pckSummary)
@@ -250,28 +256,26 @@ def main():
                 if not param in paramScanResults: paramScanResults[param]={}
                 paramScanResults[param][(var,psSlice)]=paramScan[param]
 
+    print '[showFinalChisquareSummary] for',varKey
+    print 'Collected the results for the following variables'
+    print varList
+    #raw_input()
+
     #display the results
     models2Plot=['PW+PY8*','PW+PY8',
                  'ISR up','ISR dn','FSR up','FSR dn','ERD on','QCD based','Gluon move','Rope','Rope (no CR)', 'UE up','UE dn','no MPI','no CR',
                  'aMC@NLO+PY8','PW+HW++','PW+HW7','Sherpa']
-    ana2Plot=[('mean','evshape'),('dist','evshape'),
-              ('mean','evshape_2'),('dist','evshape_2'),
-              ('mean','flux'),('dist','flux')]
-
     c=ROOT.TCanvas('c','c',550,500)
     c.SetTopMargin(0.06)
     c.SetLeftMargin(0.23)
     c.SetBottomMargin(0.1)
     c.SetRightMargin(0.15)
     c.SetGridy()
-
-
-    for anaKey in ana2Plot:
-        ana,varKey=anaKey
+    for ana in ['mean','dist']:
 
         summaryH=None
         ztitle='flux'
-        if varKey=='evshape' : ztitle='event shape'
+        if varKey=='evshape'  : ztitle='event shape'
         if varKey=='evshape_2': ztitle='event shape (quadratic)'
         if ana=='dist':
             summaryH=ROOT.TH2F('pvalSummary', 
@@ -340,9 +344,12 @@ def main():
         tex.SetNDC()
         tex.DrawLatex(0.1,0.96,opt.cmsLabel)
         tex.DrawLatex(0.67,0.96,'#scale[0.8]{35.9 fb^{-1} (13 TeV)}')
-        varList=', '.join( [VARTITLES['chmult'],VARTITLES['chflux'],VARTITLES['chavgpt'],VARTITLES['chfluxz'],VARTITLES['chavgpz'],VARTITLES['chrecoil']] )
-        if not 'flux' in varKey:
+        if varKey=='flux':
+            varList=', '.join( [VARTITLES['chmult'],VARTITLES['chflux'],VARTITLES['chavgpt'],VARTITLES['chfluxz'],VARTITLES['chavgpz'],VARTITLES['chrecoil']] )
+        if varKey=='evshapes':
             varList=', '.join([VARTITLES['sphericity'],VARTITLES['aplanarity'],VARTITLES['C'],VARTITLES['D']])
+        if varKey=='evshapes_2':
+            varList=', '.join([VARTITLES['sphericity_2'],VARTITLES['aplanarity_2'],VARTITLES['C_2'],VARTITLES['D_2']])
         tex.DrawLatex(0.25,0.91,'#scale[0.6]{* - %s}'%varList)
         c.RedrawAxis()
         c.Modified()
@@ -380,7 +387,7 @@ def main():
         fluxFits2s=evshapeFits2s.Clone('flux2s')
         for v,psSlice in paramScanResults[p]:
 
-            chi20,p0,pmax,pmin,pmax2s,pmin2s,gr=paramScanResults[p][(v,psSlice)]
+            chi20,p0,pmax,pmin,pmax2s,pmin2s,gr,rawGr=paramScanResults[p][(v,psSlice)]
             if pmax and pmin:
                 summarygr,summarygr2s=fluxFits,fluxFits2s
                 if v in ['C','D','sphericity','aplanarity']:
@@ -398,7 +405,7 @@ def main():
 
             #temp method to add stuff to legends
             def addToLegend(leg,chi2Res,opt='lp'):
-                pVal,p0Val,pmaxVal,pminVal,pmaxVal2s,pminVal2s,chi2Gr=chi2Res
+                pVal,p0Val,pmaxVal,pminVal,pmaxVal2s,pminVal2s,chi2Gr,_=chi2Res
                 legTxt=chi2Gr.GetTitle()
                 #legTxt='#splitline{%s}{#scale[0.7]{%3.3f '%(chi2Gr.GetTitle(),p0Val)
                 #if pminVal and pmaxVal:
@@ -445,7 +452,7 @@ def main():
 
                 try:
                     combResult=performChisquareFitTo(chi2scanSum)
-                    chi20_comb,p0_comb,pmax_comb,pmin_comb,pmax2s_comb,pmin2s_comb,gr_comb=combResult                
+                    chi20_comb,p0_comb,pmax_comb,pmin_comb,pmax2s_comb,pmin2s_comb,gr_comb,rawgr_comb=combResult                
                 except:
                     print 'Could not combine',pfix,v
                     continue
@@ -474,8 +481,9 @@ def main():
 #                gr.SetMarkerStyle(1)
 #                gr.SetTitle('inclusive')
 
-                #gr.Draw('apc')
                 gr.Draw('ac')
+                rawGr.Draw('p')
+                #gr.Draw('ac')
                 gr.SetTitle('inclusive')
                 gr.GetXaxis().SetTitle(p)
                 gr.GetYaxis().SetTitle('#chi^{2}')

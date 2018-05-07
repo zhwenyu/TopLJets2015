@@ -106,7 +106,7 @@ def main():
         
         if opt.step==0:
             print 'Hadding 1/2 of the files for the migration matrix'
-            os.system( 'hadd -f %s/ChunkAForToys.root %s'%(opt.out,' '.join( str(x) for x in chunkA) ) )
+            os.system( 'hadd -f -k %s/ChunkAForToys.root %s'%(opt.out,' '.join( str(x) for x in chunkA) ) )
 
         if opt.step==2:
 
@@ -138,8 +138,9 @@ def main():
             binBias,binPulls=None,None
             for itoy in xrange(0,len(chunkB)):
                 unf.reset();
-                results=unf.unfoldToy(chunkB[itoy],opt_tau,indmig,norm,indfakes)
-                
+                status=unf.unfoldToy(chunkB[itoy],opt_tau,indmig,norm,indfakes)
+                if not status: continue            
+
                 #bottom line test
                 toySF=unf.curToyTruth_.Integral()/refGen.Integral()
                 #refRec.Scale(unf.curToyRec_.Integral()/refRec.Integral())
