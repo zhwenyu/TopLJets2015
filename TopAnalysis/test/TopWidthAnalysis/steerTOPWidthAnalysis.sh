@@ -26,17 +26,15 @@ CMSSW_7_6_3dir=~/CMSSW_8_0_26_patch1/src/
 unblind=true
 nPseudo=1000
 
-mas=(1710 1712 1714 1716 1718 1720 1722 1724 1725 1726 1728 1730 1732 1734 1736 1738 1740)
-masNs=("172.0" "171.2" "171.4" "171.6" "171.8" 
+mas=(1718 1720 1722 1724 1725 1726 1728 1730 1732)
+masNs=("171.8"
        "172.0" "172.2" "172.4" "172.5" "172.6"
-       "172.8" "173.0" "173.2" "173.4" "173.6"
-       "173.8" "174.0")
+       "172.8" "173.0" "173.2")
 
-wid=(20 40 50 60 70 80 90 100 110 120 130 140 150 160 180 200 220 240 260 280 300 350 400)        
-widNs=("0.20" "0.40" "0.50" "0.60" "0.70" "0.80" "0.90" 
-       "1.00" "1.10" "1.20" "1.30" "1.40" "1.50" "1.60" "1.80"
-       "2.00" "2.20" "2.40" "2.60" "2.80"
-       "3.00" "3.50" "4.00") 
+#wid=(100)        
+#widNs=("1.00")
+wid=(50 60 70 80 90 100 110 120 130 140 150 160 180)        
+widNs=("0.80" "0.90" "1.00" "1.10" "1.20" "1.30" "1.40" "1.50" "1.60" "1.80")
 
 lbCat=(highpt lowpt)
 lfs=(EE EM MM)
@@ -128,9 +126,28 @@ case $WHAT in
 ########################### 2D LIMITS #####################################
     2D_LIMITS)
         python test/TopWidthAnalysis/getContour.py \
-            --mass ${massSt} -n Contour1D_2D \
+            --mass ${massSt} -n Contour1D_2D_stat \
             -e _100pseudodata \
             -i ${extdir}/
+
+        nuisanceGroups=("sel,trig_*CH*" "lumi_13TeV" "DYnorm_*CH*" "Wnorm_th" 
+               "tWnorm_th" "VVnorm_th" "tbartVnorm_th" 
+               "ees" "mes" "jer" "ltag" "btag" "bfrag" "semilep"
+               "pu" "tttoppt" "ttMEqcdscale" "ttPDF"
+               "jes" "UE" "CR" 
+               "hdamp" "ISR" "FSR" 
+               "tWttInterf" "tWMEScale" "all") 
+
+        exit 
+        for nuisGroup in ${nuisanceGroups[@]} ; do
+            echo "------------------------"
+            echo "Limits for ${nuisGroup}:"
+            python test/TopWidthAnalysis/getContour.py \
+                --mass ${massSt} --wids ${widStr} \
+                -n Contour1D_2D_${nuisGroup} \
+                -e _100pseudodata \
+                -i ${extdir}Frz_${nuisGroup}/
+        done
     ;;
 ############################### CLs #######################################
     CLs ) # get CLs statistics from combine
