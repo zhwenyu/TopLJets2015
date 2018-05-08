@@ -39,53 +39,57 @@ x    = ROOT.TVector(nPoints)
 y    = ROOT.TVector(nPoints)
 z    = ROOT.TVector(nPoints)
 
+# Utility Function: Make 2D graph from array of triplets
+def makeGraph2D(x) :
+    xVec,yVec,zVec = array('d'),array('d'),array('d')
+    for iG in range(0,len(x)) :
+        xVec.append(x[iG][0])
+        yVec.append(x[iG][1])
+        zVec.append(x[iG][2])
+    gr=ROOT.TGraph2D(len(x),xVec,yVec,zVec)
+    gr.SetTitle("")
+    return gr
+
 # two dimensional scan if >1 mass
 def get2DContour() :
-    # create graphs
-    nPoints = len(wids) * len(masses)
-    pullGraph = ROOT.TGraph2D(nPoints);
-    fOut=ROOT.TFile("bla.root","RECREATE")
 
-    h=ROOT.TH2D("","",300,0.5*1.324,3.8*1.324,100,171.1,173.9)
-    contours = array('d',[2.30,4.61,5.99,6.18,9.21,11.83])
+    fOut = ROOT.TFile("2DInfo_%s.root"%options.outnm,"RECREATE")
 
-    h.SetDirectory(0)
-
-    iPoint=0
+    grPoints=[]
     for i,j in [(a,b) for a in xrange(0,len(wids)) for b in xrange(0,len(masses))]:
+        if masses[j]=="1728" and wids[i]=="100" : continue
+
         fIn0 = ROOT.TFile(options.indir+"/hypotest_100vs"+wids[i]+'_m1725vs'+masses[j]+options.extname+"/testStat_scan0n_PL.root")
         fIn1 = ROOT.TFile(options.indir+"/hypotest_100vs"+wids[i]+'_m1725vs'+masses[j]+options.extname+"/testStat_scan1n_PL.root")
-        if fIn1 is None or fIn0 is None :
-            iPoint += 1
-            continue
-
         tree0 = fIn0.Get("limit")
         tree1 = fIn1.Get("limit")
-        if not tree0 :
-            x     = 0
-            y     = 0
-            z     = 1000
-            pullGraph.SetPoint(iPoint,x,y,z)
-            fIn0.Close()
-            fIn1.Close()
-            iPoint += 1
-            continue
 
-        tree0.Draw("limit","quantileExpected==-1")
-        tree1.Draw("limit","quantileExpected==-1")
+        if not tree0 or not tree1 :
+            print "Skipping missing file",wids[i],masses[j]
+        else :
+            tree0.Draw("limit","quantileExpected==-1")
+            tree1.Draw("limit","quantileExpected==-1")
 
-        x     = 1.324*float(wids[i])/100
-        y     = float(masses[j])/10
-        z     = ( -tree0.GetV1()[0] + tree1.GetV1()[0])
-        pullGraph.SetPoint(iPoint,x,y,z)
-        print x,y,z
+            x     = 1.324*float(wids[i])/100
+            y     = float(masses[j])/10
+            z     = ( -tree0.GetV1()[0] + tree1.GetV1()[0])
+            grPoints+=[(x,y,z)]
 
-        #print x,y,z
         fIn0.Close()
         fIn1.Close()
-        iPoint += 1
 
+    # create graphs
+    minWid=min([a[0] for a in grPoints])
+    maxWid=max([a[0] for a in grPoints])
+    minMass=min([a[1] for a in grPoints])
+    maxMass=max([a[1] for a in grPoints])
+    h=ROOT.TH2D("h","h",300,minWid,maxWid,100,minMass,maxMass)
+    contours = array('d',[0.01,2.30,4.61,5.99,6.18,9.21,11.83])
+    h.SetDirectory(0)
+
+    pullGraph=makeGraph2D(grPoints)
     pullGraph.SetTitle("")
+    pullGraph.SetName("chiSqGr")
     pullGraph.SetHistogram(h)
     h.SetTitle("")
 
@@ -123,15 +127,21 @@ def get2DContour() :
         contGrs.append(x)
         x.SetLineWidth(2)
         x.Draw('same l')
-    xmin=ROOT.TMath.MinElement(contGrs[0].GetN(),contGrs[0].GetX())
-    xmax=ROOT.TMath.MaxElement(contGrs[0].GetN(),contGrs[0].GetX())
-    ymin=ROOT.TMath.MinElement(contGrs[0].GetN(),contGrs[0].GetY())
-    ymax=ROOT.TMath.MaxElement(contGrs[0].GetN(),contGrs[0].GetY())
-    h.GetXaxis().SetRangeUser(0.6*xmin,1.4*xmax)
+    xmin=ROOT.TMath.MinElement(contGrs[1].GetN(),contGrs[1].GetX())
+    xmax=ROOT.TMath.MaxElement(contGrs[1].GetN(),contGrs[1].GetX())
+    ymin=ROOT.TMath.MinElement(contGrs[1].GetN(),contGrs[1].GetY())
+    ymax=ROOT.TMath.MaxElement(contGrs[1].GetN(),contGrs[1].GetY())
+    h.GetXaxis().SetRangeUser(0.5*xmin,1.4*xmax)
 
-    xx, yy, zz = ROOT.Long(0), ROOT.Long(0), ROOT.Long(0)
-    h.GetMinimumBin(xx,yy,zz)
-    print h.GetXaxis().GetBinCenter(xx),h.GetYaxis().GetBinCenter(yy)
+    centralX =ROOT.TMath.MinElement(contGrs[0].GetN(),contGrs[0].GetX())
+    centralX+=ROOT.TMath.MaxElement(contGrs[0].GetN(),contGrs[0].GetX())
+    centralX/=2
+    centralY =ROOT.TMath.MinElement(contGrs[0].GetN(),contGrs[0].GetY())
+    centralY+=ROOT.TMath.MaxElement(contGrs[0].GetN(),contGrs[0].GetY())
+    centralY/=2
+
+    print "mtop:",centralY,"+",ymax-centralY,"/ -",centralY-ymin
+    print "gamm:",centralX,"+",xmax-centralX,"/ -",centralX-xmin
 
     h.GetXaxis().SetTitle("Top quark width, #Gamma_{t} [GeV/c^{2}]")
     h.GetYaxis().SetTitle("Top quark mass, m_{t} [GeV/c^{2}]")
@@ -151,6 +161,7 @@ def get2DContour() :
     CMS_lumi.lumiTextSize = 0.55
     CMS_lumi.extraOverCmsTextSize=0.80
     CMS_lumi.CMS_lumi(c,4,0)
+    ROOT.gStyle.SetOptStat(0)
 
     ltx = ROOT.TLatex(0.6,0.935,options.exText)
     ltx.SetNDC(ROOT.kTRUE)
@@ -161,9 +172,22 @@ def get2DContour() :
     c.SaveAs(options.outdir+"%s.pdf"%options.outnm)
     c.SaveAs(options.outdir+"%s.png"%options.outnm)
 
+    # Perform a 2D fit to a paraboloid
+    paraboloid = ROOT.TF2("paraboloid","pow(((x-[3])*TMath::Cos([0]) + (y-[4])*TMath::Sin([0]))/[1],2) + pow(((x-[3])*TMath::Cos([0]) - (y-[4])*TMath::Sin([0]))/[2],2)",xmin-0.2,xmax+0.2,ymin-0.2,ymax+0.2)
+    paraboloid.SetParameters(0.02,centralX-xmin,centralY-ymin,0,0);
+    paraboloid.FixParameter(3,centralX)
+    paraboloid.FixParameter(4,centralY)
+    paraboloid.SetContour(len(contours),contours)
+    h.Fit(paraboloid,"","")
+
+    h.Draw("CONT1")
+    c.SaveAs(options.outdir+"%s_fit.pdf"%options.outnm)
+    c.SaveAs(options.outdir+"%s_fit.png"%options.outnm)
+
     fOut.cd()
     pullGraph.Write()
     h.Write()
+    paraboloid.Write()
     fOut.Close()
 
 
