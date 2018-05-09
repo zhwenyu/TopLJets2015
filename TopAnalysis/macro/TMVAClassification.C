@@ -18,7 +18,7 @@
 #include "TMVA/Tools.h"
 #include "TMVA/TMVAGui.h"
 #include "TMVA/MethodBDT.h"
-
+#include "TMVA/Config.h"
 #include "TMVA/ResultsClassification.h"
 #include "TMVA/ROCCurve.h"
 // Authored by Hamed Bakhshiansohi 08/12/2016
@@ -143,7 +143,7 @@ int TMVAClassification( TString myMethodList , TString extention, BDTOptimizer* 
    TFile* outputFile = TFile::Open( outfileName, "RECREATE" );
    
    TMVA::Factory *factory = new TMVA::Factory( extention , outputFile,
-                                               "!V:!Silent:Color:DrawProgressBar:Transformations=D:AnalysisType=Classification" );
+                                               "!V:!Silent:Color:DrawProgressBar:Transformations=I:AnalysisType=Classification" );
    
    TFile *inputS = TFile::Open( infname + "/signal.root" ); // To be fixed
    TTree *signalTree     = (TTree*)inputS->Get("data"); // To be fixed
@@ -165,12 +165,13 @@ int TMVAClassification( TString myMethodList , TString extention, BDTOptimizer* 
      //(TMVA::gConfig().GetVariablePlotting()).fTimesRMS = 8.0;
      //(TMVA::gConfig().GetIONames()).fWeightFileDir = "myWeightDirectory";
 
-     dataloader->AddVariable( "D", "D", "", 'F' ) ;
+     //(TMVA::gConfig().GetVariablePlotting()).fMaxNumOfAllowedVariablesForScatterPlots = 60;  
+     // dataloader->AddVariable( "D", "D", "", 'F' ) ;
      dataloader->AddVariable( "C", "C", "", 'F' ) ;
      dataloader->AddVariable( "aplanarity", "aplanarity", "", 'F' ) ;
      dataloader->AddVariable( "sphericity", "sphericity", "", 'F' ) ;
      dataloader->AddVariable( "circularity", "circularity", "", 'F' ) ;
-     dataloader->AddVariable( "isotropty", "isotropy", "", 'F' ) ;
+     dataloader->AddVariable( "isotropy", "isotropy", "", 'F' ) ;
      dataloader->AddVariable( "ht", "ht", "", 'F' ) ;
      dataloader->AddVariable( "mht", "mht", "", 'F' ) ;
      dataloader->AddVariable( "balance", "balance", "", 'F' ) ;
@@ -178,18 +179,44 @@ int TMVAClassification( TString myMethodList , TString extention, BDTOptimizer* 
      dataloader->AddVariable( "mjj", "mjj", "", 'F' ) ;
      dataloader->AddVariable( "detajj", "detajj", "", 'F' ) ;
      dataloader->AddVariable( "jjpt", "jjpt", "", 'F' ) ;
-     dataloader->AddVariable( "dhpijj", "dphijj", "", 'F' ) ;
+     dataloader->AddVariable( "dphijj", "dphijj", "", 'F' ) ;
      dataloader->AddVariable( "forwardeta", "forwardeta", "", 'F' ) ;
      dataloader->AddVariable( "jjetas", "jjetas", "", 'F' ) ;
-     dataloader->AddVariable( "centjy", "centjy", "", 'F' ) ;
-     dataloader->AddVariable( "ncentjj", "ncentjj", "", 'F' ) ;
-     dataloader->AddVariable( "dphivj0", "dphivj0", "", 'F' ) ;
-     dataloader->AddVariable( "dphivj1", "dphivj1", "", 'F' ) ;
-     dataloader->AddVariable( "dphivj2", "dphivj2", "", 'F' ) ;
-     dataloader->AddVariable( "dphivj3", "dphivj3", "", 'F' ) ;
+     //dataloader->AddVariable( "centjy", "centjy", "", 'F' ) ;
+     //dataloader->AddVariable( "ncentjj", "ncentjj", "", 'F' ) ;
+     //dataloader->AddVariable( "dphivj0", "dphivj0", "", 'F' ) ;
+     //dataloader->AddVariable( "dphivj1", "dphivj1", "", 'F' ) ;
+     //dataloader->AddVariable( "dphivj2", "dphivj2", "", 'F' ) ;
+     //dataloader->AddVariable( "dphivj3", "dphivj3", "", 'F' ) ;
      dataloader->AddVariable( "j_pt[0]", "LeadJetPt", "", 'F' ) ;
      dataloader->AddVariable( "j_pt[1]", "SubLeadJetPt", "", 'F' ) ;
-     
+
+     dataloader->AddVariable("j_c1_00[0]",        "jet_c1_001",       "", 'F' ) ;
+     dataloader->AddVariable("j_c1_02[0]",        "jet_c1_021",       "", 'F' ) ;
+     dataloader->AddVariable("j_c1_05[0]",        "jet_c1_051",       "", 'F' ) ;
+     dataloader->AddVariable("j_c2_00[0]",        "jet_c2_001",       "", 'F' ) ;
+     dataloader->AddVariable("j_c2_02[0]",        "jet_c2_021",       "", 'F' ) ;
+     dataloader->AddVariable("j_c2_05[0]",        "jet_c2_051",       "", 'F' ) ;
+     dataloader->AddVariable("j_c3_00[0]",        "jet_c3_001",       "", 'F' ) ;
+     dataloader->AddVariable("j_c3_02[0]",        "jet_c3_021",       "", 'F' ) ;
+     dataloader->AddVariable("j_c3_05[0]",        "jet_c3_051",       "", 'F' ) ;
+     dataloader->AddVariable("j_zg[0]",           "jet_zg1",          "", 'F' ) ;
+     dataloader->AddVariable("j_gaptd[0]",        "jet_gaptd1",       "", 'F' ) ;
+     dataloader->AddVariable("j_gawidth[0]",      "jet_gawidth1",     "", 'F' ) ;
+
+     dataloader->AddVariable("j_c1_00[1]",        "jet_c1_002",       "", 'F' ) ;
+     dataloader->AddVariable("j_c1_02[1]",        "jet_c1_022",       "", 'F' ) ;
+     dataloader->AddVariable("j_c1_05[1]",        "jet_c1_052",       "", 'F' ) ;
+     dataloader->AddVariable("j_c2_00[1]",        "jet_c2_002",       "", 'F' ) ;
+     dataloader->AddVariable("j_c2_02[1]",        "jet_c2_022",       "", 'F' ) ;
+     dataloader->AddVariable("j_c2_05[1]",        "jet_c2_052",       "", 'F' ) ;
+     dataloader->AddVariable("j_c3_00[1]",        "jet_c3_002",       "", 'F' ) ;
+     dataloader->AddVariable("j_c3_02[1]",        "jet_c3_022",       "", 'F' ) ;
+     dataloader->AddVariable("j_c3_05[1]",        "jet_c3_052",       "", 'F' ) ;
+     dataloader->AddVariable("j_zg[1]",           "jet_zg2",          "", 'F' ) ;
+     dataloader->AddVariable("j_gaptd[1]",        "jet_gaptd2",       "", 'F' ) ;
+     dataloader->AddVariable("j_gawidth[1]",      "jet_gawidth2",     "", 'F' ) ;
+
      // dataloader->AddSignalTree( signalTrainingTree, signalTrainWeight, "Training" );
      // dataloader->AddSignalTree( signalTestTree,     signalTestWeight,  "Test" );
      
@@ -210,7 +237,7 @@ int TMVAClassification( TString myMethodList , TString extention, BDTOptimizer* 
      TCut mycuts = TCut(cut);
      TCut mycutb = TCut(cut);
      dataloader->PrepareTrainingAndTestTree( mycuts, mycutb,
-					     "nTrain_Signal=3000:nTrain_Background=5000:SplitMode=Random:NormMode=NumEvents:!V");// To use the info in the Tree
+					     "nTrain_Signal=1000:nTrain_Background=5000:SplitMode=Random:NormMode=NumEvents:!V");// To use the info in the Tree
      cout<<bdt_options->size()<<endl;
      for(auto bdt_option : *bdt_options){
        method = bdt_option.BookMethod( factory , dataloader );
