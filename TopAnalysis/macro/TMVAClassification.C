@@ -128,7 +128,7 @@ int TMVAClassification( TString myMethodList , TString extention, BDTOptimizer* 
 	  return 1;
 	}
 	Use[regMethod] = 1;
-
+	cout<< regMethod<<"\tis set"<<endl;
 	// if(regMethod == "ttH")
 	//   extention += "_" + tth_bdt_option.to_string("tth");
 	// else if(regMethod == "DiG")
@@ -145,7 +145,7 @@ int TMVAClassification( TString myMethodList , TString extention, BDTOptimizer* 
    TMVA::Factory *factory = new TMVA::Factory( extention , outputFile,
                                                "!V:!Silent:Color:DrawProgressBar:Transformations=D:AnalysisType=Classification" );
    
-   TFile *inputS = TFile::Open( infname + "/Signal.root" ); // To be fixed
+   TFile *inputS = TFile::Open( infname + "/signal.root" ); // To be fixed
    TTree *signalTree     = (TTree*)inputS->Get("data"); // To be fixed
    Double_t signalWeight     = 1.0;
    TString default_w_str = "evtWeight";
@@ -156,9 +156,9 @@ int TMVAClassification( TString myMethodList , TString extention, BDTOptimizer* 
    if( Use["VBF"] ){
 
      std::cout << "Loading VBF trees" << endl;
-     TFile *inputB = TFile::Open( infname + "/ttH.root" ); //To be fixed
+     TFile *inputB = TFile::Open( infname + "/backgrounds.root" ); //To be fixed
      TTree *background  = (TTree*)inputB->Get("data");
-
+     cout<<"bdt_options->dsName = "<<bdt_options->dsName<<endl;
      dataloader =new TMVA::DataLoader(bdt_options->dsName);
      // (please check "src/Config.h" to see all available global options)
      //
@@ -211,10 +211,10 @@ int TMVAClassification( TString myMethodList , TString extention, BDTOptimizer* 
      TCut mycutb = TCut(cut);
      dataloader->PrepareTrainingAndTestTree( mycuts, mycutb,
 					     "nTrain_Signal=3000:nTrain_Background=5000:SplitMode=Random:NormMode=NumEvents:!V");// To use the info in the Tree
-
+     cout<<bdt_options->size()<<endl;
      for(auto bdt_option : *bdt_options){
        method = bdt_option.BookMethod( factory , dataloader );
-       cout << method->GetName() << endl;
+       cout << "method "<<method->GetName() << endl;
      }
    }
    
