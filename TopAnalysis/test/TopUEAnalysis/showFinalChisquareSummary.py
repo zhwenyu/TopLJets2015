@@ -155,6 +155,7 @@ def buildChisquareReportFrom(pckSummary):
             if '#alpha_{S}' in model:
                 param,valStr=model.split('=')
                 val=float(valStr)
+                if val>=0.15 and 'CMW' in model: continue
                 if val==0.1365 : continue
                 #chi2Scan[param].append( (val,chi2/np) )
                 chi2Scan[param].append( (val,chi2) )
@@ -208,7 +209,7 @@ def main():
                       default=None)
     parser.add_option('--col',
                       dest='collection',
-                      help='collection of variables (flux,evshape,evshape_2) [%default]',
+                      help='collection of variables (flux,evshapes,evshapes_2) [%default]',
                       default='flux')
     parser.add_option('--cmsLabel',
                       dest='cmsLabel',
@@ -227,10 +228,10 @@ def main():
         if varKey=='flux':
             if not var in ['chavgpt','chavgpz','chflux','chfluxz','chmult','chrecoil'] :
                 continue
-        if varKey=='evshape':
+        if varKey=='evshapes':
             if not var in ['C','D','sphericity','aplanarity']:
                 continue
-        if varKey=='evshape_2':
+        if varKey=='evshapes_2':
             if not var in ['C_2','D_2','sphericity_2','aplanarity_2']:
                 continue
         fulld=os.path.join(opt.input,var)
@@ -264,7 +265,7 @@ def main():
     #display the results
     models2Plot=['PW+PY8*','PW+PY8',
                  'ISR up','ISR dn','FSR up','FSR dn','ERD on','QCD based','Gluon move','Rope','Rope (no CR)', 'UE up','UE dn','no MPI','no CR',
-                 'aMC@NLO+PY8','PW+HW++','PW+HW7','Sherpa']
+                 'MG5_aMC','PW+HW++','PW+HW7','Sherpa']
     c=ROOT.TCanvas('c','c',550,500)
     c.SetTopMargin(0.06)
     c.SetLeftMargin(0.23)
@@ -275,8 +276,8 @@ def main():
 
         summaryH=None
         ztitle='flux'
-        if varKey=='evshape'  : ztitle='event shape'
-        if varKey=='evshape_2': ztitle='event shape (quadratic)'
+        if varKey=='evshapes'  : ztitle='event shape'
+        if varKey=='evshapes_2': ztitle='event shape (quadratic)'
         if ana=='dist':
             summaryH=ROOT.TH2F('pvalSummary', 
                                #';p-value;;Number of '+ztitle+' analysis', 
@@ -350,7 +351,7 @@ def main():
             varList=', '.join([VARTITLES['sphericity'],VARTITLES['aplanarity'],VARTITLES['C'],VARTITLES['D']])
         if varKey=='evshapes_2':
             varList=', '.join([VARTITLES['sphericity_2'],VARTITLES['aplanarity_2'],VARTITLES['C_2'],VARTITLES['D_2']])
-        tex.DrawLatex(0.25,0.91,'#scale[0.6]{* - %s}'%varList)
+        tex.DrawLatex(0.25,0.03,'#scale[0.6]{* - %s}'%varList)
         c.RedrawAxis()
         c.Modified()
         c.Update()
@@ -373,33 +374,25 @@ def main():
         if '0.5M_{Z}' in p : pname +=' scale0.5'
         if 'M_{Z}' in p    : pname +=' scale1.0'
         if '2M_{Z}' in p   : pname +=' scale2.0'
+        
+        fits=ROOT.TGraphAsymmErrors()
+        fits.SetMarkerStyle(20)
+        fits.SetName('fits')
+        fits2s=fits.Clone('fits2s')
+        fits2s.SetMarkerStyle(1)
+        fits2s.SetLineColor(2)
+        fits2s.SetMarkerColor(2)
 
-        evshapeFits=ROOT.TGraphAsymmErrors()
-        evshapeFits.SetMarkerStyle(20)
-        evshapeFits.SetName('evshapes')
-        evshapeFits2s=evshapeFits.Clone('evshapes2s')
-        evshapeFits2s.SetMarkerStyle(1)
-        evshapeFits2s.SetLineColor(2)
-        evshapeFits2s.SetMarkerColor(2)
-        evshape_2Fits=evshapeFits.Clone('evshapes_2')
-        evshape_2Fits2s=evshapeFits2s.Clone('evshapes_22s')
-        fluxFits=evshapeFits.Clone('flux')
-        fluxFits2s=evshapeFits2s.Clone('flux2s')
         for v,psSlice in paramScanResults[p]:
 
             chi20,p0,pmax,pmin,pmax2s,pmin2s,gr,rawGr=paramScanResults[p][(v,psSlice)]
-            if pmax and pmin:
-                summarygr,summarygr2s=fluxFits,fluxFits2s
-                if v in ['C','D','sphericity','aplanarity']:
-                    summarygr,summarygr2s=evshapeFits,evshapeFits2s
-                if v in ['C_2','D_2','sphericity_2','aplanarity_2']:
-                    summarygr,summarygr2s=evshape_2Fits,evshape_2Fits2s
-                npts=summarygr.GetN()
-                summarygr.SetPoint(npts,p0,npts)
-                summarygr.SetPointError(npts,pmax-p0,p0-pmin,0,0)
-                summarygr2s.SetPoint(npts,p0,npts)
+            if pmax and pmin:                
+                npts=fits.GetN()
+                fits.SetPoint(npts,p0,npts)
+                fits.SetPointError(npts,pmax-p0,p0-pmin,0,0)
+                fits2s.SetPoint(npts,p0,npts)
                 if pmax2s and pmin2s:
-                    summarygr2s.SetPointError(npts,pmax2s-p0,p0-pmin2s,0,0)
+                    fits2s.SetPointError(npts,pmax2s-p0,p0-pmin2s,0,0)
 
             if psSlice!='inc' : continue
 
@@ -407,15 +400,15 @@ def main():
             def addToLegend(leg,chi2Res,opt='lp'):
                 pVal,p0Val,pmaxVal,pminVal,pmaxVal2s,pminVal2s,chi2Gr,_=chi2Res
                 legTxt=chi2Gr.GetTitle()
-                #legTxt='#splitline{%s}{#scale[0.7]{%3.3f '%(chi2Gr.GetTitle(),p0Val)
-                #if pminVal and pmaxVal:
-                #    legTxt+='[%3.3f,%3.3f]}}'%(pminVal,pmaxVal)
-                #elif pminVal:
-                #    legTxt+='[%3.3f,n/a]}}'%pminVal
-                #elif pmaxVal:
-                #    legTxt+='[n/a,%3.3f]}}'%pmaxVal
-                #else:
-                #    legTxt+=' n/a}}'
+                legTxt='#splitline{%s}{#scale[0.7]{%3.3f '%(chi2Gr.GetTitle(),p0Val)
+                if pminVal and pmaxVal:
+                    legTxt+='[%3.3f,%3.3f]}}'%(pminVal,pmaxVal)
+                elif pminVal:
+                    legTxt+='[%3.3f,n/a]}}'%pminVal
+                elif pmaxVal:
+                    legTxt+='[n/a,%3.3f]}}'%pmaxVal
+                else:
+                    legTxt+=' n/a}}'
                 leg.AddEntry(chi2Gr,legTxt,opt)
 
 
@@ -482,7 +475,7 @@ def main():
 #                gr.SetTitle('inclusive')
 
                 gr.Draw('ac')
-                rawGr.Draw('p')
+                #rawGr.Draw('p')
                 #gr.Draw('ac')
                 gr.SetTitle('inclusive')
                 gr.GetXaxis().SetTitle(p)
@@ -507,11 +500,12 @@ def main():
                 leg.SetFillStyle(0)
                 leg.SetTextFont(42)
                 leg.SetTextSize(0.045)
-                leg.AddEntry(gr,'inclusive','l')
+                #leg.AddEntry(gr,'inclusive','l')
                 #leg.AddEntry(gr,'combination','lp')
                 #leg.AddEntry(gr_comb,'combination','lp')
                 #if pfix=='inc' : leg.AddEntry(gr,VARTITLES[v],'l')
                 #else : addToLegend(leg,paramScanResults[p][(v,psSlice)])
+                addToLegend(leg,paramScanResults[p][(v,psSlice)])
 
                 #draw comparisons
                 compColors=['#889093','#92c5de','#f4a582','#ca0020']
@@ -556,53 +550,53 @@ def main():
                 c.RedrawAxis()
                 c.Modified()
                 c.Update()
-                for ext in ['png','pdf','root']: c.SaveAs('%s/chi2scans_%s_%s_%s.%s'%(opt.input,v,pname,pfix,ext))
+                fname='chi2scans_%s_%s_%s'%(v,pname,pfix)
+                fname=fname.replace(' ','')
+                for ext in ['png','pdf','root']: c.SaveAs('%s/%s.%s'%(opt.input,fname,ext))
                 resultLog.close()
 
-        for gr,gr2s in [(evshapeFits,evshapeFits2s),
-                        (evshape_2Fits,evshape_2Fits2s),
-                        (fluxFits,fluxFits2s)]:
-            c.Clear()
+        c.Clear()
 
-            frame=ROOT.TH1F('frame','frame',30,0.05,0.25)
-            frame.Draw()
-            frame.GetYaxis().SetNdivisions(0)
-            frame.GetYaxis().SetTitle('Analysis')
-            frame.GetXaxis().SetTitle(p)  
-            frame.GetXaxis().SetTitleSize(0.05)
-            frame.GetYaxis().SetTitleSize(0.05)
-            frame.GetXaxis().SetLabelSize(0.04)
-            frame.GetYaxis().SetLabelSize(0.04)
-            frame.GetYaxis().SetRangeUser(-1,gr.GetN()*1.2)
+        frame=ROOT.TH1F('frame','frame',30,0.05,0.25)
+        frame.Draw()
+        frame.GetYaxis().SetNdivisions(0)
+        frame.GetYaxis().SetTitle('Analysis')
+        frame.GetXaxis().SetTitle(p)  
+        frame.GetXaxis().SetTitleSize(0.05)
+        frame.GetYaxis().SetTitleSize(0.05)
+        frame.GetXaxis().SetLabelSize(0.04)
+        frame.GetYaxis().SetLabelSize(0.04)
+        frame.GetYaxis().SetRangeUser(-1,gr.GetN()*1.2)
+        
+        if fits.GetN()==0 : continue
+        fits2s.Draw('p')
+        fits.Draw('p')
 
-            gr2s.Draw('p')
-            gr.Draw('p')
+        fitRes=[]
+        for i in xrange(0,gr.GetN()) : fitRes.append( fits.GetX()[i] )
+        try:
+            perc=npy.percentile( npy.array(fitRes), [16,50,84] )
+            line.SetLineColor(ROOT.kRed)
+            line.DrawLine(perc[0],0,perc[0],fits.GetN())
+            line.DrawLine(perc[2],0,perc[2],fits.GetN())
+        except:
+            print 'Unable to retrieve quantiles for',fits.GetName(),pname
 
-            fitRes=[]
-            for i in xrange(0,gr.GetN()) : fitRes.append( gr.GetX()[i] )
-            try:
-                perc=npy.percentile( npy.array(fitRes), [16,50,84] )
-                line.SetLineColor(ROOT.kRed)
-                line.DrawLine(perc[0],0,perc[0],gr.GetN())
-                line.DrawLine(perc[2],0,perc[2],gr.GetN())
-            except:
-                print 'Unable to retrieve quantiles for',gr.GetName(),pname
-
-            tex=ROOT.TLatex()
-            tex.SetTextFont(42)
-            tex.SetTextSize(0.05)
-            tex.SetNDC()
-            tex.DrawLatex(0.16,0.88,opt.cmsLabel)
-            try:
-                tex.DrawLatex(0.6,0.88,'#scale[0.8]{%s=%3.3f}'%(p,perc[1]))
-                tex.DrawLatex(0.6,0.8,'#scale[0.8]{[%3.3f,%3.3f]}'%(perc[0],perc[2]))
-            except:
-                pass
-            tex.DrawLatex(0.67,0.96,'#scale[0.8]{35.9 fb^{-1} (13 TeV)}')
-            c.RedrawAxis()
-            c.Modified()
-            c.Update()
-            for ext in ['png','pdf','root']: c.SaveAs('%s/chi2summary_%s_%s.%s'%(opt.input,gr.GetName(),pname,ext))
+        tex=ROOT.TLatex()
+        tex.SetTextFont(42)
+        tex.SetTextSize(0.05)
+        tex.SetNDC()
+        tex.DrawLatex(0.16,0.88,opt.cmsLabel)
+        try:
+            tex.DrawLatex(0.6,0.88,'#scale[0.8]{%s=%3.3f}'%(p,perc[1]))
+            tex.DrawLatex(0.6,0.8,'#scale[0.8]{[%3.3f,%3.3f]}'%(perc[0],perc[2]))
+        except:
+            pass
+        tex.DrawLatex(0.67,0.96,'#scale[0.8]{35.9 fb^{-1} (13 TeV)}')
+        c.RedrawAxis()
+        c.Modified()
+        c.Update()
+        for ext in ['png','pdf','root']: c.SaveAs('%s/chi2summary_%s_%s_%s.%s'%(opt.input,gr.GetName(),pname,varKey,ext))
 
 """
 for execution from another script

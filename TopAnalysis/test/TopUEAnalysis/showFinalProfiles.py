@@ -132,7 +132,7 @@ def showProfile(grColl,grCollComp,grCollStat,
     c.SetBottomMargin(0.2)
     #c.SetGridx()
     units=''
-    if obs in ['chflux','chfluxz','chavgpt','chavgpt'] : units = ' [GeV]'
+    if obs in ['chflux','chfluxz','chavgpt','chavgpt','chrecoil'] : units = ' [GeV]'
     
     frame=ROOT.TH1F('frame',';Category;< %s >%s;'%(VARTITLES[obs],units),len(sliceList),0,len(sliceList))
     for xbin in xrange(1,frame.GetNbinsX()+1): frame.GetXaxis().SetBinLabel(xbin,sliceList[xbin-1][1])

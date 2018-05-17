@@ -129,7 +129,7 @@ PLOTTINGSET_2=[
 PLOTTINGSET_3=[
     ('Data',           '2',   1001, '#a6cee3', 1 , True,  None),
     ('Sherpa',         'ep0', 0,    '#49494c', 24, False, 0.2),
-    ('MG5_aMC',    'ep0', 0,    '#e41a1c', 21, False, 0.5),
+    ('MG5_aMC',        'ep0', 0,    '#e41a1c', 21, False, 0.5),
     ('PW+HW++',        'ep0', 0,    '#386cb0', 22, False, 0.8),
     ('PW+HW7',         'ep0', 0,    '#386cb0', 23, False, 0.8),
 ]

@@ -24,6 +24,7 @@ def compareNuisances(args,toys,out):
                 pname=kname.replace('tree_fit_sb_','')
                 pname=kname.replace('tree_fit_sb_','')
                 if pname[-2:]=='In' : continue
+                if '_bin' in pname : continue
                 if pname in ['fit_status','r','rErr','x','xErr','rLoErr','rHiErr','numbadnll','nll_min','nll_nll0']: continue
                 pname=pname.replace('_',' ')
                 pad=key.ReadObj().GetListOfPrimitives().At(0)
