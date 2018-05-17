@@ -67,9 +67,10 @@ void VBFVectorBoson::RunVBFVectorBoson()
       }
       //Category selection
       if(chTag!="A" && chTag!="MM") continue;
-      float cat[6] = {0,0,0,0,0,0};
-      if(chTag == "A") cat[1] = 1;
-      if(chTag == "MM") cat[0] = 1;
+
+      category.flush();
+      if(chTag == "A")  category.enable( Category::A );
+      if(chTag == "MM") category.enable( Category::MM );
 
       //jet related variables and selection
       mjj = (jets.size()>=2 ?  (jets[0]+jets[1]).M() : 0.);
@@ -91,7 +92,7 @@ void VBFVectorBoson::RunVBFVectorBoson()
       //categorize the event according to the boson kinematics
       //for the photon refine also the category according to the trigger  bit
       TLorentzVector boson(0,0,0,0);     
-      bool isHighPt(false),isVBF(false),isHighPtAndVBF(false),isBosonPlusOneJet(false);
+      bool isHighPt(false),isVBF(false),isHighPtAndVBF(false),isHighPtAndOfflineVBF(false),isBosonPlusOneJet(false);
       sihih = 0, chiso = 0 ,r9 = 0, hoe = 0;
       if(chTag=="A") {        
         boson += photons[0];
@@ -105,6 +106,7 @@ void VBFVectorBoson::RunVBFVectorBoson()
                     && passVBFJetsTrigger);
         isHighPt = ( selector->hasTriggerBit("HLT_Photon200_v", ev.triggerBits) 
                      && photons[0].Pt()>200 );       
+        isHighPtAndOfflineVBF = (isHighPt && fabs(photons[0].Eta())<1.442 && passVBFJetsTrigger);
         isHighPtAndVBF = (isHighPt && isVBF);
         isBosonPlusOneJet=(isHighPt && alljets.size()==1);
 
@@ -113,6 +115,7 @@ void VBFVectorBoson::RunVBFVectorBoson()
           isVBF          = false;
           isHighPt       = false;
           isHighPtAndVBF = false;
+          isHighPtAndOfflineVBF = false;
         }
           
       } else {
@@ -130,13 +133,12 @@ void VBFVectorBoson::RunVBFVectorBoson()
       double mindrl(9999.);
       for(auto &l: leptons) mindrl=min(l.DeltaR(boson),mindrl);
 
-      std::vector<TString> chTags;      
-      if(isVBF)             {chTags.push_back("VBF"+chTag); cat[2]=1;}
-      if(isHighPt)	    {chTags.push_back("HighPt"+chTag); cat[3]=1;}
-      if(isHighPtAndVBF)    {chTags.push_back("HighPtVBF"+chTag); cat[4]=1;}
-      if(isBosonPlusOneJet) {chTags.push_back("V1J"+chTag); cat[5]=1;}
-
-      category.set(cat);
+      if(isVBF)                 category.enable(Category::VBF); 
+      if(isHighPt)	        category.enable(Category::HighPt);
+      if(isHighPtAndVBF)        category.enable(Category::HighPtVBF);
+      if(isHighPtAndOfflineVBF) category.enable(Category::HighPtOfflineVBF);
+      if(isBosonPlusOneJet)     category.enable(Category::V1J);
+      std::vector<TString> chTags( category.getChannelTags() );
 
       //leptons and boson
       mindrl = 9999.;
@@ -257,6 +259,7 @@ void VBFVectorBoson::RunVBFVectorBoson()
 void VBFVectorBoson::saveHistos(){
   fOut->cd();
   for (auto& it : ht->getPlots())  { 
+    if(it.second->GetEntries()==0) continue;
     for(auto &wit : photonPtWgtCtr){
       if(!it.first.Contains(wit.first)) continue;
       cout << "Scaling " << it.first << " by "<< wit.second.first <<endl;
@@ -266,6 +269,7 @@ void VBFVectorBoson::saveHistos(){
     it.second->SetDirectory(fOut); it.second->Write(); 
   }
   for (auto& it : ht->get2dPlots())  { 
+    if(it.second->GetEntries()==0) continue;
     for(auto &wit : photonPtWgtCtr){
       if(!it.first.Contains(wit.first)) continue;
       it.second->Scale(wit.second.first);
@@ -304,16 +308,16 @@ void VBFVectorBoson::bookHistograms(){
   ht->addHist("puwgtctr",      new TH1F("puwgtctr",         ";Weight sums;Events",2,0,2));  
   ht->addHist("qscale",        new TH1F("qscale",           ";Q^{2} scale;Events",100,0,2000));  
   ht->addHist("nvtx",          new TH1F("nvtx",             ";Vertex multiplicity;Events",100,-0.5,99.5));  
-  ht->addHist("vpt", 	     new TH1F("vectorbosonPt",    ";Boson p_{T}[GeV];Events",25,0,500));  
-  ht->addHist("vy", 	     new TH1F("vectorbosony",     ";Boson rapidity;Events",25,-3,3));  
-  ht->addHist("mindrl", 	     new TH1F("mindrl",           ";min #Delta R(boson,lepton);Events",25,0,6));  
-  ht->addHist("sihih", 	     new TH1F("sihih",            ";#sigma(i#eta,i#eta);Events",50,0,0.1));  
-  ht->addHist("hoe", 	     new TH1F("hoe",              ";h/e;Events",25,0,0.1));  
-  ht->addHist("r9", 	     new TH1F("r9",               ";r9;Events",25,0,1.0));  
-  ht->addHist("chiso", 	     new TH1F("chiso",            ";Charged isolation [GeV];Events",25,0,0.10));  
+  ht->addHist("vpt", 	       new TH1F("vectorbosonPt",    ";Boson p_{T}[GeV];Events",25,0,500));  
+  ht->addHist("vy", 	       new TH1F("vectorbosony",     ";Boson rapidity;Events",25,-3,3));  
+  ht->addHist("mindrl",        new TH1F("mindrl",           ";min #Delta R(boson,lepton);Events",25,0,6));  
+  ht->addHist("sihih", 	       new TH1F("sihih",            ";#sigma(i#eta,i#eta);Events",50,0,0.1));  
+  ht->addHist("hoe", 	       new TH1F("hoe",              ";h/e;Events",25,0,0.1));  
+  ht->addHist("r9", 	       new TH1F("r9",               ";r9;Events",25,0,1.0));  
+  ht->addHist("chiso", 	       new TH1F("chiso",            ";Charged isolation [GeV];Events",25,0,0.10));  
   ht->addHist("vystar",        new TH1F("vectorbosonystar", ";y-(1/2)(y_{j1}+y_{j2});Events",25,-5,5));  
   ht->addHist("njets",         new TH1F("njets",            ";Jet multiplicity;Events",10,-0.5,9.5));  
-  ht->addHist("mjj", 	     new TH1F("mjj",              ";Dijet invariant mass [GeV];Events",40,0,4000));  
+  ht->addHist("mjj", 	       new TH1F("mjj",              ";Dijet invariant mass [GeV];Events",40,0,4000));  
   ht->addHist("leadpt",        new TH1F("leadpt",           ";Leading jet p_{T} [GeV];Events",25,0,500));  
   ht->addHist("subleadpt",     new TH1F("subleadpt"   ,     ";Sub-leading jet p_{T} [GeV];Events",25,0,500));  
   ht->addHist("drj1b",         new TH1F("drj1b",            ";#DeltaR(j_{1},boson);Events",25,0,8));  
@@ -328,12 +332,14 @@ void VBFVectorBoson::bookHistograms(){
   ht->addHist("ht",            new TH1F("ht",               ";H_{T} [GeV];Events",20,0,4000));  
   ht->addHist("mht",           new TH1F("mht",              ";Missing H_{T} [GeV];Events",20,0,500));  
   ht->addHist("balance",       new TH1F("balance",          ";System p_{T} balance [GeV];Events",20,0,300));  
+  ht->addHist("relbpt",        new TH1F("relbpt",           ";#Sigma p_{T}(j)/Boson p_{T};Events",25,0,2));  
+  ht->addHist("dphibjj",       new TH1F("dphibjj",          ";#Delta#phi(JJ,boson) [rad];Events",20,-3.15,3.15));  
   ht->addHist("sphericity",    new TH1F("sphericity",       ";Sphericity;Events",20,0,1.0));  
   ht->addHist("aplanarity",    new TH1F("aplanarity",       ";Aplanarity;Events",20,0,1.0));  
   ht->addHist("C",             new TH1F("C",                ";C;Events",20,0,1.0));  
   ht->addHist("D",             new TH1F("D",                ";D;Events",20,0,1.0));  
   ht->addHist("isotropy",      new TH1F("isotropy",         ";Isotropy;Events",20,0,1.0));  
-  ht->addHist("circularity",   new TH1F("circularity",      "Circularity;;Events",20,0,1.0));
+  ht->addHist("circularity",   new TH1F("circularity",      ";Circularity;;Events",20,0,1.0));
   // Study of jet variables
   ht->addHist("jet_c1_00", 	  new TH1F("jet_c1_00",          ";Jet shape var. c1_00;Jets",100,-1,1));  
   ht->addHist("jet_c1_02", 	  new TH1F("jet_c1_02",          ";Jet shape var. c1_02;Jets",100,-1,1));  
@@ -344,13 +350,13 @@ void VBFVectorBoson::bookHistograms(){
   ht->addHist("jet_c3_00", 	  new TH1F("jet_c3_00",          ";Jet shape var. c3_00;Jets",100,-1,1));  
   ht->addHist("jet_c3_02", 	  new TH1F("jet_c3_02",          ";Jet shape var. c3_02;Jets",100,-1,1));  
   ht->addHist("jet_c3_05", 	  new TH1F("jet_c3_05",          ";Jet shape var. c3_05;Jets",100,-1,1));  
-  ht->addHist("jet_zg", 	  	  new TH1F("jet_zg",          ";Jet shape var. zg;Jets",100,-1,1));  
+  ht->addHist("jet_zg", 	  new TH1F("jet_zg",          ";Jet shape var. zg;Jets",100,-1,1));  
   ht->addHist("jet_gaptd", 	  new TH1F("jet_gaptd",          ";Jet shape var. gaptd;Jets",100,-1,1));  
-  ht->addHist("jet_gawidth",        new TH1F("jet_gawidth",          ";Jet shape var. gawidth;Jets",100,-1,1));
+  ht->addHist("jet_gawidth",      new TH1F("jet_gawidth",          ";Jet shape var. gawidth;Jets",100,-1,1));
   //additional variables from https://link.springer.com/content/pdf/10.1140/epjc/s10052-017-5315-6.pdf
-  ht->addHist("jjetas", 	  	  new TH1F("jjetas",          ";#eta_{j1}#eta_{j2};Events",200,-25,25));  
+  ht->addHist("jjetas", 	  new TH1F("jjetas",          ";#eta_{j1}#eta_{j2};Events",200,-25,25));  
   ht->addHist("centjy",		  new TH1F("centjy",          ";Central jet rapidity;Jets",25,0,3));  
-  ht->addHist("ncentj", 	  	  new TH1F("ncentjj",          ";Number of central jets;Events",10,-0.5,9.5));  
+  ht->addHist("ncentj", 	  new TH1F("ncentjj",          ";Number of central jets;Events",10,-0.5,9.5));  
   ht->addHist("dphivj0", 	  new TH1F("dphivj0",          ";#Delta#phi(V,j0);Jets",20,0,4));  
   ht->addHist("dphivj1", 	  new TH1F("dphivj1",          ";#Delta#phi(V,j1);Jets",20,0,4));  
   ht->addHist("dphivj2", 	  new TH1F("dphivj2",          ";#Delta#phi(V,j2);Jets",20,0,4));  
@@ -385,6 +391,10 @@ void VBFVectorBoson::addMVAvars(){
   newTree->Branch("detajj", &detajj);
   newTree->Branch("jjpt", &jjpt);
   newTree->Branch("dphijj", &dphijj);
+  newTree->Branch("ystar", &ystar);
+  newTree->Branch("relbpt", &relbpt);
+  newTree->Branch("dphibjj", &dphibjj);
+  newTree->Branch("balance", &balance);
   newTree->Branch("forwardeta", &forwardeta);
   newTree->Branch("jjetas", &jjetas);
   newTree->Branch("centjy", &centjy);
@@ -404,7 +414,7 @@ void VBFVectorBoson::addMVAvars(){
   newTree->Branch("C",&C);
   newTree->Branch("D",&D);
   newTree->Branch("training",&training);
-  newTree->Branch("category", &category, "MM:A:VBF:HighPt:HighPtVBF:V1J");
+  category.attachToTree(newTree);
 }
 
 void VBFVectorBoson::fill(MiniEvent_t ev, TLorentzVector boson, std::vector<Jet> jets, std::vector<double> cplotwgts, TString c){
@@ -415,7 +425,7 @@ void VBFVectorBoson::fill(MiniEvent_t ev, TLorentzVector boson, std::vector<Jet>
   ht->fill("vy",     boson.Rapidity(), cplotwgts,c);   
   ht->fill("sihih",  sihih,            cplotwgts,c);   
   ht->fill("r9",     r9,               cplotwgts,c);   
-  ht->fill("hoe",    hoe,             cplotwgts,c);   
+  ht->fill("hoe",    hoe,              cplotwgts,c);   
   ht->fill("chiso",  chiso,            cplotwgts,c);   
   ht->fill("mindrl", mindrl,           cplotwgts,c);   
 
@@ -475,12 +485,14 @@ void VBFVectorBoson::fill(MiniEvent_t ev, TLorentzVector boson, std::vector<Jet>
   ht->fill("njets",        jets.size(), cplotwgts,c);
   ht->fill("ht",           scalarht,    cplotwgts,c);
   ht->fill("mht",          mht,         cplotwgts,c);
-  ht->fill("centraleta",   centraleta,      cplotwgts,c);
-  ht->fill("forwardeta",   forwardeta,      cplotwgts,c);
+  ht->fill("centraleta",   centraleta,  cplotwgts,c);
+  ht->fill("forwardeta",   forwardeta,  cplotwgts,c);
   ht->fill("dijetpt",      jjpt,        cplotwgts,c);
   ht->fill("detajj",       detajj,      cplotwgts,c);
   ht->fill("dphijj",       dphijj,      cplotwgts,c);
-  ht->fill("mjj", 	        mjj,         cplotwgts,c);
+  ht->fill("relbpt",       relbpt,      cplotwgts,c);
+  ht->fill("dphibjj",      dphibjj,     cplotwgts,c);
+  ht->fill("mjj", 	   mjj,         cplotwgts,c);
 	
   //visible system histos
   ht->fill("vystar",       ystar,              cplotwgts,c);        
