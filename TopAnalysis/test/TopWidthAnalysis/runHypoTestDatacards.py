@@ -144,7 +144,8 @@ def doCombineScript(opt,args,outDir,dataCardList):
 
     script.write('### combine datacard and start workspace\n')
     script.write('combineCards.py %s > datacard.dat\n'%dataCardList)
-    script.write('#echo "* autoMCStats 4 0 2" >> datacard.dat')
+    script.write('\n')
+    script.write('echo "* autoMCStats 4 0 2" >> datacard.dat')
     script.write('\n')
 
     script.write('### convert to workspace\n')
@@ -199,7 +200,7 @@ def doCombineScript(opt,args,outDir,dataCardList):
     commonOpts="-m 172.5 -M MaxLikelihoodFit --saveWorkspace --saveToys"
     script.write("combine %s --redefineSignalPOIs r --setParameters x=1 --freezeParameters x workspace.root -n MLNuisances\n"%commonOpts)
     commonOpts="-m 172.5 -M FitDiagnostics --saveWorkspace --saveToys --toysFrequentist --minos none --noErrors"
-    script.write("combine %s -t 1000 --redefineSignalPOIs r --rMin 0.9 --rMax 1.1 --setParameters x=1,r=1 --expectSignal=1 --freezeParameters x workspace.root -n FitToys\n"%commonOpts)
+    script.write("combine %s -t %i --redefineSignalPOIs r --rMin 0.9 --rMax 1.1 --setParameters x=1,r=1 --expectSignal=1 --freezeParameters x workspace.root -n FitToys\n"%(commonOpts,opt.nToys))
     #script.write("mv higgsCombineNuisancesRun.HybridNew.mH172.5.123456.root testStat_Nuisances.root\n")
     script.write('\n\n')
 

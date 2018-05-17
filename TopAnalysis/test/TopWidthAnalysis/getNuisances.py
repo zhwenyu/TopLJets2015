@@ -56,9 +56,14 @@ for i in xrange(0,4*nPoints) :
 it  = snap.createIterator()
 var = it.Next()
 while var :
-    if var.GetName() != "CMS_th1x" and var.GetName() != "CMS_channel" and 'In' not in var.GetName() :
+    passes=var.GetName() != "CMS_th1x"
+    passes=passes and var.GetName() != "CMS_channel"
+    passes=passes and var.GetName() != "ZERO"
+    passes=passes and var.GetName() != "ONE"
+    passes=passes and "In" not in var.GetName()
+    if passes :
         varValCrit = abs(var.getValV()) < 0.1
-        varErrCrit = abs(var.getError()-1) < 0.2
+        varErrCrit = abs(var.getError()-1) < 0.4
         if not varValCrit or not varErrCrit :
             xAxTitles+=[var.GetName()]
     var = it.Next()
