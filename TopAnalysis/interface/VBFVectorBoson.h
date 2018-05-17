@@ -183,6 +183,9 @@ private:
 	  xsecRefs["MC13TeV_GJets_HT400to600"] = 274.4; 
 	  xsecRefs["MC13TeV_GJets_HT600toInf"] = 93.46; 
 	  xsecRefs["MC13TeV_EWKZJJ"        ] = 4.32;
+	  xsecRefs["MC13TeV_AJJ_EWK_LO"    ] = 32.49;
+	  xsecRefs["MC13TeV_AJJ_EWK_INT_LO"] = 8.3;
+
 	}
 	
 	float getXsec(){
