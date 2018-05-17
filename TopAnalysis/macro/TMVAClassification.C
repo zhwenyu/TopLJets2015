@@ -80,6 +80,7 @@ public:
   }
 };
 
+
 class BDTOptimizer : public std::vector<BDTOptions> {
 public:
   TString dsName;
@@ -103,16 +104,96 @@ public:
   }
 };
 
+class DataLoaderWrapper: public TMVA::DataLoader{
+public:
+  DataLoaderWrapper(TString name= "defaultName"):DataLoader(name){};
+  ~DataLoaderWrapper(){};
+  void setCutOptVars(){
+    // TMVA::DataLoader::AddVariable( "mjj", "mjj", "", 'F' ) ;
+    // TMVA::DataLoader::AddVariable( "j_pt[1]", "SubLeadJetPt", "", 'F' ) ;
+  };
+  void setBestVars(bool excludeCuts = false){
+    if (!excludeCuts){
+      this->setCutOptVars();
+      ///////////////////////////////////////////////
+      // Best variables w/o cuts on mjj and jet pt //
+      ///////////////////////////////////////////////
+      // TMVA::DataLoader::AddVariable( "detajj", "detajj", "", 'F' ) ;    
+      // TMVA::DataLoader::AddVariable( "ht", "ht", "", 'F' ) ;
+      // TMVA::DataLoader::AddVariable("j_c2_02[0]",        "jet_c2_021",       "", 'F' ) ;
+      // TMVA::DataLoader::AddVariable("j_gaptd[0]",        "jet_gaptd1",       "", 'F' ) ;
 
+      TMVA::DataLoader::AddVariable( "ht", "ht", "", 'F' ) ; 
+      TMVA::DataLoader::AddVariable("j_gawidth[0]",      "jet_gawidth1",     "", 'F' ) ;
+      TMVA::DataLoader::AddVariable( "forwardeta", "forwardeta", "", 'F' ) ;
+      TMVA::DataLoader::AddVariable("j_c1_05[0]",        "jet_c1_051",       "", 'F' ) ;
+      TMVA::DataLoader::AddVariable( "balance", "balance", "", 'F' ) ;
+    } else {}
+  };
+  void setCentralJetVars(){
+     TMVA::DataLoader::AddVariable( "centjy", "centjy", "", 'F' ) ;
+     TMVA::DataLoader::AddVariable( "ncentjj", "ncentjj", "", 'F' ) ;
+     TMVA::DataLoader::AddVariable( "dphivj2", "dphivj2", "", 'F' ) ;
+     TMVA::DataLoader::AddVariable( "dphivj3", "dphivj3", "", 'F' ) ;
+  };
+  void setAllVariables(bool excludeCuts = false){
+    this->setBestVars(excludeCuts);
+    TMVA::DataLoader::AddVariable( "D", "D", "", 'F' ) ;
+    TMVA::DataLoader::AddVariable( "C", "C", "", 'F' ) ;
+    TMVA::DataLoader::AddVariable( "aplanarity", "aplanarity", "", 'F' ) ;
+    TMVA::DataLoader::AddVariable( "sphericity", "sphericity", "", 'F' ) ;
+    TMVA::DataLoader::AddVariable( "circularity", "circularity", "", 'F' ) ;
+    TMVA::DataLoader::AddVariable( "isotropy", "isotropy", "", 'F' ) ;
+    TMVA::DataLoader::AddVariable( "mht", "mht", "", 'F' ) ;
+    TMVA::DataLoader::AddVariable( "balance", "balance", "", 'F' ) ;
+    TMVA::DataLoader::AddVariable( "centralEta", "centralEta", "", 'F' ) ;
+    TMVA::DataLoader::AddVariable( "jjpt", "jjpt", "", 'F' ) ;
+    TMVA::DataLoader::AddVariable( "dphijj", "dphijj", "", 'F' ) ;
+    TMVA::DataLoader::AddVariable( "forwardeta", "forwardeta", "", 'F' ) ;
+    TMVA::DataLoader::AddVariable( "dphivj0", "dphivj0", "", 'F' ) ;
+    TMVA::DataLoader::AddVariable( "dphivj1", "dphivj1", "", 'F' ) ;
+    TMVA::DataLoader::AddVariable( "j_pt[0]", "LeadJetPt", "", 'F' ) ;
+    TMVA::DataLoader::AddVariable( "jjetas", "jjetas", "", 'F' ) ;
+    TMVA::DataLoader::AddVariable("j_c1_00[0]",        "jet_c1_001",       "", 'F' ) ;
+    TMVA::DataLoader::AddVariable("j_c1_02[0]",        "jet_c1_021",       "", 'F' ) ;
+    TMVA::DataLoader::AddVariable("j_c1_05[0]",        "jet_c1_051",       "", 'F' ) ;
+    TMVA::DataLoader::AddVariable("j_c2_00[0]",        "jet_c2_001",       "", 'F' ) ;
+    TMVA::DataLoader::AddVariable("j_c2_05[0]",        "jet_c2_051",       "", 'F' ) ;
+    TMVA::DataLoader::AddVariable("j_c3_00[0]",        "jet_c3_001",       "", 'F' ) ;
+    TMVA::DataLoader::AddVariable("j_c3_02[0]",        "jet_c3_021",       "", 'F' ) ;
+    TMVA::DataLoader::AddVariable("j_c3_05[0]",        "jet_c3_051",       "", 'F' ) ;
+    TMVA::DataLoader::AddVariable("j_zg[0]",           "jet_zg1",          "", 'F' ) ;
+    TMVA::DataLoader::AddVariable("j_gawidth[0]",      "jet_gawidth1",     "", 'F' ) ;
+    
+    TMVA::DataLoader::AddVariable("j_c1_00[1]",        "jet_c1_002",       "", 'F' ) ;
+    TMVA::DataLoader::AddVariable("j_c1_02[1]",        "jet_c1_022",       "", 'F' ) ;
+    TMVA::DataLoader::AddVariable("j_c1_05[1]",        "jet_c1_052",       "", 'F' ) ;
+    TMVA::DataLoader::AddVariable("j_c2_00[1]",        "jet_c2_002",       "", 'F' ) ;
+    TMVA::DataLoader::AddVariable("j_c2_02[1]",        "jet_c2_022",       "", 'F' ) ;
+    TMVA::DataLoader::AddVariable("j_c2_05[1]",        "jet_c2_052",       "", 'F' ) ;
+    TMVA::DataLoader::AddVariable("j_c3_00[1]",        "jet_c3_002",       "", 'F' ) ;
+    TMVA::DataLoader::AddVariable("j_c3_02[1]",        "jet_c3_022",       "", 'F' ) ;
+    TMVA::DataLoader::AddVariable("j_c3_05[1]",        "jet_c3_052",       "", 'F' ) ;
+    TMVA::DataLoader::AddVariable("j_zg[1]",           "jet_zg2",          "", 'F' ) ;
+    TMVA::DataLoader::AddVariable("j_gaptd[1]",        "jet_gaptd2",       "", 'F' ) ;
+    TMVA::DataLoader::AddVariable("j_gawidth[1]",      "jet_gawidth2",     "", 'F' ) ;
+  };
+};
 
 int TMVAClassification( TString myMethodList , TString extention, BDTOptimizer* bdt_options, TString infname, TString category )
 {
+
   TMVA::MethodBDT* method;
   
    TMVA::Tools::Instance();
    std::map<std::string,int> Use;
-   Use["VBF"] = 1;
-   
+   Use["VBF"] = 0;
+   Use["Cuts"] = 0;
+   Use["CutsD"] = 0;
+   Use["Fisher"] = 0;
+   Use["BoostedFisher"] = 0;
+   TString dlName = "";   
+
    if (myMethodList != "") {
       for (std::map<std::string,int>::iterator it = Use.begin(); it != Use.end(); it++)
 	it->second = 0;
@@ -128,18 +209,14 @@ int TMVAClassification( TString myMethodList , TString extention, BDTOptimizer* 
 	  return 1;
 	}
 	Use[regMethod] = 1;
+	dlName = regMethod+"DL";
 	cout<< regMethod<<"\tis set"<<endl;
-	// if(regMethod == "ttH")
-	//   extention += "_" + tth_bdt_option.to_string("tth");
-	// else if(regMethod == "DiG")
-	//   extention += "_" + dig_bdt_option.to_string("dig");
-	// else if(regMethod == "ttGj")
-	//   extention += "_" + ttgj_bdt_option.to_string("ttgj");
       }
    }
 
 
    TString outfileName( "TMVA_"+ extention  +".root" );
+
    TFile* outputFile = TFile::Open( outfileName, "RECREATE" );
    
    TMVA::Factory *factory = new TMVA::Factory( extention , outputFile,
@@ -150,101 +227,62 @@ int TMVAClassification( TString myMethodList , TString extention, BDTOptimizer* 
    Double_t signalWeight     = 1.0;
    TString default_w_str = "evtWeight";
    
-   TMVA::DataLoader *dataloader = NULL;
+   // TMVA::DataLoader *dataloader = NULL;
+   DataLoaderWrapper * dataloader = NULL;
+   TFile *inputB = TFile::Open( infname + "/backgrounds.root" ); //To be fixed
+   TTree *background  = (TTree*)inputB->Get("data");
 
-   
+   if(bdt_options){
+     cout<<"bdt_options->dsName = "<<bdt_options->dsName<<endl;
+     dlName = bdt_options->dsName;
+   }
+   dataloader = new DataLoaderWrapper(dlName);
+
+   if (Use["VBF"]) dataloader->setBestVars(false); //dataloader->setAllVariables(false); 
+   else if (Use["Cuts"] || Use["CutsD"]) dataloader->setCutOptVars();
+   else if (Use["Fisher"] || Use["BoostedFisher"]) dataloader->setBestVars(false);
+  
+   dataloader->AddSignalTree( signalTree,     signalWeight );
+   dataloader->AddBackgroundTree( background, 1 );
+
+   dataloader->SetBackgroundWeightExpression( default_w_str  );
+   dataloader->SetSignalWeightExpression( default_w_str );
+
+   std::vector<TString> cats = TMVA::gTools().SplitString( string(category), ':' );
+   TString cut = "";
+   for (unsigned int iCat = 0; iCat < cats.size(); iCat++){
+     cut+= "category." + cats[iCat] + " == 1 ";
+     if(iCat < cats.size() - 1)
+       cut+= " && ";
+     
+   }
+   cut += " && mjj > 1000 && j_pt[1] > 60";
+   TCut mycuts = TCut(cut);
+   TCut mycutb = TCut(cut);
+   dataloader->PrepareTrainingAndTestTree( mycuts, mycutb,
+					   //					     "nTrain_Signal=1000:nTrain_Background=5000:SplitMode=Random:NormMode=NumEvents:!V");// To use the info in the Tree
+					     "nTrain_Signal=300:nTrain_Background=5000:SplitMode=Random:NormMode=NumEvents:!V");// To use the info in the Tree
+
+     
    if( Use["VBF"] ){
 
      std::cout << "Loading VBF trees" << endl;
-     TFile *inputB = TFile::Open( infname + "/backgrounds.root" ); //To be fixed
-     TTree *background  = (TTree*)inputB->Get("data");
-     cout<<"bdt_options->dsName = "<<bdt_options->dsName<<endl;
-     dataloader =new TMVA::DataLoader(bdt_options->dsName);
-     // (please check "src/Config.h" to see all available global options)
-     //
-     //(TMVA::gConfig().GetVariablePlotting()).fTimesRMS = 8.0;
-     //(TMVA::gConfig().GetIONames()).fWeightFileDir = "myWeightDirectory";
-
-     //(TMVA::gConfig().GetVariablePlotting()).fMaxNumOfAllowedVariablesForScatterPlots = 60;  
-     // dataloader->AddVariable( "D", "D", "", 'F' ) ;
-     dataloader->AddVariable( "C", "C", "", 'F' ) ;
-     dataloader->AddVariable( "aplanarity", "aplanarity", "", 'F' ) ;
-     dataloader->AddVariable( "sphericity", "sphericity", "", 'F' ) ;
-     dataloader->AddVariable( "circularity", "circularity", "", 'F' ) ;
-     dataloader->AddVariable( "isotropy", "isotropy", "", 'F' ) ;
-     dataloader->AddVariable( "ht", "ht", "", 'F' ) ;
-     dataloader->AddVariable( "mht", "mht", "", 'F' ) ;
-     dataloader->AddVariable( "balance", "balance", "", 'F' ) ;
-     dataloader->AddVariable( "centralEta", "centralEta", "", 'F' ) ;
-     dataloader->AddVariable( "mjj", "mjj", "", 'F' ) ;
-     dataloader->AddVariable( "detajj", "detajj", "", 'F' ) ;
-     dataloader->AddVariable( "jjpt", "jjpt", "", 'F' ) ;
-     dataloader->AddVariable( "dphijj", "dphijj", "", 'F' ) ;
-     dataloader->AddVariable( "forwardeta", "forwardeta", "", 'F' ) ;
-     dataloader->AddVariable( "jjetas", "jjetas", "", 'F' ) ;
-     //dataloader->AddVariable( "centjy", "centjy", "", 'F' ) ;
-     //dataloader->AddVariable( "ncentjj", "ncentjj", "", 'F' ) ;
-     //dataloader->AddVariable( "dphivj0", "dphivj0", "", 'F' ) ;
-     //dataloader->AddVariable( "dphivj1", "dphivj1", "", 'F' ) ;
-     //dataloader->AddVariable( "dphivj2", "dphivj2", "", 'F' ) ;
-     //dataloader->AddVariable( "dphivj3", "dphivj3", "", 'F' ) ;
-     dataloader->AddVariable( "j_pt[0]", "LeadJetPt", "", 'F' ) ;
-     dataloader->AddVariable( "j_pt[1]", "SubLeadJetPt", "", 'F' ) ;
-
-     dataloader->AddVariable("j_c1_00[0]",        "jet_c1_001",       "", 'F' ) ;
-     dataloader->AddVariable("j_c1_02[0]",        "jet_c1_021",       "", 'F' ) ;
-     dataloader->AddVariable("j_c1_05[0]",        "jet_c1_051",       "", 'F' ) ;
-     dataloader->AddVariable("j_c2_00[0]",        "jet_c2_001",       "", 'F' ) ;
-     dataloader->AddVariable("j_c2_02[0]",        "jet_c2_021",       "", 'F' ) ;
-     dataloader->AddVariable("j_c2_05[0]",        "jet_c2_051",       "", 'F' ) ;
-     dataloader->AddVariable("j_c3_00[0]",        "jet_c3_001",       "", 'F' ) ;
-     dataloader->AddVariable("j_c3_02[0]",        "jet_c3_021",       "", 'F' ) ;
-     dataloader->AddVariable("j_c3_05[0]",        "jet_c3_051",       "", 'F' ) ;
-     dataloader->AddVariable("j_zg[0]",           "jet_zg1",          "", 'F' ) ;
-     dataloader->AddVariable("j_gaptd[0]",        "jet_gaptd1",       "", 'F' ) ;
-     dataloader->AddVariable("j_gawidth[0]",      "jet_gawidth1",     "", 'F' ) ;
-
-     dataloader->AddVariable("j_c1_00[1]",        "jet_c1_002",       "", 'F' ) ;
-     dataloader->AddVariable("j_c1_02[1]",        "jet_c1_022",       "", 'F' ) ;
-     dataloader->AddVariable("j_c1_05[1]",        "jet_c1_052",       "", 'F' ) ;
-     dataloader->AddVariable("j_c2_00[1]",        "jet_c2_002",       "", 'F' ) ;
-     dataloader->AddVariable("j_c2_02[1]",        "jet_c2_022",       "", 'F' ) ;
-     dataloader->AddVariable("j_c2_05[1]",        "jet_c2_052",       "", 'F' ) ;
-     dataloader->AddVariable("j_c3_00[1]",        "jet_c3_002",       "", 'F' ) ;
-     dataloader->AddVariable("j_c3_02[1]",        "jet_c3_022",       "", 'F' ) ;
-     dataloader->AddVariable("j_c3_05[1]",        "jet_c3_052",       "", 'F' ) ;
-     dataloader->AddVariable("j_zg[1]",           "jet_zg2",          "", 'F' ) ;
-     dataloader->AddVariable("j_gaptd[1]",        "jet_gaptd2",       "", 'F' ) ;
-     dataloader->AddVariable("j_gawidth[1]",      "jet_gawidth2",     "", 'F' ) ;
-
-     // dataloader->AddSignalTree( signalTrainingTree, signalTrainWeight, "Training" );
-     // dataloader->AddSignalTree( signalTestTree,     signalTestWeight,  "Test" );
-     
-     dataloader->AddSignalTree( signalTree,     signalWeight );
-     dataloader->AddBackgroundTree( background, 1 );
-
-     dataloader->SetBackgroundWeightExpression( default_w_str  );
-     dataloader->SetSignalWeightExpression( default_w_str );
-
-     std::vector<TString> cats = TMVA::gTools().SplitString( string(category), ':' );
-     TString cut = "";
-     for (unsigned int iCat = 0; iCat < cats.size(); iCat++){
-       cut+= "category." + cats[iCat] + " == 1 ";
-       if(iCat < cats.size() - 1)
-	 cut+= " && ";
-	 
-     }
-     TCut mycuts = TCut(cut);
-     TCut mycutb = TCut(cut);
-     dataloader->PrepareTrainingAndTestTree( mycuts, mycutb,
-					     "nTrain_Signal=1000:nTrain_Background=5000:SplitMode=Random:NormMode=NumEvents:!V");// To use the info in the Tree
      cout<<bdt_options->size()<<endl;
      for(auto bdt_option : *bdt_options){
        method = bdt_option.BookMethod( factory , dataloader );
        cout << "method "<<method->GetName() << endl;
      }
-   }
-   
+   } else if (Use["Cuts"] ){
+     std::cout << "Loading Cuts trees" << endl; 
+     factory->BookMethod( dataloader, TMVA::Types::kCuts, "Cuts","!H:!V:FitMethod=MC:EffSel:SampleSize=200000:VarProp=FSmart" );
+   } else if (Use["CutsD"])
+     factory->BookMethod( dataloader, TMVA::Types::kCuts, "CutsD","!H:!V:FitMethod=MC:EffSel:SampleSize=200000:VarProp=FSmart:VarTransform=Decorrelate" );   
+   else if (Use["Fisher"]) 
+     factory->BookMethod( dataloader, TMVA::Types::kFisher, "Fisher", "H:!V:Fisher:VarTransform=None:CreateMVAPdfs:PDFInterpolMVAPdf=Spline2:NbinsMVAPdf=50:NsmoothMVAPdf=10" );
+   else if (Use["BoostedFisher"]) 
+     factory->BookMethod( dataloader, TMVA::Types::kFisher, "BoostedFisher", "H:!V:Boost_Num=20:Boost_Transform=log:Boost_Type=AdaBoost:Boost_AdaBoostBeta=0.2:!Boost_DetailedMonitoring" );
+     
+
      
 
    
@@ -271,7 +309,8 @@ int TMVAClassification( TString myMethodList , TString extention, BDTOptimizer* 
    // --------------------------------------------------------------
 
    // Save the output
-   bdt_options->EvaluateAll( factory , outputFile );
+   if(bdt_options)
+     bdt_options->EvaluateAll( factory , outputFile );
    
    
    outputFile->Close();
@@ -498,6 +537,7 @@ int main( int argc, char** argv )
   TString DEFAULT_INFNAME  = "";
   for (int i=1; i<argc; i++) {
     TString regMethod(argv[i]);
+    cout<<regMethod<<endl;
     if( regMethod=="--ext"){
 	i++;
 	ext = TString(argv[i]);
@@ -509,6 +549,26 @@ int main( int argc, char** argv )
       for( auto i : *bdt_options)
 	i.PrintAll(cout);
       methodList += "VBF";
+      continue;
+    }
+    if( regMethod=="--cuts"){
+      //i++;
+      methodList += "Cuts";
+      continue;
+    }
+    if( regMethod=="--cutsD"){
+      //i++;
+      methodList += "CutsD";
+      continue;
+    }
+    if( regMethod=="--fisher"){
+      //i++;
+      methodList += "Fisher";
+      continue;
+    }
+    if( regMethod=="--boostedfisher"){
+      //i++;
+      methodList += "BoostedFisher";
       continue;
     }
     if( regMethod=="--indir"){
