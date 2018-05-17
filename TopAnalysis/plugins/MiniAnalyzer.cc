@@ -67,6 +67,9 @@
 
 #include "KaMuCa/Calibration/interface/KalmanMuonCalibrator.h"
 
+#include "RecoEcal/EgammaCoreTools/interface/EcalClusterLazyTools.h"
+#include "EgammaAnalysis/ElectronTools/interface/EnergyScaleCorrection_class.h"
+
 #include "TLorentzVector.h"
 #include "TH1.h"
 #include "TH1F.h"
@@ -131,12 +134,19 @@ private:
   edm::EDGetTokenT<pat::METCollection> metToken_, puppiMetToken_;
   edm::EDGetTokenT<pat::PackedCandidateCollection> pfToken_;
   edm::EDGetTokenT<std::vector<CTPPSLocalTrackLite> > ctppsToken_;
+
+  edm::EDGetTokenT<EcalRecHitCollection>           ebReducedRecHitCollection_;
+  edm::EDGetTokenT<EcalRecHitCollection>           eeReducedRecHitCollection_;
+  edm::EDGetTokenT<EcalRecHitCollection>           esReducedRecHitCollection_; 
   
-  //Electron Decisions
+  //Electron stuff
   edm::EDGetTokenT<edm::ValueMap<float> > eleMvaIdMapToken_;
   edm::EDGetTokenT<edm::ValueMap<bool> > eleVetoIdMapToken_,eleLooseIdMapToken_,eleMediumIdMapToken_,eleTightIdMapToken_;
   edm::EDGetTokenT<edm::ValueMap<vid::CutFlowResult> > eleVetoIdFullInfoMapToken_,eleLooseIdFullInfoMapToken_,eleMediumIdFullInfoMapToken_,eleTightIdFullInfoMapToken_;
   unsigned int evetoIsoBit_, elooseIsoBit_, emediumIsoBit_, etightIsoBit_;
+  EnergyScaleCorrection_class *egmScaler_;
+
+  //met stuff
   edm::EDGetTokenT<bool> BadChCandFilterToken_,BadPFMuonFilterToken_;
 
   //  edm::EDGetTokenT<edm::ValueMap<float> > petersonFragToken_;
@@ -190,7 +200,7 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig) :
   metToken_(consumes<pat::METCollection>(iConfig.getParameter<edm::InputTag>("mets"))),
   puppiMetToken_(consumes<pat::METCollection>(iConfig.getParameter<edm::InputTag>("puppimets"))),
   pfToken_(consumes<pat::PackedCandidateCollection>(iConfig.getParameter<edm::InputTag>("pfCands"))),
-  ctppsToken_(consumes<std::vector<CTPPSLocalTrackLite> >(iConfig.getParameter<edm::InputTag>("ctppsLocalTracks"))),
+  ctppsToken_(consumes<std::vector<CTPPSLocalTrackLite> >(iConfig.getParameter<edm::InputTag>("ctppsLocalTracks"))),  
   eleMvaIdMapToken_(consumes<edm::ValueMap<float> >(iConfig.getParameter<edm::InputTag>("eleMvaIdMap"))),
   eleVetoIdMapToken_(consumes<edm::ValueMap<bool> >(iConfig.getParameter<edm::InputTag>("eleVetoIdMap"))),
   eleLooseIdMapToken_(consumes<edm::ValueMap<bool> >(iConfig.getParameter<edm::InputTag>("eleLooseIdMap"))),
@@ -201,6 +211,7 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig) :
   eleMediumIdFullInfoMapToken_(consumes<edm::ValueMap<vid::CutFlowResult> >(iConfig.getParameter<edm::InputTag>("eleMediumIdFullInfoMap"))),
   eleTightIdFullInfoMapToken_(consumes<edm::ValueMap<vid::CutFlowResult> >(iConfig.getParameter<edm::InputTag>("eleTightIdFullInfoMap"))),
   evetoIsoBit_(999), elooseIsoBit_(999), emediumIsoBit_(999), etightIsoBit_(999),
+  egmScaler_(new EnergyScaleCorrection_class("EgammaAnalysis/ElectronTools/data/ScalesSmearings/Moriond17_23Jan_ele")),
   BadChCandFilterToken_(consumes<bool>(iConfig.getParameter<edm::InputTag>("badChCandFilter"))),
   BadPFMuonFilterToken_(consumes<bool>(iConfig.getParameter<edm::InputTag>("badPFMuonFilter"))),
   //petersonFragToken_(consumes<edm::ValueMap<float> >(edm::InputTag("bfragWgtProducer:PetersonFrag"))),
@@ -707,6 +718,7 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
   iEvent.getByToken(eleTightIdFullInfoMapToken_,  tight_cuts);
   edm::Handle<edm::ValueMap<float> > emva_id;
   iEvent.getByToken(eleMvaIdMapToken_, emva_id);
+  EcalClusterLazyTools lazyTool(iEvent, iSetup, ebReducedRecHitCollection_, eeReducedRecHitCollection_, esReducedRecHitCollection_);
   Int_t nele(0);
   for (const pat::Electron &el : *electrons) 
     {        
@@ -837,7 +849,28 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       ev_.l_eta[ev_.nl]      = e->eta();
       ev_.l_phi[ev_.nl]      = e->phi();
       ev_.l_mass[ev_.nl]     = e->mass();
+      
+      //energy scale uncertainties
+      float aeta = std::abs(el.superCluster()->eta());
+      DetId seedDetId = el.superCluster()->seed()->seed();
+      bool isBarrel = seedDetId.subdetId() == EcalBarrel;
+      const EcalRecHitCollection * recHits = (isBarrel?lazyTool.getEcalEBRecHitCollection():lazyTool.getEcalEERecHitCollection());
+      EcalRecHitCollection::const_iterator seedRecHit = recHits->find(seedDetId);
+      unsigned int gainSeedSC = 12;
+      if (seedRecHit != recHits->end()) { 
+        if(seedRecHit->checkFlag(EcalRecHit::kHasSwitchToGain6)) gainSeedSC = 6;
+        if(seedRecHit->checkFlag(EcalRecHit::kHasSwitchToGain1)) gainSeedSC = 1;
+      }
+      float scale_stat = egmScaler_->ScaleCorrectionUncertainty(iEvent.id().run(), el.isEB(), el.full5x5_r9(), aeta, e->pt(), gainSeedSC, 1);
+      float scale_syst = egmScaler_->ScaleCorrectionUncertainty(iEvent.id().run(), el.isEB(), el.full5x5_r9(), aeta, e->pt(), gainSeedSC, 2);
+      float scale_gain = egmScaler_->ScaleCorrectionUncertainty(iEvent.id().run(), el.isEB(), el.full5x5_r9(), aeta, e->pt(), gainSeedSC, 4);
+      cout << scale_stat << " " << scale_syst << " " << scale_gain << " " << endl;
+
       ev_.l_scaleUnc[ev_.nl] = e->correctedEcalEnergyError();
+      ev_.l_scaleUncBreakup[ev_.nl][0] = scale_stat;
+      ev_.l_scaleUncBreakup[ev_.nl][1] = scale_syst;
+      ev_.l_scaleUncBreakup[ev_.nl][2] = scale_gain;
+
       ev_.l_miniIso[ev_.nl]  = getMiniIsolation(pfcands,&el,0.05, 0.2, 10., false);
       ev_.l_relIso[ev_.nl]   = (e->chargedHadronIso()+ max(0., e->neutralHadronIso() + e->photonIso()  - 0.5*e->puChargedHadronIso()))/e->pt();     
       ev_.l_chargedHadronIso[ev_.nl] = e->chargedHadronIso();
