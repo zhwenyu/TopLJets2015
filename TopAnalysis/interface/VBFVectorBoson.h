@@ -29,38 +29,32 @@ using namespace std;
 
 //Vector boson will be either Z or photon at the moment
 
-struct Category{  
-  enum Category_t {MM,A,VBF,HighPt,HighPtVBF,HighPtOfflineVBF,V1J,LASTCAT};
-  std::vector<Float_t> cats_;
-  Category() : cats_(LASTCAT,0.){
-    flush();
-  }
-  void flush() {
-    std::fill(cats_.begin(), cats_.end(), 0);
-  }
-  void enable(Category_t c) { 
-    cats_[c]=1;
-  }
-  void attachToTree(TTree *t){
-    TString catNames[]={"MM","A","VBF","HighPt","HighPtVBF","HighPtOfflineVBF","V1J"}; 
-    for(size_t i=0; i<LASTCAT; i++)
-      t->Branch(catNames[i],&cats_[i],catNames[i]+"/F");
-  }
-  std::vector<TString> getChannelTags() {
-    std::vector<TString> chTags;
-    
-    TString chTag("");
-    if(cats_[MM]>0) chTag="MM";
-    if(cats_[A]>0)  chTag="A";
-    if(chTag=="") return chTags;
-
-    if(cats_[VBF]>0)              chTags.push_back("VBF"+chTag);
-    if(cats_[HighPt]>0)           chTags.push_back("HighPt"+chTag);
-    if(cats_[HighPtVBF]>0)        chTags.push_back("HighPtVBF"+chTag);
-    if(cats_[HighPtOfflineVBF]>0) chTags.push_back("HighPtOfflineVBF"+chTag);
-    if(cats_[V1J]>0)              chTags.push_back("V1J"+chTag);
-    return chTags;
-  }
+struct Category{
+  float MM,A,VBF,HighPt,HighPtVBF,V1J;
+  Category(float * cat){
+    MM = cat[0];
+    A = cat[1];
+    VBF = cat[2];
+    HighPt = cat[3];
+    HighPtVBF = cat[4];
+    V1J = cat[5];
+  };
+  Category(){
+    MM = 0;
+    A = 0;
+    VBF = 0;
+    HighPt = 0;
+    HighPtVBF = 0; 
+    V1J = 0; 
+  };
+  void set(float * cat){
+    MM = cat[0];
+    A = cat[1];
+    VBF = cat[2];
+    HighPt = cat[3];
+    HighPtVBF = cat[4];
+    V1J = cat[5];
+  };
 };
 
 class VBFVectorBoson{
@@ -119,7 +113,7 @@ private:
 	TTree * t /*inTree*/, *newTree /*MVA*/;
   	HistTool * ht;
 	MiniEvent_t ev;
-        float sihih,chiso,r9,hoe, ystar,relbpt,dphibjj;
+        float sihih,chiso,r9,hoe, ystar;
 	double mindrl;
 
 	TRandom3 rnd;
@@ -189,8 +183,6 @@ private:
 	  xsecRefs["MC13TeV_GJets_HT400to600"] = 274.4; 
 	  xsecRefs["MC13TeV_GJets_HT600toInf"] = 93.46; 
 	  xsecRefs["MC13TeV_EWKZJJ"        ] = 4.32;
-	  xsecRefs["MC13TeV_AJJ_EWK_LO"    ] = 32.49;
-	  xsecRefs["MC13TeV_AJJ_EWK_INT_LO"] = 8.3;
 	}
 	
 	float getXsec(){
