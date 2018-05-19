@@ -70,7 +70,9 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev)
   t->Branch("l_phi",      ev.l_phi,     "l_phi[nl]/F");
   t->Branch("l_mass",     ev.l_mass,    "l_mass[nl]/F");
   t->Branch("l_scaleUnc",         ev.l_scaleUnc,         "l_scaleUnc[nl]/F");
-  t->Branch("l_scaleUncBreakup",  ev.l_scaleUncBreakup,  "l_scaleUncBreakup[nl][3]/F");
+  t->Branch("l_scaleUnc_1",       ev.l_scaleUnc_1,       "l_scaleUnc_1[nl]/F");
+  t->Branch("l_scaleUnc_2",       ev.l_scaleUnc_2,       "l_scaleUnc_2[nl]/F");
+  t->Branch("l_scaleUnc_3",       ev.l_scaleUnc_3,       "l_scaleUnc_3[nl]/F");
   t->Branch("l_chargedHadronIso", ev.l_chargedHadronIso, "l_chargedHadronIso[nl]/F");
   t->Branch("l_miniIso",          ev.l_miniIso,          "l_miniIso[nl]/F");
   t->Branch("l_relIso",           ev.l_relIso,           "l_relIso[nl]/F");
@@ -211,7 +213,9 @@ void attachToMiniEventTree(TTree *t,MiniEvent_t &ev,bool full)
   t->SetBranchAddress("l_phi",      ev.l_phi);
   t->SetBranchAddress("l_mass",     ev.l_mass);
   t->SetBranchAddress("l_scaleUnc",         ev.l_scaleUnc);
-  t->SetBranchAddress("l_scaleUncBreakup",  ev.l_scaleUncBreakup);
+  t->SetBranchAddress("l_scaleUnc_1",       ev.l_scaleUnc_1);
+  t->SetBranchAddress("l_scaleUnc_2",       ev.l_scaleUnc_2);
+  t->SetBranchAddress("l_scaleUnc_3",       ev.l_scaleUnc_3);
   t->SetBranchAddress("l_chargedHadronIso", ev.l_chargedHadronIso);
   t->SetBranchAddress("l_miniIso",          ev.l_miniIso);
   t->SetBranchAddress("l_relIso",           ev.l_relIso);

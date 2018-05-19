@@ -31,13 +31,13 @@ whoami=`whoami`
 myletter=${whoami:0:1}
 eosdir=/store/cmst3/group/top/ReReco2016/b312177
 dataeosdir=/store/cmst3/group/top/ReReco2016/be52dbe_03Feb2017
-summaryeosdir=/store/cmst3/group/top/TOP-17-010-final-v2/
+summaryeosdir=/store/cmst3/group/top/TOP-17-010-final-v3/
 AnalysisDir=/eos/cms/${summaryeosdir}/analysis
 ChunksDir=${AnalysisDir}/Chunks
 COMBINERELEASE=${HOME}/scratch0/CMSSW_8_1_0/src/
-outdir=/afs/cern.ch/work/${myletter}/${whoami}/TOP-17-010-final-v2/
+outdir=/afs/cern.ch/work/${myletter}/${whoami}/TOP-17-010-final-v3/
 anadir=${outdir}/$2
-wwwdir=${HOME}/www/TOP-17-010/final-v2
+wwwdir=${HOME}/www/TOP-17-010/final-v3
 
 
 RED='\e[31m'
@@ -46,8 +46,8 @@ case $WHAT in
     TEST )
         file=root://eoscms//eos/cms/store/cmst3/group/top/ReReco2016/b312177/MC13TeV_SingleTbar_tW/MergedMiniEvents_0_ext0.root
         #file=root://eoscms//eos/cms/store/cmst3/group/top/ReReco2016/b312177/MC13TeV_TTJets/MergedMiniEvents_0_ext0.root
-	python scripts/runLocalAnalysis.py -i ${file} \
-            -q local -o /tmp/`whoami`/MC13TeV_SingleT_tW_test.root --era era2016 -m TOP-17-010::RunTop17010 --ch 0 --runSysts;
+	#python scripts/runLocalAnalysis.py -i ${file} \
+        #    -q local -o /tmp/`whoami`/MC13TeV_SingleT_tW_test.root --era era2016 -m TOP-17-010::RunTop17010 --ch 0 --runSysts;
         python scripts/runTopWidthAnalysis.py -i /tmp/`whoami`/MC13TeV_SingleT_tW_test.root -o /tmp/`whoami`/Chunks -q local;
         ;;
     SEL )
@@ -72,11 +72,9 @@ case $WHAT in
 	python scripts/runTopWidthAnalysis.py -i root://eoscms//eos/cms/${summaryeosdir}/Chunks/MC13TeV_TTJets_12.root -o ${outdir}/analysis/Chunks -q local;
         ;;
     ANA )
-        python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${ChunksDir}-part2 -q ${queue} --only TTJets;
-	#python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${ChunksDir} -q ${queue} --only MC;
-        #python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${ChunksDir} -q ${queue} --only Data13TeV_Single,Data13TeV_Double --farm TOP17010DataANA;
-        #python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${ChunksDir} -q ${queue} --only Data13TeV_Double --farm TOP17010DataANA;
-        #python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${ChunksDir} -q ${queue} --only MuonEG --farm TOP17010DataMuEGANA;
+	python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${ChunksDir} -q ${queue} --only MC;
+        python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${ChunksDir} -q ${queue} --only Data13TeV_Single,Data13TeV_Double --farm TOP17010DataANA;        
+        python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${ChunksDir} -q ${queue} --only MuonEG --farm TOP17010DataMuEGANA;
 	;;
     CHECKANA )
         for FARM in TOP17010ANA TOP17010DataANA TOP17010DataMuEGANA; do

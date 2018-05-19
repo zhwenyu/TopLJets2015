@@ -201,6 +201,9 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig) :
   puppiMetToken_(consumes<pat::METCollection>(iConfig.getParameter<edm::InputTag>("puppimets"))),
   pfToken_(consumes<pat::PackedCandidateCollection>(iConfig.getParameter<edm::InputTag>("pfCands"))),
   ctppsToken_(consumes<std::vector<CTPPSLocalTrackLite> >(iConfig.getParameter<edm::InputTag>("ctppsLocalTracks"))),  
+  ebReducedRecHitCollection_(consumes<EcalRecHitCollection>(edm::InputTag("reducedEgamma:reducedEBRecHits"))),
+  eeReducedRecHitCollection_(consumes<EcalRecHitCollection>(edm::InputTag("reducedEgamma:reducedEERecHits"))),
+  esReducedRecHitCollection_(consumes<EcalRecHitCollection>(edm::InputTag("reducedEgamma:reducedESRecHits"))), 
   eleMvaIdMapToken_(consumes<edm::ValueMap<float> >(iConfig.getParameter<edm::InputTag>("eleMvaIdMap"))),
   eleVetoIdMapToken_(consumes<edm::ValueMap<bool> >(iConfig.getParameter<edm::InputTag>("eleVetoIdMap"))),
   eleLooseIdMapToken_(consumes<edm::ValueMap<bool> >(iConfig.getParameter<edm::InputTag>("eleLooseIdMap"))),
@@ -604,6 +607,7 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       float eta = mu.eta();
       float phi = mu.phi();
       float ptUnc = mu.bestTrack()->ptError();
+      float vclose_unc(0),syst_unc(0);
       if(muonCor_ && mu.muonBestTrackType() == 1 && pt < maxMuPtForCor)
         {
 	  bool corrApplied(true);
@@ -632,20 +636,21 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
           if(corrApplied)
 	    {
 	      int n=muonCor_->getN();
-	      float uncUp(0),uncDn(0);
+	      syst_unc=0;
 	      for(int i=0; i<n; i++)
 		{
 		  muonCor_->vary(i,+1);
-		  uncUp += pow(muonCor_->getCorrectedPt(mu.pt(),eta,phi,mu.charge())-pt,2);
+                  float iunc=fabs(muonCor_->getCorrectedPt(mu.pt(),eta,phi,mu.charge())-pt);
 		  muonCor_->vary(i,-1);
-		  uncDn += pow(muonCor_->getCorrectedPt(mu.pt(),eta,phi,mu.charge())-pt,2);
+                  iunc += fabs(muonCor_->getCorrectedPt(mu.pt(),eta,phi,mu.charge())-pt);
+		  syst_unc += pow(0.5*iunc,2);
 		}
+              syst_unc = TMath::Sqrt(syst_unc);
 	      muonCor_->reset();
 	      muonCor_->varyClosure(+1);
-	      float vClose=muonCor_->getCorrectedPt(mu.pt(),eta,phi,mu.charge());
-	      uncUp += pow(vClose-pt,2);
-	      uncDn += pow(vClose-pt,2);
-	      ptUnc = 0.5*(TMath::Sqrt(uncUp)+TMath::Sqrt(uncDn));
+	      vclose_unc=fabs(muonCor_->getCorrectedPt(mu.pt(),eta,phi,mu.charge())-pt);
+
+	      ptUnc = TMath::Sqrt(syst_unc*syst_unc+vclose_unc*vclose_unc);
 	    }
         }
       p4.SetPtEtaPhiM(pt,eta,phi,mu.mass());
@@ -682,6 +687,10 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       ev_.l_phi[ev_.nl]      = p4.Phi();
       ev_.l_mass[ev_.nl]     = p4.M();
       ev_.l_scaleUnc[ev_.nl] = ptUnc;
+      ev_.l_scaleUnc_1[ev_.nl] = syst_unc;
+      ev_.l_scaleUnc_2[ev_.nl] = vclose_unc;
+      ev_.l_scaleUnc_3[ev_.nl] = 0.;
+      
       ev_.l_mva[ev_.nl]      = 0;
       ev_.l_pid[ev_.nl]      = (isSoft | (isLoose<<1) | (isMedium<<2) | (isMedium2016ReReco<<3) | (isTight<<4));
       ev_.l_chargedHadronIso[ev_.nl] = mu.pfIsolationR04().sumChargedHadronPt;
@@ -864,13 +873,12 @@ int MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& i
       float scale_stat = egmScaler_->ScaleCorrectionUncertainty(iEvent.id().run(), el.isEB(), el.full5x5_r9(), aeta, e->pt(), gainSeedSC, 1);
       float scale_syst = egmScaler_->ScaleCorrectionUncertainty(iEvent.id().run(), el.isEB(), el.full5x5_r9(), aeta, e->pt(), gainSeedSC, 2);
       float scale_gain = egmScaler_->ScaleCorrectionUncertainty(iEvent.id().run(), el.isEB(), el.full5x5_r9(), aeta, e->pt(), gainSeedSC, 4);
-      cout << scale_stat << " " << scale_syst << " " << scale_gain << " " << endl;
 
-      ev_.l_scaleUnc[ev_.nl] = e->correctedEcalEnergyError();
-      ev_.l_scaleUncBreakup[ev_.nl][0] = scale_stat;
-      ev_.l_scaleUncBreakup[ev_.nl][1] = scale_syst;
-      ev_.l_scaleUncBreakup[ev_.nl][2] = scale_gain;
-
+      ev_.l_scaleUnc[ev_.nl] = TMath::Sqrt(scale_stat*scale_stat+scale_syst*scale_syst+scale_syst*scale_syst)*e->pt();
+      ev_.l_scaleUnc_1[ev_.nl] = scale_stat*e->pt();
+      ev_.l_scaleUnc_2[ev_.nl] = scale_syst*e->pt();
+      ev_.l_scaleUnc_3[ev_.nl] = scale_gain*e->pt();
+     
       ev_.l_miniIso[ev_.nl]  = getMiniIsolation(pfcands,&el,0.05, 0.2, 10., false);
       ev_.l_relIso[ev_.nl]   = (e->chargedHadronIso()+ max(0., e->neutralHadronIso() + e->photonIso()  - 0.5*e->puChargedHadronIso()))/e->pt();     
       ev_.l_chargedHadronIso[ev_.nl] = e->chargedHadronIso();

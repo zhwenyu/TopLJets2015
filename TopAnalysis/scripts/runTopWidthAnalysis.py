@@ -6,6 +6,7 @@ import sys
 import os
 import math
 from TopLJets2015.TopAnalysis.storeTools import getEOSlslist
+from TopLJets2015.TopAnalysis.ParametrizedLeptonScaleUnc_class import ParametrizedLeptonScaleUnc
 import MT2Calculator
 
 #REFERENCE WIDTH
@@ -49,17 +50,18 @@ Analysis loop
 """
 def runTopWidthAnalysis(fileName,
                         outFileName,
-                        widthList=[1.16, 1.23,  1.28, 1.31,   1.34,  1.39,  1.48],
-                        massList =[166.5,169.5, 171.5, 172.5, 173.5, 175.5, 178.5],
-                        #widthList=[0.2,0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.1,1.2,1.3,1.4,1.5,1.6,1.8,2.0,2.2,2.4,2.6,2.8,3.0,3.5,4.0],
-                        #massList=[171.0,171.2,171.4,171.6,171.8,172.0,172.2,172.4,172.5,172.6,172.8,173.0,173.2,173.4,173.6,173.8,174.0],
+                        widthList=[0.2,0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.1,1.2,1.3,1.4,1.5,1.6,1.8,2.0,2.2,2.4,2.6,2.8,3.0,3.5,4.0,1.16, 1.23,  1.28, 1.31,   1.34,  1.39,  1.48],
+                        massList=[171.0,171.2,171.4,171.6,171.8,172.0,172.2,172.4,172.5,172.6,172.8,173.0,173.2,173.4,173.6,173.8,174.0,    166.5,169.5, 171.5, 172.5, 173.5, 175.5, 178.5],
                         systs=['',
                                'puup','pudn',
                                'btagup','btagdn',
                                'ltagup','ltagdn',
                                'jerup','jerdn',
-                               'eesup','eesdn',
-                               'mesup','mesdn',
+                               'ees1up','ees1dn',
+                               'ees2up','ees2dn',
+                               'ees3up','ees3dn',
+                               'mes1up','mes1dn',
+                               'mes2up','mes2dn',
                                'trigup','trigdn',
                                'eselup','eseldn',
                                'mselup','mseldn',
@@ -69,7 +71,8 @@ def runTopWidthAnalysis(fileName,
 
     print '....analysing',fileName,'with output @',outFileName
 
-
+    plsu=ParametrizedLeptonScaleUnc()
+    
     #powheg samples have running width 2%/1GeV
     #see  https://github.com/jfernan2/genproductions/tree/8b309da3427fb5fdcc2dadc1860774f20adb517c/bin/Powheg/production
     smWidth=1.31
@@ -391,8 +394,9 @@ def runTopWidthAnalysis(fileName,
 
             stdlp4=ROOT.TLorentzVector()
             stdlp4.SetPtEtaPhiM(tree.l_pt[il],tree.l_eta[il],tree.l_phi[il],tree.l_m[il])
-            lscale=tree.l_les[il]
-
+            lcharge=-1 if tree.l_id[il]>0 else +1 
+            lscale=plsu.getUncertainty(tree.l_id[il],tree.l_pt[il],tree.l_eta[il],tree.l_phi[il],lcharge)
+            
             for isyst in xrange(0,len(systs)):
 
                 s=systs[isyst]
@@ -415,10 +419,16 @@ def runTopWidthAnalysis(fileName,
                     ijs=int(s.split('_')[1])
                     idx=7 if 'dn' in s else 8
                     ijhyp=idx+2*ijs
-                if s=='eesup' and abs(tree.l_id[il])==11:  lp4 *= (1.0+lscale)
-                if s=='eesdn' and abs(tree.l_id[il])==11 : lp4 *= (1.0-lscale)
-                if s=='mesup' and abs(tree.l_id[il])==13:  lp4 *= (1.0+lscale)
-                if s=='mesdn' and abs(tree.l_id[il])==13 : lp4 *= (1.0-lscale)
+                if s=='ees1up' and abs(tree.l_id[il])==11:  lp4 *= (1.0+lscale[0])
+                if s=='ees1dn' and abs(tree.l_id[il])==11 : lp4 *= (1.0-lscale[0])
+                if s=='ees2up' and abs(tree.l_id[il])==11:  lp4 *= (1.0+lscale[1])
+                if s=='ees2dn' and abs(tree.l_id[il])==11 : lp4 *= (1.0-lscale[1])
+                if s=='ees3up' and abs(tree.l_id[il])==11:  lp4 *= (1.0+lscale[2])
+                if s=='ees3dn' and abs(tree.l_id[il])==11 : lp4 *= (1.0-lscale[2])
+                if s=='mes1up' and abs(tree.l_id[il])==13:  lp4 *= (1.0+lscale[0])
+                if s=='mes1dn' and abs(tree.l_id[il])==13 : lp4 *= (1.0-lscale[0])
+                if s=='mes2up' and abs(tree.l_id[il])==13:  lp4 *= (1.0+lscale[1])
+                if s=='mes2dn' and abs(tree.l_id[il])==13 : lp4 *= (1.0-lscale[1])
                 if s=='puup'   : evWeight=puNormSF[1]*tree.weight[1]
                 if s=='pudn'   : evWeight=puNormSF[2]*tree.weight[2]
                 if s=='trigup':  evWeight=puNormSF[0]*tree.weight[3]

@@ -1,6 +1,8 @@
 import FWCore.ParameterSet.Config as cms
 from EgammaAnalysis.ElectronTools.regressionWeights_cfi import regressionWeights
 from PhysicsTools.SelectorUtils.tools.vid_id_tools import *
+from EgammaAnalysis.ElectronTools.calibrationTablesRun2 import correctionType
+from EgammaAnalysis.ElectronTools.calibrationTablesRun2 import files
 
 # EGM corrections
 # scale regression https://twiki.cern.ch/twiki/bin/view/CMS/EGMRegression
@@ -10,6 +12,7 @@ def customizeEGM(process,runOnData):
     process = regressionWeights(process)
     process.load('EgammaAnalysis.ElectronTools.regressionApplication_cff')
     process.load('EgammaAnalysis.ElectronTools.calibratedPatElectronsRun2_cfi')
+    process.calibratedPatElectrons.correctionFile = cms.string(files['Moriond17_23Jan'])
     process.calibratedPatElectrons.isMC = cms.bool(False) if runOnData else cms.bool(True)
     print 'Using smeared electrons with corrections from',process.calibratedPatElectrons.correctionFile
 
