@@ -14,11 +14,13 @@ SelectionTool::SelectionTool(TString dataset,bool debug,TH1 *triggerList, Analys
   isDoubleEGPD_(dataset.Contains("DoubleEG")), 
   isDoubleMuonPD_(dataset.Contains("DoubleMuon")), 
   isMuonEGPD_(dataset.Contains("MuonEG")),
-  isPhotonPD_(dataset.Contains("Photon"))
+  isPhotonPD_(dataset.Contains("Photon") || dataset.Contains("EGamma"))
 {
   if(triggerList!=0)
     for(int xbin=0; xbin<triggerList->GetNbinsX(); xbin++)
       triggerBits_[ triggerList->GetXaxis()->GetBinLabel(xbin+1) ] = xbin;  
+
+  setPhotonSelection();
 }
 
 //
@@ -41,7 +43,7 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
 
   //decide the channel based on the lepton multiplicity and set lepton collections
   std::vector<Particle> tightLeptons( selLeptons(preselLeptons,TIGHT) );
-  std::vector<Particle> tightPhotons( selPhotons(preselPhotons,TIGHT, tightLeptons) );
+  std::vector<Particle> tightPhotons( selPhotons(preselPhotons,offlinePhoton_, tightLeptons) );
 
   TString chTag("");
   if(anType_==TOP)
@@ -100,8 +102,8 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
                      hasTriggerBit("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8_v",         ev.triggerBits) );
   bool hasEETrigger( hasTriggerBit("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_v",              ev.triggerBits) ||
                      hasTriggerBit("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ_v",           ev.triggerBits) );
-  bool hasPhotonTrigger( hasTriggerBit("HLT_Photon75_R9Id90_HE10_IsoM_EBOnly_PFJetsMJJ300DEta3_v", ev.triggerBits) ||
-                         hasTriggerBit("HLT_Photon200_v", ev.triggerBits) );
+  bool hasPhotonTrigger(false);
+  for(auto &t:photonTriggers_) hasPhotonTrigger |= hasTriggerBit(t, ev.triggerBits);
 
   //check consistency with data
   if(chTag=="EM")
@@ -148,10 +150,10 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
   if(chTag=="A")
     {
       if(!hasPhotonTrigger) chTag="";
-	  if((hasEETrigger || hasETrigger) && chTag == "A"){
-		cout<< "----------------- This is EE in fact!" <<endl;
-		chTag = "";
-	  }
+      //if((hasEETrigger || hasETrigger) && chTag == "A"){
+      //cout<< "----------------- This is EE in fact!" <<endl;
+      //chTag = "";
+      //}
       if(ev.isData && !isPhotonPD_) chTag="";
     }
       

@@ -29,6 +29,21 @@ using namespace std;
 //
 void VBFVectorBoson::RunVBFVectorBoson()
 {
+  bool is2018(filename.Contains("2018"));
+
+  float minBosonHighPt(200.);
+  TString vbfPhotonTrigger("HLT_Photon75_R9Id90_HE10_IsoM_EBOnly_PFJetsMJJ300DEta3_v");
+  TString highPtPhotonTrigger("HLT_Photon200_v");
+  SelectionTool::QualityFlags offlinePhoton(SelectionTool::TIGHT);
+  if(is2018) {
+    cout << "[VBFVectorBoson::RunVBFVectorBoson] this is 2018, adapting" << endl;
+    vbfPhotonTrigger="HLT_Photon75_R9Id90_HE10_IsoM_EBOnly_PFJetsMJJ300DEta3_v";
+    highPtPhotonTrigger="HLT_Photon165_R9Id90_HE10_IsoM_v"; //HLT_Photon300_NoHE_v
+    offlinePhoton=SelectionTool::LOOSE;
+    minBosonHighPt=165.;
+  }
+  selector->setPhotonSelection({vbfPhotonTrigger,highPtPhotonTrigger},offlinePhoton);
+
   ///////////////////////
   // LOOP OVER EVENTS //
   /////////////////////
@@ -99,13 +114,13 @@ void VBFVectorBoson::RunVBFVectorBoson()
         sihih = ev.gamma_sieie[photons[0].originalReference()];
         chiso = ev.gamma_chargedHadronIso[photons[0].originalReference()];
         r9    = ev.gamma_r9[photons[0].originalReference()];
-        hoe   = ev.gamma_hoe[photons[0].originalReference()];
-        isVBF    = (selector->hasTriggerBit("HLT_Photon75_R9Id90_HE10_IsoM_EBOnly_PFJetsMJJ300DEta3_v", ev.triggerBits) 
+        hoe   = ev.gamma_hoe[photons[0].originalReference()];        
+        isVBF    = (selector->hasTriggerBit(vbfPhotonTrigger, ev.triggerBits) 
                     && photons[0].Pt()>75 
                     && fabs(photons[0].Eta())<1.442
                     && passVBFJetsTrigger);
-        isHighPt = ( selector->hasTriggerBit("HLT_Photon200_v", ev.triggerBits) 
-                     && photons[0].Pt()>200 );       
+        isHighPt = ( selector->hasTriggerBit(highPtPhotonTrigger, ev.triggerBits) 
+                     && photons[0].Pt()>minBosonHighPt);
         isHighPtAndOfflineVBF = (isHighPt && fabs(photons[0].Eta())<1.442 && passVBFJetsTrigger);
         isHighPtAndVBF = (isHighPt && isVBF);
         isBosonPlusOneJet=(isHighPt && alljets.size()==1);
@@ -122,7 +137,7 @@ void VBFVectorBoson::RunVBFVectorBoson()
         boson   += leptons[0];
         boson   += leptons[1];
         isVBF    = boson.Pt()>75 && fabs(boson.Rapidity())<1.442 && passVBFJetsTrigger;
-        isHighPt = boson.Pt()>200;
+        isHighPt = boson.Pt()>minBosonHighPt;
         isHighPtAndVBF = (isHighPt && isVBF);
         isBosonPlusOneJet=(isHighPt && alljets.size()==1);
       }
@@ -308,7 +323,7 @@ void VBFVectorBoson::bookHistograms(){
   ht->addHist("puwgtctr",      new TH1F("puwgtctr",         ";Weight sums;Events",2,0,2));  
   ht->addHist("qscale",        new TH1F("qscale",           ";Q^{2} scale;Events",100,0,2000));  
   ht->addHist("nvtx",          new TH1F("nvtx",             ";Vertex multiplicity;Events",100,-0.5,99.5));  
-  ht->addHist("vpt", 	       new TH1F("vectorbosonPt",    ";Boson p_{T}[GeV];Events",25,0,500));  
+  ht->addHist("vpt", 	       new TH1F("vectorbosonPt",    ";Boson p_{T}[GeV];Events",25,50,550));  
   ht->addHist("vy", 	       new TH1F("vectorbosony",     ";Boson rapidity;Events",25,-3,3));  
   ht->addHist("mindrl",        new TH1F("mindrl",           ";min #Delta R(boson,lepton);Events",25,0,6));  
   ht->addHist("sihih", 	       new TH1F("sihih",            ";#sigma(i#eta,i#eta);Events",50,0,0.1));  

@@ -15,8 +15,10 @@ fi
 queue=workday
 githash=fbc74ae
 eosdir=/store/cmst3/group/top/RunIIFall17/${githash}
+eosdir2018=/store/cmst3/group/top/RunIISpring18/4ad3a45
 fulllumi=41367
 vbflumi=7661
+fulllumi2018=2300
 lumiUnc=0.025
 outdir=${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBFVectorBoson
 wwwdir=~/www/VBFVectorBoson
@@ -30,12 +32,11 @@ case $WHAT in
         input=${eosdir}/MC13TeV_DY50toInf/MergedMiniEvents_4_ext0.root
         output=MC13TeV_DY4Jets50toInf.root
         tag="--tag MC13TeV_DY50toInf"
-        #input=${eosdir}/Data13TeV_SingleMuon_2017D/MergedMiniEvents_0_ext0.root
-        #output=Data13TeV_SingleMuon_2017D.root
-        #input=${eosdir}/MC13TeV_GJets_HT100to200_DR04/MergedMiniEvents_0_ext0.root
-        #output=MC13TeV_GJets_HT100to200_DR04.root \
-        #input=${eosdir}/Data13TeV_SingleMuon_2017C/MergedMiniEvents_0_ext0.root
-        #output=Data13TeV_SingleMuon_2017C.root
+
+        input=${eosdir2018}/Data13TeV_EGamma_2018A/MergedMiniEvents_0_ext0.root
+        output=Data13TeV_EGamma_2018A.root
+        tag="--tag Data13TeV_EGamma_2018A"
+
 	python scripts/runLocalAnalysis.py \
             -i ${input} -o ${output} ${tag} \
             --njobs 1 -q local --debug --mvatree \
@@ -46,7 +47,15 @@ case $WHAT in
 	python scripts/runLocalAnalysis.py -i ${eosdir} \
             -o ${outdir}/raw \
             --only data/era2017/vbf_samples.json \
-            -q ${queue} --mvatree \
+            -q ${queue} \
+            --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts;
+         # --mvatree \
+	;;
+
+    SEL2018 )
+	python scripts/runLocalAnalysis.py -i ${eosdir2018} \
+            -o ${outdir}/raw2018 \
+            -q ${queue} \
             --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts;
 	;;
 
@@ -64,10 +73,23 @@ case $WHAT in
     PLOT )
 #	commonOpts="-i ${outdir} --puNormSF puwgtctr -l 1  --saveLog"
 #	python scripts/plotter.py ${commonOpts} -j data/era2017/vbf_samples.json  --noStack --skip TT,ZZ,WW,WZ,Single,QCD,GJets,DY1Jets,DY2Jets,DY3Jets,DY4Jets,DY50toInf_HT -O ${outdir}/plots_DY ;
-	commonOpts="-i ${outdir}/${EXTRA} --puNormSF puwgtctr -l ${fulllumi}  --saveLog --mcUnc ${lumiUnc} --lumiSpecs VBFA:${vbflumi}"
-	python scripts/plotter.py ${commonOpts} -j data/era2017/vbf_samples.json; 
-        python test/analysis/computeVBFRatios.py -t -i ${outdir}/${EXTRA}/plots/plotter.root -o ${outdir}/${EXTRA}/plots/trigger_ratio_plotter.root
 
+        json=data/era2017/vbf_samples.json;
+        lumi=${fulllumi}        
+        if [[ "${EXTRA}" = *"2018"* ]]; then
+            json=data/era2018/vbf_samples.json;
+            lumi=${fulllumi2018}
+            vbflumi=${lumi}
+        fi
+
+	commonOpts="-i ${outdir}/${EXTRA} --puNormSF puwgtctr -l ${fulllumi}  --saveLog --mcUnc ${lumiUnc} --lumiSpecs VBFA:${vbflumi},OfflineVBFA:${fulllumi}"
+	python scripts/plotter.py ${commonOpts} -j ${json};
+        ;;
+    RATIO )
+        python test/analysis/computeVBFRatios.py -t \
+            -i ${outdir}/raw/plots/plotter.root,${outdir}/raw2018/plots/plotter.root \
+            --titles "2017","2018" \
+            -o ${outdir}/raw/plots/trigger_ratio_plotter.root
 	;;
 
     WWW )

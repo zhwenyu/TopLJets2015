@@ -42,6 +42,7 @@ class Plot(object):
         self.mcsyst = {}
         self.totalMCUnc = None
         self.spimpose={}
+        self.spimposeWithErrors=False
         self.dataH = None
         self.data = None
         self._garbageList = []
@@ -102,7 +103,7 @@ class Plot(object):
                 self._garbageList.append(h)
         else:
             try:
-                if spImpose : self.spimpose[title].Add(h)
+                if spimpose : self.spimpose[title].Add(h)
                 else        : self.mc[title].Add(h)
             except:
                 h.SetName('%s_%s' % (h.GetName(), title ) )
@@ -156,7 +157,7 @@ class Plot(object):
                 pass
 
     def show(self, outDir,lumi,noStack=False,saveTeX=False,extraText=None,noRatio=False):
-        if len(self.mc)<1 and self.dataH is None:
+        if len(self.mc)<1 and self.dataH is None and len(self.spimpose)<1:
             print '%s has 0 or 1 MC!' % self.name
             return
 
@@ -198,7 +199,7 @@ class Plot(object):
         # legend
         iniy=0.9 if self.wideCanvas else 0.85
         dy=0.05
-        ndy= max(len(self.mc),1)
+        ndy= max(len(self.mc)+len(self.spimpose),1)
         inix,dx =0.65,0.4
         if noRatio: inix=0.6
         if noStack:
@@ -232,6 +233,11 @@ class Plot(object):
                     refH.SetLineWidth(2)
             leg.AddEntry(self.mc[h], self.mc[h].GetTitle(), 'f')
             nlegCols += 1
+
+        for m in self.spimpose:
+            leg.AddEntry(self.spimpose[m],self.spimpose[m].GetTitle(),'l')
+            nlegCols += 1
+
         if nlegCols ==0 :
             print '%s is empty'%self.name
             return
@@ -311,31 +317,33 @@ class Plot(object):
             self.totalMCUnc = totalMCUnc
 
         #test for null plots
-        if totalMC :
-            if totalMC.Integral()==0:
-                if self.dataH is None : return
-                if self.dataH.Integral()==0: return
-        elif self.dataH is None : return
-        elif self.dataH.Integral()==0 : return
+        if len(self.spimpose)==0:
+            if totalMC:
+                if totalMC.Integral()==0:
+                    if self.dataH is None: return
+                    if self.dataH.Integral()==0 : return
+            elif self.dataH is None: return
+            elif self.dataH.Integral()==0: return
 
 
-        frame = totalMC.Clone('frame') if totalMC is not None else self.dataH.Clone('frame')
-        frame.Reset('ICE')
+        frame = None
+        if totalMC      : frame=totalMC.Clone('frame')
+        elif self.dataH : frame=self.dataH.Clone('frame')
+        else            : frame=self.spimpose[self.spimpose.keys()[0]].Clone('frame')
+
         if noStack:
-            try:
-                maxY=self.dataH.GetMaximum()*1.25 
-            except:
-                maxY=stack.GetStack().At(0).GetMaximum()/1.25
+            if dataH:   maxY=self.dataH.GetMaximum()*1.25 
+            elif stack: maxY=stack.GetStack().At(0).GetMaximum()/1.25
+            else:       maxY=frame.GetMaximum()*1.25
         elif totalMC:
             maxY = totalMC.GetMaximum()
             if self.dataH:
                 if maxY<self.dataH.GetMaximum():
                     maxY=self.dataH.GetMaximum()
         else:
-            maxY=self.dataH.GetMaximum()
+            maxY=frame.GetMaximum()
 
         frame.GetYaxis().SetRangeUser(self.frameMin,self.frameMax*maxY)
-
         frame.SetDirectory(0)
         frame.Reset('ICE')
         self._garbageList.append(frame)
@@ -344,7 +352,7 @@ class Plot(object):
         ROOT.TGaxis.SetMaxDigits(4)
         frame.GetYaxis().SetTitleOffset(1.2)
         if noRatio:
-            frame.GetYaxis().SetTitleOffset(1.4)
+            frame.GetYaxis().SetTitleOffset(0.9)
         if self.dataH:
             frame.GetXaxis().SetTitleSize(0.0)
             frame.GetXaxis().SetLabelSize(0.0)
@@ -358,6 +366,7 @@ class Plot(object):
             frame.GetXaxis().SetLabelSize(0.03)
             frame.GetXaxis().SetTitleSize(0.035)
         frame.Draw()
+
         if totalMC is not None   :
             if noStack: stack.Draw('nostack same')
             else:
@@ -365,9 +374,13 @@ class Plot(object):
                 if (len(self.mcsyst)>0):
                     totalMCUnc.Draw('e2 same')
                     totalMCUncShape.Draw('e2 same')
+
         for m in self.spimpose:
-            self.spimpose[m].Draw('histsame')
-            leg.AddEntry(self.spimpose[m],self.spimpose[m].GetTitle(),'l')
+            if self.spimposeWithErrors:
+                self.spimpose[m].Draw('e1same')
+            else:
+                self.spimpose[m].Draw('histsame')
+
         if self.data is not None : self.data.Draw('p')
 
         if (totalMC is not None and totalMC.GetMaximumBin() > totalMC.GetNbinsX()/2.):
@@ -375,10 +388,11 @@ class Plot(object):
             leg.SetX1(inix)
             leg.SetX2(inix+dx)
         leg.Draw()
+
         txt=ROOT.TLatex()
         txt.SetNDC(True)
         txt.SetTextFont(42)
-        txt.SetTextSize(0.05)
+        txt.SetTextSize(0.045)
         txt.SetTextAlign(12)
         iniy=0.88 if self.wideCanvas else 0.88
         inix=0.15 if noStack else 0.18
@@ -389,7 +403,7 @@ class Plot(object):
             inix=0.56
             inixlumi=0.65
 
-        txt.DrawLatex(inix,iniy,self.cmsLabel)
+        txt.DrawLatex(0.12,0.97,self.cmsLabel)
         if lumi<1:
             txt.DrawLatex(inixlumi,0.97,'#scale[0.8]{%3.1f nb^{-1} (%s)}' % (lumi*1000.,self.com) )
         elif lumi<100:
