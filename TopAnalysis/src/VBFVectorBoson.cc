@@ -126,6 +126,7 @@ void VBFVectorBoson::RunVBFVectorBoson()
       mht = mhtP4.Pt();
       bool passJets(jets.size()>=2 && mjj>400);
       bool passVBFJetsTrigger(passJets && detajj>3.0);
+      bool passVBFCutBased(passJets && mjj>1000. && jets[1].pt()>60.);
 
       //categorize the event according to the boson kinematics
       //for the photon refine also the category according to the trigger  bit
@@ -147,7 +148,7 @@ void VBFVectorBoson::RunVBFVectorBoson()
         isHighPtAndOfflineVBF = (isHighPt && fabs(photons[0].Eta())<1.442 && passVBFJetsTrigger);
         isHighPtAndVBF = (isHighPt && isVBF);
         isBosonPlusOneJet=(isHighPt && alljets.size()==1);
-        isHighPtVBFCutBased = (isHighPt && passJets && mjj>1000 && jets[1].pt()>60);
+        isHighPtVBFCutBased = (isHighPt && passVBFCutBased);
 
         //veto prompt photons on the QCDEM enriched sample
         if( isQCDEMEnriched && ev.gamma_isPromptFinalState[ photons[0].originalReference() ] ) {
@@ -220,6 +221,7 @@ void VBFVectorBoson::RunVBFVectorBoson()
       D           = esv.D(1.);
       
       vbfmva = passJets ? reader->EvaluateMVA(mvaMethod) : -99;
+      if(doBlindAnalysis && ev.isData & passVBFCutBased && vbfmva>0.1) vbfmva=-1000;
       cout << passJets << " " << vbfmva << endl;
       ////////////////////
       // EVENT WEIGHTS //
@@ -560,7 +562,8 @@ void VBFVectorBoson::fill(MiniEvent_t ev, TLorentzVector boson, std::vector<Jet>
 
   //final analysis histograms
   ht->fill("evcount",      1, cplotwgts, c);
-  ht->fill("vbfmva",       vbfmva, cplotwgts,c);
+  if(!(doBlindAnalysis && vbfmva<-99))
+    ht->fill("vbfmva",       vbfmva, cplotwgts,c);
 
   if(skimtree) newTree->Fill();
 }

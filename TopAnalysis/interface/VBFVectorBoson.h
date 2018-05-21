@@ -77,7 +77,7 @@ public:
                        TH1F *genPU_,
                        TString era_,
                        Bool_t debug_=false, Bool_t skimtree_=false):
-           filename(filename_),outname(outname_),anFlag(anFlag_), normH(0), genPU(0), era(era_), debug(debug_), skimtree(skimtree_)
+           filename(filename_),outname(outname_),anFlag(anFlag_), normH(0), genPU(0), era(era_), debug(debug_), skimtree(skimtree_), doBlindAnalysis(true)
 	{
           if(normH_) normH = (TH1F*)normH_->Clone("normH_c");
 	  if(genPU_) genPU = (TH1F*)genPU_->Clone("genPu_c");
@@ -148,6 +148,7 @@ private:
 	float scalarht,balance, mht, training;
         float leadj_gawidth,leadj_c1_05,subleadj_gawidth,subleadj_c1_05;
         float vbfmva;
+        bool doBlindAnalysis;
 
 	/////////////////////////////////////
 	// Categorie for VBF:              //
