@@ -221,7 +221,7 @@ void VBFVectorBoson::RunVBFVectorBoson()
       D           = esv.D(1.);
       
       vbfmva = passJets ? reader->EvaluateMVA(mvaMethod) : -99;
-      if(doBlindAnalysis && ev.isData & passVBFCutBased && vbfmva>0.1) vbfmva=-1000;
+      if(doBlindAnalysis && ev.isData && vbfmva>0.1) vbfmva=-1000;
       cout << passJets << " " << vbfmva << endl;
       ////////////////////
       // EVENT WEIGHTS //
