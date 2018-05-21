@@ -185,8 +185,11 @@ def doCombineScript(opt,args,outDir,dataCardList):
     def writeScanToScript(testStat,script):
         extraName='_'+testStat
         commonOpts="-m 172.5 -M HybridNew --testStat=%s --onlyTestStat --saveToys --saveHybridResult"%(testStat)
+        commonOpts+=" --setRobustFitTolerance 0.001 --cminDefaultMinimizerType GSLMultiMinMod --cminDefaultMinimizerAlgo BFGS2"
         if hasattr(opt,"frzString") and opt.frzString != "" :
             commonOpts += " --freezeParameters %s"%opt.frzString
+        if hasattr(opt,"externStr") and opt.externStr != "" :
+            commonOpts += " --setParameters %s"%opt.externStr
         script.write("combine %s --singlePoint 0  workspace.root -n scan0n\n"%commonOpts)
         script.write("mv higgsCombinescan0n.HybridNew.mH172.5.123456.root testStat_scan0n%s.root\n"%extraName)
         script.write("combine %s --singlePoint 1  workspace.root -n scan1n\n"%commonOpts)
@@ -195,12 +198,19 @@ def doCombineScript(opt,args,outDir,dataCardList):
     script.write('### SCAN \n')
     script.write('\n')
     for testStat in ['PL']: writeScanToScript(testStat=testStat,script=script)
-    commonOpts="-m 172.5 -M MultiDimFit --saveWorkspace --saveToys"
-    script.write("combine %s --setParameters x=1 --freezeParameters x workspace.root -n NuisancesRun\n"%commonOpts)
-    commonOpts="-m 172.5 -M MaxLikelihoodFit --saveWorkspace --saveToys"
-    script.write("combine %s --redefineSignalPOIs r --setParameters x=1 --freezeParameters x workspace.root -n MLNuisances\n"%commonOpts)
+    #commonOpts="-m 172.5 -M MultiDimFit --saveWorkspace --saveToys"
+    #script.write("combine %s --setParameters x=1 --freezeParameters x workspace.root -n NuisancesRun\n"%commonOpts)
+    #commonOpts="-m 172.5 -M MaxLikelihoodFit --saveWorkspace --saveToys"
+    #script.write("combine %s --redefineSignalPOIs r --setParameters x=1 --freezeParameters x workspace.root -n MLNuisances\n"%commonOpts)
     commonOpts="-m 172.5 -M FitDiagnostics --saveWorkspace --saveToys --toysFrequentist --minos none --noErrors"
-    script.write("combine %s -t %i --redefineSignalPOIs r --rMin 0.9 --rMax 1.1 --setParameters x=1,r=1 --expectSignal=1 --freezeParameters x workspace.root -n FitToys\n"%(commonOpts,opt.nToys))
+    commonOpts+=" --setRobustFitTolerance 0.001 --cminDefaultMinimizerType GSLMultiMinMod --cminDefaultMinimizerAlgo BFGS2"
+    setFrzStr="x"
+    if hasattr(opt,"frzString") and opt.frzString != "" :
+        setFrzStr += ","+opt.frzString
+    setParStr="x=1,r=1"
+    if hasattr(opt,"externStr") and opt.externStr != "" :
+        setParStr += ","+opt.externStr
+    script.write("combine %s -t %i --redefineSignalPOIs r --rMin 0.9 --rMax 1.1 --setParameters %s --expectSignal=1 --freezeParameters %s workspace.root -n FitToys\n"%(commonOpts,opt.nToys,setParStr,setFrzStr))
     #script.write("mv higgsCombineNuisancesRun.HybridNew.mH172.5.123456.root testStat_Nuisances.root\n")
     script.write('\n\n')
 
@@ -369,6 +379,10 @@ def doDataCards(opt,args):
         print "\n"
         print frzString
         print "\n"
+
+        print "\n"
+        print len(frzString.split(','))
+
     elif frzNuisances and "all" in nuisanceFRZ :
         frzString = "all"
 
@@ -962,6 +976,7 @@ def main():
     parser.add_option('-s', '--signal',             dest='signal',             help='signal (csv)',                                default='tbart,Singletop',  type='string')
     parser.add_option(      '--removeNuisances',    dest='rmvNuisances',       help='nuisance group to remove (csv)',              default='',  type='string')
     parser.add_option(      '--freezeNuisances',    dest='frzNuisances',       help='nuisance group to freeze (csv)',              default='',  type='string')
+    parser.add_option(      '--externNuisances',    dest='externStr',          help='setParameters string',                        default='',  type='string')
     parser.add_option('-c', '--cat',                dest='cat',                help='categories (csv)',
                       default='EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt',
                       type='string')

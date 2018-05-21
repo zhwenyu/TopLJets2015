@@ -34,7 +34,7 @@ dataeosdir=/store/cmst3/group/top/ReReco2016/be52dbe_03Feb2017
 summaryeosdir=/store/cmst3/group/top/TOP-17-010-final-v2/
 AnalysisDir=/eos/cms/${summaryeosdir}/analysis
 ChunksDir=${AnalysisDir}/Chunks
-COMBINERELEASE=${HOME}/scratch0/CMSSW_8_1_0/src/
+COMBINERELEASE=${HOME}/CMSSW_8_1_0/src/
 outdir=/afs/cern.ch/work/${myletter}/${whoami}/TOP-17-010-final-v2/
 anadir=${outdir}/$2
 wwwdir=${HOME}/www/TOP-17-010/final-v2
@@ -125,41 +125,125 @@ case $WHAT in
 
     mainHypo=(100)
 
+	    #"EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt"
+	    #"EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt"
+	    #"EM1bhighpt"
+        #"EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt,EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt"
+
 	CATS=(
         "EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt,EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt"
         )
+        #"EM1blowpt"
+        #"EM1bhighpt"
+        #"EM2blowpt"
+        #"EM2bhighpt"
+        #"MM1blowpt"
+        #"MM1bhighpt"
+        #"MM2blowpt"
+        #"MM2bhighpt"
 
     TAGS=(
-        "inc_scan_ARC_full"
+        "inc_scan_ARC_full_newMin"
         )
+        #"inc_scan_ARC__EM1blowpt"
+        #"inc_scan_ARC__EM1bhighpt"
+        #"inc_scan_ARC__EM2blowpt"
+        #"inc_scan_ARC__EM2bhighpt"
+        #"inc_scan_ARC__MM1blowpt"
+        #"inc_scan_ARC__MM1bhighpt"
+        #"inc_scan_ARC__MM2blowpt"
+        #"inc_scan_ARC__MM2bhighpt"
 
     #altHypo=(20 40 50 60 70 80 90 100 110 120 130 140 150 160 180 200 220 240 260 280 300 350 400)        
-    altHypo=(50 60 70 80 90 100 110 120 130 140 150 160 180)        
-    #altHypo=(150) 
+    altHypo=(80 90 100 110 120)        
+    #altHypo=(100) 
 
     #altMass=(1710 1712 1714 1716 1718 1720 1722 1724 1725 1726 1728 1730 1732 1734 1736 1738 1740)
-    altMass=(1718 1720 1722 1724 1725 1726 1728 1730 1732)
-    #altMass=(1722) 
+    altMass=(1724 1725 1726)
+    #altMass=(1725) 
 
 	#data=(-1 50 60 70 80 90 100 110 120 130 140 150 160 180 200 220 240 260 280 300 350 400)
     data=(100)
 
     expAltHypo=("nan") #"meq166p5" "meq169p5" "meq171p5" "meq173p5" "meq175p5" "meq178p5")
 
+    #nuisanceFreeze=("lalala"
+    #                "lalala"
+    #                "lalala"
+    #                "lalala"
+    #                "lalala"
+    #                "lalala"
+    #                "lalala"
+    #                "lalala"
+    #                "lalala"
+    #                "lalala"
+    #                "lalala"
+    #                "lalala"
+    #                "lalala"
+    #                "lalala"
+    #                "lalala"
+    #                "lalala"
+    #                "lalala"
+    #                "lalala"
+    #                "lalala"
+    #                "lalala"
+    #                "lalala") 
+    #externNuisances=("lumi_13TeV=-1"
+    #                "DYnorm_EE=-1,DYnorm_EM=-1,DYnorm_MM=-1"
+    #                "ees=-1" 
+    #                "mes=-1" 
+    #                "jer=-1" 
+    #                "ltag=-1" 
+    #                "btag=-1"
+    #                "bfrag=-1"
+    #                "semilep=-1"
+    #                "pu=-1" 
+    #                "tttoppt=-1" 
+    #                "ttMEqcdscale=-1" 
+    #                "ttPDF=-1"
+    #                "jes0=-1,jes1=-1,jes2=-1,jes3=-1,jes4=-1,jes5=-1,jes6=-1,jes7=-1,jes8=-1,jes9=-1,jes10=-1,jes11=-1,jes12=-1,jes13=-1,jes14=-1,jes15=-1,jes16=-1,jes17=-1,jes18=-1,jes19=-1,jes20=-1,,jes21=-1,jes22=-1,jes23=-1,jes24=-1,jes25=-1,jes26=-1,jes27=-1,jes28=-1"
+    #                "UE=-1" 
+    #                "CR=-1" 
+    #                "hdamp=-1" 
+    #                "ISR_tt=-1" 
+    #                "FSR_tt=-1"
+    #                "tWttInterf=-1" 
+    #                "tWMEScale=-1") 
+    #externNames=("lumi_13TeV"
+    #                "DYnorm"
+    #                "ees" 
+    #                "mes" 
+    #                "jer" 
+    #                "ltag" 
+    #                "btag"
+    #                "bfrag"
+    #                "semilep"
+    #                "pu" 
+    #                "tttoppt" 
+    #                "ttMEqcdscale" 
+    #                "ttPDF"
+    #                "jes"
+    #                "UE" 
+    #                "CR" 
+    #                "hdamp" 
+    #                "ISR_tt" 
+    #                "FSR_tt"
+    #                "tWttInterf" 
+    #                "tWMEScale") 
     #nuisanceFreeze=("sel,trig_*CH*" "lumi_13TeV" "DYnorm_*CH*" "Wnorm_th" 
     #            "tWnorm_th" "VVnorm_th" "tbartVnorm_th" 
     #            "ees" "mes" "jer" "ltag" "btag" "bfrag" "semilep"
     #            "pu" "tttoppt" "ttMEqcdscale" "ttPDF"
     #            "jes" "UE" "CR" 
     #            "hdamp" "ISR" "FSR"
-    #            "tWttInterf" "tWMEScale" "all") 
+    #            "tWttInterf" "tWMEScale") # "all") 
     #nuisanceFreeze=("jes0" "jes1" "jes2" "jes3" "jes4" "jes5" "jes6" "jes7" "jes8" "jes9" "jes10" 
     #                "jes11" "jes12" "jes13" "jes14" "jes15" "jes16" "jes17" "jes18" "jes19" 
     #                "jes20" "jes21" "jes22" "jes23" "jes24" "jes25" "jes26" "jes27" "jes28")
     #nuisanceFreeze=("CR,UE,ISR,FSR,hdamp,pu,ttMEqcdscale,tttoppt")
     nuisanceFreeze=("nan")
 
-    queue=1nh
+    queue=1nw
     
 	for mm in ${altMass[@]}; do
 	for h in ${altHypo[@]}; do
@@ -170,6 +254,8 @@ case $WHAT in
 		for i in ${!TAGS[*]}; do
                     
             iNuisFrz=${nuisanceFreeze[${f}]}
+            #iNuisExt=${externNuisances[${f}]}
+            #iNuisNam=${externNames[${f}]}
 		    icat=${CATS[${i}]}
 		    itag=${TAGS[${i}]}
 		    
@@ -182,16 +268,17 @@ case $WHAT in
             fi
             if [[ "${iNuisFrz}" != "nan" ]] ; then 
     		    cmd="${cmd} --freezeNuisances ${iNuisFrz}"		    
+    		    #cmd="${cmd} --externNuisances ${iNuisExt}"		    
             fi
 		    cmd="${cmd} --dist incmlb"		    
 		    cmd="${cmd} --tmass 1725"		    
 		    cmd="${cmd} --alttmass ${mm}"		    
 		    #cmd="${cmd} --dist tmass"		    
-		    cmd="${cmd} --nToys -1"
-		    cmd="${cmd} -i /eos/cms/${summaryeosdir}/plotter/plotter.root"
-		    cmd="${cmd} --systInput /eos/cms/${summaryeosdir}/plotter/syst_plotter.root"
-		    #cmd="${cmd} -i /afs/cern.ch/work/e/ecoleman/TOP-17-010-final-v2/plotter.root"
-		    #cmd="${cmd} --systInput /afs/cern.ch/work/e/ecoleman/TOP-17-010-final-v2/syst_plotter.root"
+		    cmd="${cmd} --nToys 1000"
+		    #cmd="${cmd} -i /eos/cms/${summaryeosdir}/plotter/plotter.root"
+		    #cmd="${cmd} --systInput /eos/cms/${summaryeosdir}/plotter/syst_plotter.root"
+		    cmd="${cmd} -i /afs/cern.ch/work/e/ecoleman/TOP-17-010-final-v2/plotter.root"
+		    cmd="${cmd} --systInput /afs/cern.ch/work/e/ecoleman/TOP-17-010-final-v2/syst_plotter.root"
 		    #cmd="${cmd} --pseudoDataFromSim=widthx0p5"
 		    cmd="${cmd} -c ${icat}"
 		    cmd="${cmd} --rebin 2"            

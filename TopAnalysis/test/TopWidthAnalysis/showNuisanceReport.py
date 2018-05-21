@@ -24,6 +24,7 @@ def compareNuisances(args,toys,out):
                 pname=kname.replace('tree_fit_sb_','')
                 pname=kname.replace('tree_fit_sb_','')
                 if pname[-2:]=='In' : continue
+                if 'bin' in pname : continue
                 if pname in ['fit_status','r','rErr','x','xErr','rLoErr','rHiErr','numbadnll','nll_min','nll_nll0']: continue
                 pname=pname.replace('_',' ')
                 pad=key.ReadObj().GetListOfPrimitives().At(0)
@@ -37,15 +38,15 @@ def compareNuisances(args,toys,out):
             varNames=[]
             iter = fit_s.createIterator()
             var = iter.Next()
-            while var :   
+            while var :
                 pname=var.GetName()
-                if not 'CMS_th1' in pname and not '_In' in pname :
+                if not 'CMS_th1' in pname and not '_In' in pname and not 'bin' in pname:
                     if not pname in ['x','r'] :
-                        if not pname in varList: 
+                        if not pname in varList:
                             varList[pname]={}
                         varList[pname][title]=(var.getVal(),var.getErrorLo(),var.getErrorHi())
                     var=iter.Next()
-    
+
     keyCtr=0
     keyLists=[]
     for key in sorted(varList):
@@ -71,7 +72,7 @@ def compareNuisances(args,toys,out):
         #prepare a frame
         frame=ROOT.TH2F('frame',';#hat{#theta};Nuisance parameter',1,-3,3,npars,0,npars)
         frame.SetDirectory(0)
-        for ybin in xrange(0,len(keyList)): 
+        for ybin in xrange(0,len(keyList)):
             frame.GetYaxis().SetBinLabel(ybin+1,'#color[%d]{%s}'%((ybin%2)*10+1,keyList[ybin]))
         frame.Draw()
         frame.GetXaxis().SetTitleSize(0.05)
@@ -87,9 +88,9 @@ def compareNuisances(args,toys,out):
         gr1s.SetName('gr1s')
         gr1s.SetMarkerStyle(1)
         gr1s.SetMarkerColor(19)
-        gr1s.SetLineColor(19) 
+        gr1s.SetLineColor(19)
         gr1s.SetFillStyle(1001)
-        gr1s.SetFillColor(19) 
+        gr1s.SetFillColor(19)
         gr1s.SetPoint(0,-1,0)
         gr1s.SetPoint(1,-1,npars)
         gr1s.SetPoint(2,1,npars)
@@ -98,10 +99,10 @@ def compareNuisances(args,toys,out):
 
         #2-sigma
         gr2s=gr1s.Clone('gr2s')
-        gr2s.SetMarkerColor(18) 
+        gr2s.SetMarkerColor(18)
         gr2s.SetLineColor(18)
         gr2s.SetFillStyle(1001)
-        gr2s.SetFillColor(18) 
+        gr2s.SetFillColor(18)
         gr2s.SetPoint(0,-2,0)
         gr2s.SetPoint(1,-2,npars)
         gr2s.SetPoint(2,2,npars)
@@ -109,14 +110,14 @@ def compareNuisances(args,toys,out):
         gr2s.SetPoint(4,-2,0)
 
         gr2s.Draw('f')
-        gr1s.Draw('f')    
-    
+        gr1s.Draw('f')
+
         txt=ROOT.TLatex()
         txt.SetTextFont(42)
         txt.SetTextSize(0.03)
         txt.SetTextColor(ROOT.kGray+3)
         for delta,title in [(1.0,'-1#sigma'),(2,'+2#sigma'),(-1,'-1#sigma'),(-2,'-2#sigma')]:
-            txt.DrawLatex(delta-0.2,frame.GetYaxis().GetXmax()+0.2,title)      
+            txt.DrawLatex(delta-0.2,frame.GetYaxis().GetXmax()+0.2,title)
 
         txt=ROOT.TLatex()
         txt.SetNDC(True)
@@ -134,19 +135,19 @@ def compareNuisances(args,toys,out):
                 if not title in nuisGrs:
                     idx=len(nuisGrs)
                     nuisGrs[title]=ROOT.TGraphAsymmErrors()
-                    nuisGrs[title].SetTitle(title)  
+                    nuisGrs[title].SetTitle(title)
                     nuisGrs[title].SetMarkerStyle(20+idx)
                     nuisGrs[title].SetMarkerColor(COLORS[idx])
                     nuisGrs[title].SetLineColor(COLORS[idx])
                     nuisGrs[title].SetLineWidth(2)
-                    nuisGrs[title].SetFillStyle(0)    
+                    nuisGrs[title].SetFillStyle(0)
                 np=nuisGrs[title].GetN()
                 val,uncLo,uncHi = varList[key][title]
                 nuisGrs[title].SetPoint(np,val,np+dy*(ires+1))
-                nuisGrs[title].SetPointError(np,abs(uncLo),abs(uncHi),0.,0.)  
+                nuisGrs[title].SetPointError(np,abs(uncLo),abs(uncHi),0.,0.)
                 ires+=1
 
-        leg=ROOT.TLegend(0.7,0.9,0.95,0.9-0.08*len(args))    
+        leg=ROOT.TLegend(0.7,0.9,0.95,0.9-0.08*len(args))
         leg.SetTextFont(42)
         leg.SetTextSize(0.035)
         leg.SetBorderSize(0)
@@ -159,13 +160,13 @@ def compareNuisances(args,toys,out):
         c.RedrawAxis()
         c.Modified()
         c.Update()
-    
+
         for ext in ['png','pdf']:
             c.SaveAs('%s_%d.%s'%(out,ilist,ext))
 
     return
 
-                    
+
 """
 steer the script
 """
@@ -183,7 +184,7 @@ def main():
     parser.add_option("-o",    type="string",       dest="out"  ,  default='nuisances',  help="name of the output file")
     parser.add_option("-t",    action='store_true', dest="toys"  , default=False,  help="is toys file")
     (opt, args) = parser.parse_args()
-    
+
     compareNuisances(args,opt.toys,opt.out)
 
 """

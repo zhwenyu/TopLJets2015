@@ -26,15 +26,16 @@ CMSSW_7_6_3dir=~/CMSSW_8_0_26_patch1/src/
 unblind=true
 nPseudo=1000
 
-mas=(1718 1720 1722 1724 1725 1726 1728 1730 1732)
-masNs=("171.8"
-       "172.0" "172.2" "172.4" "172.5" "172.6"
-       "172.8" "173.0" "173.2")
+#mas=(1725)
+#masNs=("172.5")
+mas=(1720 1722 1724 1725 1726 1728 1730)
+masNs=("172.0" "172.2" "172.4" "172.5" "172.6"
+       "172.8" "173.0")
 
 #wid=(100)        
 #widNs=("1.00")
-wid=(50 60 70 80 90 100 110 120 130 140 150 160 180)        
-widNs=("0.80" "0.90" "1.00" "1.10" "1.20" "1.30" "1.40" "1.50" "1.60" "1.80")
+wid=(60 70 80 90 100 110 120 130 140 150 160)        
+widNs=("0.60" "0.70" "0.80" "0.90" "1.00" "1.10" "1.20" "1.30" "1.40" "1.50" "1.60")
 
 lbCat=(highpt lowpt)
 lfs=(EE EM MM)
@@ -125,206 +126,48 @@ case $WHAT in
     ;;
 ########################### 2D LIMITS #####################################
     2D_LIMITS)
-        python test/TopWidthAnalysis/getContour.py \
-            --mass ${massSt} -n Contour1D_2D_stat \
-            -e _100pseudodata \
-            -i ${extdir}/
+        #python test/TopWidthAnalysis/getContour.py \
+        #    --mass ${massSt} --wids ${widStr} -n Contour2D_stat \
+        #    -e _100pseudodata \
+        #    -i ${extdir}/
 
-        nuisanceGroups=("sel,trig_*CH*" "lumi_13TeV" "DYnorm_*CH*" "Wnorm_th" 
-               "tWnorm_th" "VVnorm_th" "tbartVnorm_th" 
+        nuisanceGroups=("lumi_13TeV" "DYnorm_*CH*"
                "ees" "mes" "jer" "ltag" "btag" "bfrag" "semilep"
                "pu" "tttoppt" "ttMEqcdscale" "ttPDF"
                "jes" "UE" "CR" 
-               "hdamp" "ISR" "FSR" 
-               "tWttInterf" "tWMEScale" "all") 
+               "hdamp" "ISR_tt" "FSR_tt" 
+               "tWttInterf" "tWMEScale" ) #"all") 
 
-        exit 
-        for nuisGroup in ${nuisanceGroups[@]} ; do
+    externNames=("lumi_13TeV"
+                    "DYnorm"
+                    "ees" 
+                    "mes" 
+                    "jer" 
+                    "ltag" 
+                    "btag"
+                    "bfrag"
+                    "semilep"
+                    "pu" 
+                    "tttoppt" 
+                    "ttMEqcdscale" 
+                    "ttPDF"
+                    "jes"
+                    "UE" 
+                    "CR" 
+                    "hdamp" 
+                    "ISR_tt" 
+                    "FSR_tt"
+                    "tWttInterf" 
+                    "tWMEScale") 
+
+        for nuisGroup in ${externNames[@]} ; do
             echo "------------------------"
             echo "Limits for ${nuisGroup}:"
             python test/TopWidthAnalysis/getContour.py \
                 --mass ${massSt} --wids ${widStr} \
-                -n Contour1D_2D_${nuisGroup} \
+                -n Contour2D_externFrzAllButStat_-1_${nuisGroup} \
                 -e _100pseudodata \
-                -i ${extdir}Frz_${nuisGroup}/
-        done
-    ;;
-############################### CLs #######################################
-    CLs ) # get CLs statistics from combine
-        cd ${CMSSW_7_4_7dir}
-        eval `scramv1 runtime -sh`
-        cd ${extdir}
-        for dist in ${dists[*]} ; do
-        for twid in ${wid[*]} ; do
-
-            # pre-fit 
-            echo "Making CLs for ${twid} ${dist}"
-            cmd="combine ${extdir}/hypotest_100vs${twid}_${3}pseudodata/workspace.root -M HybridNew --seed 8192 --saveHybridResult" 
-            cmd="${cmd} -m 172.5  --testStat=TEV --singlePoint 1 -T ${nPseudo} -i 2 --fork 8"
-            cmd="${cmd} --clsAcc 0 --fullBToys --saveToys --saveWorkspace --generateExt=1 --generateNuis=0"
-            cmd="${cmd} --expectedFromGrid 0.5 -n cls_prefit_exp"
-
-            bsub -q ${queue} ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh "${extdir}/hypotest_100vs${twid}_${3}pseudodata/" "${cmd}" 
-
-
-            # post-fit expected 
-            echo "Making CLs for ${twid} ${dist}"
-            cmd="combine ${extdir}/hypotest_100vs${twid}_${3}pseudodata/workspace.root -M HybridNew --seed 8192 --saveHybridResult" 
-            cmd="${cmd} -m 172.5  --testStat=TEV --singlePoint 1 -T ${nPseudo} -i 2 --fork 8"
-            cmd="${cmd} --clsAcc 0 --fullBToys  --saveWorkspace --saveToys --frequentist"
-            cmd="${cmd} --expectedFromGrid 0.5 -n cls_postfit_exp"
-
-            bsub -q ${queue} ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh "${extdir}/hypotest_100vs${twid}_${3}pseudodata/" "${cmd}" 
-
-            # post-fit observed
-            if [[ ${unblind} == true ]] ; then 
-                echo "Making CLs for ${twid} ${dist}"
-                cmd="combine ${extdir}/hypotest_100vs${twid}_${3}pseudodata/workspace.root -M HybridNew --seed 8192 --saveHybridResult" 
-                cmd="${cmd} -m 172.5  --testStat=TEV --singlePoint 1 -T ${nPseudo} -i 2 --fork 8"
-                cmd="${cmd} --clsAcc 0 --fullBToys --saveWorkspace --saveToys --frequentist"
-                cmd="${cmd} -n cls_postfit_obs"
-
-                bsub -q ${queue} ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh "${extdir}/hypotest_100vs${twid}_${3}pseudodata/" "${cmd}" 
-            fi
-        done
-        done
-    ;;
-############################### TOYS ######################################
-    TOYS ) # get toys distributions from the pseudoexperiments
-        cd ${CMSSW_7_4_7dir}
-        eval `scramv1 runtime -sh`
-        cd ${extdir}
-        for dist in ${dists[*]} ; do
-
-            tWidI=0
-        for twid in ${wid[*]} ; do
-            widN=${widNs[${tWidI}]}
-
-            # pre-fit expected 
-            rootcmds="${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis"
-            rootcmds="${rootcmds}/hypoTestResultTreeTopWid.cxx\("
-            rootcmds="${rootcmds}172.5,1,\\\"x\\\",\\\"\\\",\\\"${widN}\\\",\\\"${dist}\\\",false,\\\"pre\\\"\)"
-
-            cmd=""
-            cmd="${cmd}root -l -q -b"
-            cmd="${cmd} ${extdir}"
-            cmd="${cmd}/hypotest_100vs${twid}_${3}pseudodata/higgsCombinecls_prefit_exp.HybridNew.mH172.5.8192.quant0.500.root"
-            cmd="${cmd} ${rootcmds}"
-
-            sh ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh \
-                "${extdir}/" "${cmd}"
-
-
-            # post-fit expected 
-            rootcmds="${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis"
-            rootcmds="${rootcmds}/hypoTestResultTreeTopWid.cxx\("
-            rootcmds="${rootcmds}172.5,1,\\\"x\\\",\\\"\\\",\\\"${widN}\\\",\\\"${dist}\\\",false,\\\"post\\\"\)"
-
-            cmd=""
-            cmd="${cmd}root -l -q -b"
-            cmd="${cmd} ${extdir}"
-            cmd="${cmd}/hypotest_100vs${twid}_${3}pseudodata/higgsCombinecls_postfit_exp.HybridNew.mH172.5.8192.quant0.500.root"
-            cmd="${cmd} ${rootcmds}"
-
-            sh ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh \
-                "${extdir}/hypotest_100vs${twid}_${3}pseudodata/" "${cmd}"
-
-            # post-fit observed 
-            if [[ ${unblind} == true ]] ; then 
-                rootcmds="${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis"
-                rootcmds="${rootcmds}/hypoTestResultTreeTopWid.cxx\("
-                rootcmds="${rootcmds}172.5,1,\\\"x\\\",\\\"\\\",\\\"${widN}\\\",\\\"${dist}\\\",${unblind},\\\"obs\\\"\)"
-
-                cmd=""
-                cmd="${cmd}root -l -q -b"
-                cmd="${cmd} ${extdir}"
-                cmd="${cmd}/hypotest_100vs${twid}_${3}pseudodata/higgsCombinecls_postfit_obs.HybridNew.mH172.5.8192.root"
-                cmd="${cmd} ${rootcmds}"
-
-                sh ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/wrapPseudoexperiments.sh \
-                        "${extdir}/hypotest_100vs${twid}_${3}pseudodata/" "${cmd}"
-            fi
-
-            cp ${extdir}/hypotest_100vs${twid}_${3}pseudodata/*obs*${twid}*${dist}*.{pdf,png} ${extdir}
-            cp ${extdir}/hypotest_100vs${twid}_${3}pseudodata/*post*${twid}*${dist}*.{pdf,png} ${extdir}
-            cp ${extdir}/hypotest_100vs${twid}_${3}pseudodata/*pre*${twid}*${dist}*.{pdf,png} ${extdir}
-            cp ${extdir}/hypotest_100vs${twid}_${3}pseudodata/*obs*stats*.txt ${extdir}
-            cp ${extdir}/hypotest_100vs${twid}_${3}pseudodata/*post*stats*.txt ${extdir}
-            cp ${extdir}/hypotest_100vs${twid}_${3}pseudodata/*pre*stats*.txt ${extdir}
-
-            let "tWidI += 1"
-        done
-        done
-    ;;
-    QUANTILES ) # plot quantiles distributions of all toys, get CLsPlot
-            
-        cd ${CMSSW_7_4_7dir}
-        eval `scramv1 runtime -sh` 
-
-        cd ${extdir}
-        rm statsPlots.root
-        for dist in ${dists[*]} ; do
-
-            ## Quantiles plot with pre-fit information 
-            python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getQuantilesPlot.py \
-                -i ${extdir}/ -o ${extdir}/ \
-                --wid ${widStr} \
-                --nwid ${nwidSt} \
-                --dist ${dist}  \
-                --prep pre
-
-            ## Quantiles plot with post-fit information 
-            python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getQuantilesPlot.py \
-                -i ${extdir}/ -o ${extdir}/ \
-                --wid ${widStr} \
-                --nwid ${nwidSt} \
-                --dist ${dist}  \
-                --prep post \
-                --unblind
-
-            ## Quantiles plot with observed information 
-            python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getQuantilesPlot.py \
-                -i ${extdir}/ -o ${extdir}/ \
-                --wid ${widStr} \
-                --nwid ${nwidSt} \
-                --dist ${dist}  \
-                --prep obs \
-                --unblind
-            
-            # Get CLs plots for pre-fit expectations
-            python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getSeparationTables.py \
-                -i ${extdir}/ -o ${extdir}/ \
-                --wid ${widStr} \
-                --prep pre \
-                --dist ${dist}
-            
-            # Get CLs plots for post-fit expectations 
-            python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getSeparationTables.py \
-                -i ${extdir}/ -o ${extdir}/ \
-                --wid ${widStr} \
-                --dist ${dist} \
-                --prep post \
-                --addPre \
-                --unblind
-            
-            # Get CLs plots for observed expectations 
-            python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getSeparationTables.py \
-                -i ${extdir}/ -o ${extdir}/ \
-                --wid ${widStr} \
-                --dist ${dist} \
-                --prep obs \
-                --unblind
-
-            python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getCLsFromFit.py \
-                -i ${extdir}/ \
-                --dist ${dist} \
-                --prep pre
-
-            python ${CMSSW_7_6_3dir}/TopLJets2015/TopAnalysis/test/TopWidthAnalysis/getCLsFromFit.py \
-                -i ${extdir}/ \
-                --dist ${dist} \
-                --prep post \
-                --unblind
+                -i ${extdir}_${nuisGroup}/
         done
     ;;
 ############################### PLOT_NUIS #################################
@@ -333,7 +176,15 @@ case $WHAT in
         eval `scramv1 runtime -sh` 
         cd - 
 
-        for dist in ${dists[*]} ; do
+        nuisanceGroups=("sel,trig_*CH*" "lumi_13TeV" "DYnorm_*CH*" "Wnorm_th" 
+               "tWnorm_th" "VVnorm_th" "tbartVnorm_th" 
+               "ees" "mes" "jer" "ltag" "btag" "bfrag" "semilep"
+               "pu" "tttoppt" "ttMEqcdscale" "ttPDF"
+               "jes" "st_wid" "UE" "CR" 
+               "hdamp" "ISR" "FSR" "mtop" 
+               "tWttInterf" "tWMEScale" "all") 
+
+        for ngrp in ${nuisanceGroups[*]} ; do
             iwidN=0
         for twid in ${wid[*]} ; do
             imassN=0
@@ -342,9 +193,9 @@ case $WHAT in
             nmas=${masNs[${imassN}]}
 
             python test/TopWidthAnalysis/getNuisances.py \
-                -i ${extdir}/hypotest_100vs${twid}_m1725vs${tmass}_${3}pseudodata/higgsCombineNuisancesRun.MultiDimFit.mH172.5.123456.root \
-                -o ${extdir}/ \
-                -n Nuisances_${twid}_${tmass}_${dist} \
+                -i ${extdir}_only${ngrp}/hypotest_100vs${twid}_m1725vs${tmass}_${3}pseudodata/higgsCombineNuisancesRun.MultiDimFit.mH172.5.123456.root \
+                -o ${extdir}_only${ngrp}/ \
+                -n Nuisances_${twid}_${tmass}_incmlb_only${ngrp} \
                 --extraText "#Gamma_{Alt.} = ${nwid} #times #Gamma_{SM} ; m_{Alt.} = ${nmas} GeV"
 
             let "imassN += 1"
