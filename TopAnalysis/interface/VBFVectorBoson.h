@@ -29,36 +29,41 @@ using namespace std;
 
 //Vector boson will be either Z or photon at the moment
 
-struct Category{  
-  enum Category_t {MM,A,VBF,HighPt,HighPtVBF,HighPtOfflineVBF,V1J,LASTCAT};
-  std::vector<Float_t> cats_;
-  Category() : cats_(LASTCAT,0.){
-    flush();
-  }
-  void flush() {
-    std::fill(cats_.begin(), cats_.end(), 0);
-  }
-  void enable(Category_t c) { 
-    cats_[c]=1;
-  }
-  void attachToTree(TTree *t){
-    TString catNames[]={"MM","A","VBF","HighPt","HighPtVBF","HighPtOfflineVBF","V1J"}; 
-    for(size_t i=0; i<LASTCAT; i++)
-      t->Branch(catNames[i],&cats_[i],catNames[i]+"/F");
-  }
+struct Category{
+  float MM,A,VBF,HighPt,HighPtVBF,V1J,HighPtOfflineVBF,HighPtVBFCutBased;
+  Category(){ reset(); }
+  Category(std::vector<bool> &cat){
+    reset();
+    set(cat);
+  };  
+  void reset(){
+    std::vector<bool> cat(7,false);
+    set(cat);
+  };
+  void set(std::vector<bool> &cat){
+    MM =(float) cat[0];
+    A = (float)cat[1];
+    VBF = (float)cat[2];
+    HighPt = (float)cat[3];
+    HighPtVBF = (float)cat[4];
+    V1J = (float)cat[5];
+    HighPtOfflineVBF = (float)cat[6];
+    HighPtVBFCutBased = (float)cat[7];
+  };
   std::vector<TString> getChannelTags() {
     std::vector<TString> chTags;
-    
     TString chTag("");
-    if(cats_[MM]>0) chTag="MM";
-    if(cats_[A]>0)  chTag="A";
+
+    if(MM>0) chTag="MM";
+    if(A>0)  chTag="A";
     if(chTag=="") return chTags;
 
-    if(cats_[VBF]>0)              chTags.push_back("VBF"+chTag);
-    if(cats_[HighPt]>0)           chTags.push_back("HighPt"+chTag);
-    if(cats_[HighPtVBF]>0)        chTags.push_back("HighPtVBF"+chTag);
-    if(cats_[HighPtOfflineVBF]>0) chTags.push_back("HighPtOfflineVBF"+chTag);
-    if(cats_[V1J]>0)              chTags.push_back("V1J"+chTag);
+    if(VBF>0)               chTags.push_back("VBF"+chTag);
+    if(HighPt>0)            chTags.push_back("HighPt"+chTag);
+    if(HighPtVBF>0)         chTags.push_back("HighPtVBF"+chTag);
+    if(V1J>0)               chTags.push_back("V1J"+chTag);
+    if(HighPtOfflineVBF>0)  chTags.push_back("HighPtOfflineVBF"+chTag);
+    if(HighPtVBFCutBased>0) chTags.push_back("HighPtVBFCutBased"+chTag);
     return chTags;
   }
 };

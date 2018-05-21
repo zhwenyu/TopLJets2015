@@ -83,9 +83,10 @@ void VBFVectorBoson::RunVBFVectorBoson()
       //Category selection
       if(chTag!="A" && chTag!="MM") continue;
 
-      category.flush();
-      if(chTag == "A")  category.enable( Category::A );
-      if(chTag == "MM") category.enable( Category::MM );
+      category.reset();
+      std::vector<bool> cat(8,0);
+      if(chTag == "A") cat[1] = true;
+      if(chTag == "MM") cat[0] = true;
 
       //jet related variables and selection
       mjj = (jets.size()>=2 ?  (jets[0]+jets[1]).M() : 0.);
@@ -107,7 +108,7 @@ void VBFVectorBoson::RunVBFVectorBoson()
       //categorize the event according to the boson kinematics
       //for the photon refine also the category according to the trigger  bit
       TLorentzVector boson(0,0,0,0);     
-      bool isHighPt(false),isVBF(false),isHighPtAndVBF(false),isHighPtAndOfflineVBF(false),isBosonPlusOneJet(false);
+      bool isHighPt(false),isVBF(false),isHighPtAndVBF(false),isHighPtAndOfflineVBF(false),isBosonPlusOneJet(false),isHighPtVBFCutBased(false);
       sihih = 0, chiso = 0 ,r9 = 0, hoe = 0;
       if(chTag=="A") {        
         boson += photons[0];
@@ -124,6 +125,7 @@ void VBFVectorBoson::RunVBFVectorBoson()
         isHighPtAndOfflineVBF = (isHighPt && fabs(photons[0].Eta())<1.442 && passVBFJetsTrigger);
         isHighPtAndVBF = (isHighPt && isVBF);
         isBosonPlusOneJet=(isHighPt && alljets.size()==1);
+        isHighPtVBFCutBased = (isHighPt && passJets && mjj>1000 && jets[1].pt()>60);
 
         //veto prompt photons on the QCDEM enriched sample
         if( isQCDEMEnriched && ev.gamma_isPromptFinalState[ photons[0].originalReference() ] ) {
@@ -148,11 +150,13 @@ void VBFVectorBoson::RunVBFVectorBoson()
       double mindrl(9999.);
       for(auto &l: leptons) mindrl=min(l.DeltaR(boson),mindrl);
 
-      if(isVBF)                 category.enable(Category::VBF); 
-      if(isHighPt)	        category.enable(Category::HighPt);
-      if(isHighPtAndVBF)        category.enable(Category::HighPtVBF);
-      if(isHighPtAndOfflineVBF) category.enable(Category::HighPtOfflineVBF);
-      if(isBosonPlusOneJet)     category.enable(Category::V1J);
+      if(isVBF)                 cat[2]=true;
+      if(isHighPt)	        cat[3]=true;
+      if(isHighPtAndVBF)        cat[4]=true;
+      if(isBosonPlusOneJet)     cat[5]=true;
+      if(isHighPtAndOfflineVBF) cat[6]=true;
+      if(isHighPtVBFCutBased)   cat[7]=true;
+      category.set(cat);
       std::vector<TString> chTags( category.getChannelTags() );
 
       //leptons and boson
@@ -429,7 +433,7 @@ void VBFVectorBoson::addMVAvars(){
   newTree->Branch("C",&C);
   newTree->Branch("D",&D);
   newTree->Branch("training",&training);
-  category.attachToTree(newTree);
+  newTree->Branch("category", &category, "MM:A:VBF:HighPt:HighPtVBF:V1J:HighPtOfflineVBF:HighPtVBFCutBased");
 }
 
 void VBFVectorBoson::fill(MiniEvent_t ev, TLorentzVector boson, std::vector<Jet> jets, std::vector<double> cplotwgts, TString c){
