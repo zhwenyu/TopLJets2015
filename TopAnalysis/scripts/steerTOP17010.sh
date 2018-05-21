@@ -72,9 +72,11 @@ case $WHAT in
 	python scripts/runTopWidthAnalysis.py -i root://eoscms//eos/cms/${summaryeosdir}/Chunks/MC13TeV_TTJets_12.root -o ${outdir}/analysis/Chunks -q local;
         ;;
     ANA )
-	python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${ChunksDir} -q ${queue} --only MC;
-        python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${ChunksDir} -q ${queue} --only Data13TeV_Single,Data13TeV_Double --farm TOP17010DataANA;
-        python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${ChunksDir} -q ${queue} --only MuonEG --farm TOP17010DataMuEGANA;
+        python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${ChunksDir}-part2 -q ${queue} --only TTJets;
+	#python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${ChunksDir} -q ${queue} --only MC;
+        #python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${ChunksDir} -q ${queue} --only Data13TeV_Single,Data13TeV_Double --farm TOP17010DataANA;
+        #python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${ChunksDir} -q ${queue} --only Data13TeV_Double --farm TOP17010DataANA;
+        #python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${ChunksDir} -q ${queue} --only MuonEG --farm TOP17010DataMuEGANA;
 	;;
     CHECKANA )
         for FARM in TOP17010ANA TOP17010DataANA TOP17010DataMuEGANA; do
@@ -89,13 +91,18 @@ case $WHAT in
 	python scripts/plotter.py -i ${AnalysisDir} ${opts} --only mll -o dy_plotter.root; 
 	python scripts/runDYRinRout.py --in ${AnalysisDir}/plots/dy_plotter.root --categs 1b,2b --out ${AnalysisDir}/plots/ > ${AnalysisDir}/plots/dysf.dat;
         opts="${opts} --procSF DY:${AnalysisDir}/plots/.dyscalefactors.pck --doDataOverMC --mcUnc ${lumiUnc}"
-	python scripts/plotter.py -i ${AnalysisDir} ${opts} --only mll,evcount,dphilb,drlb,met,njets,ptlb,incmlb_w100 -o dysf_plotter.root; 
+	python scripts/plotter.py -i ${AnalysisDir} ${opts} --only mll,evcount,dphilb,drlb,met,njets,ptlb,incmlb_w100_m1725 -o dysf_plotter.root; 
 	python scripts/plotter.py -i ${AnalysisDir} ${opts} --only evcount --saveTeX -o count_plotter.root;
 	;;
     PLOT )
         opts="-l ${lumi} ${lumiSpecs} --procSF DY:${AnalysisDir}/plots/.dyscalefactors.pck --mcUnc ${lumiUnc} --silent"
-        python scripts/plotter.py -i ${AnalysisDir}  -j data/era2016/samples.json       ${opts};
-        #python scripts/plotter.py -i ${AnalysisDir}  -j data/era2016/syst_samples.json  ${opts} -o syst_plotter.root;
+        for m in 1710 1712 1714 1716 1718 1720 1722 1724 1725 1726 1728 1730 1732 1734 1736 1738 1740; do
+            for w in 20 40 50 60 70 80 90 100 110 120 130 140 150 160 180 200 220 240 260 280 300 350 400; do
+                pfix=w${w}_m${m}
+                python scripts/plotter.py -i ${AnalysisDir}  -j data/era2016/samples.json       ${opts} --only ${pfix} -o plotter_${pfix}.root;
+                python scripts/plotter.py -i ${AnalysisDir}  -j data/era2016/syst_samples.json  ${opts} --only ${pfix} -o syst_plotter_${pfix}.root;
+            done
+        done
         ;;
     COMBPLOT )
 	#combined plots
@@ -105,13 +112,13 @@ case $WHAT in
 	python test/TopWidthAnalysis/combinePlotsForAllCategories.py drlb:drlb1b             EE1b,MM1b,EM1b                    ${AnalysisDir}/plots/plotter.root
 	python test/TopWidthAnalysis/combinePlotsForAllCategories.py drlb:drlb2b             EE2b,MM2b,EM2b                    ${AnalysisDir}/plots/plotter.root
 	python test/TopWidthAnalysis/combinePlotsForAllCategories.py drlb:drlbinc            EE1b,EE2b,MM1b,MM2b,EM1b,EM2b     ${AnalysisDir}/plots/plotter.root
-	python test/TopWidthAnalysis/combinePlotsForAllCategories.py incmlb_w100:mlb1blowpt  EE1blowpt,MM1blowpt,EM1blowpt     ${AnalysisDir}/plots/plotter.root
-	python test/TopWidthAnalysis/combinePlotsForAllCategories.py incmlb_w100:mlb2blowpt  EE2blowpt,MM2blowpt,EM2blowpt     ${AnalysisDir}/plots/plotter.root
-	python test/TopWidthAnalysis/combinePlotsForAllCategories.py incmlb_w100:mlb1bhighpt EE1bhighpt,MM1bhighpt,EM1bhighpt  ${AnalysisDir}/plots/plotter.root
-	python test/TopWidthAnalysis/combinePlotsForAllCategories.py incmlb_w100:mlb2bhighpt EE2bhighpt,MM2bhighpt,EM2bhighpt  ${AnalysisDir}/plots/plotter.root
-	python test/TopWidthAnalysis/combinePlotsForAllCategories.py incmlb_w100:mlblowpt    EE1blowpt,MM1blowpt,EM1blowpt,EE2blowpt,MM2blowpt,EM2blowpt  ${AnalysisDir}/plots/plotter.root
-	python test/TopWidthAnalysis/combinePlotsForAllCategories.py incmlb_w100:mlbhighpt   EE1bhighpt,MM1bhighpt,EM1bhighpt,EE2bhighpt,MM2bhighpt,EM2bhighpt  ${AnalysisDir}/plots/plotter.root
-	python test/TopWidthAnalysis/combinePlotsForAllCategories.py incmlb_w100:mlbinc      EE1blowpt,MM1blowpt,EM1blowpt,EE2blowpt,MM2blowpt,EM2blowpt,EE1bhighpt,MM1bhighpt,EM1bhighpt,EE2bhighpt,MM2bhighpt,EM2bhighpt  ${AnalysisDir}/plots/plotter.root
+	python test/TopWidthAnalysis/combinePlotsForAllCategories.py incmlb_w100_m1725:mlb1blowpt  EE1blowpt,MM1blowpt,EM1blowpt     ${AnalysisDir}/plots/plotter.root
+	python test/TopWidthAnalysis/combinePlotsForAllCategories.py incmlb_w100_m1725:mlb2blowpt  EE2blowpt,MM2blowpt,EM2blowpt     ${AnalysisDir}/plots/plotter.root
+	python test/TopWidthAnalysis/combinePlotsForAllCategories.py incmlb_w100_m1725:mlb1bhighpt EE1bhighpt,MM1bhighpt,EM1bhighpt  ${AnalysisDir}/plots/plotter.root
+	python test/TopWidthAnalysis/combinePlotsForAllCategories.py incmlb_w100_m1725:mlb2bhighpt EE2bhighpt,MM2bhighpt,EM2bhighpt  ${AnalysisDir}/plots/plotter.root
+	python test/TopWidthAnalysis/combinePlotsForAllCategories.py incmlb_w100_m1725:mlblowpt    EE1blowpt,MM1blowpt,EM1blowpt,EE2blowpt,MM2blowpt,EM2blowpt  ${AnalysisDir}/plots/plotter.root
+	python test/TopWidthAnalysis/combinePlotsForAllCategories.py incmlb_w100_m1725:mlbhighpt   EE1bhighpt,MM1bhighpt,EM1bhighpt,EE2bhighpt,MM2bhighpt,EM2bhighpt  ${AnalysisDir}/plots/plotter.root
+	python test/TopWidthAnalysis/combinePlotsForAllCategories.py incmlb_w100_m1725:mlbinc      EE1blowpt,MM1blowpt,EM1blowpt,EE2blowpt,MM2blowpt,EM2blowpt,EE1bhighpt,MM1bhighpt,EM1bhighpt,EE2bhighpt,MM2bhighpt,EM2bhighpt  ${AnalysisDir}/plots/plotter.root
         ;;
     WWW )
         mkdir -p ${wwwdir}/ana

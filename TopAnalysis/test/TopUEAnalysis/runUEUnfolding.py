@@ -6,6 +6,56 @@ import re
 import optparse
 import ROOT
 
+def computeChisquare(data,model,cov):
+    """ computes the chi^2 between two graphs and the covariance matrix associated to the first graph """
+
+    #n-points
+    np=data.GetN()
+    
+    #invert covariance matrix
+    invCovM=None
+    if cov:        
+        nx,ny=cov.GetNbinsX(),cov.GetNbinsY()
+        covM=ROOT.TMatrixF(nx,ny)
+        for xbin in xrange(1,nx+1):
+            for ybin in xrange(1,ny+1):
+                covM[xbin-1][ybin-1]=cov.GetBinContent(xbin,ybin)
+        invCovM=ROOT.TMatrixF(covM)
+        invCovM.Invert()
+
+    #vector of differences
+    diffVec=ROOT.TVectorF(np)
+    x,y=ROOT.Double(0),ROOT.Double(0)
+    for i in xrange(0,np):
+
+        data.GetPoint(i,x,y)
+        ydata_i=float(y)
+
+        model.GetPoint(i,x,y)
+        ymodel_i=float(y)
+
+        #the difference has to be multiplied by the bin width 
+        ex=data.GetErrorX(i)
+        diffVec[i]=ex*(ymodel_i-ydata_i)
+
+    #chi^2 for distribution analysis
+    chi2=0
+    if invCovM:
+        for i in xrange(0,np):
+            for j in xrange(0,np):
+                chi2 += diffVec[i]*invCovM[i][j]*diffVec[j]            
+    else:
+        for i in xrange(0,np):
+            ey=data.GetErrorY(i)
+            ex=data.GetErrorX(i)
+            if ey*ex==0: continue
+            chi2 += (diffVec[i]/(ey*ex))**2
+        
+    pval=ROOT.TMath.Prob(chi2,np-1)
+
+    return chi2,np-1,pval
+
+
 """
 """
 def main():
@@ -56,7 +106,7 @@ def main():
         
         if opt.step==0:
             print 'Hadding 1/2 of the files for the migration matrix'
-            os.system( 'hadd -f %s/ChunkAForToys.root %s'%(opt.out,' '.join( str(x) for x in chunkA) ) )
+            os.system( 'hadd -f -k %s/ChunkAForToys.root %s'%(opt.out,' '.join( str(x) for x in chunkA) ) )
 
         if opt.step==2:
 
@@ -66,6 +116,11 @@ def main():
             indmig.SetDirectory(0)
             indfakes=fIn.Get('fakes_0')
             indfakes.SetDirectory(0)
+            refRec=fIn.Get('reco_0')
+            refRec.Add(indfakes,-1)
+            refRec.SetDirectory(0)
+            refGen=fIn.Get('gen')
+            refGen.SetDirectory(0)
             fIn.Close()
 
             print 'Running %d toys'%len(chunkB)
@@ -78,12 +133,41 @@ def main():
             indfakes.Scale(fakes.Integral()/indfakes.Integral())
             indmig.Scale(mig.Integral()/indmig.Integral())
 
+            pvalRatio=None
             globalBias,globalPulls=None,None
             binBias,binPulls=None,None
             for itoy in xrange(0,len(chunkB)):
                 unf.reset();
-                results=unf.unfoldToy(chunkB[itoy],opt_tau,indmig,norm,indfakes)
+                status=unf.unfoldToy(chunkB[itoy],opt_tau,indmig,norm,indfakes)
+                if not status: continue            
+
+                #bottom line test
+                toySF=unf.curToyTruth_.Integral()/refGen.Integral()
+                #refRec.Scale(unf.curToyRec_.Integral()/refRec.Integral())
+                refRec.Scale(toySF)
+                #refRec.Scale(unf.curFolded_unfolded_.Integral()/refRec.Integral())
+                refGr=ROOT.TGraphErrors(refRec)
+                toyRec=ROOT.TGraphErrors(unf.curToyRec_)                
+                #toyRec=ROOT.TGraphErrors(unf.curFolded_unfolded_)
+                smearedChi2=computeChisquare(toyRec,refGr,None)
                 
+                toyUnf=ROOT.TGraphErrors(unf.curToyUnf_)
+                toyGen=ROOT.TGraphErrors(unf.curToyTruth_)
+                refGen.Scale(toySF)
+                refGenGr=ROOT.TGraphErrors(refGen)
+                unfChi2=computeChisquare(toyUnf,refGenGr,unf.curCov_)
+
+                toyRec.Delete()
+                refGr.Delete()
+                toyGen.Delete()
+                toyUnf.Delete()
+                refGenGr.Delete()
+
+                if not pvalRatio:
+                    pvalRatio=ROOT.TH1F('pvalRatio',';p-val(unf.)/p-val(smeared);',50,0,10)
+                    pvalRatio.SetDirectory(0)
+                if smearedChi2[2]>0: pvalRatio.Fill(unfChi2[2]/smearedChi2[2])
+
                 fOut.cd()
                 fOut.rmdir('toy_%d'%itoy)
                 fOutDir=fOut.mkdir('toy_%d'%itoy)
@@ -101,6 +185,7 @@ def main():
                             globalBias.SetDirectory(0)
                             binBias=ROOT.TH2F('bin_bias',';Bin number;Bias;',r.GetNbinsX(),0,r.GetNbinsX(),100,-maxVal,maxVal)
                             binBias.SetDirectory(0)
+
                         for xbin in xrange(1,r.GetNbinsX()+1):
                             xbias=r.GetBinContent(xbin)
                             globalBias.Fill(xbias)
@@ -125,7 +210,7 @@ def main():
             
             #all done
             fOut.cd()
-            for x in [globalBias,globalPulls,binBias,binPulls]: x.Write()
+            for x in [pvalRatio,globalBias,globalPulls,binBias,binPulls]: x.Write()
             fOut.Close()
 
 

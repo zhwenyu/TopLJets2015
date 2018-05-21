@@ -15,11 +15,12 @@ class EventShapeTool:
         self.tmomentumTensor=ROOT.TMatrixDSym(2)
         self.detST=0
 
-    def analyseNewEvent(self,inputP4,r=2):
+    def analyseNewEvent(self,inputP4,r=1):
         self.computeMomentumTensor(inputP4,r)
         self.computeEventShapes()
 
-    def computeMomentumTensor(self,inputP4,r=2):
+    def computeMomentumTensor(self,inputP4,r=1):
+        """r=2 is the sphericity tensor, r=1 (default) is the linearized version of it"""
         self.momentumTensor.Zero();
         if len(inputP4)<2: return
         norm=0
@@ -27,7 +28,7 @@ class EventShapeTool:
         for p4 in inputP4:
             p3vec=p4.Vect()
             pR=ROOT.TMath.Power(p3vec.Mag(),r)
-            pRminus2=ROOT.TMath.Power(pR,0.5*r-1)
+            pRminus2=ROOT.TMath.Power(p3vec.Mag(),r-2)
             norm += pR
             normT=ROOT.TMath.Power(p4.Pt(),r)
             self.momentumTensor[0][0] += pRminus2*p3vec.X()*p3vec.X();
@@ -40,9 +41,9 @@ class EventShapeTool:
             self.momentumTensor[2][1] += pRminus2*p3vec.Z()*p3vec.Y();
             self.momentumTensor[2][2] += pRminus2*p3vec.Z()*p3vec.Z();
 
-            for i in xrange(0,2):
+        for i in xrange(0,2):
             for j in xrange(0,2):
-                self.tmomentumTensor[i][j]=(1.norm)*self.momentumTensor[i][j]
+                self.tmomentumTensor[i][j]=(1./norm)*self.momentumTensor[i][j]
         
         for i in xrange(0,3):
             for j in xrange(0,3):

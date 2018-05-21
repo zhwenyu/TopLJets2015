@@ -17,24 +17,31 @@ NBINSMLB,MINMLB,MAXMLB=20,0.,200.
 """
 Take the ratio of two Breit-Wigner functions at fixed mass as a reweighting factor
 """
-def weightTopWidth(tmassList,bwigner,targetWidth,origWidth=1.324):
+def weightTopWidth(tmassList,bwigner,targetWidth,targetMass,origWidth=1.324,origMass=172.5):
 
     #if not available do nothing
     if not bwigner : return 1.0
 
+    bwigner.FixParameter(1,origMass)
     bwigner.FixParameter(2,origWidth)
     origNorm=bwigner.Integral(0,300)
 
+    bwigner.FixParameter(1,targetMass)
     bwigner.FixParameter(2,targetWidth)
     targetNorm=bwigner.Integral(0,300)
 
     wgt=1.0
     for m in tmassList:
+        bwigner.FixParameter(1,origMass)
         bwigner.FixParameter(2,origWidth)
         origVal=bwigner.Eval(m)
+
+        bwigner.FixParameter(1,targetMass)
         bwigner.FixParameter(2,targetWidth)
         targetVal=bwigner.Eval(m)
+
         wgt *= (targetVal/targetNorm) / (origVal/origNorm)
+
     return wgt
 
 """
@@ -42,7 +49,10 @@ Analysis loop
 """
 def runTopWidthAnalysis(fileName,
                         outFileName,
-                        widthList=[0.2,0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.1,1.2,1.3,1.4,1.5,1.6,1.8,2.0,2.2,2.4,2.6,2.8,3.0,3.5,4.0],
+                        widthList=[1.16, 1.23,  1.28, 1.31,   1.34,  1.39,  1.48],
+                        massList =[166.5,169.5, 171.5, 172.5, 173.5, 175.5, 178.5],
+                        #widthList=[0.2,0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.1,1.2,1.3,1.4,1.5,1.6,1.8,2.0,2.2,2.4,2.6,2.8,3.0,3.5,4.0],
+                        #massList=[171.0,171.2,171.4,171.6,171.8,172.0,172.2,172.4,172.5,172.6,172.8,173.0,173.2,173.4,173.6,173.8,174.0],
                         systs=['',
                                'puup','pudn',
                                'btagup','btagdn',
@@ -103,6 +113,7 @@ def runTopWidthAnalysis(fileName,
     if isData:
         bwigner=None
         widthList=[1.0]
+        massList=[172.5]
         systs=['']
     else:
         
@@ -120,9 +131,21 @@ def runTopWidthAnalysis(fileName,
 
         #single top samples have no width [https://hypernews.cern.ch/HyperNews/CMS/get/top-modeling-and-generators/192.html]
         #backgrounds also have no width
-        if not 'TTJets' in fileName:
+        isBkg=True if not 'TTJets' in fileName else False
+        if isBkg:
             bwigner=None
             widthList=[1.0]
+            massList=[smMass]
+
+        #simplify for dedicated systs
+        isDedicatedSyst=False
+        for sname in ['TTJets_evtgen','TTJets_widthx','TTJets_m1','TTJets_herwig','TTJets_isr','TTJets_fsr','TTJets_hdamp','TTJets_ue','TTJets_erd','TTJets_qcd','TTJets_gluon']:
+            if sname in fileName: isDedicatedSyst=True
+        if isDedicatedSyst:
+            systs=['']
+            thsysts=[]
+            print 'Removed all systs in the end as this is a dedicated systematics sample'
+        
 
     #read the MCFM NLO(prod+dec)/NLO(prod) weights
     mcfmIn=ROOT.TFile.Open('${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/MCFM_todk2tota.root')
@@ -135,20 +158,21 @@ def runTopWidthAnalysis(fileName,
 
     #MC truth control histograms
     for w in widthList:
-        var='tmass_w%d'%int(100*w)
-        observablesH[var]=ROOT.TH1F(var,';Top quark mass [GeV];Top quarks',100,150,200)
-        for assig in ['cor','wro']:
-            var='%sgenmlbvsmtop_w%d'%(assig,int(100*w))
-            observablesH[var]=ROOT.TH2F(var,';Mass(lepton,jet) [GeV];Top mass;l+j pairs',30,0,300,100,150,200)
-            if w!=1.0 : continue
-            var='%smlb'%(assig)
-            observablesH[var]=ROOT.TH1F(var,';Mass(lepton,jet) [GeV];l+j pairs',30,0,300)
-            var='%sptlb'%(assig)
-            observablesH[var]=ROOT.TH1F(var,';p_{T}(lepton,jet);l+j pairs',30,0,300)
-            var='%sdphilb'%(assig)
-            observablesH[var]=ROOT.TH1F(var,';#Delta#phi(lepton,jet);l+j pairs',30,-3.15,3.15)
-            var='%sdrlb'%(assig)
-            observablesH[var]=ROOT.TH1F(var,';#DeltaR(lepton,jet);l+j pairs',30,0,6)
+        for m in massList:
+            var='tmass_w%d_m%d'%(int(100*w),int(10*m))
+            observablesH[var]=ROOT.TH1F(var,';Top quark mass [GeV];Top quarks',100,150,200)
+            for assig in ['cor','wro']:
+                var='%sgenmlbvsmtop_w%d_m%d'%(assig,int(100*w),int(10*m))
+                observablesH[var]=ROOT.TH2F(var,';Mass(lepton,jet) [GeV];Top mass;l+j pairs',30,0,300,100,150,200)
+                if (w,m)!=(1.0,smMass): continue
+                var='%smlb'%(assig)
+                observablesH[var]=ROOT.TH1F(var,';Mass(lepton,jet) [GeV];l+j pairs',30,0,300)
+                var='%sptlb'%(assig)
+                observablesH[var]=ROOT.TH1F(var,';p_{T}(lepton,jet);l+j pairs',30,0,300)
+                var='%sdphilb'%(assig)
+                observablesH[var]=ROOT.TH1F(var,';#Delta#phi(lepton,jet);l+j pairs',30,-3.15,3.15)
+                var='%sdrlb'%(assig)
+                observablesH[var]=ROOT.TH1F(var,';#DeltaR(lepton,jet);l+j pairs',30,0,6)
 
     #RECO level histograms
     for j in ['EE','MM','EM']:
@@ -189,26 +213,27 @@ def runTopWidthAnalysis(fileName,
             for i in ['lowpt','highpt']:
 
                 for w in widthList:
-                    var=j+b+i+'_incmlb_w%d'%int(100*w)
-                    observablesH[var]=ROOT.TH1F(var,';Mass(lepton,jet) (Inclusive) [GeV];l+j pairs',NBINSMLB,MINMLB,MAXMLB)
+                    for m in massList:
+                        var=j+b+i+'_incmlb_w%d_m%d'%(int(100*w),int(10*m))
+                        observablesH[var]=ROOT.TH1F(var,';Mass(lepton,jet) (Inclusive) [GeV];l+j pairs',NBINSMLB,MINMLB,MAXMLB)
 
-                    var=j+b+i+'_incmlb_w%d_exp'%int(100*w)
-                    nsysts=len(systs)
-                    observablesH[var]=ROOT.TH2F(var,';Mass(lepton,jet) (Inclusive) [GeV];Systematics;l+j pairs',NBINSMLB,MINMLB,MAXMLB,nsysts+1,0,nsysts+1)
-                    for isyst in xrange(0,nsysts):
-                        observablesH[var].GetYaxis().SetBinLabel(isyst+1,systs[isyst])
+                        var=j+b+i+'_incmlb_w%d_m%d_exp'%(int(100*w),int(10*m))
+                        nsysts=len(systs)
+                        observablesH[var]=ROOT.TH2F(var,';Mass(lepton,jet) (Inclusive) [GeV];Systematics;l+j pairs',NBINSMLB,MINMLB,MAXMLB,nsysts+1,0,nsysts+1)
+                        for isyst in xrange(0,nsysts):
+                            observablesH[var].GetYaxis().SetBinLabel(isyst+1,systs[isyst])
 
-                    var=j+b+i+'_incmlb_w%d_gen'%int(100*w)
-                    nsysts=len(thsysts)
-                    observablesH[var]=ROOT.TH2F(var,';Mass(lepton,jet) (Inclusive) [GeV];Systematics;l+j pairs',NBINSMLB,MINMLB,MAXMLB,nsysts+1,0,nsysts+1)
-                    for isyst in xrange(0,nsysts):
-                        observablesH[var].GetYaxis().SetBinLabel(isyst+1,thsysts[isyst])
+                        var=j+b+i+'_incmlb_w%d_m%d_gen'%(int(100*w),int(10*m))
+                        nsysts=len(thsysts)
+                        observablesH[var]=ROOT.TH2F(var,';Mass(lepton,jet) (Inclusive) [GeV];Systematics;l+j pairs',NBINSMLB,MINMLB,MAXMLB,nsysts+1,0,nsysts+1)
+                        for isyst in xrange(0,nsysts):
+                            observablesH[var].GetYaxis().SetBinLabel(isyst+1,thsysts[isyst])
 
-                    if w!=1.0 : continue
-                    var=j+b+i+'_pairing'
-                    observablesH[var]=ROOT.TH1F(var,';Pairing;l+j pairs',2,0,2)
-                    observablesH[var].GetXaxis().SetBinLabel(1,'correct')
-                    observablesH[var].GetXaxis().SetBinLabel(2,'wrong')
+                        if (w,m)!=(1.0,smMass): continue
+                        var=j+b+i+'_pairing'
+                        observablesH[var]=ROOT.TH1F(var,';Pairing;l+j pairs',2,0,2)
+                        observablesH[var].GetXaxis().SetBinLabel(1,'correct')
+                        observablesH[var].GetXaxis().SetBinLabel(2,'wrong')
 
     for var in observablesH:
         observablesH[var].SetDirectory(0)
@@ -245,14 +270,16 @@ def runTopWidthAnalysis(fileName,
                 tops[ tid ] = ROOT.TLorentzVector()
                 tops[ tid ].SetPtEtaPhiM(tree.t_pt[it],tree.t_eta[it],tree.t_phi[it],tree.t_m[it])
                 tmassList.append( tops[tid].M() )
+
         widthWeight={}
         for w in widthList:
-            widthWeight[w]=weightTopWidth(tmassList,bwigner,w*REFWIDTH,smWidth)
+            for m in massList:
+                widthWeight[(w,m)]=weightTopWidth(tmassList,bwigner,w*REFWIDTH,m,smWidth,smMass)
 
-            #paranoid check for the reweighted mass based on the Breit-Wigner
-            var='tmass_w%d'%int(100*w)
-            for mtop in tmassList:
-                observablesH[var].Fill(mtop,baseEvWeight*widthWeight[w])
+                #paranoid check for the reweighted mass based on the Breit-Wigner
+                var='tmass_w%d_m%d'%(int(100*w),int(10*m))
+                for mtop in tmassList:
+                    observablesH[var].Fill(mtop,baseEvWeight*widthWeight[(w,m)])
                 
         #preselect the b-jets (central, b-tag up, b-tag dn, l-tag up, l-tag dn, jer up, jer dn, jes_1 up, jes_1 dn, ...)
         bjets     = [ [], [], [], [], [], [], [] ]
@@ -437,18 +464,19 @@ def runTopWidthAnalysis(fileName,
                         observablesH[var+'_dphilb'].Fill(dphilb,evWeight)
 
                     #observable and associated systematics
-                    for w in widthList:
-
+                    for wmkey in widthWeight:
+                        wmpfix='w%d_m%d'%(int(100*wmkey[0]),int(10*wmkey[1]))
+                        
                         if isyst==0:
-                            var=evcat+btagcat+ptCat+'_incmlb_w%d'%int(100*w)
-                            observablesH[var].Fill(mlb,evWeight*widthWeight[w])
+                            var=evcat+btagcat+ptCat+'_incmlb_'+wmpfix
+                            observablesH[var].Fill(mlb,evWeight*widthWeight[wmkey])
 
-                        var=evcat+btagcat+ptCat+'_incmlb_w%d_exp'%int(100*w)
-                        observablesH[var].Fill(mlb,isyst,evWeight*widthWeight[w])
+                        var=evcat+btagcat+ptCat+'_incmlb_'+wmpfix+'_exp'
+                        observablesH[var].Fill(mlb,isyst,evWeight*widthWeight[wmkey])
 
-                        if w==1.0:
+                        if wmkey==(1.0,smMass):
                             var=evcat+btagcat+'_ptlb_exp'
-                            observablesH[var].Fill(ptlb,isyst,evWeight*widthWeight[w])
+                            observablesH[var].Fill(ptlb,isyst,evWeight*widthWeight[wmkey])
 
                         
                     #for the nominal variation do MC truth and the theory systematics, if available
@@ -486,20 +514,21 @@ def runTopWidthAnalysis(fileName,
 
                     #save MC truth distribution
                     if pairFullyMatchedAtGen:
-                        for w in widthList:
+                        for wmkey in widthWeight:
+                            wmpfix='w%d_m%d'%(int(100*wmkey[0]),int(10*wmkey[1]))
                             assigvar='cor' if assignmentType==0 else 'wro'
-                            var=assigvar+'genmlbvsmtop_w%d'%int(100*w)
-                            observablesH[var].Fill(genmlb,tmass,evWeight*widthWeight[w])
+                            var=assigvar+'genmlbvsmtop_'+wmpfix
+                            observablesH[var].Fill(genmlb,tmass,evWeight*widthWeight[wmkey])
                             
-                            if w!=1: continue
+                            if wmkey!=(1.0,smMass): continue
                             var=assigvar+'mlb'
-                            observablesH[var].Fill(genmlb,evWeight*widthWeight[w])
+                            observablesH[var].Fill(genmlb,evWeight*widthWeight[wmkey])
                             var=assigvar+'ptlb'
-                            observablesH[var].Fill(genptlb,evWeight*widthWeight[w])
+                            observablesH[var].Fill(genptlb,evWeight*widthWeight[wmkey])
                             var=assigvar+'dphilb'
-                            observablesH[var].Fill(gendphilb,evWeight*widthWeight[w])
+                            observablesH[var].Fill(gendphilb,evWeight*widthWeight[wmkey])
                             var=assigvar+'drlb'
-                            observablesH[var].Fill(gendrlb,evWeight*widthWeight[w])
+                            observablesH[var].Fill(gendrlb,evWeight*widthWeight[wmkey])
 
                     #emulate reweighting to NLO prod+dec based on MCFM calculations
                     pairWeightAtNLO=1.0
@@ -521,13 +550,14 @@ def runTopWidthAnalysis(fileName,
                                 thEvWeight=0
                         if s=='nloproddec'  : thEvWeight = evWeight*pairWeightAtNLO
                         if math.isnan(thEvWeight) : continue
-                        for w in widthList:
-                            var=evcat+btagcat+ptCat+'_incmlb_w%d_gen'%int(100*w)
-                            observablesH[var].Fill(mlb,ith,thEvWeight*widthWeight[w])
+                        for wmkey in widthWeight:
+                            wmpfix='w%d_m%d'%(int(100*wmkey[0]),int(10*wmkey[1]))
+                            var=evcat+btagcat+ptCat+'_incmlb_'+wmpfix+'_gen'
+                            observablesH[var].Fill(mlb,ith,thEvWeight*widthWeight[wmkey])
 
-                            if w==1.0:
+                            if wmkey==(1.0,smMass):
                                 var=evcat+btagcat+'_ptlb_gen'
-                                observablesH[var].Fill(ptlb,ith,thEvWeight*widthWeight[w])
+                                observablesH[var].Fill(ptlb,ith,thEvWeight*widthWeight[wmkey])
 
     #save results
     fOut=ROOT.TFile.Open(outFileName,'RECREATE')

@@ -84,13 +84,15 @@ class UEEventCounter:
         self.rec_C              = [0]*nSysts
         self.rec_D              = [0]*nSysts
         self.rec_rapDist        = [0]*nSysts
-        self.rec_maxRap        = [0]*nSysts
+        self.rec_maxRap         = [0]*nSysts
+        self.rec_detST          = [0]*nSysts
         self.gen_sphericity     = 0
         self.gen_aplanarity     = 0
         self.gen_C              = 0
         self.gen_D              = 0
         self.gen_rapDist        = 0
         self.gen_maxRap         = 0
+        self.gen_detST          = 0
 
         self.rec_chmult   = [0]*nSysts            #classic observables
         self.rec_chflux   = [0]*nSysts
@@ -190,7 +192,6 @@ class UEEventCounter:
                     pass
             if not passExtraCuts: self.rec_passSel[iSystVar] = False
                 
-
             if self.rec_passSel[iSystVar]:
 
                 #select particles
@@ -297,8 +298,9 @@ class UEEventCounter:
                 self.rec_chrecoil[iSystVar] = chrecoil.Pt()
 
                 #event shapes
-                self.evshapes.analyseNewEvent(selP4)
+                self.evshapes.analyseNewEvent(inputP4=selP4,r=1)
                 self.rec_sphericity[iSystVar]     = self.evshapes.sphericity
+                self.rec_detST[iSystVar]          = self.evshapes.detST
                 self.rec_aplanarity[iSystVar]     = self.evshapes.aplanarity
                 self.rec_C[iSystVar]              = self.evshapes.C
                 self.rec_D[iSystVar]              = self.evshapes.D
@@ -311,7 +313,7 @@ class UEEventCounter:
                 if 'chmult' in self.cuts:
                     if self.rec_chmult[iSystVar]<self.cuts['chmult'][0] or self.rec_chmult[iSystVar]>=self.cuts['chmult'][1]:
                         self.rec_passSel[iSystVar] = False
-                
+
         #gen level (only one selection variation needed and require e-mu final state)
         self.gen_passSel=(t.gen_passSel&0x1)
         if isMC and abs(t.gen_cat)!=11*13 : self.gen_passSel=False
@@ -365,8 +367,9 @@ class UEEventCounter:
             self.gen_chrecoil = chrecoil.Pt()
 
             #event shapes
-            self.evshapes.analyseNewEvent(selP4)
+            self.evshapes.analyseNewEvent(selP4,r=1)
             self.gen_sphericity     = self.evshapes.sphericity
+            self.gen_detST          = self.evshapes.detST
             self.gen_aplanarity     = self.evshapes.aplanarity
             self.gen_C              = self.evshapes.C
             self.gen_D              = self.evshapes.D
