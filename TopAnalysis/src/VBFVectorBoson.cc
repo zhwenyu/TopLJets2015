@@ -20,6 +20,10 @@
 #include <algorithm>
 #include "TMath.h"
 
+#include "TMVA/Tools.h"
+#include "TMVA/Reader.h"
+#include "TMVA/MethodCuts.h"
+
 using namespace std;
 
 //TODOS
@@ -44,6 +48,19 @@ void VBFVectorBoson::RunVBFVectorBoson()
   }
   selector->setPhotonSelection({vbfPhotonTrigger,highPtPhotonTrigger},offlinePhoton);
 
+
+  //TMVA configuration
+  TMVA::Reader *reader = new TMVA::Reader( "!Color:!Silent" );
+  TString weightFile("${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBF_weights/CutMjjJptBest_BDT_VBF0.weights.xml");
+  TString mvaMethod("BDT");
+  gSystem->ExpandPathName(weightFile);
+  reader->AddVariable("ht",&scalarht);
+  reader->AddVariable("j_gawidth[0]",&leadj_gawidth);
+  reader->AddVariable("forwardeta",&forwardeta);
+  reader->AddVariable("j_c1_05[0]",&leadj_c1_05);
+  reader->AddVariable("balance",&balance);
+  reader->BookMVA(mvaMethod, weightFile );
+  
   ///////////////////////
   // LOOP OVER EVENTS //
   /////////////////////
@@ -90,9 +107,14 @@ void VBFVectorBoson::RunVBFVectorBoson()
 
       //jet related variables and selection
       mjj = (jets.size()>=2 ?  (jets[0]+jets[1]).M() : 0.);
-      detajj = (jets.size()>=2 ? fabs(jets[0].Eta()-jets[1].Eta()) : -1.);
-      dphijj = (jets.size()>=2 ? jets[0].DeltaPhi(jets[1]) : -1.);
+      detajj = (jets.size()>=2 ? fabs(jets[0].Eta()-jets[1].Eta()) : -99.);
+      dphijj = (jets.size()>=2 ? jets[0].DeltaPhi(jets[1]) : -99.);
       jjpt = (jets.size()>=2 ? (jets[0]+jets[1]).Pt() : 0.);
+
+      leadj_gawidth=(jets.size()>1 ? ev.j_gawidth[jets[0].getJetIndex()] : -99);
+      leadj_c1_05=(jets.size()>1 ? ev.j_c1_05[jets[0].getJetIndex()] : -99);
+      subleadj_gawidth=(jets.size()>2 ? ev.j_gawidth[jets[1].getJetIndex()] : -99);
+      subleadj_c1_05=(jets.size()>2 ? ev.j_c1_05[jets[1].getJetIndex()] : -99);
 
       scalarht = 0.;
       TLorentzVector mhtP4(0,0,0,0);
@@ -168,6 +190,10 @@ void VBFVectorBoson::RunVBFVectorBoson()
       balance=0;
       relbpt=0;
       dphibjj=0;
+      leadj_gawidth=0;
+      leadj_c1_05=0;
+      subleadj_gawidth=0;
+      subleadj_c1_05=0;
       if(passJets) {
         ystar=boson.Rapidity()-0.5*(jets[0].Rapidity()+jets[1].Rapidity());
         balance=(boson+jets[0]+jets[1]).Pt();
@@ -193,6 +219,8 @@ void VBFVectorBoson::RunVBFVectorBoson()
       C           = esv.C(1.);
       D           = esv.D(1.);
       
+      vbfmva = passJets ? reader->EvaluateMVA(mvaMethod) : -99;
+      cout << passJets << " " << vbfmva << endl;
       ////////////////////
       // EVENT WEIGHTS //
       //////////////////
@@ -380,6 +408,9 @@ void VBFVectorBoson::bookHistograms(){
   ht->addHist("dphivj1", 	  new TH1F("dphivj1",          ";#Delta#phi(V,j1);Jets",20,0,4));  
   ht->addHist("dphivj2", 	  new TH1F("dphivj2",          ";#Delta#phi(V,j2);Jets",20,0,4));  
   ht->addHist("dphivj3", 	  new TH1F("dphivj3",          ";#Delta#phi(V,j3);Jets",20,0,4));
+  //final analyses distributions
+  ht->addHist("evcount",         new TH1F("evcount",        ";Pass;Events",1,0,1));  
+  ht->addHist("vbfmva",          new TH1F("vbfmva",         ";VBF MVA;Events",20,1,1));  
 }
 void VBFVectorBoson::setGammaZPtWeights(){
   TString wgtUrl("${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBFVectorBoson/raw/plots/ratio_plotter.root");
@@ -415,6 +446,10 @@ void VBFVectorBoson::addMVAvars(){
   newTree->Branch("dphibjj", &dphibjj);
   newTree->Branch("balance", &balance);
   newTree->Branch("forwardeta", &forwardeta);
+  newTree->Branch("leadj_gawidth", &leadj_gawidth);
+  newTree->Branch("subleadj_gawidth", &subleadj_gawidth);
+  newTree->Branch("leadj_c1_05", &leadj_c1_05);
+  newTree->Branch("subleadj_c1_05", &subleadj_c1_05);
   newTree->Branch("jjetas", &jjetas);
   newTree->Branch("centjy", &centjy);
   newTree->Branch("ncentjj", &ncentjj);
@@ -522,6 +557,10 @@ void VBFVectorBoson::fill(MiniEvent_t ev, TLorentzVector boson, std::vector<Jet>
   ht->fill("aplanarity",   aplanarity, cplotwgts,c);
   ht->fill("C",            C,          cplotwgts,c);
   ht->fill("D",            D,          cplotwgts,c);
-  cout<< "hist filling is done ... "<<endl;
+
+  //final analysis histograms
+  ht->fill("evcount",      1, cplotwgts, c);
+  ht->fill("vbfmva",       vbfmva, cplotwgts,c);
+
   if(skimtree) newTree->Fill();
 }
