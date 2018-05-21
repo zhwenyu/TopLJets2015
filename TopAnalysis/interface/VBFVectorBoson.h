@@ -147,7 +147,7 @@ private:
 	float isotropy, circularity,sphericity,	aplanarity, C, D;
 	float scalarht,balance, mht, training;
         float leadj_gawidth,leadj_c1_05,subleadj_gawidth,subleadj_c1_05;
-        float vbfmva;
+        float vbfmva,vbffisher;
         bool doBlindAnalysis;
 
 	/////////////////////////////////////

@@ -51,16 +51,19 @@ void VBFVectorBoson::RunVBFVectorBoson()
 
   //TMVA configuration
   TMVA::Reader *reader = new TMVA::Reader( "!Color:!Silent" );
-  TString weightFile("${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBF_weights/CutMjjJptBest_BDT_VBF0.weights.xml");
-  TString mvaMethod("BDT");
-  gSystem->ExpandPathName(weightFile);
   reader->AddVariable("ht",&scalarht);
   reader->AddVariable("j_gawidth[0]",&leadj_gawidth);
   reader->AddVariable("forwardeta",&forwardeta);
   reader->AddVariable("j_c1_05[0]",&leadj_c1_05);
   reader->AddVariable("balance",&balance);
-  reader->BookMVA(mvaMethod, weightFile );
-  
+  TString weightFiles[]={"${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBF_weights/CutMjjJptBest_BDT_VBF0.weights.xml",
+                         "${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBF_weights/FisherCutMjjJptBest_Fisher.weights.xml"};
+  TString mvaMethod[]={"BDT","Fisher"};
+  for(size_t i=0; i<2; i++){
+    gSystem->ExpandPathName(weightFiles[i]);
+    reader->BookMVA(mvaMethod[i], weightFiles[i] );
+  }
+
   ///////////////////////
   // LOOP OVER EVENTS //
   /////////////////////
@@ -220,9 +223,11 @@ void VBFVectorBoson::RunVBFVectorBoson()
       C           = esv.C(1.);
       D           = esv.D(1.);
       
-      vbfmva = passJets ? reader->EvaluateMVA(mvaMethod) : -99;
-      if(doBlindAnalysis && ev.isData && vbfmva>0.1) vbfmva=-1000;
-      cout << passJets << " " << vbfmva << endl;
+      vbfmva = passJets ? reader->EvaluateMVA(mvaMethod[0]) : -99;
+      vbffisher = passJets ? reader->EvaluateMVA(mvaMethod[1]) : -99;
+      if(doBlindAnalysis && ev.isData && vbfmva>0.1)    vbfmva=-1000;
+      if(doBlindAnalysis && ev.isData && vbffisher>0.1) vbffisher=-1000;
+
       ////////////////////
       // EVENT WEIGHTS //
       //////////////////
@@ -412,7 +417,8 @@ void VBFVectorBoson::bookHistograms(){
   ht->addHist("dphivj3", 	  new TH1F("dphivj3",          ";#Delta#phi(V,j3);Jets",20,0,4));
   //final analyses distributions
   ht->addHist("evcount",         new TH1F("evcount",        ";Pass;Events",1,0,1));  
-  ht->addHist("vbfmva",          new TH1F("vbfmva",         ";VBF MVA;Events",20,1,1));  
+  ht->addHist("vbfmva",          new TH1F("vbfmva",         ";VBF MVA;Events",20,-1,1));  
+  ht->addHist("vbffisher",       new TH1F("vbffisher",       ";VBF Fisher;Events",20,-0.4,0.5));  
 }
 void VBFVectorBoson::setGammaZPtWeights(){
   TString wgtUrl("${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBFVectorBoson/raw/plots/ratio_plotter.root");
@@ -561,9 +567,11 @@ void VBFVectorBoson::fill(MiniEvent_t ev, TLorentzVector boson, std::vector<Jet>
   ht->fill("D",            D,          cplotwgts,c);
 
   //final analysis histograms
-  ht->fill("evcount",      1, cplotwgts, c);
+  ht->fill("evcount",    0, cplotwgts, c);
   if(!(doBlindAnalysis && vbfmva<-99))
     ht->fill("vbfmva",       vbfmva, cplotwgts,c);
+  if(!(doBlindAnalysis && vbffisher<-99))
+    ht->fill("vbffisher",       vbffisher, cplotwgts,c);
 
   if(skimtree) newTree->Fill();
 }
