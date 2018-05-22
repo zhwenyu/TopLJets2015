@@ -333,7 +333,7 @@ class Plot(object):
         else            : frame=self.spimpose[self.spimpose.keys()[0]].Clone('frame')
 
         if noStack:
-            if dataH:   maxY=self.dataH.GetMaximum()*1.25 
+            if self.dataH:   maxY=self.dataH.GetMaximum()*1.25 
             elif stack: maxY=stack.GetStack().At(0).GetMaximum()/1.25
             else:       maxY=frame.GetMaximum()*1.25
         elif totalMC:

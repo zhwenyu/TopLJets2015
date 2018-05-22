@@ -13,7 +13,6 @@ fi
 
 #to run locally use local as queue + can add "--njobs 8" to use 8 parallel jobs
 queue=workday
-githash=c29f431
 githash=fbc74ae
 eosdir=/store/cmst3/group/top/RunIIFall17/${githash}
 eosdir2018=/store/cmst3/group/top/RunIISpring18/4ad3a45
@@ -51,13 +50,12 @@ case $WHAT in
         ;;
 
     SEL )
-	python scripts/runLocalAnalysis.py -i ${eosdir} \
+        #extraOpts=" --mvatree"
+	python scripts/runLocalAnalysis.py -i ${eosdir} \            
             -o ${outdir}/${githash}/raw \
             --farmappendix ${githash} \
             -q ${queue} --genWeights genweights_${githash}.root\
-            --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts;
-         # --only data/era2017/vbf_samples.json \
-         # --mvatree \
+            --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts ${extraOpts};
 	;;
 
     SEL2018 )
@@ -87,9 +85,14 @@ case $WHAT in
             vbflumi=${lumi}
         fi
         kFactors="--procSF MC13TeV_QCDEM_15to20:1.26,MC13TeV_QCDEM_20to30:1.26,MC13TeV_QCDEM_30to50:1.26,MC13TeV_QCDEM_50to80:1.26,MC13TeV_QCDEM_80to120:1.26,MC13TeV_QCDEM_120to170:1.26,MC13TeV_QCDEM_170to300:1.26,MC13TeV_QCDEM_300toInf:1.26,MC13TeV_GJets_HT40to100:1.26,MC13TeV_GJets_HT100to200:1.26,MC13TeV_GJets_HT200to400:1.26,MC13TeV_GJets_HT600toInf:1.26"
-	commonOpts="-i ${outdir}/${githash}/${EXTRA} --puNormSF puwgtctr -l ${fulllumi}  --saveLog --mcUnc ${lumiUnc} --lumiSpecs VBFA:${vbflumi},OfflineVBFA:${fulllumi} ${kFactors}"
-	python scripts/plotter.py ${commonOpts} -j ${json};
+	commonOpts="-i ${outdir}/${githash}/${EXTRA} --puNormSF puwgtctr -l ${fulllumi}  --saveLog --mcUnc ${lumiUnc} --lumiSpecs VBFA:${vbflumi},OfflineVBFA:${fulllumi}"
+	#python scripts/plotter.py ${commonOpts} -j ${json} ${kFactors};
+        if [[ "${EXTRA}" != *"2018"* ]]; then
+            #python scripts/plotter.py ${commonOpts}  -j data/era2017/vbf_signal_samples.json --only HighPtA_mjj -O ${outdir}/${githash}/${EXTRA}/plots_signal/ --noStack;
+            python scripts/plotter.py ${commonOpts}  -j data/era2017/gjets_samples.json --only HighPtA_mjj -O ${outdir}/${githash}/${EXTRA}/plots_gjets/ --noStack;
+        fi
         ;;
+       
     RATIO )
         python test/analysis/computeVBFRatios.py -t \
             -i ${outdir}/${githash}/raw/plots/plotter.root,${outdir}/raw2018/plots/plotter.root \
@@ -98,11 +101,15 @@ case $WHAT in
 	;;
 
     WWW )
-        pdir=${outdir}/${githash}/${EXTRA}/plots
-        fdir=${wwwdir}/${githash}/${EXTRA}
-	mkdir -p ${fdir}
-	cp ${pdir}/*.{png,pdf} ${fdir};
-	cp test/index.php ${fdir};
-        echo "Check plots in ${fdir}"
+        for p in plots_gjets; do # plots plots_signal; do
+            pdir=${outdir}/${githash}/${EXTRA}/${p}
+            if [ -d ${pdir} ]; then
+                fdir=${wwwdir}/${githash}/${EXTRA}/${p}
+	        mkdir -p ${fdir}
+	        cp ${pdir}/*.{png,pdf} ${fdir};
+	        cp test/index.php ${fdir};
+                echo "Check plots in ${fdir} for ${p}"
+            fi
+        done
 	;;
 esac
