@@ -1,6 +1,7 @@
 <use name="root"/>
 <use name="roofit"/>
 <use name="rootrflx"/>
+<use name="roottmva"/>
 <use name="PhysicsTools/PatAlgos"/>
 <use name="CondFormats/BTauObjects"/>
 <use name="CondFormats/JetMETObjects"/>

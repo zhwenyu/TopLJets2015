@@ -16,10 +16,10 @@ def main():
     #configuration
     usage = 'usage: %prog [options]'
     parser = optparse.OptionParser(usage)
-    parser.add_option(     '--mcUnc',        dest='mcUnc'  ,      help='common MC related uncertainty (e.g. lumi)',        default=0,              type=float)
-    parser.add_option(     '--com',          dest='com'  ,        help='center of mass energy',                            default='13 TeV',       type='string')
+    parser.add_option(     '--mcUnc',        dest='mcUnc'  ,     help='common MC related uncertainty (e.g. lumi)',        default=0,              type=float)
+    parser.add_option(     '--com',          dest='com'  ,       help='center of mass energy',                            default='13 TeV',       type='string')
     parser.add_option('-j', '--json',        dest='json'  ,      help='json with list of files',        default=None,              type='string')
-    parser.add_option( '--systJson', dest='systJson', help='json with list of systematics', default=None, type='string')
+    parser.add_option( '--systJson',         dest='systJson',    help='json with list of systematics', default=None, type='string')
     parser.add_option(      '--signalJson',  dest='signalJson',  help='signal json list',               default=None,              type='string')
     parser.add_option('-i', '--inDir',       dest='inDir' ,      help='input directory',                default=None,              type='string')
     parser.add_option('-O', '--outDir',      dest='outDir' ,     help='output directory',                default=None,              type='string')

@@ -60,11 +60,19 @@ class SelectionTool {
 
   void setDebug(bool flag) { debug_=flag; }
 
+  void setPhotonSelection(std::vector<TString> photonTrigs={"HLT_Photon75_R9Id90_HE10_IsoM_EBOnly_PFJetsMJJ300DEta3_v","HLT_Photon200_v"},
+                          SelectionTool::QualityFlags offlinePhoton=TIGHT){
+    photonTriggers_=photonTrigs;
+    offlinePhoton_=offlinePhoton;
+  }
+
  private:
   bool debug_;
   AnalysisType anType_;
   bool isSingleElectronPD_,isSingleMuonPD_,isDoubleEGPD_,isDoubleMuonPD_,isMuonEGPD_,isPhotonPD_;
   std::map<TString,unsigned int> triggerBits_;
+  std::vector<TString> photonTriggers_;
+  int offlinePhoton_;
 };
 
 #endif

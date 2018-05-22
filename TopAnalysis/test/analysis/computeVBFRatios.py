@@ -4,8 +4,12 @@ import sys
 from TopLJets2015.TopAnalysis.Plot import *
 
 def normalize(h):
-    if h.Integral()<=0 : return
-    h.Scale(1./h.Integral(0,h.GetNbinsX()+1))
+    try:
+        if h.Integral()<=0 : return
+        h.Scale(1./h.Integral(0,h.GetNbinsX()+1))
+    except:
+        h=None
+        pass
 
 def getPlotsIn(inF,dirname):
     """gets the data and mc sums in a given directory"""
@@ -25,39 +29,49 @@ def getPlotsIn(inF,dirname):
             mc.Add(h)
     return data,mc
 
-def computeVBFRatios(inUrl,triggerBased=False):
+def computeVBFRatios(inputList,triggerBased=False):
     """opens a plotter and computes the gamma/Z ratios for data and MC
        for different distributions"""
 
     ratios={}
 
-    inF=ROOT.TFile.Open(inUrl)
-    for key in inF.GetListOfKeys():
-        name=key.GetName()
+    for t,f in inputList:
 
-        doRatioTo=None
-        ratioTitle=''
-        if not triggerBased:
-            if 'HighPtA_' in name or 'VBFA_' in name: 
-                doRatioTo=('A_','MM_')
-                ratioTitle='#gamma / Z#rightarrow #mu#mu ratio'
-        else:
-            if 'HighPtVBFA_' in name:
-                doRatioTo=('HighPtVBFA_','HighPtA_')
-                ratioTitle='High p_{T} VBF #gamma / High p_{T} #gamma'
+        inF=ROOT.TFile.Open(f)
+        for key in inF.GetListOfKeys():
+            name=key.GetName()
 
-        if doRatioTo:
+            doRatioTo=None
+            ratioTitle=''
+            if not triggerBased:
+                if 'HighPtA_' in name or 'VBFA_' in name: 
+                    doRatioTo=('A_','MM_')
+                    ratioTitle='#gamma / Z#rightarrow #mu#mu ratio'
+            else:
+                if 'HighPtVBFA_' in name:
+                    doRatioTo=('HighPtVBFA_','HighPtOfflineVBFA_')
+                    ratioTitle='High p_{T} VBF #gamma / High p_{T} #gamma'
+
+            if not doRatioTo: continue
             dataNum,mcNum=getPlotsIn(inF,name)
             dataDen,mcDen=getPlotsIn(inF,name.replace(doRatioTo[0],doRatioTo[1]))
 
             if triggerBased:
                 for h in [dataNum,mcNum,dataDen,mcDen] : normalize(h)
 
-            dataNum.Divide(dataDen)
-            mcNum.Divide(mcNum)
-            ratios[name]=(dataNum,mcNum)
-            for i in xrange(0,2):
-                ratios[name][i].GetYaxis().SetTitle(ratioTitle)
+            if not name in ratios: ratios[name]=[]
+
+            if dataNum : 
+                dataNum.Divide(dataDen)
+                dataNum.GetYaxis().SetTitle(ratioTitle)
+                if len(t)>0 : dataNum.SetTitle('Data (%s)'%t)
+                ratios[name].append(dataNum)
+            if mcNum   : 
+                mcNum.Divide(mcDen)
+                mcNum.GetYaxis().SetTitle(ratioTitle)
+                if len(t)>0 : mcNum.SetTitle('MC (%s)'%t)
+                ratios[name].append(mcNum)
+
     inF.Close()
 
     return ratios
@@ -72,12 +86,16 @@ def showRatios(ratios,outUrl):
     os.system('rm %s'%outUrl)
     outDir=os.path.dirname(outUrl)
 
+    COLOURS=[1,'#f4a582','#bababa','#abdda4']
     for key in ratios:
         p=Plot(key+'_ratio',com='13 TeV')
         p.doPoissonErrorBars=False
         p.ratiorange=(0.38,1.64)
-        p.add(h=ratios[key][0],title='Data',color=1,isData=True,spImpose=False,isSyst=False)
-        #p.add(h=ratios[key][1],title='MC',color='#e5f5f9',isData=False,spImpose=False,isSyst=False)
+        p.spimposeWithErrors=True
+        ic=0
+        for h in ratios[key]:            
+            p.add(h=h,title=h.GetTitle(),color=COLOURS[ic],isData=False,spImpose=True,isSyst=False)
+            ic+=1
         p.show(outDir=outDir,lumi=41400,noStack=False,saveTeX=False,noRatio=True)
         p.appendTo(outUrl)
         p.reset()
@@ -87,12 +105,14 @@ def main():
     #configuration
     usage = 'usage: %prog [options]'
     parser = optparse.OptionParser(usage)
-    parser.add_option('-i',  dest='input',  help='input plotter [%default]',  default=None,                    type='string')
+    parser.add_option('-i',  dest='input',  help='input plotters (CSV list) [%default]',  default=None,        type='string')
     parser.add_option('-o',  dest='output', help='output plotter [%default]', default='ratio_plotter.root',    type='string')
-    parser.add_option('-t',  dest='triggerBased', help='trigger-based ratio [%default]', default=False, action='store_true')
+    parser.add_option('--titles',  dest='titles', help='titles (CSV list) [%default]',    default=None,        type='string')
+    parser.add_option('-t',  dest='triggerBased', help='trigger-based ratio [%default]',  default=False,       action='store_true')
     (opt, args) = parser.parse_args()
 
-    ratios=computeVBFRatios(opt.input,opt.triggerBased)
+    inputList=list(zip(opt.titles.split(','),opt.input.split(',')))
+    ratios=computeVBFRatios(inputList,opt.triggerBased)
     showRatios(ratios,opt.output)
 
 if __name__ == "__main__":
