@@ -30,31 +30,42 @@ using namespace std;
 //Vector boson will be either Z or photon at the moment
 
 struct Category{
-  float MM,A,VBF,HighPt,HighPtVBF,V1J;
-  Category(float * cat){
-    MM = cat[0];
-    A = cat[1];
-    VBF = cat[2];
-    HighPt = cat[3];
-    HighPtVBF = cat[4];
-    V1J = cat[5];
+  float MM,A,VBF,HighPt,HighPtVBF,V1J,HighPtOfflineVBF,HighPtVBFCutBased;
+  Category(){ reset(); }
+  Category(std::vector<bool> &cat){
+    reset();
+    set(cat);
+  };  
+  void reset(){
+    std::vector<bool> cat(7,false);
+    set(cat);
   };
-  Category(){
-    MM = 0;
-    A = 0;
-    VBF = 0;
-    HighPt = 0;
-    HighPtVBF = 0; 
-    V1J = 0; 
+  void set(std::vector<bool> &cat){
+    MM =(float) cat[0];
+    A = (float)cat[1];
+    VBF = (float)cat[2];
+    HighPt = (float)cat[3];
+    HighPtVBF = (float)cat[4];
+    V1J = (float)cat[5];
+    HighPtOfflineVBF = (float)cat[6];
+    HighPtVBFCutBased = (float)cat[7];
   };
-  void set(float * cat){
-    MM = cat[0];
-    A = cat[1];
-    VBF = cat[2];
-    HighPt = cat[3];
-    HighPtVBF = cat[4];
-    V1J = cat[5];
-  };
+  std::vector<TString> getChannelTags() {
+    std::vector<TString> chTags;
+    TString chTag("");
+
+    if(MM>0) chTag="MM";
+    if(A>0)  chTag="A";
+    if(chTag=="") return chTags;
+
+    if(VBF>0)               chTags.push_back("VBF"+chTag);
+    if(HighPt>0)            chTags.push_back("HighPt"+chTag);
+    if(HighPtVBF>0)         chTags.push_back("HighPtVBF"+chTag);
+    if(V1J>0)               chTags.push_back("V1J"+chTag);
+    if(HighPtOfflineVBF>0)  chTags.push_back("HighPtOfflineVBF"+chTag);
+    if(HighPtVBFCutBased>0) chTags.push_back("HighPtVBFCutBased"+chTag);
+    return chTags;
+  }
 };
 
 class VBFVectorBoson{
@@ -66,10 +77,10 @@ public:
                        TH1F *genPU_,
                        TString era_,
                        Bool_t debug_=false, Bool_t skimtree_=false):
-	filename(filename_),outname(outname_),anFlag(anFlag_), era(era_), debug(debug_), skimtree(skimtree_)
+           filename(filename_),outname(outname_),anFlag(anFlag_), normH(0), genPU(0), era(era_), debug(debug_), skimtree(skimtree_), doBlindAnalysis(true)
 	{
-	  normH = (TH1F*)normH_->Clone("normH_c");
-	  genPU = (TH1F*)genPU_->Clone("genPu_c");
+          if(normH_) normH = (TH1F*)normH_->Clone("normH_c");
+	  if(genPU_) genPU = (TH1F*)genPU_->Clone("genPu_c");
 	  fMVATree = NULL;
 	  newTree = NULL;
 	  init();
@@ -113,7 +124,7 @@ private:
 	TTree * t /*inTree*/, *newTree /*MVA*/;
   	HistTool * ht;
 	MiniEvent_t ev;
-        float sihih,chiso,r9,hoe, ystar;
+        float sihih,chiso,r9,hoe, ystar,relbpt,dphibjj;
 	double mindrl;
 
 	TRandom3 rnd;
@@ -135,6 +146,9 @@ private:
 	float evtWeight, mjj, detajj , dphijj ,jjpt;
 	float isotropy, circularity,sphericity,	aplanarity, C, D;
 	float scalarht,balance, mht, training;
+        float leadj_gawidth,leadj_c1_05,subleadj_gawidth,subleadj_c1_05;
+        float vbfmva,vbffisher;
+        bool doBlindAnalysis;
 
 	/////////////////////////////////////
 	// Categorie for VBF:              //
@@ -185,7 +199,6 @@ private:
 	  xsecRefs["MC13TeV_EWKZJJ"        ] = 4.32;
 	  xsecRefs["MC13TeV_AJJ_EWK_LO"    ] = 32.49;
 	  xsecRefs["MC13TeV_AJJ_EWK_INT_LO"] = 8.3;
-
 	}
 	
 	float getXsec(){
