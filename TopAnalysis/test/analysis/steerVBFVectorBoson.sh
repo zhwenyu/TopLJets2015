@@ -46,7 +46,7 @@ case $WHAT in
 	python scripts/runLocalAnalysis.py -i ${eosdir} \
             -o ${outdir}/raw \
             --only data/era2017/vbf_samples.json \
-            -q ${queue} --mvatree \
+            -q ${queue} \
             --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts;
 	;;
 

@@ -261,7 +261,7 @@ int TMVAClassification( TString myMethodList , TString extention, BDTOptimizer* 
    TCut mycutb = TCut(cut);
    dataloader->PrepareTrainingAndTestTree( mycuts, mycutb,
 					   //					     "nTrain_Signal=1000:nTrain_Background=5000:SplitMode=Random:NormMode=NumEvents:!V");// To use the info in the Tree
-					     "nTrain_Signal=300:nTrain_Background=5000:SplitMode=Random:NormMode=NumEvents:!V");// To use the info in the Tree
+					     "nTrain_Signal=1000:nTrain_Background=5000:SplitMode=Random:NormMode=NumEvents:!V");// To use the info in the Tree
 
      
    if( Use["VBF"] ){
