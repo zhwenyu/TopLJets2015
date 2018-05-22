@@ -32,6 +32,10 @@ case $WHAT in
         input=${eosdir}/MC13TeV_DY50toInf/MergedMiniEvents_4_ext0.root
         output=MC13TeV_DY4Jets50toInf.root
         tag="--tag MC13TeV_DY50toInf"
+        
+        input=${eosdir}/Data13TeV_SinglePhoton_2017F/MergedMiniEvents_0_ext0.root
+        output=Data13TeV_SinglePhoton_2017F.root
+        tag="--tag Data13TeV_SinglePhoton_2017F"
 
         #input=${eosdir2018}/Data13TeV_EGamma_2018A/MergedMiniEvents_0_ext0.root
         #output=Data13TeV_EGamma_2018A.root

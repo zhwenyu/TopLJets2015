@@ -105,8 +105,8 @@ void VBFVectorBoson::RunVBFVectorBoson()
 
       category.reset();
       std::vector<bool> cat(8,0);
-      if(chTag == "A") cat[1] = true;
       if(chTag == "MM") cat[0] = true;
+      if(chTag == "A") cat[1] = true;
 
       //jet related variables and selection
       mjj = (jets.size()>=2 ?  (jets[0]+jets[1]).M() : 0.);
@@ -184,6 +184,10 @@ void VBFVectorBoson::RunVBFVectorBoson()
       if(isHighPtVBFCutBased)   cat[7]=true;
       category.set(cat);
       std::vector<TString> chTags( category.getChannelTags() );
+      for(auto c:cat) cout << c << " ";
+      cout << endl;
+      for(auto c:chTags) cout << c << " ";
+      cout << endl;
 
       //leptons and boson
       mindrl = 9999.;
@@ -267,7 +271,7 @@ void VBFVectorBoson::RunVBFVectorBoson()
       }
 
       //control histograms
-      for( auto c : chTags) {
+      for( auto c : chTags) {        
         std::vector<double> cplotwgts(plotwgts);
 
         //photon pT weighting
@@ -281,13 +285,13 @@ void VBFVectorBoson::RunVBFVectorBoson()
           photonPtWgtCtr[c].first  += 1.0;
           photonPtWgtCtr[c].second += photonPtWgt;
           cplotwgts[0]*=photonPtWgt;
-        } 
+        }
 
 	//What is the final weight? 0 or 1 in the array?
 	evtWeight = cplotwgts[0]*xsec;
 	training = useForTraining(); 
 	fill( ev,  boson,  jets,  cplotwgts, c);
-       }
+      }
     }
 
   
@@ -316,7 +320,6 @@ void VBFVectorBoson::saveHistos(){
     if(it.second->GetEntries()==0) continue;
     for(auto &wit : photonPtWgtCtr){
       if(!it.first.Contains(wit.first)) continue;
-      cout << "Scaling " << it.first << " by "<< wit.second.first <<endl;
       it.second->Scale(wit.second.first);
       break;
     }
