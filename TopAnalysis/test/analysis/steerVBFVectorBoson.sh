@@ -13,6 +13,7 @@ fi
 
 #to run locally use local as queue + can add "--njobs 8" to use 8 parallel jobs
 queue=workday
+githash=c29f431
 githash=fbc74ae
 eosdir=/store/cmst3/group/top/RunIIFall17/${githash}
 eosdir2018=/store/cmst3/group/top/RunIISpring18/4ad3a45
@@ -29,13 +30,13 @@ NC='\e[0m'
 case $WHAT in
 
     TESTSEL )
-        input=${eosdir}/MC13TeV_DY50toInf/MergedMiniEvents_4_ext0.root
+        input=${eosdir}/MC13TeV_DY50toInf/MergedMiniEvents_0_ext0.root
         output=MC13TeV_DY4Jets50toInf.root
         tag="--tag MC13TeV_DY50toInf"
         
-        input=${eosdir}/Data13TeV_SinglePhoton_2017F/MergedMiniEvents_0_ext0.root
-        output=Data13TeV_SinglePhoton_2017F.root
-        tag="--tag Data13TeV_SinglePhoton_2017F"
+        #input=${eosdir}/Data13TeV_SinglePhoton_2017F/MergedMiniEvents_0_ext0.root
+        #output=Data13TeV_SinglePhoton_2017F.root
+        #tag="--tag Data13TeV_SinglePhoton_2017F"
 
         #input=${eosdir2018}/Data13TeV_EGamma_2018A/MergedMiniEvents_0_ext0.root
         #output=Data13TeV_EGamma_2018A.root
@@ -43,14 +44,17 @@ case $WHAT in
 
 	python scripts/runLocalAnalysis.py \
             -i ${input} -o ${output} ${tag} \
-            --njobs 1 -q local --debug --mvatree \
+            --njobs 1 -q local --genWeights genweights_${githash}.root \
             --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts;
+
+        #--debug --mvatree \
         ;;
 
     SEL )
 	python scripts/runLocalAnalysis.py -i ${eosdir} \
-            -o ${outdir}/raw \
-            -q ${queue} \
+            -o ${outdir}/${githash}/raw \
+            --farmappendix ${githash} \
+            -q ${queue} --genWeights genweights_${githash}.root\
             --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts;
          # --only data/era2017/vbf_samples.json \
          # --mvatree \
@@ -71,7 +75,7 @@ case $WHAT in
         ;;
 
     MERGE )
-	./scripts/mergeOutputs.py ${outdir}/${EXTRA};
+	./scripts/mergeOutputs.py ${outdir}/${githash}/${EXTRA};
 	;;
 
     PLOT )
@@ -86,19 +90,19 @@ case $WHAT in
             vbflumi=${lumi}
         fi
 
-	commonOpts="-i ${outdir}/${EXTRA} --puNormSF puwgtctr -l ${fulllumi}  --saveLog --mcUnc ${lumiUnc} --lumiSpecs VBFA:${vbflumi},OfflineVBFA:${fulllumi}"
+	commonOpts="-i ${outdir}/${githash}/${EXTRA} --puNormSF puwgtctr -l ${fulllumi}  --saveLog --mcUnc ${lumiUnc} --lumiSpecs VBFA:${vbflumi},OfflineVBFA:${fulllumi}"
 	python scripts/plotter.py ${commonOpts} -j ${json};
         ;;
     RATIO )
         python test/analysis/computeVBFRatios.py -t \
-            -i ${outdir}/raw/plots/plotter.root,${outdir}/raw2018/plots/plotter.root \
+            -i ${outdir}/${githash}/raw/plots/plotter.root,${outdir}/raw2018/plots/plotter.root \
             --titles "2017","2018" \
             -o ${outdir}/raw/plots/trigger_ratio_plotter.root
 	;;
 
     WWW )
-        pdir=${outdir}/${EXTRA}/plots
-        fdir=${wwwdir}/${EXTRA}
+        pdir=${outdir}/${githash}/${EXTRA}/plots
+        fdir=${wwwdir}/${githash}/${EXTRA}
 	mkdir -p ${fdir}
 	cp ${pdir}/*.{png,pdf} ${fdir};
 	cp test/index.php ${fdir};
