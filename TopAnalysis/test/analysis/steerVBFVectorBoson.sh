@@ -19,7 +19,7 @@ githash2018=4ad3a45
 eosdir2018=/store/cmst3/group/top/RunIISpring18/${githash2018}
 fulllumi=41367
 vbflumi=7661
-fulllumi2018=2300
+fulllumi2018=5300
 lumiUnc=0.025
 outdir=${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBFVectorBoson
 wwwdir=~/www/VBFVectorBoson
@@ -92,8 +92,9 @@ case $WHAT in
             gh=${githash2018}
         fi
         kFactors="--procSF MC13TeV_QCDEM_15to20:1.26,MC13TeV_QCDEM_20to30:1.26,MC13TeV_QCDEM_30to50:1.26,MC13TeV_QCDEM_50to80:1.26,MC13TeV_QCDEM_80to120:1.26,MC13TeV_QCDEM_120to170:1.26,MC13TeV_QCDEM_170to300:1.26,MC13TeV_QCDEM_300toInf:1.26,MC13TeV_GJets_HT40to100:1.26,MC13TeV_GJets_HT100to200:1.26,MC13TeV_GJets_HT200to400:1.26,MC13TeV_GJets_HT600toInf:1.26"
-	commonOpts="-i ${outdir}/${gh}/${EXTRA} --puNormSF puwgtctr -l ${fulllumi}  --saveLog --mcUnc ${lumiUnc} --lumiSpecs VBFA:${vbflumi},OfflineVBFA:${fulllumi}"
+	commonOpts="-i ${outdir}/${gh}/${EXTRA} --puNormSF puwgtctr -l ${lumi}  --saveLog --mcUnc ${lumiUnc} --lumiSpecs VBFA:${vbflumi},OfflineVBFA:${fulllumi}"
 	python scripts/plotter.py ${commonOpts} -j ${json} ${kFactors};
+	python scripts/plotter.py ${commonOpts} -j ${json} ${kFactors} --only evcount --saveTeX;
         if [[ "${EXTRA}" != *"2018"* ]]; then
             python scripts/plotter.py ${commonOpts}  -j data/era2017/vbf_signal_samples.json --only HighPtA_ -O ${outdir}/${githash}/${EXTRA}/plots_signal/ --noStack;
             python scripts/plotter.py ${commonOpts}  -j data/era2017/gjets_samples.json --only HighPtA_mjj -O ${outdir}/${githash}/${EXTRA}/plots_gjets/ --noStack;
@@ -120,7 +121,7 @@ case $WHAT in
             if [ -d ${pdir} ]; then
                 fdir=${wwwdir}/${gh}/${EXTRA}/${p}
 	        mkdir -p ${fdir}
-	        cp ${pdir}/*.{png,pdf} ${fdir};
+	        cp ${pdir}/*.{png,pdf,dat} ${fdir};
 	        cp test/index.php ${fdir};
                 echo "Check plots in ${fdir} for ${p}"
             fi
