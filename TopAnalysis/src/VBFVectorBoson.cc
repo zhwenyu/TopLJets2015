@@ -105,19 +105,19 @@ void VBFVectorBoson::RunVBFVectorBoson()
 
       category.reset();
       std::vector<bool> cat(8,0);
-      if(chTag == "A") cat[1] = true;
       if(chTag == "MM") cat[0] = true;
+      if(chTag == "A") cat[1] = true;
 
       //jet related variables and selection
-      mjj = (jets.size()>=2 ?  (jets[0]+jets[1]).M() : 0.);
+      mjj    = (jets.size()>=2 ?  (jets[0]+jets[1]).M() : 0.);
       detajj = (jets.size()>=2 ? fabs(jets[0].Eta()-jets[1].Eta()) : -99.);
       dphijj = (jets.size()>=2 ? jets[0].DeltaPhi(jets[1]) : -99.);
-      jjpt = (jets.size()>=2 ? (jets[0]+jets[1]).Pt() : 0.);
+      jjpt   = (jets.size()>=2 ? (jets[0]+jets[1]).Pt() : 0.);
 
-      leadj_gawidth=(jets.size()>1 ? ev.j_gawidth[jets[0].getJetIndex()] : -99);
-      leadj_c1_05=(jets.size()>1 ? ev.j_c1_05[jets[0].getJetIndex()] : -99);
-      subleadj_gawidth=(jets.size()>2 ? ev.j_gawidth[jets[1].getJetIndex()] : -99);
-      subleadj_c1_05=(jets.size()>2 ? ev.j_c1_05[jets[1].getJetIndex()] : -99);
+      leadj_gawidth    = (jets.size()>1 ? ev.j_gawidth[jets[0].getJetIndex()] : -99);
+      leadj_c1_05      = (jets.size()>1 ? ev.j_c1_05[jets[0].getJetIndex()] : -99);
+      subleadj_gawidth = (jets.size()>2 ? ev.j_gawidth[jets[1].getJetIndex()] : -99);
+      subleadj_c1_05   = (jets.size()>2 ? ev.j_c1_05[jets[1].getJetIndex()] : -99);
 
       scalarht = 0.;
       TLorentzVector mhtP4(0,0,0,0);
@@ -155,10 +155,12 @@ void VBFVectorBoson::RunVBFVectorBoson()
 
         //veto prompt photons on the QCDEM enriched sample
         if( isQCDEMEnriched && ev.gamma_isPromptFinalState[ photons[0].originalReference() ] ) {
-          isVBF          = false;
-          isHighPt       = false;
-          isHighPtAndVBF = false;
+          isVBF                 = false;
+          isHighPt              = false;
+          isHighPtAndVBF        = false;
           isHighPtAndOfflineVBF = false;
+          isBosonPlusOneJet     = false;
+          isHighPtVBFCutBased   = false;
         }
           
       } else {
@@ -168,9 +170,10 @@ void VBFVectorBoson::RunVBFVectorBoson()
         isHighPt = boson.Pt()>minBosonHighPt;
         isHighPtAndVBF = (isHighPt && isVBF);
         isBosonPlusOneJet=(isHighPt && alljets.size()==1);
+        isHighPtVBFCutBased = (isHighPt && passVBFCutBased);
       }
 
-      if(!isVBF && !isHighPt && !isBosonPlusOneJet) continue;      
+      //if(!isVBF && !isHighPt && !isBosonPlusOneJet) continue;      
 
       //leptons and boson
       double mindrl(9999.);
@@ -184,7 +187,7 @@ void VBFVectorBoson::RunVBFVectorBoson()
       if(isHighPtVBFCutBased)   cat[7]=true;
       category.set(cat);
       std::vector<TString> chTags( category.getChannelTags() );
-
+      
       //leptons and boson
       mindrl = 9999.;
       for(auto &l: leptons) mindrl=min(l.DeltaR(boson),mindrl);
@@ -267,7 +270,7 @@ void VBFVectorBoson::RunVBFVectorBoson()
       }
 
       //control histograms
-      for( auto c : chTags) {
+      for( auto c : chTags) {        
         std::vector<double> cplotwgts(plotwgts);
 
         //photon pT weighting
@@ -281,13 +284,13 @@ void VBFVectorBoson::RunVBFVectorBoson()
           photonPtWgtCtr[c].first  += 1.0;
           photonPtWgtCtr[c].second += photonPtWgt;
           cplotwgts[0]*=photonPtWgt;
-        } 
+        }
 
 	//What is the final weight? 0 or 1 in the array?
 	evtWeight = cplotwgts[0]*xsec;
 	training = useForTraining(); 
 	fill( ev,  boson,  jets,  cplotwgts, c);
-       }
+      }
     }
 
   
@@ -316,7 +319,6 @@ void VBFVectorBoson::saveHistos(){
     if(it.second->GetEntries()==0) continue;
     for(auto &wit : photonPtWgtCtr){
       if(!it.first.Contains(wit.first)) continue;
-      cout << "Scaling " << it.first << " by "<< wit.second.first <<endl;
       it.second->Scale(wit.second.first);
       break;
     }
@@ -498,7 +500,7 @@ void VBFVectorBoson::fill(MiniEvent_t ev, TLorentzVector boson, std::vector<Jet>
     TString jtype(ij==0?"lead":"sublead");
     ht->fill(jtype+"pt",       jets[ij].Pt(),        cplotwgts,c);          
     ht->fill(jtype+"pumva",    jets[ij].getPUMVA(),  cplotwgts,c);
-    ht->fill("dr"+jtype+"b",   jets[ij].DeltaR(boson),  cplotwgts,c);
+    ht->fill(Form("drj%db",(int)ij+1),   jets[ij].DeltaR(boson),  cplotwgts,c);
     ht->fill("jet_c1_00", 	ev.j_c1_00[jets[ij].getJetIndex()]	  ,  cplotwgts,c);
     ht->fill("jet_c1_02", 	ev.j_c1_02[jets[ij].getJetIndex()]	  ,  cplotwgts,c);
     ht->fill("jet_c1_05", 	ev.j_c1_05[jets[ij].getJetIndex()]	  ,  cplotwgts,c);

@@ -53,8 +53,11 @@ def computeVBFRatios(inputList,triggerBased=False):
                     ratioTitle='High p_{T} VBF #gamma / High p_{T} #gamma'
 
             if not doRatioTo: continue
-            dataNum,mcNum=getPlotsIn(inF,name)
-            dataDen,mcDen=getPlotsIn(inF,name.replace(doRatioTo[0],doRatioTo[1]))
+            try:
+                dataNum,mcNum=getPlotsIn(inF,name)
+                dataDen,mcDen=getPlotsIn(inF,name.replace(doRatioTo[0],doRatioTo[1]))
+            except:
+                continue
 
             if triggerBased:
                 for h in [dataNum,mcNum,dataDen,mcDen] : normalize(h)

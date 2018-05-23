@@ -15,10 +15,11 @@ fi
 queue=workday
 githash=fbc74ae
 eosdir=/store/cmst3/group/top/RunIIFall17/${githash}
-eosdir2018=/store/cmst3/group/top/RunIISpring18/4ad3a45
+githash2018=4ad3a45
+eosdir2018=/store/cmst3/group/top/RunIISpring18/${githash2018}
 fulllumi=41367
 vbflumi=7661
-fulllumi2018=2300
+fulllumi2018=5300
 lumiUnc=0.025
 outdir=${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBFVectorBoson
 wwwdir=~/www/VBFVectorBoson
@@ -29,9 +30,13 @@ NC='\e[0m'
 case $WHAT in
 
     TESTSEL )
-        input=${eosdir}/MC13TeV_DY50toInf/MergedMiniEvents_4_ext0.root
+        input=${eosdir}/MC13TeV_DY50toInf/MergedMiniEvents_0_ext0.root
         output=MC13TeV_DY4Jets50toInf.root
         tag="--tag MC13TeV_DY50toInf"
+        
+        #input=${eosdir}/Data13TeV_SinglePhoton_2017F/MergedMiniEvents_0_ext0.root
+        #output=Data13TeV_SinglePhoton_2017F.root
+        #tag="--tag Data13TeV_SinglePhoton_2017F"
 
         #input=${eosdir2018}/Data13TeV_EGamma_2018A/MergedMiniEvents_0_ext0.root
         #output=Data13TeV_EGamma_2018A.root
@@ -39,22 +44,24 @@ case $WHAT in
 
 	python scripts/runLocalAnalysis.py \
             -i ${input} -o ${output} ${tag} \
-            --njobs 1 -q local --debug --mvatree \
+            --njobs 1 -q local --genWeights genweights_${githash}.root \
             --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts;
+
+        #--debug --mvatree \
         ;;
 
     SEL )
-	python scripts/runLocalAnalysis.py -i ${eosdir} \
-            -o ${outdir}/raw \
-            -q ${queue} \
-            --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts;
-         # --only data/era2017/vbf_samples.json \
-         # --mvatree \
+        #extraOpts=" --mvatree"
+	python scripts/runLocalAnalysis.py -i ${eosdir} \            
+            -o ${outdir}/${githash}/raw \
+            --farmappendix ${githash} \
+            -q ${queue} --genWeights genweights_${githash}.root\
+            --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts ${extraOpts};
 	;;
 
     SEL2018 )
 	python scripts/runLocalAnalysis.py -i ${eosdir2018} \
-            -o ${outdir}/raw2018 \
+            -o ${outdir}/${githash2018}/raw2018 \
             -q ${queue} \
             --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts;
 	;;
@@ -67,37 +74,57 @@ case $WHAT in
         ;;
 
     MERGE )
-	./scripts/mergeOutputs.py ${outdir}/${EXTRA};
+        gh=${githash}
+        if [[ "${EXTRA}" = *"2018"* ]]; then
+            gh=${githash2018}
+        fi
+	./scripts/mergeOutputs.py ${outdir}/${gh}/${EXTRA};
 	;;
 
     PLOT )
-#	commonOpts="-i ${outdir} --puNormSF puwgtctr -l 1  --saveLog"
-#	python scripts/plotter.py ${commonOpts} -j data/era2017/vbf_samples.json  --noStack --skip TT,ZZ,WW,WZ,Single,QCD,GJets,DY1Jets,DY2Jets,DY3Jets,DY4Jets,DY50toInf_HT -O ${outdir}/plots_DY ;
-
         json=data/era2017/vbf_samples.json;
         lumi=${fulllumi}        
+        gh=${githash}
         if [[ "${EXTRA}" = *"2018"* ]]; then
             json=data/era2018/vbf_samples.json;
             lumi=${fulllumi2018}
             vbflumi=${lumi}
+            gh=${githash2018}
         fi
-
-	commonOpts="-i ${outdir}/${EXTRA} --puNormSF puwgtctr -l ${fulllumi}  --saveLog --mcUnc ${lumiUnc} --lumiSpecs VBFA:${vbflumi},OfflineVBFA:${fulllumi}"
-	python scripts/plotter.py ${commonOpts} -j ${json};
+        kFactors="--procSF MC13TeV_QCDEM_15to20:1.26,MC13TeV_QCDEM_20to30:1.26,MC13TeV_QCDEM_30to50:1.26,MC13TeV_QCDEM_50to80:1.26,MC13TeV_QCDEM_80to120:1.26,MC13TeV_QCDEM_120to170:1.26,MC13TeV_QCDEM_170to300:1.26,MC13TeV_QCDEM_300toInf:1.26,MC13TeV_GJets_HT40to100:1.26,MC13TeV_GJets_HT100to200:1.26,MC13TeV_GJets_HT200to400:1.26,MC13TeV_GJets_HT600toInf:1.26"
+	commonOpts="-i ${outdir}/${gh}/${EXTRA} --puNormSF puwgtctr -l ${lumi}  --saveLog --mcUnc ${lumiUnc} --lumiSpecs VBFA:${vbflumi},OfflineVBFA:${fulllumi}"
+	python scripts/plotter.py ${commonOpts} -j ${json} ${kFactors};
+	python scripts/plotter.py ${commonOpts} -j ${json} ${kFactors} --only evcount --saveTeX;
+        if [[ "${EXTRA}" != *"2018"* ]]; then
+            python scripts/plotter.py ${commonOpts}  -j data/era2017/vbf_signal_samples.json --only HighPtA_ -O ${outdir}/${githash}/${EXTRA}/plots_signal/ --noStack;
+            python scripts/plotter.py ${commonOpts}  -j data/era2017/gjets_samples.json --only HighPtA_mjj -O ${outdir}/${githash}/${EXTRA}/plots_gjets/ --noStack;
+        fi
         ;;
+       
     RATIO )
         python test/analysis/computeVBFRatios.py -t \
-            -i ${outdir}/raw/plots/plotter.root,${outdir}/raw2018/plots/plotter.root \
+            -i ${outdir}/${githash}/raw/plots/plotter.root,${outdir}/raw2018/plots/plotter.root \
             --titles "2017","2018" \
             -o ${outdir}/raw/plots/trigger_ratio_plotter.root
 	;;
 
     WWW )
-        pdir=${outdir}/${EXTRA}/plots
-        fdir=${wwwdir}/${EXTRA}
-	mkdir -p ${fdir}
-	cp ${pdir}/*.{png,pdf} ${fdir};
-	cp test/index.php ${fdir};
-        echo "Check plots in ${fdir}"
+
+        plotList=(plots plots_signal plots_gjets)
+        gh=${githash}
+        if [[ "${EXTRA}" = *"2018"* ]]; then
+            gh=${githash2018}
+        fi
+
+        for p in ${plotList[@]}; do
+            pdir=${outdir}/${gh}/${EXTRA}/${p}
+            if [ -d ${pdir} ]; then
+                fdir=${wwwdir}/${gh}/${EXTRA}/${p}
+	        mkdir -p ${fdir}
+	        cp ${pdir}/*.{png,pdf,dat} ${fdir};
+	        cp test/index.php ${fdir};
+                echo "Check plots in ${fdir} for ${p}"
+            fi
+        done
 	;;
 esac

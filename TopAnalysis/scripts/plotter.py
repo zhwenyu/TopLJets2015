@@ -172,8 +172,7 @@ def main():
 
                         for hist in histos:
                             if not isData and not '(data)' in sp[1]: 
-                                print hist.GetName()
-                                print hist.GetTitle()
+
                                 #check if a special scale factor needs to be applied
                                 sfVal=1.0                            
                                 for procToScale in procSF:
@@ -212,7 +211,6 @@ def main():
     os.system('mkdir -p %s' % outDir)
     os.system('rm %s/%s'%(outDir,opt.outName))
     for p in plots:
-        print plots[p].name
         plots[p].mcUnc=opt.mcUnc
         if opt.saveLog    : plots[p].savelog=True
         skipPlot=False
@@ -223,6 +221,7 @@ def main():
             if not tag+'_' in p: continue
             lumi=lumiSpecs[tag]
             break
+
         #continue
         plots[p].show(outDir=outDir,lumi=lumi,noStack=opt.noStack,saveTeX=opt.saveTeX)
         plots[p].appendTo('%s/%s'%(outDir,opt.outName))

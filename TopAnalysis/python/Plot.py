@@ -103,9 +103,11 @@ class Plot(object):
                 self._garbageList.append(h)
         else:
             try:
-                if spimpose : self.spimpose[title].Add(h)
-                else        : self.mc[title].Add(h)
-            except:
+                if spImpose : 
+                    self.spimpose[title].Add(h)
+                else : 
+                    self.mc[title].Add(h)
+            except Exception as e: 
                 h.SetName('%s_%s' % (h.GetName(), title ) )
                 h.SetDirectory(0)
                 h.SetMarkerStyle(1)
@@ -249,7 +251,6 @@ class Plot(object):
         totalMC = None
         stack = ROOT.THStack('mc','mc')
         for h in reversed(self.mc):
-            print "Integral is %f" %self.mc[h].Integral()
             if noStack:
                 self.mc[h].SetFillStyle(0)
                 self.mc[h].SetLineColor(self.mc[h].GetFillColor())
@@ -332,7 +333,7 @@ class Plot(object):
         else            : frame=self.spimpose[self.spimpose.keys()[0]].Clone('frame')
 
         if noStack:
-            if dataH:   maxY=self.dataH.GetMaximum()*1.25 
+            if self.dataH:   maxY=self.dataH.GetMaximum()*1.25 
             elif stack: maxY=stack.GetStack().At(0).GetMaximum()/1.25
             else:       maxY=frame.GetMaximum()*1.25
         elif totalMC:
