@@ -110,7 +110,7 @@ public:
 	void addMVAvars();
 	void fill(MiniEvent_t ev, TLorentzVector boson, std::vector<Jet> jets, std::vector<double> cplotwgts, TString c);
 	void RunVBFVectorBoson();
-
+	void initVariables(std::vector<Jet>);
 
 
 private:
@@ -146,7 +146,7 @@ private:
 	float evtWeight, mjj, detajj , dphijj ,jjpt;
 	float isotropy, circularity,sphericity,	aplanarity, C, D;
 	float scalarht,balance, mht, training;
-        float leadj_gawidth,leadj_c1_05,subleadj_gawidth,subleadj_c1_05;
+        float leadj_gawidth,leadj_c1_05,subleadj_gawidth,subleadj_c1_05, subleadj_pt;
         float vbfmva,vbffisher;
         bool doBlindAnalysis;
 

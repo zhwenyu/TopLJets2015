@@ -1,0 +1,155 @@
+<?xml version="1.0"?>
+<MethodSetup Method="BDT::BDT_VBF0">
+  <GeneralInfo>
+    <Info name="TMVA Release" value="4.2.1 [262657]"/>
+    <Info name="ROOT Release" value="6.10/02 [395778]"/>
+    <Info name="Creator" value="ajafari"/>
+    <Info name="Date" value="Wed May 23 12:29:10 2018"/>
+    <Info name="Host" value="Linux NadjiehCarbon 4.8.0-53-generic #56~16.04.1-Ubuntu SMP Tue May 16 01:18:56 UTC 2017 x86_64 x86_64 x86_64 GNU/Linux"/>
+    <Info name="Dir" value="/home/ajafari/cernbox/Documents/VJJAnalysis/Code/macro"/>
+    <Info name="Training events" value="6000"/>
+    <Info name="TrainingTime" value="2.28471041e-01"/>
+    <Info name="AnalysisType" value="Classification"/>
+  </GeneralInfo>
+  <Options>
+    <Option name="V" modified="Yes">False</Option>
+    <Option name="VerbosityLevel" modified="No">Default</Option>
+    <Option name="VarTransform" modified="No">None</Option>
+    <Option name="H" modified="Yes">False</Option>
+    <Option name="CreateMVAPdfs" modified="Yes">True</Option>
+    <Option name="IgnoreNegWeightsInTraining" modified="No">False</Option>
+    <Option name="NTrees" modified="No">11</Option>
+    <Option name="MaxDepth" modified="No">1</Option>
+    <Option name="MinNodeSize" modified="No">5%</Option>
+    <Option name="nCuts" modified="Yes">0</Option>
+    <Option name="BoostType" modified="Yes">AdaBoost</Option>
+    <Option name="AdaBoostR2Loss" modified="No">quadratic</Option>
+    <Option name="UseBaggedBoost" modified="No">False</Option>
+    <Option name="Shrinkage" modified="No">1.000000e+00</Option>
+    <Option name="AdaBoostBeta" modified="No">6.000000e-01</Option>
+    <Option name="UseRandomisedTrees" modified="No">False</Option>
+    <Option name="UseNvars" modified="No">3</Option>
+    <Option name="UsePoissonNvars" modified="No">True</Option>
+    <Option name="BaggedSampleFraction" modified="No">6.000000e-01</Option>
+    <Option name="UseYesNoLeaf" modified="No">True</Option>
+    <Option name="NegWeightTreatment" modified="Yes">inverseboostnegweights</Option>
+    <Option name="Css" modified="No">1.000000e+00</Option>
+    <Option name="Cts_sb" modified="No">1.000000e+00</Option>
+    <Option name="Ctb_ss" modified="No">1.000000e+00</Option>
+    <Option name="Cbb" modified="No">1.000000e+00</Option>
+    <Option name="NodePurityLimit" modified="No">5.000000e-01</Option>
+    <Option name="SeparationType" modified="Yes">giniindex</Option>
+    <Option name="RegressionLossFunctionBDTG" modified="No">huber</Option>
+    <Option name="HuberQuantile" modified="No">7.000000e-01</Option>
+    <Option name="DoBoostMonitor" modified="No">False</Option>
+    <Option name="UseFisherCuts" modified="No">False</Option>
+    <Option name="MinLinCorrForFisher" modified="No">8.000000e-01</Option>
+    <Option name="UseExclusiveVars" modified="No">False</Option>
+    <Option name="DoPreselection" modified="No">False</Option>
+    <Option name="SigToBkgFraction" modified="No">1.000000e+00</Option>
+    <Option name="PruneMethod" modified="No">nopruning</Option>
+    <Option name="PruneStrength" modified="No">0.000000e+00</Option>
+    <Option name="PruningValFraction" modified="No">5.000000e-01</Option>
+    <Option name="SkipNormalization" modified="No">False</Option>
+    <Option name="nEventsMin" modified="No">0</Option>
+    <Option name="UseBaggedGrad" modified="No">False</Option>
+    <Option name="GradBaggingFraction" modified="No">6.000000e-01</Option>
+    <Option name="UseNTrainEvents" modified="No">0</Option>
+    <Option name="NNodesMax" modified="No">0</Option>
+  </Options>
+  <Variables NVar="7">
+    <Variable VarIndex="0" Expression="mjj" Label="mjj" Title="mjj" Unit="" Internal="mjj" Type="F" Min="0.00000000e+00" Max="5.10597266e+03"/>
+    <Variable VarIndex="1" Expression="j_pt[1]" Label="j_pt[1]" Title="SubLeadJetPt" Unit="" Internal="j_pt_1_" Type="F" Min="0.00000000e+00" Max="9.32387329e+02"/>
+    <Variable VarIndex="2" Expression="ht" Label="ht" Title="ht" Unit="" Internal="ht" Type="F" Min="0.00000000e+00" Max="1.96353027e+03"/>
+    <Variable VarIndex="3" Expression="j_gawidth[0]" Label="j_gawidth[0]" Title="jet_gawidth1" Unit="" Internal="j_gawidth_0_" Type="F" Min="-1.00000000e+00" Max="5.82820594e-01"/>
+    <Variable VarIndex="4" Expression="forwardeta" Label="forwardeta" Title="forwardeta" Unit="" Internal="forwardeta" Type="F" Min="-9.99900000e+03" Max="4.56280136e+00"/>
+    <Variable VarIndex="5" Expression="j_c1_05[0]" Label="j_c1_05[0]" Title="jet_c1_051" Unit="" Internal="j_c1_05_0_" Type="F" Min="-1.00000000e+00" Max="2.60171205e-01"/>
+    <Variable VarIndex="6" Expression="balance" Label="balance" Title="balance" Unit="" Internal="balance" Type="F" Min="0.00000000e+00" Max="6.86867920e+02"/>
+  </Variables>
+  <Spectators NSpec="0"/>
+  <Classes NClass="2">
+    <Class Name="Signal" Index="0"/>
+    <Class Name="Background" Index="1"/>
+  </Classes>
+  <Transformations NTransformations="0"/>
+  <MVAPdfs>
+    <PDF Name="BDT_VBF0_PDFSig" MinNSmooth="0" MaxNSmooth="0" InterpolMethod="2" KDE_type="1" KDE_iter="1" KDE_border="1" KDE_finefactor="1.0000000000000000e+00">
+      <Histogram Name="BDT_tr_S_original" NBins="120" XMin="-1.0000000000000000e+00" XMax="1.0000000000000000e+00" HasEquidistantBins="1">
+        0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 2.54774834e-03 0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 1.44442073e-01 1.01390293e-02 0.00000000e+00 0.00000000e+00 1.06514074e+00 0.00000000e+00 6.65015709e-01 0.00000000e+00 0.00000000e+00 1.34445768e-01 0.00000000e+00 0.00000000e+00 1.17613528e+00 0.00000000e+00 9.00041153e-01 0.00000000e+00 1.53656306e-01 1.86089051e+00 0.00000000e+00 0.00000000e+00 4.39317207e-01 0.00000000e+00 0.00000000e+00 5.62830964e-02 1.24564905e-01 1.85039628e+00 0.00000000e+00 2.34240306e+00 0.00000000e+00 0.00000000e+00 3.42934026e-01 0.00000000e+00 4.47272544e-01 1.03606650e+00 1.87631794e+00 2.50518240e+00 7.80363519e-01 0.00000000e+00 2.39431677e-01 0.00000000e+00 1.29313737e-01 1.23840940e+00 4.50012609e+00 1.06326366e+01 0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 3.23017482e+00 0.00000000e+00 8.92052537e+00 3.83847498e+00 0.00000000e+00 4.75450697e-02 0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 3.73454346e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 7.13611817e-01 0.00000000e+00 0.00000000e+00 0.00000000e+00 1.14125256e-01 0.00000000e+00 3.48057595e-01 0.00000000e+00 8.53065006e-01 0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 4.05728301e-01 0.00000000e+00 0.00000000e+00 3.14067501e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 
+      </Histogram>
+    </PDF>
+    <PDF Name="BDT_VBF0_PDFBkg" MinNSmooth="0" MaxNSmooth="0" InterpolMethod="2" KDE_type="1" KDE_iter="1" KDE_border="1" KDE_finefactor="1.0000000000000000e+00">
+      <Histogram Name="BDT_tr_B_original" NBins="120" XMin="-1.0000000000000000e+00" XMax="1.0000000000000000e+00" HasEquidistantBins="1">
+        6.09880463e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 2.48909429e+00 3.52520595e+00 0.00000000e+00 0.00000000e+00 8.61683314e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 1.87516016e+00 0.00000000e+00 2.63088150e-02 2.65709821e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 1.10189595e+00 0.00000000e+00 1.71758490e-02 4.02973074e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 9.15401960e-02 3.68551821e-01 0.00000000e+00 0.00000000e+00 7.70401286e+00 2.34128782e-01 3.14510629e+00 0.00000000e+00 0.00000000e+00 7.44549934e-02 0.00000000e+00 0.00000000e+00 3.68900793e+00 0.00000000e+00 1.58624980e+00 0.00000000e+00 1.48037786e-01 1.47082171e-01 0.00000000e+00 0.00000000e+00 5.48104222e-01 0.00000000e+00 6.22036814e-04 3.38833547e-02 1.23130062e-01 3.97912538e-01 0.00000000e+00 2.35604361e+00 0.00000000e+00 6.83373090e-02 1.44149289e-01 0.00000000e+00 1.72130767e-01 4.31330292e-01 5.16017444e-02 6.93575532e-01 7.70791508e-01 0.00000000e+00 4.30392163e-02 0.00000000e+00 2.03496350e-01 4.01056168e-01 4.60283703e-01 2.07103347e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 2.91715229e-02 2.12172098e-01 0.00000000e+00 9.43671033e-01 4.54678644e-01 0.00000000e+00 6.70460940e-02 0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 2.92492031e-01 0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 5.31094360e-01 0.00000000e+00 0.00000000e+00 0.00000000e+00 3.42029398e-02 0.00000000e+00 8.92857104e-02 0.00000000e+00 3.71803821e-01 0.00000000e+00 0.00000000e+00 0.00000000e+00 6.07482680e-02 3.52570245e-02 0.00000000e+00 0.00000000e+00 2.82374919e-01 0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00 
+      </Histogram>
+    </PDF>
+  </MVAPdfs>
+  <Weights NTrees="11" AnalysisType="0">
+    <BinaryTree type="DecisionTree" boostWeight="7.1035854981348390e-01" itree="0">
+      <Node pos="s" depth="0" NCoef="0" IVar="0" Cut="5.0229019165039062e+02" cType="0" res="-9.9000000000000000e+01" rms="0.0000000000000000e+00" purity="5.0000000000000000e-01" nType="0">
+        <Node pos="l" depth="1" NCoef="0" IVar="-1" Cut="0.0000000000000000e+00" cType="1" res="-9.9000000000000000e+01" rms="0.0000000000000000e+00" purity="7.9730254411697388e-01" nType="1"/>
+        <Node pos="r" depth="1" NCoef="0" IVar="-1" Cut="0.0000000000000000e+00" cType="1" res="-9.9000000000000000e+01" rms="0.0000000000000000e+00" purity="2.5990492105484009e-01" nType="-1"/>
+      </Node>
+    </BinaryTree>
+    <BinaryTree type="DecisionTree" boostWeight="4.1302874422329167e-01" itree="1">
+      <Node pos="s" depth="0" NCoef="0" IVar="6" Cut="2.1417854309082031e+01" cType="1" res="-9.9000000000000000e+01" rms="0.0000000000000000e+00" purity="5.2216303348541260e-01" nType="0">
+        <Node pos="l" depth="1" NCoef="0" IVar="-1" Cut="0.0000000000000000e+00" cType="1" res="-9.9000000000000000e+01" rms="0.0000000000000000e+00" purity="7.9880684614181519e-01" nType="1"/>
+        <Node pos="r" depth="1" NCoef="0" IVar="-1" Cut="0.0000000000000000e+00" cType="1" res="-9.9000000000000000e+01" rms="0.0000000000000000e+00" purity="3.9541885256767273e-01" nType="-1"/>
+      </Node>
+    </BinaryTree>
+    <BinaryTree type="DecisionTree" boostWeight="5.0152459911738578e-01" itree="2">
+      <Node pos="s" depth="0" NCoef="0" IVar="0" Cut="2.0205102539062500e+02" cType="0" res="-9.9000000000000000e+01" rms="0.0000000000000000e+00" purity="5.6428313255310059e-01" nType="0">
+        <Node pos="l" depth="1" NCoef="0" IVar="-1" Cut="0.0000000000000000e+00" cType="1" res="-9.9000000000000000e+01" rms="0.0000000000000000e+00" purity="6.7475110292434692e-01" nType="1"/>
+        <Node pos="r" depth="1" NCoef="0" IVar="-1" Cut="0.0000000000000000e+00" cType="1" res="-9.9000000000000000e+01" rms="0.0000000000000000e+00" purity="2.3412936925888062e-01" nType="-1"/>
+      </Node>
+    </BinaryTree>
+    <BinaryTree type="DecisionTree" boostWeight="3.0669297148140773e-01" itree="3">
+      <Node pos="s" depth="0" NCoef="0" IVar="0" Cut="8.2769201660156250e+02" cType="0" res="-9.9000000000000000e+01" rms="0.0000000000000000e+00" purity="5.0333327054977417e-01" nType="0">
+        <Node pos="l" depth="1" NCoef="0" IVar="-1" Cut="0.0000000000000000e+00" cType="1" res="-9.9000000000000000e+01" rms="0.0000000000000000e+00" purity="7.2966915369033813e-01" nType="1"/>
+        <Node pos="r" depth="1" NCoef="0" IVar="-1" Cut="0.0000000000000000e+00" cType="1" res="-9.9000000000000000e+01" rms="0.0000000000000000e+00" purity="4.1550779342651367e-01" nType="-1"/>
+      </Node>
+    </BinaryTree>
+    <BinaryTree type="DecisionTree" boostWeight="3.0256862235240961e-01" itree="4">
+      <Node pos="s" depth="0" NCoef="0" IVar="6" Cut="2.1506820678710938e+01" cType="1" res="-9.9000000000000000e+01" rms="0.0000000000000000e+00" purity="5.3833425045013428e-01" nType="0">
+        <Node pos="l" depth="1" NCoef="0" IVar="-1" Cut="0.0000000000000000e+00" cType="1" res="-9.9000000000000000e+01" rms="0.0000000000000000e+00" purity="7.4820393323898315e-01" nType="1"/>
+        <Node pos="r" depth="1" NCoef="0" IVar="-1" Cut="0.0000000000000000e+00" cType="1" res="-9.9000000000000000e+01" rms="0.0000000000000000e+00" purity="4.3685239553451538e-01" nType="-1"/>
+      </Node>
+    </BinaryTree>
+    <BinaryTree type="DecisionTree" boostWeight="3.4231115042943577e-01" itree="5">
+      <Node pos="s" depth="0" NCoef="0" IVar="1" Cut="4.2190574645996094e+01" cType="0" res="-9.9000000000000000e+01" rms="0.0000000000000000e+00" purity="5.6693637371063232e-01" nType="0">
+        <Node pos="l" depth="1" NCoef="0" IVar="-1" Cut="0.0000000000000000e+00" cType="1" res="-9.9000000000000000e+01" rms="0.0000000000000000e+00" purity="6.2293857336044312e-01" nType="1"/>
+        <Node pos="r" depth="1" NCoef="0" IVar="-1" Cut="0.0000000000000000e+00" cType="1" res="-9.9000000000000000e+01" rms="0.0000000000000000e+00" purity="2.7919512987136841e-01" nType="-1"/>
+      </Node>
+    </BinaryTree>
+    <BinaryTree type="DecisionTree" boostWeight="2.5569900346781338e-01" itree="6">
+      <Node pos="s" depth="0" NCoef="0" IVar="6" Cut="3.9633426666259766e+01" cType="1" res="-9.9000000000000000e+01" rms="0.0000000000000000e+00" purity="5.1027321815490723e-01" nType="0">
+        <Node pos="l" depth="1" NCoef="0" IVar="-1" Cut="0.0000000000000000e+00" cType="1" res="-9.9000000000000000e+01" rms="0.0000000000000000e+00" purity="6.1990380287170410e-01" nType="1"/>
+        <Node pos="r" depth="1" NCoef="0" IVar="-1" Cut="0.0000000000000000e+00" cType="1" res="-9.9000000000000000e+01" rms="0.0000000000000000e+00" purity="4.0886741876602173e-01" nType="-1"/>
+      </Node>
+    </BinaryTree>
+    <BinaryTree type="DecisionTree" boostWeight="2.2985009003008292e-01" itree="7">
+      <Node pos="s" depth="0" NCoef="0" IVar="0" Cut="2.7599661254882812e+02" cType="0" res="-9.9000000000000000e+01" rms="0.0000000000000000e+00" purity="5.1309543848037720e-01" nType="0">
+        <Node pos="l" depth="1" NCoef="0" IVar="-1" Cut="0.0000000000000000e+00" cType="1" res="-9.9000000000000000e+01" rms="0.0000000000000000e+00" purity="5.7435673475265503e-01" nType="1"/>
+        <Node pos="r" depth="1" NCoef="0" IVar="-1" Cut="0.0000000000000000e+00" cType="1" res="-9.9000000000000000e+01" rms="0.0000000000000000e+00" purity="3.5215997695922852e-01" nType="-1"/>
+      </Node>
+    </BinaryTree>
+    <BinaryTree type="DecisionTree" boostWeight="2.3461409046188270e-01" itree="8">
+      <Node pos="s" depth="0" NCoef="0" IVar="5" Cut="8.8554486632347107e-02" cType="1" res="-9.9000000000000000e+01" rms="0.0000000000000000e+00" purity="4.8715049028396606e-01" nType="0">
+        <Node pos="l" depth="1" NCoef="0" IVar="-1" Cut="0.0000000000000000e+00" cType="1" res="-9.9000000000000000e+01" rms="0.0000000000000000e+00" purity="6.0346937179565430e-01" nType="1"/>
+        <Node pos="r" depth="1" NCoef="0" IVar="-1" Cut="0.0000000000000000e+00" cType="1" res="-9.9000000000000000e+01" rms="0.0000000000000000e+00" purity="4.0818262100219727e-01" nType="-1"/>
+      </Node>
+    </BinaryTree>
+    <BinaryTree type="DecisionTree" boostWeight="1.7351889330541334e-01" itree="9">
+      <Node pos="s" depth="0" NCoef="0" IVar="0" Cut="7.3338568115234375e+02" cType="0" res="-9.9000000000000000e+01" rms="0.0000000000000000e+00" purity="4.9827566742897034e-01" nType="0">
+        <Node pos="l" depth="1" NCoef="0" IVar="-1" Cut="0.0000000000000000e+00" cType="1" res="-9.9000000000000000e+01" rms="0.0000000000000000e+00" purity="6.0320615768432617e-01" nType="1"/>
+        <Node pos="r" depth="1" NCoef="0" IVar="-1" Cut="0.0000000000000000e+00" cType="1" res="-9.9000000000000000e+01" rms="0.0000000000000000e+00" purity="4.4434270262718201e-01" nType="-1"/>
+      </Node>
+    </BinaryTree>
+    <BinaryTree type="DecisionTree" boostWeight="1.6951249455678574e-01" itree="10">
+      <Node pos="s" depth="0" NCoef="0" IVar="6" Cut="2.1417854309082031e+01" cType="1" res="-9.9000000000000000e+01" rms="0.0000000000000000e+00" purity="5.1231950521469116e-01" nType="0">
+        <Node pos="l" depth="1" NCoef="0" IVar="-1" Cut="0.0000000000000000e+00" cType="1" res="-9.9000000000000000e+01" rms="0.0000000000000000e+00" purity="6.2539440393447876e-01" nType="1"/>
+        <Node pos="r" depth="1" NCoef="0" IVar="-1" Cut="0.0000000000000000e+00" cType="1" res="-9.9000000000000000e+01" rms="0.0000000000000000e+00" purity="4.5690330862998962e-01" nType="-1"/>
+      </Node>
+    </BinaryTree>
+  </Weights>
+</MethodSetup>
