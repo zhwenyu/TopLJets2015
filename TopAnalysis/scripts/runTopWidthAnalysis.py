@@ -50,8 +50,8 @@ Analysis loop
 """
 def runTopWidthAnalysis(fileName,
                         outFileName,
-                        widthList=[0.2,0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.1,1.2,1.3,1.4,1.5,1.6,1.8,2.0,2.2,2.4,2.6,2.8,3.0,3.5,4.0,1.16, 1.23,  1.28, 1.31,   1.34,  1.39,  1.48],
-                        massList=[171.0,171.2,171.4,171.6,171.8,172.0,172.2,172.4,172.5,172.6,172.8,173.0,173.2,173.4,173.6,173.8,174.0,    166.5,169.5, 171.5, 172.5, 173.5, 175.5, 178.5],
+                        widthList=[0.2,0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.1,1.2,1.3,1.4,1.5,1.6,1.8,1.9,2.0,2.1,2.2,2.4,2.6,2.8,3.0,3.5,4.0], #1.16, 1.23,  1.28, 1.31,   1.34,  1.39,  1.48],
+                        massList=[170.0,170.5,171.0,171.2,171.4,171.6,171.8,172.0,172.2,172.4,172.5,172.6,172.8,173.0,173.2,173.4,173.6,173.8,174.0,174.5,175.5],#    166.5,169.5, 171.5, 172.5, 173.5, 175.5, 178.5],
                         systs=['',
                                'puup','pudn',
                                'btagup','btagdn',
@@ -213,11 +213,12 @@ def runTopWidthAnalysis(fileName,
             for isyst in xrange(0,nsysts):
                 observablesH[var].GetYaxis().SetBinLabel(isyst+1,thsysts[isyst])
 
-            for i in ['lowpt','highpt']:
+            ptCats=['lowpt','highpt']
+            for i in ptCats:
 
                 for w in widthList:
                     for m in massList:
-                        var=j+b+i+'_incmlb_w%d_m%d'%(int(100*w),int(10*m))
+                        var=j+b+i+'_incmlb_w%d_m%d'%(int(100*w),int(10*m))                        
                         observablesH[var]=ROOT.TH1F(var,';Mass(lepton,jet) (Inclusive) [GeV];l+j pairs',NBINSMLB,MINMLB,MAXMLB)
 
                         var=j+b+i+'_incmlb_w%d_m%d_exp'%(int(100*w),int(10*m))

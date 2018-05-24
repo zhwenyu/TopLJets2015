@@ -55,6 +55,11 @@ case $WHAT in
 	python scripts/runLocalAnalysis.py -i ${eosdir} ${commonOpts}     --only MC --farmappendix TOP17010MC;
 	python scripts/runLocalAnalysis.py -i ${dataeosdir} ${commonOpts} --only Data --farmappendix TOP17010Data;
 	;;
+    CHECKSEL )
+        for FARM in FARMTOP17010Data FARMTOP17010MC; do
+            python scripts/checkAnalysisIntegrity.py ${CMSSW_BASE}/${FARM} /eos/cms/${summaryeosdir}/Chunks;
+        done
+        ;;
     MERGESEL )
 	mkdir -p ${outdir}
 	./scripts/mergeOutputs.py /eos/cms${summaryeosdir} True ${outdir};	
