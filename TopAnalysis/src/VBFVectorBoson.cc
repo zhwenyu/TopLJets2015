@@ -51,13 +51,15 @@ void VBFVectorBoson::RunVBFVectorBoson()
 
   //TMVA configuration
   TMVA::Reader *reader = new TMVA::Reader( "!Color:!Silent" );
+  reader->AddVariable("mjj", &mjj);
+  reader->AddVariable("j_pt[1]",&subleadj_pt);
   reader->AddVariable("ht",&scalarht);
   reader->AddVariable("j_gawidth[0]",&leadj_gawidth);
   reader->AddVariable("forwardeta",&forwardeta);
   reader->AddVariable("j_c1_05[0]",&leadj_c1_05);
   reader->AddVariable("balance",&balance);
-  TString weightFiles[]={"${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBF_weights/CutMjjJptBest_BDT_VBF0.weights.xml",
-                         "${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBF_weights/FisherCutMjjJptBest_Fisher.weights.xml"};
+  TString weightFiles[]={"${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBF_weights/BDT.weights.xml",
+                         "${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBF_weights/Fisher.weights.xml"};
   TString mvaMethod[]={"BDT","Fisher"};
   for(size_t i=0; i<2; i++){
     gSystem->ExpandPathName(weightFiles[i]);
@@ -109,16 +111,8 @@ void VBFVectorBoson::RunVBFVectorBoson()
       if(chTag == "A") cat[1] = true;
 
       //jet related variables and selection
-      mjj    = (jets.size()>=2 ?  (jets[0]+jets[1]).M() : 0.);
-      detajj = (jets.size()>=2 ? fabs(jets[0].Eta()-jets[1].Eta()) : -99.);
-      dphijj = (jets.size()>=2 ? jets[0].DeltaPhi(jets[1]) : -99.);
-      jjpt   = (jets.size()>=2 ? (jets[0]+jets[1]).Pt() : 0.);
-
-      leadj_gawidth    = (jets.size()>1 ? ev.j_gawidth[jets[0].getJetIndex()] : -99);
-      leadj_c1_05      = (jets.size()>1 ? ev.j_c1_05[jets[0].getJetIndex()] : -99);
-      subleadj_gawidth = (jets.size()>2 ? ev.j_gawidth[jets[1].getJetIndex()] : -99);
-      subleadj_c1_05   = (jets.size()>2 ? ev.j_c1_05[jets[1].getJetIndex()] : -99);
-
+      initVariables(jets);
+      
       scalarht = 0.;
       TLorentzVector mhtP4(0,0,0,0);
       mht = 0;
@@ -191,16 +185,8 @@ void VBFVectorBoson::RunVBFVectorBoson()
       //leptons and boson
       mindrl = 9999.;
       for(auto &l: leptons) mindrl=min(l.DeltaR(boson),mindrl);
-
       //system variables and event shapes
-      ystar=0;
-      balance=0;
-      relbpt=0;
-      dphibjj=0;
-      leadj_gawidth=0;
-      leadj_c1_05=0;
-      subleadj_gawidth=0;
-      subleadj_c1_05=0;
+      
       if(passJets) {
         ystar=boson.Rapidity()-0.5*(jets[0].Rapidity()+jets[1].Rapidity());
         balance=(boson+jets[0]+jets[1]).Pt();
@@ -447,6 +433,7 @@ void VBFVectorBoson::loadCorrections(){
 }
 void VBFVectorBoson::addMVAvars(){
   newTree->Branch("centralEta", &centraleta);
+  newTree->Branch("subleadj_pt", &subleadj_pt);
   newTree->Branch("mjj", &mjj);
   newTree->Branch("detajj", &detajj);
   newTree->Branch("jjpt", &jjpt);
@@ -479,6 +466,31 @@ void VBFVectorBoson::addMVAvars(){
   newTree->Branch("D",&D);
   newTree->Branch("training",&training);
   newTree->Branch("category", &category, "MM:A:VBF:HighPt:HighPtVBF:V1J:HighPtOfflineVBF:HighPtVBFCutBased");
+}
+
+void VBFVectorBoson::initVariables(std::vector<Jet> jets){
+  mjj    = (jets.size()>=2 ?  (jets[0]+jets[1]).M() : 0.);
+  detajj = (jets.size()>=2 ? fabs(jets[0].Eta()-jets[1].Eta()) : -99.);
+  dphijj = (jets.size()>=2 ? jets[0].DeltaPhi(jets[1]) : -99.);
+  jjpt   = (jets.size()>=2 ? (jets[0]+jets[1]).Pt() : 0.);
+  leadj_gawidth    = (jets.size()>1 ? ev.j_gawidth[jets[0].getJetIndex()] : -99);
+  leadj_c1_05      = (jets.size()>1 ? ev.j_c1_05[jets[0].getJetIndex()] : -99);
+  subleadj_gawidth = (jets.size()>2 ? ev.j_gawidth[jets[1].getJetIndex()] : -99);
+  subleadj_c1_05   = (jets.size()>2 ? ev.j_c1_05[jets[1].getJetIndex()] : -99);
+  subleadj_pt      = (jets.size()>2 ? ev.j_pt[jets[1].getJetIndex()] : -99);
+  ystar       = -99;
+  balance     = -99;
+  relbpt      = -99;
+  dphibjj     = -99;
+  isotropy    = -99;
+  circularity = -99;
+  sphericity  = -99;
+  aplanarity  = -99;
+  C           = -99;
+  D           = -99;
+  jjetas      = -99;
+  dphivj0     = -99; 
+  dphivj1     = -99;
 }
 
 void VBFVectorBoson::fill(MiniEvent_t ev, TLorentzVector boson, std::vector<Jet> jets, std::vector<double> cplotwgts, TString c){
@@ -516,8 +528,7 @@ void VBFVectorBoson::fill(MiniEvent_t ev, TLorentzVector boson, std::vector<Jet>
     centraleta=min(centraleta,float(fabs(jets[ij].Eta())));
     forwardeta=max(forwardeta,float(fabs(jets[ij].Eta())));
   }
-  jjetas = 9999;
-  dphivj0 = 9999; dphivj1 = 9999;
+  
   if(jets.size() >= 2){
     jjetas = jets[0].Eta()*jets[1].Eta();
     dphivj0 = fabs(jets[0].DeltaPhi(boson));
