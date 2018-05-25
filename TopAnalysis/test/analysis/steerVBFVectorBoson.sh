@@ -33,7 +33,11 @@ case $WHAT in
         input=${eosdir}/MC13TeV_DY50toInf/MergedMiniEvents_0_ext0.root
         output=MC13TeV_DY4Jets50toInf.root
         tag="--tag MC13TeV_DY50toInf"
-        
+
+        input=${eosdir}/MC13TeV_AJJ_EWK_INT_LO_mjj500_dr04/MC13TeV_AJJ_EWK_INT_LO_mjj500_dr04.root
+        output=MC13TeV_AJJ_EWK_INT_LO_mjj500_dr04.root
+        tag="--tag MC13TeV_AJJ_EWK_INT_LO_mjj500_dr04"
+
         #input=${eosdir}/Data13TeV_SinglePhoton_2017F/MergedMiniEvents_0_ext0.root
         #output=Data13TeV_SinglePhoton_2017F.root
         #tag="--tag Data13TeV_SinglePhoton_2017F"
@@ -93,24 +97,33 @@ case $WHAT in
         fi
         kFactors="--procSF MC13TeV_QCDEM_15to20:1.26,MC13TeV_QCDEM_20to30:1.26,MC13TeV_QCDEM_30to50:1.26,MC13TeV_QCDEM_50to80:1.26,MC13TeV_QCDEM_80to120:1.26,MC13TeV_QCDEM_120to170:1.26,MC13TeV_QCDEM_170to300:1.26,MC13TeV_QCDEM_300toInf:1.26,MC13TeV_GJets_HT40to100:1.26,MC13TeV_GJets_HT100to200:1.26,MC13TeV_GJets_HT200to400:1.26,MC13TeV_GJets_HT600toInf:1.26"
 	commonOpts="-i ${outdir}/${gh}/${EXTRA} --puNormSF puwgtctr -l ${lumi}  --saveLog --mcUnc ${lumiUnc} --lumiSpecs VBFA:${vbflumi},OfflineVBFA:${fulllumi}"
-	python scripts/plotter.py ${commonOpts} -j ${json} ${kFactors};
-	python scripts/plotter.py ${commonOpts} -j ${json} ${kFactors} --only evcount --saveTeX;
+	#python scripts/plotter.py ${commonOpts} -j ${json} ${kFactors};
+	#python scripts/plotter.py ${commonOpts} -j ${json} ${kFactors} --only evcount --saveTeX --o ${outdir}/${githash}/${EXTRA}/plots/evcount_plotter.root;
         if [[ "${EXTRA}" != *"2018"* ]]; then
             python scripts/plotter.py ${commonOpts}  -j data/era2017/vbf_signal_samples.json --only HighPtA_ -O ${outdir}/${githash}/${EXTRA}/plots_signal/ --noStack;
+            continue
             python scripts/plotter.py ${commonOpts}  -j data/era2017/gjets_samples.json --only HighPtA_mjj -O ${outdir}/${githash}/${EXTRA}/plots_gjets/ --noStack;
+            trigOpts="-i ${outdir}/${gh}/${EXTRA} --puNormSF puwgtctr -l ${vbflumi}  --saveLog --mcUnc ${lumiUnc} ${kFactors} --only HighPtOfflineVBFA,HighPtVBFA"
+            python scripts/plotter.py ${trigOpts} -j data/era2017/vbf_samples_2017F.json -O ${outdir}/${githash}/${EXTRA}/plots_trigger;
         fi
         ;;
        
     RATIO )
-        python test/analysis/computeVBFRatios.py -t \
-            -i ${outdir}/${githash}/raw/plots/plotter.root,${outdir}/raw2018/plots/plotter.root \
+        #python test/analysis/computeVBFRatios.py -t \
+        #    -i ${outdir}/${githash}/${EXTRA}/plots_trigger/plotter.root,${outdir}/${githash2018}/raw2018/plots/plotter.root \
+        #    --titles "2017","2018" \
+        #    -o ${outdir}/${githash}/${EXTRA}/plots_trigger/trigger_ratio_plotter.root
+
+        python test/analysis/computeVBFRatios.py \
+            -i ${outdir}/${githash}/${EXTRA}/plots/plotter.root,${outdir}/${githash2018}/raw2018/plots/plotter.root \
             --titles "2017","2018" \
-            -o ${outdir}/raw/plots/trigger_ratio_plotter.root
+            -o ${outdir}/${githash}/${EXTRA}/plots/ratio_plotter.root
+        
 	;;
 
     WWW )
 
-        plotList=(plots plots_signal plots_gjets)
+        plotList=(plots_signal) # plots plots_trigger plots_signal plots_gjets)
         gh=${githash}
         if [[ "${EXTRA}" = *"2018"* ]]; then
             gh=${githash2018}
