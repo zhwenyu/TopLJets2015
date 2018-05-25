@@ -52,7 +52,7 @@ case $WHAT in
         ;;
     SEL )
         commonOpts="-q ${queue} -o ${summaryeosdir} --era era2016 -m TOP-17-010::RunTop17010 --ch 0 --runSysts --skipexisting";
-	python scripts/runLocalAnalysis.py -i ${eosdir} ${commonOpts}     --only MC --farmappendix TOP17010MC;
+	python scripts/runLocalAnalysis.py -i ${eosdir} ${commonOpts}     --only MC   --farmappendix TOP17010MC;
 	python scripts/runLocalAnalysis.py -i ${dataeosdir} ${commonOpts} --only Data --farmappendix TOP17010Data;
 	;;
     CHECKSEL )
