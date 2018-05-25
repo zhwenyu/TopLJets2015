@@ -37,7 +37,7 @@ void RunTop17010(TString filename,
   bool isDataFile(filename.Contains("Data"));
   if(isDataFile) runSysts=false;
   bool isTTbar( filename.Contains("_TTJets") );
-
+  
   //prepare output
   TopWidthEvent_t twev;
   TString baseName=gSystem->BaseName(outname); 
@@ -87,6 +87,30 @@ void RunTop17010(TString filename,
   BTagSFUtil myBTagSFUtil;
   std::map<TString, std::map<BTagEntry::JetFlavor, BTagCalibrationReader *> > btvsfReaders = getBTVcalibrationReadersMap(era, BTagEntry::OP_MEDIUM);
   std::map<BTagEntry::JetFlavor, TGraphAsymmErrors *> expBtagEff = readExpectedBtagEff(era);
+  std::map<BTagEntry::JetFlavor, TGraphAsymmErrors *> specExpBtagEff;
+  std::map<BTagEntry::JetFlavor, TGraphAsymmErrors *> expResp,specExpResp;
+  if(isTTbar)
+    {
+      TString pfix("");
+      if(filename.Contains("erdON"))     pfix="_erdON";
+      if(filename.Contains("gluonMove")) pfix="_gluonMove";
+      if(filename.Contains("qcdBased"))  pfix="_qcdBased";
+      if(filename.Contains("fsrdn"))     pfix="_fsrdn";
+      if(filename.Contains("fsrup"))     pfix="_fsrup";
+      if(filename.Contains("isrdn"))     pfix="_isrdn";
+      if(filename.Contains("isrup"))     pfix="_isrup";
+      if(filename.Contains("uedn"))      pfix="_uedn";
+      if(filename.Contains("ueup"))      pfix="_ueup";
+      if(filename.Contains("hdampdn"))   pfix="_hdampdn";
+      if(filename.Contains("hdampup"))   pfix="_hdampup";
+      if(pfix!=""){
+        specExpBtagEff=readExpectedBtagEff(era,pfix);
+        expResp=readExpectedBtagEff(era,"","jrest_");
+        specExpResp=readExpectedBtagEff(era,pfix,"jrest_");
+        cout << "Read b-tagging efficiency and jet responses for " << pfix << endl;
+      }
+    }
+
 
   //JET ENERGY UNCERTAINTIES    
   TString jecUncUrl(era+"/Summer16_23Sep2016V4_MC_UncertaintySources_AK4PFchs.txt");
@@ -230,9 +254,24 @@ void RunTop17010(TString filename,
 	    }
 	  if(overlapsWithLepton) continue;
 
+          BTagEntry::JetFlavor hadFlav=BTagEntry::FLAV_UDSG; 
+          if(abs(ev.j_hadflav[k])==4) hadFlav=BTagEntry::FLAV_C; 
+          if(abs(ev.j_hadflav[k])==5) hadFlav=BTagEntry::FLAV_B;  
+          
+
 	  //smear jet energy resolution for MC
+          float specCorr(1.0);
 	  float genJet_pt(0);
-	  if(ev.j_g[k]>-1) genJet_pt=ev.g_pt[ ev.j_g[k] ];
+	  if(ev.j_g[k]>-1) {
+            genJet_pt=ev.g_pt[ ev.j_g[k] ];
+            if(expResp.find(hadFlav) != expResp.end()){
+              float expRespVal(expResp[hadFlav]->Eval(genJet_pt));
+              float specExpRespVal(specExpResp[hadFlav]->Eval(genJet_pt));
+              specCorr=(specExpRespVal>0 ? expRespVal/specExpRespVal : 1.0);              
+              jp4 *=specCorr;
+            }
+          }
+
 	  if(!ev.isData && genJet_pt>0) 
 	    {
 	      float jerSmear=getJetResolutionScales(jp4.Pt(),jp4.Eta(),genJet_pt)[0];
@@ -246,33 +285,31 @@ void RunTop17010(TString filename,
 	    {
 	      float jptForBtag(jp4.Pt()>1000. ? 999. : jp4.Pt()), jetaForBtag(fabs(jp4.Eta()));
 	      float expEff(1.0), jetBtagSF(1.0), jetBtagSFUp(1.0), jetBtagSFDown(1.0);
-
-	      BTagEntry::JetFlavor hadFlav=BTagEntry::FLAV_UDSG; 
-	      if(abs(ev.j_hadflav[k])==4) hadFlav=BTagEntry::FLAV_C; 
-	      if(abs(ev.j_hadflav[k])==5) hadFlav=BTagEntry::FLAV_B;  
 	     
 	      expEff    = expBtagEff[hadFlav]->Eval(jptForBtag); 
-	      //float py8corr(expEff>0 ? expBtagEffPy8[hadFlav]->Eval(jptForBtag)/expBtagEff[hadFlav]->Eval(jptForBtag) : 0.);
+              float specCorr(1.0);
+              if(specExpBtagEff.find(hadFlav) != specExpBtagEff.end()){
+                float specExpEff(specExpBtagEff[hadFlav]->Eval(jptForBtag));
+                specCorr=(specExpEff>0 ? expEff>specExpEff : 1.0);
+              }
               
 	      jetBtagSF = btvsfReaders[period][hadFlav]->eval_auto_bounds( "central", hadFlav, jetaForBtag, jptForBtag);
-	      //jetBtagSF *= py8corr;
+	      jetBtagSF *= specCorr;
 	      myBTagSFUtil.modifyBTagsWithSF(isBTagged,      jetBtagSF,      expEff);
 
 	      jetBtagSFUp = btvsfReaders[period][hadFlav]->eval_auto_bounds( "up", hadFlav, jetaForBtag, jptForBtag);
-	      //jetBtagSFUp *= py8corr;
+	      jetBtagSFUp *= specCorr;
 	      myBTagSFUtil.modifyBTagsWithSF(isBTaggedUp,    jetBtagSFUp,    expEff);
 
 	      jetBtagSFDown = btvsfReaders[period][hadFlav]->eval_auto_bounds( "down", hadFlav, jetaForBtag, jptForBtag);
-	      //jetBtagSFDown *= py8corr;
+	      jetBtagSFDown *= specCorr;
 	      myBTagSFUtil.modifyBTagsWithSF(isBTaggedDown,  jetBtagSFDown,  expEff);
 	    }
 
 	  //consider only jets above 30 GeV
 	  if(jp4.Pt()<30) continue;
 
-	  //mc truth for this jet
-	  Int_t hadFlav=ev.j_hadflav[k];
-	  Int_t flav=ev.j_flav[k];
+	  //mc truth for this jet	 
 	  TLorentzVector gjp4(0,0,0,0);
 	  if(ev.j_g[k]>=0)
 	    {
@@ -286,8 +323,8 @@ void RunTop17010(TString filename,
 	  
 	  btagStatus.push_back(btagStatusWord);
 	  genJets.push_back(gjp4);
-	  genJetsFlav.push_back(flav); 
-	  genJetsHadFlav.push_back(hadFlav);
+	  genJetsFlav.push_back(ev.j_flav[k]);
+	  genJetsHadFlav.push_back(ev.j_hadflav[k]);
 	  nbtags += isBTagged;
 	}
 

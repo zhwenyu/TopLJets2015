@@ -279,7 +279,7 @@ std::map<TString, std::map<BTagEntry::JetFlavor,BTagCalibrationReader *> > getBT
 
 
 //the expections are created with the script scripts/saveExpectedBtagEff.py (cf README)
-std::map<BTagEntry::JetFlavor, TGraphAsymmErrors *> readExpectedBtagEff(TString era,TString btagExpPostFix)
+std::map<BTagEntry::JetFlavor, TGraphAsymmErrors *> readExpectedBtagEff(TString era,TString btagExpPostFix,TString plotPreFix)
 {
   //open up the ROOT file with the expected efficiencies
   TString btagEffExpUrl(era+"/expTageff.root");
@@ -289,9 +289,9 @@ std::map<BTagEntry::JetFlavor, TGraphAsymmErrors *> readExpectedBtagEff(TString 
   
   //read efficiency graphs
   std::map<BTagEntry::JetFlavor, TGraphAsymmErrors *> expBtagEff;
-  expBtagEff[BTagEntry::FLAV_B]=(TGraphAsymmErrors *)beffIn->Get("b");
-  expBtagEff[BTagEntry::FLAV_C]=(TGraphAsymmErrors *)beffIn->Get("c");
-  expBtagEff[BTagEntry::FLAV_UDSG]=(TGraphAsymmErrors *)beffIn->Get("udsg");
+  expBtagEff[BTagEntry::FLAV_B]=(TGraphAsymmErrors *)beffIn->Get(plotPreFix+"b");
+  expBtagEff[BTagEntry::FLAV_C]=(TGraphAsymmErrors *)beffIn->Get(plotPreFix+"c");
+  expBtagEff[BTagEntry::FLAV_UDSG]=(TGraphAsymmErrors *)beffIn->Get(plotPreFix+"udsg");
   beffIn->Close();
 
   //all done

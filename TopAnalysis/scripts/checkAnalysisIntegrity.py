@@ -37,16 +37,26 @@ except:
     condor=open(os.path.join(condorSubDir,'condor.sub'),'r')
 newCondorName=os.path.join(condorSubDir,'condor_resub.sub')
 newCondor=open(newCondorName,'w')
+tag=''
 for line in condor:
-    if 'jobName=' in line: break
+    if 'jobName=' in line:
+        tag='jobName'
+        break
+    if 'cfgFile=' in line: 
+        tag='cfgFile'
+        break
     newCondor.write(line)
+if len(tag)==0:
+    print 'No tag found!'
+    sys.exit(-1)
+
 #newCondor.write('log  = %s/resublog_$(ClusterId).log\n'%FARMDIR)
 for jobName in toRun:
-    newCondor.write('jobName=%s\n'%jobName)
+    newCondor.write('%s=%s\n'%(tag,jobName))
     newCondor.write('queue 1\n')
 condor.close()
 newCondor.close()
 
 ##submit jobs
 print 'Resubmitting to condor from',newCondorName
-os.system('cd %s && condor_submit condor_resub.sub && cd -'%condorSubDir)
+#os.system('cd %s && condor_submit condor_resub.sub && cd -'%condorSubDir)
