@@ -78,8 +78,8 @@ case $WHAT in
         ;;
     ANA )
 	python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${ChunksDir} -q ${queue} --only MC;
-        python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${ChunksDir} -q ${queue} --only Data13TeV_Single,Data13TeV_Double --farm TOP17010DataANA;        
-        python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${ChunksDir} -q ${queue} --only MuonEG --farm TOP17010DataMuEGANA;
+        #python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${ChunksDir} -q ${queue} --only Data13TeV_Single,Data13TeV_Double --farm TOP17010DataANA;        
+        #python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${ChunksDir} -q ${queue} --only MuonEG --farm TOP17010DataMuEGANA;
 	;;
     CHECKANA )
         for FARM in TOP17010ANA TOP17010DataANA TOP17010DataMuEGANA; do
@@ -99,8 +99,8 @@ case $WHAT in
 	;;
     PLOT )
         opts="-l ${lumi} ${lumiSpecs} --procSF DY:${AnalysisDir}/plots/.dyscalefactors.pck --mcUnc ${lumiUnc} --silent"
-        for m in 1710 1712 1714 1716 1718 1720 1722 1724 1725 1726 1728 1730 1732 1734 1736 1738 1740; do
-            for w in 20 40 50 60 70 80 90 100 110 120 130 140 150 160 180 200 220 240 260 280 300 350 400; do
+        for m in 1700 1705 1710 1712 1714 1716 1718 1720 1722 1724 1725 1726 1728 1730 1732 1734 1736 1738 1740 1745 1755; do
+            for w in 20 40 50 60 70 80 90 100 110 120 130 140 150 160 180 190 200 210 220 240 260 280 300 350 400; do
                 pfix=w${w}_m${m}
                 python scripts/plotter.py -i ${AnalysisDir}  -j data/era2016/samples.json       ${opts} --only ${pfix} -o plotter_${pfix}.root;
                 python scripts/plotter.py -i ${AnalysisDir}  -j data/era2016/syst_samples.json  ${opts} --only ${pfix} -o syst_plotter_${pfix}.root;
