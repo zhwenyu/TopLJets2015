@@ -406,7 +406,7 @@ void VBFVectorBoson::bookHistograms(){
   //final analyses distributions
   ht->addHist("evcount",         new TH1F("evcount",        ";Pass;Events",1,0,1));  
   ht->addHist("vbfmva",          new TH1F("vbfmva",         ";VBF MVA;Events",20,-1,1));  
-  ht->addHist("vbffisher",       new TH1F("vbffisher",       ";VBF Fisher;Events",20,-0.4,0.5));  
+  ht->addHist("vbffisher",       new TH1F("vbffisher",       ";VBF Fisher;Events",40,-2,3));  
 }
 void VBFVectorBoson::setGammaZPtWeights(){
   TString wgtUrl("${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBFVectorBoson/raw/plots/ratio_plotter.root");

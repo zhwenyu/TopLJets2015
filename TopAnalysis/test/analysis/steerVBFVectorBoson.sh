@@ -51,13 +51,14 @@ case $WHAT in
         ;;
 
     SEL )
-        #extraOpts=" --mvatree"
-	python scripts/runLocalAnalysis.py -i ${eosdir} \            
+	python scripts/runLocalAnalysis.py \
+	    -i ${eosdir} \
             -o ${outdir}/${githash}/raw \
             --farmappendix ${githash} \
-            -q ${queue} --genWeights genweights_${githash}.root\
+            -q ${queue} --genWeights genweights_${githash}.root \
             --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts ${extraOpts};
 	;;
+        #extraOpts=" --mvatree"
 
     SEL2018 )
 	python scripts/runLocalAnalysis.py -i ${eosdir2018} \
@@ -78,7 +79,7 @@ case $WHAT in
         if [[ "${EXTRA}" = *"2018"* ]]; then
             gh=${githash2018}
         fi
-	./scripts/mergeOutputs.py ${outdir}/${gh}/${EXTRA};
+	./scripts/mergeOutputs.py ${outdir}/${gh}/raw/${EXTRA};
 	;;
 
     PLOT )
@@ -92,7 +93,7 @@ case $WHAT in
             gh=${githash2018}
         fi
         kFactors="--procSF MC13TeV_QCDEM_15to20:1.26,MC13TeV_QCDEM_20to30:1.26,MC13TeV_QCDEM_30to50:1.26,MC13TeV_QCDEM_50to80:1.26,MC13TeV_QCDEM_80to120:1.26,MC13TeV_QCDEM_120to170:1.26,MC13TeV_QCDEM_170to300:1.26,MC13TeV_QCDEM_300toInf:1.26,MC13TeV_GJets_HT40to100:1.26,MC13TeV_GJets_HT100to200:1.26,MC13TeV_GJets_HT200to400:1.26,MC13TeV_GJets_HT600toInf:1.26"
-	commonOpts="-i ${outdir}/${gh}/${EXTRA} --puNormSF puwgtctr -l ${lumi}  --saveLog --mcUnc ${lumiUnc} --lumiSpecs VBFA:${vbflumi},OfflineVBFA:${fulllumi}"
+	commonOpts="-i ${outdir}/${gh}/raw/${EXTRA} --puNormSF puwgtctr -l ${lumi}  --saveLog --mcUnc ${lumiUnc} --lumiSpecs VBFA:${vbflumi},OfflineVBFA:${fulllumi}"
 	python scripts/plotter.py ${commonOpts} -j ${json} ${kFactors};
 	python scripts/plotter.py ${commonOpts} -j ${json} ${kFactors} --only evcount --saveTeX;
         if [[ "${EXTRA}" != *"2018"* ]]; then
