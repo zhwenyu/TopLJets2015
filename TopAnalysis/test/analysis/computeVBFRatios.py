@@ -44,7 +44,7 @@ def computeVBFRatios(inputList,triggerBased=False):
             doRatioTo=None
             ratioTitle=''
             if not triggerBased:
-                if 'HighPtA_' in name or 'VBFA_' in name: 
+                if 'A_' in name:
                     doRatioTo=('A_','MM_')
                     ratioTitle='#gamma / Z#rightarrow #mu#mu ratio'
             else:
@@ -57,6 +57,7 @@ def computeVBFRatios(inputList,triggerBased=False):
                 dataNum,mcNum=getPlotsIn(inF,name)
                 dataDen,mcDen=getPlotsIn(inF,name.replace(doRatioTo[0],doRatioTo[1]))
             except:
+                print 'Failed at',name,'for',t
                 continue
 
             if triggerBased:
