@@ -132,42 +132,22 @@ case $WHAT in
 
     mainHypo=(100)
 
-	    #"EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt"
-	    #"EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt"
-	    #"EM1bhighpt"
-        #"EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt,EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt"
-
 	CATS=(
         "EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt,EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt"
         )
         #"EM1blowpt"
-        #"EM1bhighpt"
-        #"EM2blowpt"
-        #"EM2bhighpt"
-        #"MM1blowpt"
-        #"MM1bhighpt"
-        #"MM2blowpt"
-        #"MM2bhighpt"
 
     TAGS=(
         "inc_scan_ARC_full_newMin"
         )
-        #"inc_scan_ARC__EM1blowpt"
-        #"inc_scan_ARC__EM1bhighpt"
-        #"inc_scan_ARC__EM2blowpt"
-        #"inc_scan_ARC__EM2bhighpt"
-        #"inc_scan_ARC__MM1blowpt"
-        #"inc_scan_ARC__MM1bhighpt"
-        #"inc_scan_ARC__MM2blowpt"
-        #"inc_scan_ARC__MM2bhighpt"
 
-    #altHypo=(20 40 50 60 70 80 90 100 110 120 130 140 150 160 180 200 220 240 260 280 300 350 400)        
-    altHypo=(80 90 100 110 120)        
-    #altHypo=(100) 
+    altHypo=(20 40 50 60 70 80 90 100 110 120 130 140 150 160 180 200 220 240 260 280 300 350 400)        
+    #altHypo=(80 90 100 110 120)        
+    #altHypo=(90 100 110) 
 
-    #altMass=(1710 1712 1714 1716 1718 1720 1722 1724 1725 1726 1728 1730 1732 1734 1736 1738 1740)
-    altMass=(1724 1725 1726)
-    #altMass=(1725) 
+    altMass=(1710 1712 1714 1716 1718 1720 1722 1724 1725 1726 1728 1730 1732 1734 1736 1738 1740)
+    #altMass=(1724 1725 1726)
+    #altMass=(1724 1725 1726) 
 
 	#data=(-1 50 60 70 80 90 100 110 120 130 140 150 160 180 200 220 240 260 280 300 350 400)
     data=(100)
@@ -248,7 +228,7 @@ case $WHAT in
     #                "jes11" "jes12" "jes13" "jes14" "jes15" "jes16" "jes17" "jes18" "jes19" 
     #                "jes20" "jes21" "jes22" "jes23" "jes24" "jes25" "jes26" "jes27" "jes28")
     #nuisanceFreeze=("CR,UE,ISR,FSR,hdamp,pu,ttMEqcdscale,tttoppt")
-    nuisanceFreeze=("nan")
+    nuisanceFreeze=("all")
 
     queue=1nw
     
@@ -281,7 +261,7 @@ case $WHAT in
 		    cmd="${cmd} --tmass 1725"		    
 		    cmd="${cmd} --alttmass ${mm}"		    
 		    #cmd="${cmd} --dist tmass"		    
-		    cmd="${cmd} --nToys 1000"
+		    cmd="${cmd} --nToys -1"
 		    #cmd="${cmd} -i /eos/cms/${summaryeosdir}/plotter/plotter.root"
 		    #cmd="${cmd} --systInput /eos/cms/${summaryeosdir}/plotter/syst_plotter.root"
 		    cmd="${cmd} -i /afs/cern.ch/work/e/ecoleman/TOP-17-010-final-v2/plotter.root"

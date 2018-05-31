@@ -28,13 +28,13 @@ nPseudo=1000
 
 #mas=(1725)
 #masNs=("172.5")
-mas=(1720 1722 1724 1725 1726 1728 1730)
+mas=(1710 1712 1714 1716 1718 1720 1722 1724 1725 1726 1728 1730 1732 1734 1736 1738 1740)
 masNs=("172.0" "172.2" "172.4" "172.5" "172.6"
        "172.8" "173.0")
 
 #wid=(100)        
 #widNs=("1.00")
-wid=(60 70 80 90 100 110 120 130 140 150 160)        
+wid=(20 40 50 60 70 80 90 100 110 120 130 140 150 160 180 200 220 240 260 280 300)        
 widNs=("0.60" "0.70" "0.80" "0.90" "1.00" "1.10" "1.20" "1.30" "1.40" "1.50" "1.60")
 
 lbCat=(highpt lowpt)
@@ -126,10 +126,11 @@ case $WHAT in
     ;;
 ########################### 2D LIMITS #####################################
     2D_LIMITS)
-        #python test/TopWidthAnalysis/getContour.py \
-        #    --mass ${massSt} --wids ${widStr} -n Contour2D_stat \
-        #    -e _100pseudodata \
-        #    -i ${extdir}/
+        python test/TopWidthAnalysis/getContour.py \
+            --mass ${massSt} --wids ${widStr} -n Contour2D_comb \
+            -e _100pseudodata \
+            -i ${extdir}/
+        exit
 
         nuisanceGroups=("lumi_13TeV" "DYnorm_*CH*"
                "ees" "mes" "jer" "ltag" "btag" "bfrag" "semilep"
