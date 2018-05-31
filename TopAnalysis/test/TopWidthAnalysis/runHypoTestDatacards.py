@@ -291,8 +291,11 @@ def doDataCards(opt,args):
     # syst,weightList,whiteList,blackList,shapeTreatement=0 (none), 1 (shape only), 2 (factorizeRate),nsigma
     # a - in front of the process name in the black list will exclude rate uncertainties
     weightingSysts=[
-        ('ees',            ['ees'],                                    [],             ['DY','-W'], 2, 1.0),
-        ('mes',            ['mes'],                                    [],             ['DY','-W'], 2, 1.0),
+        ('ees_1',          ['ees1'],                                    [],             ['DY','-W'], 2, 1.0),
+        ('ees_2',          ['ees2'],                                    [],             ['DY','-W'], 2, 1.0),
+        ('ees_3',          ['ees3'],                                    [],             ['DY','-W'], 2, 1.0),
+        ('mes_1',          ['mes1'],                                    [],             ['DY','-W'], 2, 1.0),
+        ('mes_2',          ['mes2'],                                    [],             ['DY','-W'], 2, 1.0),
         ('jer',            ['jer'],                                    [],             ['DY','-W'], 2, 1.0),
         ('trig_*CH*',      ['trig'],                                   [],             ['DY','-W'], 2, 1.0),
         ('sel_E',          ['esel'],                                   [],             ['DY','-W'], 2, 1.0),
@@ -314,7 +317,9 @@ def doDataCards(opt,args):
         #('mtop',           {'tbart':['t#bar{t} m=171.5',  't#bar{t} m=173.5']}       , 1, 1./2.),
         #('st_wid',         {'Singletop':['Single top m=169.5', 'Single top m=175.5']}, 1, 1./6.),
         ('UE',             {'tbart':['t#bar{t} UEdn',     't#bar{t} UEup']}          , 2, 1.0 ),
-        ('CR',             {'tbart':['t#bar{t} QCDbased', 't#bar{t} gluon move']}    , 2, 1.0 ),
+        ('CR_1',             {'tbart':['t#bar{t} QCDbased']}    , 2, 1.0 ),
+        ('CR_2',             {'tbart':['t#bar{t} gluon move']}    , 2, 1.0 ),
+        ('CR_3',             {'tbart':['t#bar{t} ERDon']}    , 2, 1.0 ),
         ('hdamp',          {'tbart':['t#bar{t} hdamp dn', 't#bar{t} hdamp up']}      , 2, 1.0 ),
         ('ISR_tt',         {'tbart':['t#bar{t} isr dn',   't#bar{t} isr up']}        , 2, 1.0 ),
         ('FSR_tt',         {'tbart':['t#bar{t} fsr dn',   't#bar{t} fsr up']}        , 2, 1.0 ),

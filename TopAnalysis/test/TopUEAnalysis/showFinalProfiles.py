@@ -27,8 +27,8 @@ SLICELISTS=[
             ],
      [ 
             ('Extra jets',1,4),
-            ('|#vec{p}_{T}(ll)| / GeV',4,9),
-            ('m(ll) / GeV',9,13)
+            ("p_{T}(ll) / #it{GeV}",4,9),
+            ("m(ll) / #it{GeV}",9,13)
             ]
      ),
     ('_ptll',[
@@ -191,7 +191,7 @@ def showProfile(grColl,grCollComp,grCollStat,
         yarr=1.315*maxY
         ytxt=1.36*maxY
         if obs=='detST': yarr,ytxt=0.0415,0.042 #0.44,0.45
-        if obs=='sphericity': yarr,ytxt=0.62,0.63 #0.44,0.45
+        if obs=='sphericity': yarr,ytxt=0.61,0.62 #0.44,0.45
         if obs=='aplanarity': yarr,ytxt=0.188,0.192 #0.1238,0.1268
         if obs=='C': yarr,ytxt=0.88,0.895 #0.66,0.675
         if obs=='D': yarr,ytxt=0.47,0.48 #0.271,0.278
@@ -262,10 +262,10 @@ def showProfile(grColl,grCollComp,grCollStat,
         rf[-1].GetYaxis().SetTitleSize(0.12)
         rf[-1].GetYaxis().SetLabelSize(0.11)
         if i==len(plottingSetList)-1:
-            rf[-1].GetXaxis().SetTitleSize(0.13)
+            rf[-1].GetXaxis().SetTitleSize(0.16)
             rf[-1].GetXaxis().SetLabelSize(0.11)
             rf[-1].GetXaxis().SetLabelOffset(0.01)
-            rf[-1].GetXaxis().SetTitleOffset(0.9)
+            rf[-1].GetXaxis().SetTitleOffset(0.8)
             rf[-1].GetXaxis().SetTitle('Category')
         else:
             rf[-1].GetXaxis().SetTitle('')

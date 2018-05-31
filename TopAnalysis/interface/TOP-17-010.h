@@ -14,7 +14,7 @@ struct TopWidthEvent_t
 {
   Int_t cat,nw,nl,nj,nt;
   Float_t weight[1000];
-  Float_t l_pt[2],l_eta[2],l_phi[2],l_m[2],l_les[2];
+  Float_t l_pt[2],l_eta[2],l_phi[2],l_m[2];
   Int_t l_id[2];
   Float_t gl_pt[2],gl_eta[2],gl_phi[2],gl_m[2];
   Int_t gl_id[2];
@@ -28,6 +28,7 @@ struct TopWidthEvent_t
   Float_t met_pt,met_phi;
 };
 
+std::vector<float> getParametrizedLeptonScaleUncertainy(int id,float pt,float eta);
 void createTopWidthEventTree(TTree *t,TopWidthEvent_t &twev);
 void resetTopWidthEvent(TopWidthEvent_t &twev);
 void addGenScanCounters(std::map<TString, TH1 *> &plotColl,TFile *fIn);

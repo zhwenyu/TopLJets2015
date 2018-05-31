@@ -6,7 +6,7 @@ import commands
 """
 creates the crab cfg and submits the job
 """
-def submitProduction(tag,lfnDirBase,dataset,isData,cfg,workDir,lumiMask,era='era2017',submit=False):
+def submitProduction(tag,lfnDirBase,dataset,isData,cfg,workDir,lumiMask,era='era2016',submit=False):
     
     from TopLJets2015.TopAnalysis.EraConfig import getEraConfiguration
     globalTag, jecTag, jecDB = getEraConfiguration(era=era,isData=bool(isData))
@@ -63,7 +63,7 @@ def main():
     parser.add_option('-j', '--json',        dest='json'  ,      help='json with list of files',      default=None,    type='string')
     parser.add_option('-o', '--only',        dest='only'  ,      help='submit only these (csv)',      default=None,    type='string')
     parser.add_option('-l', '--lumi',        dest='lumiMask',    help='json with list of good lumis', default='/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/Final/Cert_294927-306462_13TeV_PromptReco_Collisions17_JSON.txt')
-    parser.add_option(      '--era',         dest='era',         help='era to use (sub-dir in data/)', default='era2017',  type='string')
+    parser.add_option(      '--era',         dest='era',         help='era to use (sub-dir in data/)', default='era2016',  type='string')
     parser.add_option('-w', '--workDir',     dest='workDir',     help='working directory',             default='grid',     type='string')
     parser.add_option(      '--lfn',         dest='lfn',         help='base lfn to store outputs',     default='/store/group/cmst3/group/top/psilva', type='string')
     parser.add_option('-s', '--submit',      dest='submit',      help='submit jobs',                   default=False,   action='store_true')

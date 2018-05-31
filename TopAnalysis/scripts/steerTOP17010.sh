@@ -31,13 +31,14 @@ whoami=`whoami`
 myletter=${whoami:0:1}
 eosdir=/store/cmst3/group/top/ReReco2016/b312177
 dataeosdir=/store/cmst3/group/top/ReReco2016/be52dbe_03Feb2017
-summaryeosdir=/store/cmst3/group/top/TOP-17-010-final-v2/
+summaryeosdir=/store/cmst3/group/top/TOP-17-010-final-v3/
 AnalysisDir=/eos/cms/${summaryeosdir}/analysis
 ChunksDir=${AnalysisDir}/Chunks
 COMBINERELEASE=${HOME}/CMSSW_8_1_0/src/
-outdir=/afs/cern.ch/work/${myletter}/${whoami}/TOP-17-010-final-v2/
+#outdir=/afs/cern.ch/work/${myletter}/${whoami}/TOP-17-010-final-v2/
+outdir=/afs/cern.ch/work/${myletter}/${whoami}/TOP-17-010-final-v3/
 anadir=${outdir}/$2
-wwwdir=${HOME}/www/TOP-17-010/final-v2
+wwwdir=${HOME}/www/TOP-17-010/final-v3
 
 
 RED='\e[31m'
@@ -46,15 +47,20 @@ case $WHAT in
     TEST )
         file=root://eoscms//eos/cms/store/cmst3/group/top/ReReco2016/b312177/MC13TeV_SingleTbar_tW/MergedMiniEvents_0_ext0.root
         #file=root://eoscms//eos/cms/store/cmst3/group/top/ReReco2016/b312177/MC13TeV_TTJets/MergedMiniEvents_0_ext0.root
-	python scripts/runLocalAnalysis.py -i ${file} \
-            -q local -o /tmp/`whoami`/MC13TeV_SingleT_tW_test.root --era era2016 -m TOP-17-010::RunTop17010 --ch 0 --runSysts;
+	#python scripts/runLocalAnalysis.py -i ${file} \
+        #    -q local -o /tmp/`whoami`/MC13TeV_SingleT_tW_test.root --era era2016 -m TOP-17-010::RunTop17010 --ch 0 --runSysts;
         python scripts/runTopWidthAnalysis.py -i /tmp/`whoami`/MC13TeV_SingleT_tW_test.root -o /tmp/`whoami`/Chunks -q local;
         ;;
     SEL )
         commonOpts="-q ${queue} -o ${summaryeosdir} --era era2016 -m TOP-17-010::RunTop17010 --ch 0 --runSysts --skipexisting";
-	python scripts/runLocalAnalysis.py -i ${eosdir} ${commonOpts}     --only MC --farmappendix TOP17010MC;
+	python scripts/runLocalAnalysis.py -i ${eosdir} ${commonOpts}     --only MC   --farmappendix TOP17010MC;
 	python scripts/runLocalAnalysis.py -i ${dataeosdir} ${commonOpts} --only Data --farmappendix TOP17010Data;
 	;;
+    CHECKSEL )
+        for FARM in FARMTOP17010Data FARMTOP17010MC; do
+            python scripts/checkAnalysisIntegrity.py ${CMSSW_BASE}/${FARM} /eos/cms/${summaryeosdir}/Chunks;
+        done
+        ;;
     MERGESEL )
 	mkdir -p ${outdir}
 	./scripts/mergeOutputs.py /eos/cms${summaryeosdir} True ${outdir};	
@@ -72,10 +78,8 @@ case $WHAT in
 	python scripts/runTopWidthAnalysis.py -i root://eoscms//eos/cms/${summaryeosdir}/Chunks/MC13TeV_TTJets_12.root -o ${outdir}/analysis/Chunks -q local;
         ;;
     ANA )
-        python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${ChunksDir}-part2 -q ${queue} --only TTJets;
-	#python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${ChunksDir} -q ${queue} --only MC;
-        #python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${ChunksDir} -q ${queue} --only Data13TeV_Single,Data13TeV_Double --farm TOP17010DataANA;
-        #python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${ChunksDir} -q ${queue} --only Data13TeV_Double --farm TOP17010DataANA;
+	python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${ChunksDir} -q ${queue} --only MC;
+        #python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${ChunksDir} -q ${queue} --only Data13TeV_Single,Data13TeV_Double --farm TOP17010DataANA;        
         #python scripts/runTopWidthAnalysis.py -i ${summaryeosdir}/Chunks -o ${ChunksDir} -q ${queue} --only MuonEG --farm TOP17010DataMuEGANA;
 	;;
     CHECKANA )
@@ -96,8 +100,8 @@ case $WHAT in
 	;;
     PLOT )
         opts="-l ${lumi} ${lumiSpecs} --procSF DY:${AnalysisDir}/plots/.dyscalefactors.pck --mcUnc ${lumiUnc} --silent"
-        for m in 1710 1712 1714 1716 1718 1720 1722 1724 1725 1726 1728 1730 1732 1734 1736 1738 1740; do
-            for w in 20 40 50 60 70 80 90 100 110 120 130 140 150 160 180 200 220 240 260 280 300 350 400; do
+        for m in 1700 1705 1710 1712 1714 1716 1718 1720 1722 1724 1725 1726 1728 1730 1732 1734 1736 1738 1740 1745 1755; do
+            for w in 20 40 50 60 70 80 90 100 110 120 130 140 150 160 180 190 200 210 220 240 260 280 300 350 400; do
                 pfix=w${w}_m${m}
                 python scripts/plotter.py -i ${AnalysisDir}  -j data/era2016/samples.json       ${opts} --only ${pfix} -o plotter_${pfix}.root;
                 python scripts/plotter.py -i ${AnalysisDir}  -j data/era2016/syst_samples.json  ${opts} --only ${pfix} -o syst_plotter_${pfix}.root;

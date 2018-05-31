@@ -28,7 +28,9 @@ def saveExpectedBtagEff(opt):
     preTagH=ROOT.TH1F('preTagH',';p_{T} [GeV];',len(ptBins)-1,array('d',ptBins))
     preTagH.Sumw2()
     tagH=preTagH.Clone('tagH')
-
+    respgrs=[]
+    respH=ROOT.TH2F('respH',';p_{T} [GeV];p_{T,rec}/p_{T,gen};',len(ptBins)-1,array('d',ptBins),1000,0.,5)
+    respH.Sumw2()
 
     #count number of tagged jets
     flavConds=[('b',"abs(j_hadflav)==5"),
@@ -36,6 +38,7 @@ def saveExpectedBtagEff(opt):
               ('udsg','abs(j_hadflav)!=5 && abs(j_hadflav)!=4'),
               ('pu','abs(j_hadflav)!=5 && abs(j_hadflav)!=4 && abs(j_g)<0')]
     ptVar='j_pt'
+    genPtVar='g_pt[j_g]'
     if opt.HiForest:
         flavConds=[('b',"abs(refparton_flavorForB)==5"),
                    ('c',"abs(refparton_flavorForB)==4"),
@@ -51,10 +54,18 @@ def saveExpectedBtagEff(opt):
         effgrs.append(ROOT.TGraphAsymmErrors())
         effgrs[-1].SetName(flav)
         effgrs[-1].Divide(tagH,preTagH)
+        
+        respH.Reset('ICE')
+        data.Draw('{0}/{1}:{1} >> respH'.format(ptVar,genPtVar),cond + ' && j_g>=0','goff')
+        respgrs.append( ROOT.TGraphAsymmErrors(respH.ProfileX()) )
+        respgrs[-1].SetName('jrest_%s'%flav)
+
 
     #save efficiency graphs
     fOut=ROOT.TFile.Open(opt.output,'RECREATE')
     for gr in effgrs:
+        gr.Write()
+    for gr in respgrs:
         gr.Write()
     fOut.Close()
 

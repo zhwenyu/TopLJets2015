@@ -8,8 +8,8 @@ import array as array
 #var name, var title, use to slice phase space, use as observable, can be counted in regions, 
 VARTITLES={
     'ptttbar'        : '|#vec{p}_{T}(t#bar{t})|',
-    'ptll'           : '|#vec{p}_{T}(ll)|',
-    'mll'            : 'M(l,l)',
+    'ptll'           : "p_{T}(ll)",
+    'mll'            : "m(ll)",
     'nj'             : 'N(jets)',
     'chmult'         : 'N_{ch}',
     'chflux'         : '#scale[0.7]{#sum}p_{T}',
