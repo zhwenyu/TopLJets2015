@@ -30,25 +30,26 @@ using namespace std;
 //Vector boson will be either Z or photon at the moment
 
 struct Category{
-  float MM,A,VBF,HighPt,HighPtVBF,V1J,HighPtOfflineVBF,HighPtVBFCutBased;
+  float MM,A,VBF,HighPt,HighPtVBF,V1J,HighPtOfflineVBF,HighMJJ,LowMJJ;
   Category(){ reset(); }
   Category(std::vector<bool> &cat){
     reset();
     set(cat);
   };  
   void reset(){
-    std::vector<bool> cat(7,false);
+    std::vector<bool> cat(9,false);
     set(cat);
   };
   void set(std::vector<bool> &cat){
-    MM =(float) cat[0];
-    A = (float)cat[1];
-    VBF = (float)cat[2];
-    HighPt = (float)cat[3];
-    HighPtVBF = (float)cat[4];
-    V1J = (float)cat[5];
+    MM               =(float) cat[0];
+    A                = (float)cat[1];
+    VBF              = (float)cat[2];
+    HighPt           = (float)cat[3];
+    HighPtVBF        = (float)cat[4];
+    V1J              = (float)cat[5];
     HighPtOfflineVBF = (float)cat[6];
-    HighPtVBFCutBased = (float)cat[7];
+    HighMJJ        = (float)cat[7];
+    LowMJJ         = (float)cat[8];
   };
   std::vector<TString> getChannelTags() {
     std::vector<TString> chTags;
@@ -63,7 +64,8 @@ struct Category{
     if(HighPtVBF>0)         chTags.push_back("HighPtVBF"+chTag);
     if(V1J>0)               chTags.push_back("V1J"+chTag);
     if(HighPtOfflineVBF>0)  chTags.push_back("HighPtOfflineVBF"+chTag);
-    if(HighPtVBFCutBased>0) chTags.push_back("HighPtVBFCutBased"+chTag);
+    if(HighMJJ>0)         chTags.push_back("HighMJJ"+chTag);
+    if(LowMJJ>0)          chTags.push_back("LowMJJ"+chTag);
     return chTags;
   }
 };

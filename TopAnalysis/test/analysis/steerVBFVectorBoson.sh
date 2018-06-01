@@ -55,12 +55,13 @@ case $WHAT in
         ;;
 
     SEL )
+	extraOpts=" --mvatree"
 	python scripts/runLocalAnalysis.py \
 	    -i ${eosdir} \
             -o ${outdir}/${githash}/raw \
             --farmappendix ${githash} \
             -q ${queue} --genWeights genweights_${githash}.root \
-            --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts ${extraOpts};
+            --era era2017 --only mjj500 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts ${extraOpts};
 	;;
         #extraOpts=" --mvatree"
 

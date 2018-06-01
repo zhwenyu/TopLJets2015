@@ -121,14 +121,16 @@ void VBFVectorBoson::RunVBFVectorBoson()
         mhtP4 += j;
       }
       mht = mhtP4.Pt();
-      bool passJets(jets.size()>=2 && mjj>400);
+      bool passJetMult(jets.size()>=2);
+      bool passMJJ(passJetMult && mjj>1000.);
+      bool passJets(passJetMult && mjj>500);
       bool passVBFJetsTrigger(passJets && detajj>3.0);
-      bool passVBFCutBased(passJets && mjj>1000. && jets[1].pt()>60.);
+      
 
       //categorize the event according to the boson kinematics
       //for the photon refine also the category according to the trigger  bit
       TLorentzVector boson(0,0,0,0);     
-      bool isHighPt(false),isVBF(false),isHighPtAndVBF(false),isHighPtAndOfflineVBF(false),isBosonPlusOneJet(false),isHighPtVBFCutBased(false);
+      bool isHighPt(false),isVBF(false),isHighPtAndVBF(false),isHighPtAndOfflineVBF(false),isBosonPlusOneJet(false),isHighMJJ(false),isLowMJJ(false);
       sihih = 0, chiso = 0 ,r9 = 0, hoe = 0;
       if(chTag=="A") {        
         boson += photons[0];
@@ -145,7 +147,10 @@ void VBFVectorBoson::RunVBFVectorBoson()
         isHighPtAndOfflineVBF = (isHighPt && fabs(photons[0].Eta())<1.442 && passVBFJetsTrigger);
         isHighPtAndVBF = (isHighPt && isVBF);
         isBosonPlusOneJet=(isHighPt && alljets.size()==1);
-        isHighPtVBFCutBased = (isHighPt && passVBFCutBased);
+	// A very simple categorization based on MJJ
+	isHighMJJ = (passMJJ && isVBF);
+	isLowMJJ  = (!passMJJ && isHighPt);
+        
 
         //veto prompt photons on the QCDEM enriched sample
         if( isQCDEMEnriched && ev.gamma_isPromptFinalState[ photons[0].originalReference() ] ) {
@@ -154,7 +159,8 @@ void VBFVectorBoson::RunVBFVectorBoson()
           isHighPtAndVBF        = false;
           isHighPtAndOfflineVBF = false;
           isBosonPlusOneJet     = false;
-          isHighPtVBFCutBased   = false;
+	  isHighMJJ             = false;
+	  isLowMJJ              = false;
         }
           
       } else {
@@ -164,7 +170,9 @@ void VBFVectorBoson::RunVBFVectorBoson()
         isHighPt = boson.Pt()>minBosonHighPt;
         isHighPtAndVBF = (isHighPt && isVBF);
         isBosonPlusOneJet=(isHighPt && alljets.size()==1);
-        isHighPtVBFCutBased = (isHighPt && passVBFCutBased);
+	// A very simple categorization based on MJJ
+	isHighMJJ = (passMJJ && isVBF);
+	isLowMJJ  = (!passMJJ && isHighPt);
       }
 
       //if(!isVBF && !isHighPt && !isBosonPlusOneJet) continue;      
@@ -178,7 +186,8 @@ void VBFVectorBoson::RunVBFVectorBoson()
       if(isHighPtAndVBF)        cat[4]=true;
       if(isBosonPlusOneJet)     cat[5]=true;
       if(isHighPtAndOfflineVBF) cat[6]=true;
-      if(isHighPtVBFCutBased)   cat[7]=true;
+      if(isHighMJJ)             cat[7]=true;
+      if(isLowMJJ)              cat[8]=true;
       category.set(cat);
       std::vector<TString> chTags( category.getChannelTags() );
       
@@ -406,7 +415,7 @@ void VBFVectorBoson::bookHistograms(){
   //final analyses distributions
   ht->addHist("evcount",         new TH1F("evcount",        ";Pass;Events",1,0,1));  
   ht->addHist("vbfmva",          new TH1F("vbfmva",         ";VBF MVA;Events",20,-1,1));  
-  ht->addHist("vbffisher",       new TH1F("vbffisher",       ";VBF Fisher;Events",40,-2,3));  
+  ht->addHist("vbffisher",       new TH1F("vbffisher",      ";VBF Fisher;Events",40,-2,3));  
 }
 void VBFVectorBoson::setGammaZPtWeights(){
   TString wgtUrl("${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBFVectorBoson/raw/plots/ratio_plotter.root");
@@ -465,7 +474,7 @@ void VBFVectorBoson::addMVAvars(){
   newTree->Branch("C",&C);
   newTree->Branch("D",&D);
   newTree->Branch("training",&training);
-  newTree->Branch("category", &category, "MM:A:VBF:HighPt:HighPtVBF:V1J:HighPtOfflineVBF:HighPtVBFCutBased");
+  newTree->Branch("category", &category, "MM:A:VBF:HighPt:HighPtVBF:V1J:HighPtOfflineVBF:HighMJJ:LowMJJ");
 }
 
 void VBFVectorBoson::initVariables(std::vector<Jet> jets){
