@@ -78,8 +78,8 @@ public:
                        TH1F *normH_, 
                        TH1F *genPU_,
                        TString era_,
-                       Bool_t debug_=false, Bool_t skimtree_=false):
-           filename(filename_),outname(outname_),anFlag(anFlag_), normH(0), genPU(0), era(era_), debug(debug_), skimtree(skimtree_), doBlindAnalysis(true)
+                       Bool_t debug_=false, Bool_t CR_ =false, Bool_t skimtree_=false):
+  filename(filename_),outname(outname_),anFlag(anFlag_), normH(0), genPU(0), era(era_), debug(debug_), CR(CR_), skimtree(skimtree_), doBlindAnalysis(true)
 	{
           if(normH_) normH = (TH1F*)normH_->Clone("normH_c");
 	  if(genPU_) genPU = (TH1F*)genPU_->Clone("genPu_c");
@@ -110,7 +110,7 @@ public:
 	void setGammaZPtWeights();
 	void loadCorrections();
 	void addMVAvars();
-	void fill(MiniEvent_t ev, TLorentzVector boson, std::vector<Jet> jets, std::vector<double> cplotwgts, TString c);
+	void fill(MiniEvent_t ev, TLorentzVector boson, std::vector<Jet> jets, std::vector<double> cplotwgts, TString c, std::vector<Particle> fakePhotonCR ={}, std::vector<Particle> tightPhotonCR={});
 	void RunVBFVectorBoson();
 	void initVariables(std::vector<Jet>);
 
@@ -121,7 +121,7 @@ private:
 	TH1F * normH, * genPU;
 	TString era;
 	TH1* triggerList;
-	Bool_t debug, skimtree, isQCDEMEnriched;
+	Bool_t debug, CR,skimtree, isQCDEMEnriched;
 	TFile * f /*inFile*/, *fMVATree, *fOut;
 	TTree * t /*inTree*/, *newTree /*MVA*/;
   	HistTool * ht;

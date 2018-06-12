@@ -88,20 +88,36 @@ void VBFVectorBoson::RunVBFVectorBoson()
       ///////////////////////////
       // RECO LEVEL SELECTION //
       /////////////////////////
-      TString chTag = selector->flagFinalState(ev);
+      TString chTag = selector->flagFinalState(ev,{},{},CR);
       std::vector<Particle> &photons     = selector->getSelPhotons(); 
       std::vector<Particle> &leptons     = selector->getSelLeptons(); 
-      std::vector<Jet>      &alljets     = selector->getJets();  
+      std::vector<Jet>      &alljets     = selector->getJets();
+      int nTotalJets = alljets.size();
       std::vector<Jet> jets;
+      std::vector<Particle> fakeACR;
+      std::vector<Particle> tightACR;
 
       //Pileup jet id
       for(auto j : alljets) {
         int idx=j.getJetIndex();
         int jid=ev.j_id[idx];
-        bool passLoosePu((jid>>2)&0x1);
-        if(!passLoosePu) continue;
-        jets.push_back(j);
+	bool passLoosePu((jid>>2)&0x1);
+	if(CR){
+	  if(jets.size() == 0 && passLoosePu)
+	    continue;
+	} else if(!passLoosePu) continue;
+      	jets.push_back(j);
       }
+
+      //Fake and tight photons in CR
+      for(auto a : photons) {
+        int idx=a.originalReference();
+	if (selector->isFakePhoton(ev,idx))
+	  fakeACR.push_back(a);
+	else if (a.hasQualityFlag(SelectionTool::TIGHT))
+	  tightACR.push_back(a);
+      }
+
       //Category selection
       if(chTag!="A" && chTag!="MM") continue;
 
@@ -112,6 +128,7 @@ void VBFVectorBoson::RunVBFVectorBoson()
 
       //jet related variables and selection
       initVariables(jets);
+
       
       scalarht = 0.;
       TLorentzVector mhtP4(0,0,0,0);
@@ -146,7 +163,7 @@ void VBFVectorBoson::RunVBFVectorBoson()
                      && photons[0].Pt()>minBosonHighPt);
         isHighPtAndOfflineVBF = (isHighPt && fabs(photons[0].Eta())<1.442 && passVBFJetsTrigger);
         isHighPtAndVBF = (isHighPt && isVBF);
-        isBosonPlusOneJet=(isHighPt && alljets.size()==1);
+        isBosonPlusOneJet=(isHighPt && nTotalJets==1);
 	// A very simple categorization based on MJJ
 	isHighMJJ = (passMJJ && isVBF);
 	isLowMJJ  = (!passMJJ && isHighPt);
@@ -169,7 +186,7 @@ void VBFVectorBoson::RunVBFVectorBoson()
         isVBF    = boson.Pt()>75 && fabs(boson.Rapidity())<1.442 && passVBFJetsTrigger;
         isHighPt = boson.Pt()>minBosonHighPt;
         isHighPtAndVBF = (isHighPt && isVBF);
-        isBosonPlusOneJet=(isHighPt && alljets.size()==1);
+        isBosonPlusOneJet=(isHighPt && nTotalJets==1);
 	// A very simple categorization based on MJJ
 	isHighMJJ = (passMJJ && isVBF);
 	isLowMJJ  = (!passMJJ && isHighPt);
@@ -284,7 +301,7 @@ void VBFVectorBoson::RunVBFVectorBoson()
 	//What is the final weight? 0 or 1 in the array?
 	evtWeight = cplotwgts[0]*xsec;
 	training = useForTraining(); 
-	fill( ev,  boson,  jets,  cplotwgts, c);
+	fill( ev,  boson,  jets,  cplotwgts, c, fakeACR, tightACR);
       }
     }
 
@@ -365,7 +382,7 @@ void VBFVectorBoson::bookHistograms(){
   ht->addHist("sihih", 	       new TH1F("sihih",            ";#sigma(i#eta,i#eta);Events",50,0,0.1));  
   ht->addHist("hoe", 	       new TH1F("hoe",              ";h/e;Events",25,0,0.1));  
   ht->addHist("r9", 	       new TH1F("r9",               ";r9;Events",25,0,1.0));  
-  ht->addHist("chiso", 	       new TH1F("chiso",            ";Charged isolation [GeV];Events",25,0,0.10));  
+  ht->addHist("chiso", 	       new TH1F("chiso",            ";Charged isolation [GeV];Events",50,0,10));  
   ht->addHist("vystar",        new TH1F("vectorbosonystar", ";y-(1/2)(y_{j1}+y_{j2});Events",25,-5,5));  
   ht->addHist("njets",         new TH1F("njets",            ";Jet multiplicity;Events",10,-0.5,9.5));  
   ht->addHist("mjj", 	       new TH1F("mjj",              ";Dijet invariant mass [GeV];Events",40,0,4000));  
@@ -391,6 +408,17 @@ void VBFVectorBoson::bookHistograms(){
   ht->addHist("D",             new TH1F("D",                ";D;Events",20,0,1.0));  
   ht->addHist("isotropy",      new TH1F("isotropy",         ";Isotropy;Events",20,0,1.0));  
   ht->addHist("circularity",   new TH1F("circularity",      ";Circularity;;Events",20,0,1.0));
+  //Photons in CR
+  ht->addHist("fakesihih",     new TH1F("fakesihih",        ";Fake #sigma(i#eta,i#eta);Events",50,0,0.1));
+  ht->addHist("tightsihih",    new TH1F("tightsihih",       ";Tight #sigma(i#eta,i#eta);Events",50,0,0.1));
+  ht->addHist("fakechiso",     new TH1F("fakechiso",        ";Fake ch. isolation [GeV];Events",50,0,10));  
+  ht->addHist("tightchiso",    new TH1F("tightchiso",       ";Tight ch. isolation [GeV];Events",50,0,10));
+  ht->addHist("fakeneutiso",   new TH1F("fakeneutiso",      ";Fake neut. isolation [GeV];Events",50,0,10));  
+  ht->addHist("tightneutiso",  new TH1F("tightneutiso",     ";Tight neut. isolation [GeV];Events",50,0,10));
+  ht->addHist("fakeaiso",      new TH1F("fakeaiso",         ";Fake #gamma isolation [GeV];Events",50,0,10));  
+  ht->addHist("tightaiso",     new TH1F("tightaiso",        ";Tight #gamma isolation [GeV];Events",50,0,10));  
+  ht->addHist("nfake",         new TH1F("nfake",            ";Number of fake #gamma; Events",20,-0.5,19.5));
+  ht->addHist("ntight",        new TH1F("ntight",           ";Number of tight #gamma; Events",20,-0.5,19.5));
   // Study of jet variables
   ht->addHist("jet_c1_00", 	  new TH1F("jet_c1_00",          ";Jet shape var. c1_00;Jets",100,-1,1));  
   ht->addHist("jet_c1_02", 	  new TH1F("jet_c1_02",          ";Jet shape var. c1_02;Jets",100,-1,1));  
@@ -502,7 +530,7 @@ void VBFVectorBoson::initVariables(std::vector<Jet> jets){
   dphivj1     = -99;
 }
 
-void VBFVectorBoson::fill(MiniEvent_t ev, TLorentzVector boson, std::vector<Jet> jets, std::vector<double> cplotwgts, TString c){
+void VBFVectorBoson::fill(MiniEvent_t ev, TLorentzVector boson, std::vector<Jet> jets, std::vector<double> cplotwgts, TString c, std::vector<Particle> fakeACR, std::vector<Particle> tightACR){
   ht->fill("nvtx",   ev.nvtx,          cplotwgts,c);        
 
   //boson histos
@@ -513,6 +541,24 @@ void VBFVectorBoson::fill(MiniEvent_t ev, TLorentzVector boson, std::vector<Jet>
   ht->fill("hoe",    hoe,              cplotwgts,c);   
   ht->fill("chiso",  chiso,            cplotwgts,c);   
   ht->fill("mindrl", mindrl,           cplotwgts,c);   
+ 
+  //bosons in CR and fakes
+  for(auto a : fakeACR) {
+    int idx = a.originalReference();
+    ht->fill("fakesihih",   ev.gamma_sieie[idx]             ,cplotwgts,c);
+    ht->fill("fakechiso",   ev.gamma_chargedHadronIso[idx]  ,cplotwgts,c);
+    ht->fill("fakeneutiso", ev.gamma_neutralHadronIso[idx]  ,cplotwgts,c);
+    ht->fill("fakeaiso",    ev.gamma_photonIso[idx]         ,cplotwgts,c);
+  }
+  for(auto a : tightACR) { 
+    int idx = a.originalReference();
+    ht->fill("tightsihih",   ev.gamma_sieie[idx]             ,cplotwgts,c);
+    ht->fill("tightchiso",   ev.gamma_chargedHadronIso[idx]  ,cplotwgts,c);
+    ht->fill("tightneutiso", ev.gamma_neutralHadronIso[idx]  ,cplotwgts,c);
+    ht->fill("tightaiso",    ev.gamma_photonIso[idx]         ,cplotwgts,c);
+  }
+  ht->fill("nfake",        fakeACR.size(),   cplotwgts,c);
+  ht->fill("ntight",       tightACR.size(),  cplotwgts,c);
 
   //jet histos
   centraleta = 9999;

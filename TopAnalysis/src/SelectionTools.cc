@@ -29,7 +29,7 @@ SelectionTool::SelectionTool(TString dataset,bool debug,TH1 *triggerList, Analys
 
 
 //
-TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> preselLeptons,std::vector<Particle> preselPhotons) {
+TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> preselLeptons,std::vector<Particle> preselPhotons, bool isCR) {
 
   //clear vectors
   leptons_.clear(); 
@@ -44,7 +44,7 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
   //decide the channel based on the lepton multiplicity and set lepton collections
   std::vector<Particle> tightLeptons( selLeptons(preselLeptons,TIGHT) );
   std::vector<Particle> tightPhotons( selPhotons(preselPhotons,offlinePhoton_, tightLeptons) );
-
+  std::vector<Particle> fakePhotons( selPhotons(preselPhotons,CONTROL, tightLeptons) );
   TString chTag("");
   if(anType_==TOP)
     {
@@ -64,18 +64,33 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
       }
     }
   else if(anType_==VBF)
-    {
-      if(tightLeptons.size()==2)
-        {
-          int ch( abs(tightLeptons[0].id()*tightLeptons[1].id()) );
-          float mll( (tightLeptons[0]+tightLeptons[1]).M() );
-          if( ch==13*13 && fabs(mll-91)<15 && (tightLeptons[0].pt()>30 || tightLeptons[1].pt()>30)) chTag="MM";          
-          leptons_=tightLeptons;
-        }
-     else if(tightPhotons.size()>=1) {
-        chTag="A";
-        photons_=tightPhotons;
-        leptons_=tightLeptons;
+    { 
+      if (!isCR){
+	if(tightLeptons.size()==2)
+	  {
+	    int ch( abs(tightLeptons[0].id()*tightLeptons[1].id()) );
+	    float mll( (tightLeptons[0]+tightLeptons[1]).M() );
+	    if( ch==13*13 && fabs(mll-91)<15 && (tightLeptons[0].pt()>30 || tightLeptons[1].pt()>30)) chTag="MM";          
+	    leptons_=tightLeptons;
+	  }
+	else if(tightPhotons.size()>=1) {
+	  chTag="A";
+	  photons_=tightPhotons;
+	  leptons_=tightLeptons;
+	}
+      }else {
+	if(tightLeptons.size()==2)
+	  {
+	    int ch( abs(tightLeptons[0].id()*tightLeptons[1].id()) );
+	    float mll( (tightLeptons[0]+tightLeptons[1]).M() );
+	    if( ch==13*13 && fabs(mll-91)<15 && (tightLeptons[0].pt()>30 || tightLeptons[1].pt()>30)) chTag="MM";          
+	    leptons_=tightLeptons;
+	  }
+	else if(fakePhotons.size()>=1) {
+	  chTag="A";
+	  photons_=fakePhotons;
+	  leptons_=tightLeptons;
+	}
       }
     }
   
@@ -83,6 +98,7 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
   float maxJetEta(2.4);
   if(anType_==VBF) maxJetEta=4.7;
   jets_=getGoodJets(ev,30.,maxJetEta,leptons_,photons_);
+  //getGoodJets(ev,30.,maxJetEta,leptons_,photons_);
 
   //build the met
   met_.SetPtEtaPhiM( ev.met_pt[0], 0, ev.met_phi[0], 0. );
@@ -275,12 +291,14 @@ std::vector<Particle> SelectionTool::flaggedPhotons(MiniEvent_t &ev)
     int pid(ev.gamma_pid[ig]);
 
     //see bits in plugins/MiniAnalyzer.cc
+
     int qualityFlagsWord(0);
     if( pt>50 && eta<2.4)
       {
-        if( (pid&0x7f)==0x7f )       qualityFlagsWord |= (0x1 << LOOSE);
-        if( ((pid>>10)&0x7f)==0x7f ) qualityFlagsWord |= (0x1 << MEDIUM);
-        if( ((pid>>10)&0x7f)==0x7f ) qualityFlagsWord |= (0x1 << TIGHT);
+        if( (pid&0x7f)==0x7f )            qualityFlagsWord |= (0x1 << LOOSE);
+        if( ((pid>>10)&0x7f)==0x7f )      qualityFlagsWord |= (0x1 << MEDIUM);
+        if( ((pid>>10)&0x7f)==0x7f )      qualityFlagsWord |= (0x1 << TIGHT);
+	if( isInclusivePhoton(ev,ig) )    qualityFlagsWord |= (0x1 << CONTROL);
       }
     if(qualityFlagsWord==0) continue;
 
@@ -405,7 +423,76 @@ std::vector<Jet> SelectionTool::getGoodJets(MiniEvent_t &ev, double minPt, doubl
   return jets;
 }
 
+/*void SelectionTool::getGoodJets(MiniEvent_t &ev, double minPt, double maxEta, std::vector<Particle> leptons,std::vector<Particle> photons) {
+  jets_.clear();
+  pujets_.clear();
+  for (int k=0; k<ev.nj; k++) {
+    TLorentzVector jp4;
+    jp4.SetPtEtaPhiM(ev.j_pt[k],ev.j_eta[k],ev.j_phi[k],ev.j_mass[k]);
 
+    //cross clean with leptons/photons
+    bool overlapsWithPhysicsObject(false);
+    for (auto& lepton : leptons) {
+      if(jp4.DeltaR(lepton.p4())<0.4) overlapsWithPhysicsObject=true;
+    }
+    for (auto& photon : photons) {
+      if(jp4.DeltaR(photon.p4())<0.4) overlapsWithPhysicsObject=true;
+    }
+    if(overlapsWithPhysicsObject) continue;
+    
+    //jet kinematic selection
+    if(jp4.Pt() < minPt || abs(jp4.Eta()) > maxEta) continue;
+
+    //flavor based on b tagging
+    int flavor = 0;
+    if (ev.j_btag[k]) {
+      flavor = 5;
+    }
+    
+    Jet jet(jp4, flavor, k);
+    jet.setCSV(ev.j_csv[k]);
+    jet.setDeepCSV(ev.j_deepcsv[k]);
+    jet.setPUMVA(ev.j_pumva[k]);
+
+    //fill jet constituents
+    for (int p = 0; p < ev.npf; p++) {
+      if (ev.pf_j[p] == k) {
+        TLorentzVector pp4;
+        pp4.SetPtEtaPhiM(ev.pf_pt[p],ev.pf_eta[p],ev.pf_phi[p],ev.pf_m[p]);
+        jet.addParticle(Particle(pp4, ev.pf_c[p], ev.pf_id[p], 0, p, ev.pf_puppiWgt[p]));
+        if (ev.pf_c[p] != 0) jet.addTrack(pp4, ev.pf_id[p]);
+      }
+    }
+
+    if(debug_) cout << "Jet #" << jets_.size() 
+		    << " pt=" << jp4.Pt() << " eta=" << jp4.Eta() << " deepCSV=" << ev.j_deepcsv[k] << endl;
+    
+    int jid=ev.j_id[k];
+    bool passLoosePu((jid>>2)&0x1);
+    if(!passLoosePu) 
+      pujets_.push_back(jet);
+    else
+      jets_.push_back(jet);
+  }
+  
+  //additional jet-jet information
+  for (unsigned int i = 0; i < jets_.size(); i++) {
+    for (unsigned int j = i+1; j < jets_.size(); j++) {
+      //flag jet-jet overlaps
+      if (jets_[i].p4().DeltaR(jets_[j].p4()) < 0.8) {
+        jets_[i].setOverlap(1);
+        jets_[j].setOverlap(1);
+      }
+      //flag non-b jets as part of W boson candidates: flavor 0->1
+      if (jets_[i].flavor()==5 or jets_[j].flavor()==5) continue;
+      TLorentzVector wCand = jets_[i].p4() + jets_[j].p4();
+      if (abs(wCand.M()-80.4) < 15.) {
+        jets_[i].setFlavor(1);
+        jets_[j].setFlavor(1);
+      }
+    }
+  }
+  }*/
 
 //
 // PARTICLE LEVEL SELECTORS
