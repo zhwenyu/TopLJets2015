@@ -35,11 +35,16 @@ def buildRateUncertainty(varDn,varUp):
     #all done here
     return toReturn
 
-def getDistsFromDirIn(url,indir,applyFilter=''):
+def getDistsFromDirIn(url,indir,lumix=1,applyFilter=''):
     """customize getting the distributions for hypothesis testing"""
     fIn=ROOT.TFile.Open(url)
     obs,exp=getDistsFrom(fIn.Get(indir),applyFilter)
     fIn.Close()
+
+    if obs is not None :
+        obs.Scale(lumix)
+    for hhh in exp :
+        exp[hhh].Scale(lumix)
     return obs,exp
 
 def getRowFromTH2(tempHist2D,columnName) :
@@ -61,22 +66,22 @@ def getDistsForHypoTest(cat,rawSignalList,opt,outDir="",systName="",systIsGen=Fa
     elif systName != "" : systExt = "_exp"
 
     # get main dists for data and backgrounds
-    obs,bkg=getDistsFromDirIn(opt.input,'%s_%s_w100_m1725%s'%(cat,opt.dist,systExt))
+    obs,bkg=getDistsFromDirIn(opt.input,'%s_%s_w100_m1725%s'%(cat,opt.dist,systExt),opt.lumix)
     smHypo={}
     for rawSignal in rawSignalList:
         smHypo[rawSignal]=bkg[rawSignal]
         del bkg[rawSignal]
 
     #get main hypo
-    _,mainHypo=getDistsFromDirIn(opt.input,'%s_%s_w%.0f_m%s%s'%(cat,opt.dist,opt.mainHypo,opt.tmass,systExt))
+    _,mainHypo=getDistsFromDirIn(opt.input,'%s_%s_w%.0f_m%s%s'%(cat,opt.dist,opt.mainHypo,opt.tmass,systExt),opt.lumix)
     for proc in [proc for proc in mainHypo if proc in bkg]: del mainHypo[proc]
 
     #get alternative hypo
-    _,altHypo=getDistsFromDirIn(opt.input,'%s_%s_w%.0f_m%s%s'%(cat,opt.dist,opt.altHypo,opt.alttmass,systExt))
+    _,altHypo=getDistsFromDirIn(opt.input,'%s_%s_w%.0f_m%s%s'%(cat,opt.dist,opt.altHypo,opt.alttmass,systExt),opt.lumix)
 
     # for 2D measurement: load mass template from correct file, with appropriate names
     if len(opt.altHypoFromSim)>0 :
-        _,altHypo=getDistsFromDirIn(opt.systInput,'%s_%s_w%.0f_m%s%s'%(cat,opt.dist,opt.altHypo,opt.alttmass,systExt))
+        _,altHypo=getDistsFromDirIn(opt.systInput,'%s_%s_w%.0f_m%s%s'%(cat,opt.dist,opt.altHypo,opt.alttmass,systExt),opt.lumix)
         altHypo = {k.replace(opt.altHypoFromSim,""): v
                         for k, v in altHypo.items()
                         if opt.altHypoFromSim in v.GetName()}
@@ -113,8 +118,6 @@ def getDistsForHypoTest(cat,rawSignalList,opt,outDir="",systName="",systIsGen=Fa
         exp[newProc]=altHypo[proc].Clone(newProc)
         exp[newProc].SetDirectory(0)
 
-
-
     return obs,exp,bkg,smHypo
 
 
@@ -145,7 +148,7 @@ def doCombineScript(opt,args,outDir,dataCardList):
     script.write('### combine datacard and start workspace\n')
     script.write('combineCards.py %s > datacard.dat\n'%dataCardList)
     script.write('\n')
-    script.write('echo "* autoMCStats 4 0 2" >> datacard.dat')
+    #script.write('echo "* autoMCStats 4 0 2" >> datacard.dat')
     script.write('\n')
 
     script.write('### convert to workspace\n')
@@ -185,7 +188,7 @@ def doCombineScript(opt,args,outDir,dataCardList):
     def writeScanToScript(testStat,script):
         extraName='_'+testStat
         commonOpts="-m 172.5 -M HybridNew --testStat=%s --onlyTestStat --saveToys --saveHybridResult"%(testStat)
-        commonOpts+=" --cminDefaultMinimizerType GSLMultiMin --cminDefaultMinimizerAlgo BFGS2"
+        #commonOpts+=" --cminDefaultMinimizerType GSLMultiMin --cminDefaultMinimizerAlgo BFGS2"
         if hasattr(opt,"frzString") and opt.frzString != "" :
             commonOpts += " --freezeParameters %s"%opt.frzString
         if hasattr(opt,"externStr") and opt.externStr != "" :
@@ -198,12 +201,9 @@ def doCombineScript(opt,args,outDir,dataCardList):
     script.write('### SCAN \n')
     script.write('\n')
     for testStat in ['PL']: writeScanToScript(testStat=testStat,script=script)
-    #commonOpts="-m 172.5 -M MultiDimFit --saveWorkspace --saveToys"
-    #script.write("combine %s --setParameters x=1 --freezeParameters x workspace.root -n NuisancesRun\n"%commonOpts)
-    #commonOpts="-m 172.5 -M MaxLikelihoodFit --saveWorkspace --saveToys"
-    #script.write("combine %s --redefineSignalPOIs r --setParameters x=1 --freezeParameters x workspace.root -n MLNuisances\n"%commonOpts)
+
     commonOpts="-m 172.5 -M FitDiagnostics --saveWorkspace --saveToys --toysFrequentist --minos none --noErrors"
-    commonOpts+=" --cminDefaultMinimizerType GSLMultiMin --cminDefaultMinimizerAlgo BFGS2"
+    #commonOpts+=" --cminDefaultMinimizerType GSLMultiMin --cminDefaultMinimizerAlgo BFGS2"
     setFrzStr="x"
     if hasattr(opt,"frzString") and opt.frzString != "" :
         setFrzStr += ","+opt.frzString
@@ -211,7 +211,6 @@ def doCombineScript(opt,args,outDir,dataCardList):
     if hasattr(opt,"externStr") and opt.externStr != "" :
         setParStr += ","+opt.externStr
     script.write("combine %s -t %i --redefineSignalPOIs r --rMin 0.9 --rMax 1.1 --setParameters %s --expectSignal=1 --freezeParameters %s workspace.root -n FitToys\n"%(commonOpts,opt.nToys,setParStr,setFrzStr))
-    #script.write("mv higgsCombineNuisancesRun.HybridNew.mH172.5.123456.root testStat_Nuisances.root\n")
     script.write('\n\n')
 
     #repeat fits per categories if validation is required
@@ -233,11 +232,6 @@ def doCombineScript(opt,args,outDir,dataCardList):
             script.write("cd -n\n")
             script.write('\n')
 
-    #script.write('### CLs\n')
-    # do not write CLs -- python can't launch scripts with forking
-    #script.write('combine workspace.root -M HybridNew --seed 8192 --saveHybridResult -m 172.5 --saveWorkspace --saveToys --testStat=TEV --singlePoint 1 -T %d -i 2 --fork 6 --clsAcc 0 --fullBToys  --generateExt=1 --generateNuis=0 --expectedFromGrid 0.5 -n cls_prefit_exp;\n'%opt.nToys)
-    #script.write('combine workspace.root -M HybridNew --seed 8192 --saveHybridResult -m 172.5 --saveWorkspace --saveToys --testStat=TEV --singlePoint 1 -T %d -i 2 --fork 6 --clsAcc 0 --fullBToys  --frequentist --expectedFromGrid 0.5 -n cls_postfit_exp;\n'%opt.nToys)
-    #script.write('combine workspace.root -M HybridNew --seed 8192 --saveHybridResult -m 172.5 --saveWorkspace --saveToys --testStat=TEV --singlePoint 1 -T %d -i 2 --fork 6 --clsAcc 0 --fullBToys  --frequentist -n cls_postfit_obs;\n'%opt.nToys)
     script.write('\n')
     script.close()
 
@@ -291,11 +285,13 @@ def doDataCards(opt,args):
     # syst,weightList,whiteList,blackList,shapeTreatement=0 (none), 1 (shape only), 2 (factorizeRate),nsigma
     # a - in front of the process name in the black list will exclude rate uncertainties
     weightingSysts=[
-        ('ees_1',          ['ees1'],                                    [],             ['DY','-W'], 2, 1.0),
-        ('ees_2',          ['ees2'],                                    [],             ['DY','-W'], 2, 1.0),
-        ('ees_3',          ['ees3'],                                    [],             ['DY','-W'], 2, 1.0),
-        ('mes_1',          ['mes1'],                                    [],             ['DY','-W'], 2, 1.0),
-        ('mes_2',          ['mes2'],                                    [],             ['DY','-W'], 2, 1.0),
+        #('ees_1',          ['ees1'],                                   [],             ['DY','-W'], 2, 1.0),
+        #('ees_2',          ['ees2'],                                   [],             ['DY','-W'], 2, 1.0),
+        #('ees_3',          ['ees3'],                                   [],             ['DY','-W'], 2, 1.0),
+        #('mes_1',          ['mes1'],                                   [],             ['DY','-W'], 2, 1.0),
+        #('mes_2',          ['mes2'],                                   [],             ['DY','-W'], 2, 1.0),
+        ('ees',            ['ees'],                                    [],             ['DY','-W'], 2, 1.0),
+        ('mes',            ['mes'],                                    [],             ['DY','-W'], 2, 1.0),
         ('jer',            ['jer'],                                    [],             ['DY','-W'], 2, 1.0),
         ('trig_*CH*',      ['trig'],                                   [],             ['DY','-W'], 2, 1.0),
         ('sel_E',          ['esel'],                                   [],             ['DY','-W'], 2, 1.0),
@@ -317,9 +313,9 @@ def doDataCards(opt,args):
         #('mtop',           {'tbart':['t#bar{t} m=171.5',  't#bar{t} m=173.5']}       , 1, 1./2.),
         #('st_wid',         {'Singletop':['Single top m=169.5', 'Single top m=175.5']}, 1, 1./6.),
         ('UE',             {'tbart':['t#bar{t} UEdn',     't#bar{t} UEup']}          , 2, 1.0 ),
-        ('CR_1',             {'tbart':['t#bar{t} QCDbased']}    , 2, 1.0 ),
-        ('CR_2',             {'tbart':['t#bar{t} gluon move']}    , 2, 1.0 ),
-        ('CR_3',             {'tbart':['t#bar{t} ERDon']}    , 2, 1.0 ),
+        ('CR_1',           {'tbart':['t#bar{t} QCDbased']}                           , 2, 1.0 ),
+        ('CR_2',           {'tbart':['t#bar{t} gluon move']}                         , 2, 1.0 ),
+        ('CR_3',           {'tbart':['t#bar{t} ERDon']}                              , 2, 1.0 ),
         ('hdamp',          {'tbart':['t#bar{t} hdamp dn', 't#bar{t} hdamp up']}      , 2, 1.0 ),
         ('ISR_tt',         {'tbart':['t#bar{t} isr dn',   't#bar{t} isr up']}        , 2, 1.0 ),
         ('FSR_tt',         {'tbart':['t#bar{t} fsr dn',   't#bar{t} fsr up']}        , 2, 1.0 ),
@@ -398,11 +394,10 @@ def doDataCards(opt,args):
 
 
     # prepare output directory
-    outDir='%s/hypotest_%.0fvs%.0f%s_m%svs%s'%(opt.output, opt.mainHypo,opt.altHypo,'sim'+opt.altHypoFromSim if len(opt.altHypoFromSim)!=0 else '',opt.tmass,opt.alttmass)
+    outDir='%s/hypotest_%.0fvs%.0f_m%svs%s'%(opt.output,opt.mainHypo,opt.altHypo,opt.tmass,opt.alttmass)
     if opt.pseudoData==-1 : outDir += '_data'
     else:
         outDir += '_%.0f'%opt.pseudoData
-        if len(opt.pseudoDataFromSim)!=0   : outDir+='sim_'
         outDir += 'pseudodata'
     os.system('mkdir -p %s'%outDir)
     os.system('rm -rf %s/*'%outDir)
@@ -424,46 +419,178 @@ def doDataCards(opt,args):
 
         #recreate data if requested
         if opt.pseudoData!=-1:
+            # Determine how the signal is produced
             pseudoSignal=None
-            print '\t pseudo-data is being generated',
+            print '\t Pseudo-data is being generated',
             if len(opt.pseudoDataFromSim) and opt.systInput:
-                print 'injecting signal from',opt.pseudoDataFromSim
-                pseudoDataFromSim=opt.pseudoDataFromSim.replace('_',' ')
-                _,pseudoSignalRaw=getDistsFromDirIn(opt.systInput,'%s_%s_w%.0f_m%s'%(cat,opt.dist,opt.mainHypo,opt.tmass))
+                print 'injecting signal from ext',opt.pseudoDataFromSim
+                pseudoDataDat=opt.pseudoDataFromSim.split(',')
+                pseudoDataFromSim=pseudoDataDat[0].replace('_',' ')
+                pseudoDataChannel=pseudoDataDat[1]
+                _,pseudoSignalRaw=getDistsFromDirIn(opt.systInput,'%s_%s_w%.0f_m%s'%(cat,opt.dist,opt.mainHypo,opt.tmass),opt.lumix)
                 pseudoSignal={}
-                pseudoSignal['tbart']=[pseudoSignalRaw[x] for x in pseudoSignalRaw if pseudoDataFromSim in x][0]
-            elif len(opt.pseudoDataFromWgt):
-                print 'injecting signal from',opt.pseudoDataFromWgt
-                _,pseudoSignal=getDistsFromDirIn(opt.input,'%s%s_%s_w%.0f_m%s'%(opt.pseudoDataFromWgt,cat,opt.dist,opt.mainHypo,opt.tmass),'t#bar{t}')
-                print pseudoSignal,'%s%s_%s_w%.0f_m%s'%(opt.pseudoDataFromWgt,cat,opt.dist,opt.mainHypo,opt.tmass)
+                pseudoSignal[pseudoDataChannel]=[pseudoSignalRaw[x] for x in pseudoSignalRaw if pseudoDataFromSim in x][0]
+                if pseudoDataChannel != "tbart" :
+                    _,tpseudoSignal=getDistsFromDirIn(opt.input,'%s_%s_w%.0f_m%s'%(cat,opt.dist,opt.pseudoData,opt.tmass),opt.lumix)
+                    pseudoSignal["tbart"]=tpseudoSignal["tbart"]
+
+            elif len(opt.pseudoDataFromWgt) and (len(opt.pseudoDataFromWgt.split(','))<3 or (opt.pseudoDataFromWgt.split(','))[2]==lfs):
+                print 'injecting signal from wgt',opt.pseudoDataFromWgt
+
+                systDat=opt.pseudoDataFromWgt.split(',')
+                systDir=systDat[1]
+                syst,weightList,whiteList,blackList,shapeTreatement,nSigma=[x for x in weightingSysts if x[0] == systDat[0]][0]
+
+                isGen = any("gen" in twght for twght in weightList)
+                isGen = isGen or 'toppt' in weightList
+
+                # jes has annoying formatting different
+
+                #get shapes and adapt them
+                if len(weightList)==1:
+                    if 'jes' in weightList[0] :
+                        jesNum=weightList[0].replace('jes','')
+                        _,pseudoSignal,_,_=getDistsForHypoTest(cat,rawSignalList,opt,"","jes"+systDir+"_"+jesNum,isGen)
+                    else :
+                        _,pseudoSignal,_,_=getDistsForHypoTest(cat,rawSignalList,opt,"",weightList[0]+systDir,isGen)
+
+                else:
+
+                    #put all the shapes in a 2D histogram
+                    iexp2D={}
+                    for iw in xrange(0,len(weightList)):
+                        w=weightList[iw]
+                        _,kexp,_,_=getDistsForHypoTest(cat,rawSignalList,opt,"",w,isGen)
+                        for proc in kexp:
+                            nbins=kexp[proc].GetNbinsX()
+                            if not proc in iexp2D:
+                                name =kexp[proc].GetName()+'2D'
+                                title=kexp[proc].GetTitle()
+                                xmin =kexp[proc].GetXaxis().GetXmin()
+                                xmax =kexp[proc].GetXaxis().GetXmax()
+                                nReplicas=len(weightList)
+                                iexp2D[proc]=ROOT.TH2D(name,title,nbins,xmin,xmax,nReplicas,0,nReplicas)
+                                iexp2D[proc].SetDirectory(0)
+                            for xbin in xrange(0,nbins+2):
+                                iexp2D[proc].SetBinContent(xbin,iw+1,kexp[proc].GetBinContent(xbin))
+
+                    #create the up/down variations
+                    pseudoSignal={}
+                    for proc in iexp2D:
+
+                        #create the base shape
+                        if not proc in pseudoSignal:
+                            tmp=iexp2D[proc].ProjectionX("tmp",1,1)
+                            tmp.Reset('ICE')
+                            nbinsx=tmp.GetXaxis().GetNbins()
+                            xmin=tmp.GetXaxis().GetXmin()
+                            xmax=tmp.GetXaxis().GetXmax()
+                            pseudoSignal[proc]=ROOT.TH1F(iexp2D[proc].GetName().replace('2D',systDir),proc,nbinsx,xmin,xmax)
+                            pseudoSignal[proc].SetDirectory(0)
+                            tmp.Delete()
+
+                        #project each bin shape for the different variations
+                        for xbin in xrange(0,iexp2D[proc].GetNbinsX()+2):
+                            tmp=iexp2D[proc].ProjectionY("tmp",xbin,xbin)
+                            tvals=numpy.zeros(tmp.GetNbinsX())
+                            for txbin in xrange(1,tmp.GetNbinsX()+1) : tvals[txbin-1]=tmp.GetBinContent(txbin)
+
+                            #mean and RMS based
+                            if 'PDF' in syst:
+                                mean=numpy.mean(tvals)
+                                rms=numpy.std(tvals)
+                                if 'up' == systDir:
+                                    pseudoSignal[proc].SetBinContent(xbin,mean+rms)
+                                else :
+                                    pseudoSignal[proc].SetBinContent(xbin,ROOT.TMath.Max(mean-rms,1.0e-4))
+
+                            #envelope based
+                            else:
+                                if 'up' == systDir :
+                                    imax=numpy.max(tvals)
+                                    if pseudoSignal[proc].GetBinContent(xbin)>0 : imax=ROOT.TMath.Max(pseudoSignal[proc].GetBinContent(xbin),imax)
+                                    pseudoSignal[proc].SetBinContent(xbin,imax)
+                                else :
+                                    imin=numpy.min(tvals)
+                                    if pseudoSignal[proc].GetBinContent(xbin)>0 : imin=ROOT.TMath.Min(pseudoSignal[proc].GetBinContent(xbin),imin)
+                                    pseudoSignal[proc].SetBinContent(xbin,imin)
+
+                            tmp.Delete()
+
+                        #all done, can remove the 2D histo from memory
+                        iexp2D[proc].Delete()
+
+                # cleanup
+                pseudoSignal['tbart']=pseudoSignal['tbartw100'].Clone()
+                delList=[]
+                for key in pseudoSignal :
+                    if pseudoSignal[key].Integral() < 1. :
+                        pseudoSignal[key].Delete()
+                        delList+=[key]
+                for key in delList : pseudoSignal.pop(key,None)
+
             else:
                 print 'injecting signal from weighted',opt.pseudoData
-                _,pseudoSignal=getDistsFromDirIn(opt.input,'%s_%s_w%.0f_m%s'%(cat,opt.dist,opt.pseudoData,opt.tmass))
+                pseudoSignal={}
+                _,pseudoSignal=getDistsFromDirIn(opt.input,'%s_%s_w%.0f_m%s'%(cat,opt.dist,opt.pseudoData,opt.tmass),opt.lumix)
 
-            print 'Recreating data from'
+            # Get rate sfs if needed
+            sfMap={}
+            if len(opt.pseudoDataRateMod) :
+                print '\t   getting rate modifications for externalization'
+                _,tpseudoSignal=getDistsFromDirIn(opt.input,'%s_%s_w%.0f_m%s'%(cat,opt.dist,opt.pseudoData,opt.tmass),opt.lumix)
+                modDat=opt.pseudoDataRateMod.split(',')
+                modSys=modDat[0]
+                modDir=modDat[1]
+                modLFS=None if len(modDat) < 3 else modDat[2]
+
+                modDat=([x for x in rateSysts if x[0] in modSys])[0]
+                for proc in tpseudoSignal :
+                    if modLFS is not None and modLFS != lfs : break
+                    if proc in modDat[4] : continue
+                    if len(modDat[3]) > 0 and proc not in modDat[3] : continue
+                    sf = modDat[1] if modDir == "Up" else (1-(modDat[1]-1))
+                    print '\t\t\t- %s %3.0f (sf=%3.3f)'%(proc,tpseudoSignal[proc].Integral(),sf)
+                    sfMap[proc]=sf
+
+            # Reset and add backgrounds
+            print '\t\t Resetting observations to recreate data'
             obs.Reset('ICE')
             for proc in bkg:
-                print '\t %s %3.0f'%(proc,bkg[proc].Integral())
+                sf=1. if proc not in sfMap else sfMap[proc]
+                thist=None
+                if proc in opt.pseudoDataFromSim :
+                    print '\t\t- Pulling',proc,'from pseudoSignal'
+                    print "\t\t\t - Including:", proc, pseudoSignal[proc].GetName()
+                    thist=pseudoSignal[proc].Clone()
+                elif len(opt.pseudoDataFromWgt) and proc in pseudoSignal :
+                    print '\t\t- Pulling',proc,'from pseudoSignal'
+                    print "\t\t\t - Including:", proc, pseudoSignal[proc].GetName()
+                    thist=pseudoSignal[proc].Clone()
+                else :
+                    thist=bkg[proc].Clone()
+                thist.Scale(sf)
+                print '\t\t- Adding %s %3.0f (sf=%3.3f)'%(proc,thist.Integral(),sf)
                 obs.Add(bkg[proc])
+                thist.Delete()
 
-            if not (len(opt.pseudoDataFromSim) and opt.systInput) :
-                pseudoSignal={}
-                _,pseudoSignal=getDistsFromDirIn(opt.input,'%s_%s_w%d_m%s'%(cat,opt.dist,opt.pseudoData,opt.tmass))
+            # Add signals
             for proc in pseudoSignal:
                 if not proc in rawSignalList : continue
-                print "\t\t Including:", proc, pseudoSignal[proc].GetName()
                 nbins=smHypo[proc].GetNbinsX()
-                sf=smHypo[proc].Integral(0,nbins+1)/pseudoSignal[proc].Integral(0,nbins+1)
-                pseudoSignal[proc].Scale(sf)
-                print '\t %s %3.0f (sf=%3.2f)'%(proc,pseudoSignal[proc].Integral(),sf)
+                #sf=smHypo[proc].Integral(0,nbins+1)/pseudoSignal[proc].Integral(0,nbins+1)
+                sf=1. if proc not in sfMap else sfMap[proc]
 
-                if opt.rndmPseudoSF :
-                    from random import uniform
-                    pseudoSignal[proc].Scale(uniform(0.99,1.01))
+                pseudoSignal[proc].Scale(sf)
+                print '\t\t- Adding %s %3.0f (sf=%3.3f)'%(proc,pseudoSignal[proc].Integral(),sf)
+                print "\t\t\t - Including:", proc, pseudoSignal[proc].GetName()
+                if proc in sfMap :
+                    print '\t\t\t - sfMap',proc,sfMap[proc]
 
                 obs.Add( pseudoSignal[proc] )
 
             #round up to integers
+            print '\t\t- Rounding bin contents up'
             for xbin in xrange(0,obs.GetNbinsX()+2): obs.SetBinContent(xbin,int(obs.GetBinContent(xbin)))
             print '\t Total events in pseudo-data %d'%obs.Integral()
 
@@ -810,10 +937,10 @@ def doDataCards(opt,args):
                     isAltButMain = iInHypos != 0 and opt.mainHypo == opt.altHypo
 
                     if len(samples)==2:
-                        _,jexpDn=getDistsFromDirIn(opt.systInput,'%s_%s_w%d_m%s'%(cat,opt.dist,hypo,temptmass),samples[0])
-                        _,jexpUp=getDistsFromDirIn(opt.systInput,'%s_%s_w%d_m%s'%(cat,opt.dist,hypo,temptmass),samples[1])
+                        _,jexpDn=getDistsFromDirIn(opt.systInput,'%s_%s_w%d_m%s'%(cat,opt.dist,hypo,temptmass),opt.lumix,samples[0])
+                        _,jexpUp=getDistsFromDirIn(opt.systInput,'%s_%s_w%d_m%s'%(cat,opt.dist,hypo,temptmass),opt.lumix,samples[1])
                     else:
-                        _,jexpUp=getDistsFromDirIn(opt.systInput,'%s_%s_w%d_m%s'%(cat,opt.dist,hypo,temptmass),samples[0])
+                        _,jexpUp=getDistsFromDirIn(opt.systInput,'%s_%s_w%d_m%s'%(cat,opt.dist,hypo,temptmass),opt.lumix,samples[0])
 
                     newProc=proc
                     if isSignal: newProc=('%sw%d%s'%(proc,hypo,('a' if isAltButMain else '')))
@@ -970,9 +1097,9 @@ def main():
     parser.add_option(      '--useAltRateUncs',     dest='useAltRateUncs',     help='use rate uncertainties specific to alt. hypothesis', default=False,       action='store_true')
     parser.add_option(      '--replaceDYshape',     dest='replaceDYshape',     help='use DY shape from syst file',                 default=False,       action='store_true')
     parser.add_option(      '--doValidation',       dest='doValidation',       help='create validation plots',                     default=False,       action='store_true')
-    parser.add_option(      '--rndmPseudoSF',       dest='rndmPseudoSF',       help='multiply pseudodate by random SF?',           default=False,       action='store_true')
     parser.add_option(      '--pseudoDataFromSim',  dest='pseudoDataFromSim',  help='pseudo data from dedicated sample',           default='',          type='string')
     parser.add_option(      '--pseudoDataFromWgt',  dest='pseudoDataFromWgt',  help='pseudo data from dedicated sample',           default='',          type='string')
+    parser.add_option(      '--pseudoDataRateMod',  dest='pseudoDataRateMod',  help='pseudo data modded by rate info',             default='',          type='string')
     parser.add_option(      '--mainHypo',           dest='mainHypo',           help='main width hypothesis',                       default=100,         type=float)
     parser.add_option(      '--tmass',              dest='tmass',              help='main mass hypothesis',                        default=400,         type='string')
     parser.add_option(      '--altHypo',            dest='altHypo',            help='alternative width hypothesis',                default="1725",      type=float)
@@ -982,6 +1109,7 @@ def main():
     parser.add_option(      '--removeNuisances',    dest='rmvNuisances',       help='nuisance group to remove (csv)',              default='',  type='string')
     parser.add_option(      '--freezeNuisances',    dest='frzNuisances',       help='nuisance group to freeze (csv)',              default='',  type='string')
     parser.add_option(      '--externNuisances',    dest='externStr',          help='setParameters string',                        default='',  type='string')
+    parser.add_option(      '--lumix',              dest='lumix',              help='factor to multiply lumi by',                  default=1.,        type=float)
     parser.add_option('-c', '--cat',                dest='cat',                help='categories (csv)',
                       default='EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt',
                       type='string')

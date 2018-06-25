@@ -31,14 +31,13 @@ whoami=`whoami`
 myletter=${whoami:0:1}
 eosdir=/store/cmst3/group/top/ReReco2016/b312177
 dataeosdir=/store/cmst3/group/top/ReReco2016/be52dbe_03Feb2017
-summaryeosdir=/store/cmst3/group/top/TOP-17-010-final-v3/
+summaryeosdir=/store/cmst3/group/top/TOP-17-010-final-v2/
 AnalysisDir=/eos/cms/${summaryeosdir}/analysis
 ChunksDir=${AnalysisDir}/Chunks
-COMBINERELEASE=${HOME}/CMSSW_8_1_0/src/
-#outdir=/afs/cern.ch/work/${myletter}/${whoami}/TOP-17-010-final-v2/
-outdir=/afs/cern.ch/work/${myletter}/${whoami}/TOP-17-010-final-v3/
+COMBINERELEASE=${HOME}/scratch0/CMSSW_8_1_0/src/
+outdir=/afs/cern.ch/work/${myletter}/${whoami}/TOP-17-010-final-v2/
 anadir=${outdir}/$2
-wwwdir=${HOME}/www/TOP-17-010/final-v3
+wwwdir=${HOME}/www/TOP-17-010/final-v2
 
 
 RED='\e[31m'
@@ -139,88 +138,152 @@ case $WHAT in
 	CATS=(
         "EM1blowpt,EM2blowpt,EM1bhighpt,EM2bhighpt,EE1blowpt,EE2blowpt,EE1bhighpt,EE2bhighpt,MM1blowpt,MM2blowpt,MM1bhighpt,MM2bhighpt"
         )
-        #"EM1blowpt"
 
     TAGS=(
-        "inc_scan_ARC_full_newMin"
+        "inc_scan_ARC"
         )
 
     altHypo=(20 40 50 60 70 80 90 100 110 120 130 140 150 160 180 200 220 240 260 280 300 350 400)        
-    #altHypo=(80 90 100 110 120)        
-    #altHypo=(90 100 110) 
-
+    #altHypo=(100)        
+    
     altMass=(1710 1712 1714 1716 1718 1720 1722 1724 1725 1726 1728 1730 1732 1734 1736 1738 1740)
-    #altMass=(1724 1725 1726)
-    #altMass=(1724 1725 1726) 
+    #altMass=(1725) 
 
 	#data=(-1 50 60 70 80 90 100 110 120 130 140 150 160 180 200 220 240 260 280 300 350 400)
     data=(100)
 
     expAltHypo=("nan") #"meq166p5" "meq169p5" "meq171p5" "meq173p5" "meq175p5" "meq178p5")
 
-    #nuisanceFreeze=("lalala"
-    #                "lalala"
-    #                "lalala"
-    #                "lalala"
-    #                "lalala"
-    #                "lalala"
-    #                "lalala"
-    #                "lalala"
-    #                "lalala"
-    #                "lalala"
-    #                "lalala"
-    #                "lalala"
-    #                "lalala"
-    #                "lalala"
-    #                "lalala"
-    #                "lalala"
-    #                "lalala"
-    #                "lalala"
-    #                "lalala"
-    #                "lalala"
-    #                "lalala") 
-    #externNuisances=("lumi_13TeV=-1"
-    #                "DYnorm_EE=-1,DYnorm_EM=-1,DYnorm_MM=-1"
-    #                "ees=-1" 
-    #                "mes=-1" 
-    #                "jer=-1" 
-    #                "ltag=-1" 
-    #                "btag=-1"
-    #                "bfrag=-1"
-    #                "semilep=-1"
-    #                "pu=-1" 
-    #                "tttoppt=-1" 
-    #                "ttMEqcdscale=-1" 
-    #                "ttPDF=-1"
-    #                "jes0=-1,jes1=-1,jes2=-1,jes3=-1,jes4=-1,jes5=-1,jes6=-1,jes7=-1,jes8=-1,jes9=-1,jes10=-1,jes11=-1,jes12=-1,jes13=-1,jes14=-1,jes15=-1,jes16=-1,jes17=-1,jes18=-1,jes19=-1,jes20=-1,,jes21=-1,jes22=-1,jes23=-1,jes24=-1,jes25=-1,jes26=-1,jes27=-1,jes28=-1"
-    #                "UE=-1" 
-    #                "CR=-1" 
-    #                "hdamp=-1" 
-    #                "ISR_tt=-1" 
-    #                "FSR_tt=-1"
-    #                "tWttInterf=-1" 
-    #                "tWMEScale=-1") 
-    #externNames=("lumi_13TeV"
-    #                "DYnorm"
-    #                "ees" 
-    #                "mes" 
-    #                "jer" 
-    #                "ltag" 
-    #                "btag"
-    #                "bfrag"
-    #                "semilep"
-    #                "pu" 
-    #                "tttoppt" 
-    #                "ttMEqcdscale" 
-    #                "ttPDF"
-    #                "jes"
-    #                "UE" 
-    #                "CR" 
-    #                "hdamp" 
-    #                "ISR_tt" 
-    #                "FSR_tt"
-    #                "tWttInterf" 
-    #                "tWMEScale") 
+    externArr=("nan")
+
+    #externArr=(
+    #    "RateMod lumi_13TeV,Up"
+    #    "RateMod lumi_13TeV,Dn"
+    #    "RateMod DYnorm_*CH*,Up,EE"
+    #    "RateMod DYnorm_*CH*,Up,EM"
+    #    "RateMod DYnorm_*CH*,Up,MM"
+    #    "RateMod DYnorm_*CH*,Dn,EE"
+    #    "RateMod DYnorm_*CH*,Dn,EM"
+    #    "RateMod DYnorm_*CH*,Dn,MM"
+    #    "RateMod Wnorm_th,Up"
+    #    "RateMod Wnorm_th,Dn"
+    #    "RateMod tWnorm_th,Up"
+    #    "RateMod tWnorm_th,Dn"
+    #    "RateMod VVnorm_th,Up"
+    #    "RateMod VVnorm_th,Dn"
+    #    "RateMod tbartVnorm_th,Up"
+    #    "RateMod tbartVnorm_th,Dn"
+    #    "FromSim UEdn,tbart" 
+    #    "FromSim UEup,tbart" 
+    #    "FromSim QCDbased,tbart" 
+    #    "FromSim gluonmove,tbart" 
+    #    "FromSim ERDon,tbart" 
+    #    "FromSim hdampdn,tbart" 
+    #    "FromSim hdampup,tbart" 
+    #    "FromSim isrdn,tbart" 
+    #    "FromSim isrup,tbart" 
+    #    "FromSim isrdn,Singletop" 
+    #    "FromSim isrup,Singletop" 
+    #    "FromSim fsrdn,tbart" 
+    #    "FromSim fsrdn,Singletop" 
+    #    "FromSim fsrup,Singletop" 
+    #    "FromSim DS,Singletop" 
+    #    "FromSim medn,Singletop" 
+    #    "FromSim meup,Singletop" 
+    #    "FromSim fsrup,tbart" 
+    #    "FromSim UEup,tbart" 
+    #    "FromSim UEdn,tbart" 
+    #    "FromWgt ees,up"
+    #    "FromWgt ees,dn"
+    #    "FromWgt mes,up"
+    #    "FromWgt mes,dn"
+    #    "FromWgt jer,up"
+    #    "FromWgt jer,dn"
+    #    "FromWgt trig_*CH*,up,EE"
+    #    "FromWgt trig_*CH*,dn,EE"
+    #    "FromWgt trig_*CH*,up,EM"
+    #    "FromWgt trig_*CH*,dn,EM"
+    #    "FromWgt trig_*CH*,up,MM"
+    #    "FromWgt trig_*CH*,dn,MM"
+    #    "FromWgt sel_E,up"
+    #    "FromWgt sel_E,dn"
+    #    "FromWgt sel_M,up"
+    #    "FromWgt sel_M,dn"
+    #    "FromWgt ltag,up"
+    #    "FromWgt ltag,dn"
+    #    "FromWgt btag,up"
+    #    "FromWgt btag,dn"
+    #    "FromWgt bfrag,up"
+    #    "FromWgt bfrag,dn"
+    #    "FromWgt semilep,up"
+    #    "FromWgt semilep,dn"
+    #    "FromWgt pu,up"
+    #    "FromWgt pu,dn"
+    #    "FromWgt tttoppt,up"
+    #    "FromWgt ttMEqcdscale,up"
+    #    "FromWgt ttMEqcdscale,dn"
+    #    "FromWgt ttPDF,up"
+    #    "FromWgt ttPDF,dn"
+    #    "FromWgt jes0,up"
+    #    "FromWgt jes0,dn"
+    #    "FromWgt jes1,up"
+    #    "FromWgt jes1,dn"
+    #    "FromWgt jes2,up"
+    #    "FromWgt jes2,dn"
+    #    "FromWgt jes3,up"
+    #    "FromWgt jes3,dn"
+    #    "FromWgt jes4,up"
+    #    "FromWgt jes4,dn"
+    #    "FromWgt jes5,up"
+    #    "FromWgt jes5,dn"
+    #    "FromWgt jes6,up"
+    #    "FromWgt jes6,dn"
+    #    "FromWgt jes7,up"
+    #    "FromWgt jes7,dn"
+    #    "FromWgt jes8,up"
+    #    "FromWgt jes8,dn"
+    #    "FromWgt jes9,up"
+    #    "FromWgt jes9,dn"
+    #    "FromWgt jes10,up"
+    #    "FromWgt jes10,dn"
+    #    "FromWgt jes11,up"
+    #    "FromWgt jes11,dn"
+    #    "FromWgt jes12,up"
+    #    "FromWgt jes12,dn"
+    #    "FromWgt jes13,up"
+    #    "FromWgt jes13,dn"
+    #    "FromWgt jes14,up"
+    #    "FromWgt jes14,dn"
+    #    "FromWgt jes15,up"
+    #    "FromWgt jes15,dn"
+    #    "FromWgt jes16,up"
+    #    "FromWgt jes16,dn"
+    #    "FromWgt jes17,up"
+    #    "FromWgt jes17,dn"
+    #    "FromWgt jes18,up"
+    #    "FromWgt jes18,dn"
+    #    "FromWgt jes19,up"
+    #    "FromWgt jes19,dn"
+    #    "FromWgt jes20,up"
+    #    "FromWgt jes20,dn"
+    #    "FromWgt jes21,up"
+    #    "FromWgt jes21,dn"
+    #    "FromWgt jes22,up"
+    #    "FromWgt jes22,dn"
+    #    "FromWgt jes23,up"
+    #    "FromWgt jes23,dn"
+    #    "FromWgt jes24,up"
+    #    "FromWgt jes24,dn"
+    #    "FromWgt jes25,up"
+    #    "FromWgt jes25,dn"
+    #    "FromWgt jes26,up"
+    #    "FromWgt jes26,dn"
+    #    "FromWgt jes27,up"
+    #    "FromWgt jes27,dn"
+    #    "FromWgt jes28,up"
+    #    "FromWgt jes28,dn"
+    #)
+
     #nuisanceFreeze=("sel,trig_*CH*" "lumi_13TeV" "DYnorm_*CH*" "Wnorm_th" 
     #            "tWnorm_th" "VVnorm_th" "tbartVnorm_th" 
     #            "ees" "mes" "jer" "ltag" "btag" "bfrag" "semilep"
@@ -231,10 +294,9 @@ case $WHAT in
     #nuisanceFreeze=("jes0" "jes1" "jes2" "jes3" "jes4" "jes5" "jes6" "jes7" "jes8" "jes9" "jes10" 
     #                "jes11" "jes12" "jes13" "jes14" "jes15" "jes16" "jes17" "jes18" "jes19" 
     #                "jes20" "jes21" "jes22" "jes23" "jes24" "jes25" "jes26" "jes27" "jes28")
-    #nuisanceFreeze=("CR,UE,ISR,FSR,hdamp,pu,ttMEqcdscale,tttoppt")
-    nuisanceFreeze=("all")
+    nuisanceFreeze=("nan")
 
-    queue=1nw
+    queue=8nm
     
 	for mm in ${altMass[@]}; do
 	for h in ${altHypo[@]}; do
@@ -243,14 +305,17 @@ case $WHAT in
 	    for e in ${expAltHypo[@]}; do
 	    for d in ${data[@]}; do
 		for i in ${!TAGS[*]}; do
+	    for exterName in "${externArr[@]}"; do
                     
             iNuisFrz=${nuisanceFreeze[${f}]}
-            #iNuisExt=${externNuisances[${f}]}
-            #iNuisNam=${externNames[${f}]}
 		    icat=${CATS[${i}]}
 		    itag=${TAGS[${i}]}
+
+            iNuisExt=${exterName//\*/}
+            iNuisExt=${iNuisExt//,/_}
+            iNuisExt=${iNuisExt// /}
 		    
-		    cmd="python test/TopWidthAnalysis/runHypoTestDatacards.py"
+            cmd="python test/TopWidthAnalysis/runHypoTestDatacards.py"
 		    cmd="${cmd} --combine ${COMBINERELEASE}"
 		    cmd="${cmd} --mainHypo=${mh} --altHypo ${h} --pseudoData=${d}"
             cmd="${cmd} -s tbart"
@@ -259,34 +324,32 @@ case $WHAT in
             fi
             if [[ "${iNuisFrz}" != "nan" ]] ; then 
     		    cmd="${cmd} --freezeNuisances ${iNuisFrz}"		    
-    		    #cmd="${cmd} --externNuisances ${iNuisExt}"		    
             fi
 		    cmd="${cmd} --dist incmlb"		    
 		    cmd="${cmd} --tmass 1725"		    
+		    cmd="${cmd} --lumix 1"		    
+		    cmd="${cmd} --mergeCatsBy 1b,2b"		    
 		    cmd="${cmd} --alttmass ${mm}"		    
 		    #cmd="${cmd} --dist tmass"		    
 		    cmd="${cmd} --nToys -1"
-		    #cmd="${cmd} -i /eos/cms/${summaryeosdir}/plotter/plotter.root"
-		    #cmd="${cmd} --systInput /eos/cms/${summaryeosdir}/plotter/syst_plotter.root"
-		    cmd="${cmd} -i /afs/cern.ch/work/e/ecoleman/TOP-17-010-final-v2/plotter.root"
-		    cmd="${cmd} --systInput /afs/cern.ch/work/e/ecoleman/TOP-17-010-final-v2/syst_plotter.root"
-		    #cmd="${cmd} --pseudoDataFromSim=widthx0p5"
+		    cmd="${cmd} -i /eos/cms/${summaryeosdir}/plotter/plotter.root"
+		    cmd="${cmd} --systInput /eos/cms/${summaryeosdir}/plotter/syst_plotter.root"
+            if [[ "${exterName}" != "nan" ]] ; then 
+	    	    cmd="${cmd} --pseudoData${exterName}"
+            fi
 		    cmd="${cmd} -c ${icat}"
 		    cmd="${cmd} --rebin 2"            
-            #cmd="${cmd} --doValidation"
-		    #if [ "$h" == "220" ]; then
-		    #if [ "$d" == "-1" ]; then
-		    #echo "    validation will be included"
-		    #cmd="${cmd} --doValidation"
-		    #fi
-		    #fi
                     
 		    echo "Submitting ($mh,$h,$d,$itag,$icat)"		
 		    stdcmd="${cmd} -o ${outdir}/datacards_${itag}"
 
             # add name for frozen syst
             if [[ "${iNuisFrz}" != "nan" ]] ; then 
-    		    stdcmd="${stdcmd}Frz_${iNuisFrz}"		    
+    		    stdcmd="${stdcmd}_Frz_${iNuisFrz}"		    
+            fi
+
+            if [[ "${exterName}" != "nan" ]] ; then 
+    		    stdcmd="${stdcmd}_Ext_${iNuisExt}"		    
             fi
 
             # add name for alternate mainHypo
@@ -300,17 +363,8 @@ case $WHAT in
     	    bsub -q ${queue} sh ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${stdcmd};
             sleep 1 
            
-		    #if [ "$itag" == "inc" ]; then
-			#if [ "$d" == "100" ]; then
-			#    #echo "    injecting pseudo-data from nloproddec"
-			#    #nlocmd="${cmd} --pseudoDataFromWgt nloproddec -o ${outdir}/datacards_${itag}_nloproddec"
-			#    #bsub -q ${queue} ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${nlocmd};   
-			#    #echo "    injecting pseudo-data from widthx4"
-			#    #width4cmd="${cmd} --pseudoDataFromSim=t#bar{t}_widthx4 -o ${outdir}/datacards_${itag}_widthx4"
-			#    #bsub -q ${queue} sh ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh ${width4cmd};
-			#fi
-		    #fi
 		done
+        done
         done
         done
         done

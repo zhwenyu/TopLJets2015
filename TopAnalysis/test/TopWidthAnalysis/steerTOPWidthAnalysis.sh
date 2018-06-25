@@ -27,15 +27,10 @@ unblind=true
 nPseudo=1000
 
 #mas=(1725)
-#masNs=("172.5")
 mas=(1710 1712 1714 1716 1718 1720 1722 1724 1725 1726 1728 1730 1732 1734 1736 1738 1740)
-masNs=("172.0" "172.2" "172.4" "172.5" "172.6"
-       "172.8" "173.0")
 
 #wid=(100)        
-#widNs=("1.00")
-wid=(20 40 50 60 70 80 90 100 110 120 130 140 150 160 180 200 220 240 260 280 300)        
-widNs=("0.60" "0.70" "0.80" "0.90" "1.00" "1.10" "1.20" "1.30" "1.40" "1.50" "1.60")
+wid=(20 40 50 60 70 80 90 100 110 120 130 140 150 160 180 200 220 240 260 280 300 350 400)        
 
 lbCat=(highpt lowpt)
 lfs=(EE EM MM)
@@ -75,16 +70,16 @@ case $WHAT in
         #nuisanceGroups=("jes0" "jes1" "jes2" "jes3" "jes4" "jes5" "jes6" "jes7" "jes8" "jes9" "jes10" 
         #            "jes11" "jes12" "jes13" "jes14" "jes15" "jes16" "jes17" "jes18" "jes19" 
         #            "jes20" "jes21" "jes22" "jes23" "jes24" "jes25" "jes26" "jes27" "jes28")
-        cats=(
-            "EM1blowpt"
-            "EM1bhighpt"
-            "EM2blowpt"
-            "EM2bhighpt"
-            "MM1blowpt"
-            "MM1bhighpt"
-            "MM2blowpt"
-            "MM2bhighpt"
-        )
+        #cats=(
+        #    "EM1blowpt"
+        #    "EM1bhighpt"
+        #    "EM2blowpt"
+        #    "EM2bhighpt"
+        #    "MM1blowpt"
+        #    "MM1bhighpt"
+        #    "MM2blowpt"
+        #    "MM2bhighpt"
+        #)
 
         echo "------------------------"
         python test/TopWidthAnalysis/getContour.py \
@@ -127,49 +122,68 @@ case $WHAT in
 ########################### 2D LIMITS #####################################
     2D_LIMITS)
         python test/TopWidthAnalysis/getContour.py \
-            --mass ${massSt} --wids ${widStr} -n Contour2D_comb \
-            -e _100pseudodata \
+            --mass ${massSt} --wids ${widStr} -n Contour2D_$3 \
+            -e "_100pseudodata" \
             -i ${extdir}/
-        exit
 
-        nuisanceGroups=("lumi_13TeV" "DYnorm_*CH*"
-               "ees" "mes" "jer" "ltag" "btag" "bfrag" "semilep"
-               "pu" "tttoppt" "ttMEqcdscale" "ttPDF"
-               "jes" "UE" "CR" 
-               "hdamp" "ISR_tt" "FSR_tt" 
-               "tWttInterf" "tWMEScale" ) #"all") 
+        #nuisanceGroups=("lumi_13TeV" "DYnorm_*CH*"
+        #       "ees" "mes" "jer" "ltag" "btag" "bfrag" "semilep"
+        #       "pu" "tttoppt" "ttMEqcdscale" "ttPDF"
+        #       "jes" "UE" "CR" 
+        #       "hdamp" "ISR_tt" "FSR_tt" 
+        #       "tWttInterf" "tWMEScale" ) #"all") 
 
-    externNames=("lumi_13TeV"
-                    "DYnorm"
-                    "ees" 
-                    "mes" 
-                    "jer" 
-                    "ltag" 
-                    "btag"
-                    "bfrag"
-                    "semilep"
-                    "pu" 
-                    "tttoppt" 
-                    "ttMEqcdscale" 
-                    "ttPDF"
-                    "jes"
-                    "UE" 
-                    "CR" 
-                    "hdamp" 
-                    "ISR_tt" 
-                    "FSR_tt"
-                    "tWttInterf" 
-                    "tWMEScale") 
+        #externArr=(
+        #    "RateMod lumi_13TeV,Up"
+        #    "RateMod lumi_13TeV,Dn"
+        #    "RateMod DYnorm_*CH*,Up,EE"
+        #    "RateMod DYnorm_*CH*,Up,EM"
+        #    "RateMod DYnorm_*CH*,Up,MM"
+        #    "RateMod DYnorm_*CH*,Dn,EE"
+        #    "RateMod DYnorm_*CH*,Dn,EM"
+        #    "RateMod DYnorm_*CH*,Dn,MM"
+        #    "RateMod Wnorm_th,Up"
+        #    "RateMod Wnorm_th,Dn"
+        #    "RateMod tWnorm_th,Up"
+        #    "RateMod tWnorm_th,Dn"
+        #    "RateMod VVnorm_th,Up"
+        #    "RateMod VVnorm_th,Dn"
+        #    "RateMod tbartVnorm_th,Up"
+        #    "RateMod tbartVnorm_th,Dn"
+        #    "FromSim UEdn,tbart" 
+        #    "FromSim UEup,tbart" 
+        #    "FromSim QCDbased,tbart" 
+        #    "FromSim gluonmove,tbart" 
+        #    "FromSim ERDon,tbart" 
+        #    "FromSim hdampdn,tbart" 
+        #    "FromSim hdampup,tbart" 
+        #    "FromSim isrdn,tbart" 
+        #    "FromSim isrup,tbart" 
+        #    "FromSim isrdn,Singletop" 
+        #    "FromSim isrup,Singletop" 
+        #    "FromSim fsrdn,tbart" 
+        #    "FromSim fsrup,tbart" 
+        #    "FromSim fsrdn,Singletop" 
+        #    "FromSim fsrup,Singletop" 
+        #    "FromSim DS,Singletop" 
+        #    "FromSim medn,Singletop" 
+        #    "FromSim meup,Singletop" 
+        #    "FromSim UEdn,tbart" 
+        #    "FromSim UEup,tbart" 
+        #)
 
-        for nuisGroup in ${externNames[@]} ; do
-            echo "------------------------"
-            echo "Limits for ${nuisGroup}:"
-            python test/TopWidthAnalysis/getContour.py \
-                --mass ${massSt} --wids ${widStr} \
-                -n Contour2D_externFrzAllButStat_-1_${nuisGroup} \
-                -e _100pseudodata \
-                -i ${extdir}_${nuisGroup}/
-        done
+	    #    for exterName in "${externArr[@]}"; do
+        #        echo "------------------------"
+        #        iNuisExt=${exterName//\*/}
+        #        iNuisExt=${iNuisExt//,/_}
+        #        iNuisExt=${iNuisExt// /}
+        #        echo "Limits for ${iNuisExt}:"
+        #        python test/TopWidthAnalysis/getContour.py \
+        #            --mass ${massSt} --wids ${widStr} \
+        #            -n Contour2D_${iNuisExt} \
+        #            -e "" \
+        #            -i ${extdir}_Frz_all_Ext_${iNuisExt}/
+        #    done
     ;;
 ############################### PLOT_NUIS #################################
     PLOT_NUIS )
