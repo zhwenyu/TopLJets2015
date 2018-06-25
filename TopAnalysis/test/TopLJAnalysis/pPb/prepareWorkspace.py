@@ -24,11 +24,14 @@ def getMC(tree,doPseudoTop=False):
             if abs(pdgid)<5*baseID :
                 if baseID==1 and j<2 : continue #sometimes incoming partons are stored
                 pdgid=1
-            partColl.append( Particle(pdgid,
-                                      getattr(tree,'%s_pt'%tag)[j],
-                                      getattr(tree,'%s_eta'%tag)[j],
-                                      getattr(tree,'%s_phi'%tag)[j],
-                                      getattr(tree,'%s_m'%tag)[j]) )
+            try:
+                partColl.append( Particle(pdgid,
+                                          getattr(tree,'%s_pt'%tag)[j],
+                                          getattr(tree,'%s_eta'%tag)[j],
+                                          getattr(tree,'%s_phi'%tag)[j],
+                                          getattr(tree,'%s_m'%tag)[j]) )
+            except:
+                pass
     return partColl
 
 """

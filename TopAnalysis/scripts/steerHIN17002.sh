@@ -11,7 +11,7 @@ fi
 export LSB_JOB_REPORT_MAIL=N
 
 queue=8nh
-outdir=~/work/LJets-pPb
+outdir=LJets-pPb
 wwwdir=~/www/LJets-pPb
 lumi=27.4
 
@@ -21,8 +21,7 @@ NC='\e[0m'
 case $WHAT in
     TESTSEL)
         
-        
-        inFile=/store/group/phys_top/gkrintir/TopHI/TTbar_PbP-EmbEPOS_8p16_Pyquen_pPb816Summer16DR-PbPEmb_80X_mcRun2_pA_v4-v1v1/TTbar_PbP-EmbEPOS_8p16_Pyquen/crab_TopHI/170714_072932/0000/HiForestAOD_9.root;
+        inFile=/store/cmst3/group/top/HIN-17-002/Powheg_TTbar_PPb-EmbEPOS_LJets.root        
         commonOpts="--era era2016pPb -m TOP-HIForest::RunHin17002 -q local"
         for ch in 11 13; do
             python scripts/runLocalAnalysis.py -i ${inFile} -o hin17002_${ch}_test.root ${commonOpts} --ch ${ch};
