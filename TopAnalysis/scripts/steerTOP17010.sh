@@ -328,7 +328,7 @@ case $WHAT in
 		    cmd="${cmd} --dist incmlb"		    
 		    cmd="${cmd} --tmass 1725"		    
 		    cmd="${cmd} --lumix 1"		    
-		    cmd="${cmd} --mergeCatsBy 1b,2b"		    
+		    #cmd="${cmd} --mergeCatsBy 1b,2b"		    
 		    cmd="${cmd} --alttmass ${mm}"		    
 		    #cmd="${cmd} --dist tmass"		    
 		    cmd="${cmd} --nToys -1"
