@@ -4,6 +4,8 @@ import ROOT
 class Particle:
     def __init__(self, id, pt,eta,phi,m):
         self.id = id
+        if pt==0:
+            raise ValueError("Unable to start particle with pT=0 GeV")
         self.p4 = ROOT.TLorentzVector(0,0,0,0)
         self.p4.SetPtEtaPhiM(pt,eta,phi,m)
         self.mcTruth=None

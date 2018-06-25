@@ -7,9 +7,13 @@ wwwdir=~/www/HIN-17-002
 case $WHAT in
 
     TESTSEL)
+        common="--wjjOrder drjj --thadOrder dm2tlep" # --etaRestr
+	python prepareWorkspace.py  -d MC8.16TeV_TTbar_pPb_Pohweg ${common};
+	;;
 
-	#for sample in MC8.16TeV_TTbar_pPb_Pohweg MC8.16TeV_WJets_pPb MC8TeV_WJets_pp; do 
-	for sample in MC8.16TeV_TTbar_pPb; do
+
+    TESTORDER )
+	#for sample in MC8.16TeV_TTbar_pPb; do
 	    #for wjjOrder in drjj mjj sumpt; do
 	    #    for thadOrder in dr dm2tlep dm2pdg; do
 	     #       python prepareWorkspace.py  -d ${sample} --wjjOrder ${wjjOrder} --thadOrder ${thadOrder};
@@ -20,9 +24,9 @@ case $WHAT in
 
 	    #rm plots/${sample}/*.{png,pdf}
 
-	    python checkMatchingDistributions.py "min#DeltaR_{jj'}":plots/${sample}/controlplots_drjj_dm2tlep.root \
-	        "leading p_{T}":plots/${sample}/controlplots_sumpt_dm2tlep.root \
-	        "min|m_{jj'}-m_{W}|":plots/${sample}/controlplots_mjj_dm2tlep.root
+	#python checkMatchingDistributions.py "min#DeltaR_{jj'}":plots/${sample}/controlplots_drjj_dm2tlep.root \
+	#        "leading p_{T}":plots/${sample}/controlplots_sumpt_dm2tlep.root \
+	#        "min|m_{jj'}-m_{W}|":plots/${sample}/controlplots_mjj_dm2tlep.root
 	    #mkdir -p plots/${sample}/w
 	    #mv *.{png,pdf} plots/${sample}/w
 
@@ -32,7 +36,7 @@ case $WHAT in
 	    #"min#DeltaR(b,W)":plots/${sample}/controlplots_mjj_dr.root
 	    #mkdir plots/${sample}/top
 	    #mv *.{png,pdf} plots/${sample}/top
-	done
+	#done
 	;;
 
     SEL)
