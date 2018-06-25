@@ -131,7 +131,7 @@ def get2DContour() :
     xmax=ROOT.TMath.MaxElement(contGrs[1].GetN(),contGrs[1].GetX())
     ymin=ROOT.TMath.MinElement(contGrs[1].GetN(),contGrs[1].GetY())
     ymax=ROOT.TMath.MaxElement(contGrs[1].GetN(),contGrs[1].GetY())
-    h.GetXaxis().SetRangeUser(0.5*xmin,1.4*xmax)
+    h.GetXaxis().SetRangeUser(0*xmin,1.4*xmax)
 
     centralX =ROOT.TMath.MinElement(contGrs[0].GetN(),contGrs[0].GetX())
     centralX+=ROOT.TMath.MaxElement(contGrs[0].GetN(),contGrs[0].GetX())
