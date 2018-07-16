@@ -38,7 +38,10 @@ triggerLists = { 2017: cms.vstring('HLT_Ele35_eta2p1_WPTight_Gsf_v',
                                    'HLT_Photon75_R9Id90_HE10_IsoM_EBOnly_PFJetsMJJ600DEta3_v3',
                                    'HLT_Photon175_v',
                                    'HLT_Photon200_v',
-                                   'HLT_Photon300_NoHE_v')
+                                   'HLT_Photon300_NoHE_v',
+                                   'HLT_L1SingleMu_v',
+                                   'HLT_Ele20_WPLoose_Gsf_v'
+                                   )
                  }
 
 analysis = cms.EDAnalyzer("MiniAnalyzer",

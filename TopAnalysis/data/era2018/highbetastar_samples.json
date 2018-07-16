@@ -1,0 +1,8 @@
+{
+"Data13TeV_MuonEGammaTOTEM_2018B"   : [1, 1, "/MuonEGammaTOTEM/Run2018B-PromptReco-v2/MINIAOD", "Data", 1, false, false, 0],
+"Data13TeV_MuonEGammaTOTEM_2018C"   : [1, 1, "/MuonEGammaTOTEM/Run2018C-PromptReco-v2/MINIAOD", "Data", 1, false, false, 0],
+"Data13TeV_EGammaTOTEM_2018Bv1"     : [1, 1, "/EGamma/Run2018B-PromptReco-v1/MINIAOD",          "Data", 1, false, false, 0],
+"Data13TeV_EGammaTOTEM_2018Bv2"     : [1, 1, "/EGamma/Run2018B-PromptReco-v2/MINIAOD",          "Data", 1, false, false, 0],
+"Data13TeV_EGammaTOTEM_2018Cv1"     : [1, 1, "/EGamma/Run2018C-PromptReco-v1/MINIAOD",          "Data", 1, false, false, 0],
+"Data13TeV_EGammaTOTEM_2018Cv2"     : [1, 1, "/EGamma/Run2018C-PromptReco-v2/MINIAOD",          "Data", 1, false, false, 0]
+}
