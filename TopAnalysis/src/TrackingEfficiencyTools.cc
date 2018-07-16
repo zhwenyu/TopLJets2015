@@ -46,9 +46,9 @@ void applyTrackingEfficiencySF(MiniEvent_t &ev, double sf, double minEta, double
       if (random->Rndm() > sf) {
         //make sure that particle does not pass any cuts
         ev.pf_pt[k]  = 1e-20;
-        ev.pf_m[k]   = 1e-20;
+        //ev.pf_m[k]   = 1e-20;
         ev.pf_eta[k] = 999.;
-        ev.pf_c[k]   = 0;
+        //ev.pf_c[k]   = 0;
       }
     }
   }
@@ -61,7 +61,7 @@ void applyTrackingEfficiencySF(MiniEvent_t &ev, double sf, double minEta, double
       if (ev.gpf_pt[g] < 0.9) continue;
       if (ev.gpf_eta[g] < minEta) continue;
       if (ev.gpf_eta[g] > maxEta) continue;
-      if (ev.gpf_c[g] == 0) continue;
+      // if (ev.gpf_c[g] == 0) continue;
       if (abs(ev.gpf_id[g]) < 100) continue;
       NchGenHadrons++;
       bool matched = false;
@@ -103,11 +103,11 @@ void applyTrackingEfficiencySF(MiniEvent_t &ev, double sf, double minEta, double
       }
       ev.pf_j[k]   = j;
       ev.pf_id[k]  = ev.gpf_id[g];
-      ev.pf_c[k]   = ev.gpf_c[g];
+      // ev.pf_c[k]   = ev.gpf_c[g];
       ev.pf_pt[k]  = ev.gpf_pt[g];
       ev.pf_eta[k] = ev.gpf_eta[g];
       ev.pf_phi[k] = ev.gpf_phi[g];
-      ev.pf_m[k]   = ev.gpf_m[g];
+      // ev.pf_m[k]   = ev.gpf_m[g];
       ev.pf_dxy[k] = 0.;
       ev.pf_dz[k]  = 0.;
     }

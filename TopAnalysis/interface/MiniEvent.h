@@ -26,8 +26,8 @@ struct MiniEvent_t
   Float_t g_pt[500],g_eta[500],g_phi[500],g_m[500],g_xb[500],g_xbp[500]; 
   Int_t gtop_id[25];
   Float_t gtop_pt[25],gtop_eta[25],gtop_phi[25],gtop_m[25]; 
-  Int_t gpf_id[5000],gpf_c[5000],gpf_g[5000];
-  Float_t gpf_pt[5000],gpf_eta[5000],gpf_phi[5000],gpf_m[5000];
+  Int_t gpf_id[5000],gpf_g[5000]; //,gpf_c[5000]
+  Float_t gpf_pt[5000],gpf_eta[5000],gpf_phi[5000];//,gpf_m[5000];
 
   //reco level event
   Int_t nvtx;
@@ -61,9 +61,9 @@ struct MiniEvent_t
 
   //PF candidates
   Int_t npf,pf_j[5000];
-  Int_t pf_id[5000],pf_c[5000];
+  Int_t pf_id[5000]; //,pf_c[5000];
   //Int_t pf_pvAssoc[5000],pf_vtxRef[5000];
-  Float_t pf_pt[5000],pf_eta[5000],pf_phi[5000],pf_m[5000],pf_puppiWgt[5000];
+  Float_t pf_pt[5000],pf_eta[5000],pf_phi[5000];//,pf_m[5000],pf_puppiWgt[5000];
   Float_t pf_dxy[5000],pf_dz[5000]; //pf_dxyUnc[5000],pf_dzUnc[5000];
 
   //CTPPS leaves

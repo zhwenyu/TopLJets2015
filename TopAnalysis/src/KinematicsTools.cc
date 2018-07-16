@@ -17,10 +17,11 @@ JetPullInfo_t getPullVector( MiniEvent_t &ev, int ijet)
   TLorentzVector constituent(0,0,0,0);
   std::vector<std::pair<TLorentzVector,bool> > allConstituents;
   unsigned int nCharged = 0;
+  float m_pipm(0.13957);
   for(Int_t idx = 0; idx<ev.npf; idx++)
     {
       if(ev.pf_j[idx]!=ijet) continue;
-      constituent.SetPtEtaPhiM( ev.pf_pt[idx], ev.pf_eta[idx], ev.pf_phi[idx], ev.pf_m[idx]);
+      constituent.SetPtEtaPhiM( ev.pf_pt[idx], ev.pf_eta[idx], ev.pf_phi[idx],m_pipm); // ev.pf_m[idx]);
       bool isCharged(abs(ev.pf_id[idx])==11 ||
 		     abs(ev.pf_id[idx])==13 ||
 		     abs(ev.pf_id[idx])==211 );

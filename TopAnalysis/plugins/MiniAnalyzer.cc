@@ -378,9 +378,10 @@ void MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
       //this shouldn't be needed according to the workbook
       //if(genIt.status()!=1) continue;
       if(genIt.pt()<0.5 || fabs(genIt.eta())>2.5) continue;
-      
+      if(genIt.charge()==0)  continue;
+
       ev_.gpf_id[ev_.ngpf]     = genIt.pdgId();
-      ev_.gpf_c[ev_.ngpf]      = genIt.charge();
+      //ev_.gpf_c[ev_.ngpf]      = genIt.charge();
       ev_.gpf_g[ev_.ngpf]=-1;
       for(std::map<const reco::Candidate *,int>::iterator it=jetConstsMap.begin();
 	  it!=jetConstsMap.end();
@@ -394,7 +395,7 @@ void MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
       ev_.gpf_pt[ev_.ngpf]     = genIt.pt();
       ev_.gpf_eta[ev_.ngpf]    = genIt.eta();
       ev_.gpf_phi[ev_.ngpf]    = genIt.phi();
-      ev_.gpf_m[ev_.ngpf]      = genIt.mass();
+      //ev_.gpf_m[ev_.ngpf]      = genIt.mass();
       ev_.ngpf++;    
     }
 
@@ -977,12 +978,12 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
 	}
       
       ev_.pf_id[ev_.npf]       = pf->pdgId();
-      ev_.pf_c[ev_.npf]        = pf->charge();
+      //ev_.pf_c[ev_.npf]        = pf->charge();
       ev_.pf_pt[ev_.npf]       = pf->pt();
       ev_.pf_eta[ev_.npf]      = pf->eta();
       ev_.pf_phi[ev_.npf]      = pf->phi();
-      ev_.pf_m[ev_.npf]        = pf->mass();
-      ev_.pf_puppiWgt[ev_.npf] = pf->puppiWeight();      
+      //ev_.pf_m[ev_.npf]        = pf->mass();
+      //ev_.pf_puppiWgt[ev_.npf] = pf->puppiWeight();      
       ev_.npf++;
     }
 }

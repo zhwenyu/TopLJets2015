@@ -366,12 +366,15 @@ std::vector<Jet> SelectionTool::getGoodJets(MiniEvent_t &ev, double minPt, doubl
     jet.setPUMVA(ev.j_pumva[k]);
 
     //fill jet constituents
+    float m_pipm(0.13957);
     for (int p = 0; p < ev.npf; p++) {
       if (ev.pf_j[p] == k) {
         TLorentzVector pp4;
-        pp4.SetPtEtaPhiM(ev.pf_pt[p],ev.pf_eta[p],ev.pf_phi[p],ev.pf_m[p]);
-        jet.addParticle(Particle(pp4, ev.pf_c[p], ev.pf_id[p], 0, p, ev.pf_puppiWgt[p]));
-        if (ev.pf_c[p] != 0) jet.addTrack(pp4, ev.pf_id[p]);
+        pp4.SetPtEtaPhiM(ev.pf_pt[p],ev.pf_eta[p],ev.pf_phi[p],m_pipm); //ev.pf_m[p]);
+        //jet.addParticle(Particle(pp4, ev.pf_c[p], ev.pf_id[p], 0, p, 1.0); //ev.pf_puppiWgt[p]));
+        //if (ev.pf_c[p] != 0) jet.addTrack(pp4, ev.pf_id[p]);
+        jet.addParticle(Particle(pp4, 1, ev.pf_id[p], 0, p, 1.0));
+        jet.addTrack(pp4, ev.pf_id[p]);
       }
     }
 
@@ -520,13 +523,17 @@ std::vector<Jet> SelectionTool::getGenJets(MiniEvent_t &ev, double minPt, double
     Jet jet(jp4, flavor, i);
       
     //fill jet constituents
+    float m_pipm(0.13957);
     for (int p = 0; p < ev.ngpf; p++) {
 
       if (ev.gpf_g[p] == i) {
 	TLorentzVector pp4;
-	pp4.SetPtEtaPhiM(ev.gpf_pt[p],ev.gpf_eta[p],ev.gpf_phi[p],ev.gpf_m[p]);
-	jet.addParticle(Particle(pp4, ev.gpf_c[p], ev.gpf_id[p], 0, p, 1.));
-	if (ev.gpf_c[p] != 0) jet.addTrack(pp4, ev.gpf_id[p]);
+	//pp4.SetPtEtaPhiM(ev.gpf_pt[p],ev.gpf_eta[p],ev.gpf_phi[p],ev.gpf_m[p]);
+	pp4.SetPtEtaPhiM(ev.gpf_pt[p],ev.gpf_eta[p],ev.gpf_phi[p],m_pipm);
+	//jet.addParticle(Particle(pp4, ev.gpf_c[p], ev.gpf_id[p], 0, p, 1.));
+	jet.addParticle(Particle(pp4, 1, ev.gpf_id[p], 0, p, 1.));
+	//if (ev.gpf_c[p] != 0) jet.addTrack(pp4, ev.gpf_id[p]);
+	jet.addTrack(pp4, ev.gpf_id[p]);
       }
     }
 

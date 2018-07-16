@@ -44,12 +44,12 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev)
   //final state particles
   t->Branch("ngpf",       &ev.ngpf,       "ngpf/I");
   t->Branch("gpf_id",      ev.gpf_id,     "gpf_id[ngpf]/I");
-  t->Branch("gpf_c",       ev.gpf_c,      "gpf_c[ngpf]/I");
+  //t->Branch("gpf_c",       ev.gpf_c,      "gpf_c[ngpf]/I");
   t->Branch("gpf_g",       ev.gpf_g,      "gpf_g[ngpf]/I");
   t->Branch("gpf_pt",      ev.gpf_pt,     "gpf_pt[ngpf]/F");
   t->Branch("gpf_eta",     ev.gpf_eta,    "gpf_eta[ngpf]/F");
   t->Branch("gpf_phi",     ev.gpf_phi,    "gpf_phi[ngpf]/F");
-  t->Branch("gpf_m",       ev.gpf_m,      "gpf_m[ngpf]/F");
+  //t->Branch("gpf_m",       ev.gpf_m,      "gpf_m[ngpf]/F");
 
   //reco level event
   t->Branch("nvtx",      &ev.nvtx,      "nvtx/I");
@@ -148,18 +148,18 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev)
   t->Branch("npf",        &ev.npf,         "npf/I");
   t->Branch("pf_j",        ev.pf_j,        "pf_j[npf]/I");
   t->Branch("pf_id",       ev.pf_id,       "pf_id[npf]/I");
-  t->Branch("pf_c",        ev.pf_c,        "pf_c[npf]/I");
+  //t->Branch("pf_c",        ev.pf_c,        "pf_c[npf]/I");
   t->Branch("pf_pt",       ev.pf_pt,       "pf_pt[npf]/F");
   t->Branch("pf_eta",      ev.pf_eta,      "pf_eta[npf]/F");
   t->Branch("pf_phi",      ev.pf_phi,      "pf_phi[npf]/F");
-  t->Branch("pf_m",        ev.pf_m,        "pf_m[npf]/F");
+  // t->Branch("pf_m",        ev.pf_m,        "pf_m[npf]/F");
   t->Branch("pf_dxy",      ev.pf_dxy,      "pf_dxy[npf]/F");
   t->Branch("pf_dz",       ev.pf_dz,       "pf_dz[npf]/F");
   //t->Branch("pf_dxyUnc",   ev.pf_dxyUnc,   "pf_dxyUnc[npf]/F");
   //t->Branch("pf_dzUnc",    ev.pf_dzUnc,    "pf_dzUnc[npf]/F");
   //t->Branch("pf_vtxRef",   ev.pf_vtxRef,   "pf_vtxRef[npf]/I");
   //t->Branch("pf_pvAssoc",  ev.pf_pvAssoc,  "pf_pvAssoc[npf]/I");
-  t->Branch("pf_puppiWgt", ev.pf_puppiWgt, "pf_puppiWgt[npf]/F");
+  //t->Branch("pf_puppiWgt", ev.pf_puppiWgt, "pf_puppiWgt[npf]/F");
 
   //MET
   t->Branch("nmet",       &ev.nmet,       "nmet/I");
@@ -225,12 +225,12 @@ void attachToMiniEventTree(TTree *t,MiniEvent_t &ev,bool full)
     {
       t->SetBranchAddress("ngpf",       &ev.ngpf);
       t->SetBranchAddress("gpf_id",      ev.gpf_id);
-      t->SetBranchAddress("gpf_c",       ev.gpf_c);
+      //t->SetBranchAddress("gpf_c",       ev.gpf_c);
       t->SetBranchAddress("gpf_g",       ev.gpf_g); 
       t->SetBranchAddress("gpf_pt",      ev.gpf_pt);
       t->SetBranchAddress("gpf_eta",     ev.gpf_eta);
       t->SetBranchAddress("gpf_phi",     ev.gpf_phi);
-      t->SetBranchAddress("gpf_m",       ev.gpf_m);
+      //t->SetBranchAddress("gpf_m",       ev.gpf_m);
     }
 
   //reco level event
@@ -332,17 +332,17 @@ void attachToMiniEventTree(TTree *t,MiniEvent_t &ev,bool full)
       t->SetBranchAddress("npf",        &ev.npf);
       t->SetBranchAddress("pf_j",        ev.pf_j);
       t->SetBranchAddress("pf_id",       ev.pf_id);
-      t->SetBranchAddress("pf_c",        ev.pf_c);
+      //t->SetBranchAddress("pf_c",        ev.pf_c);
       t->SetBranchAddress("pf_pt",       ev.pf_pt);
       t->SetBranchAddress("pf_eta",      ev.pf_eta);
       t->SetBranchAddress("pf_phi",      ev.pf_phi);
-      t->SetBranchAddress("pf_m",        ev.pf_m);
+      //t->SetBranchAddress("pf_m",        ev.pf_m);
       t->SetBranchAddress("pf_dxy",      ev.pf_dxy);
       t->SetBranchAddress("pf_dz",       ev.pf_dz);
       //t->SetBranchAddress("pf_dxyUnc",   ev.pf_dxyUnc);
       //t->SetBranchAddress("pf_dzUnc",    ev.pf_dzUnc);
       //t->SetBranchAddress("pf_pvAssoc",  ev.pf_pvAssoc);
-      t->SetBranchAddress("pf_puppiWgt", ev.pf_puppiWgt);
+      //t->SetBranchAddress("pf_puppiWgt", ev.pf_puppiWgt);
     }
 
   //MET

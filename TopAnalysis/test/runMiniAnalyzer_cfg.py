@@ -42,7 +42,7 @@ options.register('saveTree', True,
                  VarParsing.varType.bool,
                  "save summary tree"
                  )
-options.register('savePF', False,
+options.register('savePF', True,
                  VarParsing.multiplicity.singleton,
                  VarParsing.varType.bool,
                  'save PF candidates'
