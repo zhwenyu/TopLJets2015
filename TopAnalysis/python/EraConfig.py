@@ -4,7 +4,7 @@ def getEraConfiguration(era,isData):
     globalTags = {
         'era2016':('80X_mcRun2_asymptotic_2016_TrancheIV_v7', '80X_dataRun2_2016SeptRepro_v6'),
         'era2017':('94X_mc2017_realistic_v10',                '94X_dataRun2_ReReco_EOY17_v2'),
-        'era2018':('101X_dataRun2_Prompt_v9',                 '101X_dataRun2_Prompt_v9'),
+        'era2018':('101X_dataRun2_HLT_v7',                    '101X_dataRun2_HLT_v7'),
         }
     jecTags    = {
         'era2016':('Summer16_23Sep2016V4',  'Summer16_23Sep2016AllV4'),

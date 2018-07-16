@@ -2,48 +2,20 @@
 
 ## Installation instructions
 
-These installation instructions correspond to the 2017 data/MC production.
+These installation instructions correspond to the 2018 data/MC production.
 To install execute the following in your work area.
-Notice: if you are not creating the ntuples, you can skip the part of the instructions 
-marked with the `##OPTIONAL/##END OPTIONAL` markers
 
 ```
-cmsrel CMSSW_9_4_2
-cd CMSSW_9_4_2/src
+cmsrel CMSSW_10_1_1
+cd CMSSW_10_1_1src
 cmsenv
-
-##OPTIONAL
-
-#photon/electron id+scale and smearing
-git cms-merge-topic lsoffi:CMSSW_9_4_0_pre3_TnP    
-git cms-merge-topic guitargeek:ElectronID_MVA2017_940pre3
-git cms-merge-topic cms-egamma:MiniAOD2017V2_940
-scram b -j 8
-cd $CMSSW_BASE/external
-cd ${SCRAM_ARCH}/
-git clone https://github.com/lsoffi/RecoEgamma-PhotonIdentification.git data/RecoEgamma/PhotonIdentification/data
-cd data/RecoEgamma/PhotonIdentification/data
-git checkout CMSSW_9_4_0_pre3_TnP
-cd $CMSSW_BASE/external
-cd ${SCRAM_ARCH}/
-git clone https://github.com/lsoffi/RecoEgamma-ElectronIdentification.git data/RecoEgamma/ElectronIdentification/data
-cd data/RecoEgamma/ElectronIdentification/data
-git checkout CMSSW_9_4_0_pre3_TnP
-cd $CMSSW_BASE/external
-cd ${SCRAM_ARCH}/
-git clone git@github.com:Sam-Harper/EgammaAnalysis-ElectronTools.git data/EgammaAnalysis/ElectronTools/data
-cd data/EgammaAnalysis/ElectronTools/data
-git checkout ReReco17NovScaleAndSmearing 
-
-##END OPTIONAL
-
-
-cd $CMSSW_BASE/src
 git clone git@github.com:pfs/TopLJets2015.git
-cd TopLJets2015
+cd TopLJets2015/TopAnalysis
 git submodule init
 git submodule update
-scram b -j 8
+git checkout 10x_dev
+cd -
+scram b
 ```
 
 ## Running ntuple creation and checking the selection
@@ -53,8 +25,8 @@ It takes several options from command line (see cfg for details).
 To run locally the ntuplizer, for testing purposes do something like:
 
 ```
-cmsRun test/runMiniAnalyzer_cfg.py runOnData=False era=era2017 outFilename=MC13TeV_TTJets.root
-cmsRun test/runMiniAnalyzer_cfg.py runOnData=True  era=era2017 outFilename=Data13TeV_SingleMuon.root
+cmsRun test/runMiniAnalyzer_cfg.py runOnData=False era=era2018 outFilename=MC13TeV_TTJets.root
+cmsRun test/runMiniAnalyzer_cfg.py runOnData=True  era=era2018 outFilename=Data13TeV_SingleMuon.root
 ```
 
 To submit the ntuplizer to the grid start by setting the environment for crab3.
@@ -68,7 +40,7 @@ Partial submission can be made adding "-o csv_list" as an option.
 Adding "-s" will trigger the submission to the grid (otherwise the script only writes down the crab cfg files)
 
 ```
-python scripts/submitToGrid.py -j data/era2017/samples.json -c ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/runMiniAnalyzer_cfg.py 
+python scripts/submitToGrid.py -j data/era2018/samples.json -c ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/runMiniAnalyzer_cfg.py 
 ```
 
 As soon as ntuple production starts to finish, to move from crab output directories to a simpler directory structure which can be easily parsed by the local analysis runThe merging can be run locally if needed by using the checkProductionIntegrity.py script

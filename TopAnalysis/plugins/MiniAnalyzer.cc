@@ -890,6 +890,8 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
       for(size_t ipf=0; ipf<j->numberOfDaughters(); ipf++)
 	{
 	  const reco::Candidate *pf=j->daughter(ipf);
+          if(pf->charge()==0) continue;
+          if(pf->pt()<0.9 || fabs(pf->eta())>2.5) continue;
 	  clustCands.push_back(std::pair<const reco::Candidate *,int>(pf,ev_.nj-1));
 	}
     }
@@ -946,7 +948,7 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
   for(auto pf = pfcands->begin();  pf != pfcands->end(); ++pf)
     {
       if(ev_.npf>=5000) continue;
-
+      
       ev_.pf_j[ev_.npf] = -1;
       for(size_t i=0; i<clustCands.size(); i++)
 	{
