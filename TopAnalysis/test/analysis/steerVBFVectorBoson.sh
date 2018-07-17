@@ -13,8 +13,8 @@ fi
 
 #to run locally use local as queue + can add "--njobs 8" to use 8 parallel jobs
 queue=workday
-githash=fbc74ae
-eosdir=/store/cmst3/group/top/RunIIFall17/${githash}
+githash=f3174df
+eosdir=/store/cmst3/group/top/RunIISpring18/${githash}
 fulllumi=41367
 vbflumi=7661
 lumiUnc=0.025
@@ -27,19 +27,12 @@ NC='\e[0m'
 case $WHAT in
 
     TESTSEL )
-        input=${eosdir}/MC13TeV_DY50toInf/MergedMiniEvents_4_ext0.root
-        output=MC13TeV_DY4Jets50toInf.root
-        tag="--tag MC13TeV_DY50toInf"
-        #input=${eosdir}/Data13TeV_SingleMuon_2017D/MergedMiniEvents_0_ext0.root
-        #output=Data13TeV_SingleMuon_2017D.root
-        #input=${eosdir}/MC13TeV_GJets_HT100to200_DR04/MergedMiniEvents_0_ext0.root
-        #output=MC13TeV_GJets_HT100to200_DR04.root \
-        #input=${eosdir}/Data13TeV_SingleMuon_2017C/MergedMiniEvents_0_ext0.root
-        #output=Data13TeV_SingleMuon_2017C.root
+        input=${eosdir}/Data13TeV_SingleMuon_2018Av1/MergedMiniEvents_0_ext0.root
+        output=Data13TeV_SingleMuon_2018Av1.root
 	python scripts/runLocalAnalysis.py \
             -i ${input} -o ${output} ${tag} \
             --njobs 1 -q local --debug --mvatree \
-            --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts;
+            --era era2018 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts;
         ;;
 
     SEL )

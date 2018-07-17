@@ -46,7 +46,7 @@ python scripts/submitToGrid.py -j data/era2018/samples.json -c ${CMSSW_BASE}/src
 As soon as ntuple production starts to finish, to move from crab output directories to a simpler directory structure which can be easily parsed by the local analysis runThe merging can be run locally if needed by using the checkProductionIntegrity.py script
 
 ```
-python scripts/submitCheckProductionIntegrity.py -i /store/cmst3/group/top/psilva/c29f431 -o /store/cmst3/group/top/RunIIFall17/c29f431
+python scripts/submitCheckProductionIntegrity.py -i /store/cmst3/group/top/psilva/f3174df -o /store/cmst3/group/top/RunIISpring18/f3174df
 ```
 
 ## Luminosity
@@ -73,16 +73,16 @@ The following script runs brilcalc inclusively and per trigger path, and stores 
 It takes a bit to run, depending on the number of triggers configured to use in the analysis
 ```
 export PATH=$HOME/.local/bin:/afs/cern.ch/cms/lumi/brilconda/bin:$PATH
-python scripts/convertLumiTable.py -o data/era2017/
+python scripts/convertLumiTable.py -o data/era2018/
 ```
 
 ## Preparing the analysis 
 
-Correction and uncertainty files are stored under data by era directories (e.g data/era2017) in order no to mix different periods.
+Correction and uncertainty files are stored under data by era directories (e.g data/era2018) in order no to mix different periods.
 
 * Pileup weighting. To update the pileup distributions run the script below. It will store the data pileup distributions for different min.bias cross section in data/pileupWgts.root
 ```
-python scripts/runPileupEstimation.py --json /afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/ReReco/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt --out data/era2017/pileupWgts.root
+python scripts/runPileupEstimation.py --json /afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions18/13TeV/PromptReco/Cert_314472-318876_13TeV_PromptReco_Collisions18_JSON.txt --out data/era2018/pileupWgts.root
 ```
 * B-tagging. To apply corrections to the simulation one needs the expected efficiencies stored somwewhere. The script below will project the jet pT spectrum from the TTbar sample before and after applying b-tagging, to compute the expecte efficiencies. The result will be stored in data/expTageff.root
 ```
@@ -90,9 +90,9 @@ python scripts/saveExpectedBtagEff.py -i /store/cmst3/group/top/RunIIFall17/c29f
 ```
 * MC normalization. This will loop over all the samples available in EOS and produce a normalization cache (weights to normalize MC). The file will be available in data/genweights.pck
 ```
-python scripts/produceNormalizationCache.py -i /store/cmst3/group/top/RunIIFall17/c29f431 -o data/era2017/genweights.root
+python scripts/produceNormalizationCache.py -i /store/cmst3/group/top/RunIISpring18/f3174df -o data/era2018/genweights.root
 ```
-The lepton/photon trigger/id/iso efficiencies should also be placed under data/era2017. 
+The lepton/photon trigger/id/iso efficiencies should also be placed under data/era2018. 
 The src/EfficiencyScaleFactorsWrapper.cc  should then be updated to handle the reading of the ROOT files and the application of the scale factors
 event by event.
 

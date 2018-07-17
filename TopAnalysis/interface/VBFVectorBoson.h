@@ -68,8 +68,8 @@ public:
                        Bool_t debug_=false, Bool_t skimtree_=false):
 	filename(filename_),outname(outname_),anFlag(anFlag_), era(era_), debug(debug_), skimtree(skimtree_)
 	{
-	  normH = (TH1F*)normH_->Clone("normH_c");
-	  genPU = (TH1F*)genPU_->Clone("genPu_c");
+	  normH = normH_ ? (TH1F*)normH_->Clone("normH_c") : 0;
+	  genPU = genPU_ ? (TH1F*)genPU_->Clone("genPu_c") : 0;
 	  fMVATree = NULL;
 	  newTree = NULL;
 	  init();

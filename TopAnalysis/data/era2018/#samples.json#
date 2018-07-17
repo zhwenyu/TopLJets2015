@@ -1,0 +1,16 @@
+{
+"Data13TeV_SingleMuon_2018Av1" : [1, 1, "/SingleMuon/Run2018A-PromptReco-v1/MINIAOD", "Data", 1, false, false, 0],
+"Data13TeV_SingleMuon_2018Av2" : [1, 1, "/SingleMuon/Run2018A-PromptReco-v2/MINIAOD", "Data", 1, false, false, 0],
+"Data13TeV_SingleMuon_2018Av3" : [1, 1, "/SingleMuon/Run2018A-PromptReco-v3/MINIAOD", "Data", 1, false, false, 0],
+"Data13TeV_SingleMuon_2018Bv1" : [1, 1, "/SingleMuon/Run2018B-PromptReco-v1/MINIAOD", "Data", 1, false, false, 0],
+"Data13TeV_SingleMuon_2018Bv2" : [1, 1, "/SingleMuon/Run2018B-PromptReco-v2/MINIAOD", "Data", 1, false, false, 0],
+"Data13TeV_SingleMuon_2018Cv1" : [1, 1, "/SingleMuon/Run2018C-PromptReco-v1/MINIAOD", "Data", 1, false, false, 0],
+"Data13TeV_SingleMuon_2018Cv2" : [1, 1, "/SingleMuon/Run2018C-PromptReco-v2/MINIAOD", "Data", 1, false, false, 0],
+"Data13TeV_EGamma_2018Av1"     : [1, 1, "/EGamma/Run2018A-PromptReco-v1/MINIAOD",     "Data", 1, false, false, 0],
+"Data13TeV_EGamma_2018Av2"     : [1, 1, "/EGamma/Run2018A-PromptReco-v2/MINIAOD",     "Data", 1, false, false, 0],
+"Data13TeV_EGamma_2018Av3"     : [1, 1, "/EGamma/Run2018A-PromptReco-v3/MINIAOD",     "Data", 1, false, false, 0],
+"Data13TeV_EGamma_2018Bv1"     : [1, 1, "/EGamma/Run2018B-PromptReco-v1/MINIAOD",     "Data", 1, false, false, 0],
+"Data13TeV_EGamma_2018Bv2"     : [1, 1, "/EGamma/Run2018B-PromptReco-v2/MINIAOD",     "Data", 1, false, false, 0],
+"Data13TeV_EGamma_2018Cv1"     : [1, 1, "/EGamma/Run2018C-PromptReco-v1/MINIAOD",     "Data", 1, false, false, 0],
+"Data13TeV_EGamma_2018Cv2"     : [1, 1, "/EGamma/Run2018C-PromptReco-v2/MINIAOD",     "Data", 1, false, false, 0]
+}

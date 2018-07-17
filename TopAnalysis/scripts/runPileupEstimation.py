@@ -3,7 +3,7 @@ import os,sys
 import json
 import commands
 import ROOT
-from SimGeneral.MixingModule.mix_2016_25ns_Moriond17MC_PoissonOOTPU_cfi import *
+from SimGeneral.MixingModule.mix_2018_25ns_ProjectedPileup_PoissonOOTPU_cfi import *
 
 """
 steer the script
@@ -17,7 +17,7 @@ def main():
     parser.add_option('--out',       dest='output'  ,      help='output file with weights',           default=None,    type='string')
     parser.add_option('--mbXsec',    dest='mbXsec'  ,      help='minimum bias cross section to use',  default=69200,   type=float)
     parser.add_option('--puJson',    dest='puJson'  ,      help='pileup json file',      
-                      default='/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/PileUp/pileup_latest.txt',
+                      default='/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions18/13TeV/PileUp/pileup_latest.txt',
                       type='string')
     (opt, args) = parser.parse_args()
     
