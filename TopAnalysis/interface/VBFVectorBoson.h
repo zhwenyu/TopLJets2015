@@ -30,25 +30,26 @@ using namespace std;
 //Vector boson will be either Z or photon at the moment
 
 struct Category{
-  float MM,A,VBF,HighPt,HighPtVBF,V1J,HighPtOfflineVBF,HighPtVBFCutBased;
+  float MM,A,VBF,HighPt,HighPtVBF,V1J,HighPtOfflineVBF,HighMJJ,LowMJJ;
   Category(){ reset(); }
   Category(std::vector<bool> &cat){
     reset();
     set(cat);
   };  
   void reset(){
-    std::vector<bool> cat(7,false);
+    std::vector<bool> cat(9,false);
     set(cat);
   };
   void set(std::vector<bool> &cat){
-    MM =(float) cat[0];
-    A = (float)cat[1];
-    VBF = (float)cat[2];
-    HighPt = (float)cat[3];
-    HighPtVBF = (float)cat[4];
-    V1J = (float)cat[5];
+    MM               =(float) cat[0];
+    A                = (float)cat[1];
+    VBF              = (float)cat[2];
+    HighPt           = (float)cat[3];
+    HighPtVBF        = (float)cat[4];
+    V1J              = (float)cat[5];
     HighPtOfflineVBF = (float)cat[6];
-    HighPtVBFCutBased = (float)cat[7];
+    HighMJJ        = (float)cat[7];
+    LowMJJ         = (float)cat[8];
   };
   std::vector<TString> getChannelTags() {
     std::vector<TString> chTags;
@@ -63,7 +64,8 @@ struct Category{
     if(HighPtVBF>0)         chTags.push_back("HighPtVBF"+chTag);
     if(V1J>0)               chTags.push_back("V1J"+chTag);
     if(HighPtOfflineVBF>0)  chTags.push_back("HighPtOfflineVBF"+chTag);
-    if(HighPtVBFCutBased>0) chTags.push_back("HighPtVBFCutBased"+chTag);
+    if(HighMJJ>0)         chTags.push_back("HighMJJ"+chTag);
+    if(LowMJJ>0)          chTags.push_back("LowMJJ"+chTag);
     return chTags;
   }
 };
@@ -76,8 +78,8 @@ public:
                        TH1F *normH_, 
                        TH1F *genPU_,
                        TString era_,
-                       Bool_t debug_=false, Bool_t skimtree_=false):
-           filename(filename_),outname(outname_),anFlag(anFlag_), normH(0), genPU(0), era(era_), debug(debug_), skimtree(skimtree_), doBlindAnalysis(true)
+                       Bool_t debug_=false, Bool_t CR_ =false, Bool_t skimtree_=false, bool blind =true):
+  filename(filename_),outname(outname_),anFlag(anFlag_), normH(0), genPU(0), era(era_), debug(debug_), CR(CR_), skimtree(skimtree_), doBlindAnalysis(blind)
 	{
           if(normH_) normH = (TH1F*)normH_->Clone("normH_c");
 	  if(genPU_) genPU = (TH1F*)genPU_->Clone("genPu_c");
@@ -108,7 +110,7 @@ public:
 	void setGammaZPtWeights();
 	void loadCorrections();
 	void addMVAvars();
-	void fill(MiniEvent_t ev, TLorentzVector boson, std::vector<Jet> jets, std::vector<double> cplotwgts, TString c);
+	void fill(MiniEvent_t ev, TLorentzVector boson, std::vector<Jet> jets, std::vector<double> cplotwgts, TString c, std::map<TString, int> mults, std::vector<Particle> fakePhotonCR ={}, std::vector<Particle> tightPhotonCR={});
 	void RunVBFVectorBoson();
 	void initVariables(std::vector<Jet>);
 
@@ -119,7 +121,7 @@ private:
 	TH1F * normH, * genPU;
 	TString era;
 	TH1* triggerList;
-	Bool_t debug, skimtree, isQCDEMEnriched;
+	Bool_t debug, CR,skimtree, isQCDEMEnriched;
 	TFile * f /*inFile*/, *fMVATree, *fOut;
 	TTree * t /*inTree*/, *newTree /*MVA*/;
   	HistTool * ht;
@@ -149,6 +151,7 @@ private:
         float leadj_gawidth,leadj_c1_05,subleadj_gawidth,subleadj_c1_05, subleadj_pt;
         float vbfmva,vbffisher;
         bool doBlindAnalysis;
+
 
 	/////////////////////////////////////
 	// Categorie for VBF:              //
