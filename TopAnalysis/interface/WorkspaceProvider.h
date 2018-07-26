@@ -232,9 +232,9 @@ class WorkspaceProvider{
     myfile << "bin\t"<<binName<<"\t"<<binName<< endl;
     myfile << "process\tSignal\tBkg" << endl;
     myfile << "process\t0\t1" << endl;
-    if(chan == TString("A")){
+    if(boson == TString("A")){
       myfile << "rate\t"<<SR->hSig->Integral()<<"\t"<<SR->hBkg->Integral()<< endl;
-    } else if (chan == TString("MM")){
+    } else if (boson == TString("MM")){
       myfile << "rate\t"<<CR->hSig->Integral()<<"\t"<<CR->hBkg->Integral()<< endl;
     }
     myfile << "------------" << endl;
