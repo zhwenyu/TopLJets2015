@@ -144,7 +144,7 @@ class SelectionTool {
  private:
   bool debug_;
   AnalysisType anType_;
-  bool isSingleElectronPD_,isSingleMuonPD_,isDoubleEGPD_,isDoubleMuonPD_,isMuonEGPD_,isPhotonPD_;
+  bool isSingleElectronPD_,isSingleMuonPD_,isDoubleEGPD_,isDoubleMuonPD_,isMuonEGPD_,isPhotonPD_,isJetHTPD_;
   std::map<TString,unsigned int> triggerBits_;
   std::vector<TString> photonTriggers_;
   int offlinePhoton_;

@@ -34,9 +34,10 @@ using namespace std;
 void VBFVectorBoson::RunVBFVectorBoson()
 {
   bool is2018(filename.Contains("2018"));
+  bool isJetHT(filename.Contains("JetHT"));
 
   float minBosonHighPt(200.);
-  TString vbfPhotonTrigger("HLT_Photon75_R9Id90_HE10_IsoM_EBOnly_PFJetsMJJ300DEta3_v");
+  TString vbfPhotonTrigger = "HLT_Photon75_R9Id90_HE10_IsoM_EBOnly_PFJetsMJJ300DEta3_v";
   TString highPtPhotonTrigger("HLT_Photon200_v");
   SelectionTool::QualityFlags offlinePhoton(SelectionTool::TIGHT);
   if(is2018) {
@@ -46,7 +47,19 @@ void VBFVectorBoson::RunVBFVectorBoson()
     offlinePhoton=SelectionTool::LOOSE;
     minBosonHighPt=165.;
   }
-  selector->setPhotonSelection({vbfPhotonTrigger,highPtPhotonTrigger},offlinePhoton);
+  std::vector<TString> photonTriggerPaths={vbfPhotonTrigger,highPtPhotonTrigger};
+  if(isJetHT){
+    cout <<"[VBFVectorBoson::RunVBFVectorBoson] this is JetHT data, adapting the trigger" <<endl;
+    photonTriggerPaths.clear();
+    photonTriggerPaths = {"HLT_PFJet40_v","HLT_PFJet60_v","HLT_PFJet80_v","HLT_PFJet140_v",
+                          "HLT_PFJet200_v","HLT_PFJet260_v","HLT_PFJet320_v","HLT_PFJet400_v",
+			  "HLT_PFJet450_v","HLT_PFJet500_v","HLT_PFJet550_v","HLT_PFJetFwd40_v",
+			  "HLT_PFJetFwd60_v","HLT_PFJetFwd80_v","HLT_PFJetFwd140_v","HLT_PFJetFwd200_v",
+			  "HLT_PFJetFwd260_v","HLT_PFJetFwd320_v","HLT_PFJetFwd400_v","HLT_PFJetFwd450_v",
+			  "HLT_PFJetFwd500_v"};
+
+  }
+  selector->setPhotonSelection(photonTriggerPaths,offlinePhoton);
 
 
   //TMVA configuration

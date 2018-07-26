@@ -1,5 +1,5 @@
 #include "TopLJets2015/TopAnalysis/interface/WorkspaceProvider.h"
-
+#include "TopLJets2015/TopAnalysis/interface/VbfFitRegion.h"
 using namespace std;
 
 int main( int argc, char** argv )
@@ -41,10 +41,14 @@ int main( int argc, char** argv )
       continue;
     }
   }
+
+
+  VbfFitRegion * SR = new VbfFitRegion(channel, TString("A"), histname, nBin, true);
+  VbfFitRegion * CR = new VbfFitRegion(channel, TString("MM"), histname, nBin, false);
   
-  WorkspaceProvider wsp(histname, channel, boson, nBin);
-  wsp.ProvideWS();
-  wsp.creatTFHists();
-  wsp.makeCard(YE, sigEff, bkgEff);
+  WorkspaceProvider wsp(histname,SR, CR);
+  wsp.import();
+  wsp.makeCard(YE, TString("A"), sigEff, bkgEff);
+  wsp.makeCard(YE, TString("MM"), sigEff, bkgEff);
   return 0;
 }

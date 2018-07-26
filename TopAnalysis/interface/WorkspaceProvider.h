@@ -87,163 +87,185 @@
 #include "RooVoigtian.h"
 #include "RooPlot.h"
 #include "RooArgusBG.h"
+#include "HiggsAnalysis/CombinedLimit/interface/RooParametricHist.h"
 #include <stdio.h>
 #include <math.h>
 #include <map>
-
+#include "VbfFitRegion.h"
 using namespace std;
 using namespace RooFit;
 
 typedef std::map<TString, std::pair<double, std::pair<double, double> > > MeanErr;
 typedef std::map<TString, std::pair <double, double> > YieldsErr;
 
+//////////////////////////////////////////////////
+// Simple class to make RooParametricHist       //
+// All variables can be accessed via this class //
+//////////////////////////////////////////////////
+
 class WorkspaceProvider{
  public:
- WorkspaceProvider(TString histName, TString channel, TString v, int nbin): hist(histName),chan(channel), boson(v),nBin(nbin){
-    this->createHistograms();
-    ws      = new RooWorkspace("ws"+chan+boson, "ws"+chan+boson);
+ WorkspaceProvider(TString histName, VbfFitRegion * sr, VbfFitRegion * cr,std::vector<std::pair<TString,double> > stfu = {}, std::vector<std::pair<TString,double> >btfu={}): hist(histName),chan(sr->chan){
+    ws      = new RooWorkspace("ws"+chan, "ws"+chan);
     var     = new RooRealVar("var","var",-2,3); // to be tuned later
     ws->import(*var);
+    for(unsigned int i = 0; i < stfu.size(); i++)
+      sTFUnc.push_back(stfu[i]);
+    for(unsigned int i = 0; i < btfu.size(); i++)
+      bTFUnc.push_back(btfu[i]);
+    SR = sr->clone();
+    CR = cr->clone();
+    cout <<"Set TF ----------"<<endl;
+    this->setTF();
+    cout<<"Create PH signal -"<<endl;
+    this->createParamHists(0);
+    cout<<"Create PH bkg ----"<<endl;
+    this->createParamHists(1);
   }
-  void ProvideWS(){
-    RooDataHist * dhData   = new RooDataHist("Data"+chan+boson,"Data"+chan+boson,*var,Import(*hData));
-    RooDataHist * dhBkg    = new RooDataHist("Background"+chan+boson,"Background"+chan+boson,*var,Import(*hBkg));
-    RooDataHist * dhSignal = new RooDataHist("Signal"+chan+boson,"Signal"+chan+boson,*var,Import(*hSig));
-    ws->import(*dhData);
-    ws->import(*dhBkg);
-    ws->import(*dhSignal);
-    stringstream s;
-    s << hBkg->Integral();
-    ws->factory("Background"+chan+boson+"_norm["+s.str()+"]");
-    s.str("");
-    s << hSig->Integral();
-    ws->factory("Signal"+chan+boson+"_norm["+s.str()+"]");   
 
-    TFile * fOut = new TFile("Channel_"+chan+boson+".root","recreate");
+  ~WorkspaceProvider(){}
+
+  void setTF(){
+    wsTF = new TF(SR, CR, sTFUnc, bTFUnc);
+    wsTF->creatTFHists();
+    wsTF->setTFs();
+  }
+
+  void createParamHists(int id = 0){//0: signal 1:background 
+    RooArgList * argsMM = new RooArgList(); //CR
+    RooArgList * argsA = new RooArgList();  //SR
+    stringstream s;
+    for (int i = 1; i < CR->getModelHist(id)->GetXaxis()->GetNbins()+1; i++){
+      s.str("");
+      s<<CR->getModelHist(id)->GetName()<<"_bin"<<i;
+      double cont = CR->getModelHist(id)->GetBinContent(i);
+      double err  = 3*cont;
+      if(cont < 0){
+	cont = 3;
+	err  = 10;
+      }
+      CR->addModelBinsCR(new RooRealVar(s.str().c_str(),s.str().c_str(), cont, 0, err), id);
+      argsMM->add(*CR->getModelBinsCR(id)[i-1]);
+
+      s.str("");
+      s<<SR->getModelHist(id)->GetName()<<"_bin"<<i;      
+      SR->addModelBinsSR(new RooFormulaVar(s.str().c_str(),s.str().c_str(), "@0*@1", RooArgList(*wsTF->getTFormula(id),*CR->getModelBinsCR(id)[i-1])), id);
+      argsA->add(*SR->getModelBinsSR(id)[i-1]);     
+    }
+
+    TString tmpName = "Signal";
+    if(id == 1) tmpName = "Background";
+    SR->setPH(new RooParametricHist(tmpName+"_PH_"+SR->chan+SR->boson, tmpName +" PDF in "+SR->boson+" region",*var,*argsA,*SR->hData),id);
+    SR->setPH_norm(new RooAddition (tmpName+"_PH_"+SR->chan+SR->boson+"_norm","Total Number of "+tmpName+" events in "+SR->boson+" region",*argsA),id);
+    CR->setPH(new RooParametricHist(tmpName+"_PH_"+CR->chan+CR->boson, tmpName +" PDF in "+CR->boson+" region",*var,*argsMM,*CR->hData),id);
+    CR->setPH_norm(new RooAddition (tmpName+"_PH_"+CR->chan+CR->boson+"_norm","Total Number of "+tmpName+" events in "+CR->boson+" region",*argsMM),id);
+  }
+
+  void import(){
+
+    // Signal region
+    ws->import(*SR->getDataDH(var));
+    ws->import(*SR->getBkgDH(var));
+    ws->import(*SR->getSigDH(var));
+    ws->import(*SR->getSigHistNorm());
+    ws->import(*SR->getBkgHistNorm());
+    ws->import(*SR->sigPH);
+    ws->import(*SR->bkgPH);
+    ws->import(*SR->sigPH_norm);
+    ws->import(*SR->bkgPH_norm);
+
+
+    cout<<"Start of the control region"<<endl;
+    // Control region
+    ws->import(*CR->getDataDH(var));
+    ws->import(*CR->getBkgDH(var));
+    ws->import(*CR->getSigDH(var));
+    ws->import(*CR->getSigHistNorm());
+    ws->import(*CR->getBkgHistNorm());
+    ws->import(*CR->sigPH);
+    ws->import(*CR->bkgPH);
+    ws->import(*CR->sigPH_norm);
+    ws->import(*CR->bkgPH_norm);
+
+    
+    ws->import(*wsTF->getTFormula(0));
+    ws->import(*wsTF->getTFormula(1));
+
+    TFile * fOut = new TFile("Channel_"+CR->chan+".root","recreate");
     fOut->cd();
     ws->Write();
     fOut->Save();
     fOut->Close();
   }
 
-  void makeCard(YieldsErr YieldErrors, double sigEff=1, double bkgEff=1){
+  void makeCard(YieldsErr YieldErrors, TString boson, double sigEff=1, double bkgEff=1){
     // No shape uncertainty yet!
-    TString outname = chan+".txt";
+    TString outname = chan+"_"+boson+".txt";
     ofstream myfile;
     myfile.setf(ios_base::fixed);
     myfile.precision(4);
     myfile.open(outname);
-
-    myfile << "imax 1  number of categories" << endl;
-    myfile << "jmax 1  number of samples minus 1" << endl;
+    TString binName = "signal";
+    if(boson == "MM"){
+      myfile << "Control Region Datacard -- control category" <<endl;
+      binName = "Control";
+    } else if(boson == "A")
+      myfile << "Signal Region Datacard -- signal category"<<endl;
+    myfile << "imax *  number of categories" << endl;
+    myfile << "jmax *  number of samples minus 1" << endl;
     myfile << "kmax *  number of nuisance parameters (sources of systematical uncertainties)" << endl;
 
     myfile << "\n------------" << endl;
-    myfile << "shapes\tSignal\t"<<chan<<boson<<"\tChannel_"<<chan<<boson<<".root ws"<<chan<<boson<<":Signal"<<chan<<boson << endl; 
-    myfile << "shapes\tBkg\t"   <<chan<<boson<<"\tChannel_"<<chan<<boson<<".root ws"<<chan<<boson<<":Background"<<chan<<boson << endl;
-    myfile << "shapes\tdata_obs\t"<<chan<<boson<<"\tChannel_"<<chan<<boson<<".root ws"<<chan<<boson<<":Data"<<chan<<boson << endl;
+    if(boson == TString("A")){
+      myfile << "shapes\tSignal\t"  <<binName<<"\tChannel_"<<chan<<".root ws"<<chan<<":"<<SR->sigPH->GetName()   << endl; 
+      myfile << "shapes\tBkg\t"     <<binName<<"\tChannel_"<<chan<<".root ws"<<chan<<":"<<SR->bkgPH->GetName()   << endl;
+    } else if (boson == TString("MM")){
+      myfile << "shapes\tSignal\t"  <<binName<<"\tChannel_"<<chan<<".root ws"<<chan<<":"<<CR->sigPH->GetName()   << endl; 
+      myfile << "shapes\tBkg\t"     <<binName<<"\tChannel_"<<chan<<".root ws"<<chan<<":"<<CR->bkgPH->GetName()   << endl;
+    }
+    myfile << "shapes\tdata_obs\t"<<binName<<"\tChannel_"<<chan<<".root ws"<<chan<<":"<<"Data"<<chan<<boson << endl;
     myfile << "------------" << endl;
-    myfile << "bin\t"<<chan<<boson << endl;
+    myfile << "bin\t"<<binName << endl;
     myfile << "observation\t-1.0" << endl;
     myfile << "------------" << endl;
 
-    myfile << "bin\t"<<chan<<boson<<"\t"<<chan<<boson << endl;
+    myfile << "bin\t"<<binName<<"\t"<<binName<< endl;
     myfile << "process\tSignal\tBkg" << endl;
     myfile << "process\t0\t1" << endl;
-    myfile << "rate\t"<<hSig->Integral()<<"\t"<<hBkg->Integral()<< endl;
+    if(chan == TString("A")){
+      myfile << "rate\t"<<SR->hSig->Integral()<<"\t"<<SR->hBkg->Integral()<< endl;
+    } else if (chan == TString("MM")){
+      myfile << "rate\t"<<CR->hSig->Integral()<<"\t"<<CR->hBkg->Integral()<< endl;
+    }
     myfile << "------------" << endl;
     
     for (auto& x : YieldErrors) {
       if(x.second.first == x.second.second )
-	myfile << x.first << "\tlnN\t" << x.second.first << "\t-" << endl;
+	myfile << x.first << "\tlnN\t" << x.second.first << "\t"<<x.second.first << endl;
       else
 	myfile << x.first << "\tlnN\t" << x.second.first << "/" << x.second.second << "\t-" << endl;
     }
+    if(boson == "MM"){
+      myfile << "------------" << endl;
+      myfile << "# free floating parameters, we do not need to declare them, but its a good idea to "<<endl;
+      for(int i = 0; i < SR->nBin; i++){
+	myfile << SR->getModelBinsSR(0)[i]->GetName()<<"\tflatParam "<<endl;
+	myfile << SR->getModelBinsSR(1)[i]->GetName()<<"\tflatParam "<<endl;
+      }
+    } else {
+      myfile << "StatTF_"<<chan<<"Background\tparam\t0\t1"<<endl;
+      myfile << "StatTF_"<<chan<<"Signal\tparam\t0\t1"<<endl;
+    }
     myfile.close();
   }
-
-  void createHistograms(){
-    TString bkgs[]={"Top+VV","DY","QCD","#gamma+jets"};
-    TString signal = "EWK #gammaJJ";
-    if(boson == "MM")
-      signal = "EWK ZJJ";
-    TDirectory * dir = (TDirectory*)((TFile::Open("plotter_"+chan+".root"))->Get(chan+boson+"_"+hist));
-    dir->ls();
-    
-    hBkg = (TH1F*)dir->Get(chan+boson+"_"+hist+"_"+bkgs[0]);
-    hBkg->SetNameTitle("Background","Background");
-    int nRebin =(int)((double)hBkg->GetXaxis()->GetNbins()/(double)nBin);
-    for(int i = 1; i < 4; i++){
-      TH1F * tmp = (TH1F*)dir->Get(chan+boson+"_"+hist+"_"+bkgs[i]);
-      hBkg->Add(tmp);
-    }
-    hBkg->Rebin(nRebin);
-    
-    hSig = (TH1F*)dir->Get(chan+boson+"_"+hist+"_"+signal);
-    hSig->SetNameTitle("Signal","Signal");
-    hSig->Rebin(nRebin);
-    
-    hData = (TH1F*)dir->Get(chan+boson+"_"+hist);
-    hData->SetNameTitle("Data","Data");
-    hData->Rebin(nRebin);
-    
-    TFile* fBkg = new TFile("Background_"+chan+boson+".root","recreate");
-    fBkg->cd();
-    hBkg->Write();
-    fBkg->Close();
-    
-    TFile* fSig = new TFile("Signal_"+chan+boson+".root","recreate");
-    fSig->cd();
-    hSig->Write();
-    fSig->Close();
-    
-    TFile* fData = new TFile("Data_"+chan+boson+".root","recreate");
-    fData->cd();
-    hData->Write();
-    fData->Close();
-  }
-
-  void creatTFHists(){
-    TString bkgs[]={"Top+VV","DY","QCD","#gamma+jets"};
-    TString signal = "EWK #gammaJJ";
-    if(boson == "MM")
-      signal = "EWK ZJJ";
-    TDirectory * dirMM = (TDirectory*)((TFile::Open("plotter_"+chan+".root"))->Get(chan+"MM_"+hist));
-    TDirectory * dirA  = (TDirectory*)((TFile::Open("plotter_"+chan+".root"))->Get(chan+"A_"+hist));
-
-    bkgTF = (TH1F*)dirA->Get(chan+"A_"+hist+"_#gamma+jets");
-    bkgTF->SetNameTitle("BackgroundTF","BackgroundTF");
-    TH1F * tmp = (TH1F*)dirMM->Get(chan+"MM_"+hist+"_DY");
-    bkgTF->Sumw2();
-    tmp->Sumw2();
-    int nRebin =(int)((double)bkgTF->GetXaxis()->GetNbins()/(double)nBin);
-    bkgTF->Rebin(nRebin);
-    tmp->Rebin(nRebin);
-    bkgTF->Divide(tmp);
-    
-    sigTF = (TH1F*)dirA->Get(chan+"A_"+hist+"_EWK #gammaJJ");
-    sigTF->SetNameTitle("SignalTF","SignalTF");
-    tmp = (TH1F*)dirMM->Get(chan+"MM_"+hist+"_EWK ZJJ");
-    sigTF->Sumw2();
-    tmp->Sumw2();
-    sigTF->Rebin(nRebin);
-    tmp->Rebin(nRebin);
-    sigTF->Divide(tmp);
-    
-    TFile* fTF = new TFile("TransferFactors_"+chan+".root","recreate");
-    fTF->cd();
-    sigTF->Write();
-    bkgTF->Write();
-    fTF->Close();    
-    delete tmp;
-  }
  private:
-  TString hist,chan,boson;
-  TH1F * hBkg, * hSig, * hData;
-  TH1F * sigTF, * bkgTF;
+  TString hist,chan;
+  VbfFitRegion * SR, *CR;
+  TF * wsTF;
   RooRealVar * var;
   RooWorkspace * ws;
-  int nBin;
+  std::vector<std::pair<TString,double> > bTFUnc, sTFUnc;
+
 };
 
 YieldsErr splitter(const std::string &s, char delim1 , char delim2){

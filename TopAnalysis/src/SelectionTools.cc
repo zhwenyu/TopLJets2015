@@ -14,7 +14,8 @@ SelectionTool::SelectionTool(TString dataset,bool debug,TH1 *triggerList, Analys
   isDoubleEGPD_(dataset.Contains("DoubleEG")), 
   isDoubleMuonPD_(dataset.Contains("DoubleMuon")), 
   isMuonEGPD_(dataset.Contains("MuonEG")),
-  isPhotonPD_(dataset.Contains("Photon") || dataset.Contains("EGamma"))
+  isPhotonPD_(dataset.Contains("Photon") || dataset.Contains("EGamma")),
+  isJetHTPD_(dataset.Contains("JetHT"))
 {
   if(triggerList!=0)
     for(int xbin=0; xbin<triggerList->GetNbinsX(); xbin++)
@@ -78,17 +79,19 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
 	  photons_=tightPhotons;
 	  leptons_=tightLeptons;
 	}
-      }else {
-	if(tightLeptons.size()==2)
-	  {
-	    int ch( abs(tightLeptons[0].id()*tightLeptons[1].id()) );
-	    float mll( (tightLeptons[0]+tightLeptons[1]).M() );
-	    if( ch==13*13 && fabs(mll-91)<15 && (tightLeptons[0].pt()>30 || tightLeptons[1].pt()>30)) chTag="MM";          
-	    leptons_=tightLeptons;
-	  }
-	else if(fakePhotons.size()>=1) {
+      } else {
+	cout<< "Number of fake photons: "<<fakePhotons.size()<<endl;
+	if(fakePhotons.size()>=1) {
 	  chTag="A";
 	  photons_=fakePhotons;
+	  leptons_=tightLeptons;
+	  cout<< "\tNumber of fake photons: "<<photons_.size()<<endl;
+	  cout<< "\tNumber of tight leptons: "<<leptons_.size()<<endl;
+	  cout<< "Channel Tag: "<<chTag<<endl;
+	} else 	if(tightLeptons.size()==2){
+	  int ch( abs(tightLeptons[0].id()*tightLeptons[1].id()) );
+	  float mll( (tightLeptons[0]+tightLeptons[1]).M() );
+	  if( ch==13*13 && fabs(mll-91)<15 && (tightLeptons[0].pt()>30 || tightLeptons[1].pt()>30)) chTag="MM";          
 	  leptons_=tightLeptons;
 	}
       }
@@ -166,11 +169,9 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
   if(chTag=="A")
     {
       if(!hasPhotonTrigger) chTag="";
-      //if((hasEETrigger || hasETrigger) && chTag == "A"){
-      //cout<< "----------------- This is EE in fact!" <<endl;
-      //chTag = "";
-      //}
-      if(ev.isData && !isPhotonPD_) chTag="";
+      if(ev.isData && isCR && !isPhotonPD_ && !isJetHTPD_) chTag = "";
+      if(ev.isData && !isCR && !isPhotonPD_ ) chTag = "";  
+      //if(ev.isData && !isPhotonPD_) chTag="";    
     }
       
   if(debug_) cout << "[flagFinalState] chTag=" << chTag << endl
