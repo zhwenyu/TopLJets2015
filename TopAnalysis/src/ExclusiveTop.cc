@@ -14,6 +14,7 @@
 #include <set>
 #include <iostream>
 #include <algorithm>
+#include <string>
 
 #include "TMath.h"
 #include "TopQuarkAnalysis/TopTools/interface/MEzCalculator.h"
@@ -44,11 +45,11 @@ void RunExclusiveTop(TString filename,
   proton_reco.feedDispersions(Form("%s/src/TopLJets2015/CTPPSAnalysisTools/data/2017/dispersions.txt", CMSSW_BASE));
 
   ctpps::AlignmentsFactory ctpps_aligns;
-  ctpps_aligns.feedAlignments(Form("%s/src/TopLJets/CTPPSAnalysisTools/data/2017/alignments_30jan2017.txt", CMSSW_BASE));
+  ctpps_aligns.feedAlignments(Form("%s/src/TopLJets2015/CTPPSAnalysisTools/data/2017/alignments_30jan2017.txt", CMSSW_BASE));
 
   ctpps::LHCConditionsFactory lhc_conds;
-  lhc_conds.feedConditions(Form("%s/src/TopLJets/CTPPSAnalysisTools/data/2017/xangle_tillTS2.csv", CMSSW_BASE));
-  lhc_conds.feedConditions(Form("%s/src/TopLJets/CTPPSAnalysisTools/data/2017/xangle_afterTS2.csv", CMSSW_BASE));
+  lhc_conds.feedConditions(Form("%s/src/TopLJets2015/CTPPSAnalysisTools/data/2017/xangle_tillTS2.csv", CMSSW_BASE));
+  lhc_conds.feedConditions(Form("%s/src/TopLJets2015/CTPPSAnalysisTools/data/2017/xangle_afterTS2.csv", CMSSW_BASE));
 
   bool isTTbar( filename.Contains("_TTJets") or (normH and TString(normH->GetTitle()).Contains("_TTJets")));
   
@@ -89,13 +90,14 @@ void RunExclusiveTop(TString filename,
   HistTool ht;
   ht.setNsyst(0);
   ht.addHist("puwgtctr",     new TH1F("puwgtctr",    ";Weight sums;Events",2,0,2));
-  ht.addHist("nvtx",         new TH1F("nvtx",        ";Vertex multiplicity;Events",55,-0.5,49.5));
+  ht.addHist("nvtx",         new TH1F("nvtx",        ";Vertex multiplicity;Events",50,-0.5,49.5));
   ht.addHist("njets",        new TH1F("njets",       ";Jet multiplicity;Events",15,-0.5,14.5));
   ht.addHist("nbjets",       new TH1F("nbjets",      ";b jet multiplicity;Events",10,-0.5,9.5));
-  ht.addHist("ht",           new TH1F("ht",          ";H_{T} [GeV];Events",50,0,250));
-  ht.addHist("mttbar_cen",   new TH1F("mttbar_cen",  ";M_{ttbar} [GeV];Events",50,300,500));
+  ht.addHist("ht",           new TH1F("ht",          ";H_{T} [GeV];Events",200,0,2000));
+  ht.addHist("mttbar_cen",   new TH1F("mttbar_cen",  ";M_{ttbar} [GeV];Events",1000,0,10000));
 
   std::cout << "init done" << std::endl;
+  if (debug){std::cout<<"\n DEBUG MODE"<<std::endl;}
 
   ///////////////////////
   // LOOP OVER EVENTS //
@@ -109,6 +111,10 @@ void RunExclusiveTop(TString filename,
       t->GetEntry(iev);
       if(iev%10==0) printf ("\r [%3.0f%%] done", 100.*(float)iev/(float)nentries);
 
+      // No LHC conditions available for these run/lumi combinations, see https://raw.githubusercontent.com/forthommel/CTPPSAnalysisTools/83779a55503dcc377fd994719d4aa42b6f9654e3/data/2017/xangle_afterTS2.csv
+      if (ev.run==305178 && ev.lumi==75) continue;
+      if (ev.run==306459 && ev.lumi==2273) continue;
+	
 //      int fill_number = run_to_fill.getFillNumber(ev.run);
 //      proton_reco.setAlignmentConstants(pots_align.getAlignmentConstants(fill_number));
       
@@ -184,23 +190,36 @@ void RunExclusiveTop(TString filename,
       }
 
       if (ev.isData) {
-        const edm::EventID ev_id( ev.run, ev.lumi, ev.event );
-        // LHC information retrieval from LUT
-        const ctpps::conditions_t lhc_cond = lhc_conds.get( ev_id );
-        const double xangle = lhc_cond.crossing_angle;
-        for (int ift=0; ift<ev.nfwdtrk; ift++) {
-          // only look at strips!
-          const unsigned short pot_raw_id = 100*ev.fwdtrk_arm[ift]+/*10*ev.fwdtrk_station[ift]+*/ev.fwdtrk_pot[ift];
-          const ctpps::alignment_t align = ctpps_aligns.get( ev_id, pot_raw_id );
-          double xi, xi_error;
-          proton_reco.reconstruct(xangle, pot_raw_id, ev.fwdtrk_x[ift]/10.+align.x_align, xi, xi_error);
-        }
+
+	// No Roman Pot alignment parameters available after TS2, see https://github.com/forthommel/CTPPSAnalysisTools/blob/83779a55503dcc377fd994719d4aa42b6f9654e3/data/2017/alignments_30jan2017.txt
+	if (ev.run <= 302695){
+
+
+		const edm::EventID ev_id( ev.run, ev.lumi, ev.event );
+		// LHC information retrieval from LUT
+		const ctpps::conditions_t lhc_cond = lhc_conds.get( ev_id );
+		const double xangle = lhc_cond.crossing_angle;
+		for (int ift=0; ift<ev.nfwdtrk; ift++) {
+		  // Pot ID consist of arm number, station number, pot number
+		  const unsigned short pot_raw_id = 100*ev.fwdtrk_arm[ift]+10*ev.fwdtrk_station[ift]+ev.fwdtrk_pot[ift];
+
+		  // No alignment parameters or dispersion values available for Pot numbers different than 003,103,023 or 123, see https://github.com/forthommel/CTPPSAnalysisTools/blob/83779a55503dcc377fd994719d4aa42b6f9654e3/data/2017/alignments_30jan2017.txt 
+		  if (pot_raw_id!=3 && pot_raw_id!=23 && pot_raw_id!=103 && pot_raw_id!=123) continue;
+
+		  const ctpps::alignment_t align = ctpps_aligns.get( ev_id, pot_raw_id );
+		  double xi, xi_error;
+
+		  // No dispersion values available for xangles different than 120, 130 or 140 murad. See https://github.com/forthommel/CTPPSAnalysisTools/blob/83779a55503dcc377fd994719d4aa42b6f9654e3/data/2017/dispersions.txt
+		  if (xangle!=120 && xangle!=130 && xangle!=140) continue; 
+		  proton_reco.reconstruct(xangle, pot_raw_id, ev.fwdtrk_x[ift]*100+align.x_align, xi, xi_error);
+		}
+	}
       }
 
       //control histograms
       ht.fill("nvtx",     ev.nvtx,        plotwgts);
-      if(passJets)   ht.fill("nbjets", bJets.size(), plotwgts);
-      if(passBJets)  ht.fill("njets",  jets.size(),  plotwgts);
+      if(passBJets) ht.fill("nbjets", bJets.size(), plotwgts);
+      if(passJets)  ht.fill("njets",  jets.size(),  plotwgts);
       if(bJets.size()>=2 && lightJets.size()>=2)
         {
           //visible system
