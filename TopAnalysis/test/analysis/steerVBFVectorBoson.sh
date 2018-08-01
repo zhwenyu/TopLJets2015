@@ -60,7 +60,7 @@ case $WHAT in
 	extraOpts="" #"--mvatree"
 	python scripts/runLocalAnalysis.py \
 	    -i ${eosdir} \
-            -o ${outdir}/${githash}/raw \
+            -o ${outdir}/${githash}/${EXTRA} \
             --farmappendix ${githash} \
             -q ${queue} --genWeights genweights_${githash}.root \
             --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --only Data13TeV --runSysts ${extraOpts};

@@ -161,7 +161,7 @@ class WorkspaceProvider{
     CR->setPH_norm(new RooAddition (tmpName+"_PH_"+CR->chan+CR->boson+"_norm","Total Number of "+tmpName+" events in "+CR->boson+" region",*argsMM),id);
   }
 
-  void import(){
+  void import(bool doSignalPH = false){
 
     // Signal region
     ws->import(*SR->getDataDH(var));
@@ -169,9 +169,11 @@ class WorkspaceProvider{
     ws->import(*SR->getSigDH(var));
     ws->import(*SR->getSigHistNorm());
     ws->import(*SR->getBkgHistNorm());
-    ws->import(*SR->sigPH);
+    if(doSignalPH){
+      ws->import(*SR->sigPH);
+      ws->import(*SR->sigPH_norm);
+    }
     ws->import(*SR->bkgPH);
-    ws->import(*SR->sigPH_norm);
     ws->import(*SR->bkgPH_norm);
 
 
@@ -182,25 +184,32 @@ class WorkspaceProvider{
     ws->import(*CR->getSigDH(var));
     ws->import(*CR->getSigHistNorm());
     ws->import(*CR->getBkgHistNorm());
-    ws->import(*CR->sigPH);
+    if(doSignalPH){
+      ws->import(*CR->sigPH);
+      ws->import(*CR->sigPH_norm);
+    }
     ws->import(*CR->bkgPH);
-    ws->import(*CR->sigPH_norm);
     ws->import(*CR->bkgPH_norm);
 
     
     ws->import(*wsTF->getTFormula(0));
     ws->import(*wsTF->getTFormula(1));
 
-    TFile * fOut = new TFile("Channel_"+CR->chan+".root","recreate");
+    TString opt = "SigPH";
+    if(!doSignalPH) opt = "NoSigPH";
+    TFile * fOut = new TFile("Channel_"+CR->chan+opt+".root","recreate");
     fOut->cd();
     ws->Write();
     fOut->Save();
     fOut->Close();
   }
 
-  void makeCard(YieldsErr YieldErrors, TString boson, double sigEff=1, double bkgEff=1){
+  void makeCard(YieldsErr YieldErrors, TString boson, bool doSignalPH = false, double sigEff=1, double bkgEff=1){
     // No shape uncertainty yet!
-    TString outname = chan+"_"+boson+".txt";
+    TString opt = "SigPH";
+    if(!doSignalPH) opt= "NoSigPH";
+
+    TString outname = chan+"_"+boson+"_"+opt+".txt";
     ofstream myfile;
     myfile.setf(ios_base::fixed);
     myfile.precision(4);
@@ -217,20 +226,26 @@ class WorkspaceProvider{
 
     myfile << "\n------------" << endl;
     if(boson == TString("A")){
-      myfile << "shapes\tSignal\t"  <<binName<<"\tChannel_"<<chan<<".root ws"<<chan<<":"<<SR->sigPH->GetName()   << endl; 
-      myfile << "shapes\tBkg\t"     <<binName<<"\tChannel_"<<chan<<".root ws"<<chan<<":"<<SR->bkgPH->GetName()   << endl;
+      if(doSignalPH)
+	myfile << "shapes\tSignal"<<boson<<"\t"  <<binName<<"\tChannel_"<<chan<<opt<<".root ws"<<chan<<":"<<SR->sigPH->GetName()   << endl; 
+      else
+	myfile << "shapes\tSignal"<<boson<<"\t"  <<binName<<"\tChannel_"<<chan<<opt<<".root ws"<<chan<<":"<<SR->getSigDH(var)->GetName() << endl; 
+      myfile << "shapes\tBkg"<<boson<<"\t"     <<binName<<"\tChannel_"<<chan<<opt<<".root ws"<<chan<<":"<<SR->bkgPH->GetName()   << endl;
     } else if (boson == TString("MM")){
-      myfile << "shapes\tSignal\t"  <<binName<<"\tChannel_"<<chan<<".root ws"<<chan<<":"<<CR->sigPH->GetName()   << endl; 
-      myfile << "shapes\tBkg\t"     <<binName<<"\tChannel_"<<chan<<".root ws"<<chan<<":"<<CR->bkgPH->GetName()   << endl;
+      if(doSignalPH)
+	myfile << "shapes\tSignal"<<boson<<"\t"  <<binName<<"\tChannel_"<<chan<<opt<<".root ws"<<chan<<":"<<CR->sigPH->GetName()   << endl; 
+      else
+	myfile << "shapes\tSignal"<<boson<<"\t"  <<binName<<"\tChannel_"<<chan<<opt<<".root ws"<<chan<<":"<<CR->getSigDH(var)->GetName()   << endl; 
+      myfile << "shapes\tBkg"<<boson<<"\t"     <<binName<<"\tChannel_"<<chan<<opt<<".root ws"<<chan<<":"<<CR->bkgPH->GetName()   << endl;
     }
-    myfile << "shapes\tdata_obs\t"<<binName<<"\tChannel_"<<chan<<".root ws"<<chan<<":"<<"Data"<<chan<<boson << endl;
+    myfile << "shapes\tdata_obs\t"<<binName<<"\tChannel_"<<chan<<opt<<".root ws"<<chan<<":"<<"Data"<<chan<<boson << endl;
     myfile << "------------" << endl;
     myfile << "bin\t"<<binName << endl;
     myfile << "observation\t-1.0" << endl;
     myfile << "------------" << endl;
 
     myfile << "bin\t"<<binName<<"\t"<<binName<< endl;
-    myfile << "process\tSignal\tBkg" << endl;
+    myfile << "process\tSignal"<<boson<<"\tBkg"<<boson << endl;
     myfile << "process\t0\t1" << endl;
     if(boson == TString("A")){
       myfile << "rate\t"<<SR->hSig->Integral()<<"\t"<<SR->hBkg->Integral()<< endl;
@@ -249,12 +264,14 @@ class WorkspaceProvider{
       myfile << "------------" << endl;
       myfile << "# free floating parameters, we do not need to declare them, but its a good idea to "<<endl;
       for(int i = 0; i < SR->nBin; i++){
-	myfile << SR->getModelBinsSR(0)[i]->GetName()<<"\tflatParam "<<endl;
+	if(doSignalPH)
+	  myfile << SR->getModelBinsSR(0)[i]->GetName()<<"\tflatParam "<<endl;
 	myfile << SR->getModelBinsSR(1)[i]->GetName()<<"\tflatParam "<<endl;
       }
     } else {
       myfile << "StatTF_"<<chan<<"Background\tparam\t0\t1"<<endl;
-      myfile << "StatTF_"<<chan<<"Signal\tparam\t0\t1"<<endl;
+      if(doSignalPH)
+	myfile << "StatTF_"<<chan<<"Signal\tparam\t0\t1"<<endl;
     }
     myfile.close();
   }

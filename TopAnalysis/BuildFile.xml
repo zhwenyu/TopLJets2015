@@ -9,7 +9,7 @@
 <use name="TopQuarkAnalysis/TopTools"/>
 <use name="JetMETCorrections/Modules"/>
 <use name="PhysicsTools/CandUtils"/>
-<use name="PHiggsAnalysis/CombinedLimit"/>
+<use name="HiggsAnalysis/CombinedLimit"/>
 <use name="rivet"/>
 <use name="fastjet"/>
 <use name="fastjet-contrib"/>

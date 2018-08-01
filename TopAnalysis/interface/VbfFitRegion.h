@@ -19,7 +19,7 @@
 
 using namespace std;
 using namespace RooFit;
-
+const float nMinInBin = 0.1;
 ////////////////////////////////////
 // Acontainer for histograms, etc //
 // of SR or CR                    //
@@ -58,7 +58,11 @@ class VbfFitRegion{
        if (tmp != NULL)
 	 hBkg->Add(tmp); 
      } 
-     hBkg->Rebin(nRebin);     
+     hBkg->Rebin(nRebin);
+     for(int i = 0; i<nRebin; i++){
+       if(hBkg->GetBinContent(i) == 0)
+	 hBkg->SetBinContent(i,nMinInBin);
+     }
    } 
 
    void setSig(){ 
@@ -70,6 +74,10 @@ class VbfFitRegion{
      hSig->SetNameTitle("Signal_"+chan+boson,"Signal in "+chan+boson); 
      int nRebin =(int)((double)hSig->GetXaxis()->GetNbins()/(double)nBin); 
      hSig->Rebin(nRebin);     
+     for(int i = 0; i<nRebin; i++){
+       if(hSig->GetBinContent(i) == 0)
+	 hSig->SetBinContent(i,nMinInBin);
+     }
    } 
 
    void setData(TString boson = "A"){ 

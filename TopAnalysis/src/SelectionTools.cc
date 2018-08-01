@@ -45,7 +45,9 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
   //decide the channel based on the lepton multiplicity and set lepton collections
   std::vector<Particle> tightLeptons( selLeptons(preselLeptons,TIGHT) );
   std::vector<Particle> tightPhotons( selPhotons(preselPhotons,offlinePhoton_, tightLeptons) );
-  std::vector<Particle> fakePhotons( selPhotons(preselPhotons,CONTROL, tightLeptons) );
+  std::vector<Particle> inclusivePhotons( selPhotons(preselPhotons,CONTROL, tightLeptons) );
+  std::vector<Particle> tmpPhotons( selPhotons(preselPhotons,QCDTEMP, tightLeptons) );
+
   TString chTag("");
   if(anType_==TOP)
     {
@@ -76,16 +78,18 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
 	  }
 	else if(tightPhotons.size()>=1) {
 	  chTag="A";
-	  photons_=tightPhotons;
-	  leptons_=tightLeptons;
+	  photons_   =tightPhotons;
+	  leptons_   =tightLeptons;
+	  tempPhotons=tmpPhotons;
 	}
       } else {
-	cout<< "Number of fake photons: "<<fakePhotons.size()<<endl;
-	if(fakePhotons.size()>=1) {
+	cout<< "Number of very loose photons: "<<inclusivePhotons.size()<<endl;
+	if(inclusivePhotons.size()>=1) {
 	  chTag="A";
-	  photons_=fakePhotons;
-	  leptons_=tightLeptons;
-	  cout<< "\tNumber of fake photons: "<<photons_.size()<<endl;
+	  photons_   =inclusivePhotons;
+	  leptons_   =tightLeptons;
+	  tempPhotons=tmpPhotons;
+	  cout<< "\tNumber of very loos photons: "<<photons_.size()<<endl;
 	  cout<< "\tNumber of tight leptons: "<<leptons_.size()<<endl;
 	  cout<< "Channel Tag: "<<chTag<<endl;
 	} else 	if(tightLeptons.size()==2){
@@ -297,9 +301,10 @@ std::vector<Particle> SelectionTool::flaggedPhotons(MiniEvent_t &ev)
     if( pt>50 && eta<2.4)
       {
         if( (pid&0x7f)==0x7f )            qualityFlagsWord |= (0x1 << LOOSE);
-        if( ((pid>>10)&0x7f)==0x7f )      qualityFlagsWord |= (0x1 << MEDIUM);
-        if( ((pid>>10)&0x7f)==0x7f )      qualityFlagsWord |= (0x1 << TIGHT);
+        if( ((pid>>10)&0x7f)==0x7f   )    qualityFlagsWord |= (0x1 << MEDIUM);
+        if( ((pid>>10)&0x7f)==0x7f   )    qualityFlagsWord |= (0x1 << TIGHT);
 	if( isInclusivePhoton(ev,ig) )    qualityFlagsWord |= (0x1 << CONTROL);
+	if( isQCDTemplate(ev,ig)     )    qualityFlagsWord |= (0x1 << QCDTEMP);
       }
     if(qualityFlagsWord==0) continue;
 

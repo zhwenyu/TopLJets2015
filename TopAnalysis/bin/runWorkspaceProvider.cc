@@ -9,6 +9,7 @@ int main( int argc, char** argv )
   double sigEff =1;
   double bkgEff =1;
   int nBin = 4;
+  bool doSignalPH = false;
   for (int i=1; i<argc; i++) {
     TString input(argv[i]);
     if ( input=="--Chan"){
@@ -39,6 +40,9 @@ int main( int argc, char** argv )
       i++;
       nBin = (int)atof(TString(argv[i]));
       continue;
+    } else if (input=="--doSignalPH"){
+      doSignalPH = true;
+      continue;
     }
   }
 
@@ -47,8 +51,8 @@ int main( int argc, char** argv )
   VbfFitRegion * CR = new VbfFitRegion(channel, TString("MM"), histname, nBin, false);
   
   WorkspaceProvider wsp(histname,SR, CR);
-  wsp.import();
-  wsp.makeCard(YE, TString("A"), sigEff, bkgEff);
-  wsp.makeCard(YE, TString("MM"), sigEff, bkgEff);
+  wsp.import(doSignalPH);
+  wsp.makeCard(YE, TString("A"), doSignalPH, sigEff, bkgEff);
+  wsp.makeCard(YE, TString("MM"), doSignalPH, sigEff, bkgEff);
   return 0;
 }
