@@ -151,7 +151,7 @@ private:
         float leadj_gawidth,leadj_c1_05,subleadj_gawidth,subleadj_c1_05, subleadj_pt;
         float vbfmva,vbffisher;
         bool doBlindAnalysis;
-
+	std::vector<Particle> tmpPhotons;
 
 	/////////////////////////////////////
 	// Categorie for VBF:              //

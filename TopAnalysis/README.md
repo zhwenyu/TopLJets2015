@@ -147,3 +147,11 @@ To plot the output of the local analysis you can run the following:
 ```
 python scripts/plotter.py -i analysis/   -j data/era2017/samples.json  -l 12870
 ```
+
+# Preparation of the data cards and workspaces
+
+This part currently works only for the VBF analysis. It assumes that there are root files in the working directory which includes the plots created in the previous section. For the example below, the root file is called plotter_LowMJJ.root. Running the script below will make two data cards and a single corresponding workspace for signal region (here gamma+jets) and control region (here Z+jets) of the "LowMJJ" the category:
+```
+python scripts/makeWorkspace.py --Chan LowMJJ --nBin 5 --doSignalPH
+```
+The input histogram will be rebinned to have five bins. If you remove "--doSignalPH", the signal process in the signal and control region will NOT be connected via the transfer function.

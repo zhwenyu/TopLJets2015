@@ -5,7 +5,7 @@ import sys
 import os
 import json
 
-WORKAREA='grid_new'
+WORKAREA='grid'
 
 def getListOfFiles(inputPD,runSel):
       das_query_string = 'das_client.py --query="file dataset=%s  run in [%s] | grep file.name" --limit=0' % (inputPD,runSel)
@@ -18,7 +18,6 @@ def getListOfFiles(inputPD,runSel):
 
 def main():
       job=sys.argv[1]
-      
       #check if any lumi section is missing
       jsonF='%s/results/notFinishedLumis.json'%job
       runSel=[]

@@ -66,7 +66,6 @@
 #include "DataFormats/EgammaCandidates/interface/GsfElectron.h"
 #include "FWCore/Framework/interface/Run.h"
 //#include "TopQuarkAnalysis/BFragmentationAnalyzer/interface/BFragmentationAnalyzerUtils.h"
-
 #include "TLorentzVector.h"
 #include "TH1.h"
 #include "TH1F.h"

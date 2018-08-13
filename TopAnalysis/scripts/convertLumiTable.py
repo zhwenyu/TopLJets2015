@@ -89,7 +89,7 @@ def main():
     pool.map(getLumiTable, task_list)
 
 
-    os.system('hadd -f %s/lumisec.root %s/lumisec_*.root'%(opt.out,opt.out))
+    os.system('hadd -f %s/lumisec_JetHT.root %s/lumisec_*.root'%(opt.out,opt.out))
     os.system('rm %s/lumisec_*.root'%opt.out)
 
 
