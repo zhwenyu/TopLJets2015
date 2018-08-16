@@ -18,7 +18,7 @@ lumi=41367
 lumiUnc=0.025
 outdir=${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/ExclusiveTop
 wwwdir=~/www/ExclusiveTop
-inputfileTESTSEL=/store/cmst3/group/top/RunIIFall17/fbc74ae/Data13TeV_SingleMuon_2017D/MergedMiniEvents_2_ext0.root
+inputfileTESTSEL=/store/cmst3/group/top/RunIIFall17/fbc74ae/MC13TeV_TTJets/MergedMiniEvents_0_ext0.root
 
 RED='\e[31m'
 NC='\e[0m'
@@ -26,13 +26,13 @@ case $WHAT in
 
     TESTSEL )
 	python scripts/runLocalAnalysis.py \
-            -i ${inputfileTESTSEL} \
+            -i ${inputfileTESTSEL} --tag MC13TeV_TTJets --genWeights genweights_${githash}.root \
             -o TESTSEL.root \
             --njobs 1 -q local \
             --era era2017 -m ExclusiveTop::RunExclusiveTop --ch 0 --runSysts;
         ;;
     SEL )
-	python scripts/runLocalAnalysis.py -i ${eosdir} \
+	python scripts/runLocalAnalysis.py -i ${eosdir} --genWeights genweights_${githash}.root \
             --only data/era2017/top_samples.json --exactonly \
             -o ${outdir} \
             -q ${queue} \
