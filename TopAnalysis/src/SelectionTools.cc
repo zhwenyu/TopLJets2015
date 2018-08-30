@@ -37,9 +37,12 @@ bool SelectionTool::passSingleLeptonTrigger(MiniEvent_t &ev) {
   bool hasMTrigger(  //hasTriggerBit("HLT_IsoMu24_2p1_v",                                        ev.triggerBits) || 
 		     hasTriggerBit("HLT_IsoMu27_v",                                            ev.triggerBits) );
 
-  if(hasETrigger && !hasMTrigger) { if(ev.isData && !isSingleElectronPD_) return false; }
-  if(!hasETrigger && hasMTrigger) { if(ev.isData && !isSingleMuonPD_)     return false; }
-  if(hasETrigger && hasMTrigger)  { if(ev.isData && !isSingleMuonPD_)     return false; }
+  if(!hasETrigger && !hasMTrigger) return false;
+  if(ev.isData) {
+	if(hasETrigger && !hasMTrigger) { if(!isSingleElectronPD_) return false; }
+ 	if(!hasETrigger && hasMTrigger) { if(!isSingleMuonPD_)     return false; }
+  	if(hasETrigger && hasMTrigger)  { if(!isSingleMuonPD_)     return false; }
+  }
   return true;
 }
 
