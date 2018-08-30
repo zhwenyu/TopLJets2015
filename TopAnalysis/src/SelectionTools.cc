@@ -28,6 +28,21 @@ SelectionTool::SelectionTool(TString dataset,bool debug,TH1 *triggerList, Analys
 // RECO LEVEL SELECTORS
 //
 
+//
+bool SelectionTool::passSingleLeptonTrigger(MiniEvent_t &ev) {
+  //check if triggers have fired and are consistent with the offline selection
+  bool hasETrigger(  hasTriggerBit("HLT_Ele35_eta2p1_WPTight_Gsf_v",           ev.triggerBits) ||
+                     hasTriggerBit("HLT_Ele28_eta2p1_WPTight_Gsf_HT150_v",     ev.triggerBits) ||
+                     hasTriggerBit("HLT_Ele30_eta2p1_WPTight_Gsf_CentralPFJet35_EleCleaned_v",     ev.triggerBits) );
+  bool hasMTrigger(  //hasTriggerBit("HLT_IsoMu24_2p1_v",                                        ev.triggerBits) || 
+		     hasTriggerBit("HLT_IsoMu27_v",                                            ev.triggerBits) );
+
+  if(hasETrigger && !hasMTrigger) { if(!isSingleElectronPD_) return false; }
+  if(!hasETrigger && hasMTrigger) { if(!isSingleMuonPD_) return false; }
+  if(hasETrigger && hasMTrigger)  { if(!isSingleMuonPD_) return false; }
+  return true;
+}
+
 
 //
 TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> preselLeptons,std::vector<Particle> preselPhotons, bool isCR) {
