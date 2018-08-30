@@ -15,11 +15,8 @@ fi
 queue=workday
 githash=fbc74ae
 eosdir=/store/cmst3/group/top/RunIIFall17/${githash}
-githash2018=4ad3a45
-eosdir2018=/store/cmst3/group/top/RunIISpring18/${githash2018}
 fulllumi=41367
 vbflumi=7661
-fulllumi2018=5300
 lumiUnc=0.025
 outdir=${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBFVectorBoson
 wwwdir=~/www/VBFVectorBoson
@@ -66,8 +63,13 @@ case $WHAT in
         #extraOpts=" --mvatree"
 
     SEL2018 )
-	python scripts/runLocalAnalysis.py -i ${eosdir2018} \
-            -o ${outdir}/${githash2018}/raw2018 \
+	python scripts/runLocalAnalysis.py -i /store/cmst3/group/top/RunIISpring18/f3174df\
+            -o ${outdir}/2018/raw \
+            -q ${queue} \
+            --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts;
+
+	python scripts/runLocalAnalysis.py -i /store/cmst3/group/top/RunIISpring18/hem1516_failure\
+            -o ${outdir}/2018/hem1516_failure \
             -q ${queue} \
             --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts;
 	;;
@@ -80,12 +82,18 @@ case $WHAT in
         ;;
 
     MERGE )
-        gh=${githash}
-        if [[ "${EXTRA}" = *"2018"* ]]; then
-            gh=${githash2018}
-        fi
-	./scripts/mergeOutputs.py ${outdir}/${gh}/raw/${EXTRA};
+	./scripts/mergeOutputs.py ${outdir}/${EXTRA};
 	;;
+
+    PLOT2018)
+         commonOpts="-i test/analysis/VBFVectorBoson/2018/hem1516_failure/ --puNormSF puwgtctr -l 1.0"
+         python scripts/plotter.py ${commonOpts} -j test/analysis/VBFVectorBoson/2018/hem1516_failure/samples.json --only V1J;
+         fdir=${wwwdir}/hem1516_failure;
+	 mkdir -p ${fdir}
+	 cp test/analysis/VBFVectorBoson/2018/hem1516_failure/plots/*.{png,pdf,dat} ${fdir};
+	 cp test/index.php ${fdir};
+         echo "Check plots in ${fdir}"
+        ;;
 
     PLOT )
         json=data/era2017/vbf_samples.json;

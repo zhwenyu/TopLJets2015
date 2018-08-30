@@ -297,128 +297,135 @@ void MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
   //edm::Handle<edm::ValueMap<float> > petersonFrag;
   //iEvent.getByToken(petersonFragToken_,petersonFrag);
   int ngjets(0),ngbjets(0);
-  for(auto genJet=genJets->begin(); genJet!=genJets->end(); ++genJet)
-    {
-    
-      edm::Ref<std::vector<reco::GenJet> > genJetRef(genJets,genJet-genJets->begin());
+  if(genJets.isValid()){
+    for(auto genJet=genJets->begin(); genJet!=genJets->end(); ++genJet)
+      {
+        edm::Ref<std::vector<reco::GenJet> > genJetRef(genJets,genJet-genJets->begin());
 
-
-      //map the gen particles which are clustered in this jet
-//      JetFragInfo_t jinfo=analyzeJet(*genJet);
-
-      std::vector< const reco::Candidate * > jconst=genJet->getJetConstituentsQuick();
-      for(size_t ijc=0; ijc <jconst.size(); ijc++) jetConstsMap[ jconst[ijc] ] = ev_.ng;
-
-//      ev_.g_tagCtrs[ev_.ng]       = (jinfo.nbtags&0xf) | ((jinfo.nctags&0xf)<<4) | ((jinfo.ntautags&0xf)<<8);
-//      ev_.g_xb[ev_.ng]            = jinfo.xb;
-//      ev_.g_bid[ev_.ng]           = jinfo.leadTagId;
-//      ev_.g_isSemiLepBhad[ev_.ng] = jinfo.hasSemiLepDecay;
-      //cout << "xb=" << jinfo.xb << " petersonFrag=" << (*petersonFrag)[genJetRef] << endl;
-      ev_.g_id[ev_.ng]   = genJet->pdgId();
-      ev_.g_pt[ev_.ng]   = genJet->pt();
-      ev_.g_eta[ev_.ng]  = genJet->eta();
-      ev_.g_phi[ev_.ng]  = genJet->phi();
-      ev_.g_m[ev_.ng]    = genJet->mass();       
-      ev_.ng++;
-      
-      //gen level selection
-      if(genJet->pt()>25 && fabs(genJet->eta())<2.5)
-	{
-	  ngjets++;	
-	  if(abs(genJet->pdgId())==5) ngbjets++;
-	}
-    }
+        //map the gen particles which are clustered in this jet
+        //      JetFragInfo_t jinfo=analyzeJet(*genJet);
+        
+        std::vector< const reco::Candidate * > jconst=genJet->getJetConstituentsQuick();
+        for(size_t ijc=0; ijc <jconst.size(); ijc++) jetConstsMap[ jconst[ijc] ] = ev_.ng;
+        
+        //      ev_.g_tagCtrs[ev_.ng]       = (jinfo.nbtags&0xf) | ((jinfo.nctags&0xf)<<4) | ((jinfo.ntautags&0xf)<<8);
+        //      ev_.g_xb[ev_.ng]            = jinfo.xb;
+        //      ev_.g_bid[ev_.ng]           = jinfo.leadTagId;
+        //      ev_.g_isSemiLepBhad[ev_.ng] = jinfo.hasSemiLepDecay;
+        //cout << "xb=" << jinfo.xb << " petersonFrag=" << (*petersonFrag)[genJetRef] << endl;
+        ev_.g_id[ev_.ng]   = genJet->pdgId();
+        ev_.g_pt[ev_.ng]   = genJet->pt();
+        ev_.g_eta[ev_.ng]  = genJet->eta();
+        ev_.g_phi[ev_.ng]  = genJet->phi();
+        ev_.g_m[ev_.ng]    = genJet->mass();       
+        ev_.ng++;
+        
+        //gen level selection
+        if(genJet->pt()>25 && fabs(genJet->eta())<2.5)
+          {
+            ngjets++;	
+            if(abs(genJet->pdgId())==5) ngbjets++;
+          }
+      }
+  }
 
   //leptons
   edm::Handle<std::vector<reco::GenJet> > dressedLeptons;  
   iEvent.getByToken(genLeptonsToken_,dressedLeptons);
-  for(auto genLep = dressedLeptons->begin();  genLep != dressedLeptons->end(); ++genLep)
-    {
-      //map the gen particles which are clustered in this lepton
-      std::vector< const reco::Candidate * > jconst=genLep->getJetConstituentsQuick();
-      for(size_t ijc=0; ijc <jconst.size(); ijc++) jetConstsMap[ jconst[ijc] ] = ev_.ng;
-      
-      ev_.g_pt[ev_.ng]   = genLep->pt();
-      ev_.g_id[ev_.ng]   = genLep->pdgId();
-      ev_.g_eta[ev_.ng]  = genLep->eta();
-      ev_.g_phi[ev_.ng]  = genLep->phi();
-      ev_.g_m[ev_.ng]    = genLep->mass();       
-      ev_.ng++;
-
-      //gen level selection
-      if(genLep->pt()>20 && fabs(genLep->eta())<2.5) ngleptons_++;
-    }
-
+  if(dressedLeptons.isValid()) {
+    for(auto genLep = dressedLeptons->begin();  genLep != dressedLeptons->end(); ++genLep)
+      {
+        //map the gen particles which are clustered in this lepton
+        std::vector< const reco::Candidate * > jconst=genLep->getJetConstituentsQuick();
+        for(size_t ijc=0; ijc <jconst.size(); ijc++) jetConstsMap[ jconst[ijc] ] = ev_.ng;
+        
+        ev_.g_pt[ev_.ng]   = genLep->pt();
+        ev_.g_id[ev_.ng]   = genLep->pdgId();
+        ev_.g_eta[ev_.ng]  = genLep->eta();
+        ev_.g_phi[ev_.ng]  = genLep->phi();
+        ev_.g_m[ev_.ng]    = genLep->mass();       
+        ev_.ng++;
+        
+        //gen level selection
+        if(genLep->pt()>20 && fabs(genLep->eta())<2.5) ngleptons_++;
+      }
+  }
+  
   edm::Handle<std::vector<reco::GenParticle> > genPhotons;
   iEvent.getByToken(genPhotonsToken_,genPhotons);
-  for(auto genPhoton = genPhotons->begin();  genPhoton != genPhotons->end(); ++genPhoton)
-    {
-      if(genPhoton->pt()<15) continue;
-      if(fabs(genPhoton->eta())>2.5) continue;
-      
-      ev_.g_pt[ev_.ng]   = genPhoton->pt();
-      ev_.g_id[ev_.ng]   = genPhoton->pdgId();
-      ev_.g_eta[ev_.ng]  = genPhoton->eta();
-      ev_.g_phi[ev_.ng]  = genPhoton->phi();
-      ev_.g_m[ev_.ng]    = genPhoton->mass();       
-      ev_.ng++;
-
-      //gen level selection
-      if(genPhoton->pt()>20 && fabs(genPhoton->eta())<2.5) ngphotons_++;
-    }
+  if(genPhotons.isValid()){
+    for(auto genPhoton = genPhotons->begin();  genPhoton != genPhotons->end(); ++genPhoton)
+      {
+        if(genPhoton->pt()<15) continue;
+        if(fabs(genPhoton->eta())>2.5) continue;
+        
+        ev_.g_pt[ev_.ng]   = genPhoton->pt();
+        ev_.g_id[ev_.ng]   = genPhoton->pdgId();
+        ev_.g_eta[ev_.ng]  = genPhoton->eta();
+        ev_.g_phi[ev_.ng]  = genPhoton->phi();
+        ev_.g_m[ev_.ng]    = genPhoton->mass();       
+        ev_.ng++;
+        
+        //gen level selection
+        if(genPhoton->pt()>20 && fabs(genPhoton->eta())<2.5) ngphotons_++;
+      }
+  }
   
   //final state particles 
   ev_.ngpf=0;
   edm::Handle<pat::PackedGenParticleCollection> genParticles;
   iEvent.getByToken(genParticlesToken_,genParticles);
-  for (size_t i = 0; i < genParticles->size(); ++i)
-    {
-      const pat::PackedGenParticle & genIt = (*genParticles)[i];
+  if(genParticles.isValid()){
+    for (size_t i = 0; i < genParticles->size(); ++i)
+      {
+        const pat::PackedGenParticle & genIt = (*genParticles)[i];
+        
+        //this shouldn't be needed according to the workbook
+        //if(genIt.status()!=1) continue;
+        if(genIt.pt()<0.5 || fabs(genIt.eta())>2.5) continue;
+        
+        ev_.gpf_id[ev_.ngpf]     = genIt.pdgId();
+        ev_.gpf_c[ev_.ngpf]      = genIt.charge();
+        ev_.gpf_g[ev_.ngpf]=-1;
+        for(std::map<const reco::Candidate *,int>::iterator it=jetConstsMap.begin();
+            it!=jetConstsMap.end();
+            it++)
+          {
+            if(it->first->pdgId()!=genIt.pdgId()) continue;
+            if(deltaR( *(it->first), genIt)>0.01) continue; 
+            ev_.gpf_g[ev_.ngpf]=it->second;
+            break;
+          }
+        ev_.gpf_pt[ev_.ngpf]     = genIt.pt();
+        ev_.gpf_eta[ev_.ngpf]    = genIt.eta();
+        ev_.gpf_phi[ev_.ngpf]    = genIt.phi();
+        ev_.gpf_m[ev_.ngpf]      = genIt.mass();
+        ev_.ngpf++;    
+      }
+  }
 
-      //this shouldn't be needed according to the workbook
-      //if(genIt.status()!=1) continue;
-      if(genIt.pt()<0.5 || fabs(genIt.eta())>2.5) continue;
-      
-      ev_.gpf_id[ev_.ngpf]     = genIt.pdgId();
-      ev_.gpf_c[ev_.ngpf]      = genIt.charge();
-      ev_.gpf_g[ev_.ngpf]=-1;
-      for(std::map<const reco::Candidate *,int>::iterator it=jetConstsMap.begin();
-	  it!=jetConstsMap.end();
-	  it++)
-	{
-	  if(it->first->pdgId()!=genIt.pdgId()) continue;
-	  if(deltaR( *(it->first), genIt)>0.01) continue; 
-	  ev_.gpf_g[ev_.ngpf]=it->second;
-	  break;
-	}
-      ev_.gpf_pt[ev_.ngpf]     = genIt.pt();
-      ev_.gpf_eta[ev_.ngpf]    = genIt.eta();
-      ev_.gpf_phi[ev_.ngpf]    = genIt.phi();
-      ev_.gpf_m[ev_.ngpf]      = genIt.mass();
-      ev_.ngpf++;    
-    }
-
-
- //Bhadrons and top quarks (lastCopy)
+  //Bhadrons and top quarks (lastCopy)
   edm::Handle<reco::GenParticleCollection> prunedGenParticles;
   iEvent.getByToken(prunedGenParticlesToken_,prunedGenParticles);
   ev_.ngtop=0; 
-  for (size_t i = 0; i < prunedGenParticles->size(); ++i)
-    {
-      const reco::GenParticle & genIt = (*prunedGenParticles)[i];
-      int absid=abs(genIt.pdgId());
-  
-      //top quarks
-      if(absid==6 && genIt.isLastCopy()) 
-	{
-	  ev_.gtop_id[ ev_.ngtop ]  = genIt.pdgId();
-	  ev_.gtop_pt[ ev_.ngtop ]  = genIt.pt();
-	  ev_.gtop_eta[ ev_.ngtop ] = genIt.eta();
-	  ev_.gtop_phi[ ev_.ngtop ] = genIt.phi();
-	  ev_.gtop_m[ ev_.ngtop ]   = genIt.mass();
-	  ev_.ngtop++;
-	}
-    }
+  if(prunedGenParticles.isValid()){
+    for (size_t i = 0; i < prunedGenParticles->size(); ++i)
+      {
+        const reco::GenParticle & genIt = (*prunedGenParticles)[i];
+        int absid=abs(genIt.pdgId());
+        bool outGoingProton( absid==2212 && genIt.status()==1 && fabs(genIt.eta())>4.7 );
+        bool topLastCopy(absid==6 && genIt.isLastCopy());
+        if(outGoingProton || topLastCopy)
+          {
+            ev_.gtop_id[ ev_.ngtop ]  = genIt.pdgId();
+            ev_.gtop_pt[ ev_.ngtop ]  = genIt.pt();
+            ev_.gtop_eta[ ev_.ngtop ] = genIt.eta();
+            ev_.gtop_phi[ ev_.ngtop ] = genIt.phi();
+            ev_.gtop_m[ ev_.ngtop ]   = genIt.mass();
+            ev_.ngtop++;
+          }
+      }
+  }
   
   //pseudo-tops 
 /*  edm::Handle<reco::GenParticleCollection> particleLevel;
@@ -437,12 +444,14 @@ void MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
   //gen met
   edm::Handle<reco::METCollection> genMet;
   iEvent.getByToken(genMetsToken_,genMet);
-  ev_.gtop_id[ ev_.ngtop ]  = 0;
-  ev_.gtop_pt[ ev_.ngtop ]  = (*genMet)[0].pt();
-  ev_.gtop_eta[ ev_.ngtop ] = 0;
-  ev_.gtop_phi[ ev_.ngtop ] = (*genMet)[0].phi();
-  ev_.gtop_m[ ev_.ngtop ]   = 0;
-  ev_.ngtop++;
+  if(genMet.isValid()){
+    ev_.gtop_id[ ev_.ngtop ]  = 0;
+    ev_.gtop_pt[ ev_.ngtop ]  = (*genMet)[0].pt();
+    ev_.gtop_eta[ ev_.ngtop ] = 0;
+    ev_.gtop_phi[ ev_.ngtop ] = (*genMet)[0].phi();
+    ev_.gtop_m[ ev_.ngtop ]   = 0;
+    ev_.ngtop++;
+  }
 
   //fiducial counters
   for(Int_t iw=0; iw<ev_.g_nw; iw++)

@@ -12,6 +12,11 @@ options.register('useRawLeptons', False,
                  VarParsing.varType.bool,
                  "Do not correct electrons/muons with smearing/energy scales"
                  )
+options.register('noParticleLevel', False,
+                 VarParsing.multiplicity.singleton,
+                 VarParsing.varType.bool,
+                 "Do not run the particleLevel sequence"
+                 )
 options.register('era', 'era2017',
                  VarParsing.multiplicity.singleton,
                  VarParsing.varType.string,
@@ -86,7 +91,8 @@ customizeEGM(process=process,runOnData=options.runOnData)
 #process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(options.maxEvents) )
 #process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10000) )
 process.source = cms.Source("PoolSource",
-                            fileNames = cms.untracked.vstring('/store/mc/RunIISummer17MiniAOD/TTJets_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/92X_upgrade2017_realistic_v10-v3/10000/00F1AD27-CF99-E711-A2F0-0CC47AC087AE.root'),
+                            #fileNames = cms.untracked.vstring('/store/mc/RunIISummer17MiniAOD/TTJets_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/92X_upgrade2017_realistic_v10-v3/10000/00F1AD27-CF99-E711-A2F0-0CC47AC087AE.root'),
+                            fileNames = cms.untracked.vstring('/store/cmst3/user/psilva/ExclusiveTop/94x/FPMC_QED_ttbar/MINIAODSIM/Events_1.root'),
                             duplicateCheckMode = cms.untracked.string('noDuplicateCheck') 
                             )
 
@@ -108,11 +114,11 @@ print  "Processing",process.source.fileNames
 
 process.load('SimGeneral.HepPDTESSource.pythiapdt_cfi')
 process.mergedGenParticles = cms.EDProducer("MergedGenParticleProducer",
-                    inputPruned = cms.InputTag("prunedGenParticles"),
-                        inputPacked = cms.InputTag("packedGenParticles"),
-)
-from GeneratorInterface.RivetInterface.genParticles2HepMC_cfi import genParticles2HepMC
-process.genParticles2HepMC = genParticles2HepMC.clone( genParticles = cms.InputTag("mergedGenParticles") )
+                                            inputPruned = cms.InputTag("prunedGenParticles"),
+                                            inputPacked = cms.InputTag("packedGenParticles"),
+                                            )
+process.load('GeneratorInterface.RivetInterface.genParticles2HepMC_cfi')
+process.genParticles2HepMC.genParticles = cms.InputTag("mergedGenParticles")
 #process.load('TopQuarkAnalysis.BFragmentationAnalyzer.bfragWgtProducer_cfi')
 
 #apply lumi json, if passed in command line
@@ -159,7 +165,7 @@ if options.runOnData:
 process.custom_step=cms.Path(process.egammaScaleSmearAndVIDSeq)
 process.ana_step=cms.Path(process.analysis)
 
-if options.runOnData:
+if options.runOnData or options.noParticleLevel:
       process.schedule=cms.Schedule(process.custom_step,process.ana_step)
 else:
       process.gen_step=cms.Path(process.mergedGenParticles*process.genParticles2HepMC*process.particleLevel)
