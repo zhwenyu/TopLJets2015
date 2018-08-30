@@ -46,7 +46,7 @@ def saveExpectedBtagEff(opt):
             effgrs[(tagger,op)][flav].Divide(tagH,preTagH)
 
     #save in file
-    fOut=ROOT.TFile.Open(opt.output+'/expTagEff.root','RECREATE')
+    fOut=ROOT.TFile.Open(opt.output,'RECREATE')
     for key in effgrs:
         fOut.cd()
         outDir=fOut.mkdir('%s_%s'%key)

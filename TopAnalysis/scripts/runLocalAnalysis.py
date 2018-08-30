@@ -67,11 +67,11 @@ def main():
     parser.add_option('-n', '--njobs',       dest='njobs',       help='# jobs to run in parallel  [%default]',                  default=0,    type='int')
     parser.add_option(      '--skipexisting',dest='skipexisting',help='skip jobs with existing output files  [%default]',       default=False,      action='store_true')
     parser.add_option(      '--exactonly',   dest='exactonly',   help='match only exact sample tags to process  [%default]',    default=False,      action='store_true')
-    parser.add_option(      '--outputonly',        dest='outputonly',        help='filter job submission for a csv list of output files  [%default]',             default=None,       type='string')
-    parser.add_option(      '--farmappendix',        dest='farmappendix',        help='Appendix to condor FARM directory [%default]',             default='',       type='string')
-    parser.add_option(      '--genWeights',        dest='genWeights',        help='genWeights to get the normalization from (found within data/era directory) [%default]',             default='genweights.root',       type='string')
-    parser.add_option(      '--mvatree',       dest='mvatree',       help='make mva tree  [%default]',                            default=False,      action='store_true'),
-    parser.add_option(      '--CR',       dest='CR',       help='provide control region for photon FR  [%default]',                            default=False,      action='store_true')
+    parser.add_option(      '--outputonly',  dest='outputonly',  help='filter job submission for a csv list of output files  [%default]',             default=None,       type='string')
+    parser.add_option(      '--farmappendix',dest='farmappendix',help='Appendix to condor FARM directory [%default]',             default='',       type='string')
+    parser.add_option(      '--genWeights',  dest='genWeights',  help='genWeights to get the normalization from (found within data/era directory) [%default]',             default='genweights.root',       type='string')
+    parser.add_option(      '--mvatree',     dest='mvatree',     help='make mva tree  [%default]',                            default=False,      action='store_true'),
+    parser.add_option(      '--CR',          dest='CR',          help='provide control region for photon FR  [%default]',                            default=False,      action='store_true')
     (opt, args) = parser.parse_args()
 
     #parse selection lists

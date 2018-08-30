@@ -34,9 +34,10 @@ using namespace std;
 void VBFVectorBoson::RunVBFVectorBoson()
 {
   bool is2018(filename.Contains("2018"));
+  bool isJetHT(filename.Contains("JetHT"));
 
   float minBosonHighPt(200.);
-  TString vbfPhotonTrigger("HLT_Photon75_R9Id90_HE10_IsoM_EBOnly_PFJetsMJJ300DEta3_v");
+  TString vbfPhotonTrigger = "HLT_Photon75_R9Id90_HE10_IsoM_EBOnly_PFJetsMJJ300DEta3_v";
   TString highPtPhotonTrigger("HLT_Photon200_v");
   SelectionTool::QualityFlags offlinePhoton(SelectionTool::TIGHT);
   if(is2018) {
@@ -46,7 +47,19 @@ void VBFVectorBoson::RunVBFVectorBoson()
     offlinePhoton=SelectionTool::LOOSE;
     minBosonHighPt=165.;
   }
-  selector->setPhotonSelection({vbfPhotonTrigger,highPtPhotonTrigger},offlinePhoton);
+  std::vector<TString> photonTriggerPaths={vbfPhotonTrigger,highPtPhotonTrigger};
+  if(isJetHT){
+    cout <<"[VBFVectorBoson::RunVBFVectorBoson] this is JetHT data, adapting the trigger" <<endl;
+    photonTriggerPaths.clear();
+    photonTriggerPaths = {"HLT_PFJet40_v","HLT_PFJet60_v","HLT_PFJet80_v","HLT_PFJet140_v",
+                          "HLT_PFJet200_v","HLT_PFJet260_v","HLT_PFJet320_v","HLT_PFJet400_v",
+			  "HLT_PFJet450_v","HLT_PFJet500_v","HLT_PFJet550_v","HLT_PFJetFwd40_v",
+			  "HLT_PFJetFwd60_v","HLT_PFJetFwd80_v","HLT_PFJetFwd140_v","HLT_PFJetFwd200_v",
+			  "HLT_PFJetFwd260_v","HLT_PFJetFwd320_v","HLT_PFJetFwd400_v","HLT_PFJetFwd450_v",
+			  "HLT_PFJetFwd500_v"};
+
+  }
+  selector->setPhotonSelection(photonTriggerPaths,offlinePhoton);
 
 
   //TMVA configuration
@@ -90,6 +103,7 @@ void VBFVectorBoson::RunVBFVectorBoson()
       /////////////////////////
       TString chTag = selector->flagFinalState(ev,{},{},CR);
       std::vector<Particle> &photons     = selector->getSelPhotons(); 
+      tmpPhotons  = selector->getTemplatePhotons();
       std::vector<Particle> &leptons     = selector->getSelLeptons(); 
       std::vector<Jet>      &alljets     = selector->getJets();
       int nTotalJets = alljets.size();
@@ -101,7 +115,7 @@ void VBFVectorBoson::RunVBFVectorBoson()
       mults["tightfake"]   = 0;
       mults["looseprompt"] = 0;
       mults["tightprompt"] = 0;
-
+      std::vector<Particle> QCDTemplate;
 
       //Pileup jet id
       for(auto j : alljets) {
@@ -424,15 +438,17 @@ void VBFVectorBoson::bookHistograms(){
   ht->addHist("D",             new TH1F("D",                ";D;Events",20,0,1.0));  
   ht->addHist("isotropy",      new TH1F("isotropy",         ";Isotropy;Events",20,0,1.0));  
   ht->addHist("circularity",   new TH1F("circularity",      ";Circularity;;Events",20,0,1.0));
+  //Template for sieie in fakes
+  ht->addHist("tmpsihih",      new TH1F("tmpsihih",         ";Temp #sigma(i#eta,i#eta);Photons",50,0,0.1));
   //Photons in CR
-  ht->addHist("fakesihih",     new TH1F("fakesihih",        ";Fake #sigma(i#eta,i#eta);Events",50,0,0.1));
-  ht->addHist("tightsihih",    new TH1F("tightsihih",       ";Tight #sigma(i#eta,i#eta);Events",50,0,0.1));
-  ht->addHist("fakechiso",     new TH1F("fakechiso",        ";Fake ch. isolation [GeV];Events",50,0,10));  
-  ht->addHist("tightchiso",    new TH1F("tightchiso",       ";Tight ch. isolation [GeV];Events",50,0,10));
-  ht->addHist("fakeneutiso",   new TH1F("fakeneutiso",      ";Fake neut. isolation [GeV];Events",50,0,10));  
-  ht->addHist("tightneutiso",  new TH1F("tightneutiso",     ";Tight neut. isolation [GeV];Events",50,0,10));
-  ht->addHist("fakeaiso",      new TH1F("fakeaiso",         ";Fake #gamma isolation [GeV];Events",50,0,10));  
-  ht->addHist("tightaiso",     new TH1F("tightaiso",        ";Tight #gamma isolation [GeV];Events",50,0,10));  
+  ht->addHist("fakesihih",     new TH1F("fakesihih",        ";Fake #sigma(i#eta,i#eta);Photons",50,0,0.1));
+  ht->addHist("tightsihih",    new TH1F("tightsihih",       ";Tight #sigma(i#eta,i#eta);Photons",50,0,0.1));
+  ht->addHist("fakechiso",     new TH1F("fakechiso",        ";Fake ch. isolation [GeV];Photons",50,0,10));  
+  ht->addHist("tightchiso",    new TH1F("tightchiso",       ";Tight ch. isolation [GeV];Photons",50,0,10));
+  ht->addHist("fakeneutiso",   new TH1F("fakeneutiso",      ";Fake neut. isolation [GeV];Photons",50,0,10));  
+  ht->addHist("tightneutiso",  new TH1F("tightneutiso",     ";Tight neut. isolation [GeV];Photons",50,0,10));
+  ht->addHist("fakeaiso",      new TH1F("fakeaiso",         ";Fake #gamma isolation [GeV];Photons",50,0,10));  
+  ht->addHist("tightaiso",     new TH1F("tightaiso",        ";Tight #gamma isolation [GeV];Photons",50,0,10));  
   ht->addHist("nloose",        new TH1F("nloose",           ";Number of loose #gamma; Events",20,-0.5,19.5));
   ht->addHist("ntight",        new TH1F("ntight",           ";Number of tight #gamma; Events",20,-0.5,19.5));
   ht->addHist("nloosefake",    new TH1F("nloosefake",       ";Number of fake loose #gamma; Events",20,-0.5,19.5));
@@ -561,7 +577,11 @@ void VBFVectorBoson::fill(MiniEvent_t ev, TLorentzVector boson, std::vector<Jet>
   ht->fill("hoe",    hoe,              cplotwgts,c);   
   ht->fill("chiso",  chiso,            cplotwgts,c);   
   ht->fill("mindrl", mindrl,           cplotwgts,c);   
- 
+  //template photon
+  for(auto a : tmpPhotons){
+    int idx = a.originalReference();
+    ht->fill("tmpsihih",   ev.gamma_sieie[idx]             ,cplotwgts,c);
+  }
   //bosons in CR and fakes
   for(auto a : fakeACR) {
     int idx = a.originalReference();

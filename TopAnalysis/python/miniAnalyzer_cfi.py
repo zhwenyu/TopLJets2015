@@ -68,5 +68,5 @@ analysis = cms.EDAnalyzer("MiniAnalyzer",
                           mets                   = cms.InputTag('slimmedMETs'),                          
                           puppimets              = cms.InputTag('slimmedMETsPuppi'),
                           pfCands                = cms.InputTag('packedPFCandidates'),
-                          ctppsLocalTracks       = cms.InputTag('ctppsLocalTrackLiteProducer')
+                          ctppsLocalTracks       = cms.InputTag('ctppsLocalTrackLiteProducer'),
                           )

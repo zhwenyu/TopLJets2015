@@ -20,15 +20,16 @@ class SelectionTool {
   ~SelectionTool() {}
 
   enum FlavourSplitting {NOFLAVOURSPLITTING=0, UDSGSPLITTING=1, CSPLITTING=4, BSPLITTING=5 };
-  enum QualityFlags     {VETO, LOOSE, MEDIUM, TIGHT, CONTROL, FAKE};
+  enum QualityFlags     {VETO, LOOSE, MEDIUM, TIGHT, CONTROL, QCDTEMP};
 
 
 
   //
   //RECO LEVEL SELECTORS
   // 
+  bool passSingleLeptonTrigger(MiniEvent_t &ev);
   TString flagFinalState(MiniEvent_t &ev, std::vector<Particle> leptons={}, std::vector<Particle> photons={}, bool isCR=false); 
-  std::vector<Particle> leptons_,vetoLeptons_,photons_;
+  std::vector<Particle> leptons_,vetoLeptons_,photons_,tempPhotons;
   std::vector<Jet> jets_;
   TLorentzVector met_;
   bool hasTriggerBit(TString triggerName,unsigned int word);
@@ -39,6 +40,7 @@ class SelectionTool {
   std::vector<Particle> flaggedPhotons(MiniEvent_t &ev);
   std::vector<Particle> selPhotons(std::vector<Particle> &flaggedPhotons,int qualBit=LOOSE, std::vector<Particle> leptons = {}, double minPt = 30., double maxEta = 2.5, std::vector<Particle> veto = {});
   std::vector<Particle> &getSelPhotons()  { return photons_; }
+  std::vector<Particle> &getTemplatePhotons()  { return tempPhotons; }
   std::vector<Jet>      getGoodJets(MiniEvent_t &ev, double minPt = 30., double maxEta = 4.7, std::vector<Particle> leptons = {},std::vector<Particle> photons = {}); // changed for the moment to VBF
   //void                  getGoodJets(MiniEvent_t &ev, double minPt = 30., double maxEta = 4.7, std::vector<Particle> leptons = {},std::vector<Particle> photons = {}); 
   std::vector<Jet>      &getJets()        { return jets_; }
@@ -99,6 +101,24 @@ class SelectionTool {
     fakeIdCuts["EE"] = eeloose;
   }
 
+  bool isQCDTemplate(MiniEvent_t ev, int idx){
+    double pt(ev.gamma_pt[idx]);
+    double eta(fabs(ev.gamma_eta[idx]));
+    TString region = "EB";
+    if(fabs(eta) > 1.4442)
+      region = "EE";
+    double cutNeutIso   = (fakeIdCuts[region][3] + pt*fakeIdCuts[region][4] + pt*pt*fakeIdCuts[region][5]);
+    double cutGIso      = (fakeIdCuts[region][6] + pt*fakeIdCuts[region][7]);
+    bool HoE     = ev.gamma_hoe[idx]                    < fakeIdCuts[region][0];
+    //bool sieie   = ev.gamma_sieie[idx]                  < fakeIdCuts[region][1];
+    bool chIso   = ev.gamma_chargedHadronIso[idx]       > std::min(5* fakeIdCuts[region][2], 0.2*pt);
+    bool neutIso = ev.gamma_neutralHadronIso[idx]       < std::min(5* cutNeutIso           , 0.2*pt);
+    bool gIso    = ev.gamma_photonIso[idx]              < std::min(5* cutGIso              , 0.2*pt);
+
+    bool ret = (HoE && chIso && neutIso && gIso);
+    return ret;    
+  }
+
   bool isInclusivePhoton(MiniEvent_t ev, int idx){
     // from AN-14-242
     double pt(ev.gamma_pt[idx]);
@@ -144,7 +164,7 @@ class SelectionTool {
  private:
   bool debug_;
   AnalysisType anType_;
-  bool isSingleElectronPD_,isSingleMuonPD_,isDoubleEGPD_,isDoubleMuonPD_,isMuonEGPD_,isPhotonPD_;
+  bool isSingleElectronPD_,isSingleMuonPD_,isDoubleEGPD_,isDoubleMuonPD_,isMuonEGPD_,isPhotonPD_,isJetHTPD_;
   std::map<TString,unsigned int> triggerBits_;
   std::vector<TString> photonTriggers_;
   int offlinePhoton_;

@@ -14,7 +14,8 @@ SelectionTool::SelectionTool(TString dataset,bool debug,TH1 *triggerList, Analys
   isDoubleEGPD_(dataset.Contains("DoubleEG")), 
   isDoubleMuonPD_(dataset.Contains("DoubleMuon")), 
   isMuonEGPD_(dataset.Contains("MuonEG")),
-  isPhotonPD_(dataset.Contains("Photon") || dataset.Contains("EGamma"))
+  isPhotonPD_(dataset.Contains("Photon") || dataset.Contains("EGamma")),
+  isJetHTPD_(dataset.Contains("JetHT"))
 {
   if(triggerList!=0)
     for(int xbin=0; xbin<triggerList->GetNbinsX(); xbin++)
@@ -26,6 +27,21 @@ SelectionTool::SelectionTool(TString dataset,bool debug,TH1 *triggerList, Analys
 //
 // RECO LEVEL SELECTORS
 //
+
+//
+bool SelectionTool::passSingleLeptonTrigger(MiniEvent_t &ev) {
+  //check if triggers have fired and are consistent with the offline selection
+  bool hasETrigger(  hasTriggerBit("HLT_Ele35_eta2p1_WPTight_Gsf_v",           ev.triggerBits) ||
+                     hasTriggerBit("HLT_Ele28_eta2p1_WPTight_Gsf_HT150_v",     ev.triggerBits) ||
+                     hasTriggerBit("HLT_Ele30_eta2p1_WPTight_Gsf_CentralPFJet35_EleCleaned_v",     ev.triggerBits) );
+  bool hasMTrigger(  //hasTriggerBit("HLT_IsoMu24_2p1_v",                                        ev.triggerBits) || 
+		     hasTriggerBit("HLT_IsoMu27_v",                                            ev.triggerBits) );
+
+  if(hasETrigger && !hasMTrigger) { if(ev.isData && !isSingleElectronPD_) return false; }
+  if(!hasETrigger && hasMTrigger) { if(ev.isData && !isSingleMuonPD_)     return false; }
+  if(hasETrigger && hasMTrigger)  { if(ev.isData && !isSingleMuonPD_)     return false; }
+  return true;
+}
 
 
 //
@@ -44,7 +60,9 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
   //decide the channel based on the lepton multiplicity and set lepton collections
   std::vector<Particle> tightLeptons( selLeptons(preselLeptons,TIGHT) );
   std::vector<Particle> tightPhotons( selPhotons(preselPhotons,offlinePhoton_, tightLeptons) );
-  std::vector<Particle> fakePhotons( selPhotons(preselPhotons,CONTROL, tightLeptons) );
+  std::vector<Particle> inclusivePhotons( selPhotons(preselPhotons,CONTROL, tightLeptons) );
+  std::vector<Particle> tmpPhotons( selPhotons(preselPhotons,QCDTEMP, tightLeptons) );
+
   TString chTag("");
   if(anType_==TOP)
     {
@@ -75,20 +93,24 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
 	  }
 	else if(tightPhotons.size()>=1) {
 	  chTag="A";
-	  photons_=tightPhotons;
-	  leptons_=tightLeptons;
+	  photons_   =tightPhotons;
+	  leptons_   =tightLeptons;
+	  tempPhotons=tmpPhotons;
 	}
-      }else {
-	if(tightLeptons.size()==2)
-	  {
-	    int ch( abs(tightLeptons[0].id()*tightLeptons[1].id()) );
-	    float mll( (tightLeptons[0]+tightLeptons[1]).M() );
-	    if( ch==13*13 && fabs(mll-91)<15 && (tightLeptons[0].pt()>30 || tightLeptons[1].pt()>30)) chTag="MM";          
-	    leptons_=tightLeptons;
-	  }
-	else if(fakePhotons.size()>=1) {
+      } else {
+	cout<< "Number of very loose photons: "<<inclusivePhotons.size()<<endl;
+	if(inclusivePhotons.size()>=1) {
 	  chTag="A";
-	  photons_=fakePhotons;
+	  photons_   =inclusivePhotons;
+	  leptons_   =tightLeptons;
+	  tempPhotons=tmpPhotons;
+	  cout<< "\tNumber of very loos photons: "<<photons_.size()<<endl;
+	  cout<< "\tNumber of tight leptons: "<<leptons_.size()<<endl;
+	  cout<< "Channel Tag: "<<chTag<<endl;
+	} else 	if(tightLeptons.size()==2){
+	  int ch( abs(tightLeptons[0].id()*tightLeptons[1].id()) );
+	  float mll( (tightLeptons[0]+tightLeptons[1]).M() );
+	  if( ch==13*13 && fabs(mll-91)<15 && (tightLeptons[0].pt()>30 || tightLeptons[1].pt()>30)) chTag="MM";          
 	  leptons_=tightLeptons;
 	}
       }
@@ -166,11 +188,9 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
   if(chTag=="A")
     {
       if(!hasPhotonTrigger) chTag="";
-      //if((hasEETrigger || hasETrigger) && chTag == "A"){
-      //cout<< "----------------- This is EE in fact!" <<endl;
-      //chTag = "";
-      //}
-      if(ev.isData && !isPhotonPD_) chTag="";
+      if(ev.isData && isCR && !isPhotonPD_ && !isJetHTPD_) chTag = "";
+      if(ev.isData && !isCR && !isPhotonPD_ ) chTag = "";  
+      //if(ev.isData && !isPhotonPD_) chTag="";    
     }
       
   if(debug_) cout << "[flagFinalState] chTag=" << chTag << endl
@@ -296,9 +316,10 @@ std::vector<Particle> SelectionTool::flaggedPhotons(MiniEvent_t &ev)
     if( pt>50 && eta<2.4)
       {
         if( (pid&0x7f)==0x7f )            qualityFlagsWord |= (0x1 << LOOSE);
-        if( ((pid>>10)&0x7f)==0x7f )      qualityFlagsWord |= (0x1 << MEDIUM);
-        if( ((pid>>10)&0x7f)==0x7f )      qualityFlagsWord |= (0x1 << TIGHT);
+        if( ((pid>>10)&0x7f)==0x7f   )    qualityFlagsWord |= (0x1 << MEDIUM);
+        if( ((pid>>10)&0x7f)==0x7f   )    qualityFlagsWord |= (0x1 << TIGHT);
 	if( isInclusivePhoton(ev,ig) )    qualityFlagsWord |= (0x1 << CONTROL);
+	if( isQCDTemplate(ev,ig)     )    qualityFlagsWord |= (0x1 << QCDTEMP);
       }
     if(qualityFlagsWord==0) continue;
 
