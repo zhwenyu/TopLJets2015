@@ -27,6 +27,7 @@ class SelectionTool {
   //
   //RECO LEVEL SELECTORS
   // 
+  bool passSingleLeptonTrigger(MiniEvent_t &ev);
   TString flagFinalState(MiniEvent_t &ev, std::vector<Particle> leptons={}, std::vector<Particle> photons={}, bool isCR=false); 
   std::vector<Particle> leptons_,vetoLeptons_,photons_,tempPhotons;
   std::vector<Jet> jets_;
