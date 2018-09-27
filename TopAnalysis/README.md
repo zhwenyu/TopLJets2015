@@ -37,9 +37,17 @@ git checkout ReReco17NovScaleAndSmearing
 
 ##END OPTIONAL
 
+#higgs combination tool
+git clone https://github.com/cms-analysis/HiggsAnalysis-CombinedLimit.git HiggsAnalysis/CombinedLimit
+cd HiggsAnalysis/CombinedLimit
+git fetch origin
+git checkout v7.0.10
+scramv1 b clean; scramv1 b
+cd -
 
+#this package
 cd $CMSSW_BASE/src
-git clone git@github.com:pfs/TopLJets2015.git
+git clone https://github.com/pfs/TopLJets2015.git
 cd TopLJets2015
 git submodule init
 git submodule update
