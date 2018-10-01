@@ -8,32 +8,16 @@ Notice: if you are not creating the ntuples, you can skip the part of the instru
 marked with the `##OPTIONAL/##END OPTIONAL` markers
 
 ```
-cmsrel CMSSW_9_4_2
-cd CMSSW_9_4_2/src
+cmsrel CMSSW_9_4_9_cand2
+cd CMSSW_9_4_9_cand2/src
 cmsenv
 
-##OPTIONAL
+##OPTIONAL (USE IF CREATING NTUPLES FROM SCRATCH)
 
-#photon/electron id+scale and smearing
-git cms-merge-topic lsoffi:CMSSW_9_4_0_pre3_TnP    
-git cms-merge-topic guitargeek:ElectronID_MVA2017_940pre3
-git cms-merge-topic cms-egamma:MiniAOD2017V2_940
+#photon/electron id+scale and smearing fixes for MINIAOD 2017v2 (doesn't harm 2016v3)
+git cms-init
+git cms-merge-topic cms-egamma:EgammaPostRecoTools_940 #just adds in an extra file to have a setup function to make things easier
 scram b -j 8
-cd $CMSSW_BASE/external
-cd ${SCRAM_ARCH}/
-git clone https://github.com/lsoffi/RecoEgamma-PhotonIdentification.git data/RecoEgamma/PhotonIdentification/data
-cd data/RecoEgamma/PhotonIdentification/data
-git checkout CMSSW_9_4_0_pre3_TnP
-cd $CMSSW_BASE/external
-cd ${SCRAM_ARCH}/
-git clone https://github.com/lsoffi/RecoEgamma-ElectronIdentification.git data/RecoEgamma/ElectronIdentification/data
-cd data/RecoEgamma/ElectronIdentification/data
-git checkout CMSSW_9_4_0_pre3_TnP
-cd $CMSSW_BASE/external
-cd ${SCRAM_ARCH}/
-git clone git@github.com:Sam-Harper/EgammaAnalysis-ElectronTools.git data/EgammaAnalysis/ElectronTools/data
-cd data/EgammaAnalysis/ElectronTools/data
-git checkout ReReco17NovScaleAndSmearing 
 
 ##END OPTIONAL
 
