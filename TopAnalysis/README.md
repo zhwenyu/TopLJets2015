@@ -15,7 +15,6 @@ cmsenv
 ##OPTIONAL (USE IF CREATING NTUPLES FROM SCRATCH)
 
 #photon/electron id+scale and smearing fixes for MINIAOD 2017v2 (doesn't harm 2016v3)
-git cms-init
 git cms-merge-topic cms-egamma:EgammaPostRecoTools_940 #just adds in an extra file to have a setup function to make things easier
 scram b -j 8
 
