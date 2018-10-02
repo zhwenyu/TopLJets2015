@@ -46,6 +46,11 @@
 #include "DataFormats/PatCandidates/interface/PackedGenParticle.h"
 #include "DataFormats/CTPPSReco/interface/CTPPSLocalTrackLite.h"
 #include "DataFormats/CTPPSDetId/interface/CTPPSDetId.h"
+#include "JetMETCorrections/Modules/interface/JetResolution.h"
+#include "CondFormats/JetMETObjects/interface/JetResolutionObject.h"
+#include "CondFormats/JetMETObjects/interface/FactorizedJetCorrector.h"
+#include "CondFormats/JetMETObjects/interface/JetCorrectionUncertainty.h"
+#include "CondFormats/JetMETObjects/interface/JetCorrectorParameters.h"
 
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 #include "TopLJets2015/TopAnalysis/interface/MiniEvent.h"
@@ -142,7 +147,7 @@ private:
 
   std::unordered_map<std::string,TH1*> histContainer_;
 
-  PFJetIDSelectionFunctor pfjetIDLoose_;
+  std::string jetIdToUse_;
 
   std::vector<std::string> triggersToUse_,metFiltersToUse_;
 
@@ -197,8 +202,6 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig) :
   ctppsToken_(consumes<std::vector<CTPPSLocalTrackLite> >(iConfig.getParameter<edm::InputTag>("ctppsLocalTracks"))),
   BadChCandFilterToken_(consumes<bool>(iConfig.getParameter<edm::InputTag>("badChCandFilter"))),
   BadPFMuonFilterToken_(consumes<bool>(iConfig.getParameter<edm::InputTag>("badPFMuonFilter"))),
-  //petersonFragToken_(consumes<edm::ValueMap<float> >(edm::InputTag("bfragWgtProducer:PetersonFrag"))),
-  pfjetIDLoose_( PFJetIDSelectionFunctor::FIRSTDATA, PFJetIDSelectionFunctor::LOOSE ),  
   saveTree_( iConfig.getParameter<bool>("saveTree") ),
   savePF_( iConfig.getParameter<bool>("savePF") )
 {
@@ -206,8 +209,8 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig) :
   electronToken_      = mayConsume<edm::View<pat::Electron> >(iConfig.getParameter<edm::InputTag>("electrons"));
   photonToken_        = mayConsume<edm::View<pat::Photon> >(iConfig.getParameter<edm::InputTag>("photons"));
   triggersToUse_      = iConfig.getParameter<std::vector<std::string> >("triggersToUse");
-  metFiltersToUse_  = iConfig.getParameter<std::vector<std::string> >("metFiltersToUse");
-
+  metFiltersToUse_    = iConfig.getParameter<std::vector<std::string> >("metFiltersToUse");
+  jetIdToUse_         = iConfig.getParameter<std::string>("jetIdToUse");
 
   muonRC_ = new RoccoR();
   muonRC_->init(edm::FileInPath(iConfig.getParameter<std::string>("RoccoR")).fullPath());
@@ -822,72 +825,116 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
   ev_.nj=0; 
   edm::Handle<edm::View<pat::Jet> > jets;
   iEvent.getByToken(jetToken_,jets);
+  JME::JetResolution jerResolution  = JME::JetResolution::get(iSetup, "AK4PFchs_pt");
+  JME::JetResolutionScaleFactor jerResolutionSF = JME::JetResolutionScaleFactor::get(iSetup, "AK4PFchs");
   std::vector< std::pair<const reco::Candidate *,int> > clustCands;
+  
   for(auto j = jets->begin();  j != jets->end(); ++j)
     {
-      //kinematics
-      if(j->pt()<20 || fabs(j->eta())>4.7) continue;
+      //base kinematics
+      if(j->pt()<15 || fabs(j->eta())>4.7) continue;
       
-      // PF jet ID
-      //pat::strbitset retpf = pfjetIDLoose_.getBitTemplate();
-      //retpf.set(false);
-      //bool passLoose=pfjetIDLoose_( *j, retpf );
-      //if(!passLoose) continue;
-
-      //pass tightlepveto cf. https://twiki.cern.ch/twiki/bin/view/CMS/JetID13TeVRun2017
-      bool tightLepVeto(true);
-      if(fabs(j->eta())>3)
+      //resolution corrections
+      float jerSF[]={1.0,1.0,1.0};
+      ev_.j_g[ev_.nj] = -1;
+      if(!iEvent.isRealData())
         {
-          if( j->neutralHadronEnergyFraction()<=0.02 ||
-              j->neutralMultiplicity()<=10 ||
-              j->neutralEmEnergyFraction()>=0.9 ) tightLepVeto=false;
-        }
-      else if(fabs(j->eta()>2.7))
-        {
-          if(j->neutralEmEnergyFraction()<=0.02 ||
-             j->neutralEmEnergyFraction()>=0.99 ||
-             j->neutralMultiplicity()<=2 ) tightLepVeto=false;
-        }
-      else
-        {
-          if(j->neutralHadronEnergyFraction()>=0.9 ||
-             j->neutralEmEnergyFraction()>=0.9 ||
-             j->chargedMultiplicity()+j->neutralMultiplicity()<=1 ||
-             j->muonEnergyFraction() >= 0.8) tightLepVeto=false;
-          if(fabs(j->eta())<2.4)
+          //match to gen level jet/parton
+          float genj_pt(0);
+          const reco::Candidate *genParton = j->genParton();
+          ev_.j_flav[ev_.nj]       = j->partonFlavour();
+          ev_.j_hadflav[ev_.nj]    = j->hadronFlavour();
+          ev_.j_pid[ev_.nj]        = genParton ? genParton->pdgId() : 0;
+          for(int ig=0; ig<ev_.ng; ig++)
             {
-              if(j->chargedHadronEnergyFraction()<=0 ||
-                 j->chargedMultiplicity()==0 ||
-                 j->chargedEmEnergyFraction()>=0.8)
-                tightLepVeto=false;
+              if(abs(ev_.g_id[ig])==11 || abs(ev_.g_id[ig])==13) continue;
+              if(deltaR( j->eta(),j->phi(), ev_.g_eta[ig],ev_.g_phi[ig])>0.4) continue;
+              genj_pt=ev_.g_pt[ig];
+              ev_.j_g[ev_.nj]=ig;
+              ev_.g_xbp[ig]  = genParton   ? ev_.g_xb[ig]*genj_pt/genParton->pt() : 0.;
+              break;
+            }	 
+          
+          //jet energy resolution
+          JME::JetParameters jerParams = {{JME::Binning::JetPt, j->pt()}, 
+                                          {JME::Binning::JetEta, j->eta()},
+                                          {JME::Binning::Rho, rho}};
+          float r = jerResolution.getResolution(jerParams);
+          jerSF[0] = jerResolutionSF.getScaleFactor(jerParams);
+          jerSF[1] = jerResolutionSF.getScaleFactor(jerParams, Variation::UP);
+          jerSF[2] = jerResolutionSF.getScaleFactor(jerParams, Variation::DOWN);
+          for(int i=0; i<3; i++) {
+            //use stochasting smearing for unmatched jets
+            if(genj_pt<=0)
+              {
+                float sigma = r * std::sqrt(std::max(float( pow(jerSF[i],2)- 1.0),float(0.)));
+                jerSF[i] = std::max(float(1.0 + gRandom->Gaus(0, sigma)),float(0.));
+              }
+            else {           
+              float dPt = j->pt()-genj_pt;
+              jerSF[i] = std::max(float(1.0 + (jerSF[i] - 1.) * dPt / j->pt()),float(0.));
             }
+           
+            //make up/down variations relative
+            if(jerSF[0]>0) { jerSF[1]/=jerSF[0]; jerSF[2]/=jerSF[0]; }
+          }
         }
-      if(!tightLepVeto) continue;
-     
+
+      auto corrP4  = j->p4() * jerSF[0];
+
+      //jet id cf.
+      //2016 https://twiki.cern.ch/twiki/bin/view/CMS/JetID13TeVRun2016
+      //2017 https://twiki.cern.ch/twiki/bin/view/CMS/JetID13TeVRun2017
+      float NHF  = j->neutralHadronEnergyFraction();
+      float NEMF = j->neutralEmEnergyFraction();
+      float CHF  = j->chargedHadronEnergyFraction();
+      float MUF  = j->muonEnergyFraction();
+      float CEMF = j->chargedEmEnergyFraction();
+      float NumChargedParticles = j->chargedMultiplicity();
+      float NumNeutralParticles = j->neutralMultiplicity();
+      float NumConst = NumChargedParticles+NumNeutralParticles;
+      float CHM = j->chargedMultiplicity();
+
+      bool tightLepVeto(true),looseJetID(true);//,tightJetId(true);
+      if(abs(j->eta())<2.4) {
+        looseJetID = (NHF<0.99 && NEMF<0.99 && NumConst>1 && CHF>0 && CHM>0 && CEMF<0.99);
+        //tightJetID = (NHF<0.90 && NEMF<0.90 && NumConst>1 && CHF>0 && CHM>0 && CEMF<0.99);
+        tightLepVeto = (NHF<0.90 && NEMF<0.90 && NumConst>1 && MUF<0.8 && CHF>0 && CHM>0 && CEMF<0.80);
+      }
+      else if(abs(j->eta())<2.7) {
+        looseJetID = (NHF<0.99 && NEMF<0.99 && NumConst>1);
+        //tightJetID = (NHF<0.90 && NEMF<0.90 && NumConst>1);
+        tightLepVeto = (NHF<0.90 && NEMF<0.90 && NumConst>1 && MUF<0.8);
+      }
+      else if(abs(j->eta())<3.0) {
+        looseJetID = (NHF<0.98 && NEMF>0.01 && NumNeutralParticles>2);
+        //tightJetID = (NHF<0.98 && NEMF>0.01 && NumNeutralParticles>2);
+        tightLepVeto = (NHF<0.98 && NEMF>0.01 && NumNeutralParticles>2);
+      }
+      else {
+        looseJetID = (NEMF<0.90 && NumNeutralParticles>10);
+        //tightJetID = (NEMF<0.90 && NumNeutralParticles>10);
+        tightLepVeto = (NEMF<0.90 && NumNeutralParticles>10);
+      }
+
+      if(jetIdToUse_=="tightLepVeto") { if(!tightLepVeto) continue; }
+      else { if(!looseJetID) continue; }
+
       //save jet
-      const reco::Candidate *genParton = j->genParton();
-      ev_.j_area[ev_.nj]  = j->jetArea();
-      ev_.j_rawsf[ev_.nj] = j->correctedJet("Uncorrected").pt()/j->pt();
-      ev_.j_pt[ev_.nj]    = j->pt();
-      ev_.j_mass[ev_.nj]  = j->mass();
-      ev_.j_eta[ev_.nj]   = j->eta();
-      ev_.j_phi[ev_.nj]   = j->phi();
-      ev_.j_pumva[ev_.nj] = j->userFloat("pileupJetId:fullDiscriminant");
-      ev_.j_id[ev_.nj]    = j->userInt("pileupJetId:fullId");
-      ev_.j_g[ev_.nj]     = -1;
-      for(int ig=0; ig<ev_.ng; ig++)
-	{
-	  if(abs(ev_.g_id[ig])==11 || abs(ev_.g_id[ig])==13) continue;
-	  if(deltaR( j->eta(),j->phi(), ev_.g_eta[ig],ev_.g_phi[ig])>0.4) continue;
-	  ev_.j_g[ev_.nj]=ig;
-	  ev_.g_xbp[ig]  = genParton   ? ev_.g_xb[ig]*ev_.g_pt[ig]/genParton->pt() : 0.;
-	  break;
-	}	 
+      ev_.j_area[ev_.nj]    = j->jetArea();
+      ev_.j_jerUp[ev_.nj]   = jerSF[1];
+      ev_.j_jerDn[ev_.nj]   = jerSF[2];
+      ev_.j_rawsf[ev_.nj]   = j->correctedJet("Uncorrected").pt()/j->pt();
+      ev_.j_pt[ev_.nj]      = corrP4.pt();
+      ev_.j_mass[ev_.nj]    = corrP4.mass();
+      ev_.j_eta[ev_.nj]     = corrP4.eta();
+      ev_.j_phi[ev_.nj]     = corrP4.phi();
+      ev_.j_pumva[ev_.nj]   = j->userFloat("pileupJetId:fullDiscriminant");
+      ev_.j_id[ev_.nj]      = j->userInt("pileupJetId:fullId");
       ev_.j_csv[ev_.nj]     = j->bDiscriminator("pfCombinedInclusiveSecondaryVertexV2BJetTags");
       ev_.j_deepcsv[ev_.nj] = j->bDiscriminator("pfDeepCSVJetTags:probb") + j->bDiscriminator("pfDeepCSVJetTags:probbb");
       ev_.j_btag[ev_.nj]    = (ev_.j_deepcsv[ev_.nj]>0.4941);
 
-      
       //jet shape variables
       ev_.j_c1_00[ev_.nj]    = getC(1, 0.0, &(*j), true, 0.9);
       ev_.j_c1_02[ev_.nj]    = getC(1, 0.2, &(*j), true, 0.9);
@@ -928,9 +975,6 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
 	    }
 	}
 
-      ev_.j_flav[ev_.nj]       = j->partonFlavour();
-      ev_.j_hadflav[ev_.nj]    = j->hadronFlavour();
-      ev_.j_pid[ev_.nj]        = genParton ? genParton->pdgId() : 0;
       ev_.nj++;
 
       //save all PF candidates central jet
