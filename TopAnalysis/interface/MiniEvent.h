@@ -52,7 +52,7 @@ struct MiniEvent_t
 
   Int_t nj;
   Float_t j_pt[200],j_eta[200],j_phi[200],j_mass[200],j_area[200],j_rawsf[200];
-  Float_t j_jerUp[200],j_jerDn[200];
+  Float_t j_jerUp[200],j_jerDn[200],j_jecUp[30][200],j_jecDn[30][200];
   Float_t j_csv[200],j_deepcsv[200],j_pumva[200];
   Float_t j_c1_00[200],j_c1_02[200],j_c1_05[200],j_c1_10[200],j_c1_20[200],j_c2_00[200],j_c2_02[200],j_c2_05[200],j_c2_10[200],j_c2_20[200],j_c3_00[200],j_c3_02[200],j_c3_05[200],j_c3_10[200],j_c3_20[200];
   Float_t j_zg[200],j_mult[200],j_gaptd[200],j_gawidth[200],j_gathrust[200],j_tau32[200],j_tau21[200];
@@ -78,7 +78,7 @@ struct MiniEvent_t
   Float_t fwdtrk_y[50],fwdtrk_y_unc[50];
 };
 
-void createMiniEventTree(TTree *t,MiniEvent_t &ev);
+void createMiniEventTree(TTree *t,MiniEvent_t &ev,Int_t njecUncs=0);
 void attachToMiniEventTree(TTree *t, MiniEvent_t &ev,bool full=false);
 
 #endif

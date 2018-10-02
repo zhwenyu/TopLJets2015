@@ -9,8 +9,8 @@ def getEraConfiguration(era,isData):
         'era2017':('94X_mc2017_realistic_v14', '94X_dataRun2_v6')
         }
     jecFiles    = {
-        'era2016':('Summer16_07Aug2017_V11_MC',  'Summer16_07Aug2017All_V11_DATA'),
-        'era2017':('Fall17_17Nov2017_V6_MC',     'Fall17_17Nov2017BCDEF_V6_DATA')
+        'era2016':('Summer16_07Aug2017_V11_MC',  'Summer16_07Aug2017All_V11_DATA', 'Summer16_07Aug2017_V11_MC_UncertaintySources_AK4PFchs'),
+        'era2017':('Fall17_17Nov2017_V6_MC',     'Fall17_17Nov2017BCDEF_V6_DATA',  'Fall17_17Nov2017_V8_MC_UncertaintySources_AK4PFchs')
         }
     jerFiles    = {
         'era2016':('Summer16_25nsV1_MC',         'Summer16_25nsV1_DATA'),
@@ -29,12 +29,15 @@ def getEraConfiguration(era,isData):
     jerTag    = '_'.join( jerFile.split('_')[0:-1] )
     jerDB     = 'jer_DATA.db'  if isData else 'jer_MC.db'
 
+
+    
     if not os.path.isfile(jecDB) and not os.path.islink(jecDB):
         print 'Creating symbolic link to JEC correction DB'
         os.system('ln -s ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/%s/%s.db %s'%(era,jecFile,jecDB))
     if not os.path.isfile(jerDB) and not os.path.islink(jerDB):
         print 'Creating symbolic link to JER correction DB'
         os.system('ln -s ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/%s/%s.db %s'%(era,jerFile,jerDB))
+    os.system('cp ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/%s/%s.txt jecUncSources.txt'%(era,jecFiles[era][2]))
     os.system('cp ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/%s/%s muoncorr_db.txt'%(era,muonFiles[era]))
 
 

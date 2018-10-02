@@ -51,6 +51,7 @@
 #include "CondFormats/JetMETObjects/interface/FactorizedJetCorrector.h"
 #include "CondFormats/JetMETObjects/interface/JetCorrectionUncertainty.h"
 #include "CondFormats/JetMETObjects/interface/JetCorrectorParameters.h"
+#include "JetMETCorrections/Objects/interface/JetCorrectionsRecord.h"
 
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 #include "TopLJets2015/TopAnalysis/interface/MiniEvent.h"
@@ -148,6 +149,7 @@ private:
   std::unordered_map<std::string,TH1*> histContainer_;
 
   std::string jetIdToUse_;
+  std::vector<JetCorrectionUncertainty *> jecCorrectionUncs_;
 
   std::vector<std::string> triggersToUse_,metFiltersToUse_;
 
@@ -211,6 +213,11 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig) :
   triggersToUse_      = iConfig.getParameter<std::vector<std::string> >("triggersToUse");
   metFiltersToUse_    = iConfig.getParameter<std::vector<std::string> >("metFiltersToUse");
   jetIdToUse_         = iConfig.getParameter<std::string>("jetIdToUse");
+  std::string jecUncFile(edm::FileInPath(iConfig.getParameter<std::string>("jecUncFile")).fullPath());
+  for(auto name : iConfig.getParameter<std::vector<std::string> >("jecUncSources") ) {
+    JetCorrectorParameters *p = new JetCorrectorParameters(jecUncFile,name.c_str());
+    jecCorrectionUncs_.push_back(new JetCorrectionUncertainty(*p));
+  }
 
   muonRC_ = new RoccoR();
   muonRC_->init(edm::FileInPath(iConfig.getParameter<std::string>("RoccoR")).fullPath());
@@ -227,7 +234,7 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig) :
   if(saveTree_)
     {
       tree_ = fs->make<TTree>("data","data");
-      createMiniEventTree(tree_,ev_);
+      createMiniEventTree(tree_,ev_,jecCorrectionUncs_.size());
     }
 }
 
@@ -828,7 +835,6 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
   JME::JetResolution jerResolution  = JME::JetResolution::get(iSetup, "AK4PFchs_pt");
   JME::JetResolutionScaleFactor jerResolutionSF = JME::JetResolutionScaleFactor::get(iSetup, "AK4PFchs");
   std::vector< std::pair<const reco::Candidate *,int> > clustCands;
-  
   for(auto j = jets->begin();  j != jets->end(); ++j)
     {
       //base kinematics
@@ -924,6 +930,14 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
       ev_.j_area[ev_.nj]    = j->jetArea();
       ev_.j_jerUp[ev_.nj]   = jerSF[1];
       ev_.j_jerDn[ev_.nj]   = jerSF[2];
+      for(size_t iunc=0; iunc<jecCorrectionUncs_.size(); iunc++){
+        jecCorrectionUncs_[iunc]->setJetPt(j->pt());
+        jecCorrectionUncs_[iunc]->setJetEta(j->eta());
+        ev_.j_jecUp[iunc][ev_.nj]=1.+jecCorrectionUncs_[iunc]->getUncertainty(true);
+        jecCorrectionUncs_[iunc]->setJetPt(j->pt());
+        jecCorrectionUncs_[iunc]->setJetEta(j->eta());
+        ev_.j_jecDn[iunc][ev_.nj]=1.+jecCorrectionUncs_[iunc]->getUncertainty(false);
+      }
       ev_.j_rawsf[ev_.nj]   = j->correctedJet("Uncorrected").pt()/j->pt();
       ev_.j_pt[ev_.nj]      = corrP4.pt();
       ev_.j_mass[ev_.nj]    = corrP4.mass();

@@ -138,9 +138,9 @@ process.TFileService = cms.Service("TFileService",
 
 #analysis
 process.load('TopLJets2015.TopAnalysis.miniAnalyzer_cfi')
-print 'Ntuplizer configuration is as follows'
 process.analysis.saveTree=cms.bool(options.saveTree)
 process.analysis.savePF=cms.bool(options.savePF)
+process.analysis.jetIdToUse=cms.string('tightLepVeto' if 'era2017' in options.era else 'looseID')
 if not process.analysis.saveTree :
     print '\t Summary tree won\'t be saved'
 if not process.analysis.savePF :
