@@ -51,6 +51,7 @@
 #include "TopLJets2015/TopAnalysis/interface/MiniEvent.h"
 #include "TopLJets2015/TopAnalysis/interface/MyIPTools.h"
 #include "TopLJets2015/TopAnalysis/interface/JetShapes.h"
+#include "TopLJets2015/TopAnalysis/interface/RoccoR.h"
 #include "DataFormats/TrackReco/interface/HitPattern.h"
 #include "PhysicsTools/SelectorUtils/interface/PFJetIDSelectionFunctor.h"
 #include "DataFormats/Common/interface/ValueMap.h"
@@ -70,6 +71,7 @@
 #include "TH1.h"
 #include "TH1F.h"
 #include "TH2F.h"
+#include "TRandom2.h"
 #include "TTree.h"
 
 #include <vector>
@@ -148,8 +150,8 @@ private:
   TTree *tree_;
   MiniEvent_t ev_;
   
-  //KalmanMuonCalibrator *muonCor_;
-  bool useRawLeptons_;
+  RoccoR *muonRC_;
+
   edm::Service<TFileService> fs;
 
   //counters
@@ -198,15 +200,17 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig) :
   //petersonFragToken_(consumes<edm::ValueMap<float> >(edm::InputTag("bfragWgtProducer:PetersonFrag"))),
   pfjetIDLoose_( PFJetIDSelectionFunctor::FIRSTDATA, PFJetIDSelectionFunctor::LOOSE ),  
   saveTree_( iConfig.getParameter<bool>("saveTree") ),
-  savePF_( iConfig.getParameter<bool>("savePF") ),
-  //muonCor_(0),
-  useRawLeptons_( iConfig.getParameter<bool>("useRawLeptons") )
+  savePF_( iConfig.getParameter<bool>("savePF") )
 {
   //now do what ever initialization is needed
   electronToken_      = mayConsume<edm::View<pat::Electron> >(iConfig.getParameter<edm::InputTag>("electrons"));
   photonToken_        = mayConsume<edm::View<pat::Photon> >(iConfig.getParameter<edm::InputTag>("photons"));
   triggersToUse_      = iConfig.getParameter<std::vector<std::string> >("triggersToUse");
   metFiltersToUse_  = iConfig.getParameter<std::vector<std::string> >("metFiltersToUse");
+
+
+  muonRC_ = new RoccoR();
+  muonRC_->init(edm::FileInPath(iConfig.getParameter<std::string>("RoccoR")).fullPath());
 
   histContainer_["triggerList"] = fs->make<TH1F>("triggerList", ";Trigger bits;",triggersToUse_.size(),0,triggersToUse_.size());
   for(size_t i=0; i<triggersToUse_.size(); i++) histContainer_["triggerList"] ->GetXaxis()->SetBinLabel(i+1,triggersToUse_[i].c_str());
@@ -548,6 +552,7 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
   //MUON SELECTION: cf. https://twiki.cern.ch/twiki/bin/viewauth/CMS/SWGuideMuonIdRun2
   edm::Handle<pat::MuonCollection> muons;
   iEvent.getByToken(muonToken_, muons);
+  std::vector<Double_t> muStatUncReplicas(100,0);
   for (const pat::Muon &mu : *muons) 
     { 
 
@@ -555,13 +560,52 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
       TLorentzVector p4;
 
       //apply correction
-      float pt=mu.pt();
+      float pt  = mu.pt();
       if(pt<2) continue; //no need to care about very low pt muons here... (corrections will tend to be meaningless)
-
       float eta = mu.eta();
       float phi = mu.phi();
-      float ptUnc = mu.bestTrack()->ptError();
-      p4.SetPtEtaPhiM(pt,eta,phi,mu.mass());
+      float q   = mu.charge();
+      const reco::GenParticle * gen=mu.genLepton(); 
+
+      //rochester corrections
+      float sf(1.0),smearSeed(-1);
+      float statUnc(0),zptUnc(0),ewkUnc(0),deltamUnc(0);
+      if(iEvent.isRealData())
+        {
+          sf = muonRC_->kScaleDT(q, pt, eta, phi);
+          for(int i=0; i<100; i++)
+            muStatUncReplicas[i] = muonRC_->kScaleDT(q, pt, eta, phi, 1,i);
+          statUnc = (1.0+TMath::StdDev(muStatUncReplicas.begin(),muStatUncReplicas.end()))/sf;
+          zptUnc = muonRC_->kScaleDT(q, pt, eta, phi, 2)/sf;
+          ewkUnc = muonRC_->kScaleDT(q, pt, eta, phi, 3)/sf;
+          deltamUnc = muonRC_->kScaleDT(q, pt, eta, phi, 4)/sf;
+        }
+      else
+        {
+          smearSeed=gRandom->Rndm();
+          int tlwm=(mu.innerTrack().isNonnull() ? mu.innerTrack()->hitPattern().trackerLayersWithMeasurement() : 0);
+          sf = gen ?
+            muonRC_->kSpreadMC(q, pt, eta, phi, gen->pt()) :
+            muonRC_->kSmearMC(q, pt, eta, phi, tlwm , smearSeed);
+          for(int i=0; i<100; i++)
+            muStatUncReplicas[i]=gen ?
+              muonRC_->kSpreadMC(q, pt, eta, phi, gen->pt(),1,i) :
+              muonRC_->kSmearMC(q, pt, eta, phi, tlwm, smearSeed,1,i);
+          statUnc=(1.0+TMath::StdDev(muStatUncReplicas.begin(),muStatUncReplicas.end()))/sf;
+          zptUnc=(gen ?
+                  muonRC_->kSpreadMC(q, pt, eta, phi, gen->pt(),2) :
+                  muonRC_->kSmearMC(q, pt, eta, phi, tlwm, smearSeed,2))/sf;
+          ewkUnc=(gen ?
+                  muonRC_->kSpreadMC(q, pt, eta, phi, gen->pt(),3) :
+                  muonRC_->kSmearMC(q, pt, eta, phi, tlwm, smearSeed,3))/sf;
+          deltamUnc=(gen ?
+                     muonRC_->kSpreadMC(q, pt, eta, phi, gen->pt(),4) :
+                     muonRC_->kSmearMC(q, pt, eta, phi, tlwm, smearSeed,4))/sf;
+          std::cout << sf << " " << statUnc << " " << zptUnc << " " << ewkUnc << " " << deltamUnc << std::endl;
+        }      
+
+
+      p4.SetPtEtaPhiM(sf*pt,eta,phi,mu.mass());
 
       //kinematics
       bool passPt(p4.Pt() > 10);
@@ -573,7 +617,6 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
       if(!isLoose) continue;
 
       //save info
-      const reco::GenParticle * gen=mu.genLepton(); 
       ev_.l_isPromptFinalState[ev_.nl] = gen ? gen->isPromptFinalState() : false;
       ev_.l_isDirectPromptTauDecayProductFinalState[ev_.nl] = gen ? gen->isDirectPromptTauDecayProductFinalState() : false;
       ev_.l_id[ev_.nl]=13;
@@ -585,12 +628,16 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
 	  ev_.l_g[ev_.nl]=ig;
 	  break;
 	}	 
-      ev_.l_charge[ev_.nl]   = mu.charge();
+      
+      ev_.l_charge[ev_.nl]   = q;
       ev_.l_pt[ev_.nl]       = p4.Pt();
       ev_.l_eta[ev_.nl]      = p4.Eta();
       ev_.l_phi[ev_.nl]      = p4.Phi();
       ev_.l_mass[ev_.nl]     = p4.M();
-      ev_.l_scaleUnc[ev_.nl] = ptUnc;
+      ev_.l_scaleUnc1[ev_.nl]= statUnc;
+      ev_.l_scaleUnc2[ev_.nl]= zptUnc;
+      ev_.l_scaleUnc3[ev_.nl]= ewkUnc;
+      ev_.l_scaleUnc4[ev_.nl]= deltamUnc;
       ev_.l_mva[ev_.nl]      = 0;
       ev_.l_pid[ev_.nl]      = mu.selectors();
       ev_.l_chargedHadronIso[ev_.nl] = mu.pfIsolationR04().sumChargedHadronPt;
@@ -684,8 +731,8 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
       ev_.l_eta[ev_.nl]      = e.eta();
       ev_.l_phi[ev_.nl]      = e.phi();
       ev_.l_mass[ev_.nl]     = e.mass();
-      ev_.l_smearUnc[ev_.nl] = 0.5*(e.userFloat("energySmearUp")-e.userFloat("energySmearDown"));
-      ev_.l_scaleUnc[ev_.nl] = 0.5*(e.userFloat("energyScaleUp")-e.userFloat("energyScaleDown"));
+      ev_.l_scaleUnc1[ev_.nl] = 0.5*(e.userFloat("energyScaleUp")-e.userFloat("energyScaleDown"));
+      ev_.l_scaleUnc2[ev_.nl] = 0.5*(e.userFloat("energySmearUp")-e.userFloat("energySmearDown"));
       ev_.l_miniIso[ev_.nl]  = getMiniIsolation(pfcands,&e,0.05, 0.2, 10., false);
       ev_.l_relIso[ev_.nl]   = (e.chargedHadronIso()+ max(0., e.neutralHadronIso() + e.photonIso()  - 0.5*e.puChargedHadronIso()))/e.pt();     
       ev_.l_chargedHadronIso[ev_.nl] = e.chargedHadronIso();

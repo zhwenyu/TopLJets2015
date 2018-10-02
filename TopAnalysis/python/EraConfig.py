@@ -16,7 +16,11 @@ def getEraConfiguration(era,isData):
         'era2016':('Summer16_25nsV1_MC',         'Summer16_25nsV1_DATA'),
         'era2017':('Summer16_25nsV1_MC',         'Summer16_25nsV1_DATA'),
         }
+    muonFiles   = {
+        'era2016':'RoccoR2016.txt',
+        'era2017':'RoccoR2017.txt'
 
+        }
     globalTag = globalTags[era][isData]
     jecFile   = jecFiles[era][isData]
     jecTag    = '_'.join( jecFile.split('_')[0:-1] )
@@ -31,8 +35,12 @@ def getEraConfiguration(era,isData):
     if not os.path.isfile(jerDB) and not os.path.islink(jerDB):
         print 'Creating symbolic link to JER correction DB'
         os.system('ln -s ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/%s/%s.db %s'%(era,jerFile,jerDB))
+    os.system('cp ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/%s/%s muoncorr_db.txt'%(era,muonFiles[era]))
+
+
     print 'JEC tag: ',jecTag,'to be read from',jecDB
     print 'JER tag: ',jerTag,'to be read from',jerDB
+    print 'Muon corrections to be read from muoncorr_db.txt'
 
     return globalTag, jecTag, jecDB, jerTag, jerDB
     

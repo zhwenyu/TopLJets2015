@@ -57,15 +57,3 @@ def customizeJetTools(process,jecDB,jecTag,jerDB,jerTag,baseJetCollection,runOnD
 	#MET
 	from PhysicsTools.PatUtils.tools.runMETCorrectionsAndUncertainties import runMetCorAndUncFromMiniAOD
 	runMetCorAndUncFromMiniAOD(process,isData=runOnData)
-	
-
-	process.load('RecoMET.METFilters.BadPFMuonFilter_cfi')
-	process.BadPFMuonFilter.muons = cms.InputTag("slimmedMuons")
-	process.BadPFMuonFilter.PFCandidates = cms.InputTag("packedPFCandidates")
-
-	process.load('RecoMET.METFilters.BadChargedCandidateFilter_cfi')
-	process.BadChargedCandidateFilter.muons = cms.InputTag("slimmedMuons")
-	process.BadChargedCandidateFilter.PFCandidates = cms.InputTag("packedPFCandidates")
-
-	process.extraMetFilters = cms.Path(process.BadPFMuonFilter*process.BadChargedCandidateFilter)
-	#process.jetmetSeq=cms.Sequence(process.BadPFMuonFilter+process.BadChargedCandidateFilter)
