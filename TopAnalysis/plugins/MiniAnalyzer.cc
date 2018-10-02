@@ -556,9 +556,6 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
   for (const pat::Muon &mu : *muons) 
     { 
 
-      //correct the 4-momentum
-      TLorentzVector p4;
-
       //apply correction
       float pt  = mu.pt();
       if(pt<2) continue; //no need to care about very low pt muons here... (corrections will tend to be meaningless)
@@ -601,11 +598,9 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
           deltamUnc=(gen ?
                      muonRC_->kSpreadMC(q, pt, eta, phi, gen->pt(),4) :
                      muonRC_->kSmearMC(q, pt, eta, phi, tlwm, smearSeed,4))/sf;
-          std::cout << sf << " " << statUnc << " " << zptUnc << " " << ewkUnc << " " << deltamUnc << std::endl;
         }      
 
-
-      p4.SetPtEtaPhiM(sf*pt,eta,phi,mu.mass());
+      auto p4  = mu.p4() * sf;
 
       //kinematics
       bool passPt(p4.Pt() > 10);
@@ -664,9 +659,12 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
   iEvent.getByToken(electronToken_, electrons);    
   for (const pat::Electron &e : *electrons) 
     {        
+
+      auto corrP4  = e.p4() * e.userFloat("ecalTrkEnergyPostCorr") / e.energy();
+
       //kinematics cuts
-      bool passPt(e.pt() > 15.0);
-      bool passEta(fabs(e.eta()) < 2.5 && (fabs(e.superCluster()->eta()) < 1.4442 || fabs(e.superCluster()->eta()) > 1.5660));
+      bool passPt(corrP4.pt() > 15.0);
+      bool passEta(fabs(corrP4.eta()) < 2.5 && (fabs(e.superCluster()->eta()) < 1.4442 || fabs(e.superCluster()->eta()) > 1.5660));
       if(!passPt || !passEta) continue;
       
       //full id+iso decisions
@@ -713,11 +711,12 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
       for(int ig=0; ig<ev_.ng; ig++)
 	{
 	  if(abs(ev_.g_id[ig])!=ev_.l_id[ev_.nl]) continue;
-	  if(deltaR( e.eta(),e.phi(), ev_.g_eta[ig],ev_.g_phi[ig])>0.4) continue;
+	  if(deltaR( corrP4.eta(),corrP4.phi(), ev_.g_eta[ig],ev_.g_phi[ig])>0.4) continue;
 	  ev_.l_g[ev_.nl]=ig;
 	  break;
 	}	      
       ev_.l_mva[ev_.nl]=e.userFloat("ElectronMVAEstimatorRun2Fall17IsoV1Values");
+      ev_.l_mvaCats[ev_.nl]=e.userInt("ElectronMVAEstimatorRun2Fall17IsoV1Categories");
 
       ev_.l_pid[ev_.nl]=0;
       ev_.l_pid[ev_.nl]= (passVetoId | (isVeto<<1) 
@@ -727,14 +726,19 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
 			  | (passIpCuts<<8) 
 			 );
       ev_.l_charge[ev_.nl]   = e.charge();
-      ev_.l_pt[ev_.nl]       = e.pt();
-      ev_.l_eta[ev_.nl]      = e.eta();
-      ev_.l_phi[ev_.nl]      = e.phi();
-      ev_.l_mass[ev_.nl]     = e.mass();
-      ev_.l_scaleUnc1[ev_.nl] = 0.5*(e.userFloat("energyScaleUp")-e.userFloat("energyScaleDown"));
-      ev_.l_scaleUnc2[ev_.nl] = 0.5*(e.userFloat("energySmearUp")-e.userFloat("energySmearDown"));
+      ev_.l_pt[ev_.nl]       = corrP4.pt();
+      ev_.l_eta[ev_.nl]      = corrP4.eta();
+      ev_.l_phi[ev_.nl]      = corrP4.phi();
+      ev_.l_mass[ev_.nl]     = corrP4.mass();
+      ev_.l_scaleUnc1[ev_.nl] = 0.5*(e.userFloat("energyScaleStatUp")-e.userFloat("energyScaleStatDown"));
+      ev_.l_scaleUnc2[ev_.nl] = 0.5*(e.userFloat("energyScaleGainUp")-e.userFloat("energyScaleGainDown"));
+      ev_.l_scaleUnc3[ev_.nl] = 0.5*(e.userFloat("energyScaleSystUp")-e.userFloat("energyScaleSystDown"));
+      ev_.l_scaleUnc4[ev_.nl] = 0.5*(e.userFloat("energySigmaUp")-e.userFloat("energySigmaDown"));
+      ev_.l_scaleUnc5[ev_.nl] = 0.5*(e.userFloat("energySigmaPhiUp")-e.userFloat("energySigmaPhiDown"));
+      ev_.l_scaleUnc6[ev_.nl] = 0.5*(e.userFloat("energySigmaRhoUp")-e.userFloat("energySigmaRhoDown"));
+      ev_.l_scaleUnc7[ev_.nl] = 0.5*(e.userFloat("energyScaleEtUp")-e.userFloat("energyScaleEtDown"));
       ev_.l_miniIso[ev_.nl]  = getMiniIsolation(pfcands,&e,0.05, 0.2, 10., false);
-      ev_.l_relIso[ev_.nl]   = (e.chargedHadronIso()+ max(0., e.neutralHadronIso() + e.photonIso()  - 0.5*e.puChargedHadronIso()))/e.pt();     
+      ev_.l_relIso[ev_.nl]   = (e.chargedHadronIso()+ max(0., e.neutralHadronIso() + e.photonIso()  - 0.5*e.puChargedHadronIso()))/corrP4.pt();     
       ev_.l_chargedHadronIso[ev_.nl] = e.chargedHadronIso();
       ev_.l_ip3d[ev_.nl]     = -9999.;
       ev_.l_ip3dsig[ev_.nl]  = -9999;
@@ -746,7 +750,7 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
 	}
       ev_.nl++;
       
-      if( e.pt()>20 && passEta && passLooseId ) nrecleptons_++;
+      if( corrP4.pt()>20 && passEta && passLooseId ) nrecleptons_++;
     }
 
   // PHOTON SELECTION: cf. https://twiki.cern.ch/twiki/bin/view/CMS/CutBasedPhotonIdentificationRun2
@@ -755,9 +759,11 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
   iEvent.getByToken(photonToken_, photons);    
   for (const pat::Photon &g : *photons)
     {        
+      auto corrP4  = g.p4() * g.userFloat("ecalEnergyPostCorr") / g.energy();
+
       //kinematics cuts
-      bool passPt(g.pt() > 30.0);
-      float eta=g.eta();
+      bool passPt(corrP4.pt() > 30.0);
+      float eta=corrP4.eta();
       bool passEta(fabs(eta) < 2.5 && (fabs(eta) < 1.4442 || fabs(eta) > 1.5660));
       if(!passPt || !passEta) continue;
 
@@ -779,22 +785,28 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
       for(int ig=0; ig<ev_.ng; ig++)
 	{
 	  if(abs(ev_.g_id[ig])!=22) continue;
-	  if(deltaR( g.eta(),g.phi(), ev_.g_eta[ig],ev_.g_phi[ig])>0.4) continue;
+	  if(deltaR( corrP4.eta(),corrP4.phi(), ev_.g_eta[ig],ev_.g_phi[ig])>0.4) continue;
 	  ev_.gamma_g[ev_.ngamma]=ig;
 	  break;
 	}	      
       
       ev_.gamma_mva[ev_.ngamma]=g.userFloat("PhotonMVAEstimatorRunIIFall17v1Values");
+      ev_.gamma_mvaCats[ev_.ngamma]=g.userInt("PhotonMVAEstimatorRunIIFall17v1Categories");
       ev_.gamma_passElectronVeto[ev_.ngamma] = g.passElectronVeto();
       ev_.gamma_hasPixelSeed[ev_.ngamma] = g.hasPixelSeed();
       ev_.gamma_pid[ev_.ngamma]= ( (looseBits & 0x3ff)
                                    | ((mediumBits & 0x3ff)<<10)
                                    | ((tightBits & 0x3ff)<<20));
-      ev_.gamma_pt[ev_.ngamma]  = g.pt();
-      ev_.gamma_eta[ev_.ngamma] = g.eta();
-      ev_.gamma_phi[ev_.ngamma] = g.phi();   
-      ev_.gamma_smearUnc[ev_.ngamma] = 0.5*(g.userFloat("energySmearUp")-g.userFloat("energySmearDown"));
-      ev_.gamma_scaleUnc[ev_.ngamma] = 0.5*(g.userFloat("energyScaleUp")-g.userFloat("energyScaleDown"));   
+      ev_.gamma_pt[ev_.ngamma]  = corrP4.pt();
+      ev_.gamma_eta[ev_.ngamma] = corrP4.eta();
+      ev_.gamma_phi[ev_.ngamma] = corrP4.phi();   
+      ev_.gamma_scaleUnc1[ev_.ngamma] = 0.5*(g.userFloat("energyScaleStatUp")-g.userFloat("energyScaleStatDown"));
+      ev_.gamma_scaleUnc2[ev_.ngamma] = 0.5*(g.userFloat("energyScaleGainUp")-g.userFloat("energyScaleGainDown"));
+      ev_.gamma_scaleUnc3[ev_.ngamma] = 0.5*(g.userFloat("energyScaleSystUp")-g.userFloat("energyScaleSystDown"));
+      ev_.gamma_scaleUnc4[ev_.ngamma] = 0.5*(g.userFloat("energySigmaUp")-g.userFloat("energySigmaDown"));
+      ev_.gamma_scaleUnc5[ev_.ngamma] = 0.5*(g.userFloat("energySigmaPhiUp")-g.userFloat("energySigmaPhiDown"));
+      ev_.gamma_scaleUnc6[ev_.ngamma] = 0.5*(g.userFloat("energySigmaRhoUp")-g.userFloat("energySigmaRhoDown"));
+      ev_.gamma_scaleUnc7[ev_.ngamma] = 0.5*(g.userFloat("energyScaleEtUp")-g.userFloat("energyScaleEtDown"));
       ev_.gamma_chargedHadronIso[ev_.ngamma] = g.chargedHadronIso();
       ev_.gamma_neutralHadronIso[ev_.ngamma] = g.neutralHadronIso();
       ev_.gamma_photonIso[ev_.ngamma]        = g.photonIso();
@@ -803,7 +815,7 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
       ev_.gamma_r9[ev_.ngamma]               = g.full5x5_r9();
       ev_.ngamma++;
       if(ev_.ngamma>50) break;
-      if( g.pt()>30 && passEta) nrecphotons_++;
+      if( corrP4.pt()>30 && passEta) nrecphotons_++;
     }
 
   // JETS
