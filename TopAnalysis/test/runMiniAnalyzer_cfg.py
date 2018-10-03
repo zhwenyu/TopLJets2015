@@ -110,7 +110,7 @@ process.source = cms.Source("PoolSource",
                             duplicateCheckMode = cms.untracked.string('noDuplicateCheck') 
                             )
 if options.runOnData:
-      process.source.fileNames = cms.untracked.vstring('')
+      process.source.fileNames = cms.untracked.vstring('/store/data/Run2017B/SingleElectron/MINIAOD/31Mar2018-v1/30000/04B05308-0038-E811-99AB-008CFAC94314.root')
 
 if options.inputFile:
       fileList=[]
