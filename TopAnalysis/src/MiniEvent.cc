@@ -6,7 +6,7 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev,Int_t njecUncs)
   //event header
   t->Branch("isData",    &ev.isData,   "isData/O");
   t->Branch("run",       &ev.run,      "run/i");
-  t->Branch("event",     &ev.event,    "event/i");
+  t->Branch("event",     &ev.event,    "event/l");
   t->Branch("lumi",      &ev.lumi,     "lumi/i");
 
   //generator level information
