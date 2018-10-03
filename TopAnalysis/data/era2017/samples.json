@@ -17,12 +17,9 @@
 "MC13TeV_2017_DY50toInf_fxfx_ext1"    : [5765.4, 0,  "/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14_ext1-v1/MINIAODSIM", "DY", 41, false, false, 1],
 "MC13TeV_2017_DY1J50toInf_fxfx"         : [5765.4, 0,  "/DYJetsToLL_1J_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM", "DYjetbinned", 41, false, false, 1],
 "MC13TeV_2017_DY2J50toInf_fxfx"         : [5765.4, 0,  "/DYJetsToLL_2J_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM", "DYjetbinned", 41, false, false, 1],
-"MC13TeV_2017_ZZ"                    : [0.5644, 0,  "/ZZ_TuneCP5_13TeV-pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM
-", "Multiboson", 815, false, false, 1],
-"MC13TeV_2017_WZ"                    : [47.13, 0,   "/WZ_TuneCP5_13TeV-pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM
-", "Multiboson", 815, false, false, 1],
-"MC13TeV_2017_WW"                    : [12.178, 0,  "/WW_TuneCP5_13TeV-pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM
-", "Multiboson", 815, false, false, 1],
+"MC13TeV_2017_ZZ"                    : [0.5644, 0,  "/ZZ_TuneCP5_13TeV-pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM", "Multiboson", 815, false, false, 1],
+"MC13TeV_2017_WZ"                    : [47.13, 0,   "/WZ_TuneCP5_13TeV-pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM", "Multiboson", 815, false, false, 1],
+"MC13TeV_2017_WW"                    : [12.178, 0,  "/WW_TuneCP5_13TeV-pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM", "Multiboson", 815, false, false, 1],
 "MC13TeV_2017_W0Jets_fxfx"           : [942.3, 0,   "/WJetsToLNu_0J_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v2/MINIAODSIM", "W", 797,false,false,1],
 "MC13TeV_2017_WJets_mlm"             : [942.3, 0,   "/WJetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v2/MINIAODSIM", "Wlo", 797,false,false,1],
 "MC13TeV_2017_WJets_mlm_ext1"        : [524.2, 0,   "/WJetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14_ext1-v2/MINIAODSIM", "Wlo", 797,false,false,1],
