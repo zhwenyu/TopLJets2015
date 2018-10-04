@@ -4,6 +4,50 @@ import os,sys
 from TopLJets2015.TopAnalysis.Plot import fixExtremities
 from computeTransferFactor import getPlotsIn,scaleTo
 
+def parametrizeTurnOn(num,den,turnOn=None):
+        
+    """parametrizes the turn-on with a given function, and computes the ratio parametrized"""
+
+    if not turnOn: return None
+
+    num.Fit(turnOn,'MR+')
+    num.GetListOfFunctions().At(0).SetLineColor(1)
+    grnum=ROOT.TGraphErrors()
+    for i in xrange(0,num.GetNbinsX()+1):
+        grnum.SetPoint(i, num.GetXaxis().GetBinCenter(i+1),0)
+    ROOT.TVirtualFitter.GetFitter().GetConfidenceIntervals(grnum,0.68)
+            
+    den.Fit(turnOn,'MR+')
+    den.GetListOfFunctions().At(0).SetLineColor(ROOT.kBlue)
+    grden=ROOT.TGraphErrors()
+    for i in xrange(0,den.GetNbinsX()+1):
+        grden.SetPoint(i, den.GetXaxis().GetBinCenter(i+1),0)
+    ROOT.TVirtualFitter.GetFitter().GetConfidenceIntervals(grden,0.68)
+            
+    #compute the parametrized ratio
+    data2mcParam=ROOT.TGraphErrors()
+    x,ynum,yden=ROOT.Double(0),ROOT.Double(0),ROOT.Double(0)
+    for i in xrange(0,grnum.GetN()):
+        grden.GetPoint(i,x,yden)
+        ydenUnc=grden.GetErrorY(i)
+        grnum.GetPoint(i,x,ynum)
+        ynumUnc=grnum.GetErrorY(i)
+                
+        if float(yden)==0 : continue
+        ip=data2mcParam.GetN()
+        data2mcParam.SetPoint(ip,float(x),float(ynum)/float(yden))
+        eratio =  (float(ynum)*ydenUnc)**2
+        eratio += (float(yden)*ynumUnc)**2
+        eratio = ROOT.TMath.Sqrt(eratio)/(float(yden)**2)
+        data2mcParam.SetPointError(ip,0.5*den.GetXaxis().GetBinWidth(i+1),eratio)
+    data2mcParam.SetTitle('Data/MC param')
+    data2mcParam.SetFillStyle(1001)
+    data2mcParam.SetFillColor(ROOT.kGray)
+    data2mcParam.SetMarkerColor(ROOT.kGray)
+    data2mcParam.SetLineColor(ROOT.kGray)
+
+    return data2mcParam
+
 def computeVBFTriggerEff(f,distsOfInterest):
     
     """computes ratios to evaluate VBF trigger efficiency and fits an erf function"""
@@ -41,60 +85,24 @@ def computeVBFTriggerEff(f,distsOfInterest):
         data2mc.SetDirectory(0)
         data2mc.GetYaxis().SetTitle('Data/MC')
 
-        data2mcParam=None
-        if dist=='mjj':
-            #turnOn=ROOT.TF1('turnon',
-            #                '[0]+0.5*[1]*(1+TMath::Erf((x-[2])/(TMath::Sqrt(x)*[3])))',
-            #                dataNum.GetXaxis().GetXmin(),
-            #                dataNum.GetXaxis().GetXmax())
-            #turnOn.SetParLimits(0,0,0.2)
-            #turnOn.SetParLimits(1,0.8,1.4)
-            #turnOn.SetParLimits(2,500,2000)
+        turnOn=None
+        if dist in ['mjj','subleadpt'] : 
             turnOn=ROOT.TF1('turnon',
                             '[0]+[1]/(1.+TMath::Exp([2]*(x-[3])))',
                             dataNum.GetXaxis().GetXmin(),
                             dataNum.GetXaxis().GetXmax())
-            turnOn.SetParLimits(0,0,0.5)
+            turnOn.SetParLimits(0,0.,0.8)
             turnOn.SetParLimits(1,0.5,1.2)
             turnOn.SetParLimits(2,-2,2)
-            turnOn.SetParLimits(3,500,2000)
-            dataNum.Fit(turnOn,'MR+')
-            dataNum.GetListOfFunctions().At(0).SetLineColor(1)
-            grnum=ROOT.TGraphErrors()
-            for i in xrange(0,dataNum.GetNbinsX()+1):
-                grnum.SetPoint(i, dataNum.GetXaxis().GetBinCenter(i+1),0)
-            ROOT.TVirtualFitter.GetFitter().GetConfidenceIntervals(grnum,0.68)
-
-            mcNum.Fit(turnOn,'MR+')
-            mcNum.GetListOfFunctions().At(0).SetLineColor(ROOT.kBlue)
-            grden=ROOT.TGraphErrors()
-            for i in xrange(0,mcNum.GetNbinsX()+1):
-                grden.SetPoint(i, mcNum.GetXaxis().GetBinCenter(i+1),0)
-            ROOT.TVirtualFitter.GetFitter().GetConfidenceIntervals(grden,0.68)
-            
-            #compute the parametrized ratio
-            data2mcParam=ROOT.TGraphErrors()
-            x,ynum,yden=ROOT.Double(0),ROOT.Double(0),ROOT.Double(0)
-            for i in xrange(0,grnum.GetN()):
-                grden.GetPoint(i,x,yden)
-                ydenUnc=grden.GetErrorY(i)
-                grnum.GetPoint(i,x,ynum)
-                ynumUnc=grnum.GetErrorY(i)
-                
-                if float(yden)==0 : continue
-                data2mcParam.SetPoint(i,float(x),float(ynum)/float(ynum))
-                eratio =  (float(ynum)*ydenUnc)**2
-                eratio += (float(yden)*ynumUnc)**2
-                eratio = ROOT.TMath.Sqrt(eratio)/(float(yden)**2)
-                data2mcParam.SetPointError(i,mcNum.GetXaxis().GetBinWidth(i+1),eratio)
-            data2mcParam.SetTitle('Data/MC param')
-            data2mcParam.SetFillStyle(1001)
-            data2mcParam.SetFillColor(ROOT.kGray)
-            data2mcParam.SetMarkerColor(ROOT.kGray)
-            data2mcParam.SetLineColor(ROOT.kGray)
-
+            turnOn.SetParLimits(3,500,2000)           
+            if dist=='subleadpt': turnOn.SetParLimits(3,20,50)            
+        #else:
+        #    turnOn=ROOT.TF1('turnon',
+        #                    '[0]',
+        #                    dataNum.GetXaxis().GetXmin(),
+        #                    dataNum.GetXaxis().GetXmax())
+        data2mcParam=parametrizeTurnOn(dataNum,mcNum,turnOn)
         ratios[name]=(dataNum,mcNum,data2mc,data2mcParam)
-
 
     inF.Close()
 
@@ -202,8 +210,7 @@ def main():
     ROOT.gStyle.SetOptStat(0)
     ROOT.gROOT.SetBatch(True)
 
-    distsOfInterest=['detajj','dphijj','drvj0','drvj1','forwardeta','centraleta','mjj','nvtx','leadpt','subleadpt']
-
+    distsOfInterest=['detajj','dphijj','drvj0','drvj1','forwardeta','centraleta','mjj','nvtx','leadpt','subleadpt','vpt','vy']
     trigEff=computeVBFTriggerEff(opt.plotter,distsOfInterest)
     for name in trigEff:
         fOutName=name
