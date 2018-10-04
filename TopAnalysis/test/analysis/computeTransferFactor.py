@@ -51,8 +51,11 @@ def getPlotsIn(inF,dirname,specList=[],rebin=True):
 def scaleTo(h,ht):
     """ scales h to ht(arget) """
     total_h=h.Integral(1,h.GetNbinsX())
-    total_ht=ht.Integral(1,ht.GetNbinsX())
-    h.Scale(total_ht/total_h)
+    if type(ht) is float:
+        h.Scale(ht/total_h)
+    else:
+        total_ht=ht.Integral(1,ht.GetNbinsX())
+        h.Scale(total_ht/total_h)
 
 
 def applyTF(h,tf):

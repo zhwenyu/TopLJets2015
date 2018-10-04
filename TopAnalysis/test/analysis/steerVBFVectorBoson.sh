@@ -133,6 +133,9 @@ case $WHAT in
 	python scripts/plotter.py ${commonOpts} -j ${json}      ${kFactors}
         python scripts/plotter.py ${commonOpts} -j ${syst_json} ${kFactors} --silent -o syst_plotter.root;
 
+        #trigger efficiencies
+        python test/analysis/computeVBFTriggerEff.py -p ${plotOutDir}/plotter.root -o ${plotOutDir};
+
         #transfer factors
         python test/analysis/computeTransferFactor.py -p ${plotOutDir}/plotter.root -s ${plotOutDir}/syst_plotter.root -o ${plotOutDir};
 
