@@ -20,7 +20,7 @@ def customizeJetTools(process,jecDB,jecTag,jerDB,jerTag,baseJetCollection,runOnD
 							       label  = cms.untracked.string('AK4PFchs')
 							       )						      
 						      ), 
-				   connect = cms.string('sqlite_fip:%s'%jecDB)
+				   connect = cms.string('sqlite_file:%s'%jecDB)
 				   )
 
 	## add an es_prefer statement to resolve a possible conflict from simultaneous connection to a global tag
@@ -28,7 +28,7 @@ def customizeJetTools(process,jecDB,jecTag,jerDB,jerTag,baseJetCollection,runOnD
 
         from CondCore.DBCommon.CondDBSetup_cfi import CondDBSetup
         process.jerDB = cms.ESSource('PoolDBESSource', CondDBSetup,
-                                     connect = cms.string('sqlite_fip:%s'%jerDB),
+                                     connect = cms.string('sqlite_file:%s'%jerDB),
                                      toGet = cms.VPSet(cms.PSet(record = cms.string('JetResolutionRcd'),
                                                                 tag = cms.string('JR_%s_PtResolution_AK4PFchs'%jerTag),
                                                                 label = cms.untracked.string('AK4PFchs_pt')

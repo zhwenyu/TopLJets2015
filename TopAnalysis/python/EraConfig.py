@@ -30,10 +30,10 @@ def getEraConfiguration(era,isData):
     jerDB     = 'jer_DATA.db'  if isData else 'jer_MC.db'
 
     #copy correction files to a common CMSSW search path directory
-    os.system('cp ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/%s/%s.db ${CMSSW_BASE}/src/%s'%(era,jecFile,jecDB))
-    os.system('cp ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/%s/%s.db ${CMSSW_BASE}/src/%s'%(era,jerFile,jerDB))
-    os.system('cp ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/%s/%s.txt ${CMSSW_BASE}/src/jecUncSources.txt'%(era,jecFiles[era][2]))
-    os.system('cp ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/%s/%s ${CMSSW_BASE}/src/muoncorr_db.txt'%(era,muonFiles[era]))
+    os.system('cp ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/%s/%s.db %s'%(era,jecFile,jecDB))
+    os.system('cp ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/%s/%s.db %s'%(era,jerFile,jerDB))
+    os.system('cp ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/%s/%s.txt jecUncSources.txt'%(era,jecFiles[era][2]))
+    os.system('cp ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/%s/%s muoncorr_db.txt'%(era,muonFiles[era]))
 
     print 'JEC tag: ',jecTag,'to be read from',jecDB
     print 'JER tag: ',jerTag,'to be read from',jerDB

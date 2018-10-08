@@ -212,15 +212,17 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig) :
   photonToken_        = mayConsume<edm::View<pat::Photon> >(iConfig.getParameter<edm::InputTag>("photons"));
   triggersToUse_      = iConfig.getParameter<std::vector<std::string> >("triggersToUse");
   metFiltersToUse_    = iConfig.getParameter<std::vector<std::string> >("metFiltersToUse");
-  jetIdToUse_         = iConfig.getParameter<std::string>("jetIdToUse");
-  std::string jecUncFile(edm::FileInPath(iConfig.getParameter<std::string>("jecUncFile")).fullPath());
+  jetIdToUse_         = iConfig.getParameter<std::string>("jetIdToUse");  
+  std::string jecUncFile(iConfig.getParameter<std::string>("jecUncFile"));
+  //std::string jecUncFile(edm::FileInPath(iConfig.getParameter<std::string>("jecUncFile")).fullPath());
   for(auto name : iConfig.getParameter<std::vector<std::string> >("jecUncSources") ) {
     JetCorrectorParameters *p = new JetCorrectorParameters(jecUncFile,name.c_str());
     jecCorrectionUncs_.push_back(new JetCorrectionUncertainty(*p));
   }
 
   muonRC_ = new RoccoR();
-  muonRC_->init(edm::FileInPath(iConfig.getParameter<std::string>("RoccoR")).fullPath());
+  muonRC_->init(iConfig.getParameter<std::string>("RoccoR"));
+  //muonRC_->init(edm::FileInPath(iConfig.getParameter<std::string>("RoccoR")).fullPath());
 
   histContainer_["triggerList"] = fs->make<TH1F>("triggerList", ";Trigger bits;",triggersToUse_.size(),0,triggersToUse_.size());
   for(size_t i=0; i<triggersToUse_.size(); i++) histContainer_["triggerList"] ->GetXaxis()->SetBinLabel(i+1,triggersToUse_[i].c_str());
