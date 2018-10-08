@@ -138,17 +138,21 @@ process.TFileService = cms.Service("TFileService",
 
 #analysis
 process.load('TopLJets2015.TopAnalysis.miniAnalyzer_cfi')
+print 'MiniAnalyzer configuration is as follows:'
 process.analysis.saveTree=cms.bool(options.saveTree)
 process.analysis.savePF=cms.bool(options.savePF)
-process.analysis.jetIdToUse=cms.string('tightLepVeto' if 'era2017' in options.era else 'looseID')
-if not process.analysis.saveTree :
-    print '\t Summary tree won\'t be saved'
-if not process.analysis.savePF :
-    print 'Summary PF info won\'t be saved'
-
+print 'save tree=',options.saveTree,' save PF=',options.savePF
+if 'era2017' in options.era:
+      process.analysis.jetIdToUse=ANALYSISJETIDS[2017]
+      process.analysis.triggersToUse=ANALYSISTRIGGERLISTS[2017]
+      print '\t Using 2017 triggers/jet ids'
+else:
+      process.analysis.jetIdToUse=ANALYSISJETIDS[2016]
+      process.analysis.triggersToUse=ANALYSISTRIGGERLISTS[2016]
+      print '\t Using 2016 triggers/jet ids'
 if options.runOnData:
       process.analysis.metFilterBits = cms.InputTag("TriggerResults","","RECO")
-#process.ana_step=cms.Path(process.analysis)
+      print '\t will save met filter bits'
 
 #schedule execution
 toSchedule=[]
