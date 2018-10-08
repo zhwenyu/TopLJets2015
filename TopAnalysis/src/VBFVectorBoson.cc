@@ -279,9 +279,6 @@ void VBFVectorBoson::RunVBFVectorBoson()
       //////////////////
       float wgt(1.0);
 
-      //l1 prefire probability
-      EffCorrection_t l1prefireProb=l1PrefireWR->getJetBasedCorrection(jets);
-      wgt *= l1prefireProb.first;
       if (!ev.isData) {
 
         // norm weight
@@ -293,6 +290,9 @@ void VBFVectorBoson::RunVBFVectorBoson()
         std::vector<double>puPlotWgts(1,puWgt);
         ht->fill("puwgtctr",1,puPlotWgts);
         
+        //l1 prefire probability
+        float l1prefireProb=l1PrefireWR->getJetBasedCorrection(jets).first;
+
         // photon trigger*selection weights
         float trigSF(1.0), selSF(1.0);
         if(chTag=="A")
@@ -306,7 +306,7 @@ void VBFVectorBoson::RunVBFVectorBoson()
             selSF  *=gammaEffWR->getOfflineCorrection(leptons[0], period).first;
             selSF  *=gammaEffWR->getOfflineCorrection(leptons[1], period).first;
           }
-        wgt *= puWgt*trigSF*selSF;
+        wgt *= puWgt*trigSF*selSF*l1prefireProb;
         
        
         // generator level weights

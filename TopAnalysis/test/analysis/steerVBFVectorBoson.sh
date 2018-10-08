@@ -31,17 +31,17 @@ NC='\e[0m'
 case $WHAT in
 
     TESTSEL )
-        # input=${eosdir}/MC13TeV_DY50toInf/MergedMiniEvents_0_ext0.root
-        # output=MC13TeV_DY4Jets50toInf.root
-        # tag="--tag MC13TeV_DY50toInf"
+        input=${eosdir}/MC13TeV_DY50toInf/MergedMiniEvents_0_ext0.root
+        output=MC13TeV_DY4Jets50toInf.root
+        tag="--tag MC13TeV_DY50toInf"
 
-        input=${eosdirJetHT}/Data13TeV_JetHT_2017D/MergedMiniEvents_4_ext0.root #/MC13TeV_AJJ_EWK_INT_LO_mjj500_dr04/MC13TeV_AJJ_EWK_INT_LO_mjj500_dr04.root
-        output=Data13TeV_JetHT_2017D.root #MC13TeV_AJJ_EWK_INT_LO_mjj500_dr04.root
-        tag="--tag Data13TeV_JetHT_2017D" #MC13TeV_AJJ_EWK_INT_LO_mjj500_dr04"
+        #input=${eosdirJetHT}/Data13TeV_JetHT_2017D/MergedMiniEvents_4_ext0.root #/MC13TeV_AJJ_EWK_INT_LO_mjj500_dr04/MC13TeV_AJJ_EWK_INT_LO_mjj500_dr04.root
+        #output=Data13TeV_JetHT_2017D.root #MC13TeV_AJJ_EWK_INT_LO_mjj500_dr04.root
+        #tag="--tag Data13TeV_JetHT_2017D" #MC13TeV_AJJ_EWK_INT_LO_mjj500_dr04"
 
-        input=${eosdir}/MC13TeV_AJJ_EWK_INT_LO_mjj500_dr04/MC13TeV_AJJ_EWK_INT_LO_mjj500_dr04.root
-        output=MC13TeV_AJJ_EWK_INT_LO_mjj500_dr04.root
-        tag="--tag MC13TeV_AJJ_EWK_INT_LO_mjj500_dr04"
+        #input=${eosdir}/MC13TeV_AJJ_EWK_INT_LO_mjj500_dr04/MC13TeV_AJJ_EWK_INT_LO_mjj500_dr04.root
+        #output=MC13TeV_AJJ_EWK_INT_LO_mjj500_dr04.root
+        #tag="--tag MC13TeV_AJJ_EWK_INT_LO_mjj500_dr04"
 
         #input=${eosdir}/Data13TeV_SinglePhoton_2017F/MergedMiniEvents_0_ext0.root
         #output=Data13TeV_SinglePhoton_2017F.root
