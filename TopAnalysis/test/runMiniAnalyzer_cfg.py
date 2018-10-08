@@ -137,11 +137,12 @@ process.TFileService = cms.Service("TFileService",
                                   )
 
 #analysis
+from TopLJets2015.TopAnalysis.miniAnalyzer_cfi import  ANALYSISJETIDS,ANALYSISTRIGGERLISTS
 process.load('TopLJets2015.TopAnalysis.miniAnalyzer_cfi')
 print 'MiniAnalyzer configuration is as follows:'
 process.analysis.saveTree=cms.bool(options.saveTree)
 process.analysis.savePF=cms.bool(options.savePF)
-print 'save tree=',options.saveTree,' save PF=',options.savePF
+print '\t save tree=',options.saveTree,' save PF=',options.savePF
 if 'era2017' in options.era:
       process.analysis.jetIdToUse=ANALYSISJETIDS[2017]
       process.analysis.triggersToUse=ANALYSISTRIGGERLISTS[2017]
