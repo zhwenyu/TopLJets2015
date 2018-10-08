@@ -11,6 +11,7 @@
 #include "TopLJets2015/TopAnalysis/interface/CommonTools.h"
 #include "TopLJets2015/TopAnalysis/interface/VBFVectorBoson.h"
 #include "TopLJets2015/TopAnalysis/interface/EfficiencyScaleFactorsWrapper.h"
+#include "TopLJets2015/TopAnalysis/interface/L1PrefireEfficiencyWrapper.h"
 
 #include "PhysicsTools/CandUtils/interface/EventShapeVariables.h"
 
@@ -277,6 +278,10 @@ void VBFVectorBoson::RunVBFVectorBoson()
       // EVENT WEIGHTS //
       //////////////////
       float wgt(1.0);
+
+      //l1 prefire probability
+      EffCorrection_t l1prefireProb=l1PrefireWR->getJetBasedCorrection(jets);
+      wgt *= l1prefireProb.first;
       if (!ev.isData) {
 
         // norm weight
@@ -314,7 +319,7 @@ void VBFVectorBoson::RunVBFVectorBoson()
       //control histograms
       for( auto c : chTags) {        
         std::vector<double> cplotwgts(plotwgts);
-
+        
         //photon pT weighting
         if(chTag=="A") {
           float photonPtWgt(1.0);
@@ -502,6 +507,7 @@ void VBFVectorBoson::loadCorrections(){
   lumi = new LumiTools(era,genPU);
   gammaEffWR = new EfficiencyScaleFactorsWrapper(filename.Contains("Data13TeV"),era);
   jec = new JECTools(era);
+  l1PrefireWR = new L1PrefireEfficiencyWrapper(filename.Contains("Data13TeV"),era);
   if(anFlag>0) this->setGammaZPtWeights();
 }
 void VBFVectorBoson::addMVAvars(){
