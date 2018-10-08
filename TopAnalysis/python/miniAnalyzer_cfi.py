@@ -121,7 +121,7 @@ ANALYSISTRIGGERLISTS={'2017':['HLT_HIEle20_WPLoose_Gsf_v',
                       }
 
 ANALYSISJETIDS={2017:'tightLepVeto',
-                2016,'looseID'}
+                2016:'looseID'}
 
 analysis = cms.EDAnalyzer("MiniAnalyzer",
                           saveTree               = cms.bool(True),
