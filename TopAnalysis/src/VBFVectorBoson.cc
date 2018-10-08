@@ -69,7 +69,7 @@ void VBFVectorBoson::RunVBFVectorBoson()
   reader->AddVariable("ht",&scalarht);
   reader->AddVariable("j_gawidth[0]",&leadj_gawidth);
   reader->AddVariable("forwardeta",&forwardeta);
-  reader->AddVariable("j_c1_05[0]",&leadj_c1_05);
+  reader->AddVariable("j_c2_05[0]",&leadj_c2_05);
   reader->AddVariable("balance",&balance);
   TString weightFiles[]={"${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBF_weights/BDT.weights.xml",
                          "${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBF_weights/Fisher.weights.xml"};
@@ -456,15 +456,9 @@ void VBFVectorBoson::bookHistograms(){
   ht->addHist("nlooseprompt",  new TH1F("nlooseprompt",     ";Number of prompt loose #gamma; Events",20,-0.5,19.5));
   ht->addHist("ntightprompt",  new TH1F("ntightprompt",     ";Number of prompt tight #gamma; Events",20,-0.5,19.5));
   // Study of jet variables
-  ht->addHist("jet_c1_00", 	  new TH1F("jet_c1_00",          ";Jet shape var. c1_00;Jets",100,-1,1));  
-  ht->addHist("jet_c1_02", 	  new TH1F("jet_c1_02",          ";Jet shape var. c1_02;Jets",100,-1,1));  
-  ht->addHist("jet_c1_05", 	  new TH1F("jet_c1_05",          ";Jet shape var. c1_05;Jets",100,-1,1));  
   ht->addHist("jet_c2_00", 	  new TH1F("jet_c2_00",          ";Jet shape var. c2_00;Jets",100,-1,1));  
   ht->addHist("jet_c2_02", 	  new TH1F("jet_c2_02",          ";Jet shape var. c2_02;Jets",100,-1,1));  
   ht->addHist("jet_c2_05", 	  new TH1F("jet_c2_05",          ";Jet shape var. c2_05;Jets",100,-1,1));  
-  ht->addHist("jet_c3_00", 	  new TH1F("jet_c3_00",          ";Jet shape var. c3_00;Jets",100,-1,1));  
-  ht->addHist("jet_c3_02", 	  new TH1F("jet_c3_02",          ";Jet shape var. c3_02;Jets",100,-1,1));  
-  ht->addHist("jet_c3_05", 	  new TH1F("jet_c3_05",          ";Jet shape var. c3_05;Jets",100,-1,1));  
   ht->addHist("jet_zg", 	  new TH1F("jet_zg",          ";Jet shape var. zg;Jets",100,-1,1));  
   ht->addHist("jet_gaptd", 	  new TH1F("jet_gaptd",          ";Jet shape var. gaptd;Jets",100,-1,1));  
   ht->addHist("jet_gawidth",      new TH1F("jet_gawidth",          ";Jet shape var. gawidth;Jets",100,-1,1));
@@ -518,8 +512,8 @@ void VBFVectorBoson::addMVAvars(){
   newTree->Branch("forwardeta", &forwardeta);
   newTree->Branch("leadj_gawidth", &leadj_gawidth);
   newTree->Branch("subleadj_gawidth", &subleadj_gawidth);
-  newTree->Branch("leadj_c1_05", &leadj_c1_05);
-  newTree->Branch("subleadj_c1_05", &subleadj_c1_05);
+  newTree->Branch("leadj_c2_05", &leadj_c2_05);
+  newTree->Branch("subleadj_c2_05", &subleadj_c2_05);
   newTree->Branch("jjetas", &jjetas);
   newTree->Branch("centjy", &centjy);
   newTree->Branch("ncentjj", &ncentjj);
@@ -547,9 +541,9 @@ void VBFVectorBoson::initVariables(std::vector<Jet> jets){
   dphijj = (jets.size()>=2 ? jets[0].DeltaPhi(jets[1]) : -99.);
   jjpt   = (jets.size()>=2 ? (jets[0]+jets[1]).Pt() : 0.);
   leadj_gawidth    = (jets.size()>1 ? ev.j_gawidth[jets[0].getJetIndex()] : -99);
-  leadj_c1_05      = (jets.size()>1 ? ev.j_c1_05[jets[0].getJetIndex()] : -99);
+  leadj_c2_05      = (jets.size()>1 ? ev.j_c2_05[jets[0].getJetIndex()] : -99);
   subleadj_gawidth = (jets.size()>2 ? ev.j_gawidth[jets[1].getJetIndex()] : -99);
-  subleadj_c1_05   = (jets.size()>2 ? ev.j_c1_05[jets[1].getJetIndex()] : -99);
+  subleadj_c2_05   = (jets.size()>2 ? ev.j_c2_05[jets[1].getJetIndex()] : -99);
   subleadj_pt      = (jets.size()>2 ? ev.j_pt[jets[1].getJetIndex()] : -99);
   ystar       = -99;
   balance     = -99;
@@ -612,15 +606,9 @@ void VBFVectorBoson::fill(MiniEvent_t ev, TLorentzVector boson, std::vector<Jet>
     ht->fill(jtype+"pt",       jets[ij].Pt(),        cplotwgts,c);          
     ht->fill(jtype+"pumva",    jets[ij].getPUMVA(),  cplotwgts,c);
     ht->fill(Form("drj%db",(int)ij+1),   jets[ij].DeltaR(boson),  cplotwgts,c);
-    ht->fill("jet_c1_00", 	ev.j_c1_00[jets[ij].getJetIndex()]	  ,  cplotwgts,c);
-    ht->fill("jet_c1_02", 	ev.j_c1_02[jets[ij].getJetIndex()]	  ,  cplotwgts,c);
-    ht->fill("jet_c1_05", 	ev.j_c1_05[jets[ij].getJetIndex()]	  ,  cplotwgts,c);
     ht->fill("jet_c2_00", 	ev.j_c2_00[jets[ij].getJetIndex()]	  ,  cplotwgts,c);
     ht->fill("jet_c2_02", 	ev.j_c2_02[jets[ij].getJetIndex()]	  ,  cplotwgts,c);
     ht->fill("jet_c2_05",	ev.j_c2_05[jets[ij].getJetIndex()]	  ,  cplotwgts,c);
-    ht->fill("jet_c3_00", 	ev.j_c3_00[jets[ij].getJetIndex()]	  ,  cplotwgts,c);
-    ht->fill("jet_c3_02",	ev.j_c3_02[jets[ij].getJetIndex()]	  ,  cplotwgts,c);
-    ht->fill("jet_c3_05",	ev.j_c3_05[jets[ij].getJetIndex()]	  ,  cplotwgts,c);
     ht->fill("jet_zg", 		ev.j_zg[jets[ij].getJetIndex()]	  ,  cplotwgts,c);
     ht->fill("jet_gaptd", 	ev.j_gaptd[jets[ij].getJetIndex()]	  ,  cplotwgts,c);
     ht->fill("jet_gawidth", ev.j_gawidth[jets[ij].getJetIndex()]	  ,  cplotwgts,c);

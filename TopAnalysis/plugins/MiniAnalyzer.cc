@@ -948,23 +948,14 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
       ev_.j_csv[ev_.nj]     = j->bDiscriminator("pfCombinedInclusiveSecondaryVertexV2BJetTags");
       ev_.j_deepcsv[ev_.nj] = j->bDiscriminator("pfDeepCSVJetTags:probb") + j->bDiscriminator("pfDeepCSVJetTags:probbb");
       ev_.j_btag[ev_.nj]    = (ev_.j_deepcsv[ev_.nj]>0.4941);
+      ev_.j_emf[ev_.nj]     = CEMF+NEMF;
 
       //jet shape variables
-      ev_.j_c1_00[ev_.nj]    = getC(1, 0.0, &(*j), true, 0.9);
-      ev_.j_c1_02[ev_.nj]    = getC(1, 0.2, &(*j), true, 0.9);
-      ev_.j_c1_05[ev_.nj]    = getC(1, 0.5, &(*j), true, 0.9);
-      ev_.j_c1_10[ev_.nj]    = getC(1, 1.0, &(*j), true, 0.9);
-      ev_.j_c1_20[ev_.nj]    = getC(1, 2.0, &(*j), true, 0.9);
       ev_.j_c2_00[ev_.nj]    = getC(2, 0.0, &(*j), true, 0.9);
       ev_.j_c2_02[ev_.nj]    = getC(2, 0.2, &(*j), true, 0.9);
       ev_.j_c2_05[ev_.nj]    = getC(2, 0.5, &(*j), true, 0.9);
       ev_.j_c2_10[ev_.nj]    = getC(2, 1.0, &(*j), true, 0.9);
       ev_.j_c2_20[ev_.nj]    = getC(2, 2.0, &(*j), true, 0.9);
-      ev_.j_c3_00[ev_.nj]    = getC(3, 0.0, &(*j), true, 0.9);
-      ev_.j_c3_02[ev_.nj]    = getC(3, 0.2, &(*j), true, 0.9);
-      ev_.j_c3_05[ev_.nj]    = getC(3, 0.5, &(*j), true, 0.9);
-      ev_.j_c3_10[ev_.nj]    = getC(3, 1.0, &(*j), true, 0.9);
-      ev_.j_c3_20[ev_.nj]    = getC(3, 2.0, &(*j), true, 0.9);
       ev_.j_zg[ev_.nj]       = getZg(&(*j),true,0.9)[0];
       ev_.j_mult[ev_.nj]     = calcGA(0,0,&(*j),true,0.9);
       ev_.j_gaptd[ev_.nj]    = calcGA(0,2,&(*j),true,0.9);
