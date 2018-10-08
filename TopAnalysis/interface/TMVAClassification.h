@@ -112,12 +112,12 @@ public:
   DataLoaderWrapper(TString name= "defaultName"):DataLoader(name){};
   ~DataLoaderWrapper(){};
   void setCutOptVars(){
-    // TMVA::DataLoader::AddVariable( "mjj", "mjj", "", 'F' ) ;
-    // TMVA::DataLoader::AddVariable( "j_pt[1]", "SubLeadJetPt", "", 'F' ) ;
+     TMVA::DataLoader::AddVariable( "mjj", "mjj", "", 'F' ) ;
+     TMVA::DataLoader::AddVariable( "j_pt[1]", "SubLeadJetPt", "", 'F' ) ;
   };
-  void setBestVars(bool excludeCuts = false){
+  void setBestVars(bool isHighMJJ = false, bool excludeCuts = false){
     if (!excludeCuts){
-      this->setCutOptVars();
+      //this->setCutOptVars();//Not needed for High/Low MJJ categories
       ///////////////////////////////////////////////
       // Best variables w/o cuts on mjj and jet pt //
       ///////////////////////////////////////////////
@@ -126,11 +126,30 @@ public:
       // TMVA::DataLoader::AddVariable("j_c2_02[0]",        "jet_c2_021",       "", 'F' ) ;
       // TMVA::DataLoader::AddVariable("j_gaptd[0]",        "jet_gaptd1",       "", 'F' ) ;
 
-      TMVA::DataLoader::AddVariable( "ht", "ht", "", 'F' ) ; 
-      TMVA::DataLoader::AddVariable("j_gawidth[0]",      "jet_gawidth1",     "", 'F' ) ;
+      //Variables for the May25th studies
+      /* TMVA::DataLoader::AddVariable( "ht", "ht", "", 'F' ) ;  */
+      /* TMVA::DataLoader::AddVariable("j_gawidth[0]",      "jet_gawidth1",     "", 'F' ) ; */
+      /* TMVA::DataLoader::AddVariable( "forwardeta", "forwardeta", "", 'F' ) ; */
+      /* TMVA::DataLoader::AddVariable("j_c1_05[0]",        "jet_c1_051",       "", 'F' ) ; */
+      /* TMVA::DataLoader::AddVariable( "balance", "balance", "", 'F' ) ; */
+
+      //Variables for the HighMJJ category
+      TMVA::DataLoader::AddVariable( "ht", "ht", "", 'F' ) ;
       TMVA::DataLoader::AddVariable( "forwardeta", "forwardeta", "", 'F' ) ;
-      TMVA::DataLoader::AddVariable("j_c1_05[0]",        "jet_c1_051",       "", 'F' ) ;
+      TMVA::DataLoader::AddVariable("j_c2_02[1]",        "jet_c2_021",       "", 'F' ) ;
       TMVA::DataLoader::AddVariable( "balance", "balance", "", 'F' ) ;
+      TMVA::DataLoader::AddVariable( "aplanarity", "aplanarity", "", 'F' ) ;
+      TMVA::DataLoader::AddVariable( "dphivj0", "dphivj0", "", 'F' ) ;
+      TMVA::DataLoader::AddVariable( "mjj", "mjj", "", 'F' ) ;
+      TMVA::DataLoader::AddVariable( "D", "D", "", 'F' ) ;
+
+      
+      /* if(isHighMJJ) */
+      /* 	TMVA::DataLoader::AddVariable( "dphivj1", "dphivj1", "", 'F' ); */
+      /* else */
+      /* 	TMVA::DataLoader::AddVariable("j_c2_00[0]",        "jet_c2_000",       "", 'F' ) ; */
+
+
     } else {}
   };
   void setCentralJetVars(){

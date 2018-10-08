@@ -30,7 +30,7 @@ using namespace std;
 //Vector boson will be either Z or photon at the moment
 
 struct Category{
-  float MM,A,VBF,HighPt,HighPtVBF,V1J,HighPtOfflineVBF,HighMJJ,LowMJJ;
+  float MM,A,VBF,HighPt,HighPtVBF,V1J,HighPtOfflineVBF,HighMJJ,LowMJJ,HighMJJLP,LowMJJLP;
   Category(){ reset(); }
   Category(std::vector<bool> &cat){
     reset();
@@ -50,6 +50,8 @@ struct Category{
     HighPtOfflineVBF = (float)cat[6];
     HighMJJ        = (float)cat[7];
     LowMJJ         = (float)cat[8];
+    HighMJJLP       = (float)cat[9];
+    LowMJJLP        = (float)cat[10];
   };
   std::vector<TString> getChannelTags() {
     std::vector<TString> chTags;
@@ -64,8 +66,10 @@ struct Category{
     if(HighPtVBF>0)         chTags.push_back("HighPtVBF"+chTag);
     if(V1J>0)               chTags.push_back("V1J"+chTag);
     if(HighPtOfflineVBF>0)  chTags.push_back("HighPtOfflineVBF"+chTag);
-    if(HighMJJ>0)         chTags.push_back("HighMJJ"+chTag);
-    if(LowMJJ>0)          chTags.push_back("LowMJJ"+chTag);
+    if(HighMJJ>0)           chTags.push_back("HighMJJ"+chTag);
+    if(LowMJJ>0)            chTags.push_back("LowMJJ"+chTag);
+    if(HighMJJLP>0)         chTags.push_back("HighMJJLP"+chTag);
+    if(LowMJJLP>0)          chTags.push_back("LowMJJLP"+chTag);
     return chTags;
   }
 };
@@ -78,8 +82,8 @@ public:
                        TH1F *normH_, 
                        TH1F *genPU_,
                        TString era_,
-                       Bool_t debug_=false, Bool_t CR_ =false, Bool_t skimtree_=false, bool blind =true):
-  filename(filename_),outname(outname_),anFlag(anFlag_), normH(0), genPU(0), era(era_), debug(debug_), CR(CR_), skimtree(skimtree_), doBlindAnalysis(blind)
+                       Bool_t debug_=false, Bool_t CR_ =false, Bool_t QCDTemp_ =true, Bool_t SRfake_ = false, Bool_t skimtree_=false, bool blind =true):
+  filename(filename_),outname(outname_),anFlag(anFlag_), normH(0), genPU(0), era(era_), debug(debug_), CR(CR_), QCDTemp(QCDTemp_), SRfake(SRfake_), skimtree(skimtree_), doBlindAnalysis(blind)
 	{
           if(normH_) normH = (TH1F*)normH_->Clone("normH_c");
 	  if(genPU_) genPU = (TH1F*)genPU_->Clone("genPu_c");
@@ -113,7 +117,7 @@ public:
 	void fill(MiniEvent_t ev, TLorentzVector boson, std::vector<Jet> jets, std::vector<double> cplotwgts, TString c, std::map<TString, int> mults, std::vector<Particle> fakePhotonCR ={}, std::vector<Particle> tightPhotonCR={});
 	void RunVBFVectorBoson();
 	void initVariables(std::vector<Jet>);
-
+	
 
 private:
 	TString filename, outname, baseName;
@@ -121,7 +125,7 @@ private:
 	TH1F * normH, * genPU;
 	TString era;
 	TH1* triggerList;
-	Bool_t debug, CR,skimtree, isQCDEMEnriched;
+	Bool_t debug, CR, QCDTemp, SRfake, skimtree, isQCDEMEnriched;
 	TFile * f /*inFile*/, *fMVATree, *fOut;
 	TTree * t /*inTree*/, *newTree /*MVA*/;
   	HistTool * ht;
@@ -143,16 +147,19 @@ private:
   	std::map<TString,TGraph *> photonPtWgts;
   	std::map<TString,std::pair<double,double> > photonPtWgtCtr;
 
+	//Fake rate
+	FakeRateTool * fr;
+
 	//Variables to be added to the MVA Tree
 	float centraleta, forwardeta, jjetas, centjy, ncentjj, dphivj0, dphivj1, dphivj2, dphivj3;
 	float evtWeight, mjj, detajj , dphijj ,jjpt;
 	float isotropy, circularity,sphericity,	aplanarity, C, D;
 	float scalarht,balance, mht, training;
-        float leadj_gawidth,leadj_c1_05,subleadj_gawidth,subleadj_c1_05, subleadj_pt;
+        float leadj_gawidth,leadj_c1_05,subleadj_gawidth,subleadj_c1_05, subleadj_c2_02, subleadj_pt;
         float vbfmva,vbffisher;
         bool doBlindAnalysis;
-	std::vector<Particle> tmpPhotons;
 
+	std::vector<Particle> relaxedTightPhotons, photons, tmpPhotons; 
 	/////////////////////////////////////
 	// Categorie for VBF:              //
 	//   MM:A:VBF:HighPt:HighPtVBF:V1J // 

@@ -23,7 +23,9 @@ void printHelp()
        << "\t --era      - era directory to use for corrections, uncertainties" << endl
        << "\t --normTag  - normalization tag" << endl
        << "\t --method   - method to run" << endl
-       << "\t --CR       - make CR for fake rate based on pu jet id" << endl
+       << "\t --CR       - make CR for fake rate, based on pu jet id" << endl
+       << "\t --QCDTemp  - can be true only if is CR. Used to make QCD templates for fake photons" << endl
+       << "\t --SRfake   - makes the region on which the fake ratio should be applied" << endl
        << "\t --mvatree  - store selected events in a tree for mva" << endl;
 }
 
@@ -34,7 +36,7 @@ int main(int argc, char* argv[])
   TString in(""),out(""),era(""),normTag(""),method(""),genWeights("genweights.root");
   std::string systVar("");
   bool runSysts(false);
-  bool debug(false), skimtree(false), CR(false);
+  bool debug(false), skimtree(false), CR(false), QCDTemp(false), SRfake(false);
   int channel(0),charge(0),flag(0);
   for(int i=1;i<argc;i++){
     string arg(argv[i]);
@@ -48,6 +50,8 @@ int main(int argc, char* argv[])
     else if(arg.find("--out")!=string::npos && i+1<argc)        { out=argv[i+1]; i++;}
     else if(arg.find("--debug")!=string::npos)                  { debug=true; }
     else if(arg.find("--CR")!=string::npos)                     { CR=true; }
+    else if(arg.find("--QCDTemp")!=string::npos)                { QCDTemp=true; }
+    else if(arg.find("--SRfake")!=string::npos)                 { SRfake=true; }
     else if(arg.find("--mvatree")!=string::npos)                { skimtree=true; }
     else if(arg.find("--normTag")!=string::npos && i+1<argc)    { normTag=argv[i+1]; i++;}
     else if(arg.find("--era")!=string::npos && i+1<argc)        { era=argv[i+1]; i++;}
@@ -91,7 +95,7 @@ int main(int argc, char* argv[])
   //check method to run
   if(method=="ExclusiveTop::RunExclusiveTop")          RunExclusiveTop(in,out,channel,charge,normH,puH,era,debug);
   else if(method=="VBFVectorBoson::RunVBFVectorBoson") {
-    VBFVectorBoson myVBF(in,out,flag,normH,puH,era,debug,CR,skimtree,false);
+    VBFVectorBoson myVBF(in,out,flag,normH,puH,era,debug,CR,QCDTemp,SRfake,skimtree,false);
     myVBF.RunVBFVectorBoson();
   }
   else {

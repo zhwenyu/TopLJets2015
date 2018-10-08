@@ -1,5 +1,5 @@
 //////////////////////////////////////
-// Current;y the simplest case:     //
+// Currently the simplest case:     //
 //    - Only signal region          //
 //    - Hence no transfer factor    //
 //////////////////////////////////////
@@ -127,7 +127,7 @@ class WorkspaceProvider{
 
   void setTF(){
     wsTF = new TF(SR, CR, sTFUnc, bTFUnc);
-    wsTF->creatTFHists();
+    wsTF->creatTFHists(true);
     wsTF->setTFs();
   }
 

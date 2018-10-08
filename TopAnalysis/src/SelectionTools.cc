@@ -30,7 +30,7 @@ SelectionTool::SelectionTool(TString dataset,bool debug,TH1 *triggerList, Analys
 
 
 //
-TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> preselLeptons,std::vector<Particle> preselPhotons, bool isCR) {
+TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> preselLeptons,std::vector<Particle> preselPhotons, bool isCR, bool isQCDTemp, bool isSRfake) {
 
   //clear vectors
   leptons_.clear(); 
@@ -46,8 +46,14 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
   std::vector<Particle> tightLeptons( selLeptons(preselLeptons,TIGHT) );
   std::vector<Particle> tightPhotons( selPhotons(preselPhotons,offlinePhoton_, tightLeptons) );
   std::vector<Particle> inclusivePhotons( selPhotons(preselPhotons,CONTROL, tightLeptons) );
-  std::vector<Particle> tmpPhotons( selPhotons(preselPhotons,QCDTEMP, tightLeptons) );
-
+  tmpPhotons          = selPhotons(preselPhotons,QCDTEMP, tightLeptons);
+  relaxedTightPhotons = selPhotons(preselPhotons,RELAXEDTIGHT, tightLeptons);
+  std::vector<Particle> fakePhotons;
+  for(auto a : inclusivePhotons) {
+    int idx = a.originalReference();
+    if (!this->isFakePhoton(ev,idx)) continue;
+    fakePhotons.push_back(a);
+  }
   TString chTag("");
   if(anType_==TOP)
     {
@@ -69,29 +75,29 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
   else if(anType_==VBF)
     { 
       if (!isCR){
-	if(tightLeptons.size()==2)
-	  {
-	    int ch( abs(tightLeptons[0].id()*tightLeptons[1].id()) );
-	    float mll( (tightLeptons[0]+tightLeptons[1]).M() );
-	    if( ch==13*13 && fabs(mll-91)<15 && (tightLeptons[0].pt()>30 || tightLeptons[1].pt()>30)) chTag="MM";          
-	    leptons_=tightLeptons;
+	if(tightLeptons.size()==2){
+	  int ch( abs(tightLeptons[0].id()*tightLeptons[1].id()) );
+	  float mll( (tightLeptons[0]+tightLeptons[1]).M() );
+	  if( ch==13*13 && fabs(mll-91)<15 && (tightLeptons[0].pt()>30 || tightLeptons[1].pt()>30)) chTag="MM";          
+	  leptons_=tightLeptons;
+	}else {
+	  bool passPhoton = (!isSRfake && tightPhotons.size()>=1) || (isSRfake && fakePhotons.size()>=1);
+	  if(passPhoton){
+	    chTag="A";
+	    leptons_   =tightLeptons;
 	  }
-	else if(tightPhotons.size()>=1) {
-	  chTag="A";
-	  photons_   =tightPhotons;
-	  leptons_   =tightLeptons;
-	  tempPhotons=tmpPhotons;
+	  if(isSRfake) photons_   =fakePhotons;
+	  else       photons_   =tightPhotons;
 	}
       } else {
-	cout<< "Number of very loose photons: "<<inclusivePhotons.size()<<endl;
-	if(inclusivePhotons.size()>=1) {
+	bool passPhoton = (!isSRfake && !isQCDTemp && inclusivePhotons.size()>=1) || (!isSRfake && isQCDTemp && tmpPhotons.size()>=1) || (isSRfake && fakePhotons.size()>=1);
+	if(passPhoton) {
 	  chTag="A";
-	  photons_   =inclusivePhotons;
+	  if (isSRfake)       photons_   =fakePhotons;
+	  else if(!isQCDTemp) photons_   =inclusivePhotons;
+	  else                photons_   =tmpPhotons;
+	  //cout<< "Number of very loose photons: "<<photons_.size()<<endl;
 	  leptons_   =tightLeptons;
-	  tempPhotons=tmpPhotons;
-	  cout<< "\tNumber of very loos photons: "<<photons_.size()<<endl;
-	  cout<< "\tNumber of tight leptons: "<<leptons_.size()<<endl;
-	  cout<< "Channel Tag: "<<chTag<<endl;
 	} else 	if(tightLeptons.size()==2){
 	  int ch( abs(tightLeptons[0].id()*tightLeptons[1].id()) );
 	  float mll( (tightLeptons[0]+tightLeptons[1]).M() );
@@ -304,7 +310,8 @@ std::vector<Particle> SelectionTool::flaggedPhotons(MiniEvent_t &ev)
         if( ((pid>>10)&0x7f)==0x7f   )    qualityFlagsWord |= (0x1 << MEDIUM);
         if( ((pid>>10)&0x7f)==0x7f   )    qualityFlagsWord |= (0x1 << TIGHT);
 	if( isInclusivePhoton(ev,ig) )    qualityFlagsWord |= (0x1 << CONTROL);
-	if( isQCDTemplate(ev,ig)     )    qualityFlagsWord |= (0x1 << QCDTEMP);
+	if( isQCDTemplate(ev,ig))    qualityFlagsWord |= (0x1 << QCDTEMP);
+	if( isRelaxedTight(ev,ig)    )    qualityFlagsWord |= (0x1 << RELAXEDTIGHT);
       }
     if(qualityFlagsWord==0) continue;
 
@@ -330,10 +337,10 @@ std::vector<Particle> SelectionTool::selPhotons(std::vector<Particle> &photons,i
     {
       //check quality flag
       if( !photons[i].hasQualityFlag(qualBit) ) continue;
-
+      //      cout<<"Id Passed!"<<endl;
       //check kinematics
       if(photons[i].pt()<minPt || fabs(photons[i].eta())>maxEta) continue;
-
+      //      cout<<"Kinematics Passed!"<<endl;
       //check if this lepton should be vetoed by request      
       bool skipThisPhoton(false);
       for(auto &vetoL : veto){
@@ -342,7 +349,7 @@ std::vector<Particle> SelectionTool::selPhotons(std::vector<Particle> &photons,i
         break;
       }
       if(skipThisPhoton) continue;
-            
+      //      cout<<"Not-Veto Passed!"<<endl;     
       // cross-cleaning with leptos
       bool overlapsWithPhysicsObject(false);
       for (auto& lepton : leptons) {
@@ -350,6 +357,7 @@ std::vector<Particle> SelectionTool::selPhotons(std::vector<Particle> &photons,i
       }
       
       if(overlapsWithPhysicsObject) continue;
+      //      cout<<"No overlap Passed!"<<endl;
       //photon is selected
       selPhotons.push_back(photons[i]);
     }

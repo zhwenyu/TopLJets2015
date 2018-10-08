@@ -52,11 +52,16 @@ class VbfFitRegion{
      dir->ls();
      hBkg = (TH1F*)dir->Get(chan+boson+"_"+hist+"_"+bkgs[0]); 
      hBkg->SetNameTitle("Background_"+chan+boson,"Background in "+chan+boson); 
+     hBkg->SetLineColor(kBlack);
+     hBkg->SetMarkerColor(kBlack);
      int nRebin =(int)((double)hBkg->GetXaxis()->GetNbins()/(double)nBin);      
      for(int i = 1; i < 4; i++){ 
        TH1F * tmp = (TH1F*)dir->Get(chan+boson+"_"+hist+"_"+bkgs[i]); 
-       if (tmp != NULL)
+       if (tmp != NULL) {
+	 tmp->SetLineColor(kBlack);
+	 tmp->SetMarkerColor(kBlack);
 	 hBkg->Add(tmp); 
+       }
      } 
      hBkg->Rebin(nRebin);
      for(int i = 0; i<nRebin; i++){
@@ -209,11 +214,23 @@ class TF{
   ~TF(){};
 
   // Based on current MC, we can set the TF as constant
-  void creatTFHists(){   
+  void creatTFHists(bool shapeOnly = false){   
     bkgTF = (TH1F*)sr->hBkg->Clone("BackgroundTF_"+sr->chan);
     bkgTF->SetTitle("BackgroundTF");
     bkgTF->Sumw2();
-    bkgTF->Divide(cr->hBkg);
+
+    TH1F * crBkg = (TH1F*)cr->hBkg->Clone("NormalCRBkg_"+sr->chan);
+    if(crBkg->Integral() != 0 )
+      crBkg->Scale(1./crBkg->Integral());
+
+    if(shapeOnly){
+      if(bkgTF->Integral() != 0)
+	bkgTF->Scale(1./bkgTF->Integral());
+      bkgTF->Divide(crBkg);
+    } else {
+      bkgTF->Divide(cr->hBkg);
+    }
+
     bkgETF = (TH1F*)bkgTF->Clone(TString("Err_")+bkgTF->GetName());
     for(int i = 0; i < nBin+1; i++){
       cout << "Background Bin "<<i+1<<": "<<bkgTF->GetBinContent(i)<<" +/- "<<bkgTF->GetBinError(i)<<endl;
@@ -227,10 +244,22 @@ class TF{
       bkgETF->SetBinError(i,err);
     }
     
+
     sigTF = (TH1F*)sr->hSig->Clone("SignalTF_"+sr->chan);
     sigTF->SetTitle("SignalTF");
     sigTF->Sumw2();
-    sigTF->Divide(cr->hSig);
+    TH1F * crSig = (TH1F*)cr->hSig->Clone("NormalCRSig_"+sr->chan);
+    if(crSig->Integral() != 0 )
+      crSig->Scale(1./crSig->Integral());
+
+    if(shapeOnly){
+      if(sigTF->Integral() != 0)
+	sigTF->Scale(1./sigTF->Integral());
+      sigTF->Divide(crSig);
+    } else {
+      sigTF->Divide(cr->hSig);
+    }
+
     sigETF = (TH1F*)sigTF->Clone(TString("Err_")+sigTF->GetName());
     for(int i = 0; i < nBin+1; i++){
       cout << "Signal Bin "<<i+1<<": "<<sigTF->GetBinContent(i)<<" +/- "<<sigTF->GetBinError(i)<<endl;
