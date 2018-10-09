@@ -7,6 +7,11 @@ options.register('runOnData', False,
                  VarParsing.varType.bool,
                  "Run this on real data"
                  )
+options.register('runL1PrefireAna', False,
+                 VarParsing.multiplicity.singleton,
+                 VarParsing.varType.bool,
+                 "Run L1 pre-firing analysis"
+                 )
 options.register('noParticleLevel', False,
                  VarParsing.multiplicity.singleton,
                  VarParsing.varType.bool,
@@ -110,7 +115,18 @@ process.source = cms.Source("PoolSource",
                             duplicateCheckMode = cms.untracked.string('noDuplicateCheck') 
                             )
 if options.runOnData:
-      process.source.fileNames = cms.untracked.vstring('/store/data/Run2017B/SingleElectron/MINIAOD/31Mar2018-v1/30000/04B05308-0038-E811-99AB-008CFAC94314.root')
+      process.source.fileNames = cms.untracked.vstring('/store/data/Run2017F/SinglePhoton/MINIAOD/31Mar2018-v1/00000/0033B9DF-4338-E811-AB11-1CB72C1B6CC6.root')
+      if options.runL1PrefireAna:
+            print 'Adding secondary filenames to run L1 prefire analysis'
+            process.source.secondaryFileNames = cms.untracked.vstring(['/store/data/Run2017F/SinglePhoton/AOD/17Nov2017-v1/70000/BC8110F6-3CE0-E711-9210-02163E014564.root',
+                                                                       '/store/data/Run2017F/SinglePhoton/AOD/17Nov2017-v1/70000/F68021F2-3CE0-E711-85E6-02163E014702.root',
+                                                                       '/store/data/Run2017F/SinglePhoton/AOD/17Nov2017-v1/60000/90EE7B12-BCDE-E711-8C47-A4BF0112BC06.root',
+                                                                       '/store/data/Run2017F/SinglePhoton/AOD/17Nov2017-v1/60000/F8CD978A-17DF-E711-A05F-A0369F836334.root',
+                                                                       '/store/data/Run2017F/SinglePhoton/AOD/17Nov2017-v1/60000/3E1B045C-28DF-E711-8B81-002590A37114.root',
+                                                                       '/store/data/Run2017F/SinglePhoton/AOD/17Nov2017-v1/60000/506AF751-29DF-E711-9E1F-001E67397F2B.root',
+                                                                       '/store/data/Run2017F/SinglePhoton/AOD/17Nov2017-v1/60000/1CDC7A53-20DF-E711-A272-1CC1DE1CDD20.root',
+                                                                       '/store/data/Run2017F/SinglePhoton/AOD/17Nov2017-v1/60000/28249C05-0DDF-E711-BA56-008CFA0527CC.root',
+                                                                       '/store/data/Run2017F/SinglePhoton/AOD/17Nov2017-v1/60000/142F6B6F-28DF-E711-9D48-A4BF0112BDF8.root'])
 
 if options.inputFile:
       fileList=[]
@@ -165,18 +181,10 @@ if not (options.runOnData or options.noParticleLevel):
       toSchedule.append( process.mctruth )
 process.ana=cms.Path(process.analysis)
 toSchedule.append( process.ana )
+if options.runOnData and options.runL1PrefireAna:
+      print 'Prefire analysis is scheduled to be executed'
+      from TopLJets2015.TopAnalysis.l1prefireAnalysis_cfi import *
+      defineL1PrefireAnalysis(process,options.era)
+      toSchedule.append(process.l1prefirePath)
 
 process.schedule=cms.Schedule( (p for p in toSchedule) )
-
-
-#if options.runOnData or options.noParticleLevel:
-#      if process.egammaPostRecoSeq:
-#            process.schedule=cms.Schedule(cms.Path(process.egammaPostRecoSeq),process.ana_step)
-#      else:
-#            process.schedule=cms.Schedule(process.ana_step)
-#else:
-#      process.gen_step=cms.Path(process.mergedGenParticles*process.genParticles2HepMC*process.particleLevel)
-#      if process.egammaPostRecoSeq:
-#            process.schedule=cms.Schedule(cms.Path(process.egammaPostRecoSeq),process.gen_step,process.ana_step)
-#      else:
-#            process.schedule=cms.Schedule(process.gen_step,process.ana_step)

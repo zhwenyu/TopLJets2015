@@ -45,7 +45,7 @@ To run locally the ntuplizer, for testing purposes do something like:
 
 ```
 cmsRun test/runMiniAnalyzer_cfg.py runOnData=False era=era2017 outFilename=MC13TeV_TTJets.root
-cmsRun test/runMiniAnalyzer_cfg.py runOnData=True  era=era2017 outFilename=Data13TeV_SingleMuon.root
+cmsRun test/runMiniAnalyzer_cfg.py runOnData=True  era=era2017 outFilename=Data13TeV_SinglePhoton.root
 ```
 
 To submit the ntuplizer to the grid start by setting the environment for crab3.
