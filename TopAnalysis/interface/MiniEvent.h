@@ -29,9 +29,9 @@ struct MiniEvent_t
   Float_t gtop_pt[25],gtop_eta[25],gtop_phi[25],gtop_m[25]; 
   Int_t gpf_id[5000],gpf_c[5000],gpf_g[5000];
   Float_t gpf_pt[5000],gpf_eta[5000],gpf_phi[5000],gpf_m[5000];
-  Float_t gpf_chSum_px,gpf_chSum_py,gpf_chSum_pz,gpf_ch_ht,gpf_ch_hz; 
-  Float_t gpf_inc_px,gpf_inc_py,gpf_inc_pz,gpf_inc_ht,gpf_inc_hz;
-  
+  Float_t gpf_chSum_px,gpf_chSum_py,gpf_chSum_pz,gpf_ch_ht,gpf_ch_hz,gpf_ch_wgtSum; 
+  Float_t gpf_inc_px,gpf_inc_py,gpf_inc_pz,gpf_inc_ht,gpf_inc_hz,gpf_inc_wgtSum;
+
   //reco level event
   Int_t nvtx;
   Int_t triggerBits;
@@ -74,8 +74,9 @@ struct MiniEvent_t
   //Int_t pf_pvAssoc[5000],pf_vtxRef[5000];
   Float_t pf_pt[5000],pf_eta[5000],pf_phi[5000],pf_m[5000],pf_puppiWgt[5000];
   Float_t pf_dxy[5000],pf_dz[5000]; //pf_dxyUnc[5000],pf_dzUnc[5000];
-  Float_t pf_chSum_px,pf_chSum_py,pf_chSum_pz,pf_ch_ht,pf_ch_hz; 
-  Float_t pf_puppi_px,pf_puppi_py,pf_puppi_pz,pf_puppi_ht,pf_puppi_hz;
+  Float_t pf_chSum_px,pf_chSum_py,pf_chSum_pz,pf_ch_ht,pf_ch_hz,pf_ch_wgtSum; 
+  Float_t pf_puppi_px,pf_puppi_py,pf_puppi_pz,pf_puppi_ht,pf_puppi_hz,pf_puppi_wgtSum;
+  Float_t pf_closestDZnonAssoc;
 
   //CTPPS leaves
   Int_t nfwdtrk,fwdtrk_arm[50],fwdtrk_station[50],fwdtrk_pot[50];

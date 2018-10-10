@@ -393,7 +393,7 @@ void MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
   edm::Handle<pat::PackedGenParticleCollection> genParticles;
   iEvent.getByToken(genParticlesToken_,genParticles);
   LorentzVector chSum(0,0,0,0),incSum(0,0,0,0);
-  float ch_ht(0), inc_ht(0), ch_hz(0), inc_hz(0);
+  float ch_ht(0), inc_ht(0), ch_hz(0), inc_hz(0), chWgtSum(0), incWgtSum(0);
   if(genParticles.isValid()){
     for (size_t i = 0; i < genParticles->size(); ++i)
       {
@@ -406,11 +406,13 @@ void MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
         incSum += genIt.p4();
         inc_ht += genIt.pt();
         inc_hz += genIt.pz();
+        incWgtSum += 1.0;
         if(fabs(genIt.eta())>2.5) continue;
         if(genIt.charge()!=0){
           chSum += genIt.p4();
           ch_ht += genIt.pt();
           ch_hz += genIt.pz();
+          chWgtSum += 1.0;
         }
         
         ev_.gpf_id[ev_.ngpf]     = genIt.pdgId();
@@ -433,9 +435,9 @@ void MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
       }
 
     ev_.gpf_chSum_px=chSum.px();  ev_.gpf_chSum_py=chSum.py();  ev_.gpf_chSum_pz=chSum.pz();
-    ev_.gpf_ch_ht=ch_ht;          ev_.gpf_ch_hz=ch_hz;
+    ev_.gpf_ch_ht=ch_ht;          ev_.gpf_ch_hz=ch_hz;          ev_.gpf_ch_wgtSum=chWgtSum;
     ev_.gpf_inc_px=incSum.px();   ev_.gpf_inc_py=incSum.py();   ev_.gpf_inc_pz=incSum.pz();
-    ev_.gpf_inc_ht=inc_ht;        ev_.gpf_inc_hz=inc_hz;
+    ev_.gpf_inc_ht=inc_ht;        ev_.gpf_inc_hz=inc_hz;        ev_.gpf_inc_wgtSum=incWgtSum;
   }
 
   //Bhadrons and top quarks (lastCopy)
@@ -1063,20 +1065,29 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
   //PF candidates
   ev_.npf=0;  
   LorentzVector chSum(0,0,0,0),puppiSum(0,0,0,0);
-  float ch_ht(0), puppi_ht(0), ch_hz(0), puppi_hz(0);
+  float ch_ht(0), puppi_ht(0), chWgtSum(0), puppiWgtSum(0), ch_hz(0), puppi_hz(0);
+  float closestDZnonAssoc(99999.);
   for(auto pf = pfcands->begin();  pf != pfcands->end(); ++pf)
     {
 
       bool passChargeSel(pf->charge()!=0 && pf->pt()>0.9 && fabs(pf->eta())<2.5);
       const pat::PackedCandidate::PVAssoc pvassoc=pf->fromPV();
-      passChargeSel |= (pvassoc>=pat::PackedCandidate::PVTight);
+
       if(passChargeSel){
-        chSum += pf->p4();
-        ch_ht += pf->pt();
-        ch_hz += pf->pz();
+        if(pvassoc>=pat::PackedCandidate::PVTight){
+          chWgtSum += 1.0;
+          chSum += pf->p4();
+          ch_ht += pf->pt();
+          ch_hz += pf->pz();
+        }
+        else{
+          if(pf->trackHighPurity() && fabs(pf->dz())<fabs(closestDZnonAssoc)) 
+            closestDZnonAssoc=pf->dz();
+        }
       }
       else if(pf->pt()>0.5){
         float wgt=pf->puppiWeight();
+        puppiWgtSum += wgt;
         puppiSum += wgt*pf->p4();
         puppi_ht += wgt*pf->pt();
         puppi_hz += wgt*pf->pz();
@@ -1097,7 +1108,7 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
       if(pf->charge()==0 && ev_.pf_j[ev_.npf]==-1) continue;
 
       //if particle is charged require association to prim vertex
-      if(passChargeSel)
+      if(passChargeSel && pvassoc>=pat::PackedCandidate::PVTight)
 	{
 	  ev_.pf_dxy[ev_.npf]      = pf->dxy();
 	  ev_.pf_dz[ev_.npf]       = pf->dz();
@@ -1117,10 +1128,11 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
       ev_.npf++;
     }
 
+  ev_.pf_closestDZnonAssoc=closestDZnonAssoc;
   ev_.pf_chSum_px=chSum.px();     ev_.pf_chSum_py=chSum.py();     ev_.pf_chSum_pz=chSum.pz();
-  ev_.pf_ch_ht=ch_ht;             ev_.pf_ch_hz=ch_hz;
+  ev_.pf_ch_ht=ch_ht;             ev_.pf_ch_hz=ch_hz;             ev_.pf_ch_wgtSum=chWgtSum;
   ev_.pf_puppi_px=puppiSum.px();  ev_.pf_puppi_py=puppiSum.py();  ev_.pf_puppi_pz=puppiSum.pz();
-  ev_.pf_puppi_ht=ch_ht;          ev_.pf_puppi_hz=ch_hz;
+  ev_.pf_puppi_ht=ch_ht;          ev_.pf_puppi_hz=ch_hz;          ev_.pf_puppi_wgtSum=puppiWgtSum;
 }
 
 //cf. https://twiki.cern.ch/twiki/bin/viewauth/CMS/SWGuideMuonIdRun2#Soft_Muon
