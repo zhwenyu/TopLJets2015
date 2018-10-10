@@ -405,13 +405,13 @@ void MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
 
         incSum += genIt.p4();
         inc_ht += genIt.pt();
-        inc_hz += genIt.pz();
+        inc_hz += fabs(genIt.pz());
         incWgtSum += 1.0;
         if(fabs(genIt.eta())>2.5) continue;
         if(genIt.charge()!=0){
           chSum += genIt.p4();
           ch_ht += genIt.pt();
-          ch_hz += genIt.pz();
+          ch_hz += fabs(genIt.pz());
           chWgtSum += 1.0;
         }
         
@@ -1078,7 +1078,7 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
           chWgtSum += 1.0;
           chSum += pf->p4();
           ch_ht += pf->pt();
-          ch_hz += pf->pz();
+          ch_hz += fabs(pf->pz());
         }
         else{
           if(pf->trackHighPurity() && fabs(pf->dz())<fabs(closestDZnonAssoc)) 
@@ -1090,7 +1090,7 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
         puppiWgtSum += wgt;
         puppiSum += wgt*pf->p4();
         puppi_ht += wgt*pf->pt();
-        puppi_hz += wgt*pf->pz();
+        puppi_hz += wgt*fabs(pf->pz());
       }
 
       if(ev_.npf>=5000) continue;
