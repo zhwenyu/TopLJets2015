@@ -29,7 +29,9 @@ struct MiniEvent_t
   Float_t gtop_pt[25],gtop_eta[25],gtop_phi[25],gtop_m[25]; 
   Int_t gpf_id[5000],gpf_c[5000],gpf_g[5000];
   Float_t gpf_pt[5000],gpf_eta[5000],gpf_phi[5000],gpf_m[5000];
-
+  Float_t gpf_chSum_px,gpf_chSum_py,gpf_chSum_pz,gpf_ch_ht,gpf_ch_hz; 
+  Float_t gpf_inc_px,gpf_inc_py,gpf_inc_pz,gpf_inc_ht,gpf_inc_hz;
+  
   //reco level event
   Int_t nvtx;
   Int_t triggerBits;
@@ -54,7 +56,7 @@ struct MiniEvent_t
   Int_t nj;
   Float_t j_pt[200],j_eta[200],j_phi[200],j_mass[200],j_area[200],j_rawsf[200];
   Float_t j_jerUp[200],j_jerDn[200],j_jecUp[30][200],j_jecDn[30][200];
-  Float_t j_csv[200],j_deepcsv[200],j_pumva[200],j_emf[200];
+  Float_t j_csv[200],j_deepcsv[200],j_pumva[200],j_emf[200],j_qg[200];
   Float_t j_c2_00[200],j_c2_02[200],j_c2_05[200],j_c2_10[200],j_c2_20[200];
   Float_t j_zg[200],j_mult[200],j_gaptd[200],j_gawidth[200],j_gathrust[200],j_tau32[200],j_tau21[200];
   Float_t j_vtxmass[200],j_vtx3DVal[200],j_vtx3DSig[200],j_vtxpx[200],j_vtxpy[200],j_vtxpz[200];
@@ -72,6 +74,8 @@ struct MiniEvent_t
   //Int_t pf_pvAssoc[5000],pf_vtxRef[5000];
   Float_t pf_pt[5000],pf_eta[5000],pf_phi[5000],pf_m[5000],pf_puppiWgt[5000];
   Float_t pf_dxy[5000],pf_dz[5000]; //pf_dxyUnc[5000],pf_dzUnc[5000];
+  Float_t pf_chSum_px,pf_chSum_py,pf_chSum_pz,pf_ch_ht,pf_ch_hz; 
+  Float_t pf_puppi_px,pf_puppi_py,pf_puppi_pz,pf_puppi_ht,pf_puppi_hz;
 
   //CTPPS leaves
   Int_t nfwdtrk,fwdtrk_arm[50],fwdtrk_station[50],fwdtrk_pot[50];

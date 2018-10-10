@@ -30,18 +30,15 @@ def submitProduction(tag,lfnDirBase,dataset,isData,cfg,workDir,lumiMask,era='era
     config_file.write('config.JobType.pluginName = "Analysis"\n')
     config_file.write('config.JobType.psetName = "'+cfg+'"\n')
     config_file.write('config.JobType.disableAutomaticOutputCollection = False\n')
-    if addParents:
-        config_file.write('config.JobType.pyCfgParams = [\'runOnData=%s\',\'runL1PrefireAna=True\',\'era=%s\']\n' % (bool(isData),era))
-    else:
-        config_file.write('config.JobType.pyCfgParams = [\'runOnData=%s\',\'era=%s\']\n' % (bool(isData),era))
+    config_file.write('config.JobType.pyCfgParams = [\'runOnData=%s\',\'era=%s\']\n' % (bool(isData),era))
     #config_file.write('config.JobType.inputFiles = [\'{0}/{1}\',\'{0}/{2}\',\'{0}/muoncorr_db.txt\',\'{0}/jecUncSources.txt\']\n'.format(cmssw,jecDB,jerDB))
     config_file.write('config.JobType.inputFiles = [\'{0}\',\'{1}\',\'muoncorr_db.txt\',\'jecUncSources.txt\']\n'.format(jecDB,jerDB))
     config_file.write('\n')
     config_file.write('config.section_("Data")\n')
     config_file.write('config.Data.inputDataset = "%s"\n' % dataset)
     config_file.write('config.Data.inputDBS = "global"\n')
-    if isData : 
-        config_file.write('config.Data.useParent = True\n')
+    config_file.write('config.Data.useParent = %s\n'% bool(addParents) )
+    if isData :         
         config_file.write('config.Data.splitting = "LumiBased"\n')
         config_file.write('config.Data.unitsPerJob = 100\n')
         config_file.write('config.Data.lumiMask = \'%s\'\n' %lumiMask)
@@ -99,7 +96,9 @@ def main():
             if filtTag in tag :
                 submit=True
         if not submit : continue
-        print tag,sample
+        if len(sample[2])==0 : 
+            print 'Ignoring',tag,'no dataset is set in the json file'
+            continue 
         submitProduction(tag=tag,
                          lfnDirBase=lfnDirBase,
                          dataset=sample[2],
@@ -109,7 +108,7 @@ def main():
                          era=opt.era,
                          workDir=opt.workDir,
                          submit=opt.submit,
-                         addParents=options.addParents)
+                         addParents=opt.addParents)
 
     print 'crab cfg files have been created under %s' % opt.workDir
     if opt.submit:

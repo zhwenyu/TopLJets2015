@@ -44,7 +44,7 @@ namespace {
   struct EventStruct {    
     int triggerRule;
     std::vector<LorentzVector> jet_p4;
-    std::vector<float> jet_neutralEmFrac,jet_emFrac;
+    std::vector<float> jet_neutralEmFrac,jet_emFrac,jet_muFrac;
     // pdgid=0 if jet 22 if gamma
     // bits   jet: 0=loose ID,  1=tight ID, 2-4=match to HLT_PFJet 450,500,550
     //      gamma: 0=medium ID, 1=tight ID
@@ -116,6 +116,7 @@ PrefiringVBFAna::PrefiringVBFAna(const edm::ParameterSet& iConfig):
   tree_->Branch("jet_p4", &event_.jet_p4);
   tree_->Branch("jet_neutralEmFrac", &event_.jet_neutralEmFrac);
   tree_->Branch("jet_emFrac", &event_.jet_emFrac);
+  tree_->Branch("jet_muFrac", &event_.jet_muFrac);
   tree_->Branch("jet_pdgid", &event_.jet_pdgid);  
   tree_->Branch("jet_id", &event_.jet_id);
   tree_->Branch("L1EG_bx", &event_.L1EG_bx);
@@ -163,12 +164,21 @@ void PrefiringVBFAna::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   iEvent.getByToken(triggerPrescalesToken_, triggerPrescalesHandle);
   const edm::TriggerResults& triggerResults = triggerPrescalesHandle->triggerResults();
 
-
   event_.jet_p4.clear();
   event_.jet_neutralEmFrac.clear();
   event_.jet_emFrac.clear();
+  event_.jet_muFrac.clear();
   event_.jet_pdgid.clear();
   event_.jet_id.clear();
+
+  //jets
+  std::string jetfilters[]={"hltDiCaloJet30MJJ300AllJetsDEta3Filter", 
+                            "hltDiPFJet30MJJ300AllJetsDEta3Filter",
+                            "hltDiCaloJet30MJJ600AllJetsDEta3Filter", 
+                            "hltDiPFJet30MJJ600AllJetsDEta3Filter",
+                            "hltSinglePFJet450",
+                            "hltSinglePFJet500",
+                            "hltSinglePFJet550"};
   for(const auto& jet : *jetHandle) {
     pat::Jet jetNew(jet);
 
@@ -207,31 +217,26 @@ void PrefiringVBFAna::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     int packedIds = (looseJetID <<0) | (tightJetID <<1) | (tightLepVeto<<2);
 
     if ( !looseJetID && !tightLepVeto) continue;
-
     std::vector<const pat::TriggerObjectStandAlone*> matchedTrigObjs = getMatchedObjs(jet.eta(), jet.phi(), *triggerObjectsHandle, 0.3);
     for (const auto trigObjConst : matchedTrigObjs) {
       pat::TriggerObjectStandAlone trigObj(*trigObjConst);
       trigObj.unpackNamesAndLabels(iEvent, triggerResults);
-
-      // HLT_PFJetX_v*
-      if ( trigObj.hasFilterLabel("hltSinglePFJet450") ) {
-        packedIds |= 1<<3;
-      }
-      if ( trigObj.hasFilterLabel("hltSinglePFJet500") ) {
-        packedIds |= 1<<4;
-      }
-      if ( trigObj.hasFilterLabel("hltSinglePFJet550") ) {
-        packedIds |= 1<<5;
-      }
+      for(size_t fidx=0; fidx<sizeof(jetfilters)/sizeof(std::string); fidx++)
+        if ( trigObj.hasFilterLabel(jetfilters[fidx]) ) packedIds |= 1<<(3+fidx);
     }
     event_.jet_p4.push_back( jetNew.p4() );
     event_.jet_neutralEmFrac.push_back( NEMF );
     event_.jet_emFrac.push_back( NEMF+CEMF );
+    event_.jet_muFrac.push_back( MUF );
     event_.jet_pdgid.push_back( 0 );
     event_.jet_id.push_back( packedIds );
   }
 
-
+  
+  //photons
+  std::string egfilters[]={"hltEG200EtFilter",
+                           "hltEG200HEFilter",
+                           "hltL1sSingleEG40to50"};
   for (const pat::Photon &g : *phoHandle) {
     auto corrP4  = g.p4() * g.userFloat("ecalEnergyPostCorr") / g.energy();
     bool looseID(g.photonID("cutBasedPhotonID-Fall17-94X-V1-loose"));
@@ -239,27 +244,18 @@ void PrefiringVBFAna::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     bool tightID(g.photonID("cutBasedPhotonID-Fall17-94X-V1-tight"));
     int packedIds = (looseID <<0)  | (mediumID<<1) | (tightID <<2);
     if ( !looseID || corrP4.pt()<20) continue;
-    
     std::vector<const pat::TriggerObjectStandAlone*> matchedTrigObjs = getMatchedObjs(corrP4.eta(), corrP4.phi(), *triggerObjectsHandle, 0.3);
     for (const auto trigObjConst : matchedTrigObjs) {
       pat::TriggerObjectStandAlone trigObj(*trigObjConst);
       trigObj.unpackNamesAndLabels(iEvent, triggerResults);
-      
-      // HLT_PFJetX_v*
-      if ( trigObj.hasFilterLabel("hltSinglePFJet450") ) {
-        packedIds |= 1<<3;
-      }
-      if ( trigObj.hasFilterLabel("hltSinglePFJet500") ) {
-        packedIds |= 1<<4;
-      }
-      if ( trigObj.hasFilterLabel("hltSinglePFJet550") ) {
-        packedIds |= 1<<5;
-      }
-    }
+      for(size_t fidx=0; fidx<sizeof(egfilters)/sizeof(std::string); fidx++)
+        if ( trigObj.hasFilterLabel(egfilters[fidx]) ) packedIds |= 1<<(3+fidx);
+    }    
       
     event_.jet_p4.push_back( corrP4 );
     event_.jet_neutralEmFrac.push_back( 1.0 );
     event_.jet_emFrac.push_back( 1.0 );
+    event_.jet_muFrac.push_back( 0.0 );
     event_.jet_pdgid.push_back( 22 );
     event_.jet_id.push_back( packedIds );
   }

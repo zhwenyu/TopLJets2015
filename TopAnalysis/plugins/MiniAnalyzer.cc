@@ -92,6 +92,8 @@ using namespace std;
 using namespace reco;
 using namespace pat; 
 
+typedef math::XYZTLorentzVector LorentzVector;
+
 //
 // class declaration
 //
@@ -390,14 +392,26 @@ void MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
   ev_.ngpf=0;
   edm::Handle<pat::PackedGenParticleCollection> genParticles;
   iEvent.getByToken(genParticlesToken_,genParticles);
+  LorentzVector chSum(0,0,0,0),incSum(0,0,0,0);
+  float ch_ht(0), inc_ht(0), ch_hz(0), inc_hz(0);
   if(genParticles.isValid()){
     for (size_t i = 0; i < genParticles->size(); ++i)
       {
         const pat::PackedGenParticle & genIt = (*genParticles)[i];
-        
+
         //this shouldn't be needed according to the workbook
         //if(genIt.status()!=1) continue;
-        if(genIt.pt()<0.5 || fabs(genIt.eta())>2.5) continue;
+        if(genIt.pt()<0.5) continue;
+
+        incSum += genIt.p4();
+        inc_ht += genIt.pt();
+        inc_hz += genIt.pz();
+        if(fabs(genIt.eta())>2.5) continue;
+        if(genIt.charge()!=0){
+          chSum += genIt.p4();
+          ch_ht += genIt.pt();
+          ch_hz += genIt.pz();
+        }
         
         ev_.gpf_id[ev_.ngpf]     = genIt.pdgId();
         ev_.gpf_c[ev_.ngpf]      = genIt.charge();
@@ -417,6 +431,11 @@ void MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
         ev_.gpf_m[ev_.ngpf]      = genIt.mass();
         ev_.ngpf++;    
       }
+
+    ev_.gpf_chSum_px=chSum.px();  ev_.gpf_chSum_py=chSum.py();  ev_.gpf_chSum_pz=chSum.pz();
+    ev_.gpf_ch_ht=ch_ht;          ev_.gpf_ch_hz=ch_hz;
+    ev_.gpf_inc_px=incSum.px();   ev_.gpf_inc_py=incSum.py();   ev_.gpf_inc_pz=incSum.pz();
+    ev_.gpf_inc_ht=inc_ht;        ev_.gpf_inc_hz=inc_hz;
   }
 
   //Bhadrons and top quarks (lastCopy)
@@ -945,6 +964,7 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
       ev_.j_mass[ev_.nj]    = corrP4.mass();
       ev_.j_eta[ev_.nj]     = corrP4.eta();
       ev_.j_phi[ev_.nj]     = corrP4.phi();
+      ev_.j_qg[ev_.nj]      = j->userFloat("QGTagger:qgLikelihood");
       ev_.j_pumva[ev_.nj]   = j->userFloat("pileupJetId:fullDiscriminant");
       ev_.j_id[ev_.nj]      = j->userInt("pileupJetId:fullId");
       ev_.j_csv[ev_.nj]     = j->bDiscriminator("pfCombinedInclusiveSecondaryVertexV2BJetTags");
@@ -1042,8 +1062,26 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
 
   //PF candidates
   ev_.npf=0;  
+  LorentzVector chSum(0,0,0,0),puppiSum(0,0,0,0);
+  float ch_ht(0), puppi_ht(0), ch_hz(0), puppi_hz(0);
   for(auto pf = pfcands->begin();  pf != pfcands->end(); ++pf)
     {
+
+      bool passChargeSel(pf->charge()!=0 && pf->pt()>0.9 && fabs(pf->eta())<2.5);
+      const pat::PackedCandidate::PVAssoc pvassoc=pf->fromPV();
+      passChargeSel |= (pvassoc>=pat::PackedCandidate::PVTight);
+      if(passChargeSel){
+        chSum += pf->p4();
+        ch_ht += pf->pt();
+        ch_hz += pf->pz();
+      }
+      else if(pf->pt()>0.5){
+        float wgt=pf->puppiWeight();
+        puppiSum += wgt*pf->p4();
+        puppi_ht += wgt*pf->pt();
+        puppi_hz += wgt*pf->pz();
+      }
+
       if(ev_.npf>=5000) continue;
 
       ev_.pf_j[ev_.npf] = -1;
@@ -1059,15 +1097,8 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
       if(pf->charge()==0 && ev_.pf_j[ev_.npf]==-1) continue;
 
       //if particle is charged require association to prim vertex
-      if(pf->charge()!=0)
+      if(passChargeSel)
 	{
-	  //if(pf->pvAssociationQuality()<pat::PackedCandidate::CompatibilityDz) continue;
-	  //if(pf->vertexRef().key()!=0) continue;
-
-	  if(pf->pt()<0.9 || fabs(pf->eta())>2.5) continue;
-	  const pat::PackedCandidate::PVAssoc pvassoc=pf->fromPV();
-	  if(pvassoc< pat::PackedCandidate::PVTight) continue;
-	  
 	  ev_.pf_dxy[ev_.npf]      = pf->dxy();
 	  ev_.pf_dz[ev_.npf]       = pf->dz();
 	  //ev_.pf_dxyUnc[ev_.npf]   = pf->dxyError();
@@ -1085,6 +1116,11 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
       ev_.pf_puppiWgt[ev_.npf] = pf->puppiWeight();      
       ev_.npf++;
     }
+
+  ev_.pf_chSum_px=chSum.px();     ev_.pf_chSum_py=chSum.py();     ev_.pf_chSum_pz=chSum.pz();
+  ev_.pf_ch_ht=ch_ht;             ev_.pf_ch_hz=ch_hz;
+  ev_.pf_puppi_px=puppiSum.px();  ev_.pf_puppi_py=puppiSum.py();  ev_.pf_puppi_pz=puppiSum.pz();
+  ev_.pf_puppi_ht=ch_ht;          ev_.pf_puppi_hz=ch_hz;
 }
 
 //cf. https://twiki.cern.ch/twiki/bin/viewauth/CMS/SWGuideMuonIdRun2#Soft_Muon

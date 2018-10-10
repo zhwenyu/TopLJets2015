@@ -32,6 +32,16 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev,Int_t njecUncs)
   t->Branch("g_eta",     ev.g_eta,    "g_eta[ng]/F");
   t->Branch("g_phi",     ev.g_phi,    "g_phi[ng]/F");
   t->Branch("g_m",       ev.g_m,      "g_m[ng]/F");
+  t->Branch("gpf_chSum_px",   &ev.gpf_chSum_px,   "gpf_chSum_px/F");
+  t->Branch("gpf_chSum_py",   &ev.gpf_chSum_py,   "gpf_chSum_py/F");
+  t->Branch("gpf_chSum_pz",   &ev.gpf_chSum_pz,   "gpf_chSum_pz/F");
+  t->Branch("gpf_ch_ht",      &ev.gpf_ch_ht,      "gpf_ch_ht/F");
+  t->Branch("gpf_ch_hz",      &ev.gpf_ch_hz,      "gpf_ch_ht/F");
+  t->Branch("gpf_inc_px",     &ev.gpf_inc_px,     "gpf_inc_px/F");
+  t->Branch("gpf_inc_py",     &ev.gpf_inc_py,     "gpf_inc_py/F");
+  t->Branch("gpf_inc_pz",     &ev.gpf_inc_pz,     "gpf_inc_pz/F");
+  t->Branch("gpf_inc_ht",     &ev.gpf_inc_ht,     "gpf_inc_ht/F");
+  t->Branch("gpf_inc_hz",     &ev.gpf_inc_hz,     "gpf_inc_ht/F");
 
   //top (lastCopy and pseudo-top)
   t->Branch("ngtop",     &ev.ngtop,      "ngtop/I");
@@ -52,9 +62,9 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev,Int_t njecUncs)
   t->Branch("gpf_m",       ev.gpf_m,      "gpf_m[ngpf]/F");
 
   //reco level event
-  t->Branch("nvtx",      &ev.nvtx,      "nvtx/I");
-  t->Branch("rho",      &ev.rho,      "rho/F");
-  t->Branch("triggerBits",   &ev.triggerBits,        "triggerBits/I");
+  t->Branch("nvtx",          &ev.nvtx,        "nvtx/I");
+  t->Branch("rho",           &ev.rho,         "rho/F");
+  t->Branch("triggerBits",   &ev.triggerBits, "triggerBits/I");
 
   //leptons
   t->Branch("nl", &ev.nl, "nl/I");
@@ -129,6 +139,7 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev,Int_t njecUncs)
   t->Branch("j_csv",      ev.j_csv,     "j_csv[nj]/F");
   t->Branch("j_btag",     ev.j_btag,    "j_btag[nj]/O");
   t->Branch("j_emf",      ev.j_emf,     "j_emf[nj]/F");
+  t->Branch("j_qg",       ev.j_qg,      "j_qg[nj]/F");
   t->Branch("j_c2_00",    ev.j_c2_00,   "j_c2_00[nj]/F");
   t->Branch("j_c2_02",    ev.j_c2_02,   "j_c2_02[nj]/F");
   t->Branch("j_c2_05",    ev.j_c2_05,   "j_c2_05[nj]/F");
@@ -169,6 +180,17 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev,Int_t njecUncs)
   //t->Branch("pf_vtxRef",   ev.pf_vtxRef,   "pf_vtxRef[npf]/I");
   //t->Branch("pf_pvAssoc",  ev.pf_pvAssoc,  "pf_pvAssoc[npf]/I");
   t->Branch("pf_puppiWgt", ev.pf_puppiWgt, "pf_puppiWgt[npf]/F");
+  t->Branch("pf_chSum_px",   &ev.pf_chSum_px,   "pf_chSum_px/F");
+  t->Branch("pf_chSum_py",   &ev.pf_chSum_py,   "pf_chSum_py/F");
+  t->Branch("pf_chSum_pz",   &ev.pf_chSum_pz,   "pf_chSum_pz/F");
+  t->Branch("pf_ch_ht",      &ev.pf_ch_ht,      "pf_ch_ht/F");
+  t->Branch("pf_ch_hz",      &ev.pf_ch_hz,      "pf_ch_ht/F");
+  t->Branch("pf_puppi_px",     &ev.pf_puppi_px,     "pf_puppi_px/F");
+  t->Branch("pf_puppi_py",     &ev.pf_puppi_py,     "pf_puppi_py/F");
+  t->Branch("pf_puppi_pz",     &ev.pf_puppi_pz,     "pf_puppi_pz/F");
+  t->Branch("pf_puppi_ht",     &ev.pf_puppi_ht,     "pf_puppi_ht/F");
+  t->Branch("pf_puppi_hz",     &ev.pf_puppi_hz,     "pf_puppi_ht/F");
+
 
   //MET
   t->Branch("nmet",       &ev.nmet,       "nmet/I");
@@ -221,6 +243,7 @@ void attachToMiniEventTree(TTree *t,MiniEvent_t &ev,bool full)
   t->SetBranchAddress("g_phi",     ev.g_phi);
   t->SetBranchAddress("g_m",       ev.g_m);
 
+
   //top (lastCopy and pseudo-top)
   t->SetBranchAddress("ngtop",     &ev.ngtop);
   t->SetBranchAddress("gtop_id",    ev.gtop_id);
@@ -240,6 +263,16 @@ void attachToMiniEventTree(TTree *t,MiniEvent_t &ev,bool full)
       t->SetBranchAddress("gpf_eta",     ev.gpf_eta);
       t->SetBranchAddress("gpf_phi",     ev.gpf_phi);
       t->SetBranchAddress("gpf_m",       ev.gpf_m);
+      t->SetBranchAddress("gpf_chSum_px",   &ev.gpf_chSum_px);
+      t->SetBranchAddress("gpf_chSum_py",   &ev.gpf_chSum_py);
+      t->SetBranchAddress("gpf_chSum_pz",   &ev.gpf_chSum_pz);
+      t->SetBranchAddress("gpf_ch_ht",      &ev.gpf_ch_ht);
+      t->SetBranchAddress("gpf_ch_hz",      &ev.gpf_ch_hz);
+      t->SetBranchAddress("gpf_inc_px",     &ev.gpf_inc_px);
+      t->SetBranchAddress("gpf_inc_py",     &ev.gpf_inc_py);
+      t->SetBranchAddress("gpf_inc_pz",     &ev.gpf_inc_pz);
+      t->SetBranchAddress("gpf_inc_ht",     &ev.gpf_inc_ht);
+      t->SetBranchAddress("gpf_inc_hz",     &ev.gpf_inc_hz);
     }
 
   //reco level event
@@ -321,6 +354,7 @@ void attachToMiniEventTree(TTree *t,MiniEvent_t &ev,bool full)
   t->SetBranchAddress("j_csv",      ev.j_csv);
   t->SetBranchAddress("j_btag",     ev.j_btag);
   t->SetBranchAddress("j_emf",      ev.j_emf);
+  t->SetBranchAddress("j_qg",       ev.j_qg);
   t->SetBranchAddress("j_c2_00",    ev.j_c2_00);
   t->SetBranchAddress("j_c2_02",    ev.j_c2_02);
   t->SetBranchAddress("j_c2_05",    ev.j_c2_05);
@@ -362,6 +396,16 @@ void attachToMiniEventTree(TTree *t,MiniEvent_t &ev,bool full)
       //t->SetBranchAddress("pf_dzUnc",    ev.pf_dzUnc);
       //t->SetBranchAddress("pf_pvAssoc",  ev.pf_pvAssoc);
       t->SetBranchAddress("pf_puppiWgt", ev.pf_puppiWgt);
+      t->SetBranchAddress("pf_chSum_px",   &ev.pf_chSum_px);
+      t->SetBranchAddress("pf_chSum_py",   &ev.pf_chSum_py);
+      t->SetBranchAddress("pf_chSum_pz",   &ev.pf_chSum_pz);
+      t->SetBranchAddress("pf_ch_ht",      &ev.pf_ch_ht);
+      t->SetBranchAddress("pf_ch_hz",      &ev.pf_ch_hz);
+      t->SetBranchAddress("pf_puppi_px",     &ev.pf_puppi_px);
+      t->SetBranchAddress("pf_puppi_py",     &ev.pf_puppi_py);
+      t->SetBranchAddress("pf_puppi_pz",     &ev.pf_puppi_pz);
+      t->SetBranchAddress("pf_puppi_ht",     &ev.pf_puppi_ht);
+      t->SetBranchAddress("pf_puppi_hz",     &ev.pf_puppi_hz);
     }
 
   //MET
