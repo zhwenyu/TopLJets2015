@@ -1,6 +1,7 @@
 #include "TopLJets2015/TopAnalysis/interface/LumiTools.h"
 #include "TFile.h"
 #include "TH2F.h"
+#include "TF1.h"
 #include "TSystem.h"
 
 #include <iostream>
@@ -78,10 +79,13 @@ TString LumiTools::assignRunPeriod()
 void LumiTools::parsePileupWeightsMap(TH1 *genPU)
 {  
   if(genPU==0) return;
-  genPU->Scale(1./genPU->Integral());
+  float totalExp(genPU->Integral());
+  if(totalExp<=0) return;
+  genPU->Scale(1./totalExp);
   for (auto period : runPeriods_) {
 
-    puWgtGr_[period.first]=std::vector<TGraph *>(3,0);
+    puWgtGr_[period.first]=std::vector<TH1 *>(3,0);
+    //puWgtGr_[period.first]=std::vector<TGraph *>(3,0);
 
     //readout the pileup weights and take the ratio of data/MC
     TString puWgtUrl(era_+"/pileupWgts"+period.first+".root");
@@ -100,13 +104,21 @@ void LumiTools::parsePileupWeightsMap(TH1 *genPU)
             Float_t yexp=genPU->GetBinContent(xbin);
             Double_t xobs,yobs;
             puData->GetPoint(xbin-1,xobs,yobs);
-            tmp->SetBinContent(xbin, yexp>0 ? yobs/(totalData*yexp) : 0. );
+            float wgt(yexp>0 ? float(yobs)/(totalData*yexp) : 0.);
+            if(isinf(wgt) || isnan(wgt)) wgt=0.;
+            tmp->SetBinContent(xbin,wgt);
           }
-        TGraph *gr=new TGraph(tmp);
+        
         grName.ReplaceAll("pu","puwgts");
-        gr->SetName(period.first+grName);
-        puWgtGr_[period.first][i]=gr;
-        tmp->Delete();
+        tmp->SetName(period.first+grName);
+        tmp->SetDirectory(0);
+        puWgtGr_[period.first][i]=tmp;
+
+        //TGraph *gr=new TGraph(tmp);
+        //grName.ReplaceAll("pu","puwgts");
+        //gr->SetName(period.first+grName);
+        //puWgtGr_[period.first][i]=gr;
+        //tmp->Delete();
       }
   }
 }
@@ -117,6 +129,13 @@ std::vector<Float_t> LumiTools::pileupWeight(Float_t genPu,TString period)
   std::vector<Float_t> toReturn(3,1.0);
   if(puWgtGr_.find(period)==puWgtGr_.end()) return toReturn;
   for(size_t i=0; i<3; i++)
-    toReturn[i]=puWgtGr_[period][i]->Eval(genPu);
+    {      
+      TH1 *h=puWgtGr_[period][i];
+      float minPu( h->GetXaxis()->GetXmin() ), maxPu( h->GetXaxis()->GetXmax()-0.01 );
+      float puForEval=TMath::Max(TMath::Min(genPu,maxPu),minPu);
+      toReturn[i]=h->GetBinContent(puForEval);
+
+      //toReturn[i]=puWgtGr_[period][i]->Eval(genPu);
+    }
   return toReturn;
 }

@@ -1,0 +1,8 @@
+{
+"Data13TeV_JetHT_2017B" : [1, 1, "/JetHT/Run2017B-17Nov2017-v1/MINIAOD", "Data", 1, false, false, 0],
+"Data13TeV_JetHT_2017C" : [1, 1, "/JetHT/Run2017C-17Nov2017-v1/MINIAOD", "Data", 1, false, false, 0],
+"Data13TeV_JetHT_2017D" : [1, 1, "/JetHT/Run2017D-17Nov2017-v1/MINIAOD", "Data", 1, false, false, 0],
+"Data13TeV_JetHT_2017E" : [1, 1, "/JetHT/Run2017E-17Nov2017-v1/MINIAOD", "Data", 1, false, false, 0],
+"Data13TeV_JetHT_2017F" : [1, 1, "/JetHT/Run2017F-17Nov2017-v1/MINIAOD", "Data", 1, false, false, 0]
+}
+

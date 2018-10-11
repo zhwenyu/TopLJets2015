@@ -13,8 +13,6 @@
 #include "TopLJets2015/TopAnalysis/interface/Davismt2.h"
 #include "TopLJets2015/TopAnalysis/interface/HistTool.h"
 #include "TopLJets2015/TopAnalysis/interface/TemplatedFitTools.h"
-#include "TopLJets2015/TopAnalysis/interface/FillNumberLUTHandler.h"
-#include "TopLJets2015/TopAnalysis/interface/AlignmentLUTHandler.h"
-#include "TopLJets2015/TopAnalysis/interface/ProtonReconstruction.h"
+#include "TopLJets2015/TopAnalysis/interface/FakeRateTool.h"
 
 #endif

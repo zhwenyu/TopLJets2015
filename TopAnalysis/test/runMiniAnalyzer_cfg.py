@@ -95,6 +95,17 @@ if options.runOnData:
       #process.source.fileNames = cms.untracked.vstring('/store/data/Run2017F/SingleElectron/MINIAOD/17Nov2017-v1/50000/FA333057-D0E0-E711-BDFB-5065F37DC062.root')
       #process.source.fileNames = cms.untracked.vstring('/store/data/Run2017F/SingleMuon/MINIAOD/17Nov2017-v1/50000/FEED7A3F-D3E2-E711-84DD-0025905A6134.root')
 
+if options.inputFile:
+      fileList=[]
+      if '.root' in options.inputFile :
+            fileList=[options.inputFile]
+      else:
+            import os
+            inDir=options.inputFile
+            fileList = ['file:'+os.path.join(inDir,f) for f in os.listdir(inDir)]
+      process.source.fileNames = cms.untracked.vstring(fileList)
+print  "Processing",process.source.fileNames
+
 process.load('SimGeneral.HepPDTESSource.pythiapdt_cfi')
 process.mergedGenParticles = cms.EDProducer("MergedGenParticleProducer",
                     inputPruned = cms.InputTag("prunedGenParticles"),

@@ -106,9 +106,33 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev)
   t->Branch("j_eta",      ev.j_eta,     "j_eta[nj]/F");
   t->Branch("j_phi",      ev.j_phi,     "j_phi[nj]/F");
   t->Branch("j_mass",     ev.j_mass,    "j_mass[nj]/F");
+  t->Branch("j_pumva",    ev.j_pumva,   "j_pumva[nj]/F");
+  t->Branch("j_id",       ev.j_id,      "j_id[nj]/I");
   t->Branch("j_csv",      ev.j_csv,     "j_csv[nj]/F");
   t->Branch("j_btag",     ev.j_btag,    "j_btag[nj]/O");
-  t->Branch("j_deepcsv",     ev.j_deepcsv,    "j_deepcsv[nj]/F");
+  t->Branch("j_c1_00",    ev.j_c1_00,   "j_c1_00[nj]/F");
+  t->Branch("j_c1_02",    ev.j_c1_02,   "j_c1_02[nj]/F");
+  t->Branch("j_c1_05",    ev.j_c1_05,   "j_c1_05[nj]/F");
+  t->Branch("j_c1_10",    ev.j_c1_10,   "j_c1_10[nj]/F");
+  t->Branch("j_c1_20",    ev.j_c1_20,   "j_c1_20[nj]/F");
+  t->Branch("j_c2_00",    ev.j_c2_00,   "j_c2_00[nj]/F");
+  t->Branch("j_c2_02",    ev.j_c2_02,   "j_c2_02[nj]/F");
+  t->Branch("j_c2_05",    ev.j_c2_05,   "j_c2_05[nj]/F");
+  t->Branch("j_c2_10",    ev.j_c2_10,   "j_c2_10[nj]/F");
+  t->Branch("j_c2_20",    ev.j_c2_20,   "j_c2_20[nj]/F");
+  t->Branch("j_c3_00",    ev.j_c3_00,   "j_c3_00[nj]/F");
+  t->Branch("j_c3_02",    ev.j_c3_02,   "j_c3_02[nj]/F");
+  t->Branch("j_c3_05",    ev.j_c3_05,   "j_c3_05[nj]/F");
+  t->Branch("j_c3_10",    ev.j_c3_10,   "j_c3_10[nj]/F");
+  t->Branch("j_c3_20",    ev.j_c3_20,   "j_c3_20[nj]/F");
+  t->Branch("j_zg",       ev.j_zg,      "j_zg[nj]/F");
+  t->Branch("j_mult",     ev.j_mult,    "j_mult[nj]/F");
+  t->Branch("j_gaptd",    ev.j_gaptd,   "j_gaptd[nj]/F");
+  t->Branch("j_gawidth",  ev.j_gawidth, "j_gawidth[nj]/F");
+  t->Branch("j_gathrust", ev.j_gathrust,"j_gathrust[nj]/F");
+  t->Branch("j_tau32",    ev.j_tau32,   "j_tau32[nj]/F");
+  t->Branch("j_tau21",    ev.j_tau21,   "j_tau21[nj]/F");
+  t->Branch("j_deepcsv",  ev.j_deepcsv, "j_deepcsv[nj]/F");
   t->Branch("j_vtxpx",    ev.j_vtxpx,   "j_vtxpx[nj]/F");
   t->Branch("j_vtxpy",    ev.j_vtxpy,   "j_vtxpy[nj]/F");
   t->Branch("j_vtxpz",    ev.j_vtxpz,   "j_vtxpz[nj]/F");
@@ -145,13 +169,14 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev)
   t->Branch("met_filterBits", &ev.met_filterBits, "met_filterBits/I");
 
   //CTPPS local tracks
-  t->Branch("nfwdtrk",    &ev.nfwdtrk,       "nfwdtrk/I");
-  t->Branch("fwdtrk_arm",  ev.fwdtrk_arm,    "fwdtrk_arm[nfwdtrk]/I");
-  t->Branch("fwdtrk_pot",  ev.fwdtrk_pot,    "fwdtrk_pot[nfwdtrk]/I");
-  t->Branch("fwdtrk_x",    ev.fwdtrk_x,      "fwdtrk_x[nfwdtrk]/F");
-  t->Branch("fwdtrk_x_unc",ev.fwdtrk_x_unc,  "fwdtrk_x_unc[nfwdtrk]/F");
-  t->Branch("fwdtrk_y",    ev.fwdtrk_y,      "fwdtrk_y[nfwdtrk]/F");
-  t->Branch("fwdtrk_y_unc",ev.fwdtrk_y_unc,  "fwdtrk_y_unc[nfwdtrk]/F");
+  t->Branch("nfwdtrk",      &ev.nfwdtrk,       "nfwdtrk/I");
+  t->Branch("fwdtrk_arm",    ev.fwdtrk_arm,    "fwdtrk_arm[nfwdtrk]/I");
+  t->Branch("fwdtrk_station",ev.fwdtrk_station,"fwdtrk_station[nfwdtrk]/I");
+  t->Branch("fwdtrk_pot",    ev.fwdtrk_pot,    "fwdtrk_pot[nfwdtrk]/I");
+  t->Branch("fwdtrk_x",      ev.fwdtrk_x,      "fwdtrk_x[nfwdtrk]/F");
+  t->Branch("fwdtrk_x_unc",  ev.fwdtrk_x_unc,  "fwdtrk_x_unc[nfwdtrk]/F");
+  t->Branch("fwdtrk_y",      ev.fwdtrk_y,      "fwdtrk_y[nfwdtrk]/F");
+  t->Branch("fwdtrk_y_unc",  ev.fwdtrk_y_unc,  "fwdtrk_y_unc[nfwdtrk]/F");
 }
 
 //
@@ -263,8 +288,32 @@ void attachToMiniEventTree(TTree *t,MiniEvent_t &ev,bool full)
   t->SetBranchAddress("j_eta",      ev.j_eta);
   t->SetBranchAddress("j_phi",      ev.j_phi);
   t->SetBranchAddress("j_mass",     ev.j_mass);
+  t->SetBranchAddress("j_pumva",    ev.j_pumva);
+  t->SetBranchAddress("j_id",       ev.j_id);
   t->SetBranchAddress("j_csv",      ev.j_csv);
   t->SetBranchAddress("j_btag",     ev.j_btag);
+  t->SetBranchAddress("j_c1_00",    ev.j_c1_00);
+  t->SetBranchAddress("j_c1_02",    ev.j_c1_02);
+  t->SetBranchAddress("j_c1_05",    ev.j_c1_05);
+  t->SetBranchAddress("j_c1_10",    ev.j_c1_10);
+  t->SetBranchAddress("j_c1_20",    ev.j_c1_20);
+  t->SetBranchAddress("j_c2_00",    ev.j_c2_00);
+  t->SetBranchAddress("j_c2_02",    ev.j_c2_02);
+  t->SetBranchAddress("j_c2_05",    ev.j_c2_05);
+  t->SetBranchAddress("j_c2_10",    ev.j_c2_10);
+  t->SetBranchAddress("j_c2_20",    ev.j_c2_20);
+  t->SetBranchAddress("j_c3_00",    ev.j_c3_00);
+  t->SetBranchAddress("j_c3_02",    ev.j_c3_02);
+  t->SetBranchAddress("j_c3_05",    ev.j_c3_05);
+  t->SetBranchAddress("j_c3_10",    ev.j_c3_10);
+  t->SetBranchAddress("j_c3_20",    ev.j_c3_20);
+  t->SetBranchAddress("j_zg",       ev.j_zg);
+  t->SetBranchAddress("j_mult",     ev.j_mult);
+  t->SetBranchAddress("j_gaptd",    ev.j_gaptd);
+  t->SetBranchAddress("j_gawidth",  ev.j_gawidth);
+  t->SetBranchAddress("j_gathrust", ev.j_gathrust);
+  t->SetBranchAddress("j_tau32",    ev.j_tau32);
+  t->SetBranchAddress("j_tau21",    ev.j_tau21);
   t->SetBranchAddress("j_deepcsv",     ev.j_deepcsv);  
   t->SetBranchAddress("j_vtxpx",    ev.j_vtxpx);
   t->SetBranchAddress("j_vtxpy",    ev.j_vtxpy);
@@ -304,11 +353,12 @@ void attachToMiniEventTree(TTree *t,MiniEvent_t &ev,bool full)
   t->SetBranchAddress("met_filterBits", &ev.met_filterBits);
 
   //CTPPS local tracks
-  t->SetBranchAddress("nfwdtrk",    &ev.nfwdtrk);
-  t->SetBranchAddress("fwdtrk_arm",  ev.fwdtrk_arm);
-  t->SetBranchAddress("fwdtrk_pot",  ev.fwdtrk_pot);
-  t->SetBranchAddress("fwdtrk_x",    ev.fwdtrk_x);
-  t->SetBranchAddress("fwdtrk_x_unc",ev.fwdtrk_x_unc);
-  t->SetBranchAddress("fwdtrk_y",    ev.fwdtrk_y);
-  t->SetBranchAddress("fwdtrk_y_unc",ev.fwdtrk_y_unc);
+  t->SetBranchAddress("nfwdtrk",       &ev.nfwdtrk);
+  t->SetBranchAddress("fwdtrk_arm",    ev.fwdtrk_arm);
+  t->SetBranchAddress("fwdtrk_station",ev.fwdtrk_station);
+  t->SetBranchAddress("fwdtrk_pot",    ev.fwdtrk_pot);
+  t->SetBranchAddress("fwdtrk_x",      ev.fwdtrk_x);
+  t->SetBranchAddress("fwdtrk_x_unc",  ev.fwdtrk_x_unc);
+  t->SetBranchAddress("fwdtrk_y",      ev.fwdtrk_y);
+  t->SetBranchAddress("fwdtrk_y_unc",  ev.fwdtrk_y_unc);
 }

@@ -18,7 +18,8 @@ class HistTool {
   
   void setNsyst(unsigned int nsyst) { nsyst_ = nsyst; }
   void addHist(TString title, TH1* hist);
-  void fill(TString title, double value, std::vector<double> weights);
+  void fill(TString title, double value, std::vector<double> weights,TString cat="");
+  void fill(TString title, double valueX, double valueY, std::vector<double> weights,TString cat="");
   std::map<TString, TH1 *> &getPlots()   { return allPlots_; }
   std::map<TString, TH2 *> &get2dPlots() { return all2dPlots_; }
   

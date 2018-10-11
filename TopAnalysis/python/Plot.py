@@ -42,6 +42,7 @@ class Plot(object):
         self.mcsyst = {}
         self.totalMCUnc = None
         self.spimpose={}
+        self.spimposeWithErrors=False
         self.dataH = None
         self.data = None
         self._garbageList = []
@@ -58,6 +59,13 @@ class Plot(object):
         if 'ratevsrun' in self.name and not isData: return
 
         h.SetTitle(title)
+
+        #add overflows
+        try:
+            if not h.InheritsFrom('TH2') and not h.InheritsFrom('TGraph'):
+                fixExtremities(h=h,addOverflow=True,addUnderflow=True)
+        except:
+            pass
 
         #check if color is given in hexadec format
         try:
@@ -95,9 +103,11 @@ class Plot(object):
                 self._garbageList.append(h)
         else:
             try:
-                if spImpose : self.spimpose[title].Add(h)
-                else        : self.mc[title].Add(h)
-            except:
+                if spImpose : 
+                    self.spimpose[title].Add(h)
+                else : 
+                    self.mc[title].Add(h)
+            except Exception as e: 
                 h.SetName('%s_%s' % (h.GetName(), title ) )
                 h.SetDirectory(0)
                 h.SetMarkerStyle(1)
@@ -149,8 +159,7 @@ class Plot(object):
                 pass
 
     def show(self, outDir,lumi,noStack=False,saveTeX=False,extraText=None,noRatio=False):
-
-        if len(self.mc)<1 and self.dataH is None:
+        if len(self.mc)<1 and self.dataH is None and len(self.spimpose)<1:
             print '%s has 0 or 1 MC!' % self.name
             return
 
@@ -184,7 +193,6 @@ class Plot(object):
                 p1.SetTopMargin(0.05)
             p1.SetBottomMargin(0.12)
         p1.Draw()
-
         p1.SetGridx(False)
         p1.SetGridy(False) #True)
         self._garbageList.append(p1)
@@ -193,7 +201,7 @@ class Plot(object):
         # legend
         iniy=0.9 if self.wideCanvas else 0.85
         dy=0.05
-        ndy= max(len(self.mc),1)
+        ndy= max(len(self.mc)+len(self.spimpose),1)
         inix,dx =0.65,0.4
         if noRatio: inix=0.6
         if noStack:
@@ -213,6 +221,7 @@ class Plot(object):
             if self.data is None: self.finalize()
             leg.AddEntry( self.data, self.data.GetTitle(),'p')
             nlegCols += 1
+
         for h in self.mc:
 
             #compare
@@ -224,9 +233,13 @@ class Plot(object):
                     self.mc[h].SetTitle('#splitline{%s}{#chi^{2}=%3.1f (p-val: %3.3f)}'%(self.mc[h].GetTitle(),chi2,pval))
                 else:
                     refH.SetLineWidth(2)
-
             leg.AddEntry(self.mc[h], self.mc[h].GetTitle(), 'f')
             nlegCols += 1
+
+        for m in self.spimpose:
+            leg.AddEntry(self.spimpose[m],self.spimpose[m].GetTitle(),'l')
+            nlegCols += 1
+
         if nlegCols ==0 :
             print '%s is empty'%self.name
             return
@@ -238,11 +251,10 @@ class Plot(object):
         totalMC = None
         stack = ROOT.THStack('mc','mc')
         for h in reversed(self.mc):
-
             if noStack:
                 self.mc[h].SetFillStyle(0)
                 self.mc[h].SetLineColor(self.mc[h].GetFillColor())
-
+                if lumi == 1 and self.mc[h].Integral() != 1 and self.mc[h].Integral() !=0 : self.mc[h].Scale(1./self.mc[h].Integral())
             stack.Add(self.mc[h],'hist')
 
             try:
@@ -306,31 +318,33 @@ class Plot(object):
             self.totalMCUnc = totalMCUnc
 
         #test for null plots
-        if totalMC :
-            if totalMC.Integral()==0:
-                if self.dataH is None : return
-                if self.dataH.Integral()==0: return
-        elif self.dataH is None : return
-        elif self.dataH.Integral()==0 : return
+        if len(self.spimpose)==0:
+            if totalMC:
+                if totalMC.Integral()==0:
+                    if self.dataH is None: return
+                    if self.dataH.Integral()==0 : return
+            elif self.dataH is None: return
+            elif self.dataH.Integral()==0: return
 
 
-        frame = totalMC.Clone('frame') if totalMC is not None else self.dataH.Clone('frame')
-        frame.Reset('ICE')
+        frame = None
+        if totalMC      : frame=totalMC.Clone('frame')
+        elif self.dataH : frame=self.dataH.Clone('frame')
+        else            : frame=self.spimpose[self.spimpose.keys()[0]].Clone('frame')
+
         if noStack:
-            try:
-                maxY=self.dataH.GetMaximum()*1.25 
-            except:
-                maxY=stack.GetStack().At(0).GetMaximum()/1.25
+            if self.dataH:   maxY=self.dataH.GetMaximum()*1.25 
+            elif stack: maxY=stack.GetStack().At(0).GetMaximum()/1.25
+            else:       maxY=frame.GetMaximum()*1.25
         elif totalMC:
             maxY = totalMC.GetMaximum()
             if self.dataH:
                 if maxY<self.dataH.GetMaximum():
                     maxY=self.dataH.GetMaximum()
         else:
-            maxY=self.dataH.GetMaximum()
+            maxY=frame.GetMaximum()
 
         frame.GetYaxis().SetRangeUser(self.frameMin,self.frameMax*maxY)
-
         frame.SetDirectory(0)
         frame.Reset('ICE')
         self._garbageList.append(frame)
@@ -339,7 +353,7 @@ class Plot(object):
         ROOT.TGaxis.SetMaxDigits(4)
         frame.GetYaxis().SetTitleOffset(1.2)
         if noRatio:
-            frame.GetYaxis().SetTitleOffset(1.4)
+            frame.GetYaxis().SetTitleOffset(0.9)
         if self.dataH:
             frame.GetXaxis().SetTitleSize(0.0)
             frame.GetXaxis().SetLabelSize(0.0)
@@ -353,6 +367,7 @@ class Plot(object):
             frame.GetXaxis().SetLabelSize(0.03)
             frame.GetXaxis().SetTitleSize(0.035)
         frame.Draw()
+
         if totalMC is not None   :
             if noStack: stack.Draw('nostack same')
             else:
@@ -360,21 +375,25 @@ class Plot(object):
                 if (len(self.mcsyst)>0):
                     totalMCUnc.Draw('e2 same')
                     totalMCUncShape.Draw('e2 same')
-        for m in self.spimpose:
-            self.spimpose[m].Draw('histsame')
-            leg.AddEntry(self.spimpose[m],self.spimpose[m].GetTitle(),'l')
-        if self.data is not None : self.data.Draw('p')
 
+        for m in self.spimpose:
+            if self.spimposeWithErrors:
+                self.spimpose[m].Draw('e1same')
+            else:
+                self.spimpose[m].Draw('histsame')
+
+        if self.data is not None : self.data.Draw('p')
 
         if (totalMC is not None and totalMC.GetMaximumBin() > totalMC.GetNbinsX()/2.):
             inix = 0.15
             leg.SetX1(inix)
             leg.SetX2(inix+dx)
         leg.Draw()
+
         txt=ROOT.TLatex()
         txt.SetNDC(True)
         txt.SetTextFont(42)
-        txt.SetTextSize(0.05)
+        txt.SetTextSize(0.045)
         txt.SetTextAlign(12)
         iniy=0.88 if self.wideCanvas else 0.88
         inix=0.15 if noStack else 0.18
@@ -385,7 +404,7 @@ class Plot(object):
             inix=0.56
             inixlumi=0.65
 
-        txt.DrawLatex(inix,iniy,self.cmsLabel)
+        txt.DrawLatex(0.12,0.97,self.cmsLabel)
         if lumi<1:
             txt.DrawLatex(inixlumi,0.97,'#scale[0.8]{%3.1f nb^{-1} (%s)}' % (lumi*1000.,self.com) )
         elif lumi<100:
@@ -399,7 +418,6 @@ class Plot(object):
                 extraCtr+=1
         except:
             pass
-
 
         #holds the ratio
         c.cd()
@@ -487,7 +505,6 @@ class Plot(object):
                     gr.Draw('p')
                 except:
                     pass
-
         #all done
         if p1: p1.RedrawAxis()
         c.cd()
@@ -495,10 +512,12 @@ class Plot(object):
         c.Update()
 
         #save
+        if lumi == 1: frame.GetYaxis().SetRangeUser(0,0.8)
         for ext in self.plotformats : c.SaveAs(os.path.join(outDir, self.name+'.'+ext))
         if self.savelog:
             p1.cd()
             frame.GetYaxis().SetRangeUser(1,maxY*50)
+            if lumi == 1: frame.GetYaxis().SetRangeUser(0.001,1)
             p1.SetLogy()
             c.cd()
             c.Modified()
@@ -506,6 +525,8 @@ class Plot(object):
             for ext in self.plotformats : c.SaveAs(os.path.join(outDir, self.name+'_log.'+ext))
 
         if saveTeX : self.convertToTeX(outDir=outDir)
+
+
 
 
     def convertToTeX(self, outDir):

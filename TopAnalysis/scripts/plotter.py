@@ -6,18 +6,20 @@ from collections import OrderedDict
 
 from TopLJets2015.TopAnalysis.Plot import *
 
+
 """
 steer the script
 """
+	
 def main():
 
     #configuration
     usage = 'usage: %prog [options]'
     parser = optparse.OptionParser(usage)
-    parser.add_option(     '--mcUnc',        dest='mcUnc'  ,      help='common MC related uncertainty (e.g. lumi)',        default=0,              type=float)
-    parser.add_option(     '--com',          dest='com'  ,        help='center of mass energy',                            default='13 TeV',       type='string')
+    parser.add_option(     '--mcUnc',        dest='mcUnc'  ,     help='common MC related uncertainty (e.g. lumi)',        default=0,              type=float)
+    parser.add_option(     '--com',          dest='com'  ,       help='center of mass energy',                            default='13 TeV',       type='string')
     parser.add_option('-j', '--json',        dest='json'  ,      help='json with list of files',        default=None,              type='string')
-    parser.add_option( '--systJson', dest='systJson', help='json with list of systematics', default=None, type='string')
+    parser.add_option( '--systJson',         dest='systJson',    help='json with list of systematics', default=None, type='string')
     parser.add_option(      '--signalJson',  dest='signalJson',  help='signal json list',               default=None,              type='string')
     parser.add_option('-i', '--inDir',       dest='inDir' ,      help='input directory',                default=None,              type='string')
     parser.add_option('-O', '--outDir',      dest='outDir' ,     help='output directory',                default=None,              type='string')
@@ -28,7 +30,7 @@ def main():
     parser.add_option(      '--onlyData',    dest='onlyData' ,   help='only plots containing data',     default=False,             action='store_true')
     parser.add_option(      '--saveTeX',     dest='saveTeX' ,    help='save as tex file as well',       default=False,             action='store_true')
     parser.add_option(      '--rebin',       dest='rebin',       help='rebin factor',                   default=1,                 type=int)
-    parser.add_option('-l', '--lumi',        dest='lumi' ,       help='lumi to print out',              default=12900,              type=float)
+    parser.add_option('-l', '--lumi',        dest='lumi' ,       help='lumi to print out, if == 1 draw normalized',              default=12900,              type=float)
     parser.add_option(      '--lumiSpecs',   dest='lumiSpecs',   help='lumi specifications for some channels [tag:lumi,tag2:lumi2,...]', default=None,       type=str)
     parser.add_option(      '--only',        dest='only',        help='plot only these (csv)',          default='',                type='string')
     parser.add_option(      '--skip',        dest='skip',        help='skip these samples (csv)',          default='MC13TeV_TTJets_cflip',                type='string')
@@ -64,12 +66,15 @@ def main():
     
     skipList=opt.skip.split(',')
 
+
+
     #lumi specifications per tag
     lumiSpecs={}
     if opt.lumiSpecs:
         for spec in opt.lumiSpecs.split(','):
             tag,lumi=spec.split(':')
             lumiSpecs[tag]=float(lumi)
+        print lumiSpecs
 
     #proc SF
     procSF={}
@@ -113,19 +118,21 @@ def main():
                 puNormSF=1
                 if opt.puNormSF and not isData:
                     puCorrH=fIn.Get(opt.puNormSF)
-                    nonWgt=puCorrH.GetBinContent(1)
-                    wgt=puCorrH.GetBinContent(2)
-                    if wgt>0 :
-                        puNormSF=nonWgt/wgt
-                        if puNormSF>1.3 or puNormSF<0.7 : 
-                            puNormSF=1
-                            report += '%s wasn\'t be scaled as too large SF was found (probably low stats)\n' % sp[0]
-                        else :
-                            report += '%s was scaled by %3.3f for pileup normalization\n' % (sp[0],puNormSF)
+                    try:
+                        nonWgt=puCorrH.GetBinContent(1)
+                        wgt=puCorrH.GetBinContent(2)
+                        if wgt>0 :
+                            puNormSF=nonWgt/wgt
+                            if puNormSF>1.3 or puNormSF<0.7 : 
+                                puNormSF=1
+                                report += '%s wasn\'t be scaled as too large SF was found (probably low stats)\n' % sp[0]
+                            else :
+                                report += '%s was scaled by %3.3f for pileup normalization\n' % (sp[0],puNormSF)
+                    except:
+                        print 'Check pu weight control histo',opt.puNormSF,'for',sp[0]
 
                 for tkey in fIn.GetListOfKeys():
                     keyIsSyst=False
-
                     try:
                         key=tkey.GetName()
 
@@ -136,7 +143,6 @@ def main():
                                 keep=True
                                 break
                         if not keep: continue
-
                         histos = []
                         obj=fIn.Get(key)
                         if obj.InheritsFrom('TH2'):
@@ -179,10 +185,9 @@ def main():
                                 #scale by lumi
                                 lumi=opt.lumi
                                 for tag in lumiSpecs:
-                                    if not tag in key: continue
+                                    if not tag+'_' in key: continue
                                     lumi=lumiSpecs[tag]
                                     break
-                                            
                                 hist.Scale(xsec*lumi*puNormSF*sfVal)                    
                             
                             #rebin if needed
@@ -205,13 +210,20 @@ def main():
     else:                outDir = opt.outDir
     os.system('mkdir -p %s' % outDir)
     os.system('rm %s/%s'%(outDir,opt.outName))
-    for p in plots : 
+    for p in plots:
         plots[p].mcUnc=opt.mcUnc
         if opt.saveLog    : plots[p].savelog=True
         skipPlot=False
         if opt.onlyData and plots[p].dataH is None: skipPlot=True 
         if opt.silent : skipPlot=True
-        if not skipPlot : plots[p].show(outDir=outDir,lumi=opt.lumi,noStack=opt.noStack,saveTeX=opt.saveTeX)
+        lumi=opt.lumi
+        for tag in lumiSpecs:
+            if not tag+'_' in p: continue
+            lumi=lumiSpecs[tag]
+            break
+
+        #continue
+        plots[p].show(outDir=outDir,lumi=lumi,noStack=opt.noStack,saveTeX=opt.saveTeX)
         plots[p].appendTo('%s/%s'%(outDir,opt.outName))
         plots[p].reset()
 
