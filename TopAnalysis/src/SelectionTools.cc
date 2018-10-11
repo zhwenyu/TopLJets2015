@@ -71,23 +71,27 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
         leptons_=tightLeptons;
         vetoLeptons_=selLeptons(preselLeptons,VETO, 0., 99., leptons_);
       }
-    }
-  else if(anType_==VBF)
-    { 
+    } else if(anType_==VBF){ 
       if (!isCR){
 	if(tightLeptons.size()==2){
 	  int ch( abs(tightLeptons[0].id()*tightLeptons[1].id()) );
 	  float mll( (tightLeptons[0]+tightLeptons[1]).M() );
 	  if( ch==13*13 && fabs(mll-91)<15 && (tightLeptons[0].pt()>30 || tightLeptons[1].pt()>30)) chTag="MM";          
 	  leptons_=tightLeptons;
-	}else {
-	  bool passPhoton = (!isSRfake && tightPhotons.size()>=1) || (isSRfake && fakePhotons.size()>=1);
-	  if(passPhoton){
-	    chTag="A";
-	    leptons_   =tightLeptons;
+	} else {
+	  if (!isSRfake) {
+	    if( tightPhotons.size()>=1){
+	      chTag="A";
+	      leptons_   =tightLeptons;
+	      photons_   =tightPhotons;
+	    }
+	  } else {
+	    if(fakePhotons.size()>=1){
+	      chTag="A";
+	      leptons_   =tightLeptons;
+	      photons_   =tightPhotons;
+	    }
 	  }
-	  if(isSRfake) photons_   =fakePhotons;
-	  else       photons_   =tightPhotons;
 	}
       } else {
 	bool passPhoton = (!isSRfake && !isQCDTemp && inclusivePhotons.size()>=1) || (!isSRfake && isQCDTemp && tmpPhotons.size()>=1) || (isSRfake && fakePhotons.size()>=1);

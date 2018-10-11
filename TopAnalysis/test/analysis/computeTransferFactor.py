@@ -2,30 +2,45 @@ import optparse
 import ROOT
 import os
 import sys
+import numpy as np
 from TopLJets2015.TopAnalysis.Plot import fixExtremities
 
+def rebinUnequalBinSize(h,newBins):
+    print newBins
+    nBin = len(newBins)
+    newname = h.GetName()+'_new'
+    hnew = h.Rebin(nBin-1, newname, np.array(newBins))
+    return hnew
 
-def getPlotsIn(inF,dirname,specList=[],rebin=True):
+def getPlotsIn(inF,dirname,specList=[],rebin=True,var=None,bins=[]):
 
     """gets the data and mc sums in a given directory"""
 
-    data,mcTotal=None,None
+    data,mcTotal,h=None,None,None
     mcSpecList=[None]*len(specList)
     for key in inF.Get(dirname).GetListOfKeys():
         name=key.GetName()
         if 'Graph' in name : continue        
-
+        print "variable name is %s versus %s" %(var,name)
         #data histogram
         if name==dirname:
-            data=key.ReadObj()
-            if rebin:data.Rebin()
+            data_=key.ReadObj()
+            if rebin:data_.Rebin()
+            if ( (not bins == [] ) and (var in name)):
+                data = rebinUnequalBinSize(data_,bins)
+            else:
+                data = data_.Clone()
             data.SetDirectory(0)
             fixExtremities(data)
 
         #predictions
         else:
-            h=key.ReadObj()
-            if rebin: h.Rebin()
+            h_=key.ReadObj()
+            if rebin: h_.Rebin()
+            if ( (not bins == [] ) and (var in name)):
+                h = rebinUnequalBinSize(h_,bins)
+            else:
+                h = h_.Clone();
             proc=name.split('_')[-1]
             
             #check if this specific process should be stored
@@ -73,10 +88,11 @@ def applyTF(h,tf):
 
     return htf
 
-def computeTransferFactors(plotter,systPlotter,shapeOnly=True,rebin=True):
+def computeTransferFactors(plotter,systPlotter,shapeOnly=True,rebin=True,var=None,binList=None):
 
     """computes the Z NLO/Z LO, A LO/Z LO, Data/LO MC transfer factors"""
-
+    if not binList== None:
+        bins = [float(i) for i in binList.split(',')]
 
     tfList={}
     pF=ROOT.TFile.Open(plotter)
@@ -91,10 +107,9 @@ def computeTransferFactors(plotter,systPlotter,shapeOnly=True,rebin=True):
         tfList[name]={}
 
         try:
-            data,totalMC,nloMC = getPlotsIn(pF,name,['DY'],rebin=rebin)
-            _,_,loMC = getPlotsIn(sF,name,['DYlo'],rebin=rebin)
-            data_A,totalMClo_A,loMC_A = getPlotsIn(pF,name.replace('MM','A'),['#gamma+jets'],rebin=rebin)
-
+            data,totalMC,nloMC = getPlotsIn(pF,name,['DY'],rebin=rebin,var=var,bins=bins)
+            _,_,loMC = getPlotsIn(sF,name,['DYlo'],rebin=rebin,var=var,bins=bins)
+            data_A,totalMClo_A,loMC_A = getPlotsIn(pF,name.replace('MM','A'),['#gamma+jets'],rebin=rebin,var=var,bins=bins)
             #transfer factors
             nlo2lo = nloMC[0].Clone('{0}_nlo2lo'.format(out_name))
             if shapeOnly: scaleTo(loMC[0],nloMC[0])
@@ -179,7 +194,7 @@ def showTF(tf,outDir):
     nlo2lo.GetYaxis().SetTitleSize(0.08)
     nlo2lo.GetYaxis().SetTitleOffset(0.8)
     nlo2lo.GetYaxis().SetLabelSize(0.08)
-    nlo2lo.GetYaxis().SetRangeUser(0.52,1.48)
+    nlo2lo.GetYaxis().SetRangeUser(0.01,5)
     data2lo.Draw('e1same')
     data2nlo.Draw('e1same')
 
@@ -213,7 +228,7 @@ def showTF(tf,outDir):
     p2.cd()
     data2lo_A.Draw('e1')
     data2lo_A.GetYaxis().SetNdivisions(5)
-    data2lo_A.GetYaxis().SetRangeUser(0.52,1.48)
+    data2lo_A.GetYaxis().SetRangeUser(0.01,5)
     data2lo_A.GetXaxis().SetTitleSize(0.08)
     data2lo_A.GetXaxis().SetLabelSize(0.08)
     data2lo_A.GetYaxis().SetTitleSize(0.08)
@@ -250,6 +265,9 @@ def main():
     parser.add_option('-s',  dest='systPlotter', help='syst plotter [%default]',   default=None,        type='string')
     parser.add_option('-o',  dest='outdir',      help='outdir [%default]',         default=None,        type='string')
     parser.add_option('--rebin',  dest='rebin',  help='rebin histograms [%default]', default=False, action='store_true')
+    parser.add_option('--var',  dest='varname',   help='variable name to rebin [%default]', default=None, type='string')
+    parser.add_option('--binList',  dest='bins',  help='List of bins with unequal bin sizes [%default]', default=None, type='string')
+
     (opt, args) = parser.parse_args()
 
     ROOT.gStyle.SetOptTitle(0)
@@ -257,7 +275,7 @@ def main():
     ROOT.gROOT.SetBatch(True)
     
     #get all the transfer factors
-    tfList=computeTransferFactors(plotter=opt.plotter,systPlotter=opt.systPlotter,rebin=opt.rebin)
+    tfList=computeTransferFactors(plotter=opt.plotter,systPlotter=opt.systPlotter,rebin=opt.rebin,var=opt.varname,binList=opt.bins)
     
     #save to root and show in neat canvas
     fOutName='tf_plotter.root'
@@ -270,6 +288,7 @@ def main():
         for h in tfList[name]: h.Write()
         fOutName=name
         if opt.outdir: fOutName=os.path.join(opt.outdir,fOutName)
+        if len(tfList[name]) == 0: continue
         showTF(tfList[name],fOutName+'_tfactor')
     fOut.Close()
 

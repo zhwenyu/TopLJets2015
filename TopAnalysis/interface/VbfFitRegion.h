@@ -54,19 +54,30 @@ class VbfFitRegion{
      hBkg->SetNameTitle("Background_"+chan+boson,"Background in "+chan+boson); 
      hBkg->SetLineColor(kBlack);
      hBkg->SetMarkerColor(kBlack);
+
+     hBkgCorr = (TH1F*)hBkg->Clone("BackgroundNLO_"+chan+boson); 
+     hBkgCorr->SetTitle("Background (NLO) in "+chan+boson); 
+
      int nRebin =(int)((double)hBkg->GetXaxis()->GetNbins()/(double)nBin);      
      for(int i = 1; i < 4; i++){ 
        TH1F * tmp = (TH1F*)dir->Get(chan+boson+"_"+hist+"_"+bkgs[i]); 
        if (tmp != NULL) {
 	 tmp->SetLineColor(kBlack);
 	 tmp->SetMarkerColor(kBlack);
-	 hBkg->Add(tmp); 
+	 hBkg->Add(tmp);
+	 if(i == 3){
+	   TH1F * tmpCorr = correctBackground(tmp);
+	   hBkgCorr->Add(tmpCorr);
+	 } else hBkgCorr->Add(tmp);
        }
      } 
      hBkg->Rebin(nRebin);
+     hBkgCorr->Rebin(nRebin);
      for(int i = 0; i<nRebin; i++){
        if(hBkg->GetBinContent(i) == 0)
 	 hBkg->SetBinContent(i,nMinInBin);
+       if(hBkgCorr->GetBinContent(i) == 0)
+	 hBkgCorr->SetBinContent(i,nMinInBin);
      }
    } 
 
@@ -101,6 +112,7 @@ class VbfFitRegion{
      TFile* fBkg = new TFile("Background_"+chan+boson+".root","recreate"); 
      fBkg->cd(); 
      hBkg->Write();     
+     hBkgCorr->Write();
      fBkg->Close(); 
 
      TFile* fSig = new TFile("Signal_"+chan+boson+".root","recreate"); 
@@ -113,13 +125,28 @@ class VbfFitRegion{
     hData->Write();
     fData->Close();
   }
-
+  TH1F * correctBackground(TH1F * hin){
+    TFile * f = TFile::Open("tf_plotter.root");
+    TH1F * tf = (TH1F*) f->Get(chan+"MM_"+hist+"/"+chan+"_"+hist+"_nlo2lo"); 
+    TH1F * hout = (TH1F*)hin->Clone(hin->GetName()+TString("_NLOcorr"));
+    for(int i = 0; i< hin->GetXaxis()->GetNbins(); i++){
+      float binVal = hin->GetBinCenter(i+1);
+      int iBin     = tf->GetXaxis()->FindBin(binVal);
+      float cf     = tf->GetBinContent(iBin);
+      hout->SetBinContent(i+1,cf* hin->GetBinContent(i+1));
+      hout->SetBinError(i+1,cf* hin->GetBinError(i+1));
+    }
+    return hout;
+  }
   RooDataHist * getDataDH(RooRealVar * var){
     return  new RooDataHist("Data"+chan+boson,"Data"+chan+boson,*var,Import(*this->hData));
   }
 
   RooDataHist * getBkgDH(RooRealVar * var){
     return new RooDataHist("Background"+chan+boson,"Background"+chan+boson,*var,Import(*this->hBkg));
+  }
+  RooDataHist * getBkgDHNLO(RooRealVar * var){
+    return new RooDataHist("BackgroundNLO"+chan+boson,"BackgroundNLO"+chan+boson,*var,Import(*this->hBkgCorr));
   }
   RooDataHist * getSigDH(RooRealVar * var){
     return new RooDataHist("Signal"+chan+boson,"Signal"+chan+boson,*var,Import(*this->hSig));
@@ -135,10 +162,15 @@ class VbfFitRegion{
     s << hBkg->Integral();
     return new RooRealVar("Background"+chan+boson+"_norm", "",atof(s.str().c_str()));
   }
-
-  TH1F * getModelHist(int id = 0){ //0: signal, 1:background
+  RooRealVar * getBkgNLOHistNorm(){
+    stringstream s;
+    s << hBkgCorr->Integral();
+    return new RooRealVar("BackgroundNLO"+chan+boson+"_norm", "",atof(s.str().c_str()));
+  }
+  TH1F * getModelHist(int id = 0){ //0: signal, 1:background, 2:backgroung at NLO
     if (id == 0) return hSig;
-    return hBkg;
+    if (id == 1) return hBkg;
+    return hBkgCorr;
   }
 
   std::vector<RooRealVar*> getModelBinsCR(int id = 0){
@@ -174,7 +206,7 @@ class VbfFitRegion{
   TString chan, boson, hist;
   int nBin;
   bool isSR;
-  TH1F * hSig, * hBkg, * hData;
+  TH1F * hSig, * hBkg, * hBkgCorr, * hData;
   RooParametricHist * sigPH, * bkgPH;
   RooAddition * sigPH_norm, * bkgPH_norm;
   std::vector<RooRealVar*>    binsSigCR;

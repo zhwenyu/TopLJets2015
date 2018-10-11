@@ -58,14 +58,15 @@ case $WHAT in
         ;;
 
     SEL )
-	json=data/era2017/vbf_samples.json;
+#	json=data/era2017/vbf_samples.json;
+	json=vbf_syst_samples.json;
 	extraOpts="" #" --SRfake" #"--mvatree"
 	python scripts/runLocalAnalysis.py \
 	    -i ${eosdir} \
             -o ${outdir}/${githash}/${EXTRA} \
             --farmappendix ${githash} \
             -q ${queue} --genWeights genweights_${githash}.root \
-            --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --only SinglePhoton --runSysts ${extraOpts};
+            --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts ${extraOpts};
 	;;
         #extraOpts=" --mvatree"
 
@@ -115,9 +116,32 @@ case $WHAT in
 	;;
 
     PLOT )
+#         json=data/era2017/vbf_samples.json;
+#         lumi=${fulllumi}        
+#         gh=${githash}/
+#         if [[ "${EXTRA}" = *"2018"* ]]; then
+#             json=data/era2018/vbf_samples.json;
+#             lumi=${fulllumi2018}
+#             vbflumi=${lumi}
+#             gh=${githash2018}
+#         fi
+#         kFactors="--procSF MC13TeV_QCDEM_15to20:1.26,MC13TeV_QCDEM_20to30:1.26,MC13TeV_QCDEM_30to50:1.26,MC13TeV_QCDEM_50to80:1.26,MC13TeV_QCDEM_80to120:1.26,MC13TeV_QCDEM_120to170:1.26,MC13TeV_QCDEM_170to300:1.26,MC13TeV_QCDEM_300toInf:1.26,MC13TeV_GJets_HT40to100:1.26,MC13TeV_GJets_HT100to200:1.26,MC13TeV_GJets_HT200to400:1.26,MC13TeV_GJets_HT600toInf:1.26"
+# 	commonOpts="-i ${outdir}/${gh}/${EXTRA} --puNormSF puwgtctr -l ${lumi}  --saveLog --mcUnc ${lumiUnc} --lumiSpecs VBFA:${vbflumi},OfflineVBFA:${fulllumi}"
+# 	python scripts/plotter.py ${commonOpts} -j ${json} ${kFactors} --only LowMJJA,LowMJJMM,HighMJJMM -O ${outdir}/${githash}/${EXTRA}/plots/
+# #python scripts/plotter.py ${commonOpts} -j ${json} ${kFactors} --only evcount --saveTeX --o ${outdir}/${githash}/${EXTRA}/plots/evcount_plotter.root;
+#         if [[ "${EXTRA}" != *"2018"* ]]; then
+#             python scripts/plotter.py ${commonOpts}  -j data/era2017/vbf_signal_samples.json --only HighPtA_ -O ${outdir}/${githash}/${EXTRA}/plots_signal/ --noStack;
+#             continue
+#             #python scripts/plotter.py ${commonOpts}  -j data/era2017/gjets_samples.json --only HighPtA_mjj -O ${outdir}/${githash}/${EXTRA}/plots_gjets/ --noStack;
+#             trigOpts="-i ${outdir}/${gh}/${EXTRA} --puNormSF puwgtctr -l ${vbflumi}  --saveLog --mcUnc ${lumiUnc} ${kFactors} --only HighPtOfflineVBFA,HighPtVBFA"
+#             #python scripts/plotter.py ${trigOpts} -j data/era2017/vbf_samples_2017F.json -O ${outdir}/${githash}/${EXTRA}/plots_trigger;
+#         fi
+# 	;;
         json=data/era2017/vbf_samples.json;
+	syst_json=data/era2017/vbf_syst_samples.json;
         lumi=${fulllumi}        
         gh=${githash}/
+	plotOutDir=${outdir}/${githash}/${EXTRA}/plots/
         if [[ "${EXTRA}" = *"2018"* ]]; then
             json=data/era2018/vbf_samples.json;
             lumi=${fulllumi2018}
@@ -125,16 +149,24 @@ case $WHAT in
             gh=${githash2018}
         fi
         kFactors="--procSF MC13TeV_QCDEM_15to20:1.26,MC13TeV_QCDEM_20to30:1.26,MC13TeV_QCDEM_30to50:1.26,MC13TeV_QCDEM_50to80:1.26,MC13TeV_QCDEM_80to120:1.26,MC13TeV_QCDEM_120to170:1.26,MC13TeV_QCDEM_170to300:1.26,MC13TeV_QCDEM_300toInf:1.26,MC13TeV_GJets_HT40to100:1.26,MC13TeV_GJets_HT100to200:1.26,MC13TeV_GJets_HT200to400:1.26,MC13TeV_GJets_HT600toInf:1.26"
-	commonOpts="-i ${outdir}/${gh}/${EXTRA} --puNormSF puwgtctr -l ${lumi}  --saveLog --mcUnc ${lumiUnc} --lumiSpecs VBFA:${vbflumi},OfflineVBFA:${fulllumi}"
-	python scripts/plotter.py ${commonOpts} -j ${json} ${kFactors} --only LowMJJA,LowMJJMM,HighMJJMM -O ${outdir}/${githash}/${EXTRA}/plots/
-	#python scripts/plotter.py ${commonOpts} -j ${json} ${kFactors} --only evcount --saveTeX --o ${outdir}/${githash}/${EXTRA}/plots/evcount_plotter.root;
-        if [[ "${EXTRA}" != *"2018"* ]]; then
-            python scripts/plotter.py ${commonOpts}  -j data/era2017/vbf_signal_samples.json --only HighPtA_ -O ${outdir}/${githash}/${EXTRA}/plots_signal/ --noStack;
-            continue
-            #python scripts/plotter.py ${commonOpts}  -j data/era2017/gjets_samples.json --only HighPtA_mjj -O ${outdir}/${githash}/${EXTRA}/plots_gjets/ --noStack;
-            trigOpts="-i ${outdir}/${gh}/${EXTRA} --puNormSF puwgtctr -l ${vbflumi}  --saveLog --mcUnc ${lumiUnc} ${kFactors} --only HighPtOfflineVBFA,HighPtVBFA"
-            #python scripts/plotter.py ${trigOpts} -j data/era2017/vbf_samples_2017F.json -O ${outdir}/${githash}/${EXTRA}/plots_trigger;
-        fi
+	commonOpts="-i ${outdir}/${gh}/${EXTRA} --puNormSF puwgtctr -l ${lumi} --saveLog --mcUnc ${lumiUnc} --lumiSpecs VBFA:${vbflumi},OfflineVBFA:${fulllumi}"
+	commonOpts="-i ${outdir}/${gh}/${EXTRA} --puNormSF puwgtctr --saveLog -l ${lumi} --mcUnc ${lumiUnc} --lumiSpecs HighMJJA:${vbflumi},LowMJJA:${fulllumi},HighMJJMM:${fulllumi},LowMJJMM:${fulllumi} -O ${plotOutDir}"
+	#python scripts/plotter.py ${commonOpts} -j ${json} --only HighMJJ,LowMJJ ${kFactors}
+	#python scripts/plotter.py ${commonOpts} -j ${syst_json} ${kFactors} --only HighMJJ,LowMJJ --silent -o syst_plotter.root
+
+        #trigger efficiencies
+        #python test/analysis/computeVBFTriggerEff.py -p ${plotOutDir}/plotter.root -o ${plotOutDir};
+
+        #transfer factors
+	python test/analysis/computeTransferFactor.py -p ${plotOutDir}/plotter.root -s ${plotOutDir}/syst_plotter.root -o ${plotOutDir} --var vbffisher --binList -2,-0.5,-0.4,-0.3,-0.2,-0.1,0,0.1,0.2,0.3,0.4,0.5,2,3;
+
+        # if [[ "${EXTRA}" != *"2018"* ]]; then
+        #     python scripts/plotter.py ${commonOpts}  -j data/era2017/vbf_signal_samples.json --only HighPtA_ -O ${outdir}/${githash}/${EXTRA}/plots_signal/ --noStack;
+        #     continue
+        #     #python scripts/plotter.py ${commonOpts}  -j data/era2017/gjets_samples.json --only HighPtA_mjj -O ${outdir}/${githash}/${EXTRA}/plots_gjets/ --noStack;
+        #     trigOpts="-i ${outdir}/${gh}/${EXTRA} --puNormSF puwgtctr -l ${vbflumi}  --saveLog --mcUnc ${lumiUnc} ${kFactors} --only HighPtOfflineVBFA,HighPtVBFA"
+        #     #python scripts/plotter.py ${trigOpts} -j data/era2017/vbf_samples_2017F.json -O ${outdir}/${githash}/${EXTRA}/plots_trigger;
+        # fi
         ;;
        
     RATIO )
