@@ -11,8 +11,9 @@ def main():
     #configuration
     usage = 'usage: %prog [options]'
     parser = optparse.OptionParser(usage)
-    parser.add_option('-i', '--inDir',      dest='inDir',       help='input directory with files',  default=None,   type='string')
-    parser.add_option('-o', '--outDir',     dest='outDir',      help='output directory with files', default=None,   type='string')
+    parser.add_option('-i', '--inDir',      dest='inDir',       help='input directory with files',  default=None,       type='string')
+    parser.add_option('-o', '--outDir',     dest='outDir',      help='output directory with files', default=None,       type='string')
+    parser.add_option(      '--only',       dest='only',        help='only this tag',               default=None    ,   type='string')
     parser.add_option('-q', '--queue',      dest='queue',       help='batch queue',                 default='workday',  type='string')
     (opt, args) = parser.parse_args()
 
@@ -22,6 +23,8 @@ def main():
     cmsswBase=os.environ['CMSSW_BASE']
     FARMDIR='%s/INTEGRITYFARM'%cmsswBase
     os.system('mkdir -p %s'%FARMDIR)
+
+    onlyList=opt.only.split(',') if opt.only else []
 
     dset_list=getEOSlslist(directory=opt.inDir,prepend='')
 
@@ -56,7 +59,17 @@ def main():
                 print 'Ambiguity found @ <publication-name> for <primary-dataset>=%s , bailing out'%dsetname
                 continue
             pub=pubDir.split('/crab_')[-1]
-            
+
+            if len(onlyList)>0:
+                found=False
+                for tag in onlyList:
+                    if not tag in pub: continue
+                    found=True
+                    break
+                if not found : 
+                    print 'Skipping %s, not in process only list'%pub
+                    continue
+
             condor.write('arguments = %s %s %s\n'%(opt.inDir,opt.outDir,pub))
             condor.write('queue 1\n')
 
