@@ -9,11 +9,11 @@
 class Particle : public TLorentzVector {
   
   public:
-    Particle(TLorentzVector p4, int charge, int id, int qualityFlags, int origRef, double puppi = 1)
-      : TLorentzVector(p4), charge_(charge), id_(id), qualityFlags_(qualityFlags), origRef_(origRef), puppi_(puppi) {}
+    Particle(TLorentzVector p4, int charge, int id, int qualityFlags, int origRef, double puppi = 1,double unc=0)
+      : TLorentzVector(p4), charge_(charge), id_(id), qualityFlags_(qualityFlags), origRef_(origRef), puppi_(puppi), unc_(unc) {}
    
     Particle( const Particle &p) 
-      : TLorentzVector(p.px(),p.py(),p.pz(),p.e()), charge_(p.charge_), id_(p.id_), qualityFlags_(p.qualityFlags_), origRef_(p.origRef_), puppi_(p.puppi_) {}
+      : TLorentzVector(p.px(),p.py(),p.pz(),p.e()), charge_(p.charge_), id_(p.id_), qualityFlags_(p.qualityFlags_), origRef_(p.origRef_), puppi_(p.puppi_), unc_(p.unc_) {}
 
     double px() const    { return TLorentzVector::Px();  }
     double py() const    { return TLorentzVector::Py();  }
@@ -34,11 +34,12 @@ class Particle : public TLorentzVector {
     int originalReference() { return origRef_; }
     void setOriginalReference(int origRef) { origRef_=origRef; }
     double puppi()  { return puppi_; }
+    double scaleUnc() { return unc_; }
 
   private:
-    //TLorentzVector p4_;
     int charge_, id_, qualityFlags_,origRef_;
     double puppi_;
+    double unc_;
 };
 
 /**

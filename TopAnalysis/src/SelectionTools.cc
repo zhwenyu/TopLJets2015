@@ -242,12 +242,23 @@ std::vector<Particle> SelectionTool::flaggedLeptons(MiniEvent_t &ev)
 
     //see bits in plugins/MiniAnalyzer.cc
     int qualityFlagsWord(0);
+    Float_t unc(0.);
     if(abs(ev.l_id[il])==11)
       {
 	if( pt>20 && eta<2.4 && ((pid>>5) &0x1))                   qualityFlagsWord |= (0x1 << MEDIUM);
 	if( pt>30 && eta<2.1 && ((pid>>6) &0x1))                   qualityFlagsWord |= (0x1 << TIGHT);
 	if( pt>15 && eta<2.4 && ((pid>>1) &0x1))                   qualityFlagsWord |= (0x1 << VETO);
 	if( pt>26 && eta<2.1 && ((pid>>6) &0x1)==0 && relIso>0.4)  qualityFlagsWord |= (0x1 << CONTROL);
+
+        unc = TMath::Sqrt(
+                          pow(ev.l_scaleUnc1[il],2)+
+                          pow(ev.l_scaleUnc2[il],2)+
+                          pow(ev.l_scaleUnc3[il],2)+
+                          pow(ev.l_scaleUnc4[il],2)+
+                          pow(ev.l_scaleUnc5[il],2)+
+                          pow(ev.l_scaleUnc6[il],2)+
+                          pow(ev.l_scaleUnc7[il],2)
+                          );
       }
     else
       {
@@ -258,7 +269,7 @@ std::vector<Particle> SelectionTool::flaggedLeptons(MiniEvent_t &ev)
       }
 
     if(debug_) cout << "Lepton #" << il << " id=" << ev.l_id[il] 
-		    << " pt=" << pt << " eta=" << eta << " relIso=" << relIso 
+		    << " pt=" << pt << "+/-" << unc << " eta=" << eta << " relIso=" << relIso 
 		    << " charge=" << ev.l_charge[il]
                     << " rawId = 0x" << std::hex << pid
 		    << " quality flag=0x" << qualityFlagsWord << std::dec << endl;
@@ -267,7 +278,7 @@ std::vector<Particle> SelectionTool::flaggedLeptons(MiniEvent_t &ev)
 
     TLorentzVector lp4;
     lp4.SetPtEtaPhiM(ev.l_pt[il],ev.l_eta[il],ev.l_phi[il],ev.l_mass[il]);
-    leptons.push_back(Particle(lp4, ev.l_charge[il], ev.l_id[il], qualityFlagsWord, il, 1.0));
+    leptons.push_back(Particle(lp4, ev.l_charge[il], ev.l_id[il], qualityFlagsWord, il, 1.0, unc));
   }
   
   return leptons;
@@ -316,7 +327,7 @@ std::vector<Particle> SelectionTool::flaggedPhotons(MiniEvent_t &ev)
     //see bits in plugins/MiniAnalyzer.cc
 
     int qualityFlagsWord(0);
-    if( pt>50 && eta<2.4)
+    if( pt>30 && eta<2.4)
       {
         if( (pid&0x7f)==0x7f )            qualityFlagsWord |= (0x1 << LOOSE);
         if( ((pid>>10)&0x7f)==0x7f   )    qualityFlagsWord |= (0x1 << MEDIUM);
@@ -326,12 +337,22 @@ std::vector<Particle> SelectionTool::flaggedPhotons(MiniEvent_t &ev)
       }
     if(qualityFlagsWord==0) continue;
 
+    float unc = TMath::Sqrt(
+                            pow(ev.gamma_scaleUnc1[ig],2)+
+                            pow(ev.gamma_scaleUnc2[ig],2)+
+                            pow(ev.gamma_scaleUnc3[ig],2)+
+                            pow(ev.gamma_scaleUnc4[ig],2)+
+                            pow(ev.gamma_scaleUnc5[ig],2)+
+                            pow(ev.gamma_scaleUnc6[ig],2)+
+                            pow(ev.gamma_scaleUnc7[ig],2)
+                            );
+
     TLorentzVector p4;
     p4.SetPtEtaPhiM(ev.gamma_pt[ig],ev.gamma_eta[ig],ev.gamma_phi[ig],0);
-    photons.push_back(Particle(p4, 0, 22, qualityFlagsWord, ig, 1.0));
+    photons.push_back(Particle(p4, 0, 22, qualityFlagsWord, ig, 1.0, unc));
 
     if(debug_) std::cout << "Photon #"<< photons.size() 
-                         << " pt=" << p4.Pt() << " eta=" << p4.Eta()
+                         << " pt=" << pt << "+/-" << pt*unc << " eta=" << p4.Eta()
                          << hex << " raw particle id bits=" << pid 
                          << " quality bits=" << qualityFlagsWord 
                          << dec << endl;
