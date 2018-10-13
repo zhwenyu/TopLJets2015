@@ -241,7 +241,7 @@ void RunExclusiveTop(TString filename,
 
       //photons
       std::vector<Particle> flaggedPhotons = selector.flaggedPhotons(ev);
-      std::vector<Particle> photons        = selector.selPhotons(flaggedPhotons,SelectionTool::TIGHT,leptons,25.,2.5);
+      std::vector<Particle> photons        = selector.selPhotons(flaggedPhotons,SelectionTool::TIGHT,leptons,30.,2.5);
       
       //jets (require PU jet id)
       std::vector<Jet> allJets = selector.getGoodJets(ev,25.,2.5,leptons,photons);
