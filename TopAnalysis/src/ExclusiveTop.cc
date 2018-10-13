@@ -9,6 +9,7 @@
 
 #include "TopLJets2015/TopAnalysis/interface/CommonTools.h"
 #include "TopLJets2015/TopAnalysis/interface/ExclusiveTop.h"
+#include "TopQuarkAnalysis/TopTools/interface/MEzCalculator.h"
 
 #include <vector>
 #include <set>
@@ -27,10 +28,12 @@ using namespace std;
 #define ADDVAR(x,name,t,tree) tree->Branch(name,x,TString(name)+TString(t))
 
 //TODO
-//check PPS code is the latest from Laurent
+//add jet scale uncertainty
 //PPS json
 //lumi, puweighting, genweighting
+//
 //launch first ntuplization on condor
+//check PPS code is the latest from Laurent
 
 //
 void RunExclusiveTop(TString filename,
@@ -56,12 +59,9 @@ void RunExclusiveTop(TString filename,
   ctpps::LHCConditionsFactory lhc_conds;
   lhc_conds.feedConditions(Form("%s/src/TopLJets2015/CTPPSAnalysisTools/data/2017/xangle_tillTS2.csv", CMSSW_BASE));
   lhc_conds.feedConditions(Form("%s/src/TopLJets2015/CTPPSAnalysisTools/data/2017/xangle_afterTS2.csv", CMSSW_BASE));
-
-  bool isTTbar( filename.Contains("_TTJets") or (normH and TString(normH->GetTitle()).Contains("_TTJets")));
   
   MiniEvent_t ev;
   Int_t evcat(0);
-
 
   //PREPARE OUTPUT
   TString baseName=gSystem->BaseName(outname); 
@@ -83,9 +83,11 @@ void RunExclusiveTop(TString filename,
   TString fvars[]={"evwgt", "evcat",
                    "l1pt", "l1eta", "l1phi", "ml1", "l1id", "mt1",
                    "l2pt", "l2eta", "l2phi", "ml2", "l2id", "mt2",
-                   "llpt", "lleta", "llphi", "mll", "llht", "llacopl", "llcosthetaCS", "llphistar", "llMR", "llR", "mtll", "llcsip", "llcsim",
+                   "llpt", "lleta", "llphi", "mll", "llht", "llacopl", "llcosthetaCS", "llphistar", "llMR", "llR", "mtll", 
+                   "llcsip", "llcsipUnc", "llcsim", "llcsimUnc",
                    "xpt",  "xeta",  "xphi",  "mx",  "xid", "xht", "mtx",
-                   "fpt",  "feta",  "fphi",  "mf",  "fht", "facopl", "fcosthetaCS", "fphistar", "fMR","fR", "fcsip", "fcsim",
+                   "fpt",  "feta",  "fphi",  "mf",  "fht", "facopl", "fcosthetaCS", "fphistar", "fMR","fR", 
+                   "fcsip", "fcsipUnc", "fcsim", "fcsimUnc",
                    "nb", "nj", "nl","ng","nch", "ht", "htb", "htj", "closestkdz",
                    "puppirecoil_pt","puppirecoil_phi", "puppirecoil_spher",
   };
@@ -119,6 +121,9 @@ void RunExclusiveTop(TString filename,
   //LUMINOSITY+PILEUP
   LumiTools lumi(era,genPU);
     
+  //auxiliary to solve neutrino pZ using MET
+  MEzCalculator neutrinoPzComputer;
+
   //LEPTON EFFICIENCIES
   EfficiencyScaleFactorsWrapper lepEffH(filename.Contains("Data13TeV"),era);
 
@@ -228,16 +233,25 @@ void RunExclusiveTop(TString filename,
       bool isSF( leptons[l1idx].id()==leptons[l2idx].id() );
       bool isSS( leptons[l1idx].charge()*leptons[l2idx].charge() > 0 );
 
-      TLorentzVector lm(leptons[l1idx].charge()>0 ? leptons[l1idx] : leptons[l1idx]);
-      TLorentzVector lp(leptons[l1idx].charge()>0 ? leptons[l2idx] : leptons[l2idx]);
-      if(isSS)  { lm=leptons[l1idx]; lp=leptons[l2idx]; }
+      TLorentzVector lm(leptons[l1idx].charge()>0 ? leptons[l1idx] : leptons[l2idx]);
+      float lmScaleUnc(leptons[l1idx].charge()>0 ? leptons[l1idx].scaleUnc() : leptons[l2idx].scaleUnc());
+      TLorentzVector lp(leptons[l1idx].charge()>0 ? leptons[l2idx] : leptons[l1idx]);
+      float lpScaleUnc(leptons[l1idx].charge()>0 ? leptons[l2idx].scaleUnc() : leptons[l1idx].scaleUnc());
+      if(isSS)  { 
+        lm=leptons[l1idx]; 
+        lmScaleUnc=leptons[l1idx].scaleUnc();
+        lp=leptons[l2idx];
+        lpScaleUnc=leptons[l2idx].scaleUnc();
+      }
       TLorentzVector dil(lm+lp);
+      Float_t dilScaleUnc=TMath::Sqrt( pow(lm.Pt()*lmScaleUnc,2)+pow(lp.Pt()*lpScaleUnc,2) )/dil.Pt();
       float mll(dil.M());
       bool isZ( isSF && !isSS && fabs(mll-91)<10);
  
       //met
       TLorentzVector met(0,0,0,0);
       met.SetPtEtaPhiM(ev.met_pt[1],0,ev.met_phi[1],0.);
+      Float_t metScaleUnc(1./ev.met_sig[1]);
 
       //photons
       std::vector<Particle> flaggedPhotons = selector.flaggedPhotons(ev);
@@ -282,8 +296,11 @@ void RunExclusiveTop(TString filename,
       evcat=(isSS | isSF<<1 | isZ<<2);
 
       TLorentzVector X(met);
+      float xScaleUnc(metScaleUnc);
+      float xEtaUnc(0);
       Int_t xid(0);
       Float_t xht(0);
+      Float_t mt3l(-1);
       evcat |= (1<<7);
       cats.push_back(dilCat+"inv");
       if(leptons.size()>2){
@@ -296,14 +313,39 @@ void RunExclusiveTop(TString filename,
         else if(l1idx==1) {
           l3idx=0;
         }
-        X=leptons[l3idx];
+
+        neutrinoPzComputer.SetMET(met);
+        neutrinoPzComputer.SetLepton(leptons[l3idx].p4());
+        float nupz=neutrinoPzComputer.Calculate();
+        float metShiftUp(fabs(1+metScaleUnc));
+        TLorentzVector upMET(metShiftUp*met);
+        neutrinoPzComputer.SetMET(upMET);
+        float nupzUp=neutrinoPzComputer.Calculate();
+        float metShiftDn(fabs(1-metScaleUnc));
+        TLorentzVector dnMET(metShiftDn*met);
+        neutrinoPzComputer.SetMET(dnMET);        
+        float nupzDn=neutrinoPzComputer.Calculate();
+
+        TLorentzVector neutrinoP4(met.Px(),met.Py(),nupz ,TMath::Sqrt(TMath::Power(met.Pt(),2)+TMath::Power(nupz,2)));
+        TLorentzVector neutrinoP4Up(upMET.Px(),upMET.Py(),nupzUp ,TMath::Sqrt(TMath::Power(upMET.Pt(),2)+TMath::Power(nupzUp,2)));
+        TLorentzVector neutrinoP4Dn(dnMET.Px(),dnMET.Py(),nupzDn ,TMath::Sqrt(TMath::Power(dnMET.Pt(),2)+TMath::Power(nupzDn,2)));
+
+        X=leptons[l3idx]+neutrinoP4;
+        xScaleUnc=TMath::Sqrt(
+                              pow(leptons[l3idx].scaleUnc()*leptons[l3idx].Pt(),2)+
+                              pow(metScaleUnc*neutrinoP4.Pt(),2)
+                              )/X.Pt();
+        xEtaUnc=max( fabs((leptons[l3idx]+neutrinoP4Up).Eta()-X.Eta()),
+                     fabs((leptons[l3idx]+neutrinoP4Dn).Eta()-X.Eta()));
         xid=leptons[l3idx].id();
         xht=X.Pt();
+        mt3l=computeMT(leptons[l3idx],met);
       }
       else if(photons.size()>0) {
         evcat |= (1<<4);
         cats[2]=dilCat+"a";
         X=photons[0].p4();
+        xScaleUnc=photons[0].scaleUnc();
         xid=22;
         xht=X.Pt();
       }
@@ -311,12 +353,16 @@ void RunExclusiveTop(TString filename,
         evcat |= (1<<5);
         cats[2]=dilCat+"jj";
         X=jets[0]+jets[1];
+        xScaleUnc=TMath::Sqrt(pow(jets[0].getScaleUnc()*jets[0].Pt(),2)+
+                              pow(jets[1].getScaleUnc()*jets[1].Pt(),2))/X.Pt();
         xid=2121;
         xht=jets[0].Pt()+jets[1].Pt();
         if(bJets.size()>1) {
           evcat |= (1<<6);
           cats[2]=dilCat+"bb";
           X=bJets[0]+bJets[1];
+          xScaleUnc=TMath::Sqrt(pow(bJets[0].getScaleUnc()*bJets[0].Pt(),2)+
+                                pow(bJets[1].getScaleUnc()*bJets[1].Pt(),2))/X.Pt();
           xid=55;
           xht=bJets[0].Pt()+bJets[1].Pt();
         }
@@ -332,6 +378,7 @@ void RunExclusiveTop(TString filename,
       Float_t fR(computeRsq(dil,X,met));
       Float_t mtll(computeMT(dil,met));
       Float_t mtx(computeMT(X,met));
+      if(mt3l>0) mtx=mt3l; //for 3-leptons use the MT(3rd lep,MET) instead
 
       //recoil and UE
       int nch(int(ev.pf_ch_wgtSum));
@@ -364,15 +411,6 @@ void RunExclusiveTop(TString filename,
         EffCorrection_t  selSF = lepEffH.getOfflineCorrection(leptons[0], period);
 
         wgt *= puWgt*trigSF.first*selSF.first;
-        
-        //top pt weighting
-        double topptsf = 1.0;
-        if(isTTbar) {
-          for (int igen=0; igen<ev.ngtop; igen++) {
-            if(abs(ev.gtop_id[igen])!=6) continue;
-            topptsf *= TMath::Exp(0.0615-0.0005*ev.gtop_pt[igen]);
-          }
-        }
         
         // generator level weights
         wgt *= (ev.g_nw>0 ? ev.g_w[0] : 1.0);
@@ -452,9 +490,11 @@ void RunExclusiveTop(TString filename,
       outVars["mtll"]=mtll;
       outVars["llht"]=llht;      
 
-      std::pair<Float_t,Float_t> llcsi=calcCsi(lm,lp);
-      outVars["llcsip"]=llcsi.first;
-      outVars["llcsim"]=llcsi.second;
+      ValueCollection_t llcsi=calcCsi(lm,lmScaleUnc,lp,lpScaleUnc);
+      outVars["llcsip"]=llcsi[0].first;
+      outVars["llcsipUnc"]=llcsi[0].second;
+      outVars["llcsim"]=llcsi[1].first;
+      outVars["llcsimUnc"]=llcsi[1].second;
       outVars["xpt"]=X.Pt();
       outVars["xeta"]=X.Eta();
       outVars["xphi"]=X.Phi(); 
@@ -473,10 +513,11 @@ void RunExclusiveTop(TString filename,
       outVars["fphiStar"]=fphiStar;
       outVars["fMR"]=fMR;
       outVars["fR"]=fR;
-      std::pair<Float_t,Float_t> fcsi=calcCsi(dil,X);
-      outVars["fcsip"]=fcsi.first;
-      outVars["fcsim"]=fcsi.second;
-
+      ValueCollection_t fcsi=calcCsi(dil,dilScaleUnc,X,xScaleUnc,xEtaUnc);
+      outVars["fcsip"]=fcsi[0].first;
+      outVars["fcsipUnc"]=fcsi[0].second;
+      outVars["fcsim"]=fcsi[1].first;
+      outVars["fcsimUnc"]=fcsi[1].second;
       outVars["nb"]=bJets.size();
       outVars["nj"]=lightJets.size();
       outVars["nl"]=leptons.size();

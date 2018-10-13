@@ -16,7 +16,7 @@ githash=5fb8f4f
 eosdir=/store/cmst3/group/top/RunIIReReco/${githash}
 lumi=41367
 lumiUnc=0.025
-outdir=${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/ExclusiveTop
+outdir=/eos/cms/store/cmst3/user/psilva/ExclusiveAna
 wwwdir=~/www/ExclusiveTop
 inputfileTESTSEL=/store/cmst3/group/top/RunIIReReco/5fb8f4f/Data13TeV_2017D_DoubleMuon/MergedMiniEvents_0_ext0.root
 
@@ -32,26 +32,8 @@ case $WHAT in
         ;;
     SEL )
 	python scripts/runLocalAnalysis.py -i ${eosdir} --genWeights genweights_${githash}.root \
-            --only data/era2017/top_samples.json --exactonly \
-            -o ${outdir} \
-            -q ${queue} \
-            --era era2017 -m ExclusiveTop::RunExclusiveTop --ch 0 --runSysts;
-	;;
-    SELDATA )
-	python scripts/runLocalAnalysis.py -i ${eosdir} \
-	    --only data/era2017/top_samples_Dataonly.json --exactonly \
             -o ${outdir} -q ${queue} \
-	    --skipexisting \
-            --era era2017 \
-	    -m ExclusiveTop::RunExclusiveTop --ch 0 --runSysts;	
-	;;
-    SELMC )
-	python scripts/runLocalAnalysis.py -i ${eosdir} \
-            --era era2017 -m ExclusiveTop::RunExclusiveTop --ch 0 --runSysts \
-	    -o ${outdir} \
-            -q ${queue} \
-            --skipexisting \
-            --only data/era2017/top_samples_MConly.json --exactonly;
+            --era era2017 -m ExclusiveTop::RunExclusiveTop --ch 0 --runSysts;
 	;;
     MERGE )
 	./scripts/mergeOutputs.py ${outdir};

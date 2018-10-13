@@ -5,6 +5,9 @@
 #include "TVector2.h"
 #include "TopLJets2015/TopAnalysis/interface/MiniEvent.h"
 
+typedef std::pair<Float_t,Float_t> Value_t;
+typedef std::vector<Value_t> ValueCollection_t;
+
 struct JetPullInfo_t
 {
   Int_t n,nch;
@@ -20,6 +23,6 @@ Float_t computeRsq(TLorentzVector &a,TLorentzVector &b,TLorentzVector &met);
 Float_t computeCosThetaStar(TLorentzVector &lm,TLorentzVector &lp);
 Float_t computeAcoplanarity(TLorentzVector &lm,TLorentzVector &lp);
 Float_t computePhiStar(TLorentzVector &lm,TLorentzVector &lp);
-std::pair<Float_t,Float_t> calcCsi(TLorentzVector &a, TLorentzVector &h,Float_t sqrts=13000.);
+ValueCollection_t calcCsi(TLorentzVector &a, Float_t &aUnc, TLorentzVector &b, Float_t &bUnc, Float_t bEtaUnc=0, Float_t sqrts=13000.);
 
 #endif

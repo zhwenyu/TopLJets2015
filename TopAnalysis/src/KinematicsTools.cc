@@ -113,9 +113,19 @@ Float_t computeAcoplanarity(TLorentzVector &lm,TLorentzVector &lp){
 }
 
 //
-std::pair<Float_t,Float_t> calcCsi(TLorentzVector &a, TLorentzVector &b,Float_t sqrts){
+ValueCollection_t calcCsi(TLorentzVector &a, Float_t &aUnc, TLorentzVector &b, Float_t &bUnc, Float_t bEtaUnc, Float_t sqrts){
   
   Float_t csip(a.Pt()*exp(a.Eta())+b.Pt()*exp(b.Eta()));
+  Float_t csipUnc( TMath::Sqrt( pow(aUnc*a.Pt()*exp(a.Eta()),2)
+                                +pow(bUnc*b.Pt()*exp(b.Eta()),2)
+                                +pow(b.Pt()*exp(b.Eta())*bEtaUnc,2)
+                                ) );
   Float_t csim(a.Pt()*exp(-a.Eta())+b.Pt()*exp(-b.Eta()));
-  return std::pair<Float_t,Float_t>(csip/sqrts,csim/sqrts);
+  Float_t csimUnc( TMath::Sqrt( pow(aUnc*a.Pt()*exp(-a.Eta()),2)
+                                +pow(bUnc*b.Pt()*exp(-b.Eta()),2)
+                                +pow(b.Pt()*exp(-b.Eta())*bEtaUnc,2) ) );
+  ValueCollection_t toRet;
+  toRet.push_back( Value_t(csip/sqrts,csipUnc/sqrts) );
+  toRet.push_back( Value_t(csim/sqrts,csimUnc/sqrts) );
+  return toRet;
 }

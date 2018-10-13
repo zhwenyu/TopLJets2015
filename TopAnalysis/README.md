@@ -107,11 +107,11 @@ python scripts/runPileupEstimation.py --json /afs/cern.ch/cms/CAF/CMSCOMM/COMM_D
 ```
 * B-tagging. To apply corrections to the simulation one needs the expected efficiencies stored somwewhere. The script below will project the jet pT spectrum from the TTbar sample before and after applying b-tagging, to compute the expecte efficiencies. The result will be stored in data/expTageff.root
 ```
-python scripts/saveExpectedBtagEff.py -i /store/cmst3/group/top/RunIIFall17/c29f431/MC13TeV_TTJets -o data/era2017/expTageff.root;
+python scripts/saveExpectedBtagEff.py -i /store/cmst3/group/top/RunIIReReco/5fb8f4f/MC13TeV_TTJets -o data/era2017/expTageff.root;
 ```
 * MC normalization. This will loop over all the samples available in EOS and produce a normalization cache (weights to normalize MC). The file will be available in data/genweights.pck
 ```
-python scripts/produceNormalizationCache.py -i /store/cmst3/group/top/RunIIFall17/c29f431 -o data/era2017/genweights.root
+python scripts/produceNormalizationCache.py -i /store/cmst3/group/top/RunIIReReco/5fb8f4f -o data/era2017/genweights_5fb8f4f.root
 ```
 The lepton/photon trigger/id/iso efficiencies should also be placed under data/era2017. 
 The src/EfficiencyScaleFactorsWrapper.cc  should then be updated to handle the reading of the ROOT files and the application of the scale factors
