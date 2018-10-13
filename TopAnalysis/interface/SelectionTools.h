@@ -161,6 +161,14 @@ class SelectionTool {
     return ret;
   }
 
+  bool isSingleElectronPD(){ return isSingleElectronPD_; }
+  bool isSingleMuonPD(){ return isSingleMuonPD_; }
+  bool isDoubleEGPD(){ return isDoubleEGPD_; }
+  bool isDoubleMuonPD(){ return isDoubleMuonPD_; }
+  bool isMuonEGPD(){ return isMuonEGPD_; }
+  bool isPhotonPD(){ return isPhotonPD_; }
+  bool isJetHTPD(){ return isJetHTPD_; }
+
  private:
   bool debug_;
   AnalysisType anType_;

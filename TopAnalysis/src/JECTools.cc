@@ -11,7 +11,7 @@ JECTools::JECTools(TString era) :
   jetCorr_(0),
   rand_(new TRandom3(0))
 {
-  TString url(era_+"/Spring16_25nsV10_MC_SF_AK4PFchs.txt");
+  TString url(era_+"/Summer16_25nsV1_MC.txt");
   gSystem->ExpandPathName(url);
   jer_ = new JME::JetResolution(url.Data());
   jerSF_=new JME::JetResolutionScaleFactor(url.Data());

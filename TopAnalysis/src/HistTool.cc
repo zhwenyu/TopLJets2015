@@ -26,10 +26,16 @@ void HistTool::addHist(TString title, TH1* hist) {
 }
 
 //
+void HistTool::fill(TString title, double value, std::vector<double> weights,std::vector<TString> cats) {
+  for(auto &c : cats)
+    fill(title,value,weights,c);
+}
+
+//
 void HistTool::fill(TString title, double value, std::vector<double> weights,TString cat) {
   
   if (not allPlots_.count(title)) {
-    std::cout << "Histogram " << title << " not registered, not filling." << std::endl;
+    //std::cout << "Histogram " << title << " not registered, not filling." << std::endl;
     return;
   }
 
@@ -39,7 +45,7 @@ void HistTool::fill(TString title, double value, std::vector<double> weights,TSt
   if(cat!=""){
     TString newTitle=cat+"_"+title;
     if(not allPlots_.count(newTitle)) {
-      std::cout << "Histogram " << title << " for cat=" << cat << " not yet started, adding now." << std::endl;
+      //std::cout << "Histogram " << title << " for cat=" << cat << " not yet started, adding now." << std::endl;
       allPlots_[newTitle]=(TH1 *)allPlots_[title]->Clone(newTitle);
       allPlots_[newTitle]->SetDirectory(0);
       allPlots_[newTitle]->Reset("ICE");

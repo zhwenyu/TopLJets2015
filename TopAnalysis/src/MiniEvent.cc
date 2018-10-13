@@ -344,7 +344,7 @@ void attachToMiniEventTree(TTree *t,MiniEvent_t &ev,bool full)
   t->SetBranchAddress("j_g",        ev.j_g);
   t->SetBranchAddress("j_jerUp",    ev.j_jerUp);
   t->SetBranchAddress("j_jerDn",    ev.j_jerDn);
-  for(int i=0; i<30; i++) {
+  for(int i=0; i<29; i++) {
     t->SetBranchAddress(Form("j_jecUp%d",i), ev.j_jecUp[i]);
     t->SetBranchAddress(Form("j_jecDn%d",i), ev.j_jecDn[i]);
   }

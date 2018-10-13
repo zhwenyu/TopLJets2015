@@ -12,13 +12,13 @@ fi
 
 #to run locally use local as queue + can add "--njobs 8" to use 8 parallel jobs
 queue=tomorrow
-githash=fbc74ae
-eosdir=/store/cmst3/group/top/RunIIFall17/${githash}
+githash=5fb8f4f
+eosdir=/store/cmst3/group/top/RunIIReReco/${githash}
 lumi=41367
 lumiUnc=0.025
 outdir=${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/ExclusiveTop
 wwwdir=~/www/ExclusiveTop
-inputfileTESTSEL=/store/cmst3/group/top/RunIIFall17/fbc74ae/MC13TeV_TTJets/MergedMiniEvents_0_ext0.root
+inputfileTESTSEL=/store/cmst3/group/top/RunIIReReco/5fb8f4f/Data13TeV_2017D_DoubleMuon/MergedMiniEvents_0_ext0.root
 
 RED='\e[31m'
 NC='\e[0m'
@@ -26,9 +26,8 @@ case $WHAT in
 
     TESTSEL )
 	python scripts/runLocalAnalysis.py \
-            -i ${inputfileTESTSEL} --tag MC13TeV_TTJets --genWeights genweights_${githash}.root \
-            -o TESTSEL.root \
-            --njobs 1 -q local \
+            -i ${inputfileTESTSEL} -o testsel.root \
+            --njobs 1 -q local --debug \
             --era era2017 -m ExclusiveTop::RunExclusiveTop --ch 0 --runSysts;
         ;;
     SEL )

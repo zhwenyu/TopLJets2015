@@ -67,7 +67,7 @@ python scripts/submitToGrid.py -j data/era2017/samples.json -c ${CMSSW_BASE}/src
 As soon as ntuple production starts to finish, to move from crab output directories to a simpler directory structure which can be easily parsed by the local analysis runThe merging can be run locally if needed by using the checkProductionIntegrity.py script
 
 ```
-python scripts/submitCheckProductionIntegrity.py -i /store/cmst3/group/top/psilva/c29f431 -o /store/cmst3/group/top/RunIIFall17/c29f431
+python scripts/submitCheckProductionIntegrity.py -i /store/cmst3/group/top/psilva/5fb8f4f -o /store/cmst3/group/top/RunIIReReco/5fb8f4f
 ```
 
 ## Luminosity

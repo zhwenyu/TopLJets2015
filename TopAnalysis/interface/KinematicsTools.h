@@ -13,5 +13,13 @@ struct JetPullInfo_t
 JetPullInfo_t getPullVector( MiniEvent_t &ev, int ijet);
 
 Float_t computeMT(TLorentzVector &a, TLorentzVector &b);
+Float_t computeRecoilMT(TLorentzVector &a, TVector2 &h);
+Float_t computePhiStar(TLorentzVector &lm,TLorentzVector &lp);
+Float_t computeMR(TLorentzVector &a,TLorentzVector &b);
+Float_t computeRsq(TLorentzVector &a,TLorentzVector &b,TLorentzVector &met);
+Float_t computeCosThetaStar(TLorentzVector &lm,TLorentzVector &lp);
+Float_t computeAcoplanarity(TLorentzVector &lm,TLorentzVector &lp);
+Float_t computePhiStar(TLorentzVector &lm,TLorentzVector &lp);
+std::pair<Float_t,Float_t> calcCsi(TLorentzVector &a, TLorentzVector &h,Float_t sqrts=13000.);
 
 #endif
