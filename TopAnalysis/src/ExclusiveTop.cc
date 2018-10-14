@@ -31,9 +31,7 @@ using namespace std;
 //add jet scale uncertainty
 //PPS json
 //lumi, puweighting, genweighting
-//
-//launch first ntuplization on condor
-//check PPS code is the latest from Laurent
+//xsec in the analysis json
 
 //
 void RunExclusiveTop(TString filename,
