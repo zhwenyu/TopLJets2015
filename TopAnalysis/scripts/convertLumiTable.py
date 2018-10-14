@@ -4,7 +4,7 @@ import os,sys
 import json
 import commands
 import optparse
-from TopLJets2015.TopAnalysis.miniAnalyzer_cfi import analysis
+from TopLJets2015.TopAnalysis.miniAnalyzer_cfi import ANALYSISTRIGGERLISTS
 import ROOT
 
 """
@@ -17,7 +17,7 @@ def getLumiTable(args):
 
     #run brilcalc
     extraOpt='--hltpath %s*'%trig if trig!='inc' else ''    
-    rawLumiTable=commands.getstatusoutput('brilcalc lumi --normtag %s -u /pb -i %s %s'%(opt.normtag,opt.lumiMask,extraOpt))[1].split('\n')
+    rawLumiTable=commands.getstatusoutput('brilcalc lumi -b "STABLE BEAMS" -u /pb -i %s %s'%(opt.lumiMask,extraOpt))[1].split('\n')
 
     #parse lumi output file
     valList=[]
@@ -70,7 +70,6 @@ def main():
     #configuration
     usage = 'usage: %prog [options]'
     parser = optparse.OptionParser(usage)
-    parser.add_option('-n', '--normtag',  dest='normtag',     help='normtag',       default='/cvmfs/cms-bril.cern.ch/cms-lumi-pog/Normtags/normtag_BRIL.json',    type='string')
     parser.add_option('-o', '--out',      dest='out'   ,      help='output dir',    default='data/era2017/',    type='string')
     parser.add_option('-l', '--lumi',     dest='lumiMask',    help='json with list of good lumis', default='/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/ReReco/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt')
     (opt, args) = parser.parse_args()
@@ -81,7 +80,7 @@ def main():
 
     #per trigger path
     task_list=[]
-    triggerPaths=analysis.triggersToUse
+    triggerPaths=ANALYSISTRIGGERLISTS[2017]
     for trig in triggerPaths:
         task_list.append( (trig,opt) )
     from multiprocessing import Pool
@@ -89,7 +88,7 @@ def main():
     pool.map(getLumiTable, task_list)
 
 
-    os.system('hadd -f %s/lumisec_JetHT.root %s/lumisec_*.root'%(opt.out,opt.out))
+    os.system('hadd -f %s/lumisec.root %s/lumisec_*.root'%(opt.out,opt.out))
     os.system('rm %s/lumisec_*.root'%opt.out)
 
 

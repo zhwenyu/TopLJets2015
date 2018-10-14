@@ -714,6 +714,13 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
       int tightBits( e.userInt("cutBasedElectronID-Fall17-94X-V1-tight") );
       bool passTightId( (tightBits | 0xc0)== 0x3ff);  //mask isolation cuts and require all bits active
 
+      bool mvawp80(e.electronID("mvaEleID-Fall17-iso-V1-wp80"));
+      bool mvawp90(e.electronID("mvaEleID-Fall17-iso-V1-wp90"));
+      bool mvawploose(e.electronID("mvaEleID-Fall17-iso-V1-wpLoose"));
+      bool mvanonisowp80(e.electronID("mvaEleID-Fall17-noIso-V1-wp80"));
+      bool mvanonisowp90(e.electronID("mvaEleID-Fall17-noIso-V1-wp90"));
+      bool mvanonisowploose(e.electronID("mvaEleID-Fall17-noIso-V1-wpLoose"));
+
       //impact parameter cuts
       //see details in https://twiki.cern.ch/twiki/bin/view/CMS/CutBasedElectronIdentificationRun2
       bool passIpCuts(true);
@@ -757,7 +764,10 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
 			  | (passMediumId<<4) | (isMedium<<5) 
 			  | (passTightId<<6) | (isTight<<7)
 			  | (passIpCuts<<8) 
+                          | (mvawp80<<9) | (mvawp90<<10) | (mvawploose<<11)
+                          | (mvanonisowp80<<12) | (mvanonisowp90<<13) | (mvanonisowploose<<14)
 			 );
+
       ev_.l_charge[ev_.nl]   = e.charge();
       ev_.l_pt[ev_.nl]       = corrP4.pt();
       ev_.l_eta[ev_.nl]      = corrP4.eta();
@@ -807,10 +817,14 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
       //bool isMedium( g.electronID("cutBasedPhotonID-Fall17-94X-V1-medium") );
       int mediumBits( g.userInt("cutBasedPhotonID-Fall17-94X-V1-medium") );
       //bool passMediumId( (mediumBits & 0x3)== 0x3); //require first two bits (h/e + sihih)
-      //bool isTight( g.electronID("cutBasedPhotonID-Fall17-94X-V1-tight") );
+      //bool isTight( g.photonID("acutBasedPhotonID-Fall17-94X-V1-tight") );
       int tightBits( g.userInt("cutBasedPhotonID-Fall17-94X-V1-tight") );
       //bool passTightId( (tightBits & 0x3)== 0x3);  //require first two bits (h/e + sihih)
-      
+      bool ismvawp80( g.photonID("mvaPhoID-RunIIFall17-v1-wp80"));
+      bool ismvawp90( g.photonID("mvaPhoID-RunIIFall17-v1-wp90"));
+      bool ismva1p1w80( g.photonID("mvaPhoID-RunIIFall17-v1p1-wp80"));
+      bool ismva1p1w90( g.photonID("mvaPhoID-RunIIFall17-v1p1-wp90"));
+
       //save the photon
       const reco::GenParticle * gen=(const reco::GenParticle *)g.genPhoton(); 
       ev_.gamma_isPromptFinalState[ev_.ngamma] = gen ? gen->isPromptFinalState() : false;
@@ -825,8 +839,9 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
       
       ev_.gamma_mva[ev_.ngamma]=g.userFloat("PhotonMVAEstimatorRunIIFall17v1Values");
       ev_.gamma_mvaCats[ev_.ngamma]=g.userInt("PhotonMVAEstimatorRunIIFall17v1Categories");
-      ev_.gamma_passElectronVeto[ev_.ngamma] = g.passElectronVeto();
-      ev_.gamma_hasPixelSeed[ev_.ngamma] = g.hasPixelSeed();
+      ev_.gamma_idFlags[ev_.ngamma]= g.passElectronVeto()
+        | (g.hasPixelSeed()<<1)
+        | (ismvawp80<<2) | (ismvawp90<<3) | (ismva1p1w80<<4) | (ismva1p1w90<<5);
       ev_.gamma_pid[ev_.ngamma]= ( (looseBits & 0x3ff)
                                    | ((mediumBits & 0x3ff)<<10)
                                    | ((tightBits & 0x3ff)<<20));

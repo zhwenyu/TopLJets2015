@@ -16,7 +16,7 @@ githash=5fb8f4f
 eosdir=/store/cmst3/group/top/RunIIReReco/${githash}
 lumi=41367
 lumiUnc=0.025
-outdir=/eos/cms/store/cmst3/user/psilva/ExclusiveAna
+outdir=/store/cmst3/user/psilva/ExclusiveAna
 wwwdir=~/www/ExclusiveTop
 inputfileTESTSEL=/store/cmst3/group/top/RunIIReReco/5fb8f4f/Data13TeV_2017D_DoubleMuon/MergedMiniEvents_0_ext0.root
 
@@ -36,15 +36,15 @@ case $WHAT in
             --era era2017 -m ExclusiveTop::RunExclusiveTop --ch 0 --runSysts;
 	;;
     MERGE )
-	./scripts/mergeOutputs.py ${outdir};
+	./scripts/mergeOutputs.py /eos/cms/${outdir} True;
 	;;
     PLOT )
-	commonOpts="-i ${outdir} --puNormSF puwgtctr -j data/era2017/top_samples.json -l ${lumi}  --saveLog --mcUnc ${lumiUnc}"
-	python scripts/plotter.py ${commonOpts}; 
+	commonOpts="-i ${outdir} --puNormSF puwgtctr -j data/era2017/pps_samples.json -l ${lumi}  --saveLog --mcUnc ${lumiUnc}"
+	python scripts/plotter.py ${commonOpts} -O plots; 
 	;;
     WWW )
 	mkdir -p ${wwwdir}
-	cp ${outdir}/plots/*.{png,pdf} ${wwwdir}
+	cp plots/*.{png,pdf} ${wwwdir}
 	cp test/index.php ${wwwdir}
 	;;
 esac

@@ -46,8 +46,8 @@ struct MiniEvent_t
     l_miniIso[50], l_chargedHadronIso[50], l_relIso[50], l_ip3d[50], l_ip3dsig[50],l_mva[50],l_mvaCats[50];
 
   Int_t ngamma;
-  Bool_t gamma_isPromptFinalState[50],gamma_passElectronVeto[50],gamma_hasPixelSeed[50];
-  Int_t gamma_pid[50],gamma_g[50];
+  Bool_t gamma_isPromptFinalState[50];
+  Int_t gamma_pid[50],gamma_idFlags[50],gamma_g[50];
   Float_t gamma_pt[50],gamma_eta[50],gamma_phi[50], 
     gamma_scaleUnc1[50],gamma_scaleUnc2[50],gamma_scaleUnc3[50],gamma_scaleUnc4[50],gamma_scaleUnc5[50],gamma_scaleUnc6[50],gamma_scaleUnc7[50],
     gamma_mva[50], gamma_mvaCats[50],

@@ -98,9 +98,8 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev,Int_t njecUncs)
   //photons
   t->Branch("ngamma",                   &ev.ngamma,                   "ngamma/I");
   t->Branch("gamma_isPromptFinalState",  ev.gamma_isPromptFinalState, "gamma_isPromptFinalState[ngamma]/O");
-  t->Branch("gamma_passElectronVeto",    ev.gamma_passElectronVeto,   "gamma_passElectronVeto[ngamma]/O");
-  t->Branch("gamma_hasPixelSeed",        ev.gamma_hasPixelSeed,       "gamma_hasPixelSeed[ngamma]/O");
   t->Branch("gamma_pid",                 ev.gamma_pid,                "gamma_pid[ngamma]/I");
+  t->Branch("gamma_idFlags",             ev.gamma_idFlags,                "gamma_idFlags[ngamma]/I");
   t->Branch("gamma_g",                   ev.gamma_g,                  "gamma_g[ngamma]/I");
   t->Branch("gamma_mva",                 ev.gamma_mva,                "gamma_mva[ngamma]/F");
   t->Branch("gamma_mvaCats",             ev.gamma_mvaCats,            "gamma_mvaCats[ngamma]/F");
@@ -316,9 +315,8 @@ void attachToMiniEventTree(TTree *t,MiniEvent_t &ev,bool full)
   //photon info
   t->SetBranchAddress("ngamma", &ev.ngamma);
   t->SetBranchAddress("gamma_isPromptFinalState",  ev.gamma_isPromptFinalState);
-  t->SetBranchAddress("gamma_passElectronVeto",    ev.gamma_passElectronVeto);
-  t->SetBranchAddress("gamma_hasPixelSeed",        ev.gamma_hasPixelSeed);
   t->SetBranchAddress("gamma_pid",                 ev.gamma_pid);
+  t->SetBranchAddress("gamma_idFlags",                 ev.gamma_idFlags);
   t->SetBranchAddress("gamma_g",                   ev.gamma_g);
   t->SetBranchAddress("gamma_mva",                 ev.gamma_mva);
   t->SetBranchAddress("gamma_mvaCats",             ev.gamma_mvaCats);
