@@ -59,7 +59,6 @@ void RunExclusiveTop(TString filename,
   lhc_conds.feedConditions(Form("%s/src/TopLJets2015/CTPPSAnalysisTools/data/2017/xangle_afterTS2.csv", CMSSW_BASE));
   
   MiniEvent_t ev;
-  Int_t evcat(0);
 
   //PREPARE OUTPUT
   TString baseName=gSystem->BaseName(outname); 
@@ -72,13 +71,26 @@ void RunExclusiveTop(TString filename,
   outT->Branch("lumi",&ev.lumi,"lumi/i");
   outT->Branch("nvtx",&ev.nvtx,"nvtx/I");
   outT->Branch("metfilters",&ev.met_filterBits,"metfilters/I");  
+
+  bool hasETrigger,hasMTrigger,hasMMTrigger,hasEETrigger,hasEMTrigger;
+  outT->Branch("hasETrigger",&hasETrigger,"hasETrigger/O");
+  outT->Branch("hasMTrigger",&hasMTrigger,"hasMTrigger/O");
+  outT->Branch("hasEMTrigger",&hasEMTrigger,"hasEMTrigger/O");
+  outT->Branch("hasMMTrigger",&hasMMTrigger,"hasMMTrigger/O");
+  outT->Branch("hasEETrigger",&hasEETrigger,"hasEETrigger/O");
+
+  bool isSS,isSF,isZ;
+  outT->Branch("isSS",&isSS,"isSS/O");
+  outT->Branch("isSF",&isSF,"isSF/O");
+  outT->Branch("isZ",&isZ,"isZ/O");
+  
   ADDVAR(&ev.rho,"rho","F",outT);
   ADDVAR(&ev.pf_closestDZnonAssoc,"closestDZnonAssoc","F",outT);
   ADDVAR(&ev.pf_ch_wgtSum,"nch","F",outT);
   ADDVAR(&ev.met_pt[1],"met_pt","F",outT);
   ADDVAR(&ev.met_phi[1],"met_phi","F",outT);
   ADDVAR(&ev.met_sig[1],"met_sig","F",outT);
-  TString fvars[]={"evwgt", "evcat",
+  TString fvars[]={"evwgt", "dilcode", 
                    "l1pt", "l1eta", "l1phi", "ml1", "l1id", "mt1",
                    "l2pt", "l2eta", "l2phi", "ml2", "l2id", "mt2",
                    "llpt", "lleta", "llphi", "mll", "llht", "llacopl", "llcosthetaCS", "llphistar", "llMR", "llR", "mtll", 
@@ -133,8 +145,8 @@ void RunExclusiveTop(TString filename,
   ht.setNsyst(0);
   ht.addHist("puwgtctr",     new TH1F("puwgtctr",    ";Weight sums;Events",2,0,2));
   ht.addHist("nvtx",         new TH1F("nvtx",        ";Vertex multiplicity;Events",50,-0.5,49.5));
-  ht.addHist("nlep",         new TH1F("nlep",        ";Lepton multipliciy;Events",15,2,5));
-  ht.addHist("nljets",       new TH1F("nljets",      ";light jet multiplicity;Events",5,0,5)); 
+  ht.addHist("nlep",         new TH1F("nlep",        ";Lepton multipliciy;Events",3,2,5));
+  ht.addHist("nljets",       new TH1F("nljets",      ";light jet multiplicity;Events",6,0,6)); 
   ht.addHist("nbjets",       new TH1F("nbjets",      ";b jet multiplicity;Events",5,0,5));
   ht.addHist("lmpt",         new TH1F("lmpt",        ";Lepton 1 transverse momentum [GeV]",50,20,200));
   ht.addHist("lmeta",        new TH1F("lmeta",       ";Lepton 1 pseudo-rapidity",10,0,2.5));
@@ -142,9 +154,9 @@ void RunExclusiveTop(TString filename,
   ht.addHist("lpeta",        new TH1F("lpeta",       ";Lepton 2 pseudo-rapidity",10,0,2.5));
   ht.addHist("mll",          new TH1F("mll",         ";Dilepton invariant mass [GeV]",50,20,200));
   ht.addHist("ptll",         new TH1F("ptll",        ";Dilepton transverse momentum [GeV]",50,0,200));  
-  ht.addHist("phistar",      new TH1F("phistar",     ";log_{10}(dilepton #phi^{*})",20,-3,1));
-  ht.addHist("costhetaCS",   new TH1F("costhetaCS",  ";Dilepton cos#theta^{*}_{CS}",20,-1,1));
-  ht.addHist("acopl",        new TH1F("acopl",       ";Acoplanarity",20,0,0.25));
+  ht.addHist("phistar",      new TH1F("phistar",     ";log_{10}(dilepton #phi^{*})",50,-3,1));
+  ht.addHist("costhetaCS",   new TH1F("costhetaCS",  ";Dilepton cos#theta^{*}_{CS}",50,-1,2));
+  ht.addHist("acopl",        new TH1F("acopl",       ";Acoplanarity",50,0,1.0));
 
   std::cout << "init done" << std::endl;
   if (debug){std::cout<<"\n DEBUG MODE"<<std::endl;}
@@ -169,29 +181,27 @@ void RunExclusiveTop(TString filename,
       ////////////////      
       btvSF.addBTagDecisions(ev);
       btvSF.updateBTagDecisions(ev);      
-           
+
       ///////////////////////////
       // RECO LEVEL SELECTION //
       /////////////////////////
       //trigger
-      bool hasETrigger(selector.hasTriggerBit("HLT_Ele32_eta2p1_WPTight_Gsf_v", ev.triggerBits) ||
-                       selector.hasTriggerBit("HLT_Ele35_eta2p1_WPTight_Gsf_v", ev.triggerBits) ||
-                       selector.hasTriggerBit("HLT_Ele38_eta2p1_WPTight_Gsf_v", ev.triggerBits) ||
-                       selector.hasTriggerBit("HLT_Ele40_eta2p1_WPTight_Gsf_v", ev.triggerBits) );
-      bool hasMTrigger(selector.hasTriggerBit("HLT_IsoMu24_2p1_v", ev.triggerBits) ||
-                       selector.hasTriggerBit("HLT_IsoMu27_v",     ev.triggerBits) );
-      bool hasMMTrigger(selector.hasTriggerBit("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ",                  ev.triggerBits) ||
-                        selector.hasTriggerBit("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8_v",          ev.triggerBits) ||
-                        selector.hasTriggerBit("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8_v",        ev.triggerBits) );
-      bool hasEETrigger(selector.hasTriggerBit("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_v",             ev.triggerBits) ||
-                        selector.hasTriggerBit("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ_v",          ev.triggerBits) );
-      bool hasEMTrigger(selector.hasTriggerBit("HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_v",    ev.triggerBits) ||
-                        selector.hasTriggerBit("HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ_v", ev.triggerBits) ||
-                        selector.hasTriggerBit("HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_v",    ev.triggerBits) ||
-                        selector.hasTriggerBit("HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_v", ev.triggerBits) ||
-                        selector.hasTriggerBit("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_v",     ev.triggerBits) ||
-                        selector.hasTriggerBit("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_v",  ev.triggerBits) );
-
+      hasETrigger=(selector.hasTriggerBit("HLT_Ele35_WPTight_Gsf_v", ev.triggerBits));
+      hasMTrigger=(selector.hasTriggerBit("HLT_IsoMu24_v",     ev.triggerBits) ||
+                   selector.hasTriggerBit("HLT_IsoMu24_2p1_v", ev.triggerBits) ||
+                   selector.hasTriggerBit("HLT_IsoMu27_v",     ev.triggerBits) );
+      hasMMTrigger=(selector.hasTriggerBit("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ",                  ev.triggerBits) ||
+                    selector.hasTriggerBit("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8_v",          ev.triggerBits) ||
+                    selector.hasTriggerBit("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8_v",        ev.triggerBits) );
+      hasEETrigger=(selector.hasTriggerBit("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_v",             ev.triggerBits) ||
+                    selector.hasTriggerBit("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ_v",          ev.triggerBits) );
+      hasEMTrigger=(selector.hasTriggerBit("HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_v",    ev.triggerBits) ||
+                    selector.hasTriggerBit("HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ_v", ev.triggerBits) ||
+                    selector.hasTriggerBit("HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_v",    ev.triggerBits) ||
+                    selector.hasTriggerBit("HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_v", ev.triggerBits) ||
+                    selector.hasTriggerBit("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_v",     ev.triggerBits) ||
+                    selector.hasTriggerBit("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_v",  ev.triggerBits) );
+      
       //trigger specific to data
       if (ev.isData) {
 
@@ -213,7 +223,7 @@ void RunExclusiveTop(TString filename,
       }
 
       std::vector<Particle> flaggedLeptons = selector.flaggedLeptons(ev);
-      std::vector<Particle> leptons        = selector.selLeptons(flaggedLeptons,SelectionTool::TIGHT);
+      std::vector<Particle> leptons        = selector.selLeptons(flaggedLeptons,SelectionTool::TIGHT,SelectionTool::TIGHT);
       if(leptons.size()<2) continue;
       if(leptons[0].Pt()<30 || fabs(leptons[0].Eta())>2.1) continue;
 
@@ -223,13 +233,13 @@ void RunExclusiveTop(TString filename,
         for(size_t jl=1; jl<leptons.size(); jl++) {
           if(abs(leptons[il].id())!=abs(leptons[jl].id())) continue;
           float mll((leptons[il]+leptons[jl]).M());
-          if( fabs(mll-90)>10 ) continue;
+          if( fabs(mll-91)>10 ) continue;
           l1idx=il;
           l2idx=jl;
           break;
         }
-      bool isSF( leptons[l1idx].id()==leptons[l2idx].id() );
-      bool isSS( leptons[l1idx].charge()*leptons[l2idx].charge() > 0 );
+      isSF=( leptons[l1idx].id()==leptons[l2idx].id() );
+      isSS=( leptons[l1idx].charge()*leptons[l2idx].charge() > 0 );
 
       TLorentzVector lm(leptons[l1idx].charge()>0 ? leptons[l1idx] : leptons[l2idx]);
       float lmScaleUnc(leptons[l1idx].charge()>0 ? leptons[l1idx].scaleUnc() : leptons[l2idx].scaleUnc());
@@ -244,7 +254,8 @@ void RunExclusiveTop(TString filename,
       TLorentzVector dil(lm+lp);
       Float_t dilScaleUnc=TMath::Sqrt( pow(lm.Pt()*lmScaleUnc,2)+pow(lp.Pt()*lpScaleUnc,2) )/dil.Pt();
       float mll(dil.M());
-      bool isZ( isSF && !isSS && fabs(mll-91)<10);
+      if(mll<20) continue;
+      isZ=( isSF && !isSS && fabs(mll-91)<10);
  
       //met
       TLorentzVector met(0,0,0,0);
@@ -263,11 +274,12 @@ void RunExclusiveTop(TString filename,
       for(size_t ij=0; ij<allJets.size(); ij++) 
         {
           int idx=allJets[ij].getJetIndex();
+          float deepcsv(ev.j_deepcsv[idx]);
           int jid=ev.j_id[idx];
           bool passLoosePu((jid>>2)&0x1);
           if(!passLoosePu) continue;
-          if(allJets[ij].flavor()==5) { bJets.push_back(allJets[ij]);     scalarhtb+=allJets[ij].pt(); }
-          else                        { lightJets.push_back(allJets[ij]); scalarhtj+= allJets[ij].pt(); }
+          if(deepcsv>0.4941) { bJets.push_back(allJets[ij]);     scalarhtb+=allJets[ij].pt();  }
+          else                             { lightJets.push_back(allJets[ij]); scalarhtj+= allJets[ij].pt(); }
           njets++;
           jets.push_back(allJets[ij]);
           scalarht += jets[ij].pt();
@@ -287,22 +299,21 @@ void RunExclusiveTop(TString filename,
       //baseline categories and additional stuff produced with the dilepton
       std::vector<TString> cats(1,"inc");
 
+      Int_t dilcode=leptons[l1idx].id()*leptons[l2idx].id();
+
       TString dilCat(isSS ? "ss" : "os" );
-      dilCat+=isSF ? "sf" : "of";
+      dilCat+=!isSF ? "em" : dilcode==121 ? "ee" : "mm";
       if(isZ) dilCat += "z";
       cats.push_back(dilCat);       
-      evcat=(isSS | isSF<<1 | isZ<<2);
-
+      
       TLorentzVector X(met);
       float xScaleUnc(metScaleUnc);
       float xEtaUnc(0);
       Int_t xid(0);
       Float_t xht(0);
-      Float_t mt3l(-1);
-      evcat |= (1<<7);
+      Float_t mt3l(-1);      
       cats.push_back(dilCat+"inv");
       if(leptons.size()>2){
-        evcat |= (1<<3);
         cats[2]=dilCat+"3l"; 
         int l3idx(1);
         if(l1idx==0) {
@@ -335,12 +346,11 @@ void RunExclusiveTop(TString filename,
                               )/X.Pt();
         xEtaUnc=max( fabs((leptons[l3idx]+neutrinoP4Up).Eta()-X.Eta()),
                      fabs((leptons[l3idx]+neutrinoP4Dn).Eta()-X.Eta()));
-        xid=leptons[l3idx].id();
         xht=X.Pt();
+        xid=0;
         mt3l=computeMT(leptons[l3idx],met);
       }
       else if(photons.size()>0) {
-        evcat |= (1<<4);
         cats[2]=dilCat+"a";
         X=photons[0].p4();
         xScaleUnc=photons[0].scaleUnc();
@@ -348,15 +358,13 @@ void RunExclusiveTop(TString filename,
         xht=X.Pt();
       }
       else if (jets.size()>2) {
-        evcat |= (1<<5);
         cats[2]=dilCat+"jj";
         X=jets[0]+jets[1];
         xScaleUnc=TMath::Sqrt(pow(jets[0].getScaleUnc()*jets[0].Pt(),2)+
                               pow(jets[1].getScaleUnc()*jets[1].Pt(),2))/X.Pt();
         xid=2121;
         xht=jets[0].Pt()+jets[1].Pt();
-        if(bJets.size()>1) {
-          evcat |= (1<<6);
+        if(bJets.size()>1) {          
           cats[2]=dilCat+"bb";
           X=bJets[0]+bJets[1];
           xScaleUnc=TMath::Sqrt(pow(bJets[0].getScaleUnc()*bJets[0].Pt(),2)+
@@ -459,8 +467,8 @@ void RunExclusiveTop(TString filename,
       ht.fill("nch",           nch,                              plotwgts, cats);
 
       //fill tree
-      outVars["evcat"]=float(evcat);
       outVars["evwgt"]=plotwgts[0];
+      outVars["dilcode"]=float(dilcode);
 
       outVars["l1pt"]=lm.Pt();
       outVars["l1eta"]=lm.Eta();
@@ -507,8 +515,8 @@ void RunExclusiveTop(TString filename,
       outVars["mf"]=F.M();
       outVars["fht"]=fht;      
       outVars["facopl"]=facopl;
-      outVars["fcosthetaStarCS"]=fcosthetaStarCS;
-      outVars["fphiStar"]=fphiStar;
+      outVars["fcosthetaCS"]=fcosthetaStarCS;
+      outVars["fphistar"]=fphiStar;
       outVars["fMR"]=fMR;
       outVars["fR"]=fR;
       ValueCollection_t fcsi=calcCsi(dil,dilScaleUnc,X,xScaleUnc,xEtaUnc);

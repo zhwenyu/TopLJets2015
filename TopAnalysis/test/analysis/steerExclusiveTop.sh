@@ -12,13 +12,16 @@ fi
 
 #to run locally use local as queue + can add "--njobs 8" to use 8 parallel jobs
 queue=tomorrow
-githash=5fb8f4f
+githash=f93b8d8
 eosdir=/store/cmst3/group/top/RunIIReReco/${githash}
+outdir=/store/cmst3/user/psilva/ExclusiveAna
+samples_json=test/analysis/pps_samples.json
+wwwdir=~/www/ExclusiveAna
+inputfileTag=MC13TeV_2017_ZH
+inputfileTESTSEL=/store/cmst3/group/top/RunIIReReco/f93b8d8/${inputfileTag}/MergedMiniEvents_0_ext0.root
 lumi=41367
 lumiUnc=0.025
-outdir=/store/cmst3/user/psilva/ExclusiveAna
-wwwdir=~/www/ExclusiveTop
-inputfileTESTSEL=/store/cmst3/group/top/RunIIReReco/5fb8f4f/Data13TeV_2017D_DoubleMuon/MergedMiniEvents_0_ext0.root
+
 
 RED='\e[31m'
 NC='\e[0m'
@@ -26,20 +29,21 @@ case $WHAT in
 
     TESTSEL )
 	python scripts/runLocalAnalysis.py \
-            -i ${inputfileTESTSEL} -o testsel.root \
+            -i ${inputfileTESTSEL} --tag ${inputfileTag} \
+            -o testsel.root --genWeights genweights_${githash}.root\
             --njobs 1 -q local --debug \
             --era era2017 -m ExclusiveTop::RunExclusiveTop --ch 0 --runSysts;
         ;;
     SEL )
 	python scripts/runLocalAnalysis.py -i ${eosdir} --genWeights genweights_${githash}.root \
-            -o ${outdir} -q ${queue} \
+            -o ${outdir} -q ${queue} --only ${samples_json} --exactonly \
             --era era2017 -m ExclusiveTop::RunExclusiveTop --ch 0 --runSysts;
 	;;
     MERGE )
 	./scripts/mergeOutputs.py /eos/cms/${outdir} True;
 	;;
     PLOT )
-	commonOpts="-i ${outdir} --puNormSF puwgtctr -j data/era2017/pps_samples.json -l ${lumi}  --saveLog --mcUnc ${lumiUnc}"
+	commonOpts="-i /eos/cms/${outdir} --puNormSF puwgtctr -j ${samples_json} -l ${lumi} --mcUnc ${lumiUnc}"
 	python scripts/plotter.py ${commonOpts} -O plots; 
 	;;
     WWW )

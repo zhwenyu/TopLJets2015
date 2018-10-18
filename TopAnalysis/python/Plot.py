@@ -388,6 +388,9 @@ class Plot(object):
             inix = 0.15
             leg.SetX1(inix)
             leg.SetX2(inix+dx)
+            leg.SetY1(leg.GetY1()-0.05)
+            leg.SetY2(leg.GetY2()-0.05)
+
         leg.Draw()
 
         txt=ROOT.TLatex()
@@ -396,25 +399,19 @@ class Plot(object):
         txt.SetTextSize(0.045)
         txt.SetTextAlign(12)
         iniy=0.88 if self.wideCanvas else 0.88
-        inix=0.15 if noStack else 0.18
-        if (totalMC is not None and totalMC.GetMaximumBin() > totalMC.GetNbinsX()/2.):
-            inix = 0.64
-        inixlumi=0.7
-        if not self.dataH or noRatio:
-            inix=0.56
-            inixlumi=0.65
-
-        txt.DrawLatex(0.12,0.97,self.cmsLabel)
+ 
+        txt.DrawLatex(0.16,0.9,self.cmsLabel)
+        txt.SetTextAlign(ROOT.kHAlignRight+ROOT.kVAlignCenter)
         if lumi<1:
-            txt.DrawLatex(inixlumi,0.97,'#scale[0.8]{%3.1f nb^{-1} (%s)}' % (lumi*1000.,self.com) )
+            txt.DrawLatex(0.95,0.97,'#scale[0.8]{%3.1f nb^{-1} (%s)}' % (lumi*1000.,self.com) )
         elif lumi<100:
-            txt.DrawLatex(inixlumi,0.97,'#scale[0.8]{%3.1f pb^{-1} (%s)}' % (lumi,self.com) )
+            txt.DrawLatex(0.95,0.97,'#scale[0.8]{%3.1f pb^{-1} (%s)}' % (lumi,self.com) )
         else:
-            txt.DrawLatex(inixlumi,0.97,'#scale[0.8]{%3.1f fb^{-1} (%s)}' % (lumi/1000.,self.com) )
+            txt.DrawLatex(0.95,0.97,'#scale[0.8]{%3.1f fb^{-1} (%s)}' % (lumi/1000.,self.com) )
         try:
             extraCtr=1
             for extra in extraText.split('\\'):
-                txt.DrawLatex(inix,iniy-0.05*extraCtr,'#scale[0.8]{#it{%s}}'%extra)
+                txt.DrawLatex(0.95,iniy-0.05*extraCtr,'#scale[0.8]{#it{%s}}'%extra)
                 extraCtr+=1
         except:
             pass

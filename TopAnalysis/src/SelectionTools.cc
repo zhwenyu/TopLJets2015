@@ -50,7 +50,7 @@ bool SelectionTool::passSingleLeptonTrigger(MiniEvent_t &ev) {
 //
 TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> preselLeptons,std::vector<Particle> preselPhotons, bool isCR) {
 
-  //clear vectors
+ //clear vectors
   leptons_.clear(); 
   photons_.clear();
   vetoLeptons_.clear();
@@ -61,7 +61,7 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
   if(preselPhotons.size()==0) preselPhotons=flaggedPhotons(ev);
 
   //decide the channel based on the lepton multiplicity and set lepton collections
-  std::vector<Particle> tightLeptons( selLeptons(preselLeptons,TIGHT) );
+  std::vector<Particle> tightLeptons( selLeptons(preselLeptons,TIGHT,MVA80) );
   std::vector<Particle> tightPhotons( selPhotons(preselPhotons,offlinePhoton_, tightLeptons) );
   std::vector<Particle> inclusivePhotons( selPhotons(preselPhotons,CONTROL, tightLeptons) );
   std::vector<Particle> tmpPhotons( selPhotons(preselPhotons,QCDTEMP, tightLeptons) );
@@ -81,7 +81,7 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
         if      (ch==13) chTag = "M";
         else if (ch==11) chTag = "E";
         leptons_=tightLeptons;
-        vetoLeptons_=selLeptons(preselLeptons,VETO, 0., 99., leptons_);
+        vetoLeptons_=selLeptons(preselLeptons,VETO, VETO, 0., 99., leptons_);
       }
     }
   else if(anType_==VBF)
@@ -246,7 +246,11 @@ std::vector<Particle> SelectionTool::flaggedLeptons(MiniEvent_t &ev)
     if(abs(ev.l_id[il])==11)
       {
 	if( pt>20 && eta<2.4 && ((pid>>5) &0x1))                   qualityFlagsWord |= (0x1 << MEDIUM);
-	if( pt>30 && eta<2.1 && ((pid>>6) &0x1))                   qualityFlagsWord |= (0x1 << TIGHT);
+	if( pt>30 && eta<2.1 ) {
+          if((pid>>6) &0x1) qualityFlagsWord |= (0x1 << TIGHT);
+          if((pid>>9) &0x1) qualityFlagsWord |= (0x1 << MVA80);
+          if((pid>>10) &0x1) qualityFlagsWord |= (0x1 << MVA90);
+	}
 	if( pt>15 && eta<2.4 && ((pid>>1) &0x1))                   qualityFlagsWord |= (0x1 << VETO);
 	if( pt>26 && eta<2.1 && ((pid>>6) &0x1)==0 && relIso>0.4)  qualityFlagsWord |= (0x1 << CONTROL);
 
@@ -286,12 +290,13 @@ std::vector<Particle> SelectionTool::flaggedLeptons(MiniEvent_t &ev)
 
 
 //
-std::vector<Particle> SelectionTool::selLeptons(std::vector<Particle> &leptons,int qualBit,double minPt, double maxEta,std::vector<Particle> veto){
+std::vector<Particle> SelectionTool::selLeptons(std::vector<Particle> &leptons,int muQualBit,int eleQualBit,double minPt, double maxEta,std::vector<Particle> veto){
   std::vector<Particle> selLeptons;
   for(size_t i =0; i<leptons.size(); i++)
     {
       //check quality flag
-      if( !leptons[i].hasQualityFlag(qualBit) ) continue;
+      if(leptons[i].id()==11 && !leptons[i].hasQualityFlag(eleQualBit) ) continue;
+      if(leptons[i].id()==13 && !leptons[i].hasQualityFlag(muQualBit) ) continue;
 
       //check kinematics
       if(leptons[i].pt()<minPt || fabs(leptons[i].eta())>maxEta) continue;
@@ -323,6 +328,7 @@ std::vector<Particle> SelectionTool::flaggedPhotons(MiniEvent_t &ev)
     float pt(ev.gamma_pt[ig]);
     float eta(fabs(ev.gamma_eta[ig]));
     int pid(ev.gamma_pid[ig]);
+    int addpid(ev.gamma_idFlags[ig]);
 
     //see bits in plugins/MiniAnalyzer.cc
 
@@ -332,6 +338,8 @@ std::vector<Particle> SelectionTool::flaggedPhotons(MiniEvent_t &ev)
         if( (pid&0x7f)==0x7f )            qualityFlagsWord |= (0x1 << LOOSE);
         if( ((pid>>10)&0x7f)==0x7f   )    qualityFlagsWord |= (0x1 << MEDIUM);
         if( ((pid>>10)&0x7f)==0x7f   )    qualityFlagsWord |= (0x1 << TIGHT);
+        if( ((addpid>>2)&0x1) )   qualityFlagsWord |= (0x1 << MVA80);
+        if( ((addpid>>3)&0x1) )   qualityFlagsWord |= (0x1 << MVA90);
 	if( isInclusivePhoton(ev,ig) )    qualityFlagsWord |= (0x1 << CONTROL);
 	if( isQCDTemplate(ev,ig)     )    qualityFlagsWord |= (0x1 << QCDTEMP);
       }
@@ -440,10 +448,31 @@ std::vector<Jet> SelectionTool::getGoodJets(MiniEvent_t &ev, double minPt, doubl
       }
     }
 
-    if(debug_) cout << "Jet #" << jets.size() 
-		    << " pt=" << jp4.Pt() << " eta=" << jp4.Eta() << " deepCSV=" << ev.j_deepcsv[k] << endl;
+    //jes/jer uncertainty
+    int jflav(abs(ev.j_flav[k]));
+    float jecUp(pow(1-ev.j_jerUp[k],2)),jecDn(pow(1-ev.j_jerDn[k],2));
+    for(size_t iunc=0; iunc<30; iunc++){
 
-    
+      //see python/miniAnalyzer_cfi.py for these
+      if(iunc==6 && jflav!=21) continue; //FlavorPureGluon
+      if(iunc==7 && jflav>=4)  continue; //FlavorPureQuark
+      if(iunc==8 && jflav!=4)  continue; //FlavorPureCharm
+      if(iunc==9 && jflav!=5)  continue; //FlavorPureGluon
+      
+      if(ev.j_jecUp[iunc][k]!=0)
+        jecUp += pow(1-ev.j_jecUp[iunc][k],2);
+      if(ev.j_jecDn[iunc][k]!=0)
+        jecDn += pow(1-ev.j_jecDn[iunc][k],2);
+    }
+    jecUp=TMath::Sqrt(jecUp);
+    jecDn=TMath::Sqrt(jecDn);
+    jet.setScaleUnc(0.5*(jecUp+jecDn));
+
+    if(debug_) 
+      cout << "Jet #" << jets.size() 
+           << " pt=" << jp4.Pt() << "+/-" << jet.getScaleUnc()*jp4.Pt() << " (jec+jer)"
+           << " eta=" << jp4.Eta() << " deepCSV=" << ev.j_deepcsv[k] << " flav=" << jflav << endl;
+
     jets.push_back(jet);
   }
   

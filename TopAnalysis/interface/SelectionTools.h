@@ -20,7 +20,7 @@ class SelectionTool {
   ~SelectionTool() {}
 
   enum FlavourSplitting {NOFLAVOURSPLITTING=0, UDSGSPLITTING=1, CSPLITTING=4, BSPLITTING=5 };
-  enum QualityFlags     {VETO, LOOSE, MEDIUM, TIGHT, CONTROL, QCDTEMP};
+  enum QualityFlags     {VETO, LOOSE, MEDIUM, TIGHT, CONTROL, QCDTEMP, MVA80, MVA90};
 
 
 
@@ -34,7 +34,7 @@ class SelectionTool {
   TLorentzVector met_;
   bool hasTriggerBit(TString triggerName,unsigned int word);
   std::vector<Particle> flaggedLeptons(MiniEvent_t &ev);
-  std::vector<Particle> selLeptons(std::vector<Particle> &flaggedLeptons,int qualBit=LOOSE, double minPt=0., double maxEta=99., std::vector<Particle> veto={});
+  std::vector<Particle> selLeptons(std::vector<Particle> &flaggedLeptons,int muQualBit=LOOSE, int eleQualBit=LOOSE, double minPt=0., double maxEta=99., std::vector<Particle> veto={});
   std::vector<Particle> &getSelLeptons()  { return leptons_; }
   std::vector<Particle> &getVetoLeptons() { return vetoLeptons_; }
   std::vector<Particle> flaggedPhotons(MiniEvent_t &ev);
