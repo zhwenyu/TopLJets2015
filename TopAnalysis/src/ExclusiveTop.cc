@@ -208,10 +208,8 @@ void RunExclusiveTop(TString filename,
                     selector.hasTriggerBit("HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_v", ev.triggerBits) ||
                     selector.hasTriggerBit("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_v",     ev.triggerBits) ||
                     selector.hasTriggerBit("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_v",  ev.triggerBits) );
-      
-      //trigger specific to data
-      if (ev.isData) {
 
+      if (ev.isData) { 
         //use only these unprescaled triggers for these eras
         if(filename.Contains("2017E") || filename.Contains("2017F")){
           hasMTrigger=selector.hasTriggerBit("HLT_IsoMu27_v",ev.triggerBits);
@@ -220,45 +218,54 @@ void RunExclusiveTop(TString filename,
           hasMMTrigger=(selector.hasTriggerBit("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8_v",   ev.triggerBits) ||
                         selector.hasTriggerBit("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8_v", ev.triggerBits) );
         }
-
-        //remove trigger overlaps (use single lepton PDs only for single lepton triggers)
-        if(selector.isDoubleEGPD()       && !(hasEETrigger || hasETrigger) ) continue;
-        if(selector.isDoubleMuonPD()     && !(hasMTrigger || hasMMTrigger) ) continue;
-        if(selector.isMuonEGPD()         && !hasEMTrigger) continue;
-        //if(selector.isSingleElectronPD() && (!hasETrigger || hasEETrigger || hasEMTrigger) ) continue;
-        //if(selector.isSingleMuonPD()     && (!hasMTrigger || hasMMTrigger || hasEMTrigger) ) continue;
-
-
-        std::map<Int_t,Float_t>::iterator rIt=lumiPerRun.find(ev.run);
-        if(rIt!=lumiPerRun.end()){
-          int runBin=std::distance(lumiPerRun.begin(),rIt);
-          float lumi=1./rIt->second;
-          if(hasETrigger)  ht.fill("ratevsrun",runBin,lumi,"e");
-          if(hasMTrigger)  ht.fill("ratevsrun",runBin,lumi,"m");
-          if(hasEETrigger) ht.fill("ratevsrun",runBin,lumi,"ee");
-          if(hasMMTrigger) ht.fill("ratevsrun",runBin,lumi,"mm");
-          if(hasEMTrigger) ht.fill("ratevsrun",runBin,lumi,"em");
-        }
       }
 
+      //identify the offline final state from the leading leptons
+      int l1idx(0),l2idx(1);
       std::vector<Particle> flaggedLeptons = selector.flaggedLeptons(ev);
       std::vector<Particle> leptons        = selector.selLeptons(flaggedLeptons,SelectionTool::TIGHT,SelectionTool::TIGHT,20.);
       if(leptons.size()<2) continue;
       if(leptons[0].Pt()<30 || fabs(leptons[0].Eta())>2.1) continue;
-
-      //use leading leptons to define the event
-      int l1idx(0),l2idx(1);
+      Int_t dilcode=leptons[l1idx].id()*leptons[l2idx].id();
       isSF=( leptons[l1idx].id()==leptons[l2idx].id() );
       isSS=( leptons[l1idx].charge()*leptons[l2idx].charge() > 0 );
 
-      //check again origin of the dilepton in data
-      Int_t dilcode=leptons[l1idx].id()*leptons[l2idx].id();
-      if (ev.isData) {
-        if(dilcode!=11*11 && selector.isDoubleEGPD()) continue;
-        if(dilcode!=13*13 && selector.isDoubleMuonPD()) continue;
-        if(dilcode!=11*13 && selector.isMuonEGPD()) continue;
-      }
+      //check again origin of the dilepton in data to max. efficiency and avoid double counting
+      if(ev.isData) {
 
+        if(dilcode==11*11) {
+          if( !selector.isDoubleEGPD()      && !selector.isSingleElectronPD()) continue;
+          if( selector.isDoubleEGPD()       && !hasEETrigger ) continue;
+          if( selector.isSingleElectronPD() && (hasEETrigger || !hasETrigger) ) continue;
+        }
+        if(dilcode==13*13) {
+          if( !selector.isDoubleMuonPD() && !selector.isSingleMuonPD()) continue;
+          if( selector.isDoubleMuonPD()  && !hasMMTrigger ) continue;
+          if( selector.isSingleMuonPD()  && (hasMTrigger || !hasMTrigger) ) continue;
+        }
+        if(dilcode==11*13) {
+          if( !selector.isMuonEGPD()        && !selector.isSingleElectronPD() && !selector.isSingleMuonPD()) continue;
+          if( selector.isMuonEGPD()         && !hasEMTrigger ) continue;
+          if( selector.isSingleElectronPD() && (hasEMTrigger || !hasETrigger) ) continue;
+          if( selector.isSingleMuonPD()     && (hasEMTrigger || hasETrigger || !hasMTrigger) ) continue;
+        }
+
+        //check trigger rates and final channel assignment
+        std::map<Int_t,Float_t>::iterator rIt=lumiPerRun.find(ev.run);
+        if(rIt!=lumiPerRun.end()){
+          int runBin=std::distance(lumiPerRun.begin(),rIt);
+          float lumi=1./rIt->second;
+          if(hasETrigger)  ht.fill("ratevsrun",runBin,lumi,"trige");
+          if(hasMTrigger)  ht.fill("ratevsrun",runBin,lumi,"trigm");
+          if(hasEETrigger) ht.fill("ratevsrun",runBin,lumi,"trigee");
+          if(hasMMTrigger) ht.fill("ratevsrun",runBin,lumi,"trigmm");
+          if(hasEMTrigger) ht.fill("ratevsrun",runBin,lumi,"trigem");
+          if(dilcode==11*11) ht.fill("ratevsrun",runBin,lumi,"ee");
+          if(dilcode==13*13) ht.fill("ratevsrun",runBin,lumi,"mm");
+          if(dilcode==11*13) ht.fill("ratevsrun",runBin,lumi,"em");
+        }
+        
+      }
 
       TLorentzVector lm(leptons[l1idx].charge()>0 ? leptons[l1idx] : leptons[l2idx]);
       float lmScaleUnc(leptons[l1idx].charge()>0 ? leptons[l1idx].scaleUnc() : leptons[l2idx].scaleUnc());
