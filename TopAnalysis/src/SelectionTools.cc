@@ -246,7 +246,7 @@ std::vector<Particle> SelectionTool::flaggedLeptons(MiniEvent_t &ev)
     if(abs(ev.l_id[il])==11)
       {
 	if( pt>20 && eta<2.4 && ((pid>>5) &0x1))                   qualityFlagsWord |= (0x1 << MEDIUM);
-	if( pt>30 && eta<2.1 ) {
+	if( pt>20 && eta<2.1 ) {
           if((pid>>6) &0x1) qualityFlagsWord |= (0x1 << TIGHT);
           if((pid>>9) &0x1) qualityFlagsWord |= (0x1 << MVA80);
           if((pid>>10) &0x1) qualityFlagsWord |= (0x1 << MVA90);
@@ -267,7 +267,7 @@ std::vector<Particle> SelectionTool::flaggedLeptons(MiniEvent_t &ev)
     else
       {
 	if( pt>20 && eta<2.4 && ((pid>>reco::Muon::Selector::CutBasedIdMediumPrompt) &0x1) && relIso<0.15)  qualityFlagsWord |= (0x1 << MEDIUM);
-	if( pt>30 && eta<2.1 && ((pid>>reco::Muon::Selector::CutBasedIdTight) &0x1) && relIso<0.15)         qualityFlagsWord |= (0x1 << TIGHT);
+	if( pt>20 && eta<2.1 && ((pid>>reco::Muon::Selector::CutBasedIdTight) &0x1) && relIso<0.15)         qualityFlagsWord |= (0x1 << TIGHT);
 	if( pt>15 && eta<2.4 && ((pid>>reco::Muon::Selector::CutBasedIdLoose) &0x1) && relIso<0.25)         qualityFlagsWord |= (0x1 << VETO);
 	if( pt>26 && eta<2.1 && ((pid>>reco::Muon::Selector::CutBasedIdTight) &0x1) && relIso>0.25)         qualityFlagsWord |= (0x1 << CONTROL);
       }

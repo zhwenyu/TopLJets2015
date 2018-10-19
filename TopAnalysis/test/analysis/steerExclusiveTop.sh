@@ -16,6 +16,7 @@ githash=f93b8d8
 eosdir=/store/cmst3/group/top/RunIIReReco/${githash}
 outdir=/store/cmst3/user/psilva/ExclusiveAna
 samples_json=test/analysis/pps_samples.json
+zx_samples_json=test/analysis/zx_samples.json
 wwwdir=~/www/ExclusiveAna
 inputfileTag=MC13TeV_2017_ZH
 inputfileTESTSEL=/store/cmst3/group/top/RunIIReReco/f93b8d8/${inputfileTag}/MergedMiniEvents_0_ext0.root
@@ -35,15 +36,17 @@ case $WHAT in
             --era era2017 -m ExclusiveTop::RunExclusiveTop --ch 0 --runSysts;
         ;;
     SEL )
-	python scripts/runLocalAnalysis.py -i ${eosdir} --genWeights genweights_${githash}.root \
-            -o ${outdir} -q ${queue} --only ${samples_json} --exactonly \
-            --era era2017 -m ExclusiveTop::RunExclusiveTop --ch 0 --runSysts;
+        baseOpt="-i ${eosdir} --genWeights genweights_${githash}.root"
+        baseOpt="${baseOpt} -o ${outdir} -q ${queue} --era era2017 -m ExclusiveTop::RunExclusiveTop --ch 0 --runSysts"
+        baseOpt="${baseOpt} --exactonly"
+	python scripts/runLocalAnalysis.py ${baseOpt} --only ${samples_json};
+	python scripts/runLocalAnalysis.py ${baseOpt} --only ${zx_samples_json};
 	;;
     MERGE )
 	./scripts/mergeOutputs.py /eos/cms/${outdir} True;
 	;;
     PLOT )
-	commonOpts="-i /eos/cms/${outdir} --puNormSF puwgtctr -j ${samples_json} -l ${lumi} --mcUnc ${lumiUnc}"
+	commonOpts="-i /eos/cms/${outdir} --puNormSF puwgtctr -j ${samples_json} --signalJson ${zx_samples_json} -l ${lumi} --mcUnc ${lumiUnc} "
 	python scripts/plotter.py ${commonOpts} -O plots; 
 	;;
     WWW )

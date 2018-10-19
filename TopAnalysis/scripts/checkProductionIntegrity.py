@@ -75,8 +75,10 @@ def main():
     
             moveIndividualFiles=True
             if len(file_list)>0:
-                subgroupMerge=10 
-                if 'Data' in pub: subgroupMerge=50
+                subgroupMerge=5 
+                if 'Data' in pub: 
+                    if 'Single' in pub : subgroupMerge=10
+                    else               : subgroupMerge=25
                 moveIndividualFiles=False
 
                 splitFunc = lambda A, n=subgroupMerge: [A[i:i+n] for i in range(0, len(A), n)]

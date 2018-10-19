@@ -130,7 +130,8 @@ void RunExclusiveTop(TString filename,
   
   //LUMINOSITY+PILEUP
   LumiTools lumi(era,genPU);
-    
+  std::map<Int_t,Float_t> lumiPerRun=lumi.lumiPerRun();
+
   //auxiliary to solve neutrino pZ using MET
   MEzCalculator neutrinoPzComputer;
 
@@ -144,19 +145,25 @@ void RunExclusiveTop(TString filename,
   HistTool ht;
   ht.setNsyst(0);
   ht.addHist("puwgtctr",     new TH1F("puwgtctr",    ";Weight sums;Events",2,0,2));
-  ht.addHist("nvtx",         new TH1F("nvtx",        ";Vertex multiplicity;Events",50,-0.5,49.5));
+  ht.addHist("nvtx",         new TH1F("nvtx",        ";Vertex multiplicity;Events",50,0,100));
   ht.addHist("nlep",         new TH1F("nlep",        ";Lepton multipliciy;Events",3,2,5));
   ht.addHist("nljets",       new TH1F("nljets",      ";light jet multiplicity;Events",6,0,6)); 
   ht.addHist("nbjets",       new TH1F("nbjets",      ";b jet multiplicity;Events",5,0,5));
-  ht.addHist("lmpt",         new TH1F("lmpt",        ";Lepton 1 transverse momentum [GeV]",50,20,200));
-  ht.addHist("lmeta",        new TH1F("lmeta",       ";Lepton 1 pseudo-rapidity",10,0,2.5));
-  ht.addHist("lppt",         new TH1F("lppt",        ";Lepton 2 transverse momentum [GeV]",50,20,200));
-  ht.addHist("lpeta",        new TH1F("lpeta",       ";Lepton 2 pseudo-rapidity",10,0,2.5));
-  ht.addHist("mll",          new TH1F("mll",         ";Dilepton invariant mass [GeV]",50,20,200));
-  ht.addHist("ptll",         new TH1F("ptll",        ";Dilepton transverse momentum [GeV]",50,0,200));  
-  ht.addHist("phistar",      new TH1F("phistar",     ";log_{10}(dilepton #phi^{*})",50,-3,1));
-  ht.addHist("costhetaCS",   new TH1F("costhetaCS",  ";Dilepton cos#theta^{*}_{CS}",50,-1,2));
-  ht.addHist("acopl",        new TH1F("acopl",       ";Acoplanarity",50,0,1.0));
+  ht.addHist("lmpt",         new TH1F("lmpt",        ";Lepton 1 transverse momentum [GeV];Events",50,20,200));
+  ht.addHist("lmeta",        new TH1F("lmeta",       ";Lepton 1 pseudo-rapidity;Events",10,0,2.5));
+  ht.addHist("lppt",         new TH1F("lppt",        ";Lepton 2 transverse momentum [GeV];Events",50,20,200));
+  ht.addHist("lpeta",        new TH1F("lpeta",       ";Lepton 2 pseudo-rapidity;Events",10,0,2.5));
+  ht.addHist("mll",          new TH1F("mll",         ";Dilepton invariant mass [GeV];Events",100,0,500));
+  ht.addHist("ptll",         new TH1F("ptll",        ";Dilepton transverse momentum [GeV];Events",50,0,250));  
+  ht.addHist("phistar",      new TH1F("phistar",     ";log_{10}(dilepton #phi^{*});Events",50,-3,3));
+  ht.addHist("costhetaCS",   new TH1F("costhetaCS",  ";Dilepton cos#theta^{*}_{CS};Events",50,-1,1));
+  ht.addHist("acopl",        new TH1F("acopl",       ";Acoplanarity;Events",50,0,1.0));
+  ht.addHist("ratevsrun",    new TH1F("ratevsrun",   ";Run number; #sigma [pb]",lumiPerRun.size(),0,lumiPerRun.size()));
+  int i=0;
+  for(auto key : lumiPerRun) {
+    i++;
+    ht.getPlots()["ratevsrun"]->GetXaxis()->SetBinLabel(i,Form("%d",key.first));
+  }
 
   std::cout << "init done" << std::endl;
   if (debug){std::cout<<"\n DEBUG MODE"<<std::endl;}
@@ -215,31 +222,43 @@ void RunExclusiveTop(TString filename,
         }
 
         //remove trigger overlaps (use single lepton PDs only for single lepton triggers)
-        if(selector.isDoubleEGPD()       && !hasEETrigger) continue;
-        if(selector.isDoubleMuonPD()     && !hasMMTrigger) continue;
+        if(selector.isDoubleEGPD()       && !(hasEETrigger || hasETrigger) ) continue;
+        if(selector.isDoubleMuonPD()     && !(hasMTrigger || hasMMTrigger) ) continue;
         if(selector.isMuonEGPD()         && !hasEMTrigger) continue;
-        if(selector.isSingleElectronPD() && (!hasETrigger || hasEETrigger || hasEMTrigger) ) continue;
-        if(selector.isSingleMuonPD()     && (!hasMTrigger || hasMMTrigger || hasEMTrigger) ) continue;
+        //if(selector.isSingleElectronPD() && (!hasETrigger || hasEETrigger || hasEMTrigger) ) continue;
+        //if(selector.isSingleMuonPD()     && (!hasMTrigger || hasMMTrigger || hasEMTrigger) ) continue;
+
+
+        std::map<Int_t,Float_t>::iterator rIt=lumiPerRun.find(ev.run);
+        if(rIt!=lumiPerRun.end()){
+          int runBin=std::distance(lumiPerRun.begin(),rIt);
+          float lumi=1./rIt->second;
+          if(hasETrigger)  ht.fill("ratevsrun",runBin,lumi,"e");
+          if(hasMTrigger)  ht.fill("ratevsrun",runBin,lumi,"m");
+          if(hasEETrigger) ht.fill("ratevsrun",runBin,lumi,"ee");
+          if(hasMMTrigger) ht.fill("ratevsrun",runBin,lumi,"mm");
+          if(hasEMTrigger) ht.fill("ratevsrun",runBin,lumi,"em");
+        }
       }
 
       std::vector<Particle> flaggedLeptons = selector.flaggedLeptons(ev);
-      std::vector<Particle> leptons        = selector.selLeptons(flaggedLeptons,SelectionTool::TIGHT,SelectionTool::TIGHT);
+      std::vector<Particle> leptons        = selector.selLeptons(flaggedLeptons,SelectionTool::TIGHT,SelectionTool::TIGHT,20.);
       if(leptons.size()<2) continue;
       if(leptons[0].Pt()<30 || fabs(leptons[0].Eta())>2.1) continue;
 
-      //Z finder (leading pT leptons)
+      //use leading leptons to define the event
       int l1idx(0),l2idx(1);
-      for(size_t il=0; il<leptons.size(); il++)
-        for(size_t jl=1; jl<leptons.size(); jl++) {
-          if(abs(leptons[il].id())!=abs(leptons[jl].id())) continue;
-          float mll((leptons[il]+leptons[jl]).M());
-          if( fabs(mll-91)>10 ) continue;
-          l1idx=il;
-          l2idx=jl;
-          break;
-        }
       isSF=( leptons[l1idx].id()==leptons[l2idx].id() );
       isSS=( leptons[l1idx].charge()*leptons[l2idx].charge() > 0 );
+
+      //check again origin of the dilepton in data
+      Int_t dilcode=leptons[l1idx].id()*leptons[l2idx].id();
+      if (ev.isData) {
+        if(dilcode!=11*11 && selector.isDoubleEGPD()) continue;
+        if(dilcode!=13*13 && selector.isDoubleMuonPD()) continue;
+        if(dilcode!=11*13 && selector.isMuonEGPD()) continue;
+      }
+
 
       TLorentzVector lm(leptons[l1idx].charge()>0 ? leptons[l1idx] : leptons[l2idx]);
       float lmScaleUnc(leptons[l1idx].charge()>0 ? leptons[l1idx].scaleUnc() : leptons[l2idx].scaleUnc());
@@ -299,8 +318,6 @@ void RunExclusiveTop(TString filename,
       //baseline categories and additional stuff produced with the dilepton
       std::vector<TString> cats(1,"inc");
 
-      Int_t dilcode=leptons[l1idx].id()*leptons[l2idx].id();
-
       TString dilCat(isSS ? "ss" : "os" );
       dilCat+=!isSF ? "em" : dilcode==121 ? "ee" : "mm";
       if(isZ) dilCat += "z";
@@ -315,14 +332,7 @@ void RunExclusiveTop(TString filename,
       cats.push_back(dilCat+"inv");
       if(leptons.size()>2){
         cats[2]=dilCat+"3l"; 
-        int l3idx(1);
-        if(l1idx==0) {
-          if(l2idx==1) l3idx=2;
-        }
-        else if(l1idx==1) {
-          l3idx=0;
-        }
-
+        int l3idx(2);
         neutrinoPzComputer.SetMET(met);
         neutrinoPzComputer.SetLepton(leptons[l3idx].p4());
         float nupz=neutrinoPzComputer.Calculate();
@@ -347,7 +357,7 @@ void RunExclusiveTop(TString filename,
         xEtaUnc=max( fabs((leptons[l3idx]+neutrinoP4Up).Eta()-X.Eta()),
                      fabs((leptons[l3idx]+neutrinoP4Dn).Eta()-X.Eta()));
         xht=X.Pt();
-        xid=0;
+        xid=leptons[l3idx].id();
         mt3l=computeMT(leptons[l3idx],met);
       }
       else if(photons.size()>0) {
@@ -539,28 +549,32 @@ void RunExclusiveTop(TString filename,
 
       nRPtk=0;
       if (ev.isData) {
-        const edm::EventID ev_id( ev.run, ev.lumi, ev.event );        
-        const ctpps::conditions_t lhc_cond = lhc_conds.get( ev_id );
-        const double xangle = lhc_cond.crossing_angle;
-        for (int ift=0; ift<ev.nfwdtrk; ift++) {
-          // Pot ID consist of arm number, station number, pot number
-          const unsigned short pot_raw_id = 100*ev.fwdtrk_arm[ift]+10*ev.fwdtrk_station[ift]+ev.fwdtrk_pot[ift];
+        try{
+          const edm::EventID ev_id( ev.run, ev.lumi, ev.event );        
+          const ctpps::conditions_t lhc_cond = lhc_conds.get( ev_id );
+          const double xangle = lhc_cond.crossing_angle;
+          
+          //only dispersions for these angles are available (@ CTPPSAnalysisTools/data/2017/dispersions.txt)
+          if(xangle!=120 && xangle!=130 && xangle!=140) continue;
+          
+          for (int ift=0; ift<ev.nfwdtrk; ift++) {
+            
+            //only these roman pots are aligned CTPPSAnalysisTools/data/2017/alignments_21aug2018.txt 
+            const unsigned short pot_raw_id = 100*ev.fwdtrk_arm[ift]+10*ev.fwdtrk_station[ift]+ev.fwdtrk_pot[ift];
+            if (pot_raw_id!=3 && pot_raw_id!=23 && pot_raw_id!=103 && pot_raw_id!=123) continue;
+            
+            const ctpps::alignment_t align = ctpps_aligns.get( ev_id, pot_raw_id );
+            double xi, xi_error;
+            
+            proton_reco.reconstruct(xangle, pot_raw_id, ev.fwdtrk_x[ift]*100+align.x_align, xi, xi_error);
 
-          // No alignment parameters or dispersion values available for Pot numbers different than 003,103,023 or 123, see https://github.com/forthommel/CTPPSAnalysisTools/blob/83779a55503dcc377fd994719d4aa42b6f9654e3/data/2017/alignments_30jan2017.txt 
-          if (pot_raw_id!=3 && pot_raw_id!=23 && pot_raw_id!=103 && pot_raw_id!=123) continue;
-
-          const ctpps::alignment_t align = ctpps_aligns.get( ev_id, pot_raw_id );
-          double xi, xi_error;
-
-          // No dispersion values available for xangles different than 120, 130 or 140 murad. See https://github.com/forthommel/CTPPSAnalysisTools/blob/83779a55503dcc377fd994719d4aa42b6f9654e3/data/2017/dispersions.txt
-          if (xangle!=120 && xangle!=130 && xangle!=140) continue; 
-          proton_reco.reconstruct(xangle, pot_raw_id, ev.fwdtrk_x[ift]*100+align.x_align, xi, xi_error);
-
-          RPid[nRPtk]=pot_raw_id;
-          RPcsi[nRPtk]=xi;
-          RPcsiUnc[nRPtk]=xi_error;
-          RPxang[nRPtk]=xangle;
-          nRPtk++;
+            RPid[nRPtk]=pot_raw_id;
+            RPcsi[nRPtk]=xi;
+            RPcsiUnc[nRPtk]=xi_error;
+            RPxang[nRPtk]=xangle;
+            nRPtk++;
+          }
+        }catch(...){
         }
       }
 
