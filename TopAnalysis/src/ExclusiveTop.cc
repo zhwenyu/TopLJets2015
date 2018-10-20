@@ -106,14 +106,15 @@ void RunExclusiveTop(TString filename,
     outVars[fvars[i]]=0.;
     ADDVAR(&(outVars[fvars[i]]),fvars[i],"F",outT);
   }
-  int nRPtk(0),RPid[200];
-  float RPcsi[200],RPcsiUnc[200],RPxang[200];
+  float beamXangle(0);
+  outT->Branch("beamXangle",&beamXangle,"beamXangle/F");
+  int nRPtk(0),RPid[50];
+  float RPfarcsi[50],RPnearcsi[50];
   if(filename.Contains("Data13TeV")){
     outT->Branch("nRPtk",&nRPtk,"nRPtk/i");
     outT->Branch("RPid",RPid,"RPid[nRPtk]/i");
-    outT->Branch("RPcsi",RPcsi,"RPcsi[nRPtk]/F");
-    outT->Branch("RPcsiUnc",RPcsiUnc,"RPcsiUnc[nRPtk]/F");
-    outT->Branch("RPxang",RPxang,"RPxang[nRPtk]/F");
+    outT->Branch("RPfarcsi",RPfarcsi,"RPfarcsi[nRPtk]/F");
+    outT->Branch("RPnearcsi",RPnearcsi,"RPnearcsi[nRPtk]/F");
   }
   outT->SetDirectory(fOut);
 
@@ -158,7 +159,11 @@ void RunExclusiveTop(TString filename,
   ht.addHist("phistar",      new TH1F("phistar",     ";log_{10}(dilepton #phi^{*});Events",50,-3,3));
   ht.addHist("costhetaCS",   new TH1F("costhetaCS",  ";Dilepton cos#theta^{*}_{CS};Events",50,-1,1));
   ht.addHist("acopl",        new TH1F("acopl",       ";Acoplanarity;Events",50,0,1.0));
-  ht.addHist("ratevsrun",    new TH1F("ratevsrun",   ";Run number; #sigma [pb]",lumiPerRun.size(),0,lumiPerRun.size()));
+  ht.addHist("ratevsrun",    new TH1F("ratevsrun",   ";Run number; #sigma [pb]",int(lumiPerRun.size()),0,float(lumiPerRun.size())));
+  ht.addHist("ntkrp",        new TH1F("ntkrp",       ";Track multiplicity; Events",6,0,6) );
+  ht.addHist("csirp",        new TH1F("csirp",       ";#csi = #deltap/p; Events",50,0,0.3) );
+  ht.addHist("xangle",       new TH1F("xangle",      ";Crossing angle; Events",10,100,200) );
+ 
   int i=0;
   for(auto key : lumiPerRun) {
     i++;
@@ -179,9 +184,20 @@ void RunExclusiveTop(TString filename,
     {
       t->GetEntry(iev);
       if(iev%1000==0) printf ("\r [%3.0f%%] done", 100.*(float)iev/(float)nentries);
-	
-      //assign randomly a run period
+
+      //start weights and pu weight control
+      float wgt(1.0);
+      std::vector<double>plotwgts(1,wgt);
+      double puWgt(1.0);
       TString period = lumi.assignRunPeriod();
+      if(ev.isData){
+        ht.fill("puwgtctr",0,plotwgts);
+        puWgt=(lumi.pileupWeight(ev.g_pu,period)[0]);
+        std::vector<double>puPlotWgts(1,puWgt);
+        ht.fill("puwgtctr",1,puPlotWgts);
+      }  
+	
+
 
       //////////////////
       // CORRECTIONS //
@@ -192,378 +208,429 @@ void RunExclusiveTop(TString filename,
       ///////////////////////////
       // RECO LEVEL SELECTION //
       /////////////////////////
-      //trigger
-      hasETrigger=(selector.hasTriggerBit("HLT_Ele35_WPTight_Gsf_v", ev.triggerBits));
-      hasMTrigger=(selector.hasTriggerBit("HLT_IsoMu24_v",     ev.triggerBits) ||
-                   selector.hasTriggerBit("HLT_IsoMu24_2p1_v", ev.triggerBits) ||
-                   selector.hasTriggerBit("HLT_IsoMu27_v",     ev.triggerBits) );
-      hasMMTrigger=(selector.hasTriggerBit("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ",                  ev.triggerBits) ||
-                    selector.hasTriggerBit("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8_v",          ev.triggerBits) ||
-                    selector.hasTriggerBit("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8_v",        ev.triggerBits) );
-      hasEETrigger=(selector.hasTriggerBit("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_v",             ev.triggerBits) ||
-                    selector.hasTriggerBit("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ_v",          ev.triggerBits) );
-      hasEMTrigger=(selector.hasTriggerBit("HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_v",    ev.triggerBits) ||
-                    selector.hasTriggerBit("HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ_v", ev.triggerBits) ||
-                    selector.hasTriggerBit("HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_v",    ev.triggerBits) ||
-                    selector.hasTriggerBit("HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_v", ev.triggerBits) ||
-                    selector.hasTriggerBit("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_v",     ev.triggerBits) ||
-                    selector.hasTriggerBit("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_v",  ev.triggerBits) );
-
-      if (ev.isData) { 
-        //use only these unprescaled triggers for these eras
-        if(filename.Contains("2017E") || filename.Contains("2017F")){
-          hasMTrigger=selector.hasTriggerBit("HLT_IsoMu27_v",ev.triggerBits);
-        }
-        if(!(filename.Contains("2017A") || filename.Contains("2017B"))){
-          hasMMTrigger=(selector.hasTriggerBit("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8_v",   ev.triggerBits) ||
-                        selector.hasTriggerBit("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8_v", ev.triggerBits) );
-        }
-      }
 
       //identify the offline final state from the leading leptons
       int l1idx(0),l2idx(1);
       std::vector<Particle> flaggedLeptons = selector.flaggedLeptons(ev);
       std::vector<Particle> leptons        = selector.selLeptons(flaggedLeptons,SelectionTool::TIGHT,SelectionTool::TIGHT,20.);
-      if(leptons.size()<2) continue;
-      if(leptons[0].Pt()<30 || fabs(leptons[0].Eta())>2.1) continue;
-      Int_t dilcode=leptons[l1idx].id()*leptons[l2idx].id();
-      isSF=( leptons[l1idx].id()==leptons[l2idx].id() );
-      isSS=( leptons[l1idx].charge()*leptons[l2idx].charge() > 0 );
-
-      //check again origin of the dilepton in data to max. efficiency and avoid double counting
-      if(ev.isData) {
-
-        if(dilcode==11*11) {
-          if( !selector.isDoubleEGPD()      && !selector.isSingleElectronPD()) continue;
-          if( selector.isDoubleEGPD()       && !hasEETrigger ) continue;
-          if( selector.isSingleElectronPD() && (hasEETrigger || !hasETrigger) ) continue;
-        }
-        if(dilcode==13*13) {
-          if( !selector.isDoubleMuonPD() && !selector.isSingleMuonPD()) continue;
-          if( selector.isDoubleMuonPD()  && !hasMMTrigger ) continue;
-          if( selector.isSingleMuonPD()  && (hasMTrigger || !hasMTrigger) ) continue;
-        }
-        if(dilcode==11*13) {
-          if( !selector.isMuonEGPD()        && !selector.isSingleElectronPD() && !selector.isSingleMuonPD()) continue;
-          if( selector.isMuonEGPD()         && !hasEMTrigger ) continue;
-          if( selector.isSingleElectronPD() && (hasEMTrigger || !hasETrigger) ) continue;
-          if( selector.isSingleMuonPD()     && (hasEMTrigger || hasETrigger || !hasMTrigger) ) continue;
-        }
-
-        //check trigger rates and final channel assignment
-        std::map<Int_t,Float_t>::iterator rIt=lumiPerRun.find(ev.run);
-        if(rIt!=lumiPerRun.end()){
-          int runBin=std::distance(lumiPerRun.begin(),rIt);
-          float lumi=1./rIt->second;
-          if(hasETrigger)  ht.fill("ratevsrun",runBin,lumi,"trige");
-          if(hasMTrigger)  ht.fill("ratevsrun",runBin,lumi,"trigm");
-          if(hasEETrigger) ht.fill("ratevsrun",runBin,lumi,"trigee");
-          if(hasMMTrigger) ht.fill("ratevsrun",runBin,lumi,"trigmm");
-          if(hasEMTrigger) ht.fill("ratevsrun",runBin,lumi,"trigem");
-          if(dilcode==11*11) ht.fill("ratevsrun",runBin,lumi,"ee");
-          if(dilcode==13*13) ht.fill("ratevsrun",runBin,lumi,"mm");
-          if(dilcode==11*13) ht.fill("ratevsrun",runBin,lumi,"em");
-        }
-        
-      }
-
-      TLorentzVector lm(leptons[l1idx].charge()>0 ? leptons[l1idx] : leptons[l2idx]);
-      float lmScaleUnc(leptons[l1idx].charge()>0 ? leptons[l1idx].scaleUnc() : leptons[l2idx].scaleUnc());
-      TLorentzVector lp(leptons[l1idx].charge()>0 ? leptons[l2idx] : leptons[l1idx]);
-      float lpScaleUnc(leptons[l1idx].charge()>0 ? leptons[l2idx].scaleUnc() : leptons[l1idx].scaleUnc());
-      if(isSS)  { 
-        lm=leptons[l1idx]; 
-        lmScaleUnc=leptons[l1idx].scaleUnc();
-        lp=leptons[l2idx];
-        lpScaleUnc=leptons[l2idx].scaleUnc();
-      }
-      TLorentzVector dil(lm+lp);
-      Float_t dilScaleUnc=TMath::Sqrt( pow(lm.Pt()*lmScaleUnc,2)+pow(lp.Pt()*lpScaleUnc,2) )/dil.Pt();
-      float mll(dil.M());
-      if(mll<20) continue;
-      isZ=( isSF && !isSS && fabs(mll-91)<10);
- 
-      //met
-      TLorentzVector met(0,0,0,0);
-      met.SetPtEtaPhiM(ev.met_pt[1],0,ev.met_phi[1],0.);
-      Float_t metScaleUnc(1./ev.met_sig[1]);
-
       //photons
       std::vector<Particle> flaggedPhotons = selector.flaggedPhotons(ev);
       std::vector<Particle> photons        = selector.selPhotons(flaggedPhotons,SelectionTool::TIGHT,leptons,30.,2.5);
       
-      //jets (require PU jet id)
-      std::vector<Jet> allJets = selector.getGoodJets(ev,25.,2.5,leptons,photons);
-      int njets(0);
-      std::vector<Jet> bJets,lightJets,jets;
-      float scalarht(0.),scalarhtb(0.),scalarhtj(0.);
-      for(size_t ij=0; ij<allJets.size(); ij++) 
-        {
-          int idx=allJets[ij].getJetIndex();
-          float deepcsv(ev.j_deepcsv[idx]);
-          int jid=ev.j_id[idx];
-          bool passLoosePu((jid>>2)&0x1);
-          if(!passLoosePu) continue;
-          if(deepcsv>0.4941) { bJets.push_back(allJets[ij]);     scalarhtb+=allJets[ij].pt();  }
-          else                             { lightJets.push_back(allJets[ij]); scalarhtj+= allJets[ij].pt(); }
-          njets++;
-          jets.push_back(allJets[ij]);
-          scalarht += jets[ij].pt();
+      //pure hadronic sample (no tight leptons, or photons, jet-triggered)
+      TString dilCat("");
+      if(leptons.size()==0 && photons.size()==0) {
+        
+        if(!ev.isData) continue;
+        if(!selector.isJetHTPD()) continue;
+
+        //reset all vars
+        dilCat="jet";
+        hasETrigger=false;
+        hasMTrigger=false;
+        hasMMTrigger=false;
+        hasEETrigger=false;
+        hasEMTrigger=false;
+        for(auto v : outVars) v.second=0.;
+
+        //check trigger
+        bool hasJetTrigger(false);
+        Int_t thr[]={40,60,80,140,200,260,320,400,450,500,550};
+        for(size_t ithr=0; ithr<sizeof(thr)/sizeof(Int_t); ithr++) {
+          
+          if(selector.hasTriggerBit(Form("HLT_PFJet%d_v",thr[ithr]), ev.triggerBits)){
+            outVars["llpt"]=thr[ithr];
+          }
+          else if(selector.hasTriggerBit(Form("HLT_PFJetFwd%d_v",thr[ithr]), ev.triggerBits)){
+            outVars["llpt"]=thr[ithr];
+            outVars["lleta"]=3;
+          }
+          else {
+            continue;
+          }
+          
+          hasJetTrigger=true;
+          break;
+        }
+        if(!hasJetTrigger) continue;
+        
+      }
+      else {
+
+        //trigger
+        hasETrigger=(selector.hasTriggerBit("HLT_Ele35_WPTight_Gsf_v", ev.triggerBits));
+        hasMTrigger=(selector.hasTriggerBit("HLT_IsoMu24_v",     ev.triggerBits) ||
+                     selector.hasTriggerBit("HLT_IsoMu24_2p1_v", ev.triggerBits) ||
+                     selector.hasTriggerBit("HLT_IsoMu27_v",     ev.triggerBits) );
+        hasMMTrigger=(selector.hasTriggerBit("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ",                  ev.triggerBits) ||
+                      selector.hasTriggerBit("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8_v",          ev.triggerBits) ||
+                      selector.hasTriggerBit("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8_v",        ev.triggerBits) );
+        hasEETrigger=(selector.hasTriggerBit("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_v",             ev.triggerBits) ||
+                      selector.hasTriggerBit("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ_v",          ev.triggerBits) );
+        hasEMTrigger=(selector.hasTriggerBit("HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_v",    ev.triggerBits) ||
+                      selector.hasTriggerBit("HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ_v", ev.triggerBits) ||
+                      selector.hasTriggerBit("HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_v",    ev.triggerBits) ||
+                      selector.hasTriggerBit("HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_v", ev.triggerBits) ||
+                      selector.hasTriggerBit("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_v",     ev.triggerBits) ||
+                      selector.hasTriggerBit("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_v",  ev.triggerBits) );
+    
+        if (ev.isData) { 
+          //use only these unprescaled triggers for these eras
+          if(filename.Contains("2017E") || filename.Contains("2017F")){
+            hasMTrigger=selector.hasTriggerBit("HLT_IsoMu27_v",ev.triggerBits);
+          }
+          if(!(filename.Contains("2017A") || filename.Contains("2017B"))){
+            hasMMTrigger=(selector.hasTriggerBit("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8_v",   ev.triggerBits) ||
+                          selector.hasTriggerBit("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8_v", ev.triggerBits) );
+          }
+        }
+        
+        if(leptons.size()<2) continue;
+        if(leptons[0].Pt()<30 || fabs(leptons[0].Eta())>2.1) continue;
+        Int_t dilcode=leptons[l1idx].id()*leptons[l2idx].id();
+        isSF=( leptons[l1idx].id()==leptons[l2idx].id() );
+        isSS=( leptons[l1idx].charge()*leptons[l2idx].charge() > 0 );
+        
+        //check again origin of the dilepton in data to max. efficiency and avoid double counting
+        if(ev.isData) {
+          
+          if(dilcode==11*11) {
+            if( !selector.isDoubleEGPD()      && !selector.isSingleElectronPD()) continue;
+            if( selector.isDoubleEGPD()       && !hasEETrigger ) continue;
+            if( selector.isSingleElectronPD() && !(hasETrigger && !hasEETrigger) ) continue;
+          }
+          if(dilcode==13*13) {
+            if( !selector.isDoubleMuonPD() && !selector.isSingleMuonPD()) continue;
+            if( selector.isDoubleMuonPD()  && !hasMMTrigger ) continue;
+            if( selector.isSingleMuonPD()  && !(hasMTrigger && !hasMMTrigger) ) continue;
+          }
+          if(dilcode==11*13) {
+            if( !selector.isMuonEGPD()        && !selector.isSingleElectronPD() && !selector.isSingleMuonPD()) continue;
+            if( selector.isMuonEGPD()         && !hasEMTrigger ) continue;
+            if( selector.isSingleElectronPD() && !(hasETrigger && !hasEMTrigger) ) continue;
+            if( selector.isSingleMuonPD()     && !(hasMTrigger && !hasETrigger && !hasMTrigger) ) continue;
+          }
+
+          //check trigger rates and final channel assignment
+          std::map<Int_t,Float_t>::iterator rIt=lumiPerRun.find(ev.run);
+          if(rIt!=lumiPerRun.end()){
+            int runBin=std::distance(lumiPerRun.begin(),rIt);
+            float lumi=1./rIt->second;
+            if(hasETrigger)  ht.fill("ratevsrun",runBin,lumi,"trige");
+            if(hasMTrigger)  ht.fill("ratevsrun",runBin,lumi,"trigm");
+            if(hasEETrigger) ht.fill("ratevsrun",runBin,lumi,"trigee");
+            if(hasMMTrigger) ht.fill("ratevsrun",runBin,lumi,"trigmm");
+            if(hasEMTrigger) ht.fill("ratevsrun",runBin,lumi,"trigem");
+            if(dilcode==11*11) ht.fill("ratevsrun",runBin,lumi,"ee");
+            if(dilcode==13*13) ht.fill("ratevsrun",runBin,lumi,"mm");
+            if(dilcode==11*13) ht.fill("ratevsrun",runBin,lumi,"em");
+          }else{
+            cout << "[Warning] Unable to find run=" << ev.run << endl;
+          }
         }
 
-
-      ///dilepton kinematics
-      Float_t llht(lm.Pt()+lp.Pt());
-      Float_t llacopl = computeAcoplanarity(lm,lp);
-      Float_t llphistar=computePhiStar(lm,lp);
-      Float_t llcosthetaCS=computeCosThetaStar(lm,lp);
-      Float_t llMR(computeMR(lm,lp));
-      Float_t llR(computeRsq(lm,lp,met));
-      Float_t mtm(computeMT(lm,met));
-      Float_t mtp(computeMT(lp,met));
-
-      //baseline categories and additional stuff produced with the dilepton
-      std::vector<TString> cats(1,"inc");
-
-      TString dilCat(isSS ? "ss" : "os" );
-      dilCat+=!isSF ? "em" : dilcode==121 ? "ee" : "mm";
-      if(isZ) dilCat += "z";
-      cats.push_back(dilCat);       
-      
-      TLorentzVector X(met);
-      float xScaleUnc(metScaleUnc);
-      float xEtaUnc(0);
-      Int_t xid(0);
-      Float_t xht(0);
-      Float_t mt3l(-1);      
-      cats.push_back(dilCat+"inv");
-      if(leptons.size()>2){
-        cats[2]=dilCat+"3l"; 
-        int l3idx(2);
-        neutrinoPzComputer.SetMET(met);
-        neutrinoPzComputer.SetLepton(leptons[l3idx].p4());
-        float nupz=neutrinoPzComputer.Calculate();
-        float metShiftUp(fabs(1+metScaleUnc));
-        TLorentzVector upMET(metShiftUp*met);
-        neutrinoPzComputer.SetMET(upMET);
-        float nupzUp=neutrinoPzComputer.Calculate();
-        float metShiftDn(fabs(1-metScaleUnc));
-        TLorentzVector dnMET(metShiftDn*met);
-        neutrinoPzComputer.SetMET(dnMET);        
-        float nupzDn=neutrinoPzComputer.Calculate();
-
-        TLorentzVector neutrinoP4(met.Px(),met.Py(),nupz ,TMath::Sqrt(TMath::Power(met.Pt(),2)+TMath::Power(nupz,2)));
-        TLorentzVector neutrinoP4Up(upMET.Px(),upMET.Py(),nupzUp ,TMath::Sqrt(TMath::Power(upMET.Pt(),2)+TMath::Power(nupzUp,2)));
-        TLorentzVector neutrinoP4Dn(dnMET.Px(),dnMET.Py(),nupzDn ,TMath::Sqrt(TMath::Power(dnMET.Pt(),2)+TMath::Power(nupzDn,2)));
-
-        X=leptons[l3idx]+neutrinoP4;
-        xScaleUnc=TMath::Sqrt(
-                              pow(leptons[l3idx].scaleUnc()*leptons[l3idx].Pt(),2)+
-                              pow(metScaleUnc*neutrinoP4.Pt(),2)
-                              )/X.Pt();
-        xEtaUnc=max( fabs((leptons[l3idx]+neutrinoP4Up).Eta()-X.Eta()),
-                     fabs((leptons[l3idx]+neutrinoP4Dn).Eta()-X.Eta()));
-        xht=X.Pt();
-        xid=leptons[l3idx].id();
-        mt3l=computeMT(leptons[l3idx],met);
-      }
-      else if(photons.size()>0) {
-        cats[2]=dilCat+"a";
-        X=photons[0].p4();
-        xScaleUnc=photons[0].scaleUnc();
-        xid=22;
-        xht=X.Pt();
-      }
-      else if (jets.size()>2) {
-        cats[2]=dilCat+"jj";
-        X=jets[0]+jets[1];
-        xScaleUnc=TMath::Sqrt(pow(jets[0].getScaleUnc()*jets[0].Pt(),2)+
-                              pow(jets[1].getScaleUnc()*jets[1].Pt(),2))/X.Pt();
-        xid=2121;
-        xht=jets[0].Pt()+jets[1].Pt();
-        if(bJets.size()>1) {          
-          cats[2]=dilCat+"bb";
-          X=bJets[0]+bJets[1];
-          xScaleUnc=TMath::Sqrt(pow(bJets[0].getScaleUnc()*bJets[0].Pt(),2)+
-                                pow(bJets[1].getScaleUnc()*bJets[1].Pt(),2))/X.Pt();
-          xid=55;
-          xht=bJets[0].Pt()+bJets[1].Pt();
+        TLorentzVector lm(leptons[l1idx].charge()>0 ? leptons[l1idx] : leptons[l2idx]);
+        float lmScaleUnc(leptons[l1idx].charge()>0 ? leptons[l1idx].scaleUnc() : leptons[l2idx].scaleUnc());
+        TLorentzVector lp(leptons[l1idx].charge()>0 ? leptons[l2idx] : leptons[l1idx]);
+        float lpScaleUnc(leptons[l1idx].charge()>0 ? leptons[l2idx].scaleUnc() : leptons[l1idx].scaleUnc());
+        if(isSS)  { 
+          lm=leptons[l1idx]; 
+          lmScaleUnc=leptons[l1idx].scaleUnc();
+          lp=leptons[l2idx];
+          lpScaleUnc=leptons[l2idx].scaleUnc();
         }
-      }
-
-      //final state F=ll+X
-      TLorentzVector F(dil+X);
-      Float_t fht(llht+xht);
-      Float_t facopl(computeAcoplanarity(dil,X));
-      Float_t fphiStar(computePhiStar(dil,X));
-      Float_t fcosthetaStarCS(computeCosThetaStar(dil,X));
-      Float_t fMR(computeMR(dil,X));
-      Float_t fR(computeRsq(dil,X,met));
-      Float_t mtll(computeMT(dil,met));
-      Float_t mtx(computeMT(X,met));
-      if(mt3l>0) mtx=mt3l; //for 3-leptons use the MT(3rd lep,MET) instead
-
-      //recoil and UE
-      int nch(int(ev.pf_ch_wgtSum));
-      float closestTrackDZ(ev.pf_closestDZnonAssoc);
-      TVector2 puppiRecoil(ev.pf_puppi_px,ev.pf_puppi_py);
-      float puppiRecoilHt(ev.pf_puppi_ht);
-      TVector2 h2( xid!=0 ? TVector2(F.Px(),F.Py()) : TVector2(dil.Px(),dil.Py()) );
-      puppiRecoil   -= h2;
-      puppiRecoilHt -= (xid!=0 ? fht : llht);
-
-
-      ////////////////////
-      // EVENT WEIGHTS //
-      //////////////////
-      float wgt(1.0);
-      std::vector<double>plotwgts(1,wgt);
-      ht.fill("puwgtctr",0,plotwgts);
-      if (!ev.isData) {
-
-        // norm weight
-        wgt  = (normH? normH->GetBinContent(1) : 1.0);
+        TLorentzVector dil(lm+lp);
+        Float_t dilScaleUnc=TMath::Sqrt( pow(lm.Pt()*lmScaleUnc,2)+pow(lp.Pt()*lpScaleUnc,2) )/dil.Pt();
+        float mll(dil.M());
+        if(mll<20) continue;
+        isZ=( isSF && !isSS && fabs(mll-91)<10);
         
-        // pu weight
-        double puWgt(lumi.pileupWeight(ev.g_pu,period)[0]);
-        std::vector<double>puPlotWgts(1,puWgt);
-        ht.fill("puwgtctr",1,puPlotWgts);
+        //met
+        TLorentzVector met(0,0,0,0);
+        met.SetPtEtaPhiM(ev.met_pt[1],0,ev.met_phi[1],0.);
+        Float_t metScaleUnc(1./ev.met_sig[1]);
         
-        // lepton trigger*selection weights
-        EffCorrection_t trigSF = lepEffH.getTriggerCorrection(leptons,{},{},period);
-        EffCorrection_t  selSF = lepEffH.getOfflineCorrection(leptons[0], period);
-
-        wgt *= puWgt*trigSF.first*selSF.first;
+        //jets (require PU jet id)
+        std::vector<Jet> allJets = selector.getGoodJets(ev,25.,2.5,leptons,photons);
+        int njets(0);
+        std::vector<Jet> bJets,lightJets,jets;
+        float scalarht(0.),scalarhtb(0.),scalarhtj(0.);
+        for(size_t ij=0; ij<allJets.size(); ij++) 
+          {
+            int idx=allJets[ij].getJetIndex();
+            float deepcsv(ev.j_deepcsv[idx]);
+            int jid=ev.j_id[idx];
+            bool passLoosePu((jid>>2)&0x1);
+            if(!passLoosePu) continue;
+            if(deepcsv>0.4941) { bJets.push_back(allJets[ij]);     scalarhtb+=allJets[ij].pt();  }
+            else                             { lightJets.push_back(allJets[ij]); scalarhtj+= allJets[ij].pt(); }
+            njets++;
+            jets.push_back(allJets[ij]);
+            scalarht += jets[ij].pt();
+          }
         
-        // generator level weights
-        wgt *= (ev.g_nw>0 ? ev.g_w[0] : 1.0);
+        
+        ///dilepton kinematics
+        Float_t llht(lm.Pt()+lp.Pt());
+        Float_t llacopl = computeAcoplanarity(lm,lp);
+        Float_t llphistar=computePhiStar(lm,lp);
+        Float_t llcosthetaCS=computeCosThetaStar(lm,lp);
+        Float_t llMR(computeMR(lm,lp));
+        Float_t llR(computeRsq(lm,lp,met));
+        Float_t mtm(computeMT(lm,met));
+        Float_t mtp(computeMT(lp,met));
+        
+        //baseline categories and additional stuff produced with the dilepton
+        std::vector<TString> cats(1,"inc");
+        
+        dilCat=(isSS ? "ss" : "os" );
+        dilCat+=!isSF ? "em" : dilcode==121 ? "ee" : "mm";
+        if(isZ) dilCat += "z";
+        cats.push_back(dilCat);       
+        
+        TLorentzVector X(met);
+        float xScaleUnc(metScaleUnc);
+        float xEtaUnc(0);
+        Int_t xid(0);
+        Float_t xht(0);
+        Float_t mt3l(-1);      
+        cats.push_back(dilCat+"inv");
+        if(leptons.size()>2){
+          cats[2]=dilCat+"3l"; 
+          int l3idx(2);
+          neutrinoPzComputer.SetMET(met);
+          neutrinoPzComputer.SetLepton(leptons[l3idx].p4());
+          float nupz=neutrinoPzComputer.Calculate();
+          float metShiftUp(fabs(1+metScaleUnc));
+          TLorentzVector upMET(metShiftUp*met);
+          neutrinoPzComputer.SetMET(upMET);
+          float nupzUp=neutrinoPzComputer.Calculate();
+          float metShiftDn(fabs(1-metScaleUnc));
+          TLorentzVector dnMET(metShiftDn*met);
+          neutrinoPzComputer.SetMET(dnMET);        
+          float nupzDn=neutrinoPzComputer.Calculate();
+          
+          TLorentzVector neutrinoP4(met.Px(),met.Py(),nupz ,TMath::Sqrt(TMath::Power(met.Pt(),2)+TMath::Power(nupz,2)));
+          TLorentzVector neutrinoP4Up(upMET.Px(),upMET.Py(),nupzUp ,TMath::Sqrt(TMath::Power(upMET.Pt(),2)+TMath::Power(nupzUp,2)));
+          TLorentzVector neutrinoP4Dn(dnMET.Px(),dnMET.Py(),nupzDn ,TMath::Sqrt(TMath::Power(dnMET.Pt(),2)+TMath::Power(nupzDn,2)));
+          
+          X=leptons[l3idx]+neutrinoP4;
+          xScaleUnc=TMath::Sqrt(
+                                pow(leptons[l3idx].scaleUnc()*leptons[l3idx].Pt(),2)+
+                                pow(metScaleUnc*neutrinoP4.Pt(),2)
+                                )/X.Pt();
+          xEtaUnc=max( fabs((leptons[l3idx]+neutrinoP4Up).Eta()-X.Eta()),
+                       fabs((leptons[l3idx]+neutrinoP4Dn).Eta()-X.Eta()));
+          xht=X.Pt();
+          xid=leptons[l3idx].id();
+          mt3l=computeMT(leptons[l3idx],met);
+        }
+        else if(photons.size()>0) {
+          cats[2]=dilCat+"a";
+          X=photons[0].p4();
+          xScaleUnc=photons[0].scaleUnc();
+          xid=22;
+          xht=X.Pt();
+        }
+        else if (jets.size()>2) {
+          cats[2]=dilCat+"jj";
+          X=jets[0]+jets[1];
+          xScaleUnc=TMath::Sqrt(pow(jets[0].getScaleUnc()*jets[0].Pt(),2)+
+                                pow(jets[1].getScaleUnc()*jets[1].Pt(),2))/X.Pt();
+          xid=2121;
+          xht=jets[0].Pt()+jets[1].Pt();
+          if(bJets.size()>1) {          
+            cats[2]=dilCat+"bb";
+            X=bJets[0]+bJets[1];
+            xScaleUnc=TMath::Sqrt(pow(bJets[0].getScaleUnc()*bJets[0].Pt(),2)+
+                                  pow(bJets[1].getScaleUnc()*bJets[1].Pt(),2))/X.Pt();
+            xid=55;
+            xht=bJets[0].Pt()+bJets[1].Pt();
+          }
+        }
 
-        //update weight for plotter
-        plotwgts[0]=wgt;
-      }
+        //final state F=ll+X
+        TLorentzVector F(dil+X);
+        Float_t fht(llht+xht);
+        Float_t facopl(computeAcoplanarity(dil,X));
+        Float_t fphiStar(computePhiStar(dil,X));
+        Float_t fcosthetaStarCS(computeCosThetaStar(dil,X));
+        Float_t fMR(computeMR(dil,X));
+        Float_t fR(computeRsq(dil,X,met));
+        Float_t mtll(computeMT(dil,met));
+        Float_t mtx(computeMT(X,met));
+        if(mt3l>0) mtx=mt3l; //for 3-leptons use the MT(3rd lep,MET) instead
+        
+        //recoil and UE
+        int nch(int(ev.pf_ch_wgtSum));
+        float closestTrackDZ(ev.pf_closestDZnonAssoc);
+        TVector2 puppiRecoil(ev.pf_puppi_px,ev.pf_puppi_py);
+        float puppiRecoilHt(ev.pf_puppi_ht);
+        TVector2 h2( xid!=0 ? TVector2(F.Px(),F.Py()) : TVector2(dil.Px(),dil.Py()) );
+        puppiRecoil   -= h2;
+        puppiRecoilHt -= (xid!=0 ? fht : llht);
+        
 
-      //control histograms
-      ht.fill("nvtx",       ev.nvtx,         plotwgts, cats);
+        ////////////////////
+        // EVENT WEIGHTS //
+        //////////////////
+        if (!ev.isData) {
+          
+          // norm weight
+          wgt  = (normH? normH->GetBinContent(1) : 1.0);
+          
+          // lepton trigger*selection weights
+          EffCorrection_t trigSF(1.,0.);
+          //EffCorrection_t trigSF = lepEffH.getTriggerCorrection(leptons,{},{},period);
+          EffCorrection_t  sel1SF = lepEffH.getOfflineCorrection(leptons[l1idx], period);
+          EffCorrection_t  sel2SF = lepEffH.getOfflineCorrection(leptons[l2idx], period);
+          
+          
+          wgt *= puWgt*trigSF.first*sel1SF.first*sel2SF.first;
+          
+          // generator level weights
+          wgt *= (ev.g_nw>0 ? ev.g_w[0] : 1.0);
+          
+          //update weight for plotter
+          plotwgts[0]=wgt;
+        }
+        
+        //control histograms
+        ht.fill("nvtx",       ev.nvtx,         plotwgts, cats);
       
-      //dilepton system
-      ht.fill("nlep",       leptons.size(),  plotwgts, cats);
-      ht.fill("lmpt",       lm.Pt(),         plotwgts, cats);
-      ht.fill("lmeta",      fabs(lm.Eta()),  plotwgts, cats);
-      ht.fill("lppt",       lp.Pt(),         plotwgts, cats);
-      ht.fill("lmeta",      fabs(lp.Eta()),  plotwgts, cats);
-      ht.fill("mll",        dil.M(),         plotwgts, cats);
-      ht.fill("ptll",       dil.Pt(),        plotwgts, cats);
-      ht.fill("phistar",    TMath::Log10(llphistar),  plotwgts, cats);
-      ht.fill("costhetaCS", llcosthetaCS,      plotwgts, cats);
-      ht.fill("acopl",      llacopl,           plotwgts, cats);
+        //dilepton system
+        ht.fill("nlep",       leptons.size(),  plotwgts, cats);
+        ht.fill("lmpt",       lm.Pt(),         plotwgts, cats);
+        ht.fill("lmeta",      fabs(lm.Eta()),  plotwgts, cats);
+        ht.fill("lppt",       lp.Pt(),         plotwgts, cats);
+        ht.fill("lmeta",      fabs(lp.Eta()),  plotwgts, cats);
+        ht.fill("mll",        dil.M(),         plotwgts, cats);
+        ht.fill("ptll",       dil.Pt(),        plotwgts, cats);
+        ht.fill("phistar",    TMath::Log10(llphistar),  plotwgts, cats);
+        ht.fill("costhetaCS", llcosthetaCS,      plotwgts, cats);
+        ht.fill("acopl",      llacopl,           plotwgts, cats);
+        
+        //bjets
+        ht.fill("nbjets",     bJets.size(),    plotwgts, cats);
+        ht.fill("scalarhtb",     scalarhtb,    plotwgts, cats);
+        for(auto &b:bJets) {
+          ht.fill("bpt",     b.Pt(),           plotwgts, cats);
+          ht.fill("beta",    fabs(b.Eta()),    plotwgts, cats);
+        }
+        
+        //light jets
+        ht.fill("nljets",     lightJets.size(),    plotwgts, cats);
+        ht.fill("scalarhtj",  scalarhtj,    plotwgts, cats);
+        for(auto &l:lightJets) {
+          ht.fill("jpt",     l.Pt(),           plotwgts, cats);
+          ht.fill("jeta",    fabs(l.Eta()),    plotwgts, cats);
+        }
+        
+        //photons
+        ht.fill("npho",       photons.size(),  plotwgts, cats);
+        for(auto &a:photons) {
+          ht.fill("apt",     a.Pt(),           plotwgts, cats);
+          ht.fill("aeta",    fabs(a.Eta()),    plotwgts, cats);
+        }
+        
+        ht.fill("met",           met.Pt(),                         plotwgts, cats);
+        ht.fill("nch",           nch,                              plotwgts, cats);
+            
+        //fill tree with central detector information
+        outVars["evwgt"]=plotwgts[0];
+        outVars["dilcode"]=float(dilcode);
 
-      //bjets
-      ht.fill("nbjets",     bJets.size(),    plotwgts, cats);
-      ht.fill("scalarhtb",     scalarhtb,    plotwgts, cats);
-      for(auto &b:bJets) {
-        ht.fill("bpt",     b.Pt(),           plotwgts, cats);
-        ht.fill("beta",    fabs(b.Eta()),    plotwgts, cats);
+        outVars["l1pt"]=lm.Pt();
+        outVars["l1eta"]=lm.Eta();
+        outVars["l1phi"]=lm.Phi(); 
+        outVars["ml1"]=lm.M();
+        outVars["l1id"]=leptons[l1idx].id();
+        outVars["mt1"]=mtm;
+
+        outVars["l2pt"]=lp.Pt();
+        outVars["l2eta"]=lp.Eta();
+        outVars["l2phi"]=lp.Phi();
+        outVars["ml2"]=lp.M();
+        outVars["l2id"]=leptons[l2idx].id();
+        outVars["mt2"]=mtp;
+        
+        outVars["llpt"]=dil.Pt();
+        outVars["lleta"]=dil.Eta();
+        outVars["llphi"]=dil.Phi();
+        outVars["mll"]=dil.M();
+        outVars["llacopl"]=llacopl;
+        outVars["llcosthetaCS"]=llcosthetaCS;
+        outVars["llphistar"]=llphistar;
+        outVars["llMR"]=llMR;
+        outVars["llR"]=llR;
+        outVars["mtll"]=mtll;
+        outVars["llht"]=llht;      
+
+        ValueCollection_t llcsi=calcCsi(lm,lmScaleUnc,lp,lpScaleUnc);
+        outVars["llcsip"]=llcsi[0].first;
+        outVars["llcsipUnc"]=llcsi[0].second;
+        outVars["llcsim"]=llcsi[1].first;
+        outVars["llcsimUnc"]=llcsi[1].second;
+        outVars["xpt"]=X.Pt();
+        outVars["xeta"]=X.Eta();
+        outVars["xphi"]=X.Phi(); 
+        outVars["mx"]=X.M();
+        outVars["xid"]=xid;
+        outVars["xht"]=xht;
+        outVars["mtx"]=mtx;
+        
+        outVars["fpt"]=F.Pt();
+        outVars["feta"]=F.Eta();
+        outVars["fphi"]=F.Phi();
+        outVars["mf"]=F.M();
+        outVars["fht"]=fht;      
+        outVars["facopl"]=facopl;
+        outVars["fcosthetaCS"]=fcosthetaStarCS;
+        outVars["fphistar"]=fphiStar;
+        outVars["fMR"]=fMR;
+        outVars["fR"]=fR;
+        ValueCollection_t fcsi=calcCsi(dil,dilScaleUnc,X,xScaleUnc,xEtaUnc);
+        outVars["fcsip"]=fcsi[0].first;
+        outVars["fcsipUnc"]=fcsi[0].second;
+        outVars["fcsim"]=fcsi[1].first;
+        outVars["fcsimUnc"]=fcsi[1].second;
+        outVars["nb"]=bJets.size();
+        outVars["nj"]=lightJets.size();
+        outVars["nl"]=leptons.size();
+        outVars["ng"]=photons.size();
+        outVars["nch"]=nch;
+        outVars["ht"]=scalarht;
+        outVars["htb"]=scalarhtb;
+        outVars["htj"]=scalarhtj;
+        outVars["closestkdz"]=closestTrackDZ;
+        outVars["puppirecoil_pt"]=puppiRecoil.Mod();
+        outVars["puppirecoil_phi"]=puppiRecoil.Phi();
+        outVars["puppirecoil_spher"]=fabs(puppiRecoil.Mod())/puppiRecoilHt;
       }
 
-      //light jets
-      ht.fill("nljets",     lightJets.size(),    plotwgts, cats);
-      ht.fill("scalarhtj",  scalarhtj,    plotwgts, cats);
-      for(auto &l:lightJets) {
-        ht.fill("jpt",     l.Pt(),           plotwgts, cats);
-        ht.fill("jeta",    fabs(l.Eta()),    plotwgts, cats);
-      }
-
-      //photons
-      ht.fill("npho",       photons.size(),  plotwgts, cats);
-      for(auto &a:photons) {
-        ht.fill("apt",     a.Pt(),           plotwgts, cats);
-        ht.fill("aeta",    fabs(a.Eta()),    plotwgts, cats);
-      }
-
-      ht.fill("met",           met.Pt(),                         plotwgts, cats);
-      ht.fill("nch",           nch,                              plotwgts, cats);
-
-      //fill tree
-      outVars["evwgt"]=plotwgts[0];
-      outVars["dilcode"]=float(dilcode);
-
-      outVars["l1pt"]=lm.Pt();
-      outVars["l1eta"]=lm.Eta();
-      outVars["l1phi"]=lm.Phi(); 
-      outVars["ml1"]=lm.M();
-      outVars["l1id"]=leptons[l1idx].id();
-      outVars["mt1"]=mtm;
-
-      outVars["l2pt"]=lp.Pt();
-      outVars["l2eta"]=lp.Eta();
-      outVars["l2phi"]=lp.Phi();
-      outVars["ml2"]=lp.M();
-      outVars["l2id"]=leptons[l2idx].id();
-      outVars["mt2"]=mtp;
-
-      outVars["llpt"]=dil.Pt();
-      outVars["lleta"]=dil.Eta();
-      outVars["llphi"]=dil.Phi();
-      outVars["mll"]=dil.M();
-      outVars["llacopl"]=llacopl;
-      outVars["llcosthetaCS"]=llcosthetaCS;
-      outVars["llphistar"]=llphistar;
-      outVars["llMR"]=llMR;
-      outVars["llR"]=llR;
-      outVars["mtll"]=mtll;
-      outVars["llht"]=llht;      
-
-      ValueCollection_t llcsi=calcCsi(lm,lmScaleUnc,lp,lpScaleUnc);
-      outVars["llcsip"]=llcsi[0].first;
-      outVars["llcsipUnc"]=llcsi[0].second;
-      outVars["llcsim"]=llcsi[1].first;
-      outVars["llcsimUnc"]=llcsi[1].second;
-      outVars["xpt"]=X.Pt();
-      outVars["xeta"]=X.Eta();
-      outVars["xphi"]=X.Phi(); 
-      outVars["mx"]=X.M();
-      outVars["xid"]=xid;
-      outVars["xht"]=xht;
-      outVars["mtx"]=mtx;
-
-      outVars["fpt"]=F.Pt();
-      outVars["feta"]=F.Eta();
-      outVars["fphi"]=F.Phi();
-      outVars["mf"]=F.M();
-      outVars["fht"]=fht;      
-      outVars["facopl"]=facopl;
-      outVars["fcosthetaCS"]=fcosthetaStarCS;
-      outVars["fphistar"]=fphiStar;
-      outVars["fMR"]=fMR;
-      outVars["fR"]=fR;
-      ValueCollection_t fcsi=calcCsi(dil,dilScaleUnc,X,xScaleUnc,xEtaUnc);
-      outVars["fcsip"]=fcsi[0].first;
-      outVars["fcsipUnc"]=fcsi[0].second;
-      outVars["fcsim"]=fcsi[1].first;
-      outVars["fcsimUnc"]=fcsi[1].second;
-      outVars["nb"]=bJets.size();
-      outVars["nj"]=lightJets.size();
-      outVars["nl"]=leptons.size();
-      outVars["ng"]=photons.size();
-      outVars["nch"]=nch;
-      outVars["ht"]=scalarht;
-      outVars["htb"]=scalarhtb;
-      outVars["htj"]=scalarhtj;
-      outVars["closestkdz"]=closestTrackDZ;
-      outVars["puppirecoil_pt"]=puppiRecoil.Mod();
-      outVars["puppirecoil_phi"]=puppiRecoil.Phi();
-      outVars["puppirecoil_spher"]=fabs(puppiRecoil.Mod())/puppiRecoilHt;
-
+      //fill data with roman pot information
       nRPtk=0;
       if (ev.isData) {
+        
+        //reset information
+        for(size_t irp=0; irp<50; irp++) { 
+          RPid[irp]=0; 
+          RPfarcsi[irp]=0; 
+          RPnearcsi[irp]=0; 
+        }
+        
         try{
           const edm::EventID ev_id( ev.run, ev.lumi, ev.event );        
           const ctpps::conditions_t lhc_cond = lhc_conds.get( ev_id );
-          const double xangle = lhc_cond.crossing_angle;
+          beamXangle = lhc_cond.crossing_angle;
+          ht.fill("beamXangle", beamXangle, plotwgts, dilCat);
           
           //only dispersions for these angles are available (@ CTPPSAnalysisTools/data/2017/dispersions.txt)
-          if(xangle!=120 && xangle!=130 && xangle!=140) continue;
-          
+          if(beamXangle!=120 && beamXangle!=130 && beamXangle!=140) continue;
+
+          std::vector< std::pair<int,float> > nearCsis;
+          std::map<int,int> ntks;
+          ntks[23]=0; ntks[123]=0;
           for (int ift=0; ift<ev.nfwdtrk; ift++) {
             
             //only these roman pots are aligned CTPPSAnalysisTools/data/2017/alignments_21aug2018.txt 
@@ -573,14 +640,52 @@ void RunExclusiveTop(TString filename,
             const ctpps::alignment_t align = ctpps_aligns.get( ev_id, pot_raw_id );
             double xi, xi_error;
             
-            proton_reco.reconstruct(xangle, pot_raw_id, ev.fwdtrk_x[ift]*100+align.x_align, xi, xi_error);
+            proton_reco.reconstruct(beamXangle, pot_raw_id, ev.fwdtrk_x[ift]*100+align.x_align, xi, xi_error);
+            
+            //information is only saved for the far detectors (pixels)
+            if (pot_raw_id==23 || pot_raw_id==123) {
+              RPid[nRPtk]=pot_raw_id;
+              RPfarcsi[nRPtk]=xi;
+              RPnearcsi[nRPtk]=0;              
+              nRPtk++;
 
-            RPid[nRPtk]=pot_raw_id;
-            RPcsi[nRPtk]=xi;
-            RPcsiUnc[nRPtk]=xi_error;
-            RPxang[nRPtk]=xangle;
-            nRPtk++;
+              //monitor track multiplicity and csi values
+              if(ntks.find(pot_raw_id)==ntks.end()) ntks[pot_raw_id]=0;
+              ntks[pot_raw_id]++;
+              ht.fill("csirp",xi,plotwgts, Form("%s_%d",dilCat.Data(),pot_raw_id));
+
+            }
+            else{
+              //save near detector info to match to pixel tracks
+              nearCsis.push_back( std::pair<int,float>(pot_raw_id,xi) );
+            }
           }
+            
+          //now try to find the best matches for strip in pixels
+          for(auto stk : nearCsis) {
+            
+            int matchTk(-1);
+            float minDcsi=1;
+            for(int itk=0; itk<nRPtk; itk++) {
+              
+              //require on the same side of the beam pipe
+              if( !( (RPid[itk]==123 && stk.first==103) || (RPid[itk]==23 && stk.first==3) ) )
+                continue;
+              
+              float dcsi=fabs(stk.second-RPfarcsi[itk]);
+              if(dcsi>minDcsi) continue;
+              matchTk=itk;
+              minDcsi=dcsi;                
+            }
+            
+            if(matchTk<0) continue;
+            RPnearcsi[matchTk]=stk.second;
+          }
+          
+          
+          for(auto nit : ntks) 
+            ht.fill("ntkrp", nit.second, plotwgts, Form("%s_%d",dilCat.Data(),nit.first));
+        
         }catch(...){
         }
       }

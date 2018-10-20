@@ -14,7 +14,8 @@ def main():
     parser.add_option('-i', '--inDir',      dest='inDir',       help='input directory with files',  default=None,       type='string')
     parser.add_option('-o', '--outDir',     dest='outDir',      help='output directory with files', default=None,       type='string')
     parser.add_option(      '--only',       dest='only',        help='only this tag',               default=None    ,   type='string')
-    parser.add_option('-q', '--queue',      dest='queue',       help='batch queue',                 default='workday',  type='string')
+    parser.add_option(      '--farm',       dest='farm',        help='farm tag',               default=None    ,   type='string')
+    parser.add_option('-q', '--queue',      dest='queue',       help='batch queue [%default]',                 default='workday',  type='string')
     (opt, args) = parser.parse_args()
 
     #prepare output directory
@@ -22,7 +23,9 @@ def main():
 
     cmsswBase=os.environ['CMSSW_BASE']
     FARMDIR='%s/INTEGRITYFARM'%cmsswBase
+    if opt.farm: FARMDIR += opt.farm
     os.system('mkdir -p %s'%FARMDIR)
+    print 'Submissions scripts @ ',FARMDIR
 
     onlyList=opt.only.split(',') if opt.only else []
 
