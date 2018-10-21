@@ -245,11 +245,11 @@ std::vector<Particle> SelectionTool::flaggedLeptons(MiniEvent_t &ev)
     Float_t unc(0.);
     if(abs(ev.l_id[il])==11)
       {
-	if( pt>20 && eta<2.4 && ((pid>>5) &0x1))                   qualityFlagsWord |= (0x1 << MEDIUM);
 	if( pt>20 && eta<2.1 ) {
-          if((pid>>6) &0x1) qualityFlagsWord |= (0x1 << TIGHT);
-          if((pid>>9) &0x1) qualityFlagsWord |= (0x1 << MVA80);
-          if((pid>>10) &0x1) qualityFlagsWord |= (0x1 << MVA90);
+          if((pid>>5)&0x1)  qualityFlagsWord |= (0x1 << MEDIUM);
+          if((pid>>7)&0x1)  qualityFlagsWord |= (0x1 << TIGHT);
+          if((pid>>9)&0x1)  qualityFlagsWord |= (0x1 << MVA80);
+          if((pid>>10)&0x1) qualityFlagsWord |= (0x1 << MVA90);
 	}
 	if( pt>15 && eta<2.4 && ((pid>>1) &0x1))                   qualityFlagsWord |= (0x1 << VETO);
 	if( pt>26 && eta<2.1 && ((pid>>6) &0x1)==0 && relIso>0.4)  qualityFlagsWord |= (0x1 << CONTROL);
@@ -266,8 +266,10 @@ std::vector<Particle> SelectionTool::flaggedLeptons(MiniEvent_t &ev)
       }
     else
       {
-	if( pt>20 && eta<2.4 && ((pid>>reco::Muon::Selector::CutBasedIdMediumPrompt) &0x1) && relIso<0.15)  qualityFlagsWord |= (0x1 << MEDIUM);
-	if( pt>20 && eta<2.1 && ((pid>>reco::Muon::Selector::CutBasedIdTight) &0x1) && relIso<0.15)         qualityFlagsWord |= (0x1 << TIGHT);
+        if(pt>20 && eta<2.1) {
+          if( ((pid>>reco::Muon::Selector::CutBasedIdMediumPrompt) &0x1) && relIso<0.15)  qualityFlagsWord |= (0x1 << MEDIUM);
+          if( ((pid>>reco::Muon::Selector::CutBasedIdTight) &0x1) && relIso<0.15)         qualityFlagsWord |= (0x1 << TIGHT);
+        }
 	if( pt>15 && eta<2.4 && ((pid>>reco::Muon::Selector::CutBasedIdLoose) &0x1) && relIso<0.25)         qualityFlagsWord |= (0x1 << VETO);
 	if( pt>26 && eta<2.1 && ((pid>>reco::Muon::Selector::CutBasedIdTight) &0x1) && relIso>0.25)         qualityFlagsWord |= (0x1 << CONTROL);
       }
@@ -337,7 +339,7 @@ std::vector<Particle> SelectionTool::flaggedPhotons(MiniEvent_t &ev)
       {
         if( (pid&0x7f)==0x7f )            qualityFlagsWord |= (0x1 << LOOSE);
         if( ((pid>>10)&0x7f)==0x7f   )    qualityFlagsWord |= (0x1 << MEDIUM);
-        if( ((pid>>10)&0x7f)==0x7f   )    qualityFlagsWord |= (0x1 << TIGHT);
+        if( ((pid>>20)&0x7f)==0x7f   )    qualityFlagsWord |= (0x1 << TIGHT);
         if( ((addpid>>2)&0x1) )   qualityFlagsWord |= (0x1 << MVA80);
         if( ((addpid>>3)&0x1) )   qualityFlagsWord |= (0x1 << MVA90);
 	if( isInclusivePhoton(ev,ig) )    qualityFlagsWord |= (0x1 << CONTROL);

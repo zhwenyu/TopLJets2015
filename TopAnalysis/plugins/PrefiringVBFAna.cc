@@ -23,6 +23,7 @@
 #include "CommonTools/Utils/interface/StringCutObjectSelector.h"
 
 #include "DataFormats/PatCandidates/interface/Jet.h"
+#include "DataFormats/PatCandidates/interface/Electron.h"
 #include "DataFormats/PatCandidates/interface/Photon.h"
 #include "DataFormats/PatCandidates/interface/MET.h"
 #include "PhysicsTools/SelectorUtils/interface/PFJetIDSelectionFunctor.h"
@@ -86,6 +87,7 @@ class PrefiringVBFAna : public edm::one::EDAnalyzer<edm::one::SharedResources>  
 
     edm::EDGetTokenT<int> triggerRuleToken_;
     edm::EDGetTokenT<pat::JetCollection> jetToken_;
+    edm::EDGetTokenT<pat::ElectronCollection>  electronToken_;
     edm::EDGetTokenT<pat::PhotonCollection> photonToken_;
     edm::EDGetTokenT<pat::METCollection> metToken_;
     edm::EDGetTokenT<BXVector<l1t::EGamma>> l1egToken_;
@@ -101,6 +103,7 @@ class PrefiringVBFAna : public edm::one::EDAnalyzer<edm::one::SharedResources>  
 PrefiringVBFAna::PrefiringVBFAna(const edm::ParameterSet& iConfig):
   triggerRuleToken_(consumes<int>(iConfig.getParameter<edm::InputTag>("triggerRule"))),  
   jetToken_(consumes<pat::JetCollection>(iConfig.getParameter<edm::InputTag>("jetSrc"))),
+  electronToken_(consumes<pat::ElectronCollection>(iConfig.getParameter<edm::InputTag>("electronSrc"))),
   photonToken_(consumes<pat::PhotonCollection>(iConfig.getParameter<edm::InputTag>("photonSrc"))),
   l1egToken_(consumes<BXVector<l1t::EGamma>>(iConfig.getParameter<edm::InputTag>("l1egSrc"))),
   l1jetToken_(consumes<BXVector<l1t::Jet>>(iConfig.getParameter<edm::InputTag>("l1jetSrc"))),
@@ -144,6 +147,9 @@ void PrefiringVBFAna::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 
   Handle<pat::JetCollection> jetHandle;
   iEvent.getByToken(jetToken_, jetHandle);
+
+  Handle<pat::ElectronCollection> elecHandle;
+  iEvent.getByToken(electronToken_, elecHandle);
 
   Handle<pat::PhotonCollection> phoHandle;
   iEvent.getByToken(photonToken_, phoHandle);
@@ -232,9 +238,37 @@ void PrefiringVBFAna::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     event_.jet_id.push_back( packedIds );
   }
 
+  //electrons
+  std::string egfilters[]={"hltEG35L1SingleEGOrEtFilter",                           
+                           "hltPreEle23Ele12CaloIdLTrackIdLIsoVLDZ",
+                           "hltPreEle23Ele12CaloIdLTrackIdLIsoVL"};
+  for (const pat::Electron &g : *elecHandle) {
+    auto corrP4  = g.p4() * g.userFloat("ecalEnergyPostCorr") / g.energy();
+    bool looseID(g.electronID("cutBasedElectronID-Fall17-94X-V1-loose"));
+    bool mediumID(g.electronID("cutBasedElectronID-Fall17-94X-V1-medium"));
+    bool tightID(g.electronID("cutBasedElectronID-Fall17-94X-V1-tight"));
+    int packedIds = (looseID <<0)  | (mediumID<<1) | (tightID <<2);
+    if ( !looseID || corrP4.pt()<20) continue;
+    std::vector<const pat::TriggerObjectStandAlone*> matchedTrigObjs = getMatchedObjs(corrP4.eta(), corrP4.phi(), *triggerObjectsHandle, 0.3);
+    for (const auto trigObjConst : matchedTrigObjs) {
+      pat::TriggerObjectStandAlone trigObj(*trigObjConst);
+      trigObj.unpackNamesAndLabels(iEvent, triggerResults);
+      for(size_t fidx=0; fidx<sizeof(egfilters)/sizeof(std::string); fidx++)
+        if ( trigObj.hasFilterLabel(egfilters[fidx]) ) packedIds |= 1<<(3+fidx);
+    }    
+    
+    event_.jet_p4.push_back( corrP4 );
+    event_.jet_neutralEmFrac.push_back( 1.0 );
+    event_.jet_emFrac.push_back( 1.0 );
+    event_.jet_muFrac.push_back( 0.0 );
+    event_.jet_pdgid.push_back( 11 );
+    event_.jet_id.push_back( packedIds );
+  }
+
+
   
   //photons
-  std::string egfilters[]={"hltEG200EtFilter",
+  std::string pho_egfilters[]={"hltEG200EtFilter",
                            "hltEG200HEFilter",
                            "hltL1sSingleEG40to50"};
   for (const pat::Photon &g : *phoHandle) {
@@ -248,8 +282,8 @@ void PrefiringVBFAna::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     for (const auto trigObjConst : matchedTrigObjs) {
       pat::TriggerObjectStandAlone trigObj(*trigObjConst);
       trigObj.unpackNamesAndLabels(iEvent, triggerResults);
-      for(size_t fidx=0; fidx<sizeof(egfilters)/sizeof(std::string); fidx++)
-        if ( trigObj.hasFilterLabel(egfilters[fidx]) ) packedIds |= 1<<(3+fidx);
+      for(size_t fidx=0; fidx<sizeof(pho_egfilters)/sizeof(std::string); fidx++)
+        if ( trigObj.hasFilterLabel(pho_egfilters[fidx]) ) packedIds |= 1<<(3+fidx);
     }    
       
     event_.jet_p4.push_back( corrP4 );

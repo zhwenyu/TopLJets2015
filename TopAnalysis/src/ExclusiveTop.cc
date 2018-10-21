@@ -140,7 +140,7 @@ void RunExclusiveTop(TString filename,
   EfficiencyScaleFactorsWrapper lepEffH(filename.Contains("Data13TeV"),era);
 
   //B-TAG CALIBRATION
-  BTagSFUtil btvSF(era,"DeepCSV",BTagEntry::OperatingPoint::OP_MEDIUM,"",0);
+  BTagSFUtil btvSF(era,BTagEntry::OperatingPoint::OP_MEDIUM,"",0);
   
    //BOOK HISTOGRAMS
   HistTool ht;
@@ -190,7 +190,7 @@ void RunExclusiveTop(TString filename,
       std::vector<double>plotwgts(1,wgt);
       double puWgt(1.0);
       TString period = lumi.assignRunPeriod();
-      if(ev.isData){
+      if(!ev.isData){
         ht.fill("puwgtctr",0,plotwgts);
         puWgt=(lumi.pileupWeight(ev.g_pu,period)[0]);
         std::vector<double>puPlotWgts(1,puWgt);
@@ -200,22 +200,22 @@ void RunExclusiveTop(TString filename,
 
 
       //////////////////
-      // CORRECTIONS //
-      ////////////////      
+      // CORRECTIONS  //
+      //////////////////
       btvSF.addBTagDecisions(ev);
-      btvSF.updateBTagDecisions(ev);      
+      if(!ev.isData) btvSF.updateBTagDecisions(ev);      
 
       ///////////////////////////
-      // RECO LEVEL SELECTION //
-      /////////////////////////
+      // RECO LEVEL SELECTION  //
+      ///////////////////////////
 
       //identify the offline final state from the leading leptons
       int l1idx(0),l2idx(1);
       std::vector<Particle> flaggedLeptons = selector.flaggedLeptons(ev);
-      std::vector<Particle> leptons        = selector.selLeptons(flaggedLeptons,SelectionTool::TIGHT,SelectionTool::TIGHT,20.);
+      std::vector<Particle> leptons        = selector.selLeptons(flaggedLeptons,SelectionTool::TIGHT,SelectionTool::MVA80,20.,2.1);
       //photons
       std::vector<Particle> flaggedPhotons = selector.flaggedPhotons(ev);
-      std::vector<Particle> photons        = selector.selPhotons(flaggedPhotons,SelectionTool::TIGHT,leptons,30.,2.5);
+      std::vector<Particle> photons        = selector.selPhotons(flaggedPhotons,SelectionTool::MVA80,leptons,30.,2.1);
       
       //pure hadronic sample (no tight leptons, or photons, jet-triggered)
       TString dilCat("");
@@ -316,11 +316,6 @@ void RunExclusiveTop(TString filename,
           if(rIt!=lumiPerRun.end()){
             int runBin=std::distance(lumiPerRun.begin(),rIt);
             float lumi=1./rIt->second;
-            if(hasETrigger)  ht.fill("ratevsrun",runBin,lumi,"trige");
-            if(hasMTrigger)  ht.fill("ratevsrun",runBin,lumi,"trigm");
-            if(hasEETrigger) ht.fill("ratevsrun",runBin,lumi,"trigee");
-            if(hasMMTrigger) ht.fill("ratevsrun",runBin,lumi,"trigmm");
-            if(hasEMTrigger) ht.fill("ratevsrun",runBin,lumi,"trigem");
             if(dilcode==11*11) ht.fill("ratevsrun",runBin,lumi,"ee");
             if(dilcode==13*13) ht.fill("ratevsrun",runBin,lumi,"mm");
             if(dilcode==11*13) ht.fill("ratevsrun",runBin,lumi,"em");
@@ -358,12 +353,12 @@ void RunExclusiveTop(TString filename,
         for(size_t ij=0; ij<allJets.size(); ij++) 
           {
             int idx=allJets[ij].getJetIndex();
-            float deepcsv(ev.j_deepcsv[idx]);
             int jid=ev.j_id[idx];
             bool passLoosePu((jid>>2)&0x1);
+            bool passBtag(ev.j_btag[ij]>0);
             if(!passLoosePu) continue;
-            if(deepcsv>0.4941) { bJets.push_back(allJets[ij]);     scalarhtb+=allJets[ij].pt();  }
-            else                             { lightJets.push_back(allJets[ij]); scalarhtj+= allJets[ij].pt(); }
+            if(passBtag) { bJets.push_back(allJets[ij]);     scalarhtb+=allJets[ij].pt();  }
+            else         { lightJets.push_back(allJets[ij]); scalarhtj+= allJets[ij].pt(); }
             njets++;
             jets.push_back(allJets[ij]);
             scalarht += jets[ij].pt();

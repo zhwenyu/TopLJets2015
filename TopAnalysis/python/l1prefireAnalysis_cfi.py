@@ -10,6 +10,7 @@ def defineL1PrefireAnalysis(process,era):
     process.prefiringVBFAna = cms.EDAnalyzer("PrefiringVBFAna",
                                              triggerRule = cms.InputTag("prefireVetoFilter:ruleIndex"),
                                              jetSrc = cms.InputTag("slimmedJets"),
+                                             electronSrc = cms.InputTag("slimmedElectrons"),
                                              photonSrc = cms.InputTag("slimmedPhotons"),
                                              l1egSrc = cms.InputTag("caloStage2Digis:EGamma"),
                                              l1jetSrc = cms.InputTag("caloStage2Digis:Jet"),

@@ -20,8 +20,8 @@ zx_samples_json=test/analysis/zx_samples.json
 wwwdir=~/www/ExclusiveAna
 inputfileTag=MC13TeV_2017_ZH
 inputfileTESTSEL=/store/cmst3/group/top/RunIIReReco/f93b8d8/${inputfileTag}/MergedMiniEvents_0_ext0.root
-inputfileTag=Data13TeV_2017B_DoubleMuon
-inputfileTESTSEL=/store/cmst3/group/top/RunIIReReco/f93b8d8/${inputfileTag}/MergedMiniEvents_0_ext0.root
+#inputfileTag=Data13TeV_2017B_DoubleMuon
+#inputfileTESTSEL=/store/cmst3/group/top/RunIIReReco/f93b8d8/${inputfileTag}/MergedMiniEvents_0_ext0.root
 lumi=41367
 lumiUnc=0.025
 
