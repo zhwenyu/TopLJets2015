@@ -7,10 +7,15 @@ options.register('runOnData', False,
                  VarParsing.varType.bool,
                  "Run this on real data"
                  )
-options.register('useRawLeptons', False,
+options.register('runL1PrefireAna', False,
                  VarParsing.multiplicity.singleton,
                  VarParsing.varType.bool,
-                 "Do not correct electrons/muons with smearing/energy scales"
+                 "Run L1 pre-firing analysis"
+                 )
+options.register('noParticleLevel', False,
+                 VarParsing.multiplicity.singleton,
+                 VarParsing.varType.bool,
+                 "Do not run the particleLevel sequence"
                  )
 options.register('era', 'era2017',
                  VarParsing.multiplicity.singleton,
@@ -49,17 +54,22 @@ options.register('savePF', False,
                  )
 options.parseArguments()
 
+#start process
+process = cms.Process("MiniAnalysis")
+
 #get the configuration to apply
 from TopLJets2015.TopAnalysis.EraConfig import getEraConfiguration
-globalTag, jecTag, jecDB = getEraConfiguration(era=options.era,isData=options.runOnData)
-
-process = cms.Process("MiniAnalysis")
+globalTag, jecTag, jecDB, jerTag, jerDB = getEraConfiguration(era=options.era,isData=options.runOnData)
 
 # Load the standard set of configuration modules
 process.load("TrackingTools.TransientTrack.TransientTrackBuilder_cfi")
 process.load('Configuration.StandardSequences.Services_cff')
 process.load('Configuration.StandardSequences.GeometryDB_cff')
 process.load('Configuration.StandardSequences.MagneticField_38T_cff')
+
+#EGM customization
+from TopLJets2015.TopAnalysis.customizeEGM_cff import customizeEGM
+process.egammaPostRecoSeq=customizeEGM(process=process,era=options.era)
 
 # global tag
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
@@ -71,6 +81,27 @@ process.load("GeneratorInterface.RivetInterface.genParticles2HepMC_cfi")
 process.genParticles2HepMC.genParticles = cms.InputTag("mergedGenParticles")
 process.load("GeneratorInterface.RivetInterface.particleLevel_cfi") 
 
+# particle level definitions
+process.load('SimGeneral.HepPDTESSource.pythiapdt_cfi')
+process.mergedGenParticles = cms.EDProducer("MergedGenParticleProducer",
+                                            inputPruned = cms.InputTag("prunedGenParticles"),
+                                            inputPacked = cms.InputTag("packedGenParticles"),
+                                            )
+process.load('GeneratorInterface.RivetInterface.genParticles2HepMC_cfi')
+process.genParticles2HepMC.genParticles = cms.InputTag("mergedGenParticles")
+
+#jet energy corrections
+process.load('JetMETCorrections.Configuration.DefaultJEC_cff')
+from JetMETCorrections.Configuration.DefaultJEC_cff import *
+from JetMETCorrections.Configuration.JetCorrectionServices_cff import *
+from TopLJets2015.TopAnalysis.customizeJetTools_cff import *
+customizeJetTools(process=process,
+                  jecDB=jecDB,
+                  jecTag=jecTag,
+                  jerDB=jerDB,
+                  jerTag=jerTag,
+                  baseJetCollection=options.baseJetCollection,
+                  runOnData=options.runOnData)
 
 #message logger
 process.load("FWCore.MessageService.MessageLogger_cfi")
@@ -78,22 +109,24 @@ process.MessageLogger.cerr.threshold = ''
 process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
 process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 
-#EGM
-from TopLJets2015.TopAnalysis.customizeEGM_cff import customizeEGM
-customizeEGM(process=process,runOnData=options.runOnData)
-
 # set input to process
-#process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(options.maxEvents) )
-#process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10000) )
 process.source = cms.Source("PoolSource",
-                            fileNames = cms.untracked.vstring('/store/mc/RunIISummer17MiniAOD/TTJets_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/92X_upgrade2017_realistic_v10-v3/10000/00F1AD27-CF99-E711-A2F0-0CC47AC087AE.root'),
+                            fileNames = cms.untracked.vstring('/store/mc/RunIIFall17MiniAODv2/TTJets_TuneCP5_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/90000/FE7ABAEB-4A42-E811-87A3-0CC47AD98D26.root'),
                             duplicateCheckMode = cms.untracked.string('noDuplicateCheck') 
                             )
-
 if options.runOnData:
-      process.source.fileNames = cms.untracked.vstring('/store/data/Run2017B/SinglePhoton/MINIAOD/17Nov2017-v1/30000/10F66FEF-B7D5-E711-9003-008CFAC93F3C.root')
-      #process.source.fileNames = cms.untracked.vstring('/store/data/Run2017F/SingleElectron/MINIAOD/17Nov2017-v1/50000/FA333057-D0E0-E711-BDFB-5065F37DC062.root')
-      #process.source.fileNames = cms.untracked.vstring('/store/data/Run2017F/SingleMuon/MINIAOD/17Nov2017-v1/50000/FEED7A3F-D3E2-E711-84DD-0025905A6134.root')
+      process.source.fileNames = cms.untracked.vstring('/store/data/Run2017F/SinglePhoton/MINIAOD/31Mar2018-v1/00000/0033B9DF-4338-E811-AB11-1CB72C1B6CC6.root')
+      if options.runL1PrefireAna:
+            print 'Adding secondary filenames to run L1 prefire analysis'
+            process.source.secondaryFileNames = cms.untracked.vstring(['/store/data/Run2017F/SinglePhoton/AOD/17Nov2017-v1/70000/BC8110F6-3CE0-E711-9210-02163E014564.root',
+                                                                       '/store/data/Run2017F/SinglePhoton/AOD/17Nov2017-v1/70000/F68021F2-3CE0-E711-85E6-02163E014702.root',
+                                                                       '/store/data/Run2017F/SinglePhoton/AOD/17Nov2017-v1/60000/90EE7B12-BCDE-E711-8C47-A4BF0112BC06.root',
+                                                                       '/store/data/Run2017F/SinglePhoton/AOD/17Nov2017-v1/60000/F8CD978A-17DF-E711-A05F-A0369F836334.root',
+                                                                       '/store/data/Run2017F/SinglePhoton/AOD/17Nov2017-v1/60000/3E1B045C-28DF-E711-8B81-002590A37114.root',
+                                                                       '/store/data/Run2017F/SinglePhoton/AOD/17Nov2017-v1/60000/506AF751-29DF-E711-9E1F-001E67397F2B.root',
+                                                                       '/store/data/Run2017F/SinglePhoton/AOD/17Nov2017-v1/60000/1CDC7A53-20DF-E711-A272-1CC1DE1CDD20.root',
+                                                                       '/store/data/Run2017F/SinglePhoton/AOD/17Nov2017-v1/60000/28249C05-0DDF-E711-BA56-008CFA0527CC.root',
+                                                                       '/store/data/Run2017F/SinglePhoton/AOD/17Nov2017-v1/60000/142F6B6F-28DF-E711-9D48-A4BF0112BDF8.root'])
 
 if options.inputFile:
       fileList=[]
@@ -106,15 +139,6 @@ if options.inputFile:
       process.source.fileNames = cms.untracked.vstring(fileList)
 print  "Processing",process.source.fileNames
 
-process.load('SimGeneral.HepPDTESSource.pythiapdt_cfi')
-process.mergedGenParticles = cms.EDProducer("MergedGenParticleProducer",
-                    inputPruned = cms.InputTag("prunedGenParticles"),
-                        inputPacked = cms.InputTag("packedGenParticles"),
-)
-from GeneratorInterface.RivetInterface.genParticles2HepMC_cfi import genParticles2HepMC
-process.genParticles2HepMC = genParticles2HepMC.clone( genParticles = cms.InputTag("mergedGenParticles") )
-#process.load('TopQuarkAnalysis.BFragmentationAnalyzer.bfragWgtProducer_cfi')
-
 #apply lumi json, if passed in command line
 if options.lumiJson:
     print 'Lumi sections will be selected with',options.lumiJson
@@ -124,43 +148,43 @@ if options.lumiJson:
     process.source.lumisToProcess.extend(myLumis)
 
 
-#jet energy corrections
-process.load('JetMETCorrections.Configuration.DefaultJEC_cff')
-from JetMETCorrections.Configuration.DefaultJEC_cff import *
-from JetMETCorrections.Configuration.JetCorrectionServices_cff import *
-from TopLJets2015.TopAnalysis.customizeJetTools_cff import *
-customizeJetTools(process=process,
-                  jecTag=jecTag,
-                  jecDB=jecDB,
-                  baseJetCollection=options.baseJetCollection,
-                  runOnData=options.runOnData)
-
 process.TFileService = cms.Service("TFileService",
                                    fileName = cms.string(options.outFilename)
                                   )
 
+#analysis
+from TopLJets2015.TopAnalysis.miniAnalyzer_cfi import  ANALYSISJETIDS,ANALYSISTRIGGERLISTS
 process.load('TopLJets2015.TopAnalysis.miniAnalyzer_cfi')
-print 'Ntuplizer configuration is as follows'
+print 'MiniAnalyzer configuration is as follows:'
 process.analysis.saveTree=cms.bool(options.saveTree)
 process.analysis.savePF=cms.bool(options.savePF)
-if options.useRawLeptons:
-    process.selectedElectrons.src=cms.InputTag('slimmedElectrons')
-    process.analysis.electrons=cms.InputTag('selectedElectrons')
-    process.analysis.useRawLeptons=cms.bool(True)
-    print 'Switched off corrections for leptons'
-if not process.analysis.saveTree :
-    print '\t Summary tree won\'t be saved'
-if not process.analysis.savePF :
-    print 'Summary PF info won\'t be saved'
-
+print '\t save tree=',options.saveTree,' save PF=',options.savePF
+if 'era2017' in options.era:
+      process.analysis.jetIdToUse=ANALYSISJETIDS[2017]
+      process.analysis.triggersToUse=ANALYSISTRIGGERLISTS[2017]
+      print '\t Using 2017 triggers/jet ids'
+else:
+      process.analysis.jetIdToUse=ANALYSISJETIDS[2016]
+      process.analysis.triggersToUse=ANALYSISTRIGGERLISTS[2016]
+      print '\t Using 2016 triggers/jet ids'
 if options.runOnData:
       process.analysis.metFilterBits = cms.InputTag("TriggerResults","","RECO")
+      print '\t will save met filter bits'
 
-process.custom_step=cms.Path(process.egammaScaleSmearAndVIDSeq)
-process.ana_step=cms.Path(process.analysis)
+#schedule execution
+toSchedule=[]
+if process.egammaPostRecoSeq:
+      process.egm=cms.Path(process.egammaPostRecoSeq) 
+      toSchedule.append( process.egm )
+if not (options.runOnData or options.noParticleLevel):
+      process.mctruth=cms.Path(process.mergedGenParticles*process.genParticles2HepMC*process.particleLevel)
+      toSchedule.append( process.mctruth )
+process.ana=cms.Path(process.analysis)
+toSchedule.append( process.ana )
+if options.runOnData and options.runL1PrefireAna:
+      print 'Prefire analysis is scheduled to be executed'
+      from TopLJets2015.TopAnalysis.l1prefireAnalysis_cfi import *
+      defineL1PrefireAnalysis(process,options.era)
+      toSchedule.append(process.l1prefirePath)
 
-if options.runOnData:
-      process.schedule=cms.Schedule(process.custom_step,process.ana_step)
-else:
-      process.gen_step=cms.Path(process.mergedGenParticles*process.genParticles2HepMC*process.particleLevel)
-      process.schedule=cms.Schedule(process.custom_step,process.gen_step,process.ana_step)
+process.schedule=cms.Schedule( (p for p in toSchedule) )

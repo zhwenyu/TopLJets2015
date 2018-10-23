@@ -4,10 +4,10 @@
 #include "TFile.h"
 
 //
-BTagSFUtil::BTagSFUtil(TString era,TString tagger,BTagEntry::OperatingPoint btagOp,TString btagExp, int seed) {
+BTagSFUtil::BTagSFUtil(TString era,BTagEntry::OperatingPoint btagOp,TString btagExp, int seed) {
 
-  readExpectedBtagEff(era,tagger,btagOp,btagExp);
-  startBTVcalibrationReaders(era,tagger,btagOp);
+  readExpectedBtagEff(era,btagOp,btagExp);
+  startBTVcalibrationReaders(era,btagOp);
   rand_ = new TRandom3(seed);
 
 }
@@ -19,10 +19,10 @@ BTagSFUtil::~BTagSFUtil() {
 }
 
 //
-void BTagSFUtil::addBTagDecisions(MiniEvent_t &ev,float wp,float wpl,bool deepCSV) {
+void BTagSFUtil::addBTagDecisions(MiniEvent_t &ev,float wp,float wpl) {
   for (int k = 0; k < ev.nj; k++) {
-    if (ev.j_hadflav[k] >= 4) ev.j_btag[k] = (ev.j_csv[k] > wp);
-    else                      ev.j_btag[k] = (ev.j_csv[k] > wpl);
+    if (ev.j_hadflav[k] >= 4) ev.j_btag[k] = (ev.j_deepcsv[k] > wp);
+    else                      ev.j_btag[k] = (ev.j_deepcsv[k] > wpl);
   }
 }
 
@@ -92,13 +92,12 @@ bool BTagSFUtil::applySF(bool& isBTagged, float Btag_SF, float Btag_eff){
 }
 
 //
-void BTagSFUtil::startBTVcalibrationReaders(TString era, TString tagger,BTagEntry::OperatingPoint btagOP)
+void BTagSFUtil::startBTVcalibrationReaders(TString era,BTagEntry::OperatingPoint btagOP)
 {
   //start the btag calibration
-  TString btagUncUrl("");
-  if(era.Contains("era2017")) btagUncUrl = Form("%s/btv/%s_94XSF_V1_B_F.csv",era.Data(),tagger.Data());
+  TString btagUncUrl( era+"/DeepCSV_94XSF_V3_B_F.csv");
   gSystem->ExpandPathName(btagUncUrl);
-  BTagCalibration btvcalib(tagger.Data(), btagUncUrl.Data());
+  BTagCalibration btvcalib("DeepCSV",btagUncUrl.Data());
 
   //start calibration readers for b,c and udsg separately including the up/down variations
   btvCalibReaders_[BTagEntry::FLAV_B]=new BTagCalibrationReader(btagOP, "central", {"up", "down"});
@@ -110,13 +109,14 @@ void BTagSFUtil::startBTVcalibrationReaders(TString era, TString tagger,BTagEntr
 }
 
 //
-void BTagSFUtil::readExpectedBtagEff(TString era,TString tagger,BTagEntry::OperatingPoint btagOp,TString btagExp)
+void BTagSFUtil::readExpectedBtagEff(TString era,BTagEntry::OperatingPoint btagOp,TString btagExp)
 {
   //open up the ROOT file with the expected efficiencies
-  TString btagEffExpUrl(Form("%s/btv/expTagEff%s.root",era.Data(),btagExp.Data()));
+  TString btagEffExpUrl(Form("%s/expectedBtagEff.root",era.Data()));
   gSystem->ExpandPathName(btagEffExpUrl);
+
   TFile *beffIn=TFile::Open(btagEffExpUrl);
-  TString baseDir(tagger+"_");
+  TString baseDir("DeepCSV_");
   if(btagOp==BTagEntry::OP_LOOSE) baseDir+="loose";
   if(btagOp==BTagEntry::OP_MEDIUM) baseDir+="medium";
   if(btagOp==BTagEntry::OP_TIGHT) baseDir+="tight";

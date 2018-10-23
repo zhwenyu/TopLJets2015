@@ -32,7 +32,7 @@ def saveExpectedBtagEff(opt):
 
         print '\t Starting',x
         tagger,op,opval=x.split(':')        
-        cut='j_%s>%s'%('csv' if tagger=='CSVv2' else 'deepcsv',opval)
+        cut='j_%s>%s'%('deepcsv',opval)
         
         #count number of tagged jets
         effgrs[(tagger,op)]={}
@@ -46,7 +46,7 @@ def saveExpectedBtagEff(opt):
             effgrs[(tagger,op)][flav].Divide(tagH,preTagH)
 
     #save in file
-    fOut=ROOT.TFile.Open(opt.output+'/expTagEff.root','RECREATE')
+    fOut=ROOT.TFile.Open(opt.output,'RECREATE')
     for key in effgrs:
         fOut.cd()
         outDir=fOut.mkdir('%s_%s'%key)
@@ -60,10 +60,10 @@ def main():
     #configuration
     usage = 'usage: %prog [options]'
     parser = optparse.OptionParser(usage)
-    parser.add_option('-i', '--in',        dest='input',    help='input directory with files', default='/store/cmst3/group/top/RunIIFall17/c29f431/MC13TeV_TTJets')
-    parser.add_option('-o', '--out',       dest='output',   help='output directory',           default='data/era2017/btv')
-    parser.add_option('--taggers',   dest='taggers',  help='tagger:cut,tagger:cut',      
-                      default='DeepCSV:loose:0.1522,DeepCSV:medium:0.4941,DeepCSV:tight:0.8001,CSVv2:loose:0.5803,CSVv2:medium:0.8838,CSVv2:tight:0.9693')
+    parser.add_option('-i', '--in',        dest='input',    help='input directory with files [%default]', default='/store/cmst3/group/top/RunIIReReco/f93b8d8/MC13TeV_2017_TTJets')
+    parser.add_option('-o', '--out',       dest='output',   help='output file [%default]',           default='data/era2017/expectedBtagEff.root')
+    parser.add_option('--taggers',   dest='taggers',  help='tagger:cut,tagger:cut [%default]',      
+                      default='DeepCSV:loose:0.1522,DeepCSV:medium:0.4941,DeepCSV:tight:0.8001')
     (opt, args) = parser.parse_args()
 
     saveExpectedBtagEff(opt)

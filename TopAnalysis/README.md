@@ -8,38 +8,29 @@ Notice: if you are not creating the ntuples, you can skip the part of the instru
 marked with the `##OPTIONAL/##END OPTIONAL` markers
 
 ```
-cmsrel CMSSW_9_4_2
-cd CMSSW_9_4_2/src
+cmsrel CMSSW_9_4_9_cand2
+cd CMSSW_9_4_9_cand2/src
 cmsenv
 
-##OPTIONAL
+##OPTIONAL (USE IF CREATING NTUPLES FROM SCRATCH)
 
-#photon/electron id+scale and smearing
-git cms-merge-topic lsoffi:CMSSW_9_4_0_pre3_TnP    
-git cms-merge-topic guitargeek:ElectronID_MVA2017_940pre3
-git cms-merge-topic cms-egamma:MiniAOD2017V2_940
+#photon/electron id+scale and smearing fixes for MINIAOD 2017v2 (doesn't harm 2016v3)
+git cms-merge-topic cms-egamma:EgammaPostRecoTools_940 #just adds in an extra file to have a setup function to make things easier
 scram b -j 8
-cd $CMSSW_BASE/external
-cd ${SCRAM_ARCH}/
-git clone https://github.com/lsoffi/RecoEgamma-PhotonIdentification.git data/RecoEgamma/PhotonIdentification/data
-cd data/RecoEgamma/PhotonIdentification/data
-git checkout CMSSW_9_4_0_pre3_TnP
-cd $CMSSW_BASE/external
-cd ${SCRAM_ARCH}/
-git clone https://github.com/lsoffi/RecoEgamma-ElectronIdentification.git data/RecoEgamma/ElectronIdentification/data
-cd data/RecoEgamma/ElectronIdentification/data
-git checkout CMSSW_9_4_0_pre3_TnP
-cd $CMSSW_BASE/external
-cd ${SCRAM_ARCH}/
-git clone git@github.com:Sam-Harper/EgammaAnalysis-ElectronTools.git data/EgammaAnalysis/ElectronTools/data
-cd data/EgammaAnalysis/ElectronTools/data
-git checkout ReReco17NovScaleAndSmearing 
 
 ##END OPTIONAL
 
+#higgs combination tool
+git clone https://github.com/cms-analysis/HiggsAnalysis-CombinedLimit.git HiggsAnalysis/CombinedLimit
+cd HiggsAnalysis/CombinedLimit
+git fetch origin
+git checkout v7.0.10
+scramv1 b clean; scramv1 b
+cd -
 
+#this package
 cd $CMSSW_BASE/src
-git clone git@github.com:pfs/TopLJets2015.git
+git clone https://github.com/pfs/TopLJets2015.git
 cd TopLJets2015
 git submodule init
 git submodule update
@@ -54,7 +45,8 @@ To run locally the ntuplizer, for testing purposes do something like:
 
 ```
 cmsRun test/runMiniAnalyzer_cfg.py runOnData=False era=era2017 outFilename=MC13TeV_TTJets.root
-cmsRun test/runMiniAnalyzer_cfg.py runOnData=True  era=era2017 outFilename=Data13TeV_SingleMuon.root
+cmsRun test/runMiniAnalyzer_cfg.py runOnData=True  era=era2017 outFilename=Data13TeV_SinglePhoton.root
+cmsRun test/runL1PrefireAna_cfg.py runOnData=True  era=era2017 outFilename=Data13TeV_SinglePhoton_l1prefire.root
 ```
 
 To submit the ntuplizer to the grid start by setting the environment for crab3.
@@ -69,12 +61,13 @@ Adding "-s" will trigger the submission to the grid (otherwise the script only w
 
 ```
 python scripts/submitToGrid.py -j data/era2017/samples.json -c ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/runMiniAnalyzer_cfg.py 
+python scripts/submitToGrid.py -j data/era2017/samples.json -c ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/runL1PrefireAna_cfg.py --addParents --only JetHT,SinglePhoton,SingleElectron --lfn /store/group/cmst3/group/top/psilva/l1prefire/2017 -w grid_prefire -s
 ```
 
 As soon as ntuple production starts to finish, to move from crab output directories to a simpler directory structure which can be easily parsed by the local analysis runThe merging can be run locally if needed by using the checkProductionIntegrity.py script
 
 ```
-python scripts/submitCheckProductionIntegrity.py -i /store/cmst3/group/top/psilva/c29f431 -o /store/cmst3/group/top/RunIIFall17/c29f431
+python scripts/submitCheckProductionIntegrity.py -i /store/cmst3/group/top/psilva/5fb8f4f -o /store/cmst3/group/top/RunIIReReco/5fb8f4f
 ```
 
 ## Luminosity
@@ -100,7 +93,7 @@ You can then run the brilcalc tool to get the integrated luminosity in total and
 The following script runs brilcalc inclusively and per trigger path, and stores the results in a ROOT file with the total integrated lumi per run.
 It takes a bit to run, depending on the number of triggers configured to use in the analysis
 ```
-export PATH=$HOME/.local/bin:/afs/cern.ch/cms/lumi/brilconda/bin:$PATH
+export PATH=$HOME/.local/bin:/cvmfs/cms-bril.cern.ch/brilconda/bin:$PATH
 python scripts/convertLumiTable.py -o data/era2017/
 ```
 
@@ -114,11 +107,11 @@ python scripts/runPileupEstimation.py --json /afs/cern.ch/cms/CAF/CMSCOMM/COMM_D
 ```
 * B-tagging. To apply corrections to the simulation one needs the expected efficiencies stored somwewhere. The script below will project the jet pT spectrum from the TTbar sample before and after applying b-tagging, to compute the expecte efficiencies. The result will be stored in data/expTageff.root
 ```
-python scripts/saveExpectedBtagEff.py -i /store/cmst3/group/top/RunIIFall17/c29f431/MC13TeV_TTJets -o data/era2017/expTageff.root;
+python scripts/saveExpectedBtagEff.py -i /store/cmst3/group/top/RunIIReReco/5fb8f4f/MC13TeV_TTJets -o data/era2017/expTageff.root;
 ```
 * MC normalization. This will loop over all the samples available in EOS and produce a normalization cache (weights to normalize MC). The file will be available in data/genweights.pck
 ```
-python scripts/produceNormalizationCache.py -i /store/cmst3/group/top/RunIIFall17/c29f431 -o data/era2017/genweights.root
+python scripts/produceNormalizationCache.py -i /store/cmst3/group/top/RunIIReReco/f93b8d8 -o data/era2017/genweights_f93b8d8.root
 ```
 The lepton/photon trigger/id/iso efficiencies should also be placed under data/era2017. 
 The src/EfficiencyScaleFactorsWrapper.cc  should then be updated to handle the reading of the ROOT files and the application of the scale factors

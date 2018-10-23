@@ -155,9 +155,9 @@ private:
 	float evtWeight, mjj, detajj , dphijj ,jjpt;
 	float isotropy, circularity,sphericity,	aplanarity, C, D;
 	float scalarht,balance, mht, training;
-        float leadj_gawidth,leadj_c1_05,subleadj_gawidth,subleadj_c1_05, subleadj_c2_02, subleadj_pt;
-        float vbfmva,vbffisher;
-        bool doBlindAnalysis;
+  float leadj_gawidth,leadj_c1_05,subleadj_gawidth,subleadj_c1_05, subleadj_c2_02, subleadj_pt;
+  float vbfmva,vbffisher;
+  bool doBlindAnalysis;
 
 	std::vector<Particle> relaxedTightPhotons, photons, tmpPhotons; 
 	/////////////////////////////////////

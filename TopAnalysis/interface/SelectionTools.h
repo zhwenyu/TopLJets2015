@@ -22,9 +22,7 @@ class SelectionTool {
   ~SelectionTool() {}
 
   enum FlavourSplitting {NOFLAVOURSPLITTING=0, UDSGSPLITTING=1, CSPLITTING=4, BSPLITTING=5 };
-  enum QualityFlags     {VETO, LOOSE, MEDIUM, TIGHT, CONTROL, QCDTEMP, RELAXEDTIGHT};
-
-
+  enum QualityFlags     {VETO, LOOSE, MEDIUM, TIGHT, CONTROL, QCDTEMP, RELAXEDTIGHT, MVA80, MVA90};
 
   //
   //RECO LEVEL SELECTORS
@@ -37,13 +35,15 @@ class SelectionTool {
   // isQCDTemp: for non-isolated phoron selection to extract the QCD template of sihsih  //
   /////////////////////////////////////////////////////////////////////////////////////////
 
+  bool passSingleLeptonTrigger(MiniEvent_t &ev);
   TString flagFinalState(MiniEvent_t &ev, std::vector<Particle> leptons={}, std::vector<Particle> photons={}, bool isCR=false, bool isQCDTemp = false, bool isSRfake = false); //QCDTemp can be true only if it is CR 
   std::vector<Particle> leptons_,vetoLeptons_,photons_,tmpPhotons;
+ 
   std::vector<Jet> jets_;
   TLorentzVector met_;
   bool hasTriggerBit(TString triggerName,unsigned int word);
   std::vector<Particle> flaggedLeptons(MiniEvent_t &ev);
-  std::vector<Particle> selLeptons(std::vector<Particle> &flaggedLeptons,int qualBit=LOOSE, double minPt=0., double maxEta=99., std::vector<Particle> veto={});
+  std::vector<Particle> selLeptons(std::vector<Particle> &flaggedLeptons,int muQualBit=LOOSE, int eleQualBit=LOOSE, double minPt=0., double maxEta=99., std::vector<Particle> veto={});
   std::vector<Particle> &getSelLeptons()  { return leptons_; }
   std::vector<Particle> &getVetoLeptons() { return vetoLeptons_; }
   std::vector<Particle> flaggedPhotons(MiniEvent_t &ev);
@@ -244,6 +244,14 @@ class SelectionTool {
     bool ret = (notLooseIso && this->isInclusivePhoton(ev,idx));
     return ret;
   }
+
+  bool isSingleElectronPD(){ return isSingleElectronPD_; }
+  bool isSingleMuonPD(){ return isSingleMuonPD_; }
+  bool isDoubleEGPD(){ return isDoubleEGPD_; }
+  bool isDoubleMuonPD(){ return isDoubleMuonPD_; }
+  bool isMuonEGPD(){ return isMuonEGPD_; }
+  bool isPhotonPD(){ return isPhotonPD_; }
+  bool isJetHTPD(){ return isJetHTPD_; }
 
  private:
   bool debug_;

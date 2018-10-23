@@ -1,4 +1,3 @@
-
 import os
 import sys
 import optparse
@@ -241,7 +240,7 @@ def main():
                     if SRfake :  runOpts += ' --SRfake'
                     cfg.write('python %s/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py %s\n'%(cmsswBase,runOpts))
                     if '/store' in outF:
-                        cfg.write('xrdcp ${WORKDIR}/%s root://eoscms//eos/cms/%s\n'%(localOutF,outF))
+                        cfg.write('xrdcp --force ${WORKDIR}/%s root://eoscms//eos/cms/%s\n'%(localOutF,outF))
                         cfg.write('rm ${WORKDIR}/%s'%localOutF)
                     elif outF!=localOutF:
                         cfg.write('  mv -v ${WORKDIR}/%s %s\n'%(localOutF,outF))

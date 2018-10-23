@@ -12,7 +12,8 @@ struct MiniEvent_t
   }
 
   Bool_t isData;
-  UInt_t run,event,lumi;
+  UInt_t run,lumi;
+  ULong64_t event;
 
   //gen level event
   Int_t g_id1, g_id2;
@@ -28,6 +29,8 @@ struct MiniEvent_t
   Float_t gtop_pt[25],gtop_eta[25],gtop_phi[25],gtop_m[25]; 
   Int_t gpf_id[5000],gpf_c[5000],gpf_g[5000];
   Float_t gpf_pt[5000],gpf_eta[5000],gpf_phi[5000],gpf_m[5000];
+  Float_t gpf_chSum_px,gpf_chSum_py,gpf_chSum_pz,gpf_ch_ht,gpf_ch_hz,gpf_ch_wgtSum; 
+  Float_t gpf_inc_px,gpf_inc_py,gpf_inc_pz,gpf_inc_ht,gpf_inc_hz,gpf_inc_wgtSum;
 
   //reco level event
   Int_t nvtx;
@@ -38,17 +41,23 @@ struct MiniEvent_t
   Int_t nl;
   Bool_t l_isPromptFinalState[50], l_isDirectPromptTauDecayProductFinalState[50];
   Int_t l_id[50],l_charge[50],l_pid[50],l_g[200];
-  Float_t l_pt[50],l_eta[50],l_phi[50], l_mass[50], l_scaleUnc[50], l_smearUnc[50], l_miniIso[50], l_chargedHadronIso[50], l_relIso[50], l_ip3d[50], l_ip3dsig[50],l_mva[50];
+  Float_t l_pt[50],l_eta[50],l_phi[50], l_mass[50], 
+    l_scaleUnc1[50], l_scaleUnc2[50], l_scaleUnc3[50], l_scaleUnc4[50], l_scaleUnc5[50], l_scaleUnc6[50], l_scaleUnc7[50],   
+    l_miniIso[50], l_chargedHadronIso[50], l_relIso[50], l_ip3d[50], l_ip3dsig[50],l_mva[50],l_mvaCats[50];
 
   Int_t ngamma;
-  Bool_t gamma_isPromptFinalState[50],gamma_passElectronVeto[50],gamma_hasPixelSeed[50];
-  Int_t gamma_pid[50],gamma_g[50];
-  Float_t gamma_pt[50],gamma_eta[50],gamma_phi[50], gamma_scaleUnc[50], gamma_smearUnc[50], gamma_mva[50], gamma_chargedHadronIso[50],gamma_neutralHadronIso[50],gamma_photonIso[50],gamma_hoe[50],gamma_r9[50],gamma_sieie[50];
+  Bool_t gamma_isPromptFinalState[50];
+  Int_t gamma_pid[50],gamma_idFlags[50],gamma_g[50];
+  Float_t gamma_pt[50],gamma_eta[50],gamma_phi[50], 
+    gamma_scaleUnc1[50],gamma_scaleUnc2[50],gamma_scaleUnc3[50],gamma_scaleUnc4[50],gamma_scaleUnc5[50],gamma_scaleUnc6[50],gamma_scaleUnc7[50],
+    gamma_mva[50], gamma_mvaCats[50],
+    gamma_chargedHadronIso[50],gamma_neutralHadronIso[50],gamma_photonIso[50],gamma_hoe[50],gamma_r9[50],gamma_sieie[50];
 
   Int_t nj;
   Float_t j_pt[200],j_eta[200],j_phi[200],j_mass[200],j_area[200],j_rawsf[200];
-  Float_t j_csv[200],j_deepcsv[200],j_pumva[200];
-  Float_t j_c1_00[200],j_c1_02[200],j_c1_05[200],j_c1_10[200],j_c1_20[200],j_c2_00[200],j_c2_02[200],j_c2_05[200],j_c2_10[200],j_c2_20[200],j_c3_00[200],j_c3_02[200],j_c3_05[200],j_c3_10[200],j_c3_20[200];
+  Float_t j_jerUp[200],j_jerDn[200],j_jecUp[30][200],j_jecDn[30][200];
+  Float_t j_csv[200],j_deepcsv[200],j_pumva[200],j_emf[200],j_qg[200];
+  Float_t j_c2_00[200],j_c2_02[200],j_c2_05[200],j_c2_10[200],j_c2_20[200];
   Float_t j_zg[200],j_mult[200],j_gaptd[200],j_gawidth[200],j_gathrust[200],j_tau32[200],j_tau21[200];
   Float_t j_vtxmass[200],j_vtx3DVal[200],j_vtx3DSig[200],j_vtxpx[200],j_vtxpy[200],j_vtxpz[200];
   Bool_t j_btag[200];
@@ -65,6 +74,9 @@ struct MiniEvent_t
   //Int_t pf_pvAssoc[5000],pf_vtxRef[5000];
   Float_t pf_pt[5000],pf_eta[5000],pf_phi[5000],pf_m[5000],pf_puppiWgt[5000];
   Float_t pf_dxy[5000],pf_dz[5000]; //pf_dxyUnc[5000],pf_dzUnc[5000];
+  Float_t pf_chSum_px,pf_chSum_py,pf_chSum_pz,pf_ch_ht,pf_ch_hz,pf_ch_wgtSum; 
+  Float_t pf_puppi_px,pf_puppi_py,pf_puppi_pz,pf_puppi_ht,pf_puppi_hz,pf_puppi_wgtSum;
+  Float_t pf_closestDZnonAssoc;
 
   //CTPPS leaves
   Int_t nfwdtrk,fwdtrk_arm[50],fwdtrk_station[50],fwdtrk_pot[50];
@@ -72,7 +84,7 @@ struct MiniEvent_t
   Float_t fwdtrk_y[50],fwdtrk_y_unc[50];
 };
 
-void createMiniEventTree(TTree *t,MiniEvent_t &ev);
+void createMiniEventTree(TTree *t,MiniEvent_t &ev,Int_t njecUncs=0);
 void attachToMiniEventTree(TTree *t, MiniEvent_t &ev,bool full=false);
 
 #endif

@@ -24,11 +24,12 @@ void EfficiencyScaleFactorsWrapper::init(TString era)
       era_=2017;
       cout << "[EfficiencyScaleFactorsWrapper]" << endl
            << "\tStarting efficiency scale factors for 2017" << endl
-           << "\tWarnings: TK SF are from 2017, no trigger SFs for dileptons, single electrons or photons" << endl
+           << "\tWarnings: no trigger SFs for any object" << endl
+           << "\t          missing tk eff for muons, reco eff for photons" << endl
            << "\tDon't forget to fix these and update these items!" << endl;
 
       //PHOTONS
-      TString url(era+"/photons/egammaEffi.txt_EGM2D_runBCDEF_passingTight94X.root");
+      TString url(era+"/2017_PhotonsMVAwp80.root");
       gSystem->ExpandPathName(url);
       TFile *fIn=TFile::Open(url);
       scaleFactorsH_["g_id"]=(TH2 *)fIn->Get("EGamma_SF2D")->Clone();
@@ -36,29 +37,31 @@ void EfficiencyScaleFactorsWrapper::init(TString era)
       fIn->Close();
 
       //MUONS
+      /*
       url=era+"/muons/EfficienciesAndSF_RunBtoF_Nov17Nov2017.root";
       gSystem->ExpandPathName(url);
       fIn=TFile::Open(url);
       scaleFactorsH_["m_trig"]=(TH2 *)fIn->Get("IsoMu27_PtEtaBins/abseta_pt_ratio")->Clone();
       scaleFactorsH_["m_trig"]->SetDirectory(0);
       fIn->Close();
-      
+
       url=era+"/muons/MuonTracking_EfficienciesAndSF_BCDEFGH.root";
       gSystem->ExpandPathName(url);
       fIn=TFile::Open(url);
       scaleFactorsGr_["m_tk"]=(TGraphAsymmErrors *)fIn->Get("ratio_eff_aeta_dr030e030_corr");
       fIn->Close();
-      
-      url=era+"/muons/RunBCDEF_SF_ID.root";
+      */
+
+      url=era+"/RunBCDEF_SF_MuID.root";
       gSystem->ExpandPathName(url);
       fIn=TFile::Open(url);
-      scaleFactorsH_["m_id"]=(TH2F *)fIn->Get("NUM_TightID_DEN_genTracks")->Clone();
+      scaleFactorsH_["m_id"]=(TH2F *)fIn->Get("NUM_TightID_DEN_genTracks_pt_abseta")->Clone();
       scaleFactorsH_["m_id"]->SetDirectory(0);
 
-      url=era+"/muons/RunBCDEF_SF_ISO.root";
+      url=era+"/RunBCDEF_SF_MuISO.root";
       gSystem->ExpandPathName(url);
       fIn=TFile::Open(url);
-      scaleFactorsH_["m_iso"]=(TH2F *)fIn->Get("NUM_TightRelIso_DEN_TightIDandIPCut")->Clone();
+      scaleFactorsH_["m_iso"]=(TH2F *)fIn->Get("NUM_TightRelIso_DEN_TightIDandIPCut_pt_abseta")->Clone();
       scaleFactorsH_["m_iso"]->SetDirectory(0);
 
 
@@ -66,30 +69,26 @@ void EfficiencyScaleFactorsWrapper::init(TString era)
       /*
         url=era+"/SingleElectron_TriggerSF_Run2016"+period+"_v3_prel.root";
         gSystem->ExpandPathName(url);
-        fIn=TFile::Open(url);
+        fIn=TFile::Open(url)3 ;
         scaleFactorsH_["e_singleleptrig"+period]=(TH2 *)fIn->Get("SF")->Clone();
         scaleFactorsH_["e_singleleptrig"+period]->SetDirectory(0);
         fIn->Close();
-        
-        url=era+"/ElectronReco_egammaEffi.txt_EGM2D.root";
-        if(onlyGH)
-          url=era+"/ElectronReco_egammaEffi.txt_EGM2D_GH.root";
-        gSystem->ExpandPathName(url);
-        fIn=TFile::Open(url);
-        scaleFactorsH_["e_rec"+period]=(TH2 *)fIn->Get("EGamma_SF2D")->Clone();
-        scaleFactorsH_["e_rec"+period]->SetDirectory(0);     
-        fIn->Close();
-        
-        url=era+"/ElectronIdTight_egammaEffi.txt_EGM2D.root";
-        //TODO
-        //if(onlyGH)
-        //  url=era+"/ElectronIdTight_egammaEffi.txt_EGM2D_GH.root";
-        gSystem->ExpandPathName(url);
-        fIn=TFile::Open(url);      
-	scaleFactorsH_["e_sel"+period]=(TH2 *)fIn->Get("EGamma_SF2D")->Clone();
-        scaleFactorsH_["e_sel"+period]->SetDirectory(0);
-        fIn->Close();
       */
+        
+      url=era+"/egammaEffi.txt_EGM2D.root";
+      gSystem->ExpandPathName(url);
+      fIn=TFile::Open(url);
+      scaleFactorsH_["e_rec"]=(TH2 *)fIn->Get("EGamma_SF2D")->Clone();
+      scaleFactorsH_["e_rec"]->SetDirectory(0);     
+      fIn->Close();
+      
+      url=era+"/2017_ElectronMVA80.root";
+      gSystem->ExpandPathName(url);
+      fIn=TFile::Open(url);      
+      scaleFactorsH_["e_id"]=(TH2 *)fIn->Get("EGamma_SF2D")->Clone();
+      scaleFactorsH_["e_id"]->SetDirectory(0);
+      fIn->Close();
+      
     }
 }
 
