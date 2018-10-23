@@ -14,12 +14,10 @@ fi
 
 #to run locally use local as queue + can add "--njobs 8" to use 8 parallel jobs
 queue=workday
-githash=fbc74ae
-eosdir=/store/cmst3/group/top/RunIIFall17/${githash}
-githash2018=4ad3a45
-eosdir2018=/store/cmst3/group/top/RunIISpring18/${githash2018}
-githashJetHT=dc6c6d0
-eosdirJetHT=/store/cmst3/user/ajafari/RunIIFall17/${githashJetHT}
+githash=f93b8d8
+eosdir=/store/cmst3/group/top/RunIIReReco/${githash}
+githashJetHT=$gitash
+eosdirJetHT=/store/cmst3/user/ajafari/RunIIReReco/${githashJetHT}
 fulllumi=41367
 vbflumi=7661
 lumiUnc=0.025
@@ -36,9 +34,9 @@ case $WHAT in
         # output=MC13TeV_DY4Jets50toInf.root
         # tag="--tag MC13TeV_DY50toInf"
 
-        input=${eosdir}/Data13TeV_SinglePhoton_2017D/MergedMiniEvents_4_ext0.root #/MC13TeV_AJJ_EWK_INT_LO_mjj500_dr04/MC13TeV_AJJ_EWK_INT_LO_mjj500_dr04.root
-        output=Data13TeV_SinglePhoton_2017D.root #MC13TeV_AJJ_EWK_INT_LO_mjj500_dr04.root
-        tag="--tag Data13TeV_SinglePhoton_2017D" #MC13TeV_AJJ_EWK_INT_LO_mjj500_dr04"
+        input=${eosdir}/Data13TeV_2017C_SinglePhoton/MergedMiniEvents_0_ext0.root
+        output=Data13TeV_2017C_SinglePhoton.root #MC13TeV_AJJ_EWK_INT_LO_mjj500_dr04.root
+        tag="--tag Data13TeV_2017C_SinglePhoton" #MC13TeV_AJJ_EWK_INT_LO_mjj500_dr04"
 
         #input=${eosdir}/Data13TeV_SinglePhoton_2017F/MergedMiniEvents_0_ext0.root
         #output=Data13TeV_SinglePhoton_2017F.root

@@ -142,8 +142,9 @@ private:
 	EfficiencyScaleFactorsWrapper * gammaEffWR;
   
   	//JEC/JER
-  	JECTools * jec;
-	//Photon/Z pt weights
+  	//JECTools * jec;
+	
+        //Photon/Z pt weights
   	std::map<TString,TGraph *> photonPtWgts;
   	std::map<TString,std::pair<double,double> > photonPtWgtCtr;
 

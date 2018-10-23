@@ -114,7 +114,7 @@ void VBFVectorBoson::RunVBFVectorBoson()
       //////////////////
       // CORRECTIONS //
       ////////////////      
-      jec->smearJetEnergies(ev);
+      //jec->smearJetEnergies(ev);
              
       ///////////////////////////
       // RECO LEVEL SELECTION //
@@ -559,7 +559,7 @@ void VBFVectorBoson::loadCorrections(){
   fr = new FakeRateTool(era, "fakeRatios.root");
   lumi = new LumiTools(era,genPU);
   gammaEffWR = new EfficiencyScaleFactorsWrapper(filename.Contains("Data13TeV"),era);
-  jec = new JECTools(era);
+  //jec = new JECTools(era);
   if(anFlag>0) this->setGammaZPtWeights();
 }
 void VBFVectorBoson::addMVAvars(){
