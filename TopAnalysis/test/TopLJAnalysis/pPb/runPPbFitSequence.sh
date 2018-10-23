@@ -2,7 +2,7 @@
 
 WHAT=$1;
 
-wwwdir=~/www/HIN-17-002
+wwwdir=~/www/HIN-17-002/HLLHCYR
 
 case $WHAT in
 
@@ -41,7 +41,7 @@ case $WHAT in
 
     SEL)
 	common="--wjjOrder drjj --thadOrder dm2tlep" # --etaRestr
-        for sample in MC8.16TeV_TTbar_pPb_tighte; do # MC8.16TeV_DY_pPb MC8.16TeV_WJets_pPb MC8.16TeV_TTbar_pPb MC8.16TeV_TTbar_pPb_Pohweg MC8TeV_WJets_pp MC8.16TeV_TTbar_pPb_hypertighte; do    
+        for sample in MC8.16TeV_WJets_pPb; do #MC8.16TeV_TTbar_pPb_tighte MC8.16TeV_TTbar_pPb_Pohweg MC8.16TeV_DY_pPb MC8.16TeV_WJets_pPb MC8.16TeV_TTbar_pPb MC8.16TeV_TTbar_pPb_Pohweg MC8TeV_WJets_pp MC8.16TeV_TTbar_pPb_hypertighte; do    
 	    python prepareWorkspace.py  -d ${sample} ${common};
 	    #python prepareWorkspace.py  -d ${sample} ${common} --etaRestr;
 	done
@@ -49,7 +49,7 @@ case $WHAT in
 
     SELDATA )
      	common="--wjjOrder drjj --thadOrder dm2tlep"
-        for sample in  Data8.16TeV_pPb_nonsubiso_tighte; do #Data8.16TeV_pPb_nonsubiso_hypertighte Data8.16TeV_pPb_nonsubiso Data8.16TeV_pPb
+        for sample in  Data8.16TeV_pPb_nonsubiso_tighte Data8.16TeV_pPb_nonsubiso_hypertighte Data8.16TeV_pPb_nonsubiso Data8.16TeV_pPb; do
 	    python prepareWorkspace.py  -d ${sample} ${common} --jerProf plots/MC8.16TeV_TTbar_pPb/controlplots.root;
 	    python prepareWorkspace.py  -d ${sample} ${common} --jerProf plots/MC8.16TeV_TTbar_pPb/controlplots.root --etaRestr;
         done
@@ -68,14 +68,14 @@ case $WHAT in
 #            "POWHEG (private)":plots/MC8.16TeV_TTbar_pPb_Pohweg/controlplots.root;
 #        cp ../../index.php ${wwwdir}/ttmccomp;
 #
-#        python runQCDestimation.py data:plots/Data8.16TeV_pPb_nonsubiso_tighte/controlplots.root \
-#            ttbar:plots/MC8.16TeV_TTbar_pPb_tighte/controlplots.root \
-#            wjets:plots/MC8.16TeV_WJets_pPb/controlplots.root \
-#            dy:plots/MC8.16TeV_DY_pPb/controlplots.root;
-#        mkdir ${wwwdir}/qcdest;
-#        mv *fit_*{pdf,png} ${wwwdir}/qcdest;
-#        cp ../../index.php ${wwwdir}/qcdest;
-#
+        python runQCDestimation.py data:plots/Data8.16TeV_pPb_nonsubiso_tighte/controlplots.root \
+            ttbar:plots/MC8.16TeV_TTbar_pPb_tighte/controlplots.root \
+            wjets:plots/MC8.16TeV_WJets_pPb/controlplots.root \
+            dy:plots/MC8.16TeV_DY_pPb/controlplots.root;
+        mkdir ${wwwdir}/qcdest;
+        mv *fit_*{pdf,png} ${wwwdir}/qcdest;
+        cp ../../index.php ${wwwdir}/qcdest;
+
         python produceXsecBasedControlPlots.py data:plots/Data8.16TeV_pPb_nonsubiso_tighte/controlplots.root \
             ttbar:plots/MC8.16TeV_TTbar_pPb_tighte/controlplots.root \
             wjets:plots/MC8.16TeV_WJets_pPb/controlplots.root \
@@ -84,11 +84,11 @@ case $WHAT in
         mv *control.{pdf,png} ${wwwdir}/controlplots;
         cp ../../index.php ${wwwdir}/controlplots;
 
-#        python generateWshapes.py plots/MC8TeV_WJets_pp/controlplots.root plots/MC8.16TeV_WJets_pPb/controlplots.root;
-#        mkdir  ${wwwdir}/west;
-#        mv w_*{pdf,png} ${wwwdir}/west;
-#        cp ../../index.php ${wwwdir}/west;
-#
+        python generateWshapes.py plots/MC8TeV_WJets_pp/controlplots.root plots/MC8.16TeV_WJets_pPb/controlplots.root;
+        mkdir  ${wwwdir}/west;
+        mv w_*{pdf,png} ${wwwdir}/west;
+        cp ../../index.php ${wwwdir}/west;
+
 #        python compareControlPlots.py --outDir ${wwwdir}/wmccomp --ref "W pp (8 TeV)" --shape \
 #            "W pPb (8.16 TeV)":plots/MC8.16TeV_WJets_pPb/controlplots.root \
 #            "W pp (8 TeV)":plots/MC8TeV_WJets_pp/controlplots.root
@@ -112,6 +112,19 @@ case $WHAT in
 #            "pPb (loose e iso)":plots/Data8.16TeV_pPb_nonsubiso/controlplots.root \
 #            "pPb (tight e)":plots/Data8.16TeV_pPb_nonsubiso_hypertighte/controlplots.root;
 #        cp ../../index.php ${wwwdir}/datacomp-eid;
+        ;;
+
+    PROJSEL)
+
+        python produceXsecBasedControlPlots.py data:plots/Data8.16TeV_pPb_nonsubiso_tighte/controlplots.root \
+            ttbar:plots/MC8.16TeV_TTbar_pPb_tighte/controlplots.root \
+            wjets:plots/MC8.16TeV_WJets_pPb/controlplots.root \
+            dy:plots/MC8.16TeV_DY_pPb/controlplots.root \
+            -l 1000 -b --pseudoData;
+        mkdir ${wwwdir}/controlplots_proj;
+        mv *control.{pdf,png} ${wwwdir}/controlplots_proj;
+        cp ../../index.php ${wwwdir}/controlplots_proj;
+
         ;;
     
     PARAM)
@@ -159,6 +172,19 @@ case $WHAT in
 	        python runDataFit.py --fitType ${f} -o plots/${dataRef}/ --verbose 9 --finalWorkspace finalworkspace_wmodel${wmodel}.root --wModel ${wmodel} ${impacts}
 	    done
         done
+	;;
+    
+    PROJFITS)
+        sigRef=MC8.16TeV_TTbar_pPb_tighte #_Pohweg
+        dataRef=Data8.16TeV_pPb_nonsubiso_tighte
+	#python runDataFit.py --fitType 0 -s pdf_workspace_${sigRef}.root -i workspace_${dataRef}.root -o plots/${dataRef} --wModel 0 --blind;
+        #python runDataFit.py --fitType 0 -s pdf_workspace_${sigRef}.root --finalWorkspace finalworkspace_wmodel0.root -o plots/${dataRef} --wModel 0 --splot --blind;
+        
+        python doPRLplots.py -i fit_finalworkspace_wmodel0_0.root -d pseudodata;
+        mkdir ${wwwdir}/final;
+        mv *{comb,final}*{pdf,png} ${wwwdir}/final;
+        cp ../../index.php ${wwwdir}/final;
+ 
 	;;
 
     FINALCOMP )

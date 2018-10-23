@@ -9,6 +9,7 @@ import os
 import ROOT
 import optparse
 import os,sys
+import random
 from roofitTools import *
 from parameterizeMCShapes import ALLPDFS
 from prepareWorkspace import EVENTCATEGORIES as SELEVENTCATEGORIES
@@ -356,7 +357,6 @@ def runSimpleFit(pdf,data,poi,constr=None,pToFix=None):
         iter = constr.createIterator()
         var = iter.Next()
         while var :
-            print var.GetName()
             parcels.add(var)
             var = iter.Next()
         nll=ROOT.RooAddition('nllc','nllc',parcels)
@@ -383,6 +383,62 @@ def runSimpleFit(pdf,data,poi,constr=None,pToFix=None):
     pll=nll.createProfile(poi)
     return (r,pll)
 
+def buildPseudoData(w,wsig):
+    """build pseudo data for the fit"""
+    
+    args=w.data('data').get()
+    pdataset=ROOT.RooDataSet('pseudodata','pseudodata',args)
+    
+    #generate pseudo-data:
+    # - all processes sampled from the histos, except signal
+    # - #nsignal events are taken from the signal workspace
+    rand=ROOT.TRandom2()
+    plotter=ROOT.TFile.Open('xsec_plotter.root')
+    yields={}
+    for cat in EVENTCATEGORIES:
+
+        for proc in ['ttbar_t#bar{t}',
+                     'wjets_W+jets',
+                     'dy_DY',
+                     'qcd']: 
+          
+            #generate N events for this category
+            pname='{0}_mjj_control/mjj_{0}_{1}'.format(cat,proc)
+            if proc=='qcd':
+                pname='{0}_mjj_control/qcd_{0}_Multijets'.format(cat)
+            p=plotter.Get(pname)
+            n=rand.Poisson(p.Integral())
+            
+            if not 'ttbar' in proc:
+                for i in xrange(0,n):
+                    args.find('sample').setLabel(cat)
+                    args.setCatLabel(cat)
+                    args.find('mjj').setVal( p.GetRandom() )
+                    iter = args.createIterator()
+                    var = iter.Next()
+                    while var :
+                        if var.GetName()!='mjj' and  var.GetName()!='sample':
+                            args.find(var.GetName()).setVal(0)                            
+                        var = iter.Next()
+                    pdataset.add(args)
+            else:
+                sigdata=wsig.data('data').reduce(ROOT.RooFit.Cut("sample==sample::%s"%cat))
+                evList=random.sample(range(0,int(sigdata.sumEntries())),n)
+                for i in evList:
+                    evargs=sigdata.get(i)
+                    iter = evargs.createIterator()
+                    var = iter.Next()
+                    while var :
+                        if var.GetName()!='sample':
+                            args.find(var.GetName()).setVal( var.getVal() )
+                        else:
+                            args.find('sample').setLabel(cat)
+                            args.setCatLabel(cat)
+                        var = iter.Next()
+                    pdataset.add(args)
+                    
+    return pdataset
+
 
 """
 """
@@ -395,6 +451,13 @@ def performFits(opt):
 
     #data to fit
     data=w.data('data')
+    if opt.blind:        
+        fSigIn=ROOT.TFile.Open( opt.signal.replace('pdf_','') )
+        wsig=fSigIn.Get('w')
+        fSigIn.Close()
+        data=buildPseudoData(w,wsig)
+        getattr(w,'import')( data )
+        print 'Will used pseudodataset in the fit'
 
     #fit results summary
     fitResults={}
@@ -419,7 +482,6 @@ def performFits(opt):
             if not opt.fitType in [3]   and 'mtlep' in fname: skip=True
             if not skip :
                 constr.add( w.function(fname) )
-                print fname
         ifunc=funcIter.Next()
 
     #run the 2D/3D fits
@@ -482,6 +544,9 @@ def performFits(opt):
                 val,unc=func.getVal(),func.getPropagatedError(result)
                 fitResults[key][formName]=(val,unc,unc)
 
+            #do the following for the main fit if required
+            if ch=='combined' and opt.splot: doSplot(w,pdf,data,poi,constr)
+
             #do the following only for the main fit and if required
             if not opt.impacts: continue
 
@@ -526,6 +591,7 @@ def performFits(opt):
                     #let it float again
                     w.var(pname).setConstant(False)                
 
+
     printFitResults(fitResults,impacts,opt)
     origWorkspaceFile=os.path.splitext(os.path.basename(opt.finalWS))[0]
     w.writeToFile('fit_%s_%d.root'%(origWorkspaceFile,opt.fitType))
@@ -552,6 +618,71 @@ def performFits(opt):
     #    c.SaveAs('%s/pll_%s_%dfit.%s'%(opt.output,ch,opt.fitType))
     #raw_input()
 
+
+def doSplot(w,pdf,data,poi,constr):
+    """runs the sPlot"""
+    
+    print 'Running sPlot for %d events with pdf=%s'%(data.sumEntries(),pdf.GetName())
+    
+    #set all pdf variables which are not yields to constant
+    allVars=pdf.getParameters(data) #w.allVars()
+    varIter = allVars.createIterator()
+    var=varIter.Next()
+    toFloat=['Nbkg_','xsec']    
+    yieldsList=ROOT.RooArgList()
+    while var :
+        varName=var.GetName()    
+        fixThis=True
+        for v in toFloat:
+            if v in varName:
+                fixThis=False
+                break
+        var.setConstant(fixThis)        
+        if not fixThis:  
+            yieldsList.add(var)
+        var=varIter.Next()
+    print 'Floating these variables for the sPlot'
+    yieldsList.Print()
+
+    #repeat the fit with a reduced set of variables
+    inixsec=(w.var('xsec').getVal(),w.var('xsec').getError())
+    runSimpleFit(pdf,data,poi,constr)
+    w.saveSnapshot('splotfitresult',pdf.getParameters(data))
+    finalxsec=(w.var('xsec').getVal(),w.var('xsec').getError())
+    print 'Initial fit gave the following cross section'
+    print 'xsec=%3.3f +/- %3.3f'%inixsec
+    print 'Reduced fit yields the following cross section'
+    print 'xsec=%3.3f +/- %3.3f'%finalxsec
+
+    redData=data.reduce(ROOT.RooFit.Cut('sample==sample::mu1l4j2b'))
+    catYieldsList=ROOT.RooArgList(w.var('xsec'),w.var('Nbkg_mu1l4j2b'))
+    sData = ROOT.RooStats.SPlot("sdata","SPlotted data",redData,pdf,catYieldsList)
+    print w.var('xsec').getVal(),sData.GetYieldFromSWeight('xsec_sw')
+    raw_input()
+
+    #create the datasets with the sWeights and add to the workspace
+    iterator = yieldsList.createIterator()
+    obj = iterator.Next()
+    sigdata=None
+    while obj:
+        objName=obj.GetName()
+        if not 'xsec' in objName:
+            catName=objName.replace('Nbkg_','')            
+            redData=data.reduce(ROOT.RooFit.Cut('sample==sample::%s'%catName))
+            catYieldsList=ROOT.RooArgList(w.var('xsec'),w.var(objName))
+            sData = ROOT.RooStats.SPlot("sdata","SPlotted data",redData,pdf,catYieldsList)
+            print catName,w.var('xsec').getVal(),sData.GetYieldFromSWeight('xsec_sw')
+            if sigdata:
+                sigdata.append(ROOT.RooDataSet('signal'+catName,'signal',redData, redData.get(), '', 'xsec_sw'))
+            else:
+                sigdata=ROOT.RooDataSet('signal','signal',redData, redData.get(), '', 'xsec_sw')                             
+            getattr(w,'import')( ROOT.RooDataSet('bkg'+catName, 'bkg '+catName,   redData, redData.get(), '', objName+'_sw') )
+        obj = iterator.Next()
+    getattr(w,'import')( sigdata )
+
+    raw_input()
+
+
 """
 """
 def addPDFToWorkspace(opt):
@@ -563,7 +694,7 @@ def addPDFToWorkspace(opt):
     #common to all variables and/or channels
     w.factory('xsec[60,0,300]')    
 
-    w.factory("RooFormulaVar::lumi_constraint('0.5*pow((@0-@1)/@2,2)',{lumiCen[%f],lumi[0,500],lumiUnc[%f]})"%lumi)
+    w.factory("RooFormulaVar::lumi_constraint('0.5*pow((@0-@1)/@2,2)',{lumiCen[%f],lumi[0,5000],lumiUnc[%f]})"%lumi)
     w.factory("RooGaussian::lumi_gconstraint(lumiCen,lumi,lumiUnc)")
 
     w.factory("RooFormulaVar::accconstraint('0.5*pow((@0-@1)/@2,2)',{accCen[0.0],acc[-5,5],accUnc[1.0]})")
@@ -631,12 +762,20 @@ def main():
     parser.add_option(      '--fitType',   dest='fitType',   default=0,                  type=int,
         help='0-full signal; 1-full signal 2D; 2-full signal 3D; 3-res from MC; 4-res from CB [%default]')
     parser.add_option(      '--impacts',   dest='impacts',   default=False,                        action='store_true',        help='Run impacts [%default]')
+    parser.add_option(      '--blind',     dest='blind',     default=False,                        action='store_true',        help='Used pseudo-data [%default]')
+    parser.add_option(      '--splot',     dest='splot',     default=False,                        action='store_true',        help='Run sPlot for the combined fit [%default]')
     parser.add_option('-v', '--verbose',   dest='verbose',   default=0,                            type=int,        help='Verbose mode [%default]')
     parser.add_option(      '--finalWorkspace',      dest='finalWS',      default=None,            type='string',   help='final workspace to be used for the fit [%default]')
     (opt, args) = parser.parse_args()
 
     #keep roofit quite
     if opt.verbose<9 : shushRooFit()
+
+    if opt.blind:
+        global lumi
+        lumiUnc=lumi[1]/lumi[0]
+        lumi=(1000.,lumiUnc*1000.)
+        print 'Blind fit with updated lumi',lumi[0]
 
     #load a W model
     global WMODEL

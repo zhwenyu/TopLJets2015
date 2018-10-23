@@ -105,33 +105,33 @@ EXTRASETS = [
 
 PLOTTINGSET_1=[
     ('Data',              '2',  1001,  '#a6cee3', 1 , True,  None),
-    ('PW+PY8',            'ep0', 0,    '#49494c', 24, False, 0.2),
-    ('ISR up',            'ep0', 0,    '#fdc086', 22, False, 0.4),
-    ('ISR down',            'ep0', 0,    '#fdc086', 23, False, 0.4),
-    ('FSR up',            'ep0', 0,    '#d95f02', 22, False, 0.6),
-    ('FSR down',            'ep0', 0,    '#d95f02', 23, False, 0.6),
-    ('UE up',             'ep0', 0,    '#000000', 22, False, 0.80),
-    ('UE down',             'ep0', 0,    '#000000', 23, False, 0.80),
-    #('CP5',               'ep0', 0,    '#91b58d', 24, False, 0.9),
+    ('PW+PY8',            'ep0', 0,    '#2b83ba', 24, False, 0.2),
+    ('ISR up',            'ep0', 0,    '#81a57c', 22, False, 0.4),
+    ('ISR down',            'ep0', 0,  '#81a57c', 23, False, 0.4),
+    ('FSR up',            'ep0', 0,    '#fdae61', 22, False, 0.6),
+    ('FSR down',            'ep0', 0,  '#fdae61', 23, False, 0.6),
+    ('UE up',             'ep0', 0,    '#d7191c', 22, False, 0.80),
+    ('UE down',             'ep0', 0,  '#d7191c', 23, False, 0.80),
+    #('CP5',               'ep0', 0,   '#91b58d', 24, False, 0.9),
 ]
 
 PLOTTINGSET_2=[
     ('Data',              '2',   1001, '#a6cee3', 1 , True,  None),
-    ('no MPI',            'l',   0,    '#91b58d', 1,  False, None),
+    ('no MPI',            'l',   0,    '#fdae61', 1,  False, None),
     ('no CR',             'l',   0,    '#000000', 1,  False, None),
-    ('QCD based',         'ep0', 0,    '#fdc086', 20, False, 0.2),
-    ('Gluon move',        'ep0', 0,    '#984ea3', 21, False, 0.4),
-    ('ERD on',            'ep0', 0,    '#d95f02', 24, False, 0.6),
+    ('QCD based',         'ep0', 0,    '#2b83ba', 20, False, 0.2),
+    ('Gluon move',        'ep0', 0,    '#81a57c', 21, False, 0.4),
+    ('ERD on',            'ep0', 0,    '#d7191c', 24, False, 0.6),
     ('Rope',              'ep0', 0,    '#000000', 26, False, 0.8),
     ('Rope (no CR)',      'ep0', 0,    '#000000', 32, False, 0.8),
 ]
 
 PLOTTINGSET_3=[
     ('Data',           '2',   1001, '#a6cee3', 1 , True,  None),
-    ('Sherpa',         'ep0', 0,    '#49494c', 24, False, 0.2),
-    ('MG5_aMC',        'ep0', 0,    '#e41a1c', 21, False, 0.5),
-    ('PW+HW++',        'ep0', 0,    '#386cb0', 22, False, 0.8),
-    ('PW+HW7',         'ep0', 0,    '#386cb0', 23, False, 0.8),
+    ('Sherpa',         'ep0', 0,    '#2b83ba', 24, False, 0.2),
+    ('MG5_aMC',        'ep0', 0,    '#81a57c', 21, False, 0.5),
+    ('PW+HW++',        'ep0', 0,    '#fdae61', 22, False, 0.8),
+    ('PW+HW7',         'ep0', 0,    '#d7191c', 23, False, 0.8),
 ]
 
 PLOTTINGSET_4=[
@@ -161,10 +161,11 @@ def compareUEPlots(uePlots,outDir,cuts,obs,plottingSetList=[PLOTTINGSET_1],cmsLa
     frame=ROOT.TH1F('frame','frame',uePlots['Data'].trueAxis.GetNbins(),xarr)
     frame.Draw()
     xtitle=VARTITLES[obs]
-    if obs in ['chflux','chfluxz','chavgpt','chavgpt','chrecoil'] : xtitle += ' [GeV]'
+    if obs in ['chflux','chfluxz','chavgpt','chavgpz','chrecoil'] : xtitle += ' [GeV]'
     frame.GetXaxis().SetTitle(xtitle)
     ytitle='1/N dN/d(%s)'%VARTITLES[obs]
-    if obs in ['chflux','chfluxz','chavgpt','chavgpt','chrecoil','chavgpz'] : ytitle += ' [GeV^{-1}]'
+    if obs in ['sphericity','aplanarity','C','D']: ytitle='1/N dN/d%s'%VARTITLES[obs]
+    if obs in ['chflux','chfluxz','chavgpt','chavgpz','chrecoil','chavgpz'] : ytitle += ' [GeV^{-1}]'
     frame.GetYaxis().SetTitle(ytitle)
     frame.GetYaxis().SetTitleOffset(1.48)
     frame.GetXaxis().SetTitleOffset(1.25)
@@ -286,12 +287,12 @@ def compareUEPlots(uePlots,outDir,cuts,obs,plottingSetList=[PLOTTINGSET_1],cmsLa
         sp[-1].SetRightMargin(0.25)
         sp[-1].SetLeftMargin(0.12)
         if i==len(plottingSetList)-1:
-            sp[-1].SetTopMargin(0.02)
-            sp[-1].SetBottomMargin(0.3) #2*dy_xtit/dy_ipad)
+            sp[-1].SetTopMargin(0.01)
+            sp[-1].SetBottomMargin(0.35) #2*dy_xtit/dy_ipad)
         elif i==0:
             sp[-1].SetBottomMargin(0.11)
         else:
-            sp[-1].SetBottomMargin(0.2)
+            sp[-1].SetBottomMargin(0.25)
         #sp[-1].SetGridx()
         sp[-1].SetLogx(logX)
         sp[-1].Draw()
@@ -306,7 +307,8 @@ def compareUEPlots(uePlots,outDir,cuts,obs,plottingSetList=[PLOTTINGSET_1],cmsLa
         if i==len(plottingSetList)-1:
             rf[-1].GetXaxis().SetTitleSize(0.13)
             rf[-1].GetXaxis().SetLabelSize(0.11)
-            rf[-1].GetXaxis().SetTitleOffset(1.0)
+            rf[-1].GetXaxis().SetTitleOffset(1.1)
+            if 'chrecoil' in obs: rf[-1].GetXaxis().SetTitleOffset(1.3)
             rf[-1].GetXaxis().SetTitle(xtitle)
         else:
             rf[-1].GetXaxis().SetTitleSize(0.0)

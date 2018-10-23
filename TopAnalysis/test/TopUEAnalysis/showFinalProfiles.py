@@ -15,40 +15,40 @@ SLICELISTS=[
             ('nj=0,1',          '=0'),
             ('nj=1,2',          '=1'),
             ('nj=2,999',        '#geq2'),
-            ('ptll=0,20',       ']0,20['),
-            ('ptll=20,40',      ']20,40['),
-            ('ptll=40,80',      ']40,80['),
-            ('ptll=80,120',     ']80,120['),
+            ('ptll=0,20',       '[0,20['),
+            ('ptll=20,40',      '[20,40['),
+            ('ptll=40,80',      '[40,80['),
+            ('ptll=80,120',     '[80,120['),
             ('ptll=120,9999',   '>120'),
-            ('mll=0,60',        ']0,60['),
-            ('mll=60,120',      ']60,120['),
-            ('mll=120,200',     ']120,200['),
+            ('mll=0,60',        '[0,60['),
+            ('mll=60,120',      '[60,120['),
+            ('mll=120,200',     '[120,200['),
             ('mll=200,9999',    '>200'),
             ],
      [ 
             ('Extra jets',1,4),
-            ("p_{T}(ll) / #it{GeV}",4,9),
-            ("m(ll) / #it{GeV}",9,13)
+            ('p_{T}(ll) [GeV]',4,9),
+            ('m(ll) [GeV]',9,13)
             ]
      ),
     ('_ptll',[
             ('inc_ptll=tow',           'Inc.'),
-            ('ptll=0,20_ptll=tow',     ']0,20['),
-            ('ptll=20,40_ptll=tow',    ']20,40['),
-            ('ptll=40,80_ptll=tow',    ']40,80['),
-            ('ptll=80,120_ptll=tow',   ']80,120['),
+            ('ptll=0,20_ptll=tow',     '[0,20['),
+            ('ptll=20,40_ptll=tow',    '[20,40['),
+            ('ptll=40,80_ptll=tow',    '[40,80['),
+            ('ptll=80,120_ptll=tow',   '[80,120['),
             ('ptll=120,9999_ptll=tow', '#geq120'),
             ('inc_ptll=tra',           'Inc.'),
-            ('ptll=0,20_ptll=tra',     ']0,20['),
-            ('ptll=20,40_ptll=tra',    ']20,40['),
-            ('ptll=40,80_ptll=tra',    ']40,80['),
-            ('ptll=80,120_ptll=tra',   ']80,120['),
+            ('ptll=0,20_ptll=tra',     '[0,20['),
+            ('ptll=20,40_ptll=tra',    '[20,40['),
+            ('ptll=40,80_ptll=tra',    '[40,80['),
+            ('ptll=80,120_ptll=tra',   '[80,120['),
             ('ptll=120,9999_ptll=tra', '#geq120'),
             ('inc_ptll=awa',           'Inc.'),
-            ('ptll=0,20_ptll=awa',     ']0,20['),
-            ('ptll=20,40_ptll=awa',    ']20,40['),
-            ('ptll=40,80_ptll=awa',    ']40,80['),
-            ('ptll=80,120_ptll=awa',   ']80,120['),
+            ('ptll=0,20_ptll=awa',     '[0,20['),
+            ('ptll=20,40_ptll=awa',    '[20,40['),
+            ('ptll=40,80_ptll=awa',    '[40,80['),
+            ('ptll=80,120_ptll=awa',   '[80,120['),
             ('ptll=120,9999_ptll=awa', '#geq120'),
             ],
      [
@@ -126,27 +126,27 @@ def showProfile(grColl,grCollComp,grCollStat,
     """
     #start the canvas
     c=ROOT.TCanvas('c','c',800,600)
-    c.SetTopMargin(0.12)
+    c.SetTopMargin(0.07)
     c.SetRightMargin(0.03)
     c.SetLeftMargin(0.15)
-    c.SetBottomMargin(0.2)
+    c.SetBottomMargin(0.21)
     #c.SetGridx()
     units=''
     if obs in ['chflux','chfluxz','chavgpt','chavgpt','chrecoil'] : units = ' [GeV]'
     
-    frame=ROOT.TH1F('frame',';Category;< %s >%s;'%(VARTITLES[obs],units),len(sliceList),0,len(sliceList))
+    frame=ROOT.TH1F('frame',';Category;#LT %s #GT%s;'%(VARTITLES[obs],units),len(sliceList),0,len(sliceList))
     for xbin in xrange(1,frame.GetNbinsX()+1): frame.GetXaxis().SetBinLabel(xbin,sliceList[xbin-1][1])
     frame.GetYaxis().SetTitleSize(0.06)
     frame.GetYaxis().SetLabelSize(0.05)
     frame.GetXaxis().SetTitleSize(0.06)
     frame.GetXaxis().SetLabelSize(0.05)
     frame.GetXaxis().SetLabelOffset(0.01)
-    frame.GetXaxis().SetTitleOffset(1.5)
+    frame.GetXaxis().SetTitleOffset(1.8) #1.5)
     frame.Draw()
 
     #plot and add to the legend
-    #leg=ROOT.TLegend(0.67,0.86,0.94,0.86-len(plottingSetList[0])*0.05)
-    leg=ROOT.TLegend(0.55,0.86,0.94,0.86-len(plottingSetList[0])*0.025)
+    #leg=ROOT.TLegend(0.55,0.85,0.94,0.86-len(plottingSetList[0])*0.025)
+    leg=ROOT.TLegend(0.55,0.9,0.94,0.9-len(plottingSetList[0])*0.025)
     leg.SetNColumns(2)
     leg.SetFillStyle(0)
     leg.SetBorderSize(0)
@@ -170,8 +170,8 @@ def showProfile(grColl,grCollComp,grCollStat,
     frame.GetYaxis().SetRangeUser(minY*0.8,maxY*1.3)
     leg.Draw()
 
-    #stat component for data                                                                                                                                                                                                     
-    txt=ROOT.TPaveText(0.555,0.83,0.59,0.84,'brNDC')
+    #stat component for data
+    txt=ROOT.TPaveText(0.555,0.87,0.59,0.88,'brNDC')
     txt.SetFillStyle(3004)
     txt.SetFillColor(1)
     txt.SetBorderSize(0)
@@ -180,23 +180,24 @@ def showProfile(grColl,grCollComp,grCollStat,
 
     #category labels
     catTxt=ROOT.TLatex()
-    catTxt.SetTextFont(52)
-    catTxt.SetTextSize(0.035)
+    catTxt.SetTextFont(42)
+    catTxt.SetTextSize(0.038)
     catTxt.SetTextAlign(22)
-    catTxt.SetNDC(False)
-    ar=ROOT.TArrow()
-    ar.SetNDC(False)
+    catTxt.SetNDC(True)
+    ar=ROOT.TArrow() 
+    ar.SetNDC(True)
     ar.SetLineWidth(2)
+
+    ROOT.gPad.Update()
+    xr=ROOT.gPad.GetX2()-ROOT.gPad.GetX1()
+    yr=ROOT.gPad.GetY2()-ROOT.gPad.GetY1()
     for t,xmin,xmax in categList:
-        yarr=1.315*maxY
-        ytxt=1.36*maxY
-        if obs=='detST': yarr,ytxt=0.0415,0.042 #0.44,0.45
-        if obs=='sphericity': yarr,ytxt=0.61,0.62 #0.44,0.45
-        if obs=='aplanarity': yarr,ytxt=0.188,0.192 #0.1238,0.1268
-        if obs=='C': yarr,ytxt=0.88,0.895 #0.66,0.675
-        if obs=='D': yarr,ytxt=0.47,0.48 #0.271,0.278
-        catTxt.DrawLatex(0.5*(xmax+xmin),ytxt,t)
-        ar.DrawArrow(xmin,yarr,xmax,yarr,0.01,"<>")
+        xmax_ndc = (xmax-ROOT.gPad.GetX1())/xr
+        xmin_ndc = (xmin-ROOT.gPad.GetX1())/xr
+        ytxt=0.088
+        yarr=0.12*yr+ROOT.gPad.GetY1()
+        catTxt.DrawLatexNDC(0.5*(xmax_ndc+xmin_ndc),ytxt,t)
+        ar.DrawArrow(xmin,yarr,xmax,yarr,0.01,'<>')
 
     #standard label
     tex=ROOT.TLatex()
@@ -228,30 +229,33 @@ def showProfile(grColl,grCollComp,grCollStat,
     lg=[]
     y=1
     ar=ROOT.TArrow()
-    ar.SetNDC(False)
+    ar.SetNDC(True)
     ar.SetLineWidth(2)
     for i in xrange(0,len(plottingSetList)):
         cratio.cd()
         
         #start new sub-pad
         dy_ipad=rel_dy_pad
-        if i==0 : dy_ipad += 3*rel_dy_xtit
-        if i==len(plottingSetList)-1: dy_ipad+=rel_dy_xtit
+        if i==0 : 
+            dy_ipad += rel_dy_xtit
+        if i==len(plottingSetList)-1: 
+            dy_ipad+=3*rel_dy_xtit
         sp.append( ROOT.TPad('p%d'%i,'p%d'%i,0,y,1.0,max(y-dy_ipad,0.)) )
         y=max(y-dy_ipad,0.)
 
         #margins
-        if i==0:
-            sp[-1].SetTopMargin(0.33)
+        if i==len(plottingSetList)-1:
+            sp[-1].SetBottomMargin(0.4)
+            sp[-1].SetTopMargin(0.06)
+        elif i==0:
+            sp[-1].SetTopMargin(0.2)
+            sp[-1].SetBottomMargin(0.11)
         else:
             sp[-1].SetTopMargin(0.11)
-        sp[-1].SetRightMargin(0.25)
-        sp[-1].SetLeftMargin(0.12)
-        if i==len(plottingSetList)-1:
-            sp[-1].SetTopMargin(0.06)
-            sp[-1].SetBottomMargin(0.28) #2*dy_xtit/dy_ipad)
-        else:
             sp[-1].SetBottomMargin(0.11)
+        sp[-1].SetRightMargin(0.2)
+        sp[-1].SetLeftMargin(0.12)
+
         #sp[-1].SetGridx()
         sp[-1].Draw()
         sp[-1].cd()        
@@ -262,18 +266,18 @@ def showProfile(grColl,grCollComp,grCollStat,
         rf[-1].GetYaxis().SetTitleSize(0.12)
         rf[-1].GetYaxis().SetLabelSize(0.11)
         if i==len(plottingSetList)-1:
-            rf[-1].GetXaxis().SetTitleSize(0.16)
-            rf[-1].GetXaxis().SetLabelSize(0.11)
+            rf[-1].GetXaxis().SetTitleSize(0.13)
+            rf[-1].GetXaxis().SetLabelSize(0.088)
             rf[-1].GetXaxis().SetLabelOffset(0.01)
-            rf[-1].GetXaxis().SetTitleOffset(0.8)
+            rf[-1].GetXaxis().SetTitleOffset(1.6)
             rf[-1].GetXaxis().SetTitle('Category')
         else:
             rf[-1].GetXaxis().SetTitle('')
             for xbin in xrange(0,rf[-1].GetNbinsX()): rf[-1].GetXaxis().SetBinLabel(xbin+1,'')
-        if i==0:
+        if i==len(plottingSetList)-1:
             rf[-1].GetYaxis().SetTitleOffset(0.4)
             rf[-1].GetYaxis().SetTitleSize(0.095)
-            rf[-1].GetYaxis().SetLabelSize(0.088)
+            rf[-1].GetYaxis().SetLabelSize(0.09)
         
 
         minY,maxY=0.99,1.01
@@ -289,18 +293,18 @@ def showProfile(grColl,grCollComp,grCollStat,
             tex.SetTextSize(0.13)
             tex.SetNDC()
             tex.DrawLatex(0.12,0.84,cmsLabel)
-            tex.DrawLatex(0.5,0.84,'#scale[0.9]{35.9 fb^{-1} (13 TeV)}')
+            tex.DrawLatex(0.58,0.84,'#scale[0.9]{35.9 fb^{-1} (13 TeV)}')
         
         if i==0:
-            lg.append( ROOT.TLegend(0.75,0.1,0.99,0.7) )
+            lg.append( ROOT.TLegend(0.8,0.1,0.99,0.8) )
         elif i==len(plottingSetList)-1:
-            lg.append( ROOT.TLegend(0.75,0.23,0.99,0.95) )
+            lg.append( ROOT.TLegend(0.8,0.4,0.99,0.95) )
         else:
-            lg.append( ROOT.TLegend(0.75,0.1,0.99,0.95) )
+            lg.append( ROOT.TLegend(0.8,0.1,0.99,0.95) )
         lg[-1].SetFillStyle(0)
         lg[-1].SetBorderSize(0)
         lg[-1].SetTextFont(42)
-        lg[-1].SetTextSize(0.085 if i==0 else 0.1)
+        lg[-1].SetTextSize(0.085 if i==len(plottingSetList)-1 else 0.1)
         #lg[-1].SetNColumns(len(plottingSetList[i])-1)
     
         for p,drawOpt,fill,color,marker,keepXUnc,shiftX in plottingSetList[i]:
@@ -327,17 +331,22 @@ def showProfile(grColl,grCollComp,grCollStat,
         lg[-1].Draw()
     
         #category labels
-        if i==0:
+        if i==len(plottingSetList)-1:
+            ROOT.gPad.Update()
+            xr=ROOT.gPad.GetX2()-ROOT.gPad.GetX1()
+            yr=ROOT.gPad.GetY2()-ROOT.gPad.GetY1()
             catTxt=ROOT.TLatex()
-            catTxt.SetTextFont(52)
-            catTxt.SetTextSize(0.08)
+            catTxt.SetTextFont(42)
+            catTxt.SetTextSize(0.085)
             catTxt.SetTextAlign(22)
             catTxt.SetNDC(False)
-            maxYLabel=6.5 if isPull else maxY*1.35 
-            maxYArr=5.5 if isPull else maxY*1.125
             for t,xmin,xmax in categList:
-                catTxt.DrawLatex(0.5*(xmax+xmin),maxYLabel,t)
-                ar.DrawArrow(xmin,maxYArr,xmax,maxYArr,0.01,"<>")
+                xmax_ndc      = (xmax-ROOT.gPad.GetX1())/xr
+                xmin_ndc      = (xmin-ROOT.gPad.GetX1())/xr
+                ytxt=0.18
+                yarr=0.25*yr+ROOT.gPad.GetY1()
+                catTxt.DrawLatexNDC(0.5*(xmax_ndc+xmin_ndc),ytxt,t)
+                ar.DrawArrow(xmin,yarr,xmax,yarr,0.01,"<>")
 
     # all done
     cratio.Modified()

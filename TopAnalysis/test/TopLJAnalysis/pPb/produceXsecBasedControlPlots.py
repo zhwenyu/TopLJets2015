@@ -1,12 +1,13 @@
 import ROOT
 import sys
 import pickle
+import optparse
 
 from runDataFit import lumi
 from runQCDestimation import getHistos,QCDNORM,PROCNORM
 from TopLJets2015.TopAnalysis.Plot import Plot
 
-def showPlotFor(args,var):
+def showPlotFor(args,var,opt):
     
     histos=getHistos(args,var)
     for key in histos:
@@ -27,42 +28,54 @@ def showPlotFor(args,var):
             key=(ch,cat)
 
             #scale up processes
-            histos['ttbar'][key].Scale(lumi[0]*PROCNORM[('ttbar',ch)])
-            histos['wjets'][key].Scale(lumi[0]*PROCNORM[('wjets',ch)])
-            histos['dy'][key].Scale(lumi[0]*PROCNORM[('dy',ch)])
+            histos['ttbar'][key].Scale(opt.lumi*PROCNORM[('ttbar',ch)])
+            histos['wjets'][key].Scale(opt.lumi*PROCNORM[('wjets',ch)])
+            histos['dy'][key].Scale(opt.lumi*PROCNORM[('dy',ch)])
             qcdHisto=histos['qcd'][qcdKey].Clone('qcd_%s%s'%(ch,cat))
-            qcdHisto.Scale(QCDNORM[key][0]/qcdHisto.Integral(0,qcdHisto.GetNbinsX()+1))
+            qcdHisto.Scale((opt.lumi/lumi[0])*QCDNORM[key][0]/qcdHisto.Integral(0,qcdHisto.GetNbinsX()+1))
             for xbin in xrange(1,qcdHisto.GetNbinsX()+1):
                 totalUnc=qcdHisto.GetBinError(xbin)**2+(qcdHisto.GetBinContent(xbin)*QCDNORM[key][1]/QCDNORM[key][0])**2
                 qcdHisto.SetBinError(xbin,ROOT.TMath.Sqrt(totalUnc))
-
-            if not 'ttbar' in histTotal:
-                histTotal['ttbar']=histos['ttbar'][key].Clone('tot_ttbar')
-                histTotal['dy']=histos['dy'][key].Clone('tot_dy')
-                histTotal['wjets']=histos['wjets'][key].Clone('tot_wjets')
-                histTotal['qcd']=qcdHisto.Clone('tot_qcd')
-                histTotal['data']=histos['data'][key].Clone('tot_dat')
-                for x in histTotal: histTotal[x].SetDirectory(0)
-            else:
-                histTotal['ttbar'].Add( histos['ttbar'][key] )
-                histTotal['dy'].Add( histos['dy'][key] )
-                histTotal['wjets'].Add( histos['wjets'][key] )
-                histTotal['qcd'].Add( qcdHisto )
-                histTotal['data'].Add( histos['data'][key] )
 
             p=Plot('%s%s_%s_control'%(ch,cat,var))
             p.add(histos['ttbar'][key],'t#bar{t}',0,False,False,False)
             p.add(histos['wjets'][key],'W+jets',ROOT.TColor.GetColor('#fee090'),False,False,False)
             p.add(histos['dy'][key],'DY',ROOT.TColor.GetColor('#fc8d59'),False,False,False)
             p.add(qcdHisto,'Multijets',ROOT.TColor.GetColor('#e0f3f8'),False,False,False)
-            p.add(histos['data'][key],'Data',1,True,False,False)
+
+            if opt.pseudoData:
+                print 'Generating pseudo-data from total'
+                histos['data'][key].Reset('ICE')
+                for m in p.mc:
+                    nevts=p.mc[m].Integral()
+                    for i in xrange(0,ROOT.gRandom.Poisson(nevts)):
+                        histos['data'][key].Fill( p.mc[m].GetRandom() )                        
+                p.add(histos['data'][key],'Pseudo data',1,True,False,False)
+                p.cmsLabel='#scale[0.9]{#bf{CMS} #it{simulation preliminary}}'
+            else:
+                p.add(histos['data'][key],'Data',1,True,False,False)
+
+            #create the totals
+            for pkey in ['ttbar','dy','wjets','qcd','data']:
+                if not pkey in histTotal:
+                    if pkey=='qcd':
+                        histTotal[pkey]=qcdHisto.Clone('tot_qcd')
+                    else:
+                        histTotal[pkey]=histos[pkey][key].Clone('tot_%s'%pkey)
+                    histTotal[pkey].SetDirectory(0)
+                    histTotal[pkey].Reset('ICE')     
+                if pkey=='qcd':               
+                    histTotal[pkey].Add( qcdHisto )
+                else:
+                    histTotal[pkey].Add( histos[pkey][key] )
+
             p.ratioFrameDrawOpt='pX0'
             p.doMCOverData=False
             p.ratiorange=(0.4,1.7)
             p.com='8.16 TeV'
-            p.show(outDir='./',lumi=174*1e-3)
+            p.show(outDir='./',lumi=opt.lumi*1e-3)
             p.reset()
-
+            
         #combined plots
         p=Plot('l%s_%s_control'%(cat,var))
         p.add(histTotal['ttbar'],'t#bar{t}',ROOT.TColor.GetColor('#d7191c'),False,False,False)
@@ -83,25 +96,32 @@ def showPlotFor(args,var):
         if '1b1q' in cat: tag+=' (=1b)'
         if '2b'   in cat: tag+=' (#geq2b)'
         tag='#scale[1.1]{#bf{%s}}'%tag
-        p.show(outDir='./',lumi=174*1e-3,extraText=tag)
+        p.show(outDir='./',lumi=opt.lumi*1e-3,extraText=tag)
         p.reset()
 
 """
 """
 def main():
 
+    usage = 'usage: %prog [options]'
+    parser = optparse.OptionParser(usage)
+    parser.add_option('-l', '--lumi',       dest='lumi',       help='luminosity [nb] [%default]',   default=lumi[0], type=float)
+    parser.add_option(      '--pseudoData', dest='pseudoData', help='pseudo-data [%default]',       default=False,   action='store_true')
+    parser.add_option('-b', '--batch',      dest='batch',      help='run in batch mode [%default]', default=False,   action='store_true')
+    (opt, args) = parser.parse_args()
+
     ROOT.gStyle.SetOptStat(0)
     ROOT.gStyle.SetOptTitle(0)
-    ROOT.gROOT.SetBatch(True)
+    ROOT.gROOT.SetBatch(opt.batch)
 
     #load qcd normalization
     global QCDNORM
-    with open('qcdnorm.pck','r') as fIn:
-        QCDNORM=pickle.load(fIn)
+    with open('qcdnorm.pck','r') as fIn: QCDNORM=pickle.load(fIn)
 
-    args=sys.argv[1:]
+    #do plots
     for var in ['met','mtw','minmlb','maxmlb','mjj','drjj','ntracks','ntrackshp','mthad','mtlep']: 
-        showPlotFor(args,var)
+        print args
+        showPlotFor(args,var,opt)
 
 
 if __name__ == "__main__":

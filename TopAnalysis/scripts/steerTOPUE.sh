@@ -106,7 +106,7 @@ case $WHAT in
         #python scripts/runLocalAnalysis.py -i ${efeeos3} --farmappendix TopUEMCMPICR ${commonOpts} --ignore "~";        
         commonOpts="-q ${queue} -o ${summaryeosdir}_extra      --era era2016 -m TOP-UE::RunTopUE --ch 0 --runSysts";        
         #python scripts/runLocalAnalysis.py -i ${markuseos2} --farmappendix TopUEMC ${commonOpts} --only flavrope;
-        python scripts/runLocalAnalysis.py -i ${markuseos2} --farmappendix TopUEMC ${commonOpts} --only CMW_2loop;
+        python scripts/runLocalAnalysis.py -i ${markuseos2} --farmappendix TopUEMC ${commonOpts} --only sherpa;
 	;;
     CHECKSELINTEG )
         for farm in TopUEMC TopUEMCASISR TopUEMCMPICR; do
@@ -240,10 +240,10 @@ case $WHAT in
         ;;
 
     SUBMITSPECIALANA )
-        #obs=("chrecoil" "sphericity" "aplanarity" "C" "D" "chmult" "chavgpt" "chavgpz" "chfluxz" "chflux" "maxRap" "rapDist")
-        obs=("sphericity" "aplanarity" "C" "D")
-        obs=("chavgpt")
-        obs=("detST")
+        obs=("chrecoil" "sphericity" "aplanarity" "C" "D" "chmult" "chavgpt" "chavgpz" "chfluxz" "chflux" "maxRap" "rapDist")
+        #obs=("sphericity" "aplanarity" "C" "D")
+        #obs=("chavgpt")
+        #obs=("detST")
         for i in ${obs[@]}; do
             a=(`ls store/TOP-17-015/${i}`)
             for j in ${a[@]}; do
@@ -251,20 +251,20 @@ case $WHAT in
                 if [ -d ${dir} ]; then
                     
                     echo "Moving ${i}/${j}"
-                    cp -v UEanalysis/${i}/${j}/Chunks/* store/TOP-17-015/${i}/${j}/Chunks
-                    #cp -v UEanalysis/${i}/${j}/Chunks/* store/TOP-17-015/${i}/${j}
+                    #cp -v UEanalysis/${i}/${j}/Chunks/* store/TOP-17-015/${i}/${j}/Chunks
+                    cp -v UEanalysis/${i}/${j}/Chunks/* store/TOP-17-015/${i}/${j}
                     continue
 
-                    #echo "Checking ${i}/${j}"
-                    #python scripts/checkAnalysisIntegrity.py UEanalysis/${i}/${j}/FARM-UEANA/ UEanalysis/${i}/${j}/Chunks
-                    #continue
+                    echo "Checking ${i}/${j}"
+                    python scripts/checkAnalysisIntegrity.py UEanalysis/${i}/${j}/FARM-UEANA/ UEanalysis/${i}/${j}/Chunks
+                    continue
 
                     echo "Preparing analysis cfg for $dir"                    
                     mkdir -p UEanalysis/${i}/${j};
                     cp -v ${dir}/analysis*.pck UEanalysis/${i}/${j};
                     echo "Creating jobs for special MC (gen only)"
-                    #python test/TopUEAnalysis/runUEanalysis.py -i /eos/cms/store/cmst3/group/top/TOP-17-015-v2/Chunks --step 2 -q ${queue} -o UEanalysis/${i}/${j} --dryRun --only CMW_2loop; #flavrope;
-                    python test/TopUEAnalysis/runUEanalysis.py -i /eos/cms/store/cmst3/group/top/TOP-17-015-v2/Chunks --step 2 -q ${queue} -o UEanalysis/${i}/${j} --dryRun --only MC13TeV_TTJets --onlyExact;
+                    python test/TopUEAnalysis/runUEanalysis.py -i /eos/cms/store/cmst3/group/top/TOP-17-015-v2_extra/Chunks --step 2 -q ${queue} -o UEanalysis/${i}/${j} --only MC13TeV_TTJets_sherpa --dryRun;
+                    #python test/TopUEAnalysis/runUEanalysis.py -i /eos/cms/store/cmst3/group/top/TOP-17-015-v2/Chunks --step 2 -q ${queue} -o UEanalysis/${i}/${j} --dryRun --only MC13TeV_TTJets --onlyExact;
                     cd UEanalysis/${i}/${j};
                     condor_submit condor.sub;
                     cd -;
@@ -300,8 +300,8 @@ case $WHAT in
         commonOpts="-o ${dir}/unfold --plotter ${dir}/plots/plotter.root --syst ${dir}/plots/syst_plotter.root -d ${dir}/Chunks/"            
         #python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 0;
         #python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 1;
-        python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 2;
-        python test/TopUEAnalysis/showUnfoldSummary.py -i ${dir}/unfold/unfold_summary.root;
+        #python test/TopUEAnalysis/runUEUnfolding.py ${commonOpts} -s 2;
+        #python test/TopUEAnalysis/showUnfoldSummary.py -i ${dir}/unfold/unfold_summary.root;
         python test/TopUEAnalysis/showFinalDistributions.py \
             --cfg ${dir}/analysiscfg.pck --cmsLabel "#bf{CMS}"\
             ${dir}/unfold/unfold_summary.root \
@@ -322,7 +322,7 @@ case $WHAT in
         b=(`ls $TAGANA/*.{png,pdf}`)
         a+=( "${a[@]}" "${b[@]}" )
         for i in ${a[@]}; do            
-            cp ${i} ${wwwdir}//${tag}_`basename ${i}`;
+            cp -v ${i} ${wwwdir}//${tag}_`basename ${i}`;
         done
         cp test/index.php ${wwwdir}/
 

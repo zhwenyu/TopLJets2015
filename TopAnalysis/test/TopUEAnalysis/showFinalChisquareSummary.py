@@ -151,7 +151,7 @@ def buildChisquareReportFrom(pckSummary):
 
             if '/inc/' in pckSummary:
                 print pckSummary.split('/')[2],model,(chi2,np,pval),'|',(chi2nomodelsyst,np,pvalnomodelsyst)
-
+                raw_input()
             if '#alpha_{S}' in model:
                 param,valStr=model.split('=')
                 val=float(valStr)
@@ -214,7 +214,7 @@ def main():
     parser.add_option('--cmsLabel',
                       dest='cmsLabel',
                       help='cms label [%default]',
-                      default='#bf{CMS} #it{preliminary}')
+                      default='#bf{CMS}')
     (opt, args) = parser.parse_args()
 
         
@@ -260,7 +260,14 @@ def main():
     print '[showFinalChisquareSummary] for',varKey
     print 'Collected the results for the following variables'
     print varList
-    #raw_input()
+
+#    resultLog=open('%s/chi2grandsummary.dat'%opt.input,'w')
+#    for m in chi2Results:
+#        for a in chi2Results[m]:
+#            for r in chi2Results[m][a]:
+#                resultLog.write('%15s %15s %3.1f %d %3.3f\n'%(m,' '.join(a),r[0],r[1],r[2]))
+#    resultLog.close()
+#    raw_input('%s/chi2grandsummary.dat'%opt.input)
 
     #display the results
     models2Plot=['PW+PY8*','PW+PY8',

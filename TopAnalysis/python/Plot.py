@@ -419,24 +419,21 @@ class Plot(object):
         iniy=0.88 if self.wideCanvas else 0.88
         inix=0.15 if noStack else 0.18
         if (totalMC is not None and totalMC.GetMaximumBin() > totalMC.GetNbinsX()/2.):
-            inix = 0.6
-        inixlumi=0.7
+            inix = 0.6       
         if not self.dataH or noRatio:
             inix=0.2
-            inixlumi=0.6
-        if len(self.com)>10:
-            inixlumi=0.55
 
         txt.DrawLatex(inix,iniy,self.cmsLabel)
+        txt.SetTextAlign(32)
         if lumi<1:
-            inixlumi=0.55
-            txt.DrawLatex(inixlumi,0.97,'#scale[0.8]{pPb (%3.0f nb^{-1}, %s)}' % (lumi*1000.,self.com) )
+            txt.DrawLatex(0.95,0.97,'#scale[0.8]{pPb (%3.0f nb^{-1}, %s)}' % (lumi*1000.,self.com) )
         elif lumi<100:
-            txt.DrawLatex(inixlumi,0.97,'#scale[0.8]{%3.1f pb^{-1} (%s)}' % (lumi,self.com) )
+            txt.DrawLatex(0.95,0.97,'#scale[0.8]{%3.1f pb^{-1} (%s)}' % (lumi,self.com) )
         else:
-            txt.DrawLatex(inixlumi,0.97,'#scale[0.8]{%3.1f fb^{-1} (%s)}' % (lumi/1000.,self.com) )
+            txt.DrawLatex(0.95,0.97,'#scale[0.8]{%3.1f fb^{-1} (%s)}' % (lumi/1000.,self.com) )
         try:
             extraCtr=1
+            txt.SetTextAlign(12)
             for extra in extraText.split('\\'):
                 txt.DrawLatex(inix,iniy-0.02-0.08*extraCtr,'#scale[0.8]{%s}'%extra)
                 extraCtr+=1

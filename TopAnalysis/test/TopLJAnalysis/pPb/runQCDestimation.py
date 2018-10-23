@@ -1,7 +1,7 @@
 import ROOT
 import sys
 import pickle
-
+import optparse
 from runDataFit import lumi
 
 QCDNORM={}
@@ -153,9 +153,15 @@ def main():
     c.SetLeftMargin(0.12)
     c.SetRightMargin(0.04)
     c.SetBottomMargin(0.12)
-    
-    fitQCD(sys.argv[1:],'met',c)
-    fitQCD(sys.argv[1:],'mtw',c)
+
+    usage = 'usage: %prog [options]'
+    parser = optparse.OptionParser(usage)
+    parser.add_option('-l', '--lumi',  dest='lumi',  help='luminosity [%default]',        default=lumi[0], type=float)
+    parser.add_option('-b', '--batch', dest='batch', help='run in batch mode [%default]', default=False,   action='store_true')
+    (opt, args) = parser.parse_args()
+
+    fitQCD(args,'met',c)
+    fitQCD(args,'mtw',c)
 
     #saturate the uncertainty at 50% at least but not more than 100%
     for key in QCDNORM:
