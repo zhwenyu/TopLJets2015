@@ -65,3 +65,26 @@ void HistTool::fill(TString title, double value, std::vector<double> weights,TSt
 }
 
 
+void HistTool::fill(TString title, double valueX, double valueY, std::vector<double> weights,TString cat) {
+  
+  if (not all2dPlots_.count(title)) {
+    std::cout << "Histogram " << title << " not registered, not filling." << std::endl;
+    return;
+  }
+
+
+  //category specific plot, init if needed
+  if(cat!=""){
+    TString newTitle=cat+"_"+title;
+    if(not all2dPlots_.count(newTitle)) {
+      std::cout << "Histogram " << title << " for cat=" << cat << " not yet started, adding now." << std::endl;
+      all2dPlots_[newTitle]=(TH2 *)all2dPlots_[title]->Clone(newTitle);
+      all2dPlots_[newTitle]->SetDirectory(0);
+      all2dPlots_[newTitle]->Reset("ICE");
+    }
+    title=newTitle;
+  }
+
+  all2dPlots_[title]->Fill(valueX,valueY, weights[0]);
+}
+

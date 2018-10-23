@@ -1,5 +1,5 @@
 //////////////////////////////////////
-// Current;y the simplest case:     //
+// Currently the simplest case:     //
 //    - Only signal region          //
 //    - Hence no transfer factor    //
 //////////////////////////////////////
@@ -121,6 +121,9 @@ class WorkspaceProvider{
     this->createParamHists(0);
     cout<<"Create PH bkg ----"<<endl;
     this->createParamHists(1);
+
+    wsNoTF      = new RooWorkspace("wsNoTF"+chan, "wsNoTF"+chan);
+    wsNoTF->import(*var);
   }
 
   ~WorkspaceProvider(){}
@@ -202,6 +205,57 @@ class WorkspaceProvider{
     ws->Write();
     fOut->Save();
     fOut->Close();
+
+
+    wsNoTF->import(*SR->getDataDH(var));
+    wsNoTF->import(*SR->getBkgDHNLO(var));
+    wsNoTF->import(*SR->getSigDH(var));
+    wsNoTF->import(*SR->getSigHistNorm());
+    wsNoTF->import(*SR->getBkgNLOHistNorm());
+
+    TFile * fOut2 = new TFile("Channel_"+CR->chan+"_BkgNLO.root","recreate");
+    fOut2->cd();
+    wsNoTF->Write();
+    fOut2->Save();
+    fOut2->Close();
+  }
+
+  void makeCardNLO(YieldsErr YieldErrors, TString boson){
+    TString outname = chan+"_"+boson+"_NLO.txt";
+    TString binName = "signal";
+    ofstream myfile;
+    myfile.setf(ios_base::fixed);
+    myfile.precision(4);
+    myfile.open(outname);
+    myfile << "Datacard for Signal Region with Gamma+Jets corrected to NLO"<<endl;
+    myfile << "imax *  number of categories" << endl;
+    myfile << "jmax *  number of samples minus 1" << endl;
+    myfile << "kmax *  number of nuisance parameters (sources of systematical uncertainties)" << endl;
+
+    myfile << "\n------------" << endl;
+    myfile << "shapes\tSignal\t" <<binName <<"\tChannel_"<<chan<<"_BkgNLO.root wsNoTF"<<chan<<":"<<SR->getSigDH(var)->GetName()   << endl; 
+    myfile << "shapes\tBkg\t"    <<binName <<"\tChannel_"<<chan<<"_BkgNLO.root wsNoTF"<<chan<<":"<<SR->getBkgDHNLO(var)->GetName()<< endl; 
+    myfile << "shapes\tdata_obs\t"<<binName<<"\tChannel_"<<chan<<"_BkgNLO.root wsNoTF"<<chan<<":"<<"Data"<<chan<<boson << endl;
+    myfile << "------------" << endl;
+    myfile << "bin\t"<<binName << endl;
+    myfile << "observation\t-1.0" << endl;
+    myfile << "------------" << endl;
+
+    myfile << "bin\t"<<binName<<"\t"<<binName<< endl;
+    myfile << "process\tSignal\tBkg" << endl;
+    myfile << "process\t0\t1" << endl;
+    myfile << "rate\t"<<SR->hSig->Integral()<<"\t"<<SR->hBkgCorr->Integral()<< endl;
+
+    myfile << "------------" << endl;
+    
+    for (auto& x : YieldErrors) {
+      if(x.second.first == x.second.second )
+	myfile << x.first << "\tlnN\t" << x.second.first << "\t"<<x.second.first << endl;
+      else
+	myfile << x.first << "\tlnN\t" << x.second.first << "/" << x.second.second << "\t-" << endl;
+    }
+
+    myfile.close();
   }
 
   void makeCard(YieldsErr YieldErrors, TString boson, bool doSignalPH = false, double sigEff=1, double bkgEff=1){
@@ -280,7 +334,7 @@ class WorkspaceProvider{
   VbfFitRegion * SR, *CR;
   TF * wsTF;
   RooRealVar * var;
-  RooWorkspace * ws;
+  RooWorkspace * ws, * wsNoTF;
   std::vector<std::pair<TString,double> > bTFUnc, sTFUnc;
 
 };

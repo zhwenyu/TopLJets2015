@@ -13,5 +13,6 @@
 #include "TopLJets2015/TopAnalysis/interface/Davismt2.h"
 #include "TopLJets2015/TopAnalysis/interface/HistTool.h"
 #include "TopLJets2015/TopAnalysis/interface/TemplatedFitTools.h"
+#include "TopLJets2015/TopAnalysis/interface/FakeRateTool.h"
 
 #endif

@@ -77,9 +77,30 @@ int TMVAClassification( TString myMethodList , TString extention, BDTOptimizer* 
    }
    dataloader = new DataLoaderWrapper(dlName);
 
-   if (Use["VBF"]) dataloader->setBestVars(false); //dataloader->setAllVariables(false); 
+   std::vector<TString> cats = TMVA::gTools().SplitString( string(category), ':' );
+   TString cut = "";
+   bool isHighMJJ (false), isLowMJJ(false);
+   for (unsigned int iCat = 0; iCat < cats.size(); iCat++){
+     if (cats[iCat] == "VBF") {cout<<"It is HighMJJ!"<<endl; isHighMJJ = true;}
+     if (cats[iCat] == "HighPt") {cout<<"It is LowMJJ!"<<endl; isLowMJJ = true; }
+
+     cut+= "category." + cats[iCat] + " == 1 ";
+     if(iCat < cats.size() - 1)
+       cut+= " && ";
+     
+   }
+   //HighMJJ
+   if (isHighMJJ)
+     cut += " && mjj > 1000 && gamma_pt[0] < 200";
+   //LowMJJ
+   if (isLowMJJ)
+     cut += " && mjj > 150";
+   TCut mycuts = TCut(cut);
+   TCut mycutb = TCut(cut);
+
+   if (Use["VBF"]) dataloader->setBestVars(isHighMJJ,false); 
    else if (Use["Cuts"] || Use["CutsD"]) dataloader->setCutOptVars();
-   else if (Use["Fisher"] || Use["BoostedFisher"]) dataloader->setBestVars(false);
+   else if (Use["Fisher"] || Use["BoostedFisher"]) dataloader->setBestVars(isHighMJJ, false);
   
    dataloader->AddSignalTree( signalTree,     signalWeight );
    dataloader->AddBackgroundTree( background, 1 );
@@ -87,17 +108,7 @@ int TMVAClassification( TString myMethodList , TString extention, BDTOptimizer* 
    dataloader->SetBackgroundWeightExpression( default_w_str  );
    dataloader->SetSignalWeightExpression( default_w_str );
 
-   std::vector<TString> cats = TMVA::gTools().SplitString( string(category), ':' );
-   TString cut = "";
-   for (unsigned int iCat = 0; iCat < cats.size(); iCat++){
-     cut+= "category." + cats[iCat] + " == 1 ";
-     if(iCat < cats.size() - 1)
-       cut+= " && ";
-     
-   }
-   cut += " && mjj > 1000 && j_pt[1] > 60";
-   TCut mycuts = TCut(cut);
-   TCut mycutb = TCut(cut);
+ 
    dataloader->PrepareTrainingAndTestTree( mycuts, mycutb,
 					   //					     "nTrain_Signal=1000:nTrain_Background=5000:SplitMode=Random:NormMode=NumEvents:!V");// To use the info in the Tree
 					     "nTrain_Signal=1000:nTrain_Background=5000:SplitMode=Random:NormMode=NumEvents:!V");// To use the info in the Tree
@@ -117,7 +128,7 @@ int TMVAClassification( TString myMethodList , TString extention, BDTOptimizer* 
    } else if (Use["CutsD"])
      factory->BookMethod( dataloader, TMVA::Types::kCuts, "CutsD","!H:!V:FitMethod=MC:EffSel:SampleSize=200000:VarProp=FSmart:VarTransform=Decorrelate" );   
    else if (Use["Fisher"]) 
-     factory->BookMethod( dataloader, TMVA::Types::kFisher, "Fisher", "H:!V:Fisher:VarTransform=None:CreateMVAPdfs:PDFInterpolMVAPdf=Spline2:NbinsMVAPdf=50:NsmoothMVAPdf=10" );
+     factory->BookMethod( dataloader, TMVA::Types::kFisher, extention, "H:!V:Fisher:VarTransform=None:CreateMVAPdfs:PDFInterpolMVAPdf=Spline2:NbinsMVAPdf=50:NsmoothMVAPdf=10" );
    else if (Use["BoostedFisher"]) 
      factory->BookMethod( dataloader, TMVA::Types::kFisher, "BoostedFisher", "H:!V:Boost_Num=20:Boost_Transform=log:Boost_Type=AdaBoost:Boost_AdaBoostBeta=0.2:!Boost_DetailedMonitoring" );
      
