@@ -209,6 +209,33 @@ void RunExclusiveTop(TString filename,
       // RECO LEVEL SELECTION  //
       ///////////////////////////
 
+      //trigger
+      hasETrigger=(selector.hasTriggerBit("HLT_Ele35_WPTight_Gsf_v", ev.triggerBits));
+      hasMTrigger=(selector.hasTriggerBit("HLT_IsoMu24_v",     ev.triggerBits) ||
+                   selector.hasTriggerBit("HLT_IsoMu24_2p1_v", ev.triggerBits) ||
+                   selector.hasTriggerBit("HLT_IsoMu27_v",     ev.triggerBits) );
+      hasMMTrigger=(selector.hasTriggerBit("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ",                  ev.triggerBits) ||
+                    selector.hasTriggerBit("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8_v",          ev.triggerBits) ||
+                    selector.hasTriggerBit("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8_v",        ev.triggerBits) );
+      hasEETrigger=(selector.hasTriggerBit("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_v",             ev.triggerBits) ||
+                    selector.hasTriggerBit("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ_v",          ev.triggerBits) );
+      hasEMTrigger=(selector.hasTriggerBit("HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_v",    ev.triggerBits) ||
+                    selector.hasTriggerBit("HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ_v", ev.triggerBits) ||
+                    selector.hasTriggerBit("HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_v",    ev.triggerBits) ||
+                    selector.hasTriggerBit("HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_v", ev.triggerBits) ||
+                    selector.hasTriggerBit("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_v",     ev.triggerBits) ||
+                    selector.hasTriggerBit("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_v",  ev.triggerBits) );
+      if (ev.isData) { 
+        //use only these unprescaled triggers for these eras
+        if(filename.Contains("2017E") || filename.Contains("2017F")){
+          hasMTrigger=selector.hasTriggerBit("HLT_IsoMu27_v",ev.triggerBits);
+        }
+        if(!(filename.Contains("2017A") || filename.Contains("2017B"))){
+          hasMMTrigger=(selector.hasTriggerBit("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8_v",   ev.triggerBits) ||
+                        selector.hasTriggerBit("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8_v", ev.triggerBits) );
+        }
+      }
+      
       //identify the offline final state from the leading leptons
       int l1idx(0),l2idx(1);
       std::vector<Particle> flaggedLeptons = selector.flaggedLeptons(ev);
@@ -219,72 +246,53 @@ void RunExclusiveTop(TString filename,
       
       //pure hadronic sample (no tight leptons, or photons, jet-triggered)
       TString dilCat("");
-      if(leptons.size()==0 && photons.size()==0) {
+      if(ev.isData && selector.isJetHTPD()) {
         
-        if(!ev.isData) continue;
-        if(!selector.isJetHTPD()) continue;
-
-        //reset all vars
+        //reset variables
         dilCat="jet";
-        hasETrigger=false;
-        hasMTrigger=false;
-        hasMMTrigger=false;
-        hasEETrigger=false;
-        hasEMTrigger=false;
         for(auto v : outVars) v.second=0.;
-
+       
         //check trigger
         bool hasJetTrigger(false);
         Int_t thr[]={40,60,80,140,200,260,320,400,450,500,550};
+        TString trigName("");
         for(size_t ithr=0; ithr<sizeof(thr)/sizeof(Int_t); ithr++) {
           
-          if(selector.hasTriggerBit(Form("HLT_PFJet%d_v",thr[ithr]), ev.triggerBits)){
-            outVars["llpt"]=thr[ithr];
+          TString incTrigName=Form("HLT_PFJet%d_v",thr[ithr]);
+          TString fwdTrigName=Form("HLT_PFJetFwd%d_v",thr[ithr]);
+          if(selector.hasTriggerBit(trigName, ev.triggerBits)){
+            outVars["llpt"]=thr[ithr];            
+            trigName=incTrigName;
           }
-          else if(selector.hasTriggerBit(Form("HLT_PFJetFwd%d_v",thr[ithr]), ev.triggerBits)){
+          else if(selector.hasTriggerBit(fwdTrigName, ev.triggerBits)){
             outVars["llpt"]=thr[ithr];
-            outVars["lleta"]=3;
+            outVars["lleta"]=3;  
+            trigName=fwdTrigName;
           }
           else {
             continue;
           }
-          
           hasJetTrigger=true;
           break;
         }
         if(!hasJetTrigger) continue;
-        
+
+        outVars["dilcode"]=0;
+        if(leptons.size()>=2){
+          outVars["l1pt"]=leptons[0].Pt();
+          outVars["l1eta"]=leptons[0].Eta();
+          outVars["l1phi"]=leptons[0].Phi(); 
+          outVars["ml1"]=leptons[0].M();
+          outVars["l1id"]=leptons[0].id();
+          outVars["l2pt"]=leptons[1].Pt();
+          outVars["l2eta"]=leptons[1].Eta();
+          outVars["l2phi"]=leptons[1].Phi();
+          outVars["ml2"]=leptons[1].M();
+          outVars["l2id"]=leptons[1].id();
+        }
       }
       else {
-
-        //trigger
-        hasETrigger=(selector.hasTriggerBit("HLT_Ele35_WPTight_Gsf_v", ev.triggerBits));
-        hasMTrigger=(selector.hasTriggerBit("HLT_IsoMu24_v",     ev.triggerBits) ||
-                     selector.hasTriggerBit("HLT_IsoMu24_2p1_v", ev.triggerBits) ||
-                     selector.hasTriggerBit("HLT_IsoMu27_v",     ev.triggerBits) );
-        hasMMTrigger=(selector.hasTriggerBit("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ",                  ev.triggerBits) ||
-                      selector.hasTriggerBit("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8_v",          ev.triggerBits) ||
-                      selector.hasTriggerBit("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8_v",        ev.triggerBits) );
-        hasEETrigger=(selector.hasTriggerBit("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_v",             ev.triggerBits) ||
-                      selector.hasTriggerBit("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ_v",          ev.triggerBits) );
-        hasEMTrigger=(selector.hasTriggerBit("HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_v",    ev.triggerBits) ||
-                      selector.hasTriggerBit("HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ_v", ev.triggerBits) ||
-                      selector.hasTriggerBit("HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_v",    ev.triggerBits) ||
-                      selector.hasTriggerBit("HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_v", ev.triggerBits) ||
-                      selector.hasTriggerBit("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_v",     ev.triggerBits) ||
-                      selector.hasTriggerBit("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_v",  ev.triggerBits) );
-    
-        if (ev.isData) { 
-          //use only these unprescaled triggers for these eras
-          if(filename.Contains("2017E") || filename.Contains("2017F")){
-            hasMTrigger=selector.hasTriggerBit("HLT_IsoMu27_v",ev.triggerBits);
-          }
-          if(!(filename.Contains("2017A") || filename.Contains("2017B"))){
-            hasMMTrigger=(selector.hasTriggerBit("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8_v",   ev.triggerBits) ||
-                          selector.hasTriggerBit("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8_v", ev.triggerBits) );
-          }
-        }
-        
+            
         if(leptons.size()<2) continue;
         if(leptons[0].Pt()<30 || fabs(leptons[0].Eta())>2.1) continue;
         Int_t dilcode=leptons[l1idx].id()*leptons[l2idx].id();
