@@ -576,8 +576,8 @@ void VBFVectorBoson::addMVAvars(){
   newTree->Branch("forwardeta", &forwardeta);
   newTree->Branch("leadj_gawidth", &leadj_gawidth);
   newTree->Branch("subleadj_gawidth", &subleadj_gawidth);
-  newTree->Branch("leadj_c1_05", &leadj_c1_05);
-  newTree->Branch("subleadj_c1_05", &subleadj_c1_05);
+  //newTree->Branch("leadj_c1_05", &leadj_c1_05);
+  // newTree->Branch("subleadj_c1_05", &subleadj_c1_05);
   newTree->Branch("subleadj_c2_02", &subleadj_c2_02);
   newTree->Branch("jjetas", &jjetas);
   newTree->Branch("centjy", &centjy);
@@ -606,9 +606,9 @@ void VBFVectorBoson::initVariables(std::vector<Jet> jets){
   dphijj = (jets.size()>=2 ? jets[0].DeltaPhi(jets[1]) : -99.);
   jjpt   = (jets.size()>=2 ? (jets[0]+jets[1]).Pt() : 0.);
   leadj_gawidth    = (jets.size()>1 ? ev.j_gawidth[jets[0].getJetIndex()] : -99);
-  leadj_c2_05      = (jets.size()>1 ? ev.j_c2_05[jets[0].getJetIndex()] : -99);
+  //leadj_c2_05      = (jets.size()>1 ? ev.j_c2_05[jets[0].getJetIndex()] : -99);
   subleadj_gawidth = (jets.size()>2 ? ev.j_gawidth[jets[1].getJetIndex()] : -99);
-  subleadj_c1_05   = (jets.size()>2 ? ev.j_c1_05[jets[1].getJetIndex()] : -99);
+  //subleadj_c1_05   = (jets.size()>2 ? ev.j_c1_05[jets[1].getJetIndex()] : -99);
   subleadj_c2_02   = (jets.size()>2 ? ev.j_c2_02[jets[1].getJetIndex()] : -99);
   subleadj_pt      = (jets.size()>2 ? ev.j_pt[jets[1].getJetIndex()] : -99);
   ystar       = -99;
@@ -642,24 +642,24 @@ void VBFVectorBoson::fill(MiniEvent_t ev, TLorentzVector boson, std::vector<Jet>
     int idx = a.originalReference();
     ht->fill("allsihih",   ev.gamma_sieie[idx]             ,cplotwgts,c);
     if (fabs(ev.gamma_eta[idx]) < 1.442)
-      ht->fill("allMjjEB"  ,   ev.gamma_sieie[idx], mjj        ,cplotwgts,c); 
+      ht->fill2D("allMjjEB"  ,   ev.gamma_sieie[idx], mjj        ,cplotwgts,c); 
     else
-      ht->fill("allMjjEE"  ,   ev.gamma_sieie[idx], mjj        ,cplotwgts,c); 
+      ht->fill2D("allMjjEE"  ,   ev.gamma_sieie[idx], mjj        ,cplotwgts,c); 
   }
   for(auto a : relaxedTightPhotons) {
     int idx = a.originalReference();
     ht->fill("relaxedTightsihih",   ev.gamma_sieie[idx]             ,cplotwgts,c);
     if (fabs(ev.gamma_eta[idx]) < 1.442)
-      ht->fill("relaxedTightMjjEB"  ,   ev.gamma_sieie[idx], mjj        ,cplotwgts,c); 
+      ht->fill2D("relaxedTightMjjEB"  ,   ev.gamma_sieie[idx], mjj        ,cplotwgts,c); 
     else
-      ht->fill("relaxedTightMjjEE"  ,   ev.gamma_sieie[idx], mjj        ,cplotwgts,c); 
+      ht->fill2D("relaxedTightMjjEE"  ,   ev.gamma_sieie[idx], mjj        ,cplotwgts,c); 
   }
   for(auto a : tmpPhotons) {
     int idx = a.originalReference();
     if (fabs(ev.gamma_eta[idx]) < 1.442)
-      ht->fill("tmpQCDMjjEB"  ,   ev.gamma_sieie[idx], mjj        ,cplotwgts,c); 
+      ht->fill2D("tmpQCDMjjEB"  ,   ev.gamma_sieie[idx], mjj        ,cplotwgts,c); 
     else
-      ht->fill("tmpQCDMjjEE"  ,   ev.gamma_sieie[idx], mjj        ,cplotwgts,c); 
+      ht->fill2D("tmpQCDMjjEE"  ,   ev.gamma_sieie[idx], mjj        ,cplotwgts,c); 
   }
   //bosons in CR and fakes
   for(auto a : fakeACR) {
@@ -669,9 +669,9 @@ void VBFVectorBoson::fill(MiniEvent_t ev, TLorentzVector boson, std::vector<Jet>
     ht->fill("fakeneutiso", ev.gamma_neutralHadronIso[idx]  ,cplotwgts,c);
     ht->fill("fakeaiso",    ev.gamma_photonIso[idx]         ,cplotwgts,c);
     if (fabs(ev.gamma_eta[idx]) < 1.442)
-      ht->fill("looseMjjEB"  ,  ev.gamma_sieie[idx], mjj        ,cplotwgts,c);
+      ht->fill2D("looseMjjEB"  ,  ev.gamma_sieie[idx], mjj        ,cplotwgts,c);
     else
-      ht->fill("looseMjjEE"  ,  ev.gamma_sieie[idx], mjj        ,cplotwgts,c);
+      ht->fill2D("looseMjjEE"  ,  ev.gamma_sieie[idx], mjj        ,cplotwgts,c);
   }
   for(auto a : tightACR) { 
     int idx = a.originalReference();
@@ -680,9 +680,9 @@ void VBFVectorBoson::fill(MiniEvent_t ev, TLorentzVector boson, std::vector<Jet>
     ht->fill("tightneutiso", ev.gamma_neutralHadronIso[idx]  ,cplotwgts,c);
     ht->fill("tightaiso",    ev.gamma_photonIso[idx]         ,cplotwgts,c);
     if (fabs(ev.gamma_eta[idx]) < 1.442)
-      ht->fill("tightMjjEB"  ,   ev.gamma_sieie[idx], mjj        ,cplotwgts,c);
+      ht->fill2D("tightMjjEB"  ,   ev.gamma_sieie[idx], mjj        ,cplotwgts,c);
     else
-      ht->fill("tightMjjEE"  ,   ev.gamma_sieie[idx], mjj        ,cplotwgts,c);
+      ht->fill2D("tightMjjEE"  ,   ev.gamma_sieie[idx], mjj        ,cplotwgts,c);
   }
   ht->fill("nloose",        fakeACR.size(),       cplotwgts,c);
   ht->fill("ntight",        tightACR.size(),      cplotwgts,c);
