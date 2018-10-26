@@ -94,7 +94,7 @@ case $WHAT in
 	python scripts/runLocalAnalysis.py \
 	    -i ${eosdirJetHT} \
             -o ${outdir}/${githashJetHT}/${EXTRA} \
-            --farmappendix ${githashJetHT} \
+            --farmappendix ${githashJetHT}${QCD} \
             -q ${queue} --genWeights genweights_${githashJetHT}.root \
             --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --only ${json} --runSysts ${extraOpts};
 	;;
