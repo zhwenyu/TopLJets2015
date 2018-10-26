@@ -393,6 +393,7 @@ def buildPseudoData(w,wsig):
     # - all processes sampled from the histos, except signal
     # - #nsignal events are taken from the signal workspace
     rand=ROOT.TRandom2()
+    rand.SetSeed(0)
     plotter=ROOT.TFile.Open('xsec_plotter.root')
     yields={}
     for cat in EVENTCATEGORIES:
@@ -403,40 +404,88 @@ def buildPseudoData(w,wsig):
                      'qcd']: 
           
             #generate N events for this category
-            pname='{0}_mjj_control/mjj_{0}_{1}'.format(cat,proc)
-            if proc=='qcd':
-                pname='{0}_mjj_control/qcd_{0}_Multijets'.format(cat)
-            p=plotter.Get(pname)
-            n=rand.Poisson(p.Integral())
-            
+            p={}
+            for pvar in ['mjj','pt_l','y_l']:
+                pname='{0}_{1}_control/{1}_{0}_{2}'.format(cat,pvar,proc)
+                if proc=='qcd':
+                    pname='{0}_{1}_control/qcd_{0}_Multijets'.format(cat,pvar)
+                p[pvar]=plotter.Get(pname)
+            n=rand.Poisson(p['mjj'].Integral())
+
             if not 'ttbar' in proc:
                 for i in xrange(0,n):
                     args.find('sample').setLabel(cat)
                     args.setCatLabel(cat)
-                    args.find('mjj').setVal( p.GetRandom() )
+                    args.find('mjj').setVal( p['mjj'].GetRandom() )
+                    args.find('lpt').setVal( p['pt_l'].GetRandom() )
+                    args.find('ly').setVal( p['y_l'].GetRandom() )
                     iter = args.createIterator()
                     var = iter.Next()
                     while var :
-                        if var.GetName()!='mjj' and  var.GetName()!='sample':
-                            args.find(var.GetName()).setVal(0)                            
+                        if var.GetName()!='sample':
+                            if not var.GetName() in ['lpt','mjj','ly']:
+                                args.find(var.GetName()).setVal(0.)      
                         var = iter.Next()
                     pdataset.add(args)
             else:
+
                 sigdata=wsig.data('data').reduce(ROOT.RooFit.Cut("sample==sample::%s"%cat))
-                evList=random.sample(range(0,int(sigdata.sumEntries())),n)
-                for i in evList:
+
+                hmjj=ROOT.TH1F('mjj','mjj',25,0,500)
+                hlpt=ROOT.TH1F('lpt','lpt',20,30,300)
+                hly=ROOT.TH1F('ly','ly',15,-2.5,2.5)
+                for i in xrange(0,sigdata.numEntries()):
                     evargs=sigdata.get(i)
-                    iter = evargs.createIterator()
-                    var = iter.Next()
-                    while var :
-                        if var.GetName()!='sample':
-                            args.find(var.GetName()).setVal( var.getVal() )
-                        else:
-                            args.find('sample').setLabel(cat)
-                            args.setCatLabel(cat)
+                    hmjj.Fill(evargs.find('mjj').getVal())
+                    hlpt.Fill(evargs.find('lpt').getVal())
+                    hly.Fill(evargs.find('ly').getVal())
+
+                evList=random.sample(range(0,max(n,sigdata.numEntries())),n)
+
+                for i in evList:
+                    evidx=i
+
+                    #if event is available use it
+                    if evidx<sigdata.sumEntries():
+                        evargs=sigdata.get(evidx)
+
+                        iter = evargs.createIterator()
                         var = iter.Next()
+                        while var :
+                            if var.GetName()!='sample':
+                                args.find(var.GetName()).setVal( var.getVal() )
+                            else:
+                                args.find('sample').setLabel(cat)
+                                args.setCatLabel(cat)
+                            var = iter.Next()
+
+                    #if not sample randomly
+                    else:
+
+                        iter = args.createIterator()
+                        var = iter.Next()
+                        while var :
+                            if var.GetName()=='mjj':
+                                args.find(var.GetName()).setVal( hmjj.GetRandom() )
+                            elif var.GetName()=='lpt':
+                                args.find(var.GetName()).setVal( hlpt.GetRandom() )
+                            elif var.GetName()=='ly':
+                                ly=hly.GetRandom()
+                                args.find(var.GetName()).setVal( ly )
+                            elif var.GetName()!='sample':
+                                args.find(var.GetName()).setVal( 0. )                            
+                            else:
+                                args.find('sample').setLabel(cat)
+                                args.setCatLabel(cat)
+                            var = iter.Next()
+
+                    #add to the dataset
                     pdataset.add(args)
-                    
+
+                hmjj.Delete()
+                hlpt.Delete()
+                hly.Delete()
+
     return pdataset
 
 
@@ -451,13 +500,14 @@ def performFits(opt):
 
     #data to fit
     data=w.data('data')
-    if opt.blind:        
-        fSigIn=ROOT.TFile.Open( opt.signal.replace('pdf_','') )
+    if opt.blind:   
+        
+        fSigIn=ROOT.TFile.Open( 'workspace_MC8.16TeV_TTbar_pPb_Pohweg.root' ) #MC8.16TeV_TTbar_pPb_opt.signal.replace('pdf_','') )
         wsig=fSigIn.Get('w')
         fSigIn.Close()
         data=buildPseudoData(w,wsig)
         getattr(w,'import')( data )
-        print 'Will used pseudodataset in the fit'
+        print 'Will use pseudodataset in the fit'
 
     #fit results summary
     fitResults={}
@@ -638,8 +688,7 @@ def doSplot(w,pdf,data,poi,constr):
                 fixThis=False
                 break
         var.setConstant(fixThis)        
-        if not fixThis:  
-            yieldsList.add(var)
+        if not fixThis:  yieldsList.add(var)
         var=varIter.Next()
     print 'Floating these variables for the sPlot'
     yieldsList.Print()
@@ -658,7 +707,6 @@ def doSplot(w,pdf,data,poi,constr):
     catYieldsList=ROOT.RooArgList(w.var('xsec'),w.var('Nbkg_mu1l4j2b'))
     sData = ROOT.RooStats.SPlot("sdata","SPlotted data",redData,pdf,catYieldsList)
     print w.var('xsec').getVal(),sData.GetYieldFromSWeight('xsec_sw')
-    raw_input()
 
     #create the datasets with the sWeights and add to the workspace
     iterator = yieldsList.createIterator()
@@ -680,7 +728,6 @@ def doSplot(w,pdf,data,poi,constr):
         obj = iterator.Next()
     getattr(w,'import')( sigdata )
 
-    raw_input()
 
 
 """
@@ -748,6 +795,8 @@ def addPDFToWorkspace(opt):
 """
 def main():
 
+    global lumi
+
     ROOT.gStyle.SetOptStat(0)
     ROOT.gStyle.SetOptTitle(0)
     ROOT.gROOT.SetBatch(True) 
@@ -758,11 +807,12 @@ def main():
     parser.add_option('-o', '--output',    dest='output',    default='plots/Data8TeV_pp',          type='string',   help='output directory [%default]')
     parser.add_option('-i', '--input',     dest='input',     default='workspace_Data8TeV_pp.root', type='string',   help='workspace [%default]')
     parser.add_option('-s', '--signal',    dest='signal',    default='pdf_workspace_MC8.16TeV_TTbar_pPb.root', type='string',   help='signal workspace [%default]')
+    parser.add_option('-l', '--lumi',      dest='lumi',      default=lumi[0], type=float,   help='luminosity [nb] [%default]')
     parser.add_option(      '--wModel',    dest='wModel',    default=0, type=int,   help='W model (0-in-situ; 1-decorrelated in-situ; 2-extrapol. MC) [%default]')
     parser.add_option(      '--fitType',   dest='fitType',   default=0,                  type=int,
         help='0-full signal; 1-full signal 2D; 2-full signal 3D; 3-res from MC; 4-res from CB [%default]')
     parser.add_option(      '--impacts',   dest='impacts',   default=False,                        action='store_true',        help='Run impacts [%default]')
-    parser.add_option(      '--blind',     dest='blind',     default=False,                        action='store_true',        help='Used pseudo-data [%default]')
+    parser.add_option(      '--blind',     dest='blind',     default=False,                        action='store_true',        help='Use pseudo-data [%default]')
     parser.add_option(      '--splot',     dest='splot',     default=False,                        action='store_true',        help='Run sPlot for the combined fit [%default]')
     parser.add_option('-v', '--verbose',   dest='verbose',   default=0,                            type=int,        help='Verbose mode [%default]')
     parser.add_option(      '--finalWorkspace',      dest='finalWS',      default=None,            type='string',   help='final workspace to be used for the fit [%default]')
@@ -771,10 +821,10 @@ def main():
     #keep roofit quite
     if opt.verbose<9 : shushRooFit()
 
+    baseLumi=lumi[0]
     if opt.blind:
-        global lumi
         lumiUnc=lumi[1]/lumi[0]
-        lumi=(1000.,lumiUnc*1000.)
+        lumi=(opt.lumi,lumiUnc*opt.lumi)
         print 'Blind fit with updated lumi',lumi[0]
 
     #load a W model
@@ -786,6 +836,12 @@ def main():
     global QCDNORM
     with open('qcdnorm.pck','r') as fIn:
         QCDNORM=pickle.load(fIn)
+
+        #update luminosity
+        for key in QCDNORM:
+            val,valUnc=QCDNORM[key]
+            QCDNORM[key]=(lumi[0]*val/baseLumi,lumi[0]*valUnc/baseLumi)
+
 
     #create final workspace if not given
     if opt.finalWS is None: addPDFToWorkspace(opt)

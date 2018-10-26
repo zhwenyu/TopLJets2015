@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from runDataFit import lumi
+
 import ROOT
 import optparse
 from roofitTools import *
@@ -10,6 +12,8 @@ EVENTCATEGORIES=[x for x in SELEVENTCATEGORIES if not '1f' in x]
 """
 """
 def main():
+    
+    global lumi
 
     ROOT.gStyle.SetOptStat(0)
     ROOT.gStyle.SetOptTitle(0)
@@ -21,7 +25,13 @@ def main():
     parser = optparse.OptionParser(usage)
     parser.add_option('-i', '--input',     dest='input',     default='finalfitworkskace_0.root', type='string',   help='workspace [%default]')
     parser.add_option('-d', '--data',      dest='data',      default='data', type='string',   help='data name [%default]')
+    parser.add_option('-l', '--lumi',      dest='lumi',      type=float, default=lumi[0],   help='data name [%default]')
+    parser.add_option(      '--cmsLabel',  dest='cmsLabel',  default='#scale[1.2]{#bf{CMS}}', type='string', help='cms label [%default]')
     (opt, args) = parser.parse_args()
+
+    
+    lumiUnc=lumi[1]/lumi[0]
+    lumi=(opt.lumi,lumiUnc*opt.lumi)
 
     fIn=ROOT.TFile.Open(opt.input)
     w=fIn.Get('w')
@@ -79,7 +89,10 @@ def main():
                                   paramList=None,
                                   pfix='_final',
                                   extsToSave=['png','pdf','root'],
-                                  noPulls=noPulls)
+                                  noPulls=noPulls,
+                                  cmsLabel=opt.cmsLabel,
+                                  lumi='%d nb^{-1}'%lumi[0] if lumi[0]<500 else '%3.1f pb^{-1}'%(lumi[0]*1e-3),
+                                  dataTitle='Data' if opt.data=='data' else 'Pseudo data')
             results[(res[0],res[1])]=res[2]
             #raw_input()
 

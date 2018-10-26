@@ -1,5 +1,6 @@
 import ROOT
 import sys
+import os
 import pickle
 import optparse
 
@@ -74,6 +75,7 @@ def showPlotFor(args,var,opt):
             p.ratiorange=(0.4,1.7)
             p.com='8.16 TeV'
             p.show(outDir='./',lumi=opt.lumi*1e-3)
+            p.appendTo('xsec_plotter.root')
             p.reset()
             
         #combined plots
@@ -83,7 +85,10 @@ def showPlotFor(args,var,opt):
         p.add(histTotal['dy'],'DY',ROOT.TColor.GetColor('#2baeba'),False,False,False)
         p.add(histTotal['qcd'],'Multijets',ROOT.TColor.GetColor('#2b83ba'),False,False,False)
         p.add(histTotal['data'],'Data',1,True,False,False)
-        p.cmsLabel='#scale[1.2]{#bf{CMS}} #scale[0.75]{#it{Supplementary}}'
+        if opt.pseudoData:
+            p.cmsLabel='#scale[0.9]{#bf{CMS} #it{simulation preliminary}}'            
+        else:
+            p.cmsLabel='#scale[1.2]{#bf{CMS}} #scale[0.75]{#it{Supplementary}}'
         p.ratiorange=(0.4,1.7)
         p.ratioTitle='#scale[0.9]{Data/Exp.}'
         p.legSize=0.05
@@ -97,6 +102,7 @@ def showPlotFor(args,var,opt):
         if '2b'   in cat: tag+=' (#geq2b)'
         tag='#scale[1.1]{#bf{%s}}'%tag
         p.show(outDir='./',lumi=opt.lumi*1e-3,extraText=tag)
+        p.appendTo('xsec_plotter.root')
         p.reset()
 
 """
@@ -113,13 +119,14 @@ def main():
     ROOT.gStyle.SetOptStat(0)
     ROOT.gStyle.SetOptTitle(0)
     ROOT.gROOT.SetBatch(opt.batch)
+    os.system('rm xsec_plotter.root')
 
     #load qcd normalization
     global QCDNORM
     with open('qcdnorm.pck','r') as fIn: QCDNORM=pickle.load(fIn)
 
     #do plots
-    for var in ['met','mtw','minmlb','maxmlb','mjj','drjj','ntracks','ntrackshp','mthad','mtlep']: 
+    for var in ['met','mtw','minmlb','maxmlb','mjj','pt_l','y_l','drjj','ntracks','ntrackshp','mthad','mtlep']: 
         print args
         showPlotFor(args,var,opt)
 

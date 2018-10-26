@@ -37,12 +37,21 @@ try:
 except:
     pass
 
+isProj=False
+try:
+    if sys.argv[4]=='True' : isProj=True
+except:
+    pass
+
 maxY=0
 totalchisq=0
 for ch in ['e','mu']:
     fIn=ROOT.TFile.Open('%s_%s%s_final.root'%(var,ch,cat))
 
-    totalchisq+= 0.5*indchisquares[(var,ch+cat)]
+    try:
+        totalchisq+= 0.5*indchisquares[(var,ch+cat)]
+    except:
+        print 'No chi^2 for',var,ch+cat
 
     for p in fIn.Get('c').GetPrimitive('p1').GetListOfPrimitives():
         pname=p.GetName()
@@ -132,16 +141,27 @@ label = ROOT.TLatex()
 label.SetNDC()
 label.SetTextFont(42)
 label.SetTextSize(0.05 if noPulls else 0.06)
-cmstex=label.DrawLatex(0.17 if noPulls else 0.18,0.87 if noPulls else 0.85,'#scale[1.2]{#bf{CMS}}') # #it{preliminary}')    
-lumitex=label.DrawLatex(0.33 if noPulls else 0.37,0.955 if noPulls else 0.95,'pPb (%3.0f nb^{-1}, #sqrt{s_{NN}} = 8.16 TeV)'%lumi[0])
-cattex=label.DrawLatex(0.50,0.87 if noPulls else 0.86,'#bf{%s}'%catTitle)
+print isProj
+if isProj:
+    cmstex=label.DrawLatex(0.17 if noPulls else 0.18,0.87 if noPulls else 0.85,'#bf{CMS} #it{simulation preliminary}')  
+    label.SetTextAlign(32)
+    lumitex=label.DrawLatex(0.95,0.96 if noPulls else 0.96,'pPb (1 pb^{-1}, #sqrt{s_{NN}} = 8.16 TeV)')
+    label.SetTextAlign(12)
+    cattex=label.DrawLatex(0.50,0.8 if noPulls else 0.8,'#bf{%s}'%catTitle)
+else:
+    cmstex=label.DrawLatex(0.17 if noPulls else 0.18,0.87 if noPulls else 0.85,'#scale[1.2]{#bf{CMS}}') # #it{preliminary}')    
+    lumitex=label.DrawLatex(0.33 if noPulls else 0.37,0.96 if noPulls else 0.96,'pPb (%3.0f nb^{-1}, #sqrt{s_{NN}} = 8.16 TeV)'%lumi[0])
+    cattex=label.DrawLatex(0.50,0.87 if noPulls else 0.86,'#bf{%s}'%catTitle)
 
 pullGr=plots['data'].makeResidHist(plots['totalpdf'],True,True)
 ndof=pullGr.GetN()
 #if not noPulls : 
 #label.DrawLatex(0.50,0.49,'#chi^{2}/dof = %3.1f/%d'%(totalchisq*ndof,ndof))
 
-leg=ROOT.TLegend(0.49,0.85 if noPulls else 0.83,0.8,0.56)
+if isProj:
+    leg=ROOT.TLegend(0.49,0.75 if noPulls else 0.75,0.8,0.46)
+else:
+    leg=ROOT.TLegend(0.49,0.85 if noPulls else 0.83,0.8,0.56)
 leg.SetFillStyle(0)
 leg.SetBorderSize(0)
 leg.SetTextFont(42)
@@ -206,7 +226,10 @@ if noPulls:
     plots['totalpdf'].GetYaxis().SetTitleOffset(1.03)
 
     cmstex.Delete()
-    label.DrawLatex(0.17,0.87,'#scale[1.2]{#bf{CMS}}')
+    if isProj:
+        label.DrawLatex(0.17,0.87,'#bf{CMS} #it{simulation preliminary}')
+    else:
+        label.DrawLatex(0.17,0.87,'#scale[1.2]{#bf{CMS}}')
     #lumitex.Delete()
     #label.DrawLatex(0.33 if noPulls else 0.37,0.955 if noPulls else 0.95,'pPb (%3.0f nb^{-1}, #sqrt{s_{NN}} = 8.16 TeV)'%lumi[0])
     cattex.Delete()

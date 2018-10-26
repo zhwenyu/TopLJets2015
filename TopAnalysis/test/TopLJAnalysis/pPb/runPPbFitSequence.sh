@@ -3,6 +3,7 @@
 WHAT=$1;
 
 wwwdir=~/www/HIN-17-002/HLLHCYR
+projLumi=2000
 
 case $WHAT in
 
@@ -120,15 +121,15 @@ case $WHAT in
             ttbar:plots/MC8.16TeV_TTbar_pPb_tighte/controlplots.root \
             wjets:plots/MC8.16TeV_WJets_pPb/controlplots.root \
             dy:plots/MC8.16TeV_DY_pPb/controlplots.root \
-            -l 1000 -b --pseudoData;
+            -l ${projLumi} -b --pseudoData;
         mkdir ${wwwdir}/controlplots_proj;
         mv *control.{pdf,png} ${wwwdir}/controlplots_proj;
         cp ../../index.php ${wwwdir}/controlplots_proj;
 
         ;;
     
-    PARAM)
-
+    PARAM)        
+        
         for sample in MC8.16TeV_TTbar_pPb_tighte; do #MC8.16TeV_TTbar_pPb_hypertighte MC8.16TeV_TTbar_pPb_tighte_etarestr MC8.16TeV_TTbar_pPb_tighte MC8.16TeV_TTbar_pPb MC8.16TeV_TTbar_pPb_Pohweg; do
 	    python parameterizeMCShapes.py workspace_${sample}.root;
 	    outDir=plots/$sample/workspace/
@@ -145,13 +146,14 @@ case $WHAT in
         cp plots/MC8.16TeV_TTbar_pPb_tighte/workspace/*dat ${wwwdir}/param;
         cp ../../index.php ${wwwdir}/param/;
         
-	#python parameterizeMCShapes.py workspace_MC8.16TeV_WJets_pPb.root pdf_workspace_MC8.16TeV_TTbar_pPb_tighte.root;
-	#a=(`ls *.{png,pdf}`)
-	#for i in ${a[@]}; do
-	#    f=${i/./_w.}
-	#    mv -v ${i} plots/MC8.16TeV_WJets_pPb/${f};
-	#done
-        #cp plots/MC8.16TeV_WJets_pPb/*_w.{png,pdf}  ${wwwdir}/param/;
+	python parameterizeMCShapes.py workspace_MC8.16TeV_WJets_pPb.root pdf_workspace_MC8.16TeV_TTbar_pPb_tighte.root;
+	a=(`ls *.{png,pdf}`)
+	for i in ${a[@]}; do
+	    f=${i/./_w.}
+	    mv -v ${i} plots/MC8.16TeV_WJets_pPb/${f};
+	done
+        cp plots/MC8.16TeV_WJets_pPb/*_w.{png,pdf}  ${wwwdir}/param/;
+
 	;;
 
     FITS)
@@ -175,16 +177,33 @@ case $WHAT in
 	;;
     
     PROJFITS)
-        sigRef=MC8.16TeV_TTbar_pPb_tighte #_Pohweg
+        sigRef=MC8.16TeV_TTbar_pPb_tighte
         dataRef=Data8.16TeV_pPb_nonsubiso_tighte
-	#python runDataFit.py --fitType 0 -s pdf_workspace_${sigRef}.root -i workspace_${dataRef}.root -o plots/${dataRef} --wModel 0 --blind;
-        #python runDataFit.py --fitType 0 -s pdf_workspace_${sigRef}.root --finalWorkspace finalworkspace_wmodel0.root -o plots/${dataRef} --wModel 0 --splot --blind;
+        commonOpts="--fitType 0 -s pdf_workspace_${sigRef}.root -o plots/${dataRef} --wModel 0 --blind -l ${projLumi}"
+	python runDataFit.py ${commonOpts} -i workspace_${dataRef}.root;
+        python runDataFit.py ${commonOpts} --finalWorkspace finalworkspace_wmodel0.root;
         
-        python doPRLplots.py -i fit_finalworkspace_wmodel0_0.root -d pseudodata;
+        python doPRLplots.py -i fit_finalworkspace_wmodel0_0.root -d pseudodata -l ${projLumi} --cmsLabel '#scale[0.9]{#bf{CMS} #it{simulation preliminary}}';
         mkdir ${wwwdir}/final;
         mv *{comb,final}*{pdf,png} ${wwwdir}/final;
         cp ../../index.php ${wwwdir}/final;
- 
+        
+        for var in mjj mthad mtlep; do
+            for cat in 1l4j2b 1l4j1b1q 1l4j2q; do                         
+                python mergePLRplotCategs.py $var $cat False True;        
+                python mergePLRplotCategs.py $var $cat True True;        
+            done
+        done
+        
+        mkdir ${wwwdir}/final;
+        mv *{comb,final}*{pdf,png} ${wwwdir}/final;
+        cp ../../index.php ${wwwdir}/final;
+        
+        python runSplot.py
+        mkdir ${wwwdir}/splot;
+        mv splot/*  ${wwwdir}/splot;
+        cp ../../index.php ${wwwdir}/splot;
+
 	;;
 
     FINALCOMP )

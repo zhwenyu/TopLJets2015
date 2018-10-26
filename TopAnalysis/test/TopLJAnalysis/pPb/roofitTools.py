@@ -1,7 +1,5 @@
 import ROOT
 
-from runDataFit import lumi
-
 """
 """
 def getEffSigma(var,pdf,wmin,wmax,step=0.1,epsilon=1e-4):
@@ -43,7 +41,10 @@ display the results of the fit
 def showFitResult(fitVar,data,pdf,categs,w,showComponents=[],
                   rangeX=(0,400),outDir='plots/',paramList=[],tagTitle='',pdfAux=None,
                   pfix='',extsToSave=['png','pdf','root'],
-                  noPulls=True):
+                  noPulls=True,
+                  cmsLabel='#scale[1.2]{#bf{CMS}}',
+                  lumi='174 nb^{-1}',
+                  dataTitle='Data'):
 
   c=ROOT.TCanvas('c','c',800,800)
   c.SetTopMargin(0)
@@ -93,7 +94,7 @@ def showFitResult(fitVar,data,pdf,categs,w,showComponents=[],
       pdf.plotOn(frame,
                  ROOT.RooFit.Name('totalpdfcont'),
                  ROOT.RooFit.ProjWData(redData),
-                 ROOT.RooFit.LineColor(TColor.GetColor('#ded0ef')),
+                 ROOT.RooFit.LineColor(ROOT.TColor.GetColor('#ded0ef')),
                  ROOT.RooFit.DrawOption('l'),
                  ROOT.RooFit.MoveToBack())
     totalchisq=frame.chiSquare()
@@ -176,8 +177,8 @@ def showFitResult(fitVar,data,pdf,categs,w,showComponents=[],
                    ROOT.RooFit.Name('totalpdf'),                           
                    ROOT.RooFit.ProjWData(redData),
                    ROOT.RooFit.FillStyle(1001),
-                   ROOT.RooFit.FillColor(TColor.GetColor('#ded0ef')),
-                   ROOT.RooFit.LineColor(TColor.GetColor('#ded0ef')),
+                   ROOT.RooFit.FillColor(ROOT.TColor.GetColor('#ded0ef')),
+                   ROOT.RooFit.LineColor(ROOT.TColor.GetColor('#ded0ef')),
                    ROOT.RooFit.LineWidth(2),
                    ROOT.RooFit.DrawOption('f'),
                    ROOT.RooFit.MoveToBack())
@@ -203,11 +204,13 @@ def showFitResult(fitVar,data,pdf,categs,w,showComponents=[],
     label.SetNDC()
     label.SetTextFont(42)
     label.SetTextSize(0.05 if noPulls else 0.06)
-    label.DrawLatex(0.17 if noPulls else 0.18,0.87 if noPulls else 0.85,'#scale[1.2]{#bf{CMS}}') 
-    label.DrawLatex(0.33 if noPulls else 0.37,0.955 if noPulls else 0.95,'pPb (%3.0f nb^{-1}, #sqrt{s_{NN}} = 8.16 TeV)'%lumi[0])
-    label.DrawLatex(0.50,0.87 if noPulls else 0.86,'#bf{%s}'%(tagTitle if tagTitle!='' else 'inclusive'))
+    label.DrawLatex(0.17 if noPulls else 0.18,0.87 if noPulls else 0.85,cmsLabel) 
+    label.SetTextAlign(32)
+    label.DrawLatex(0.95,0.955 if noPulls else 0.955,'pPb (%s, #sqrt{s_{NN}} = 8.16 TeV)'%lumi)
+    label.SetTextAlign(12)
+    label.DrawLatex(0.49,0.8,'#bf{%s}'%(tagTitle if tagTitle!='' else 'inclusive'))
     #if not noPulls : 
-    label.DrawLatex(0.50,0.49,'#chi^{2}/dof = %3.1f/%d'%(totalchisq*ndof,ndof))
+    #label.DrawLatex(0.50,0.49,'#chi^{2}/dof = %3.1f/%d'%(totalchisq*ndof,ndof))
 
     #print the PDF parameters on the canvas
     #paramList=[('Nsig','N_{cp}(t#bar{t})'),
@@ -215,12 +218,12 @@ def showFitResult(fitVar,data,pdf,categs,w,showComponents=[],
     #                ('sig_sigma_%s'%fitVar,'#sigma'),
     #               ('eb_%s'%j,'#epsilon_{b}')]
     if paramList is None:
-      leg=ROOT.TLegend(0.49,0.85 if noPulls else 0.83,0.8,0.56)
+      leg=ROOT.TLegend(0.49,0.75,0.8,0.45)
       leg.SetFillStyle(0)
       leg.SetBorderSize(0)
       leg.SetTextFont(42)
       leg.SetTextSize(0.05 if noPulls else 0.06)
-      leg.AddEntry('data','Data','ep')
+      leg.AddEntry('data',dataTitle,'ep')
       leg.AddEntry('totalpdf','t#bar{t} correct','lf')
       for icomp in reversed(xrange(0,len(showComponents))):
         leg.AddEntry('pdfcomp%d'%icomp,showComponents[icomp][1],'lf')
@@ -274,14 +277,17 @@ def showFitResult(fitVar,data,pdf,categs,w,showComponents=[],
       c.SaveAs('%s/%s_%s%s%s.%s'%(outDir,fitVar,tagTitle if tag=='' else tag,pfix,pullpf,ext))
 
     p1.cd()
-    prel=label.DrawLatex(0.17 if noPulls else 0.18,0.8,'#scale[0.75]{#it{preliminary}}')
+    prel=None
+    if not 'preliminary' in cmsLabel:
+      prel=label.DrawLatex(0.17 if noPulls else 0.18,0.8,'#scale[0.75]{#it{preliminary}}')
     c.Modified()
     c.Update()
     for ext in extsToSave:
       c.SaveAs('%s/%s_%s%s_prel%s.%s'%(outDir,fitVar,tagTitle if tag=='' else tag,pfix,pullpf,ext))
 
     p1.cd()
-    prel.Delete()
+    if prel:
+      prel.Delete()
     label.DrawLatex(0.17 if noPulls else 0.18,0.8,'#scale[0.75]{#it{Supplementary}}')
     c.Modified()
     c.Update()

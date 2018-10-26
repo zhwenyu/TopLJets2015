@@ -3,6 +3,7 @@
 import ROOT
 import optparse
 import os,sys
+from array import array
 from runDataFit import shushRooFit,showFitResult,observables,EVENTCATEGORIES
 
 VAR2PLOT=[
@@ -33,10 +34,62 @@ def main():
     #load the values obtained from the "standard" combined fit
     w.loadSnapshot('fitresult_combined')
 
+    #create a simplified PDF summing up all events with >=1 b
+    catsOfInterest=['e1l4j1b1q','e1l4j2b','mu1l4j1b1q','mu1l4j2b']    
+    data=w.data(opt.data).reduce(' || '.join(['sample==sample::%s'%c for c in catsOfInterest]))
+    print 'Inclusive yields:',w.data(opt.data).sumEntries(),'->',data.sumEntries(),
+    print 'after selecting only',catsOfInterest
+    totalSig,totalBkg=0,0
+    fSig,fBkg=[],[]
+    sumSigExpr='SUM::Sgt1b('
+    sumBkgExpr='SUM::Bgt1b('
+    for i in xrange(0,len(catsOfInterest)):
+
+        cat=catsOfInterest[i]
+
+        nsig=w.function('Nsig_%s'%cat).getVal()
+        totalSig+=nsig
+        fSig.append(nsig)
+
+        nbkg=w.var('Nbkg_%s'%cat).getVal()
+        totalBkg+=nbkg
+        fQCD=w.function('Nqcd_%s'%cat).getVal()/nbkg
+        fBkg.append(nbkg*fQCD)
+        fW=w.function('Nw_%s'%cat).getVal()/nbkg        
+        fBkg.append(nbkg*fW)
+
+        if i<len(catsOfInterest)-1:
+            sumSigExpr += '{}*S_mjj_%s, '%cat
+            sumBkgExpr += '{}*QCD_mjj_%s,{}*W_mjj_%s, '%('e' if cat[0]=='e' else 'mu',cat)
+        else:
+            sumSigExpr += 'S_mjj_%s'%cat
+            sumBkgExpr += '{}*QCD_mjj_%s,W_mjj_%s'%('e' if cat[0]=='e' else 'mu',cat)
+
+    fSig=tuple([x/totalSig for x in fSig][0:-1])
+    fBkg=tuple([x/totalBkg for x in fBkg][0:-1])
+    sumSigExpr += ' )'
+    sumBkgExpr += ' )'
+    sumSigExpr=sumSigExpr.format(*fSig)
+    sumBkgExpr=sumBkgExpr.format(*fBkg)
+    w.factory('nsiggt1b[%3.1f,%3.1f,%3.1f]'%(totalSig,totalSig*0.5,totalSig*2))
+    w.factory(sumSigExpr)
+    w.factory('nbkggt1b[%3.1f,%3.1f,%3.1f]'%(totalBkg,totalBkg*0.5,totalBkg*2))
+    w.factory(sumBkgExpr)
+    w.factory('SUM::modelgt1b( nsiggt1b*Sgt1b,nbkggt1b*Bgt1b )')    
+    pdf=w.pdf('modelgt1b')
+
+    print 'Simplified signal PDF:',sumSigExpr
+    print 'Simplified background PDF:',sumBkgExpr    
+    #frame=w.var('mjj').frame()
+    #data.plotOn(frame)
+    #pdf.plotOn(frame,ROOT.RooFit.ProjWData(data))
+    #pdf.plotOn(frame,ROOT.RooFit.Components('Bgt1b'),ROOT.RooFit.LineColor(2)) ;
+    #frame.Draw()
+
     allVars=w.allVars()
     varIter = allVars.createIterator()
     var=varIter.Next()
-    toFloat=['Nbkg_','xsec']    
+    toFloat=['nsiggt1b','nbkggt1b']    
     fixVarList=[]
     yieldsList=ROOT.RooArgList()
     while var :
@@ -55,130 +108,91 @@ def main():
         var=varIter.Next()
     print 'Floating this variables for the sPlot'
     yieldsList.Print()
-    #print 'These variables have bin fixed',fixVarList
-
-    #repeat the fit with a reduced set of variables
-    inixsec=(w.var('xsec').getVal(),w.var('xsec').getError())
-    pdf=w.pdf('model_combined_mjj')
-    data=w.data(opt.data)
-
-    #for cat in EVENTCATEGORIES:
-    #    frame=w.var('mjj').frame()
-    #    redData=data.reduce(ROOT.RooFit.Cut("sample==sample::%s"%cat))
-    #    redData.plotOn(frame)
-    #    pdf.plotOn(frame,ROOT.RooFit.ProjWData(redData))
-    #    frame.Draw()
-    #    raw_input(cat)
-
-
     pdf.fitTo(data,ROOT.RooFit.Extended())
-   
-    #nll=pdf.createNLL(data,ROOT.RooFit.Extended(True),ROOT.RooFit.NumCPU(8))
-    #minuit=ROOT.RooMinuit(nll)
-    #minuit.setStrategy(2)
-    #minuit.migrad() #minimize with respect to all parameters
-    #poi=ROOT.RooArgSet()    
-    #poi.add(w.var('xsec'))
-    #minuit.minos(poi)
-    #r=minuit.save()
-
-    #for cat in EVENTCATEGORIES:
-    #    frame=w.var('mjj').frame()
-    #    redData=data.reduce(ROOT.RooFit.Cut("sample==sample::%s"%cat))
-    #    redData.plotOn(frame)
-    #    pdf.plotOn(frame,ROOT.RooFit.ProjWData(redData))
-    #    frame.Draw()
-    #    raw_input(cat+' postfit')
-
-    finalxsec=(w.var('xsec').getVal(),w.var('xsec').getError())
-    print 'Initial fit gave the following cross section'
-    print 'xsec=%3.3f +/- %3.3f'%inixsec
-    print 'Reduced fit yields the following cross section'
-    print 'xsec=%3.3f +/- %3.3f'%finalxsec
     
-    #now do the splots (per category)
-    iterator = yieldsList.createIterator()
-    obj = iterator.Next()
-    sigdata=None
-    bkgperCat=[]
-    while obj:
-        objName=obj.GetName()
-        if not 'xsec' in objName:
-            catName=objName.replace('Nbkg_','')            
-            print catName
-            redData=data.reduce(ROOT.RooFit.Cut('sample==sample::%s'%catName))
-            catYieldsList=ROOT.RooArgList(w.var('xsec'),w.var(objName))
-            sData = ROOT.RooStats.SPlot("sdata","SPlotted data",redData,pdf,catYieldsList)
-            print catName,sData.GetYieldFromSWeight('xsec_sw'),sData.GetYieldFromSWeight(objName+'_sw'),redData.sumEntries(),w.function(objName.replace('Nbkg','Nsig')).getVal()
-            if sigdata:
-                sigdata.append(ROOT.RooDataSet('signal'+catName,'signal',redData, redData.get(), '', 'xsec_sw'))
-            else:
-                sigdata=ROOT.RooDataSet('signal','signal',redData, redData.get(), '', 'xsec_sw')
-                             
-            bkgperCat.append( ROOT.RooDataSet('bkg'+catName, 'bkg '+catName,   redData, redData.get(), '', objName+'_sw') )
-        obj = iterator.Next()
-    sigdata.Print()
+    iniyields=(totalSig,totalBkg)
+    finalyields=(w.var('nsiggt1b').getVal(),w.var('nbkggt1b').getError())
+    print 'Prefit S/B=(%3.1f/%3.1f)'%iniyields    
+    print 'Postfit S/B=(%3.1f/%3.1f)'%finalyields
     
-    print 'acc_mu',w.function('acc_mu').getVal()
-    for v in ['eff_mu','lumi','xsec']:
-        print v,w.var(v).getVal()
+
+    #splot
+    sData = ROOT.RooStats.SPlot("sdata","SPlotted data",data,pdf,yieldsList)
+    sdset = sData.GetSDataSet()
+    #sigdata=ROOT.RooDataSet('signal','signal',data, data.get(), '', 'nsiggt1b_sw')
+    #bkgdata=ROOT.RooDataSet('bkg', 'bkg',data, data.get(), '', 'nbkggt1b_sw')
     
     #compare background vs signal like hypothesis
     os.system('mkdir -p %s'%opt.output)
     c=ROOT.TCanvas('c','c',500,500)
     c.SetTopMargin(0.05)
-    c.SetLeftMargin(0.12)
-    c.SetRightMargin(0.02)
+    c.SetLeftMargin(0.15)
+    c.SetRightMargin(0.05)
     c.SetBottomMargin(0.1)
+    dh=[]
     for var,varTitle,yvar,binDef in VAR2PLOT:        
         c.Clear()
+        binArray = array('d',binDef)
 
-        bins=ROOT.RooBinning(binDef[0],binDef[-1])
-        for ibin in xrange(1,len(binDef)):
-            bins.addBoundary(binDef[ibin])
-        bins.Print('v')
-        w.var(var).setBinning(bins)
-        #w.var(var).setBins(5)
+        
+        varList=ROOT.RooArgList(w.var(var))
         frame=w.var(var).frame()
-        for i in xrange(0,len(bkgperCat)):
-            bkgperCat[i].plotOn(frame,
-                                ROOT.RooFit.LineColor(ROOT.kGray),
-                                ROOT.RooFit.LineStyle(1+i),
-                                ROOT.RooFit.MarkerStyle(1+i),
-                                ROOT.RooFit.MarkerColor(ROOT.kGray),
-                                ROOT.RooFit.Name('bkg_%d'%i)
-                                )
-        sigdata.plotOn(frame,ROOT.RooFit.Name('sig'))
+        
+        #for proc,marker in [('bkg',24),('sig',20)]:
+        for proc,marker in [('sig',20)]:
+            h=ROOT.TH1F(proc+var,proc+var,len(binArray)-1,binArray)
+            for i in xrange(0,sdset.numEntries()):
+                evargs=sdset.get(i)
+                ival=evargs.find(var).getVal()
+                sw=sData.GetSWeight(i,'n%sgt1b'%proc)
+                xbin=h.GetXaxis().FindBin(ival)
+                wgt=sw/h.GetXaxis().GetBinWidth(xbin)
+                h.Fill(ival,wgt)
+            dh.append( ROOT.RooDataHist(proc+var+'dh',proc+var+'dh',varList,h) )
+            dh[-1].plotOn(frame,ROOT.RooFit.MarkerStyle(marker),ROOT.RooFit.Name(proc))
+            h.Delete()
+
         frame.Draw()
-        frame.GetYaxis().SetTitleOffset(1.3)
+        frame.GetYaxis().SetTitleSize(0.04)
+        frame.GetXaxis().SetTitleSize(0.04)
+        frame.GetYaxis().SetTitleOffset(1.5)
         frame.GetYaxis().SetTitle('dN/d%s'%yvar)
         frame.GetXaxis().SetTitle(varTitle)
+        frame.GetXaxis().SetRangeUser(binDef[0],binDef[-1])
+        frame.GetYaxis().SetRangeUser(0,frame.GetMaximum()*1.3)
         label = ROOT.TLatex()
         label.SetNDC()
         label.SetTextFont(42)
         label.SetTextSize(0.04)
         if opt.data=='pseudodata':
-            label.DrawLatex(0.15,0.9,'#bf{CMS} #it{simulation preliminary}')
-            label.DrawLatex(0.65,0.96,'#scale[0.8]{pPb (1pb^{-1}, #sqrt{s}=8.16 TeV)}')
+            label.DrawLatex(0.17,0.9,'#bf{CMS} #it{simulation preliminary}')
+            label.SetTextAlign(32)
+            label.DrawLatex(0.95,0.97,'#scale[0.8]{pPb (2pb^{-1}, #sqrt{s}=8.16 TeV)}')
         else:
             label.DrawLatex(0.15,0.9,'#bf{CMS} #it{preliminary}')
-            label.DrawLatex(0.8,0.96,'(#scale[0.8]{#sqrt{s}=8.16 TeV})')
-        #leg=ROOT.TLegend(0.15,0.88,0.4,0.75)
-        #leg.SetFillColor(0)
-        #leg.SetFillStyle(0)
-        #leg.SetBorderSize(0)
-        #leg.SetTextFont(42)
-        #leg.SetTextSize(0.04)
-        #leg.AddEntry('sig','Signal','ep')
-        #for i in xrange(0,len(bkgperCat)):
-        #    leg.AddEntry('bkg_%d'%i,bkperCat[i].GetTitle(),'l')
-        #leg.Draw()
+            label.SetTextAlign(32)
+            label.DrawLatex(0.95,0.97,'(#scale[0.8]{#sqrt{s}=8.16 TeV})')
+        """
+        leg=ROOT.TLegend(0.17,0.88,0.4,0.75)
+        leg.SetFillColor(0)
+        leg.SetFillStyle(0)
+        leg.SetBorderSize(0)
+        leg.SetTextFont(42)
+        leg.SetTextSize(0.04)
+        leg.AddEntry('sig','t#bar{t}','ep')
+        leg.AddEntry('bkg','total background','ep')
+        leg.Draw()
+        """
         c.Modified()
         c.Update()
-        for ext in ['png','pdf']:
+        for ext in ['png','pdf','root']:
             c.SaveAs('%s/%s_splot.%s'%(opt.output,var,ext))
 
-
+    fOut=ROOT.TFile.Open('splots.root','RECREATE')
+    dh[0].createHistogram("splot_ly",w.var('ly')).Write()
+    dh[1].createHistogram("splot_lpt",w.var('lpt')).Write()
+    fOut.Close()
 
 if __name__ == "__main__":
     main()
+
