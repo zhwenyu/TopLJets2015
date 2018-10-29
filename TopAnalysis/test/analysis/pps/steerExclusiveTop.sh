@@ -7,6 +7,9 @@ if [ "$#" -ne 1 ]; then
     echo "        MERGE        - merge output"
     echo "        PLOT         - make plots"
     echo "        WWW          - move plots to web-based are"
+    echo "        PREPAREANA   - prepare bank of events for event mixing from the summary trees"
+    echo "        ANA          - run analysis on the summary trees"
+    echo "        PLOTANA      - plot analysis results"
     exit 1; 
 fi
 
@@ -15,7 +18,7 @@ queue=tomorrow
 githash=f93b8d8
 eosdir=/store/cmst3/group/top/RunIIReReco/${githash}
 outdir=/store/cmst3/user/psilva/ExclusiveAna
-samples_json=test/analysis/pps_samples.json
+samples_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/pps_samples.json
 zx_samples_json=test/analysis/zx_samples.json
 wwwdir=~/www/ExclusiveAna
 inputfileTag=MC13TeV_2017_ZH
@@ -23,6 +26,7 @@ inputfileTESTSEL=/store/cmst3/group/top/RunIIReReco/f93b8d8/${inputfileTag}/Merg
 #inputfileTag=Data13TeV_2017B_DoubleMuon
 #inputfileTESTSEL=/store/cmst3/group/top/RunIIReReco/f93b8d8/${inputfileTag}/MergedMiniEvents_0_ext0.root
 lumi=41367
+ppsLumi=37500
 lumiUnc=0.025
 
 
@@ -57,8 +61,30 @@ case $WHAT in
 	python scripts/plotter.py ${commonOpts} -O plots; 
 	;;
     WWW )
-	mkdir -p ${wwwdir}
-	cp plots/*.{png,pdf} ${wwwdir}
-	cp test/index.php ${wwwdir}
+	mkdir -p ${wwwdir}/presel
+	cp plots/*.{png,pdf} ${wwwdir}/presel
+	cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}/presel
 	;;
+
+    PREPAREANA )
+        python runExclusiveAnalysis.py --step 0;        
+        ;;
+
+    ANA )
+        python runExclusiveAnalysis.py --step 1;
+        ;;
+
+    PLOTANA )
+        commonOpts="-i analysis -j ${samples_json} -l ${ppsLumi} --mcUnc ${lumiUnc} "
+        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py ${commonOpts} -O plots/ana;
+        python compareBackgroundEstimation.py;
+        mv *.{png,pdf} plots/ana/;
+        ;;
+
+    WWWANA )
+        mkdir -p ${wwwdir}/ana
+        cp plots/ana/*.{png,pdf} ${wwwdir}/ana
+        cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}/ana
+        ;;
+
 esac

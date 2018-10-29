@@ -219,8 +219,9 @@ class Plot(object):
 
         if self.dataH is not None:
             if self.data is None: self.finalize()
-            leg.AddEntry( self.data, self.data.GetTitle(),'ep')
-            nlegCols += 1
+            if self.data is not None:
+                leg.AddEntry( self.data, self.data.GetTitle(),'ep')
+                nlegCols += 1
 
         for h in self.mc:
 
