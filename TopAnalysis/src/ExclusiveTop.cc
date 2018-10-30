@@ -124,7 +124,7 @@ void RunExclusiveTop(TString filename,
   TTree *t = (TTree*)f->Get("analysis/data");
   attachToMiniEventTree(t,ev,true);
   Int_t nentries(t->GetEntriesFast());
-  if (debug) nentries = 10000; //restrict number of entries for testing
+  if (debug) nentries = 100000; //restrict number of entries for testing
   t->GetEntry(0);
 
   cout << "...producing " << outname << " from " << nentries << " events" << endl;
@@ -507,7 +507,7 @@ void RunExclusiveTop(TString filename,
         ht.fill("lmeta",      fabs(lm.Eta()),  plotwgts, cats);
         ht.fill("lppt",       lp.Pt(),         plotwgts, cats);
         ht.fill("lmeta",      fabs(lp.Eta()),  plotwgts, cats);
-        ht.fill("mll",        dil.M(),         plotwgts, cats);
+        ht.fill("mll",        dil.M(),         plotwgts, cats);        
         ht.fill("ptll",       dil.Pt(),        plotwgts, cats);
         ht.fill("phistar",    TMath::Log10(llphistar),  plotwgts, cats);
         ht.fill("costhetaCS", llcosthetaCS,      plotwgts, cats);
@@ -610,7 +610,7 @@ void RunExclusiveTop(TString filename,
         outVars["puppirecoil_phi"]=puppiRecoil.Phi();
         outVars["puppirecoil_spher"]=fabs(puppiRecoil.Mod())/puppiRecoilHt;
       }
-
+      
       //fill data with roman pot information
       nRPtk=0;
       if (ev.isData) {
@@ -629,70 +629,72 @@ void RunExclusiveTop(TString filename,
           ht.fill("beamXangle", beamXangle, plotwgts, dilCat);
           
           //only dispersions for these angles are available (@ CTPPSAnalysisTools/data/2017/dispersions.txt)
-          if(beamXangle!=120 && beamXangle!=130 && beamXangle!=140) continue;
-
-          std::vector< std::pair<int,float> > nearCsis;
-          std::map<int,int> ntks;
-          ntks[23]=0; ntks[123]=0;
-          for (int ift=0; ift<ev.nfwdtrk; ift++) {
+          if(beamXangle==120 || beamXangle==130 || beamXangle==140) {
             
-            //only these roman pots are aligned CTPPSAnalysisTools/data/2017/alignments_21aug2018.txt 
-            const unsigned short pot_raw_id = 100*ev.fwdtrk_arm[ift]+10*ev.fwdtrk_station[ift]+ev.fwdtrk_pot[ift];
-            if (pot_raw_id!=3 && pot_raw_id!=23 && pot_raw_id!=103 && pot_raw_id!=123) continue;
+            std::vector< std::pair<int,float> > nearCsis;
+            std::map<int,int> ntks;
+            ntks[23]=0; ntks[123]=0;
+            for (int ift=0; ift<ev.nfwdtrk; ift++) {
             
-            const ctpps::alignment_t align = ctpps_aligns.get( ev_id, pot_raw_id );
-            double xi, xi_error;
+              //only these roman pots are aligned CTPPSAnalysisTools/data/2017/alignments_21aug2018.txt 
+              const unsigned short pot_raw_id = 100*ev.fwdtrk_arm[ift]+10*ev.fwdtrk_station[ift]+ev.fwdtrk_pot[ift];
+              if (pot_raw_id!=3 && pot_raw_id!=23 && pot_raw_id!=103 && pot_raw_id!=123) continue;
             
-            proton_reco.reconstruct(beamXangle, pot_raw_id, ev.fwdtrk_x[ift]*100+align.x_align, xi, xi_error);
-            
-            //information is only saved for the far detectors (pixels)
-            if (pot_raw_id==23 || pot_raw_id==123) {
-              RPid[nRPtk]=pot_raw_id;
-              RPfarcsi[nRPtk]=xi;
-              RPnearcsi[nRPtk]=0;              
-              nRPtk++;
-
-              //monitor track multiplicity and csi values
-              if(ntks.find(pot_raw_id)==ntks.end()) ntks[pot_raw_id]=0;
-              ntks[pot_raw_id]++;
-              ht.fill("csirp",xi,plotwgts, Form("%s_%d",dilCat.Data(),pot_raw_id));
-
-            }
-            else{
-              //save near detector info to match to pixel tracks
-              nearCsis.push_back( std::pair<int,float>(pot_raw_id,xi) );
-            }
-          }
-            
-          //now try to find the best matches for strip in pixels
-          for(auto stk : nearCsis) {
-            
-            int matchTk(-1);
-            float minDcsi=1;
-            for(int itk=0; itk<nRPtk; itk++) {
+              const ctpps::alignment_t align = ctpps_aligns.get( ev_id, pot_raw_id );
+              double xi, xi_error;
               
-              //require on the same side of the beam pipe
-              if( !( (RPid[itk]==123 && stk.first==103) || (RPid[itk]==23 && stk.first==3) ) )
-                continue;
+              proton_reco.reconstruct(beamXangle, pot_raw_id, ev.fwdtrk_x[ift]*100+align.x_align, xi, xi_error);
               
-              float dcsi=fabs(stk.second-RPfarcsi[itk]);
-              if(dcsi>minDcsi) continue;
-              matchTk=itk;
-              minDcsi=dcsi;                
+              //information is only saved for the far detectors (pixels)
+              if (pot_raw_id==23 || pot_raw_id==123) {
+                RPid[nRPtk]=pot_raw_id;
+                RPfarcsi[nRPtk]=xi;
+                RPnearcsi[nRPtk]=0;              
+                nRPtk++;
+                
+                //monitor track multiplicity and csi values
+                if(ntks.find(pot_raw_id)==ntks.end()) ntks[pot_raw_id]=0;
+                ntks[pot_raw_id]++;
+                ht.fill("csirp",xi,plotwgts, Form("%s_%d",dilCat.Data(),pot_raw_id));
+                
+              }
+              else{
+                //save near detector info to match to pixel tracks
+                nearCsis.push_back( std::pair<int,float>(pot_raw_id,xi) );
+              }
             }
             
-            if(matchTk<0) continue;
-            RPnearcsi[matchTk]=stk.second;
-          }
+            //now try to find the best matches for strip in pixels
+            for(auto stk : nearCsis) {
+              
+              int matchTk(-1);
+              float minDcsi=1;
+              for(int itk=0; itk<nRPtk; itk++) {
+                
+                //require on the same side of the beam pipe
+                if( !( (RPid[itk]==123 && stk.first==103) || (RPid[itk]==23 && stk.first==3) ) )
+                  continue;
+              
+                float dcsi=fabs(stk.second-RPfarcsi[itk]);
+                if(dcsi>minDcsi) continue;
+                matchTk=itk;
+                minDcsi=dcsi;                
+              }
+              
+              if(matchTk<0) continue;
+              RPnearcsi[matchTk]=stk.second;
+            }
           
           
-          for(auto nit : ntks) 
-            ht.fill("ntkrp", nit.second, plotwgts, Form("%s_%d",dilCat.Data(),nit.first));
-        
+            for(auto nit : ntks) 
+              ht.fill("ntkrp", nit.second, plotwgts, Form("%s_%d",dilCat.Data(),nit.first));
+
+          }
+          
         }catch(...){
         }
       }
-
+      
       outT->Fill();
     }
     

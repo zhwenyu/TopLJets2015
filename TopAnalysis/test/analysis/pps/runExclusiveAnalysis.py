@@ -25,15 +25,11 @@ def isValidRunLumi(run,lumi,runLumiList):
         return True
 
     for lran in runLumiList[run]:
-        try:
-            if lumi>=lran[0] and lumi<=lran[1]:
-                return False
-        except:
-            if lumi==lran[0]:
-                return False
+        if lumi>=lran[0] and lumi<=lran[1]:
+            return False
 
     #reached this far, nothing found in list
-    return False
+    return True
 
 def getTracksPerRomanPot(tree):
 
