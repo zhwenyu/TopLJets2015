@@ -1,4 +1,5 @@
 import ROOT
+import sys
 
 ROOT.gStyle.SetOptStat(0)
 ROOT.gStyle.SetOptTitle(0)
@@ -28,7 +29,7 @@ def getPlotFrom(pname,fIn):
     return fIn.Get(pname+'/'+pname)
 
 
-def showComparison(a,b,outName):
+def showComparison(a,b,outName,outDir):
 
     p1.cd()
     a.SetMarkerStyle(20)
@@ -82,22 +83,26 @@ def showComparison(a,b,outName):
     c.Update()
 
     for ext in ['png','pdf']:
-        c.SaveAs('%s.%s'%(outName,ext))
+        c.SaveAs('%s/%s.%s'%(outDir,outName,ext))
 
     ratio.Delete()
 
 
-fIn=ROOT.TFile.Open('plots/ana/plotter.root')
+fIn=ROOT.TFile.Open(sys.argv[1])
+outDir=sys.argv[2]
 
-for ch in ['ee','mm','em']:
-    for side in ['neg','pos']:
-        for dist in ['csi','ntk']:
-            a=getPlotFrom('%s_%s_%s'%(dist,ch,side),fIn)
-            b=getPlotFrom('%s_%s_mix%s'%(dist,ch,side),fIn)
-            showComparison(a,b,'bkg_%s_%s_%s'%(dist,ch,side))
+for dilcat in ['ee','mm','em']:
+    for subcat in ['','Z','hpt','hptZ']:
+        if dilcat=='em' and 'Z' in subcat: continue
+        ch=dilcat+subcat
+        for side in ['neg','pos']:
+            for dist in ['csi','ntk']:
+                a=getPlotFrom('%s_%s_%s'%(dist,ch,side),fIn)
+                b=getPlotFrom('%s_%s_mix%s'%(dist,ch,side),fIn)
+                showComparison(a,b,'bkg_%s_%s_%s'%(dist,ch,side),outDir)
                                    
-    for dist in ['mpp','mmass']:
-        a=getPlotFrom('%s_%s'%(dist,ch),fIn)
-        b=getPlotFrom('%s_%s_mix'%(dist,ch),fIn)
-        showComparison(a,b,'bkg_%s_%s'%(dist,ch))
+        for dist in ['mpp','mmass']:
+            a=getPlotFrom('%s_%s'%(dist,ch),fIn)
+            b=getPlotFrom('%s_%s_mix'%(dist,ch),fIn)
+            showComparison(a,b,'bkg_%s_%s'%(dist,ch),outDir)
         

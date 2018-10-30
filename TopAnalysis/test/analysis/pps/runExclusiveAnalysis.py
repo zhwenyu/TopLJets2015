@@ -22,16 +22,15 @@ def isValidRunLumi(run,lumi,runLumiList):
 
     #run is available
     if not run in runLumiList: 
-        return False
+        return True
 
-    #lumi is within certified ranges
     for lran in runLumiList[run]:
         try:
             if lumi>=lran[0] and lumi<=lran[1]:
-                return True
+                return False
         except:
             if lumi==lran[0]:
-                return True
+                return False
 
     #reached this far, nothing found in list
     return False
@@ -63,6 +62,16 @@ def buildDiproton(rptks,sqrts=13000.):
     diproton=ROOT.TLorentzVector(0.,0.,beamP*(csiL-csiR),beamP*(csiL+csiR))
     return diproton
 
+def getRandomEra():
+
+    """generates a random era according to the integrated luminosity in each one"""
+
+    r=random.random()
+    if r<0.115   : return '2017B'
+    elif r<0.348 : return '2017C'
+    elif r<0.451 : return '2017D'
+    elif r<0.671 : return '2017E'
+    return '2017F'
 
 
 def createEventMixBank(fileList,outdir,runLumiList):
@@ -72,11 +81,10 @@ def createEventMixBank(fileList,outdir,runLumiList):
     print '... @ createEventMixBank'
 
     rpData={}
-    for tag in fileList:
-        
+    for tag in fileList:        
         rpData[tag]=[]
         tree=ROOT.TChain('tree')
-        for f in fileList[tag]: tree.AddFile(f)
+        for f in fileList[tag]: tree.AddFile(f)        
         nEntries=tree.GetEntries()
 
         print 'Starting',tag,'with',nEntries
@@ -93,24 +101,12 @@ def createEventMixBank(fileList,outdir,runLumiList):
         pickle.dump(rpData,cachefile, pickle.HIGHEST_PROTOCOL)
 
 
-def getRandomEra():
-
-    """generates a random era according to the integrated luminosity in each one"""
-
-    r=random.random()
-    if r<0.115   : return '2017B'
-    elif r<0.348 : return '2017C'
-    elif r<0.451 : return '2017D'
-    elif r<0.671 : return '2017E'
-    return '2017F'
-
-def runExclusiveAnalysis(fileList,outFileName,runLumiList,mixFile,mixSel):
+def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile,mixSel):
     
     """event loop"""
 
     tree=ROOT.TChain('tree')
-    for f in fileList:
-        tree.AddFile(f)
+    tree.AddFile(inFile)
     nEntries=tree.GetEntries()  
 
     with open(mixFile,'r') as cachefile:
@@ -142,7 +138,7 @@ def runExclusiveAnalysis(fileList,outFileName,runLumiList,mixFile,mixSel):
         histos[name][cat].Fill(*val)
         
 
-    print '....analysing',nEntries,'in',len(fileList),'files, with output @',outFileName
+    print '....analysing',nEntries,'in',inFile,', with output @',outFileName
     print '    events mixed with',mixSel if mixSel else 'lumi-weighted data','from',mixFile
 
 
@@ -159,9 +155,9 @@ def runExclusiveAnalysis(fileList,outFileName,runLumiList,mixFile,mixSel):
         
         if tree.isSS : continue
         dilId=abs(int(tree.l1id*tree.l2id))
-        if dilId==11*11 : cat='ee'
-        if dilId==11*13 : cat='em'
-        if dilId==13*13 : cat='mm'
+        if dilId==11*11 : dilcat='ee'
+        if dilId==11*13 : dilcat='em'
+        if dilId==13*13 : dilcat='mm'
 
         wgt=tree.evwgt
         nvtx=tree.nvtx
@@ -179,33 +175,50 @@ def runExclusiveAnalysis(fileList,outFileName,runLumiList,mixFile,mixSel):
         pp=buildDiproton(rptks)
         mixed_pp=buildDiproton(mixed_rptks)
 
+        mmass,mixed_mmass=0.,0.
+        if pp:        mmass=(ll-pp).M()
+        if mixed_pp : mixed_mmass=(ll-mixed_pp).M()
+
+        cats=[dilcat]
+        if tree.isZ                 : cats.append(dilcat+'Z')
+        if ll.Pt()>50               : cats.append(dilcat+'hpt')
+        if tree.isZ and ll.Pt()>50  : cats.append(dilcat+'hptZ')
+
+        blind=False
+        if tree.isZ and ll.Pt()>50:
+            if pp and (mmass>1000 and mmass<2000):
+                blind=True
+
         #fill histograms
-        fillHisto(val=(nvtx,wgt),             key=('nvtx',cat))
-        fillHisto(val=(ll.M(),wgt),           key=('mll',cat))
-        fillHisto(val=(ll.Pt(),wgt),          key=('ptll',cat)) 
+        for cat in cats:
+            
+            fillHisto(val=(nvtx,wgt),             key=('nvtx',cat))
+            fillHisto(val=(ll.M(),wgt),           key=('mll',cat))
+            fillHisto(val=(ll.Pt(),wgt),          key=('ptll',cat)) 
        
-        fillHisto(val=(beamXangle,wgt),            key=('xangle',cat))
-        fillHisto(val=(beamXangle,nvtx,wgt),       key=('xanglevsnvtx',cat))
-        fillHisto(val=(mixed_beamXangle,wgt),      key=('xangle',cat+'_mix'))
-        fillHisto(val=(mixed_beamXangle,nvtx,wgt), key=('xanglevsnvtx',cat+'_mix'))
+            fillHisto(val=(beamXangle,wgt),            key=('xangle',cat))
+            fillHisto(val=(beamXangle,nvtx,wgt),       key=('xanglevsnvtx',cat))
+            fillHisto(val=(mixed_beamXangle,wgt),      key=('xangle',cat+'_mix'))
+            fillHisto(val=(mixed_beamXangle,nvtx,wgt), key=('xanglevsnvtx',cat+'_mix'))
 
-        if pp:
-            fillHisto(val=(pp.M(),wgt),                key=('mpp',cat))
-            fillHisto(val=((ll-pp).M(),wgt),           key=('mmass',cat))
-            fillHisto(val=((ll-pp).M(),nvtx,wgt), key=('mmassvsnvtx',cat))
-        if mixed_pp:
-            fillHisto(val=(mixed_pp.M(),wgt),                key=('mpp',cat+'_mix'))
-            fillHisto(val=((ll-mixed_pp).M(),wgt),           key=('mmass',cat+'_mix'))
-            fillHisto(val=((ll-mixed_pp).M(),nvtx,wgt), key=('mmassvsnvtx',cat+'_mix'))
+            if pp and not blind:
+                fillHisto(val=(pp.M(),wgt),     key=('mpp',cat))
+                fillHisto(val=(mmass,wgt),      key=('mmass',cat))
+                fillHisto(val=(mmass,nvtx,wgt), key=('mmassvsnvtx',cat))
 
-        for irp,rpside in [(0,'pos'),(1,'neg')]:
-            fillHisto(val=(len(rptks[irp]),wgt), key=('ntk',cat+'_'+rpside))
-            for csi in rptks[irp]:
-                fillHisto(val=(csi,wgt), key=('csi',cat+'_'+rpside))
+            if mixed_pp:
+                fillHisto(val=(mixed_pp.M(),wgt),     key=('mpp',cat+'_mix'))
+                fillHisto(val=(mixed_mmass,wgt),      key=('mmass',cat+'_mix'))
+                fillHisto(val=(mixed_mmass,nvtx,wgt), key=('mmassvsnvtx',cat+'_mix'))
 
-            fillHisto(val=(len(mixed_rptks[irp]),wgt), key=('ntk',cat+'_mix'+rpside))
-            for csi in mixed_rptks[irp]:
-                fillHisto(val=(csi,wgt), key=('csi',cat+'_mix'+rpside))
+            for irp,rpside in [(0,'pos'),(1,'neg')]:
+                fillHisto(val=(len(rptks[irp]),wgt), key=('ntk',cat+'_'+rpside))
+                for csi in rptks[irp]:
+                    fillHisto(val=(csi,wgt), key=('csi',cat+'_'+rpside))
+
+                fillHisto(val=(len(mixed_rptks[irp]),wgt), key=('ntk',cat+'_mix'+rpside))
+                for csi in mixed_rptks[irp]:
+                    fillHisto(val=(csi,wgt), key=('csi',cat+'_mix'+rpside))
 
     #save results
     fOut=ROOT.TFile.Open(outFileName,'RECREATE')
@@ -242,6 +255,7 @@ def runAnalysisTasks(opt):
     with open(opt.json,'r') as cachefile:
         samples=json.load(cachefile,  encoding='utf-8', object_pairs_hook=OrderedDict).items()
         for x in samples:
+            if opt.only and not opt.only in x[0]: continue
             task_dict[x[0]]=[]
 
     #group chunks matching the same name
@@ -256,7 +270,7 @@ def runAnalysisTasks(opt):
         task_dict[tag].append( os.path.join(opt.input,file_path) )
 
     #parse json file with list of run/lumi sections
-    with open(opt.RPin,'r') as cachefile:        
+    with open(opt.RPout,'r') as cachefile:        
         runLumi=json.load(cachefile,  encoding='utf-8', object_pairs_hook=OrderedDict).items()
         runLumi={int(x[0]):x[1] for x in runLumi}
 
@@ -283,7 +297,9 @@ def runAnalysisTasks(opt):
             if 'Data' in x: 
                 runLumiList=runLumi        
                 mixSel=x.split('_')[1]
-            task_list.append( (task_dict[x],os.path.join(opt.output,x)+'.root',runLumiList,opt.mix,mixSel) )
+            for f in task_dict[x]:
+                fOut='%s/Chunks/%s'%(opt.output,os.path.basename(f))
+                task_list.append( (f,fOut,runLumiList,opt.mix,mixSel) )
 
         pool.map(runExclusiveAnalysisPacked,task_list)
 
@@ -305,11 +321,16 @@ def main():
                       default='pps_samples.json',
                       type='string',
                       help='json with the files to process')
-    parser.add_option('--RPin',
-                      dest='RPin', 
-                      default='combined_RPIN_CMS.json',
+    parser.add_option('--only',
+                      dest='only', 
+                      default=None,
                       type='string',
-                      help='json with the runs/lumi sections in which RP are in')
+                      help='only this process')
+    parser.add_option('--RPout',
+                      dest='RPout', 
+                      default='golden_noRP.json',
+                      type='string',
+                      help='json with the runs/lumi sections in which RP are out')
     parser.add_option('--step',
                       dest='step', 
                       default=0,
@@ -326,7 +347,7 @@ def main():
                       help='Output directory [default: %default]')
     (opt, args) = parser.parse_args()
     
-    os.system('mkdir -p %s' % opt.output)
+    os.system('mkdir -p %s/Chunks' % opt.output)
     runAnalysisTasks(opt)
         
 

@@ -21,6 +21,7 @@ outdir=/store/cmst3/user/psilva/ExclusiveAna
 samples_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/samples.json
 jetht_samples_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/jetht_samples.json
 zx_samples_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/zx_samples.json
+RPout_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/golden_noRP.json
 wwwdir=~/www/ExclusiveAna
 inputfileTag=MC13TeV_2017_ZH
 inputfileTESTSEL=/store/cmst3/group/top/RunIIReReco/f93b8d8/${inputfileTag}/MergedMiniEvents_0_ext0.root
@@ -55,7 +56,7 @@ case $WHAT in
         python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py ${baseOpt} --only ${jetht_samples_json};
 	;;
     MERGE )
-	./scripts/mergeOutputs.py /eos/cms/${outdir} True;
+	mergeOutputs.py /eos/cms/${outdir} True;
 	;;
     PLOT )
 	commonOpts="-i /eos/cms/${outdir} --puNormSF puwgtctr -j ${samples_json} -l ${lumi} --mcUnc ${lumiUnc} "
@@ -68,23 +69,25 @@ case $WHAT in
 	;;
 
     PREPAREANA )
-        python runExclusiveAnalysis.py --step 0;        
+        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 0 \
+            --json ${samples_json} --RPout ${RPout_json} -o plots/analysis;        
         ;;
 
     ANA )
-        python runExclusiveAnalysis.py --step 1;
+        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 1 \
+            --json ${samples_json} --RPout ${RPout_json} -o plots/analysis --mix plots/analysis/evmix.pck; 
+	mergeOutputs.py plots/analysis;
         ;;
 
     PLOTANA )
-        commonOpts="-i analysis -j ${samples_json} -l ${ppsLumi} --mcUnc ${lumiUnc} "
-        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py ${commonOpts} -O plots/ana;
-        python compareBackgroundEstimation.py;
-        mv *.{png,pdf} plots/ana/;
+        commonOpts="-i plots/analysis -j ${samples_json} -l ${ppsLumi} --mcUnc ${lumiUnc} "
+        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py ${commonOpts};
+        #python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/compareBackgroundEstimation.py plots/analysis/plots/plotter.root plots/analysis/plots;
         ;;
 
     WWWANA )
         mkdir -p ${wwwdir}/ana
-        cp plots/ana/*.{png,pdf} ${wwwdir}/ana
+        cp plots/analysis/plots/*.{png,pdf} ${wwwdir}/ana
         cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}/ana
         ;;
 
