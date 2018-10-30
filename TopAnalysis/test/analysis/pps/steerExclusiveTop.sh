@@ -18,8 +18,9 @@ queue=tomorrow
 githash=f93b8d8
 eosdir=/store/cmst3/group/top/RunIIReReco/${githash}
 outdir=/store/cmst3/user/psilva/ExclusiveAna
-samples_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/pps_samples.json
-zx_samples_json=test/analysis/zx_samples.json
+samples_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/samples.json
+jetht_samples_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/jetht_samples.json
+zx_samples_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/zx_samples.json
 wwwdir=~/www/ExclusiveAna
 inputfileTag=MC13TeV_2017_ZH
 inputfileTESTSEL=/store/cmst3/group/top/RunIIReReco/f93b8d8/${inputfileTag}/MergedMiniEvents_0_ext0.root
@@ -39,7 +40,7 @@ case $WHAT in
         #-i /store/cmst3/group/top/psilva/1e783f4/JetHT/crab_Data13TeV_2017C_JetHT/181018_194446/0000/MiniEvents_50.root \
         #-i /store/cmst3/group/top/psilva/1e783f4/DoubleEG/crab_Data13TeV_2017E_DoubleEG/181018_194206/0000/MiniEvents_7.root 
         #
-	python scripts/runLocalAnalysis.py \
+	python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py \
             -i ${inputfileTESTSEL} --tag ${inputfileTag} \
             -o testsel.root --genWeights genweights_${githash}.root \
             --njobs 1 -q local --debug \
@@ -50,8 +51,8 @@ case $WHAT in
         baseOpt="${baseOpt} -o ${outdir} -q ${queue} --era era2017 -m ExclusiveTop::RunExclusiveTop --ch 0 --runSysts"
         baseOpt="${baseOpt} --exactonly"
 	python scripts/runLocalAnalysis.py ${baseOpt} --only ${samples_json};
-	#python scripts/runLocalAnalysis.py ${baseOpt} --only ${zx_samples_json};
-        #python scripts/runLocalAnalysis.py ${baseOpt} --only ${jetht_samples_json};
+	python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py ${baseOpt} --only ${zx_samples_json};
+        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py ${baseOpt} --only ${jetht_samples_json};
 	;;
     MERGE )
 	./scripts/mergeOutputs.py /eos/cms/${outdir} True;
