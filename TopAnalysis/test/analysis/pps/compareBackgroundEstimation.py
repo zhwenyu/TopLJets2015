@@ -92,7 +92,7 @@ fIn=ROOT.TFile.Open(sys.argv[1])
 outDir=sys.argv[2]
 
 for dilcat in ['ee','mm','em']:
-    for subcat in ['','Z','hpt','hptZ']:
+    for subcat in ['','Z','hpt','hptZ','Zhighpur','hpthighpur','hptZhighpur']:
         if dilcat=='em' and 'Z' in subcat: continue
         ch=dilcat+subcat
         for side in ['neg','pos']:

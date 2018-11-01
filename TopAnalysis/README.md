@@ -61,7 +61,7 @@ Adding "-s" will trigger the submission to the grid (otherwise the script only w
 
 ```
 python scripts/submitToGrid.py -j data/era2017/samples.json -c ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/runMiniAnalyzer_cfg.py 
-python scripts/submitToGrid.py -j data/era2017/samples.json -c ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/runL1PrefireAna_cfg.py --addParents --only JetHT,SinglePhoton,SingleElectron --lfn /store/group/cmst3/group/top/psilva/l1prefire/2017 -w grid_prefire -s
+python scripts/submitToGrid.py -j data/era2017/samples.json -c ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/runL1PrefireAna_cfg.py --addParents --only JetHT,SinglePhoton,SingleElectron,MuonEG,DoubleEG --lfn /store/group/cmst3/group/top/psilva/l1prefire -w grid_prefire -s
 ```
 
 As soon as ntuple production starts to finish, to move from crab output directories to a simpler directory structure which can be easily parsed by the local analysis runThe merging can be run locally if needed by using the checkProductionIntegrity.py script

@@ -223,7 +223,7 @@ def main():
             break
 
         #continue
-        plots[p].show(outDir=outDir,lumi=lumi,noStack=opt.noStack,saveTeX=opt.saveTeX)
+        if not skipPlot: plots[p].show(outDir=outDir,lumi=lumi,noStack=opt.noStack,saveTeX=opt.saveTeX)
         plots[p].appendTo('%s/%s'%(outDir,opt.outName))
         plots[p].reset()
 

@@ -25,6 +25,11 @@ def fixExtremities(h,addOverflow=True,addUnderflow=True):
 	h.SetBinContent(nbins+1,0)
 	h.SetBinError(nbins+1,0)
 
+def scaleTo(h,val):
+    """ scale histogram integral to a given value """
+    total=h.Integral()
+    if total==0 : return
+    h.Scale(val/total)
 
 
 """

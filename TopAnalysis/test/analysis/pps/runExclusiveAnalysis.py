@@ -113,8 +113,8 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile,mixSel):
     histos['nvtx']        = {'inc':ROOT.TH1F('nvtx',';Vertex multiplicity;Events',50,0,100)}
     histos['mll']         = {'inc':ROOT.TH1F('mll',';Dilepton invariant mass [GeV];Events',50,20,250)}
     histos['ptll']        = {'inc':ROOT.TH1F('ptll',';Dilepton transverse momentum [GeV];Events',50,0,250)}
-    histos['xangle']      = {'inc':ROOT.TH1F('xangle',';LHC crossing angle [#murad];Events',3,120,150)}
-    histos['xanglevsnvtx']= {'inc':ROOT.TH2F('xanglevsnvtx',';LHC crossing angle [#murad];Vertex multiplicity;Events',3,120,150,5,0,100)}
+    histos['xangle']      = {'inc':ROOT.TH1F('xangle',';LHC crossing angle [#murad];Events',4,120,160)}
+    histos['xanglevsnvtx']= {'inc':ROOT.TH2F('xanglevsnvtx',';LHC crossing angle [#murad];Vertex multiplicity;Events',4,120,160,5,0,100)}
     histos['mpp']         = {'inc':ROOT.TH1F('mpp',';Di-proton invariant mass [GeV];Events',100,0,2000)}
     histos['mmass']       = {'inc':ROOT.TH1F('mmass',';Missing mass [GeV];Events',100,0,2000)}
     histos['mmassvsnvtx'] = {'inc':ROOT.TH2F('mmassvsnvtx',';Missing mass [GeV];Vertex multiplicity;Events',100,0,2000,5,0,100)}
@@ -136,7 +136,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile,mixSel):
 
     print '....analysing',nEntries,'in',inFile,', with output @',outFileName
     print '    events mixed with',mixSel if mixSel else 'lumi-weighted data','from',mixFile
-
+    isData=True if 'Data' in inFile else False
 
     #loop over events in the tree and fill histos
     irand=0
@@ -144,9 +144,8 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile,mixSel):
 
         tree.GetEntry(i)
 
-        if not isValidRunLumi(tree.run,tree.lumi,runLumiList):
-            continue
-
+        if not isValidRunLumi(tree.run,tree.lumi,runLumiList): continue
+        
         if i%1000==0 : sys.stdout.write('\r [ %d/100 ] done' %(int(float(100.*i)/float(nEntries))))
         
         if tree.isSS : continue
@@ -157,14 +156,20 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile,mixSel):
 
         wgt=tree.evwgt
         nvtx=tree.nvtx
-        beamXangle=tree.beamXangle
 
-        rptks   = getTracksPerRomanPot(tree)        
+        beamXangle=tree.beamXangle
+        rptks   = getTracksPerRomanPot(tree)
         eraTag  = mixSel if mixSel else getRandomEra()
         mixedEv = random.choice( mixedRP[eraTag] )
         mixed_beamXangle=mixedEv[0]
         mixed_rptks=(mixedEv[1],mixedEv[2])
 
+        #filter based on the beam crossing angle and high purity of the event
+        passBeamXangle = True if beamXangle in [120,130,140] else False
+        highPur=True if len(rptks[0])==1 and len(rptks[1])==1 else False        
+        mix_passBeamXangle = True if mixed_beamXangle in [120,130,140] else False
+        mix_highPur=True if len(mixed_rptks[0])==1 and len(mixed_rptks[1])==1 else False
+        
         ll=ROOT.TLorentzVector(0,0,0,0)
         ll.SetPtEtaPhiM(tree.llpt,tree.lleta,tree.llphi,tree.mll)
 
@@ -179,6 +184,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile,mixSel):
         if tree.isZ                 : cats.append(dilcat+'Z')
         if ll.Pt()>50               : cats.append(dilcat+'hpt')
         if tree.isZ and ll.Pt()>50  : cats.append(dilcat+'hptZ')
+        #if highPur                  : cats += [x+'highpur' for x in cats]
 
         blind=False
         if tree.isZ and ll.Pt()>50:
@@ -197,24 +203,30 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile,mixSel):
             fillHisto(val=(mixed_beamXangle,wgt),      key=('xangle',cat+'_mix'))
             fillHisto(val=(mixed_beamXangle,nvtx,wgt), key=('xanglevsnvtx',cat+'_mix'))
 
-            if pp and not blind:
-                fillHisto(val=(pp.M(),wgt),     key=('mpp',cat))
-                fillHisto(val=(mmass,wgt),      key=('mmass',cat))
-                fillHisto(val=(mmass,nvtx,wgt), key=('mmassvsnvtx',cat))
+            if pp and passBeamXangle:
+                if not (blind and 'hpt' in cat):
+                    fillHisto(val=(pp.M(),wgt),     key=('mpp',cat))
+                    fillHisto(val=(mmass,wgt),      key=('mmass',cat))
+                    fillHisto(val=(mmass,nvtx,wgt), key=('mmassvsnvtx',cat))
+                    
+                    for irp,rpside in [(0,'pos'),(1,'neg')]:
+                        fillHisto(val=(len(rptks[irp]),wgt), key=('ntk',cat+'_'+rpside))
+                        for csi in rptks[irp]:
+                            fillHisto(val=(csi,wgt), key=('csi',cat+'_'+rpside))
 
-            if mixed_pp:
+            if mixed_pp and mix_passBeamXangle:
                 fillHisto(val=(mixed_pp.M(),wgt),     key=('mpp',cat+'_mix'))
                 fillHisto(val=(mixed_mmass,wgt),      key=('mmass',cat+'_mix'))
                 fillHisto(val=(mixed_mmass,nvtx,wgt), key=('mmassvsnvtx',cat+'_mix'))
 
-            for irp,rpside in [(0,'pos'),(1,'neg')]:
-                fillHisto(val=(len(rptks[irp]),wgt), key=('ntk',cat+'_'+rpside))
-                for csi in rptks[irp]:
-                    fillHisto(val=(csi,wgt), key=('csi',cat+'_'+rpside))
+                for irp,rpside in [(0,'pos'),(1,'neg')]:
+                    fillHisto(val=(len(rptks[irp]),wgt), key=('ntk',cat+'_'+rpside))
+                    for csi in rptks[irp]:
+                        fillHisto(val=(csi,wgt), key=('csi',cat+'_'+rpside))
 
-                fillHisto(val=(len(mixed_rptks[irp]),wgt), key=('ntk',cat+'_mix'+rpside))
-                for csi in mixed_rptks[irp]:
-                    fillHisto(val=(csi,wgt), key=('csi',cat+'_mix'+rpside))
+                    fillHisto(val=(len(mixed_rptks[irp]),wgt), key=('ntk',cat+'_mix'+rpside))
+                    for csi in mixed_rptks[irp]:
+                        fillHisto(val=(csi,wgt), key=('csi',cat+'_mix'+rpside))
 
     #save results
     fOut=ROOT.TFile.Open(outFileName,'RECREATE')

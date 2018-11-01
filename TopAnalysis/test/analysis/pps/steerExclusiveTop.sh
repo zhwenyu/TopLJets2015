@@ -23,10 +23,10 @@ jetht_samples_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/je
 zx_samples_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/zx_samples.json
 RPout_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/golden_noRP.json
 wwwdir=~/www/ExclusiveAna
-#inputfileTag=MC13TeV_2017_ZH
-#inputfileTESTSEL=/store/cmst3/group/top/RunIIReReco/f93b8d8/${inputfileTag}/MergedMiniEvents_0_ext0.root
-inputfileTag=Data13TeV_2017B_DoubleMuon
+inputfileTag=MC13TeV_2017_ZH
 inputfileTESTSEL=/store/cmst3/group/top/RunIIReReco/f93b8d8/${inputfileTag}/MergedMiniEvents_0_ext0.root
+#inputfileTag=Data13TeV_2017B_DoubleMuon
+#inputfileTESTSEL=/store/cmst3/group/top/RunIIReReco/f93b8d8/${inputfileTag}/MergedMiniEvents_0_ext0.root
 lumi=41367
 ppsLumi=37500
 lumiUnc=0.025
@@ -59,13 +59,18 @@ case $WHAT in
 	;;
 
     PLOTSEL )
-	commonOpts="-i /eos/cms/${outdir} --puNormSF puwgtctr -j ${samples_json} -l ${lumi} --mcUnc ${lumiUnc} "
-	python scripts/plotter.py ${commonOpts} -O plots; 
+	commonOpts="-i /eos/cms/${outdir} --puNormSF puwgtctr -l ${lumi} --mcUnc ${lumiUnc} "
+	python scripts/plotter.py ${commonOpts} -j ${samples_json}    -O plots/sel; 
+        python scripts/plotter.py ${commonOpts} -j ${samples_json}    -O plots/zx_sel -o bkg_plotter.root --silent --only gen; 
+	python scripts/plotter.py ${commonOpts} -j ${zx_samples_json} -O plots/zx_sel                     --silent --only gen; 
+        python test/analysis/pps/computeDileptonSelEfficiency.py 
+        mv *.png plots/zx_sel/
 	;;
 
     WWWSEL )
 	mkdir -p ${wwwdir}/presel
-	cp plots/*.{png,pdf} ${wwwdir}/presel
+	cp plots/sel/*.{png,pdf} ${wwwdir}/presel
+	cp plots/zx_sel/*.{png,pdf} ${wwwdir}/presel
 	cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}/presel
 	;;
 
@@ -83,7 +88,7 @@ case $WHAT in
     PLOTANA )
         commonOpts="-i plots/analysis -j ${samples_json} -l ${ppsLumi} --mcUnc ${lumiUnc} "
         python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py ${commonOpts};
-        #python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/compareBackgroundEstimation.py plots/analysis/plots/plotter.root plots/analysis/plots;
+        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/compareBackgroundEstimation.py plots/analysis/plots/plotter.root plots/analysis/plots;
         ;;
 
     WWWANA )
