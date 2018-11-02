@@ -157,8 +157,7 @@ void VBFVectorBoson::RunVBFVectorBoson()
 	    mults["looseprompt"]++;
 	  else
 	    mults["loosefake"]++;
-	  //	} else if (a.hasQualityFlag(SelectionTool::TIGHT)){
-	} else if (selector->isTight(ev,idx)){
+	} else if (a.hasQualityFlag(SelectionTool::TIGHT)){
 	  tightACR.push_back(a);
 	  if (ev.gamma_isPromptFinalState[idx])
 	    mults["tightprompt"]++;
@@ -436,7 +435,7 @@ void VBFVectorBoson::readTree(){
   if (debug) nentries = 10000; //restrict number of entries for testing
   //nentries = 10000;
   t->GetEntry(0);
-  isQCDEMEnriched = filename.Contains("MC13TeV_QCDEM");
+  isQCDEMEnriched = filename.Contains("_QCDEM_");
 }
 
 void VBFVectorBoson::prepareOutput(){
