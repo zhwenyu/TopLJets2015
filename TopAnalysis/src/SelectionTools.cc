@@ -112,11 +112,11 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
 	  }
 	}
       } else {
-	bool passPhoton = (!isSRfake && !isQCDTemp && inclusivePhotons.size()>=1) || (!isSRfake && isQCDTemp && tmpPhotons.size()>=1) || (isSRfake && fakePhotons.size()>=1);
+	if(isSRfake) return "";
+	bool passPhoton = (!isSRfake && !isQCDTemp && inclusivePhotons.size()>=1) || (!isSRfake && isQCDTemp && tmpPhotons.size()>=1);
 	if(passPhoton) {
 	  chTag="A";
-	  if (isSRfake)       photons_   =fakePhotons;
-	  else if(!isQCDTemp) photons_   =inclusivePhotons;
+	  if(!isQCDTemp) photons_   =inclusivePhotons;
 	  else                photons_   =tmpPhotons;
 	  //cout<< "Number of very loose photons: "<<photons_.size()<<endl;
 	  leptons_   =tightLeptons;

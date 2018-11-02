@@ -2,6 +2,8 @@
 
 WHAT=$1; 
 EXTRA=$2
+QCD=""
+
 if [ "$#" -lt 1 ]; then 
     echo "steerVBFVectorBoson.sh <SEL/MERGE/PLOT/WWW> [extra]";
     echo "        SEL          - launches selection jobs to the batch, output will contain summary trees and control plots"; 
@@ -11,6 +13,9 @@ if [ "$#" -lt 1 ]; then
     exit 1; 
 fi
 
+if [ "$#" -gt 1 ]; then 
+    QCD=$3
+fi
 #to run locally use local as queue + can add "--njobs 8" to use 8 parallel jobs
 queue=workday
 githash=f93b8d8
@@ -27,21 +32,11 @@ NC='\e[0m'
 case $WHAT in
 
     TESTSEL )
-        # input=${eosdir}/MC13TeV_DY50toInf/MergedMiniEvents_0_ext0.root
-        # output=MC13TeV_DY4Jets50toInf.root
-        # tag="--tag MC13TeV_DY50toInf"
 
         input=${eosdir}/Data13TeV_2017C_SinglePhoton/MergedMiniEvents_0_ext0.root
         output=Data13TeV_2017C_SinglePhoton.root #MC13TeV_AJJ_EWK_INT_LO_mjj500_dr04.root
         tag="--tag Data13TeV_2017C_SinglePhoton" #MC13TeV_AJJ_EWK_INT_LO_mjj500_dr04"
 
-        #input=${eosdir}/Data13TeV_SinglePhoton_2017F/MergedMiniEvents_0_ext0.root
-        #output=Data13TeV_SinglePhoton_2017F.root
-        #tag="--tag Data13TeV_SinglePhoton_2017F"
-
-        #input=${eosdir2018}/Data13TeV_EGamma_2018A/MergedMiniEvents_0_ext0.root
-        #output=Data13TeV_EGamma_2018A.root
-        #tag="--tag Data13TeV_EGamma_2018A"
 
 	python scripts/runLocalAnalysis.py \
             -i ${input} -o ${output} ${tag} \
@@ -52,17 +47,17 @@ case $WHAT in
         ;;
 
     SEL )
-#	json=data/era2017/vbf_samples.json;
-	json=vbf_syst_samples.json;
+	json=data/era2017/vbf_samples.json;
+#	json=vbf_syst_samples.json;
 	extraOpts="" #" --SRfake" #"--mvatree"
 	python scripts/runLocalAnalysis.py \
 	    -i ${eosdir} \
             -o ${outdir}/${githash}/${EXTRA} \
             --farmappendix ${githash} \
             -q ${queue} --genWeights genweights_${githash}.root \
-            --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts ${extraOpts};
+            --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --only SinglePhoton  --runSysts ${extraOpts};
 	;;
-        #extraOpts=" --mvatree"
+
 
     SEL2018 )
 	python scripts/runLocalAnalysis.py -i /store/cmst3/group/top/RunIISpring18/f3174df\
@@ -79,19 +74,19 @@ case $WHAT in
     SELJETHT )
 	json=data/era2017/JetHT.json;
 	extraOpts=" --CR"
-	echo ${EXTRA} 
-	if [ ${EXTRA} == "QCDTemp" ]; then
+	echo ${QCD} 
+	if [[ ${QCD} == "QCDTemp" ]]; then
 	    echo 'I do QCD Template photon selection'
 	    extraOpts=${extraOpts}" --QCDTemp"
 	fi
-        if [ ${EXTRA} == "SRfake" ]; then
+        if [[ ${QCD} == "SRfake" ]]; then
             echo 'I do SRfake photon selection'
             extraOpts=" --SRfake"
         fi
 	python scripts/runLocalAnalysis.py \
 	    -i ${eosdir} \
-            -o ${outdir}/${githash}${EXTRA} \
-            --farmappendix ${githash}${EXTRA} \
+            -o ${outdir}/${githash}/${EXTRA}${QCD} \
+            --farmappendix ${githash}${EXTRA}${QCD} \
             -q ${queue} --genWeights genweights_${githash}.root \
             --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --only ${json} --runSysts ${extraOpts};
 	;;
@@ -125,27 +120,7 @@ case $WHAT in
         ;;
 
     PLOT )
-#         json=data/era2017/vbf_samples.json;
-#         lumi=${fulllumi}        
-#         gh=${githash}/
-#         if [[ "${EXTRA}" = *"2018"* ]]; then
-#             json=data/era2018/vbf_samples.json;
-#             lumi=${fulllumi2018}
-#             vbflumi=${lumi}
-#             gh=${githash2018}
-#         fi
-#         kFactors="--procSF MC13TeV_QCDEM_15to20:1.26,MC13TeV_QCDEM_20to30:1.26,MC13TeV_QCDEM_30to50:1.26,MC13TeV_QCDEM_50to80:1.26,MC13TeV_QCDEM_80to120:1.26,MC13TeV_QCDEM_120to170:1.26,MC13TeV_QCDEM_170to300:1.26,MC13TeV_QCDEM_300toInf:1.26,MC13TeV_GJets_HT40to100:1.26,MC13TeV_GJets_HT100to200:1.26,MC13TeV_GJets_HT200to400:1.26,MC13TeV_GJets_HT600toInf:1.26"
-# 	commonOpts="-i ${outdir}/${gh}/${EXTRA} --puNormSF puwgtctr -l ${lumi}  --saveLog --mcUnc ${lumiUnc} --lumiSpecs VBFA:${vbflumi},OfflineVBFA:${fulllumi}"
-# 	python scripts/plotter.py ${commonOpts} -j ${json} ${kFactors} --only LowMJJA,LowMJJMM,HighMJJMM -O ${outdir}/${githash}/${EXTRA}/plots/
-# #python scripts/plotter.py ${commonOpts} -j ${json} ${kFactors} --only evcount --saveTeX --o ${outdir}/${githash}/${EXTRA}/plots/evcount_plotter.root;
-#         if [[ "${EXTRA}" != *"2018"* ]]; then
-#             python scripts/plotter.py ${commonOpts}  -j data/era2017/vbf_signal_samples.json --only HighPtA_ -O ${outdir}/${githash}/${EXTRA}/plots_signal/ --noStack;
-#             continue
-#             #python scripts/plotter.py ${commonOpts}  -j data/era2017/gjets_samples.json --only HighPtA_mjj -O ${outdir}/${githash}/${EXTRA}/plots_gjets/ --noStack;
-#             trigOpts="-i ${outdir}/${gh}/${EXTRA} --puNormSF puwgtctr -l ${vbflumi}  --saveLog --mcUnc ${lumiUnc} ${kFactors} --only HighPtOfflineVBFA,HighPtVBFA"
-#             #python scripts/plotter.py ${trigOpts} -j data/era2017/vbf_samples_2017F.json -O ${outdir}/${githash}/${EXTRA}/plots_trigger;
-#         fi
-# 	;;
+
         json=data/era2017/vbf_samples.json;
 	syst_json=data/era2017/vbf_syst_samples.json;
         lumi=${fulllumi}        
