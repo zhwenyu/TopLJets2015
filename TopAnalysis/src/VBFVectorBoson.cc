@@ -157,8 +157,7 @@ void VBFVectorBoson::RunVBFVectorBoson()
 	    mults["looseprompt"]++;
 	  else
 	    mults["loosefake"]++;
-	  //	} else if (a.hasQualityFlag(SelectionTool::TIGHT)){
-	} else if (selector->isTight(ev,idx)){
+	} else if (a.hasQualityFlag(SelectionTool::TIGHT)){
 	  tightACR.push_back(a);
 	  if (ev.gamma_isPromptFinalState[idx])
 	    mults["tightprompt"]++;
