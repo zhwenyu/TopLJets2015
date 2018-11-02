@@ -1,17 +1,95 @@
 import ROOT
-from TopLJets2015.TopAnalysis.Plot import fixExtremities, scaleTo
+from TopLJets2015.TopAnalysis.Plot import fixExtremities, scaleTo, divideByBinWidth
 
-def getEff(h,forward=True):
+def getPassGenDistributions(pName,gName,plotter,ci,fill=0):
+
+    """reads the distributions from the plotter"""
+
+    passH=plotter.Get(pName)
+    fixExtremities(passH)
+    passH.SetDirectory(0)
+    passH.SetFillStyle(fill)
+    passH.SetLineColor(ci)
+    passH.SetMarkerColor(ci)
+    passH.SetLineWidth(2)
+
+    genH=plotter.Get(gName)
+    fixExtremities(genH)
+    genH.SetDirectory(0)
+    genH.SetFillStyle(fill)
+    genH.SetLineColor(ci)
+    genH.SetMarkerColor(ci)
+    genH.SetLineWidth(2)
+    
+    return passH,genH
+
+def getEfficiencyCurve(passH,genH,marker):
+    
+    """builds an efficiency curve"""
+
+    effGr=ROOT.TGraphAsymmErrors()
+    effGr.SetName(passH.GetName()+'_eff')
+    effGr.SetTitle(passH.GetTitle())
+    effGr.SetMarkerStyle(marker)
+    effGr.SetMarkerColor(passH.GetLineColor())
+    effGr.SetLineColor(passH.GetLineColor())
+    effGr.SetFillStyle(0)
+    effGr.BayesDivide(passH,genH)
+
+    return effGr
+
+
+def getCurveRatio(gr_den,gr_num):
+
+    """compute the ratio of the two curves"""
+    
+    compGr=ROOT.TGraphErrors()
+    compGr.SetTitle(gr_num.GetTitle())
+    compGr.SetName('%s_over_%s'%(gr_num.GetName(),gr_den.GetName()))
+    compGr.SetLineColor(gr_num.GetLineColor())
+    compGr.SetMarkerColor(gr_num.GetMarkerColor())
+    compGr.SetMarkerStyle(gr_num.GetMarkerStyle())
+
+    x_den,x_num,y_den,y_num=ROOT.Double(0),ROOT.Double(0),ROOT.Double(0),ROOT.Double(0)
+    for i in xrange(0,gr_den.GetN()):
+        gr_den.GetPoint(i,x_den,y_den)
+        ey_den=gr_den.GetErrorY(i)
+
+        found=False
+        for j in xrange(0,gr_num.GetN()):
+            gr_num.GetPoint(j,x_num,y_num)
+            ey_num=gr_num.GetErrorY(j)
+
+            if float(x_num)!=float(x_den): continue
+            found=True
+            break
+
+        if not found:
+            print 'Unable to find same point for',float(x_den)
+            continue
+
+        if float(y_den)==0 : continue
+        newy=float(y_num)/float(y_den)
+        newyUnc=ROOT.TMath.Sqrt((float(y_num)*ey_den)**2+(float(y_den)*ey_num)**2)/(float(y_den)**2)
+
+        ip=compGr.GetN()
+        compGr.SetPoint(ip,float(x_den),newy)
+        compGr.SetPointError(ip,0,newyUnc)
+
+    return compGr
+
+
+def getCutEfficiencyCurve(h,marker,forward=True):
 
     """build an efficiency curve for a given cut"""
 
     eff=ROOT.TGraphErrors()
     eff.SetTitle(h.GetTitle())
-    eff.SetMarkerStyle(h.GetMarkerStyle())
+    eff.SetMarkerStyle(marker)
     eff.SetMarkerColor(h.GetMarkerColor())
     eff.SetLineColor(h.GetLineColor())
     nbins=h.GetNbinsX()
-    err=ROOT.Double(0)    
+    err=ROOT.Double(0)        
     total=h.Integral()
     for xbin in xrange(1,nbins+1):        
         n=h.IntegralAndError(xbin,nbins,err)
@@ -19,103 +97,11 @@ def getEff(h,forward=True):
         eff.SetPointError(xbin-1,0,float(err)/total)
     return eff
 
-def getROC(bkgH,sigH):
 
-    """build a ROC type of curve: eff signal vs eff background"""
+def showEfficiencyPlot(grColl,xtit,ytit,logx,logy,yran,legPos,outName):
 
-    roc=ROOT.TGraphErrors()
-    roc.SetTitle(sigH.GetTitle())
-    roc.SetMarkerStyle(sigH.GetMarkerStyle())
-    roc.SetMarkerColor(sigH.GetMarkerColor())
-    roc.SetLineColor(sigH.GetLineColor())
+    """ dump efficiency plots"""
 
-    nbins=bkgH.GetNbinsX()
-    errSig=ROOT.Double(0)
-    errBkg=ROOT.Double(0)
-    totalBkg=bkgH.Integral()
-    totalSig=sigH.Integral()
-    for xbin in xrange(1,nbins+1):
-        nbkg=bkgH.IntegralAndError(xbin,nbins,errBkg)
-        nsig=sigH.IntegralAndError(xbin,nbins,errSig)
-        roc.SetPoint(xbin-1,nsig/totalSig,nbkg/totalBkg)
-        roc.SetPointError(xbin-1,float(errSig)/totalSig,float(errBkg)/totalBkg)
-
-    return roc
-
-
-
-def getCMSLabel():
-    tex=ROOT.TLatex()
-    tex.SetTextFont(42)
-    tex.SetTextSize(0.04)
-    tex.SetNDC()
-    tex.DrawLatex(0.12,0.96,'#bf{CMS} #it{simulation preliminary}')
-
-
-def doEffPlot(ch,d,plotter,bkg_plotter):
-
-    """do the efficiency plots"""
-    
-    #background
-    bkg_gen=bkg_plotter.Get('gen{0}_{1}/gen{0}_{1}_DY'.format(ch,d) )
-    bkg_rec=bkg_plotter.Get('gen{0}rec_{1}/gen{0}rec_{1}_DY'.format(ch,d) )
-    bkg_rec.SetDirectory(0)
-    bkg_rec.SetLineColor(1)
-    bkg_rec.SetMarkerColor(1)
-    bkg_rec.SetMarkerStyle(20)
-    fixExtremities(bkg_gen)
-    fixExtremities(bkg_rec)
-    genH=[bkg_gen]
-    recH=[bkg_rec]
-
-    #signals
-    gen_dir=plotter.GetDirectory('gen{0}_{1}'.format(ch,d))
-    rec_dir=plotter.GetDirectory('gen{0}rec_{1}'.format(ch,d))
-    colors=['#666666','#8c510a','#7fc97f', '#f0027f', '#fdc086', '#358CEF', '#bf5b17']
-    for key in gen_dir.GetListOfKeys():
-
-        ci=ROOT.TColor.GetColor(colors[len(recH)-2])
-        marker=20+len(recH)/2
-
-        genH.append(key.ReadObj())
-        genH[-1].SetLineColor(ci)
-        genH[-1].SetMarkerColor(ci)
-        genH[-1].SetMarkerStyle(marker)
-        genH[-1].SetFillStyle(0)
-        genH[-1].SetLineWidth(2)
-        fixExtremities(genH[-1])
-
-        proc=key.GetName()
-        proc=proc.replace('gen{0}_{1}'.format(ch,d),'')
-        recH.append(rec_dir.Get('gen{0}rec_{1}{2}'.format(ch,d,proc)))
-        recH[-1].SetLineColor(ci)
-        recH[-1].SetMarkerColor(ci)
-        recH[-1].SetMarkerStyle(marker)
-        recH[-1].SetFillStyle(0)
-        recH[-1].SetLineWidth(2)
-        fixExtremities(recH[-1])
-    
-    #compute efficiency
-    effGr=[]
-    accEffGr=[]
-    rocGr=[]
-    for i in xrange(0,len(genH)):
-        accEffGr.append( ROOT.TGraphAsymmErrors() )
-        accEffGr[-1].SetName('acceff%d'%i)
-        accEffGr[-1].SetTitle(recH[i].GetTitle())
-        accEffGr[-1].SetMarkerStyle(recH[i].GetMarkerStyle())
-        accEffGr[-1].SetMarkerColor(recH[i].GetMarkerColor())
-        accEffGr[-1].SetLineColor(recH[i].GetLineColor())
-        accEffGr[-1].BayesDivide(recH[i],genH[i])
-
-        effGr.append( getEff(recH[i] ) )
-        effGr[-1].SetName('eff%d'%i)
-
-        if i==0: continue
-        rocGr.append( getROC( recH[0],recH[i] ) )
-        rocGr[-1].SetName('roc%d'%i)
-
-    
     #show plots
     c=ROOT.TCanvas('c','c',500,500)
     c.SetLeftMargin(0.12)
@@ -125,75 +111,154 @@ def doEffPlot(ch,d,plotter,bkg_plotter):
     c.SetGridx()
     c.SetGridy()
 
-    for item in [(accEffGr,recH[0].GetXaxis().GetTitle(),            'Acc x #varepsilon',            False, False, None, (0,1),    'tr', '%s_%s_acceff'%(ch,d)),
-                 (effGr,   'Cut on ' + recH[0].GetXaxis().GetTitle(),'#varepsilon',                  False, False, None, (0,1),    'br', '%s_%s_eff'%(ch,d)),
-                 (rocGr,   'Signal Acc x #varepsilon',               'Background Acc x #varepsilon', False, True,  None, (1e-3,1), 'tl', '%s_%s_roc'%(ch,d))
-                 ]:
+    c.SetLogx(logx)
+    c.SetLogy(logy)
+    leg_y0=0.95 if legPos[0]=='t' else 0.45
+    leg_x0=0.15 if legPos[1]=='l' else 0.65
+    leg=ROOT.TLegend(leg_x0,leg_y0,leg_x0+0.3,leg_y0-0.04*len(grColl))
+    leg.SetBorderSize(0)
+    leg.SetFillStyle(0)
+    leg.SetTextFont(42)
+    mg=ROOT.TMultiGraph()
+    for g in grColl:
+        mg.Add(g,'p')
+        leg.AddEntry(g,g.GetTitle(),'ep')
+    mg.Draw('a')
+    if logx:
+        mg.GetXaxis().SetMoreLogLabels()
+    if xtit:
+        mg.GetXaxis().SetTitle(xtit)
+    if ytit:
+        mg.GetYaxis().SetTitle(ytit)
+    if yran:
+        mg.GetYaxis().SetRangeUser(*yran)
+    leg.Draw()
+    tex=ROOT.TLatex()
+    tex.SetTextFont(42)
+    tex.SetTextSize(0.04)
+    tex.SetNDC()
+    tex.DrawLatex(0.12,0.96,'#bf{CMS} #it{simulation preliminary}')
+    c.Modified()
+    c.Update()   
+    c.RedrawAxis() 
+    c.SaveAs('{0}.png'.format(outName))
 
-        grColl,xtit,ytit,logx,logy,xran,yran,legPos,outName=item
+def showSimpleDistribution(hColl,doLogx,doDivideByBinWidth,outName):
 
-        c.SetLogx(logx)
-        c.SetLogy(logy)
-        if legPos=='tl':
-            leg=ROOT.TLegend(0.15,0.95,0.45,0.95-0.04*len(grColl))
-        elif legPos=='tr':
-            leg=ROOT.TLegend(0.65,0.95,0.95,0.95-0.04*len(grColl))
-        else:
-            leg=ROOT.TLegend(0.65,0.45,0.95,0.45-0.04*len(grColl))
-        leg.SetBorderSize(0)
-        leg.SetFillStyle(0)
-        leg.SetTextFont(42)
-        mg=ROOT.TMultiGraph()
-        for g in grColl:
-            mg.Add(g,'p')
-            leg.AddEntry(g,g.GetTitle(),'ep')
-        mg.Draw('a')
-        if xtit:
-            mg.GetXaxis().SetTitle(xtit)
-        if xran:
-            mg.GetYaxis().SetRangeUser(*xran)
-        if ytit:
-            mg.GetYaxis().SetTitle(ytit)
-        if yran:
-            mg.GetYaxis().SetRangeUser(*yran)
-        leg.Draw()
-        getCMSLabel()
-        c.Modified()
-        c.Update()   
-        c.RedrawAxis() 
-        c.SaveAs(outName+'.png')
-    
-    c.Clear()
+    c=ROOT.TCanvas('c','c',500,500)
+    c.SetLeftMargin(0.12)
+    c.SetRightMargin(0.02)
+    c.SetTopMargin(0.05)
+    c.SetBottomMargin(0.1)
+    c.SetGridx()
+    c.SetGridy()
+    c.SetLogx(doLogx)
     c.SetLogy(True)
-    c.SetLogx(False)
-    leg=ROOT.TLegend(0.65,0.95,0.95,0.95-0.04*len(genH))
+    leg=ROOT.TLegend(0.65,0.95,0.95,0.95-0.04*len(hColl))
     leg.SetBorderSize(0)
     leg.SetFillStyle(0)
     leg.SetTextFont(42)
     drawOpt='hist'
-    for h in genH:
+    for h in hColl:
         scaleTo(h,1.0)
-        h.Draw(drawOpt)
         h.GetYaxis().SetRangeUser(1e-4,1.0)
         h.GetYaxis().SetTitle('PDF')
-        leg.AddEntry(h,h.GetTitle(),'lf')
+        if doDivideByBinWidth: 
+            divideByBinWidth(h)
+            h.GetYaxis().SetTitle('PDF / bin width')
+            h.GetYaxis().SetRangeUser(1e-4,0.1)
+        h.Draw(drawOpt)
+        leg.AddEntry(h,h.GetTitle(),'f')
         drawOpt='histsame'
     leg.Draw()
-    getCMSLabel()
+    tex=ROOT.TLatex()
+    tex.SetTextFont(42)
+    tex.SetTextSize(0.04)
+    tex.SetNDC()
+    tex.DrawLatex(0.12,0.96,'#bf{CMS} #it{simulation preliminary}')    
     c.Modified()
     c.Update()
     c.RedrawAxis()
-    c.SaveAs('%s_%s.png'%(ch,d))
+    c.SaveAs('%s.png'%outName)
+
+def runSelectionEfficiencyFor(ch,d):
+
+    bkgROOT=ROOT.TFile.Open('plots/zx_sel/bkg_plotter.root')
+    zxROOT=ROOT.TFile.Open('plots/zx_sel/plotter.root')
+
+    procList  =[('DY','#000000',1001,20,bkgROOT),
+                ("ZH#rightarrowllbb",'#666666',0,24,zxROOT),
+                ("qqH(900)#rightarrowZZ#rightarrow2l2#nu",'#8c510a',0,21,zxROOT),
+                ("ggH(900)#rightarrowZZ#rightarrow2l2#nu",'#7fc97f',0,21,zxROOT),
+                ("qqH(1500)#rightarrowZZ#rightarrow2l2#nu",'#f0027f',0,25,zxROOT),
+                ("ggH(1500)#rightarrowZZ#rightarrow2l2#nu",'#fdc086',0,25,zxROOT),
+                ("G_{RS}(800)#rightarrowZZ", '#358CEF',0,23,zxROOT),
+                #("G_{RS}(1200)#rightarrowZZ", '#bf5b17',0,26,zxROOT),
+                ("G_{bulk}(800)#rightarrowZZ#rightarrow2l2#nu","#c2a5cf",0,23,zxROOT)]
+    
+    tagsList=['singletrig','trig','rec','tightrec']
+
+    genSummary={}
+    effSummary={}
+    for tag in tagsList:
+        genSummary[tag]=[]
+        effSummary[tag]=[]
+        for p,color,fill,marker,plotter in procList:
+            passH,genH = getPassGenDistributions(pName='gen{0}{1}_{2}/gen{0}{1}_{2}_{3}'.format(ch,tag,d,p),
+                                                 gName='gen{0}_{1}/gen{0}_{1}_{2}'.format(ch,d,p),
+                                                 plotter=plotter,
+                                                 ci=ROOT.TColor.GetColor(color),
+                                                 fill=fill)        
+            effGr=getEfficiencyCurve(passH,genH,marker=marker)
+
+            genSummary[tag].append(genH)
+            effSummary[tag].append(effGr)
+
+    #relative gains
+    effSummary['trig_gain']=[]
+    effSummary['rec_gain']=[]
+    for i in xrange(0,len(effSummary[tagsList[0]])):
+        effSummary['trig_gain'].append(getCurveRatio(gr_den=effSummary['singletrig'][i], gr_num=effSummary['trig'][i]))
+        effSummary['rec_gain'].append(getCurveRatio(gr_den=effSummary['tightrec'][i],    gr_num=effSummary['rec'][i]))
+
+    #cut efficiency
+    if d=='ptll':
+        effSummary['cut']=[]
+        for i in xrange(0,len(effSummary[tagsList[0]])):
+            effSummary['cut'].append( getCutEfficiencyCurve(h=genSummary['rec'][i],marker=marker) )
+
+    doLogx=True if d=='ptll' else False
+    doDivideByBinWidth=True if d in ['ptll','mll'] else False
+
+    #distribution plots
+    showSimpleDistribution(genSummary['rec'],doLogx=False,doDivideByBinWidth=doDivideByBinWidth,outName='gen_%s_%s'%(ch,d))
+
+    #efficiency plots
+    for tag,xtit,ytit,logx,logy,yran,legPos in [('trig',      genSummary['rec'][0].GetXaxis().GetTitle(),'Trigger acceptance x #varepsilon',  doLogx,False,(0.6,1),  'bl'),
+                                                ('trig_gain', genSummary['rec'][0].GetXaxis().GetTitle(),'Ratio to single triggers',          doLogx,False,(0.95,1.15),'tr'),
+                                                ('rec',       genSummary['rec'][0].GetXaxis().GetTitle(),'Selection acceptance x #varepsilon',doLogx,False,(0.,1),   'tl' if d=='ptll' else 'tr'),
+                                                ('rec_gain',  genSummary['rec'][0].GetXaxis().GetTitle(),'Ratio to tight selection',          doLogx,False,(0.7,2.2),'tr'),
+                                                ('cut',       genSummary['rec'][0].GetXaxis().GetTitle(),'Cut efficiency',                    doLogx,True, (1e-3,1), 'bl'),
+                                                ]:
+
+        if not tag in effSummary: continue
+        showEfficiencyPlot(grColl=effSummary[tag],
+                           xtit=xtit,
+                           ytit=ytit,
+                           logx=logx,
+                           logy=logy,
+                           yran=yran,
+                           legPos=legPos,
+                           outName='%s_%s_%s'%(tag,ch,d))
 
 
-bkg_plotter=ROOT.TFile.Open('plots/zx_sel/bkg_plotter.root')
-plotter=ROOT.TFile.Open('plots/zx_sel/plotter.root')
-dists=['ptll','mll','drll']
-chs=['ee','mm','em']
 ROOT.gStyle.SetOptStat(0)
 ROOT.gStyle.SetOptTitle(0)
 ROOT.gROOT.SetBatch(True)
-for ch in chs:
-    for d in dists:
-        doEffPlot(ch,d,plotter,bkg_plotter)
+
+for d in ['ptll','mll','drll']:
+    for ch in ['ee','mm']:
+        runSelectionEfficiencyFor(ch,d)
+
+
 

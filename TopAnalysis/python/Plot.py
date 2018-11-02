@@ -31,6 +31,16 @@ def scaleTo(h,val):
     if total==0 : return
     h.Scale(val/total)
 
+def divideByBinWidth(h):
+    """ loop over the bins and divide contents by its width"""
+    for xbin in xrange(1,h.GetNbinsX()+1):
+        wid=h.GetXaxis().GetBinWidth(xbin)
+        val=h.GetBinContent(xbin)
+        unc=h.GetBinError(xbin)
+        h.SetBinContent(xbin,val/wid)
+        h.SetBinError(xbin,unc/wid)
+
+
 
 """
 A wrapper to store data and MC histograms for comparison
@@ -59,7 +69,7 @@ class Plot(object):
         self.frameMax=1.45
         self.mcUnc=0
 
-    def add(self, h, title, color, isData, spImpose, isSyst):
+    def add(self, h, title, color, isData, spImpose, isSyst, doDivideByBinWidth=False):
 
         if 'ratevsrun' in self.name and not isData: return
 
@@ -69,6 +79,8 @@ class Plot(object):
         try:
             if not h.InheritsFrom('TH2') and not h.InheritsFrom('TGraph'):
                 fixExtremities(h=h,addOverflow=True,addUnderflow=True)
+            if doDivideByBinWidth:
+                divideByBinWidth(h=h)
         except:
             pass
 

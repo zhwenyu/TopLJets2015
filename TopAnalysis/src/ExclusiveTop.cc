@@ -270,12 +270,20 @@ void RunExclusiveTop(TString filename,
         }
       }
 
+      //trigger efficiency
       if( (gen_dilCat=="genee" && (hasEETrigger || hasETrigger)) ||
           (gen_dilCat=="genmm" && (hasMMTrigger || hasMTrigger)) ||
           (gen_dilCat=="genem" && (hasEMTrigger || hasETrigger || hasEMTrigger)) ) { 
         ht.fill("ptll", gen_llpt, trivialwgts, gen_dilCat+"trig");
         ht.fill("mll",  gen_mll,  trivialwgts, gen_dilCat+"trig");
         ht.fill("drll", gen_drll,  trivialwgts, gen_dilCat+"trig");
+      }
+      if( (gen_dilCat=="genee" && hasETrigger) ||
+          (gen_dilCat=="genmm" && hasMTrigger) ||
+          (gen_dilCat=="genem" && (hasETrigger || hasEMTrigger)) ) { 
+        ht.fill("ptll", gen_llpt, trivialwgts, gen_dilCat+"singletrig");
+        ht.fill("mll",  gen_mll,  trivialwgts, gen_dilCat+"singletrig");
+        ht.fill("drll", gen_drll,  trivialwgts, gen_dilCat+"singletrig");
       }
 
       
@@ -454,14 +462,14 @@ void RunExclusiveTop(TString filename,
           ht.fill("ptll", gen_llpt, trivialwgts,gen_dilCat+"rec");
           ht.fill("mll",  gen_mll,  trivialwgts,gen_dilCat+"rec");
           ht.fill("drll", gen_drll,  trivialwgts, gen_dilCat+"rec");
-
+          
           if(hasSubLeadingTightLepton){
             ht.fill("ptll", gen_llpt, trivialwgts,gen_dilCat+"tightrec");
             ht.fill("mll",  gen_mll,  trivialwgts,gen_dilCat+"tightrec");
             ht.fill("drll", gen_drll,  trivialwgts, gen_dilCat+"tightrec");
           }
         }
-
+        
         TLorentzVector X(met);
         float xScaleUnc(metScaleUnc);
         float xEtaUnc(0);
