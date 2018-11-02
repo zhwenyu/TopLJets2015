@@ -61,8 +61,8 @@ case $WHAT in
     PLOTSEL )
 	commonOpts="-i /eos/cms/${outdir} --puNormSF puwgtctr -l ${lumi} --mcUnc ${lumiUnc} "
 	python scripts/plotter.py ${commonOpts} -j ${samples_json}    -O plots/sel; 
-        python scripts/plotter.py ${commonOpts} -j ${samples_json}    -O plots/zx_sel -o bkg_plotter.root --silent --only gen; 
-	python scripts/plotter.py ${commonOpts} -j ${zx_samples_json} -O plots/zx_sel                     --silent --only gen; 
+        python scripts/plotter.py ${commonOpts} -j ${samples_json}    --rawYields --silent --only gen -O plots/zx_sel -o bkg_plotter.root ; 
+	python scripts/plotter.py ${commonOpts} -j ${zx_samples_json} --rawYields --silent --only gen -O plots/zx_sel;
         python test/analysis/pps/computeDileptonSelEfficiency.py 
         mv *.png plots/zx_sel/
 	;;
