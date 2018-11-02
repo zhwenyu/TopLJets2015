@@ -11,7 +11,6 @@
 #include "TopLJets2015/TopAnalysis/interface/CommonTools.h"
 #include "TopLJets2015/TopAnalysis/interface/VBFVectorBoson.h"
 #include "TopLJets2015/TopAnalysis/interface/EfficiencyScaleFactorsWrapper.h"
-#include "TopLJets2015/TopAnalysis/interface/L1PrefireEfficiencyWrapper.h"
 
 #include "PhysicsTools/CandUtils/interface/EventShapeVariables.h"
 

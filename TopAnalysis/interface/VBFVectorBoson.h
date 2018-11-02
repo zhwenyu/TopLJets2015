@@ -16,7 +16,7 @@
 #include "TopLJets2015/TopAnalysis/interface/CommonTools.h"
 #include "TopLJets2015/TopAnalysis/interface/VBFVectorBoson.h"
 #include "TopLJets2015/TopAnalysis/interface/EfficiencyScaleFactorsWrapper.h"
-
+#include "TopLJets2015/TopAnalysis/interface/L1PrefireEfficiencyWrapper.h"
 #include "PhysicsTools/CandUtils/interface/EventShapeVariables.h"
 
 #include <vector>
@@ -141,6 +141,9 @@ private:
   	//LEPTON EFFICIENCIES
 	EfficiencyScaleFactorsWrapper * gammaEffWR;
   
+        //L1 prefire efficiencies
+        L1PrefireEfficiencyWrapper *l1PrefireWR;
+
   	//JEC/JER
   	//JECTools * jec;
 	
