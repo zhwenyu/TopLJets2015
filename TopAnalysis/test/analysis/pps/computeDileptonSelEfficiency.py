@@ -236,7 +236,7 @@ def runSelectionEfficiencyFor(ch,d):
     #efficiency plots
     for tag,xtit,ytit,logx,logy,yran,legPos in [('trig',      genSummary['rec'][0].GetXaxis().GetTitle(),'Trigger acceptance x #varepsilon',  doLogx,False,(0.6,1),  'bl'),
                                                 ('trig_gain', genSummary['rec'][0].GetXaxis().GetTitle(),'Ratio to single triggers',          doLogx,False,(0.95,1.15),'tr'),
-                                                ('rec',       genSummary['rec'][0].GetXaxis().GetTitle(),'Selection acceptance x #varepsilon',doLogx,False,(0.,1),   'tl'),
+                                                ('rec',       genSummary['rec'][0].GetXaxis().GetTitle(),'Selection acceptance x #varepsilon',doLogx,False,(0.,1),   'tl' if d=='ptll' else 'tr'),
                                                 ('rec_gain',  genSummary['rec'][0].GetXaxis().GetTitle(),'Ratio to tight selection',          doLogx,False,(0.7,2.2),'tr'),
                                                 ('cut',       genSummary['rec'][0].GetXaxis().GetTitle(),'Cut efficiency',                    doLogx,True, (1e-3,1), 'bl'),
                                                 ]:

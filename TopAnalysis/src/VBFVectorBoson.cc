@@ -11,6 +11,7 @@
 #include "TopLJets2015/TopAnalysis/interface/CommonTools.h"
 #include "TopLJets2015/TopAnalysis/interface/VBFVectorBoson.h"
 #include "TopLJets2015/TopAnalysis/interface/EfficiencyScaleFactorsWrapper.h"
+#include "TopLJets2015/TopAnalysis/interface/L1PrefireEfficiencyWrapper.h"
 
 #include "PhysicsTools/CandUtils/interface/EventShapeVariables.h"
 
@@ -327,7 +328,11 @@ void VBFVectorBoson::RunVBFVectorBoson()
         double puWgt(lumi->pileupWeight(ev.g_pu,period)[0]);
         std::vector<double>puPlotWgts(1,puWgt);
         ht->fill("puwgtctr",1,puPlotWgts);
-        
+
+        //l1 prefire probability
+        float l1prefireProb=l1PrefireWR->getJetBasedCorrection(jets).first;
+        wgt *= l1prefireProb;
+
         // photon trigger*selection weights
         float trigSF(1.0), selSF(1.0);
         if(chTag=="A")
@@ -559,6 +564,7 @@ void VBFVectorBoson::loadCorrections(){
   lumi = new LumiTools(era,genPU);
   gammaEffWR = new EfficiencyScaleFactorsWrapper(filename.Contains("Data13TeV"),era);
   //jec = new JECTools(era);
+  l1PrefireWR = new L1PrefireEfficiencyWrapper(filename.Contains("Data13TeV"),era);
   if(anFlag>0) this->setGammaZPtWeights();
 }
 void VBFVectorBoson::addMVAvars(){
