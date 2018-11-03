@@ -87,9 +87,9 @@ void RunExclusiveTop(TString filename,
   ADDVAR(&ev.rho,"rho","F",outT);
   ADDVAR(&ev.pf_closestDZnonAssoc,"closestDZnonAssoc","F",outT);
   ADDVAR(&ev.pf_ch_wgtSum,"nch","F",outT);
-  ADDVAR(&ev.met_pt[1],"met_pt","F",outT);
-  ADDVAR(&ev.met_phi[1],"met_phi","F",outT);
-  ADDVAR(&ev.met_sig[1],"met_sig","F",outT);
+  ADDVAR(&ev.met_pt,"met_pt","F",outT);
+  ADDVAR(&ev.met_phi,"met_phi","F",outT);
+  ADDVAR(&ev.met_sig,"met_sig","F",outT);
   TString fvars[]={"evwgt", "dilcode", 
                    "l1pt", "l1eta", "l1phi", "ml1", "l1id", "mt1",
                    "l2pt", "l2eta", "l2phi", "ml2", "l2id", "mt2",
@@ -414,8 +414,8 @@ void RunExclusiveTop(TString filename,
         
         //met
         TLorentzVector met(0,0,0,0);
-        met.SetPtEtaPhiM(ev.met_pt[1],0,ev.met_phi[1],0.);
-        Float_t metScaleUnc(1./ev.met_sig[1]);
+        met.SetPtEtaPhiM(ev.met_pt,0,ev.met_phi,0.);
+        Float_t metScaleUnc(1./ev.met_sig);
         
         //jets (require PU jet id)
         std::vector<Jet> allJets = selector.getGoodJets(ev,25.,2.5,leptons,photons);

@@ -196,10 +196,11 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev,Int_t njecUncs)
   t->Branch("pf_closestDZnonAssoc",     &ev.pf_closestDZnonAssoc,     "pf_closestDZnonAssoc/F");
 
   //MET
-  t->Branch("nmet",       &ev.nmet,       "nmet/I");
-  t->Branch("met_pt",      ev.met_pt,     "met_pt[nmet]/F");
-  t->Branch("met_phi",     ev.met_phi,    "met_phi[nmet]/F");
-  t->Branch("met_sig",     ev.met_sig,    "met_sig[nmet]/F");
+  t->Branch("met_pt",      &ev.met_pt,     "met_pt/F");
+  t->Branch("met_phi",     &ev.met_phi,    "met_phi/F");
+  t->Branch("met_sig",     &ev.met_sig,    "met_sig/F");
+  t->Branch("met_ptShifted",   ev.met_ptShifted,    "met_ptShifted[14]/F");
+  t->Branch("met_phiShifted",   ev.met_phiShifted,    "met_phiShifted[14]/F");
   t->Branch("met_filterBits", &ev.met_filterBits, "met_filterBits/I");
 
   //CTPPS local tracks
@@ -416,10 +417,11 @@ void attachToMiniEventTree(TTree *t,MiniEvent_t &ev,bool full)
     }
 
   //MET
-  t->SetBranchAddress("nmet",      &ev.nmet);
-  t->SetBranchAddress("met_pt",    ev.met_pt);
-  t->SetBranchAddress("met_phi",   ev.met_phi);
-  t->SetBranchAddress("met_sig",   ev.met_sig);
+  t->SetBranchAddress("met_pt",    &ev.met_pt);
+  t->SetBranchAddress("met_phi",   &ev.met_phi);
+  t->SetBranchAddress("met_sig",   &ev.met_sig);
+  t->SetBranchAddress("met_ptShifted",   ev.met_ptShifted);
+  t->SetBranchAddress("met_phiShifted",   ev.met_phiShifted);
   t->SetBranchAddress("met_filterBits", &ev.met_filterBits);
 
   //CTPPS local tracks

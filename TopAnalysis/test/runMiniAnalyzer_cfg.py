@@ -69,7 +69,7 @@ process.load('Configuration.StandardSequences.MagneticField_38T_cff')
 
 #EGM customization
 from TopLJets2015.TopAnalysis.customizeEGM_cff import customizeEGM
-process.egammaPostRecoSeq=customizeEGM(process=process,era=options.era)
+process.egammaPostReco=customizeEGM(process=process,era=options.era)
 
 # global tag
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
@@ -173,9 +173,8 @@ if options.runOnData:
 
 #schedule execution
 toSchedule=[]
-if process.egammaPostRecoSeq:
-      process.egm=cms.Path(process.egammaPostRecoSeq) 
-      toSchedule.append( process.egm )
+if process.egammaPostReco:
+      toSchedule.append( process.egammaPostReco )
 if process.updatedPatJetsUpdatedJECBTag:
       process.custom_jec_seq=cms.Sequence(process.patJetCorrFactorsUpdatedJECBTag * process.updatedPatJetsUpdatedJECBTag)
       process.custom_jec=cms.Path(process.custom_jec_seq)

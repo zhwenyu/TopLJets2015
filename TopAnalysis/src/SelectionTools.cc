@@ -136,7 +136,7 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
   //getGoodJets(ev,30.,maxJetEta,leptons_,photons_);
 
   //build the met
-  met_.SetPtEtaPhiM( ev.met_pt[1], 0, ev.met_phi[1], 0. );
+  met_.SetPtEtaPhiM( ev.met_pt, 0, ev.met_phi, 0. );
 
   //check if triggers have fired and are consistent with the offline selection
   bool hasETrigger(  hasTriggerBit("HLT_Ele35_eta2p1_WPTight_Gsf_v",           ev.triggerBits) ||

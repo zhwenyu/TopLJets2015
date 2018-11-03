@@ -139,7 +139,7 @@ private:
   edm::EDGetTokenT<edm::View<pat::Electron>  >  electronToken_;
   edm::EDGetTokenT<edm::View<pat::Photon>  >  photonToken_;
   edm::EDGetTokenT<edm::View<pat::Jet> > jetToken_;
-  edm::EDGetTokenT<pat::METCollection> metToken_, puppiMetToken_;
+  edm::EDGetTokenT<pat::METCollection> metToken_;
   edm::EDGetTokenT<pat::PackedCandidateCollection> pfToken_;
   edm::EDGetTokenT<std::vector<CTPPSLocalTrackLite> > ctppsToken_;
   
@@ -200,8 +200,7 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig) :
   rhoToken_(consumes<double>(iConfig.getParameter<edm::InputTag>("rho"))),
   muonToken_(consumes<pat::MuonCollection>(iConfig.getParameter<edm::InputTag>("muons"))),
   jetToken_(consumes<edm::View<pat::Jet> >(iConfig.getParameter<edm::InputTag>("jets"))),  
-  metToken_(consumes<pat::METCollection>(iConfig.getParameter<edm::InputTag>("mets"))),
-  puppiMetToken_(consumes<pat::METCollection>(iConfig.getParameter<edm::InputTag>("puppimets"))),
+  metToken_(consumes<pat::METCollection>(iConfig.getParameter<edm::InputTag>("mets"))),  
   pfToken_(consumes<pat::PackedCandidateCollection>(iConfig.getParameter<edm::InputTag>("pfCands"))),
   ctppsToken_(consumes<std::vector<CTPPSLocalTrackLite> >(iConfig.getParameter<edm::InputTag>("ctppsLocalTracks"))),
   BadChCandFilterToken_(consumes<bool>(iConfig.getParameter<edm::InputTag>("badChCandFilter"))),
@@ -822,8 +821,6 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
       //bool passTightId( (tightBits & 0x3)== 0x3);  //require first two bits (h/e + sihih)
       bool ismvawp80( g.photonID("mvaPhoID-RunIIFall17-v2-wp80"));
       bool ismvawp90( g.photonID("mvaPhoID-RunIIFall17-v2-wp90"));
-      bool ismva1p1w80( g.photonID("mvaPhoID-RunIIFall17-v2p1-wp80"));
-      bool ismva1p1w90( g.photonID("mvaPhoID-RunIIFall17-v2p1-wp90"));
 
       //save the photon
       const reco::GenParticle * gen=(const reco::GenParticle *)g.genPhoton(); 
@@ -837,11 +834,9 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
 	  break;
 	}	      
       
-      ev_.gamma_mva[ev_.ngamma]=g.userFloat("PhotonMVAEstimatorRunIIFall17v2Values");
-      ev_.gamma_mvaCats[ev_.ngamma]=g.userInt("PhotonMVAEstimatorRunIIFall17v2Categories");
-      ev_.gamma_idFlags[ev_.ngamma]= g.passElectronVeto()
-        | (g.hasPixelSeed()<<1)
-        | (ismvawp80<<2) | (ismvawp90<<3) | (ismva1p1w80<<4) | (ismva1p1w90<<5);
+      ev_.gamma_mva[ev_.ngamma]=g.userFloat("PhotonMVAEstimatorRunIIFall17v1Values");
+      ev_.gamma_mvaCats[ev_.ngamma]=g.userInt("PhotonMVAEstimatorRunIIFall17v1Categories");
+      ev_.gamma_idFlags[ev_.ngamma]= g.passElectronVeto() | (g.hasPixelSeed()<<1) | (ismvawp80<<2) | (ismvawp90<<3);
       ev_.gamma_pid[ev_.ngamma]= ( (looseBits & 0x3ff)
                                    | ((mediumBits & 0x3ff)<<10)
                                    | ((tightBits & 0x3ff)<<20));
@@ -1031,16 +1026,15 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
     }
       
   // MET
-  ev_.nmet=2;
-  for(int i=0; i<2; i++)
-    {
-      edm::Handle<pat::METCollection> mets;
-      if(i==0) iEvent.getByToken(metToken_, mets);
-      if(i==1) iEvent.getByToken(puppiMetToken_, mets);
-      ev_.met_pt[i]  = mets->at(0).pt();
-      ev_.met_phi[i] = mets->at(0).phi();
-      ev_.met_sig[i] = mets->at(0).significance();
-    }
+  edm::Handle<pat::METCollection> mets;
+  iEvent.getByToken(metToken_, mets);
+  ev_.met_pt  = mets->at(0).pt();
+  ev_.met_phi = mets->at(0).phi();
+  ev_.met_sig = mets->at(0).significance();
+  for(size_t i=0; i<14; i++){
+    ev_.met_ptShifted[i]  = mets->at(0).shiftedPt(pat::MET::METUncertainty(i));
+    ev_.met_phiShifted[i] = mets->at(0).shiftedPhi(pat::MET::METUncertainty(i));
+  }
 
   //MET filter bits
   ev_.met_filterBits=0;
