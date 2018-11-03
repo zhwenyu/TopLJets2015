@@ -714,12 +714,12 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
       int tightBits( e.userInt("cutBasedElectronID-Fall17-94X-V1-tight") );
       bool passTightId( (tightBits | 0xc0)== 0x3ff);  //mask isolation cuts and require all bits active
 
-      bool mvawp80(e.electronID("mvaEleID-Fall17-iso-V1-wp80"));
-      bool mvawp90(e.electronID("mvaEleID-Fall17-iso-V1-wp90"));
-      bool mvawploose(e.electronID("mvaEleID-Fall17-iso-V1-wpLoose"));
-      bool mvanonisowp80(e.electronID("mvaEleID-Fall17-noIso-V1-wp80"));
-      bool mvanonisowp90(e.electronID("mvaEleID-Fall17-noIso-V1-wp90"));
-      bool mvanonisowploose(e.electronID("mvaEleID-Fall17-noIso-V1-wpLoose"));
+      bool mvawp80(e.electronID("mvaEleID-Fall17-iso-V2-wp80"));
+      bool mvawp90(e.electronID("mvaEleID-Fall17-iso-V2-wp90"));
+      bool mvawploose(e.electronID("mvaEleID-Fall17-iso-V2-wpLoose"));
+      bool mvanonisowp80(e.electronID("mvaEleID-Fall17-noIso-V2-wp80"));
+      bool mvanonisowp90(e.electronID("mvaEleID-Fall17-noIso-V2-wp90"));
+      bool mvanonisowploose(e.electronID("mvaEleID-Fall17-noIso-V2-wpLoose"));
 
       //impact parameter cuts
       //see details in https://twiki.cern.ch/twiki/bin/view/CMS/CutBasedElectronIdentificationRun2
@@ -755,8 +755,8 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
 	  ev_.l_g[ev_.nl]=ig;
 	  break;
 	}	      
-      ev_.l_mva[ev_.nl]=e.userFloat("ElectronMVAEstimatorRun2Fall17IsoV1Values");
-      ev_.l_mvaCats[ev_.nl]=e.userInt("ElectronMVAEstimatorRun2Fall17IsoV1Categories");
+      ev_.l_mva[ev_.nl]=e.userFloat("ElectronMVAEstimatorRun2Fall17IsoV2Values");
+      ev_.l_mvaCats[ev_.nl]=e.userInt("ElectronMVAEstimatorRun2Fall17IsoV2Categories");
 
       ev_.l_pid[ev_.nl]=0;
       ev_.l_pid[ev_.nl]= (passVetoId | (isVeto<<1) 
@@ -820,10 +820,10 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
       //bool isTight( g.photonID("acutBasedPhotonID-Fall17-94X-V1-tight") );
       int tightBits( g.userInt("cutBasedPhotonID-Fall17-94X-V1-tight") );
       //bool passTightId( (tightBits & 0x3)== 0x3);  //require first two bits (h/e + sihih)
-      bool ismvawp80( g.photonID("mvaPhoID-RunIIFall17-v1-wp80"));
-      bool ismvawp90( g.photonID("mvaPhoID-RunIIFall17-v-wp90"));
-      bool ismva1p1w80( g.photonID("mvaPhoID-RunIIFall17-v1p1-wp80"));
-      bool ismva1p1w90( g.photonID("mvaPhoID-RunIIFall17-v1p1-wp90"));
+      bool ismvawp80( g.photonID("mvaPhoID-RunIIFall17-v2-wp80"));
+      bool ismvawp90( g.photonID("mvaPhoID-RunIIFall17-v2-wp90"));
+      bool ismva1p1w80( g.photonID("mvaPhoID-RunIIFall17-v2p1-wp80"));
+      bool ismva1p1w90( g.photonID("mvaPhoID-RunIIFall17-v2p1-wp90"));
 
       //save the photon
       const reco::GenParticle * gen=(const reco::GenParticle *)g.genPhoton(); 
@@ -837,8 +837,8 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
 	  break;
 	}	      
       
-      ev_.gamma_mva[ev_.ngamma]=g.userFloat("PhotonMVAEstimatorRunIIFall17v1Values");
-      ev_.gamma_mvaCats[ev_.ngamma]=g.userInt("PhotonMVAEstimatorRunIIFall17v1Categories");
+      ev_.gamma_mva[ev_.ngamma]=g.userFloat("PhotonMVAEstimatorRunIIFall17v2Values");
+      ev_.gamma_mvaCats[ev_.ngamma]=g.userInt("PhotonMVAEstimatorRunIIFall17v2Categories");
       ev_.gamma_idFlags[ev_.ngamma]= g.passElectronVeto()
         | (g.hasPixelSeed()<<1)
         | (ismvawp80<<2) | (ismvawp90<<3) | (ismva1p1w80<<4) | (ismva1p1w90<<5);
