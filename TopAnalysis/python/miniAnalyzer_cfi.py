@@ -49,7 +49,7 @@ ANALYSISTRIGGERLISTS={2017:['HLT_Ele32_WPTight_Gsf_v',
                             'HLT_PFJetFwd400_v',
                             'HLT_PFJetFwd450_v',
                             'HLT_PFJetFwd500_v',
-                            'HLT_Mu50_v*'
+                            'HLT_Mu50_v'
                             ],
                       2016:['HLT_Ele32_eta2p1_WPTight_Gsf_v',
                             'HLT_IsoMu24_v',
