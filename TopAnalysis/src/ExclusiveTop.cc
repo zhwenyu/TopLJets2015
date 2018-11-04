@@ -292,29 +292,37 @@ void RunExclusiveTop(TString filename,
       //identify the offline final state from the leading leptons
       int l1idx(0),l2idx(1);
       std::vector<Particle> flaggedLeptons = selector.flaggedLeptons(ev);
-      std::vector<Particle> leptons  = selector.selLeptons(flaggedLeptons, SelectionTool::MEDIUM, SelectionTool::MVA90,20.,2.4);
-      //require the leading lepton to be tight
+      std::vector<Particle> leptons  = selector.selLeptons(flaggedLeptons, SelectionTool::LOOSEIDONLY, SelectionTool::MVANONISOWPLOOSE,20.,2.4);
+
+      //possible selections
       bool pass2T(false),pass1T1M(false),passCombined(false);
       if(leptons.size()>1){
         
         bool isLeadingTight(leptons[0].Pt()>30 && fabs(leptons[0].Eta())<2.1 &&
                             ( (leptons[0].id()==11 && leptons[0].hasQualityFlag(SelectionTool::MVA80)) ||
                               (leptons[0].id()==13 && leptons[0].hasQualityFlag(SelectionTool::TIGHT)) ) );
-        bool isLeadingHighPt(leptons[0].Pt()>200 &&
-                             ( (leptons[0].id()==11 && leptons[0].hasQualityFlag(SelectionTool::TIGHTIDONLY)) ||
-                               (leptons[0].id()==13 && leptons[0].hasQualityFlag(SelectionTool::LOOSEIDONLY)) ) );
         bool isSubLeadingTight(leptons[1].Pt()>30     && fabs(leptons[1].Eta())<2.1 &&
                                ( (leptons[1].id()==11 && leptons[1].hasQualityFlag(SelectionTool::MVA80)) ||
                                  (leptons[1].id()==13 && leptons[1].hasQualityFlag(SelectionTool::TIGHT)) ) );
         bool isSubLeadingMedium( (leptons[1].id()==11 && leptons[1].hasQualityFlag(SelectionTool::MVA90)) ||
                                  (leptons[1].id()==13 && leptons[1].hasQualityFlag(SelectionTool::MEDIUM)) );
-        bool isSubLeadingHighPt(leptons[1].Pt()>200 &&
-                                ( (leptons[1].id()==11 && leptons[1].hasQualityFlag(SelectionTool::TIGHTIDONLY)) ||
-                                  (leptons[1].id()==13 && leptons[1].hasQualityFlag(SelectionTool::LOOSEIDONLY)) ) );        
-        pass2T     = (isLeadingTight && isSubLeadingTight);
-        pass1T1M   = (isLeadingTight && isSubLeadingMedium);
-        bool passHighPt(isLeadingHighPt && (isSubLeadingMedium || isSubLeadingHighPt));
-        passCombined = (pass1T1M || passHighPt);
+        bool passHighPt(true);
+        if( leptons[0].Pt()>200) {
+          if(leptons[0].id()==11 && !leptons[0].hasQualityFlag(SelectionTool::MVANONISOWPLOOSE)) passHighPt=false;
+          if(leptons[0].id()==13 && !leptons[0].hasQualityFlag(SelectionTool::LOOSEIDONLY)) passHighPt=false;
+        }else{
+          passHighPt=isLeadingTight;
+        }
+        if(leptons[0].Pt()>200) {
+          if(leptons[1].id()==11 && !leptons[1].hasQualityFlag(SelectionTool::MVANONISOWPLOOSE)) passHighPt=false;
+          if(leptons[1].id()==13 && !leptons[1].hasQualityFlag(SelectionTool::LOOSEIDONLY))      passHighPt=false;
+        }else{
+          passHighPt=isSubLeadingMedium;
+        }
+
+        pass2T       = (isLeadingTight && isSubLeadingTight);
+        pass1T1M     = (isLeadingTight && isSubLeadingMedium);        
+        passCombined = passHighPt;
       }
 
       //photons

@@ -247,7 +247,7 @@ std::vector<Particle> SelectionTool::flaggedLeptons(MiniEvent_t &ev)
 
     float pt(ev.l_pt[il]);
     float eta(fabs(ev.l_eta[il]));
-    int pid(ev.l_pid[il]);
+    unsigned int pid(ev.l_pid[il]);
     float relIso(ev.l_relIso[il]);
 
     //see bits in plugins/MiniAnalyzer.cc
@@ -265,6 +265,7 @@ std::vector<Particle> SelectionTool::flaggedLeptons(MiniEvent_t &ev)
           if((pid>>7)&0x1)  qualityFlagsWord |= (0x1 << TIGHT);
           if((pid>>9)&0x1)  qualityFlagsWord |= (0x1 << MVA80);
           if((pid>>10)&0x1) qualityFlagsWord |= (0x1 << MVA90);
+          if((pid>>10)&0x1) qualityFlagsWord |= (0x1 << MVANONISOWPLOOSE);
         }
         unc = TMath::Sqrt(
                           pow(ev.l_scaleUnc1[il],2)+
