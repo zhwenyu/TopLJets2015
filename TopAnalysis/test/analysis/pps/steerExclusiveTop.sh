@@ -15,7 +15,7 @@ fi
 
 #to run locally use local as queue + can add "--njobs 8" to use 8 parallel jobs
 queue=tomorrow
-githash=f93b8d8
+githash=1f7519b
 eosdir=/store/cmst3/group/top/RunIIReReco/${githash}
 outdir=/store/cmst3/user/psilva/ExclusiveAna
 samples_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/samples.json
@@ -24,7 +24,7 @@ zx_samples_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/zx_sa
 RPout_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/golden_noRP.json
 wwwdir=~/www/ExclusiveAna
 inputfileTag=MC13TeV_2017_ZH
-inputfileTESTSEL=/store/cmst3/group/top/RunIIReReco/f93b8d8/${inputfileTag}/MergedMiniEvents_0_ext0.root
+inputfileTESTSEL=${eosdir}/${inputfileTag}/MergedMiniEvents_0_ext0.root
 #inputfileTag=Data13TeV_2017B_DoubleMuon
 #inputfileTESTSEL=/store/cmst3/group/top/RunIIReReco/f93b8d8/${inputfileTag}/MergedMiniEvents_0_ext0.root
 lumi=41367

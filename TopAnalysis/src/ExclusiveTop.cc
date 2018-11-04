@@ -245,9 +245,10 @@ void RunExclusiveTop(TString filename,
 
       //trigger
       hasETrigger=(selector.hasTriggerBit("HLT_Ele35_WPTight_Gsf_v", ev.triggerBits));
-      hasMTrigger=(selector.hasTriggerBit("HLT_IsoMu24_v",     ev.triggerBits) ||
-                   selector.hasTriggerBit("HLT_IsoMu24_2p1_v", ev.triggerBits) ||
-                   selector.hasTriggerBit("HLT_IsoMu27_v",     ev.triggerBits) );
+      bool hasHighPtMTrigger=(selector.hasTriggerBit("HLT_Mu50_v",     ev.triggerBits));
+      bool hasStdMTrigger=(selector.hasTriggerBit("HLT_IsoMu24_v",     ev.triggerBits) ||
+                           selector.hasTriggerBit("HLT_IsoMu24_2p1_v", ev.triggerBits) ||
+                           selector.hasTriggerBit("HLT_IsoMu27_v",     ev.triggerBits) );     
       hasMMTrigger=(selector.hasTriggerBit("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ",                  ev.triggerBits) ||
                     selector.hasTriggerBit("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8_v",          ev.triggerBits) ||
                     selector.hasTriggerBit("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8_v",        ev.triggerBits) );
@@ -262,28 +263,29 @@ void RunExclusiveTop(TString filename,
       if (ev.isData) { 
         //use only these unprescaled triggers for these eras
         if(filename.Contains("2017E") || filename.Contains("2017F")){
-          hasMTrigger=selector.hasTriggerBit("HLT_IsoMu27_v",ev.triggerBits);
+          hasStdMTrigger=selector.hasTriggerBit("HLT_IsoMu27_v",ev.triggerBits);
         }
         if(!(filename.Contains("2017A") || filename.Contains("2017B"))){
           hasMMTrigger=(selector.hasTriggerBit("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8_v",   ev.triggerBits) ||
                         selector.hasTriggerBit("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8_v", ev.triggerBits) );
         }
       }
+      hasMTrigger=(hasHighPtMTrigger || hasStdMTrigger);
 
       //trigger efficiency
       if( (gen_dilCat=="genee" && (hasEETrigger || hasETrigger)) ||
           (gen_dilCat=="genmm" && (hasMMTrigger || hasMTrigger)) ||
-          (gen_dilCat=="genem" && (hasEMTrigger || hasETrigger || hasEMTrigger)) ) { 
+          (gen_dilCat=="genem" && (hasEMTrigger || hasETrigger || hasMTrigger)) ) { 
         ht.fill("ptll", gen_llpt, trivialwgts, gen_dilCat+"trig");
         ht.fill("mll",  gen_mll,  trivialwgts, gen_dilCat+"trig");
-        ht.fill("drll", gen_drll,  trivialwgts, gen_dilCat+"trig");
+        ht.fill("drll", gen_drll, trivialwgts, gen_dilCat+"trig");
       }
       if( (gen_dilCat=="genee" && hasETrigger) ||
-          (gen_dilCat=="genmm" && hasMTrigger) ||
-          (gen_dilCat=="genem" && (hasETrigger || hasEMTrigger)) ) { 
+          (gen_dilCat=="genmm" && hasStdMTrigger) ||
+          (gen_dilCat=="genem" && (hasETrigger || hasStdMTrigger)) ) { 
         ht.fill("ptll", gen_llpt, trivialwgts, gen_dilCat+"singletrig");
         ht.fill("mll",  gen_mll,  trivialwgts, gen_dilCat+"singletrig");
-        ht.fill("drll", gen_drll,  trivialwgts, gen_dilCat+"singletrig");
+        ht.fill("drll", gen_drll, trivialwgts, gen_dilCat+"singletrig");
       }
 
       
@@ -292,16 +294,27 @@ void RunExclusiveTop(TString filename,
       std::vector<Particle> flaggedLeptons = selector.flaggedLeptons(ev);
       std::vector<Particle> leptons  = selector.selLeptons(flaggedLeptons, SelectionTool::MEDIUM, SelectionTool::MVA90,20.,2.4);
       //require the leading lepton to be tight
-      bool hasLeadingTightLepton(false), hasSubLeadingTightLepton(false);
-      if(leptons.size()){
-        if(leptons[0].Pt()>30 && fabs(leptons[0].Eta())<2.1){
-          if( (leptons[0].id()==11  && leptons[0].hasQualityFlag(SelectionTool::MVA80) ) ||
-              (leptons[0].id()==13 && leptons[0].hasQualityFlag(SelectionTool::TIGHT) ) ) hasLeadingTightLepton=true;
-        }
-        if(leptons[1].Pt()>30 && fabs(leptons[0].Eta())<2.1){
-          if( (leptons[1].id()==11  && leptons[0].hasQualityFlag(SelectionTool::MVA80) ) ||
-              (leptons[1].id()==13 && leptons[0].hasQualityFlag(SelectionTool::TIGHT) ) ) hasSubLeadingTightLepton=true;
-        }
+      bool pass2T(false),pass1T1M(false),passCombined(false);
+      if(leptons.size()>1){
+        
+        bool isLeadingTight(leptons[0].Pt()>30 && fabs(leptons[0].Eta())<2.1 &&
+                            ( (leptons[0].id()==11 && leptons[0].hasQualityFlag(SelectionTool::MVA80)) ||
+                              (leptons[0].id()==13 && leptons[0].hasQualityFlag(SelectionTool::TIGHT)) ) );
+        bool isLeadingHighPt(leptons[0].Pt()>200 &&
+                             ( (leptons[0].id()==11 && leptons[0].hasQualityFlag(SelectionTool::TIGHTIDONLY)) ||
+                               (leptons[0].id()==13 && leptons[0].hasQualityFlag(SelectionTool::LOOSEIDONLY)) ) );
+        bool isSubLeadingTight(leptons[1].Pt()>30     && fabs(leptons[1].Eta())<2.1 &&
+                               ( (leptons[1].id()==11 && leptons[1].hasQualityFlag(SelectionTool::MVA80)) ||
+                                 (leptons[1].id()==13 && leptons[1].hasQualityFlag(SelectionTool::TIGHT)) ) );
+        bool isSubLeadingMedium( (leptons[1].id()==11 && leptons[1].hasQualityFlag(SelectionTool::MVA90)) ||
+                                 (leptons[1].id()==13 && leptons[1].hasQualityFlag(SelectionTool::MEDIUM)) );
+        bool isSubLeadingHighPt(leptons[1].Pt()>200 &&
+                                ( (leptons[1].id()==11 && leptons[1].hasQualityFlag(SelectionTool::TIGHTIDONLY)) ||
+                                  (leptons[1].id()==13 && leptons[1].hasQualityFlag(SelectionTool::LOOSEIDONLY)) ) );        
+        pass2T     = (isLeadingTight && isSubLeadingTight);
+        pass1T1M   = (isLeadingTight && isSubLeadingMedium);
+        bool passHighPt(isLeadingHighPt && (isSubLeadingMedium || isSubLeadingHighPt));
+        passCombined = (pass1T1M || passHighPt);
       }
 
       //photons
@@ -342,7 +355,8 @@ void RunExclusiveTop(TString filename,
         if(!hasJetTrigger) continue;
 
         outVars["dilcode"]=0;
-        if(leptons.size()>=2 && hasLeadingTightLepton){
+
+        if(leptons.size()>=2 && passCombined){
           outVars["l1pt"]=leptons[0].Pt();
           outVars["l1eta"]=leptons[0].Eta();
           outVars["l1phi"]=leptons[0].Phi(); 
@@ -358,7 +372,7 @@ void RunExclusiveTop(TString filename,
       else {
             
         if(leptons.size()<2) continue;
-        if(!hasLeadingTightLepton) continue;
+        if(!passCombined) continue;
         Int_t dilcode=leptons[l1idx].id()*leptons[l2idx].id();
         isSF=( leptons[l1idx].id()==leptons[l2idx].id() );
         isSS=( leptons[l1idx].charge()*leptons[l2idx].charge() > 0 );
@@ -380,7 +394,7 @@ void RunExclusiveTop(TString filename,
             if( !selector.isMuonEGPD()        && !selector.isSingleElectronPD() && !selector.isSingleMuonPD()) continue;
             if( selector.isMuonEGPD()         && !hasEMTrigger ) continue;
             if( selector.isSingleElectronPD() && !(hasETrigger && !hasEMTrigger) ) continue;
-            if( selector.isSingleMuonPD()     && !(hasMTrigger && !hasETrigger && !hasMTrigger) ) continue;
+            if( selector.isSingleMuonPD()     && !(hasMTrigger && !hasETrigger && !hasEMTrigger) ) continue;
           }
 
           //check trigger rates and final channel assignment
@@ -459,15 +473,23 @@ void RunExclusiveTop(TString filename,
         
         //selection efficiency
         if(isZ) {
+          
           ht.fill("ptll", gen_llpt, trivialwgts,gen_dilCat+"rec");
           ht.fill("mll",  gen_mll,  trivialwgts,gen_dilCat+"rec");
           ht.fill("drll", gen_drll,  trivialwgts, gen_dilCat+"rec");
           
-          if(hasSubLeadingTightLepton){
-            ht.fill("ptll", gen_llpt, trivialwgts,gen_dilCat+"tightrec");
-            ht.fill("mll",  gen_mll,  trivialwgts,gen_dilCat+"tightrec");
-            ht.fill("drll", gen_drll,  trivialwgts, gen_dilCat+"tightrec");
+          if(pass1T1M) {
+            ht.fill("ptll", gen_llpt, trivialwgts,gen_dilCat+"1t1mrec");
+            ht.fill("mll",  gen_mll,  trivialwgts,gen_dilCat+"1t1mrec");
+            ht.fill("drll", gen_drll,  trivialwgts, gen_dilCat+"1t1mrec");
           }
+          
+          if(pass2T) {
+            ht.fill("ptll", gen_llpt, trivialwgts,gen_dilCat+"2trec");
+            ht.fill("mll",  gen_mll,  trivialwgts,gen_dilCat+"2trec");
+            ht.fill("drll", gen_drll,  trivialwgts, gen_dilCat+"2trec");
+          }
+
         }
         
         TLorentzVector X(met);
