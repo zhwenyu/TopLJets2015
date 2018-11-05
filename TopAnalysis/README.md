@@ -8,14 +8,19 @@ Notice: if you are not creating the ntuples, you can skip the part of the instru
 marked with the `##OPTIONAL/##END OPTIONAL` markers
 
 ```
-cmsrel CMSSW_9_4_9_cand2
-cd CMSSW_9_4_9_cand2/src
+cmsrel CMSSW_9_4_10
+cd CMSSW_9_4_10/src
 cmsenv
 
 ##OPTIONAL (USE IF CREATING NTUPLES FROM SCRATCH)
 
+#MVA v2 ids
+git cms-merge-topic guitargeek:EgammaID_9_4_X
 #photon/electron id+scale and smearing fixes for MINIAOD 2017v2 (doesn't harm 2016v3)
-git cms-merge-topic cms-egamma:EgammaPostRecoTools_940 #just adds in an extra file to have a setup function to make things easier
+#just adds in an extra file to have a setup function to make things easier
+git cms-merge-topic cms-egamma:EgammaPostRecoTools_940 
+#re-do MET to mitigate EE noise
+git cms-merge-topic cms-met:METFixEE2017_949_v2
 scram b -j 8
 
 ##END OPTIONAL
