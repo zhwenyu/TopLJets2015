@@ -721,6 +721,7 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
       bool mvanonisowp80(e.electronID("mvaEleID-Fall17-noIso-V2-wp80"));
       bool mvanonisowp90(e.electronID("mvaEleID-Fall17-noIso-V2-wp90"));
       bool mvanonisowploose(e.electronID("mvaEleID-Fall17-noIso-V2-wpLoose"));
+      bool passHEEP(e.electronID("heepElectronID-HEEPV70"));
 
       //impact parameter cuts
       //see details in https://twiki.cern.ch/twiki/bin/view/CMS/CutBasedElectronIdentificationRun2
@@ -767,6 +768,7 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
 			  | (passIpCuts<<8) 
                           | (mvawp80<<9) | (mvawp90<<10) | (mvawploose<<11)
                           | (mvanonisowp80<<12) | (mvanonisowp90<<13) | (mvanonisowploose<<14)
+                          | (passHEEP<<15)
 			 );
 
       ev_.l_charge[ev_.nl]   = e.charge();

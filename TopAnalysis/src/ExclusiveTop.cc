@@ -291,8 +291,8 @@ void RunExclusiveTop(TString filename,
       
       //identify the offline final state from the leading leptons
       int l1idx(0),l2idx(1);
-      std::vector<Particle> flaggedLeptons = selector.flaggedLeptons(ev);
-      std::vector<Particle> leptons  = selector.selLeptons(flaggedLeptons, SelectionTool::LOOSEIDONLY, SelectionTool::MVANONISOWPLOOSE,20.,2.4);
+      std::vector<Particle> leptons = selector.flaggedLeptons(ev);
+      //std::vector<Particle> leptons  = selector.selLeptons(flaggedLeptons, SelectionTool::LOOSEIDONLY, SelectionTool::MVANONISOWPLOOSE,20.,2.4);
 
       //possible selections
       bool pass2T(false),passCombined(false);

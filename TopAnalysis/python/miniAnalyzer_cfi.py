@@ -1,6 +1,7 @@
 import FWCore.ParameterSet.Config as cms
 
 ANALYSISTRIGGERLISTS={2017:['HLT_Ele32_WPTight_Gsf_v',
+                            'HLT_Ele32_WPTight_Gsf_L1DoubleEG_v,'
                             'HLT_Ele35_WPTight_Gsf_v',
                             'HLT_Ele38_WPTight_Gsf_v',
                             'HLT_Ele40_WPTight_Gsf_v',
