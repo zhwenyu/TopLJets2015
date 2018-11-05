@@ -104,6 +104,7 @@ void VBFVectorBoson::RunVBFVectorBoson()
   for (Int_t iev=0;iev<nentries;iev++)
     {
       t->GetEntry(iev);
+      if(debug) cout << "Number of event: "<<iev<<endl;
       if(iev%10000==0) printf ("\r [%3.0f%%] done", 100.*(float)iev/(float)nentries);
       std::vector<double>plotwgts(1,1.0);
       ht->fill("qscale",ev.g_qscale,plotwgts);
