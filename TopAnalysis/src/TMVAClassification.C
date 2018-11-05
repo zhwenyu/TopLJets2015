@@ -89,14 +89,25 @@ int TMVAClassification( TString myMethodList , TString extention, BDTOptimizer* 
        cut+= " && ";
      
    }
+   TString nTrainBkg = "nTrain_Background=";
    //HighMJJ
-   if (isHighMJJ)
+   if (isHighMJJ){
      cut += " && mjj > 1000 && gamma_pt[0] < 200";
+     nTrainBkg=nTrainBkg+"5000";
+   } 
    //LowMJJ
-   if (isLowMJJ)
+   else if (isLowMJJ){
      cut += " && mjj > 150";
+     nTrainBkg=nTrainBkg+"10000";
+   }
+   if (nTrainBkg=="nTrain_Background=") nTrainBkg=nTrainBkg+"5000";
+
+   TString cutB = cut;
+   int idx = cutB.Index("category.A");
+   cutB.Replace(idx,10, "category.MM");
+   TCut dyCut  = TCut(cutB);
    TCut mycuts = TCut(cut);
-   TCut mycutb = TCut(cut);
+   TCut mycutb = TCut(cut) || dyCut;
 
    if (Use["VBF"]) dataloader->setBestVars(isHighMJJ,false); 
    else if (Use["Cuts"] || Use["CutsD"]) dataloader->setCutOptVars();
@@ -111,7 +122,7 @@ int TMVAClassification( TString myMethodList , TString extention, BDTOptimizer* 
  
    dataloader->PrepareTrainingAndTestTree( mycuts, mycutb,
 					   //					     "nTrain_Signal=1000:nTrain_Background=5000:SplitMode=Random:NormMode=NumEvents:!V");// To use the info in the Tree
-					     "nTrain_Signal=1000:nTrain_Background=5000:SplitMode=Random:NormMode=NumEvents:!V");// To use the info in the Tree
+					     "nTrain_Signal=1000:"+nTrainBkg+":SplitMode=Random:NormMode=NumEvents:!V");// To use the info in the Tree
 
      
    if( Use["VBF"] ){
