@@ -78,6 +78,7 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev,Int_t njecUncs)
   t->Branch("l_charge",   ev.l_charge,  "l_charge[nl]/I");
   t->Branch("l_mva",      ev.l_mva,     "l_mva[nl]/F");
   t->Branch("l_mvaCats",  ev.l_mvaCats, "l_mvaCats[nl]/F");
+  t->Branch("l_highpt",   ev.l_highpt,  "l_highpt[nl]/F");
   t->Branch("l_pt",       ev.l_pt,      "l_pt[nl]/F");
   t->Branch("l_eta",      ev.l_eta,     "l_eta[nl]/F");
   t->Branch("l_phi",      ev.l_phi,     "l_phi[nl]/F");
@@ -296,6 +297,7 @@ void attachToMiniEventTree(TTree *t,MiniEvent_t &ev,bool full)
   t->SetBranchAddress("l_pid",      ev.l_pid);
   t->SetBranchAddress("l_g",        ev.l_g);
   t->SetBranchAddress("l_charge",   ev.l_charge);
+  t->SetBranchAddress("l_highpt",   ev.l_highpt);
   t->SetBranchAddress("l_pt",       ev.l_pt);
   t->SetBranchAddress("l_eta",      ev.l_eta);
   t->SetBranchAddress("l_phi",      ev.l_phi);

@@ -631,7 +631,7 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
                      muonRC_->kSpreadMC(q, pt, eta, phi, gen->pt(),4) :
                      muonRC_->kSmearMC(q, pt, eta, phi, tlwm, smearSeed,4))/sf;
         }      
-
+      
       auto p4  = mu.p4() * sf;
 
       //kinematics
@@ -665,6 +665,8 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
       ev_.l_scaleUnc2[ev_.nl]= zptUnc;
       ev_.l_scaleUnc3[ev_.nl]= ewkUnc;
       ev_.l_scaleUnc4[ev_.nl]= deltamUnc;
+      ev_.l_highpt[ev_.nl]   = mu.tunePMuonBestTrack()->pt();
+      ev_.l_scaleUnc5[ev_.nl]= mu.tunePMuonBestTrack()->ptError();
       ev_.l_mva[ev_.nl]      = 0;
       ev_.l_pid[ev_.nl]      = mu.selectors();
       ev_.l_chargedHadronIso[ev_.nl] = mu.pfIsolationR04().sumChargedHadronPt;
@@ -769,6 +771,7 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
 
       ev_.l_charge[ev_.nl]   = e.charge();
       ev_.l_pt[ev_.nl]       = corrP4.pt();
+      ev_.l_highpt[ev_.nl]   = corrP4.pt();
       ev_.l_eta[ev_.nl]      = corrP4.eta();
       ev_.l_phi[ev_.nl]      = corrP4.phi();
       ev_.l_mass[ev_.nl]     = corrP4.mass();

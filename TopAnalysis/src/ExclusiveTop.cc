@@ -295,38 +295,23 @@ void RunExclusiveTop(TString filename,
       std::vector<Particle> leptons  = selector.selLeptons(flaggedLeptons, SelectionTool::LOOSEIDONLY, SelectionTool::MVANONISOWPLOOSE,20.,2.4);
 
       //possible selections
-      bool pass2T(false),pass1T1M(false),passCombined(false);
+      bool pass2T(false),passCombined(false);
       if(leptons.size()>1){
         
-        bool isLeadingTight(leptons[0].Pt()>30 && fabs(leptons[0].Eta())<2.1 &&
-                            ( (leptons[0].id()==11 && leptons[0].hasQualityFlag(SelectionTool::MVA80)) ||
-                              (leptons[0].id()==13 && leptons[0].hasQualityFlag(SelectionTool::TIGHT)) ) );
-        bool isSubLeadingTight(leptons[1].Pt()>30     && fabs(leptons[1].Eta())<2.1 &&
-                               ( (leptons[1].id()==11 && leptons[1].hasQualityFlag(SelectionTool::MVA80)) ||
-                                 (leptons[1].id()==13 && leptons[1].hasQualityFlag(SelectionTool::TIGHT)) ) );
-        pass2T = (isLeadingTight && isSubLeadingTight);
+        bool isTrigSafe(leptons[0].Pt()>30 && fabs(leptons[0].Eta())<2.1);
 
-        bool isSubLeadingMedium( (leptons[1].id()==11 && leptons[1].hasQualityFlag(SelectionTool::MVA90)) ||
-                                 (leptons[1].id()==13 && leptons[1].hasQualityFlag(SelectionTool::MEDIUM)) );
-        pass1T1M = (isLeadingTight && isSubLeadingMedium);
-
-        passCombined=true;
-        if( leptons[0].Pt()>200) {
-          if(leptons[0].id()==11 && !leptons[0].hasQualityFlag(SelectionTool::MVANONISOWPLOOSE)) passCombined=false;
-          if(leptons[0].id()==13 && 
-             !(leptons[0].hasQualityFlag(SelectionTool::LOOSEIDONLY) || leptons[0].hasQualityFlag(SelectionTool::HIGHPT)) )
-            passCombined=false;
-        }else{
-          passCombined=isLeadingTight;
-        }
-        if(leptons[1].Pt()>200) {
-          if(leptons[1].id()==11 && !leptons[1].hasQualityFlag(SelectionTool::MVANONISOWPLOOSE)) passCombined=false;
-          if(leptons[1].id()==13 && 
-             !(leptons[1].hasQualityFlag(SelectionTool::LOOSEIDONLY) || leptons[1].hasQualityFlag(SelectionTool::HIGHPT)) )
-            passCombined=false;
-        }else{
-          passCombined=isSubLeadingMedium;
-        }     
+        bool isLeadingTight( (leptons[0].id()==11 && leptons[0].hasQualityFlag(SelectionTool::MVA80)) ||
+                             (leptons[0].id()==13 && leptons[0].hasQualityFlag(SelectionTool::TIGHT)) );
+        bool isSubLeadingTight( (leptons[1].id()==11 && leptons[1].hasQualityFlag(SelectionTool::MVA80)) ||
+                                (leptons[1].id()==13 && leptons[1].hasQualityFlag(SelectionTool::TIGHT)) );
+        pass2T = (isTrigSafe && isLeadingTight && isSubLeadingTight);
+        
+        bool isLeadingCombined( (leptons[0].id()==11 && leptons[0].hasQualityFlag(SelectionTool::MVA90)) ||
+                                (leptons[0].id()==13 && (leptons[0].hasQualityFlag(SelectionTool::MEDIUM || leptons[0].hasQualityFlag(SelectionTool::HIGHPT) ) ) ) );
+        
+        bool isSubLeadingCombined( (leptons[1].id()==11 && leptons[1].hasQualityFlag(SelectionTool::MVA90)) ||
+                                   (leptons[1].id()==13 && (leptons[1].hasQualityFlag(SelectionTool::MEDIUM || leptons[1].hasQualityFlag(SelectionTool::HIGHPT) ) ) ) );                      
+        passCombined = (isTrigSafe && isLeadingCombined && isSubLeadingCombined);        
       }
 
       //photons
@@ -483,27 +468,18 @@ void RunExclusiveTop(TString filename,
         dilCat+=!isSF ? "em" : dilcode==121 ? "ee" : "mm";        
         cats.push_back(dilCat);       
         
-        //selection efficiency
+        //selection efficiency                   
+        ht.fill("mll",  gen_mll,  trivialwgts,gen_dilCat+"rec");
+        if(pass2T) ht.fill("mll",  gen_mll,  trivialwgts,gen_dilCat+"2trec");
         if(isZ) {
-          
           ht.fill("ptll", gen_llpt, trivialwgts,gen_dilCat+"rec");
-          ht.fill("mll",  gen_mll,  trivialwgts,gen_dilCat+"rec");
           ht.fill("drll", gen_drll,  trivialwgts, gen_dilCat+"rec");
-          
-          if(pass1T1M) {
-            ht.fill("ptll", gen_llpt, trivialwgts,gen_dilCat+"1t1mrec");
-            ht.fill("mll",  gen_mll,  trivialwgts,gen_dilCat+"1t1mrec");
-            ht.fill("drll", gen_drll,  trivialwgts, gen_dilCat+"1t1mrec");
-          }
-          
           if(pass2T) {
             ht.fill("ptll", gen_llpt, trivialwgts,gen_dilCat+"2trec");
-            ht.fill("mll",  gen_mll,  trivialwgts,gen_dilCat+"2trec");
             ht.fill("drll", gen_drll,  trivialwgts, gen_dilCat+"2trec");
           }
-
         }
-        
+
         TLorentzVector X(met);
         float xScaleUnc(metScaleUnc);
         float xEtaUnc(0);
