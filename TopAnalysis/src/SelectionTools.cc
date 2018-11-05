@@ -139,11 +139,10 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
   met_.SetPtEtaPhiM( ev.met_pt, 0, ev.met_phi, 0. );
 
   //check if triggers have fired and are consistent with the offline selection
-  bool hasETrigger(  hasTriggerBit("HLT_Ele35_eta2p1_WPTight_Gsf_v",           ev.triggerBits) ||
-                     hasTriggerBit("HLT_Ele28_eta2p1_WPTight_Gsf_HT150_v",     ev.triggerBits) ||
-                     hasTriggerBit("HLT_Ele30_eta2p1_WPTight_Gsf_CentralPFJet35_EleCleaned_v",     ev.triggerBits) );
-  bool hasMTrigger(  //hasTriggerBit("HLT_IsoMu24_2p1_v",                                        ev.triggerBits) || 
-		     hasTriggerBit("HLT_IsoMu27_v",                                            ev.triggerBits) );
+  bool hasETrigger(  hasTriggerBit("HLT_Ele35_WPTight_Gsf_v",                               ev.triggerBits) );
+  bool hasMTrigger(  hasTriggerBit("HLT_IsoMu24_v",                                         ev.triggerBits) ||
+                     hasTriggerBit("HLT_IsoMu24_2p1_v",                                     ev.triggerBits) ||
+                     hasTriggerBit("HLT_IsoMu27_v",                                         ev.triggerBits) );
   bool hasEMTrigger( hasTriggerBit("HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_v",     ev.triggerBits) ||
                      hasTriggerBit("HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ_v",  ev.triggerBits) ||
                      hasTriggerBit("HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_v",  ev.triggerBits) ||
@@ -175,16 +174,9 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
   if(chTag=="MM")
     {
       if(!hasMMTrigger && !hasMTrigger)                         chTag="";
-      if(anType_==TOP)
-        {
-          if(isMuonEGPD_ || isSingleElectronPD_ || isDoubleEGPD_)   chTag="";
-          if(isSingleMuonPD_ && (hasMMTrigger || !hasMTrigger) )    chTag="";
-          if(isDoubleMuonPD_ && !hasMMTrigger)                      chTag="";
-        }
-      if(anType_==VBF)
-        {
-          if(ev.isData && !isSingleMuonPD_ && !hasMTrigger) chTag="";
-        }
+      if(isMuonEGPD_ || isSingleElectronPD_ || isDoubleEGPD_)   chTag="";
+      if(isSingleMuonPD_ && (hasMMTrigger || !hasMTrigger) )    chTag="";
+      if(isDoubleMuonPD_ && !hasMMTrigger)                      chTag="";
     }
   if(chTag=="M")
     {

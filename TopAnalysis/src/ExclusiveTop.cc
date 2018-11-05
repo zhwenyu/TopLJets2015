@@ -304,29 +304,29 @@ void RunExclusiveTop(TString filename,
         bool isSubLeadingTight(leptons[1].Pt()>30     && fabs(leptons[1].Eta())<2.1 &&
                                ( (leptons[1].id()==11 && leptons[1].hasQualityFlag(SelectionTool::MVA80)) ||
                                  (leptons[1].id()==13 && leptons[1].hasQualityFlag(SelectionTool::TIGHT)) ) );
+        pass2T = (isLeadingTight && isSubLeadingTight);
+
         bool isSubLeadingMedium( (leptons[1].id()==11 && leptons[1].hasQualityFlag(SelectionTool::MVA90)) ||
                                  (leptons[1].id()==13 && leptons[1].hasQualityFlag(SelectionTool::MEDIUM)) );
-        bool passHighPt(true);
+        pass1T1M = (isLeadingTight && isSubLeadingMedium);
+
+        passCombined=true;
         if( leptons[0].Pt()>200) {
-          if(leptons[0].id()==11 && !leptons[0].hasQualityFlag(SelectionTool::MVANONISOWPLOOSE)) passHighPt=false;
+          if(leptons[0].id()==11 && !leptons[0].hasQualityFlag(SelectionTool::MVANONISOWPLOOSE)) passCombined=false;
           if(leptons[0].id()==13 && 
              !(leptons[0].hasQualityFlag(SelectionTool::LOOSEIDONLY) || leptons[0].hasQualityFlag(SelectionTool::HIGHPT)) )
-            passHighPt=false;
+            passCombined=false;
         }else{
-          passHighPt=isLeadingTight;
+          passCombined=isLeadingTight;
         }
-        if(leptons[0].Pt()>200) {
-          if(leptons[1].id()==11 && !leptons[1].hasQualityFlag(SelectionTool::MVANONISOWPLOOSE)) passHighPt=false;
+        if(leptons[1].Pt()>200) {
+          if(leptons[1].id()==11 && !leptons[1].hasQualityFlag(SelectionTool::MVANONISOWPLOOSE)) passCombined=false;
           if(leptons[1].id()==13 && 
              !(leptons[1].hasQualityFlag(SelectionTool::LOOSEIDONLY) || leptons[1].hasQualityFlag(SelectionTool::HIGHPT)) )
-            passHighPt=false;
+            passCombined=false;
         }else{
-          passHighPt=isSubLeadingMedium;
-        }
-
-        pass2T       = (isLeadingTight && isSubLeadingTight);
-        pass1T1M     = (isLeadingTight && isSubLeadingMedium);        
-        passCombined = passHighPt;
+          passCombined=isSubLeadingMedium;
+        }     
       }
 
       //photons
