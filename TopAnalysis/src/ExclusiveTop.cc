@@ -309,13 +309,17 @@ void RunExclusiveTop(TString filename,
         bool passHighPt(true);
         if( leptons[0].Pt()>200) {
           if(leptons[0].id()==11 && !leptons[0].hasQualityFlag(SelectionTool::MVANONISOWPLOOSE)) passHighPt=false;
-          if(leptons[0].id()==13 && !leptons[0].hasQualityFlag(SelectionTool::LOOSEIDONLY)) passHighPt=false;
+          if(leptons[0].id()==13 && 
+             !(leptons[0].hasQualityFlag(SelectionTool::LOOSEIDONLY) || leptons[0].hasQualityFlag(SelectionTool::HIGHPT)) )
+            passHighPt=false;
         }else{
           passHighPt=isLeadingTight;
         }
         if(leptons[0].Pt()>200) {
           if(leptons[1].id()==11 && !leptons[1].hasQualityFlag(SelectionTool::MVANONISOWPLOOSE)) passHighPt=false;
-          if(leptons[1].id()==13 && !leptons[1].hasQualityFlag(SelectionTool::LOOSEIDONLY))      passHighPt=false;
+          if(leptons[1].id()==13 && 
+             !(leptons[1].hasQualityFlag(SelectionTool::LOOSEIDONLY) || leptons[1].hasQualityFlag(SelectionTool::HIGHPT)) )
+            passHighPt=false;
         }else{
           passHighPt=isSubLeadingMedium;
         }

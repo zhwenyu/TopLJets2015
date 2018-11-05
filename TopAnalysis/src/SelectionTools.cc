@@ -280,17 +280,20 @@ std::vector<Particle> SelectionTool::flaggedLeptons(MiniEvent_t &ev)
     else
       {
         if(pt>20 && eta<2.5) {
-          if( ((pid>>reco::Muon::Selector::CutBasedIdLoose) &0x1) ) {
+          if( (pid&reco::Muon::Selector::CutBasedIdLoose)==reco::Muon::Selector::CutBasedIdLoose ) {
             qualityFlagsWord |= (0x1 << LOOSEIDONLY);
-            if(relIso<0.25)  qualityFlagsWord |= (0x1 << LOOSE);
+            if( (pid&reco::Muon::Selector::PFIsoLoose)==reco::Muon::Selector::PFIsoLoose ) qualityFlagsWord |= (0x1 << LOOSE);
           }
-          if( ((pid>>reco::Muon::Selector::CutBasedIdMediumPrompt)&0x1)) {
+          if( (pid&reco::Muon::Selector::CutBasedIdMedium)==reco::Muon::Selector::CutBasedIdMedium ) {
             qualityFlagsWord |= (0x1 << MEDIUMIDONLY);
-            if(relIso<0.20)  qualityFlagsWord |= (0x1 << MEDIUM);
+            if( (pid&reco::Muon::Selector::PFIsoMedium)==reco::Muon::Selector::PFIsoMedium ) qualityFlagsWord |= (0x1 << MEDIUM);
           }
-          if( ((pid>>reco::Muon::Selector::CutBasedIdTight) &0x1) ) { 
+          if( (pid&reco::Muon::Selector::CutBasedIdTight)==reco::Muon::Selector::CutBasedIdTight ) {
             qualityFlagsWord |= (0x1 << TIGHTIDONLY);
-            if(relIso<0.15)  qualityFlagsWord |= (0x1 << TIGHT);
+            if( (pid&reco::Muon::Selector::PFIsoTight)==reco::Muon::Selector::PFIsoTight ) qualityFlagsWord |= (0x1 << TIGHT);
+          }
+          if( (pid&reco::Muon::Selector::CutBasedIdTrkHighPt)==reco::Muon::Selector::CutBasedIdTrkHighPt ) {
+            qualityFlagsWord |= (0x1 << HIGHPT);
           }
         }
       }
