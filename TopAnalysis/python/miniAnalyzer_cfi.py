@@ -1,7 +1,7 @@
 import FWCore.ParameterSet.Config as cms
 
 ANALYSISTRIGGERLISTS={2017:['HLT_Ele32_WPTight_Gsf_v',
-                            'HLT_Ele32_WPTight_Gsf_L1DoubleEG_v,'
+                            'HLT_Ele32_WPTight_Gsf_L1DoubleEG_v',
                             'HLT_Ele35_WPTight_Gsf_v',
                             'HLT_Ele38_WPTight_Gsf_v',
                             'HLT_Ele40_WPTight_Gsf_v',
@@ -51,13 +51,15 @@ ANALYSISTRIGGERLISTS={2017:['HLT_Ele32_WPTight_Gsf_v',
                             'HLT_PFJetFwd450_v',
                             'HLT_PFJetFwd500_v',
                             'HLT_Mu50_v',
-                            'HLT_TkMu50_v*'
+                            'HLT_TkMu50_v'
                             ],
                       2016:['HLT_Ele32_eta2p1_WPTight_Gsf_v',
                             'HLT_IsoMu24_v',
                             'HLT_IsoMu24_eta2p1_v',
                             'HLT_IsoTkMu24_v',
                             'HLT_IsoTkMu24_eta2p1_v',
+                            'HLT_Mu50_v',
+                            'HLT_TkMu50_v',
                             'HLT_Mu23_TrkIsoVVL_Ele8_CaloIdL_TrackIdL_IsoVL_v',
                             'HLT_Mu23_TrkIsoVVL_Ele8_CaloIdL_TrackIdL_IsoVL_DZ_v',
                             'HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_v',
