@@ -100,6 +100,7 @@ int TMVAClassification( TString myMethodList , TString extention, BDTOptimizer* 
      cut += " && mjj > 150";
      nTrainBkg=nTrainBkg+"10000";
    }
+
    if (nTrainBkg=="nTrain_Background=") nTrainBkg=nTrainBkg+"5000";
 
    TString cutB = cut;
@@ -130,7 +131,7 @@ int TMVAClassification( TString myMethodList , TString extention, BDTOptimizer* 
      std::cout << "Loading VBF trees" << endl;
      cout<<bdt_options->size()<<endl;
      for(auto bdt_option : *bdt_options){
-       method = bdt_option.BookMethod( factory , dataloader );
+       method = bdt_option.BookMethod( factory , dataloader, extention );
        cout << "method "<<method->GetName() << endl;
      }
    } else if (Use["Cuts"] ){
@@ -171,7 +172,7 @@ int TMVAClassification( TString myMethodList , TString extention, BDTOptimizer* 
 
    // Save the output
    if(bdt_options)
-     bdt_options->EvaluateAll( factory , outputFile );
+     bdt_options->EvaluateAll( factory , outputFile, extention );
    
    
    outputFile->Close();
@@ -325,8 +326,8 @@ void BDTOptimizer::FillRange( vector<string> range_info , vector<double>& vals )
   }
 }
 
-void BDTOptions::CalcEfficiency(TMVA::IMethod * method , TDirectory* dir , TString dsname ){
-  ROCIntegral = ReadROC( method );
+void BDTOptions::CalcEfficiency(TMVA::IMethod * method , TDirectory* dir , TString dsname, TString ext ){
+  ROCIntegral = ReadROC( method , ext );
 
   Signal_TrainTest_Kolmo = ReadOverTrainingParam(dir , method->GetName() , dsname , true , true );
   Signal_TrainTest_Chi2 = ReadOverTrainingParam(dir , method->GetName() , dsname , true , false );
@@ -335,11 +336,11 @@ void BDTOptions::CalcEfficiency(TMVA::IMethod * method , TDirectory* dir , TStri
   Bkg_TrainTest_Chi2 = ReadOverTrainingParam(dir , method->GetName() , dsname , false , false );
 }
 
-double BDTOptions::ReadROC(TMVA::IMethod * method  ){
+double BDTOptions::ReadROC(TMVA::IMethod * method , TString ext ){
   TString title = method->GetName() ;
   MethodBase* theMethod = dynamic_cast<MethodBase*>(method);
   if(theMethod==0) return -1.0;
-  TMVA::Results *results= theMethod->Data()->GetResults(name,Types::kTesting,Types::kClassification);
+  TMVA::Results *results= theMethod->Data()->GetResults(name+ext,Types::kTesting,Types::kClassification);
   std::vector<Float_t> *mvaRes = dynamic_cast<ResultsClassification *>(results)->GetValueVector();
   std::vector<Bool_t>  *mvaResType = dynamic_cast<ResultsClassification *>(results)->GetValueVectorTypes();
   Double_t fROCalcValue = 0;
@@ -374,8 +375,8 @@ double BDTOptions::ReadOverTrainingParam(TDirectory* dir , TString methodTitle ,
   return ret;
 }
 
-TMVA::MethodBDT* BDTOptions::BookMethod( Factory* factory , DataLoader* dataloader ){
-  TMVA::MethodBase* method = factory->BookMethod( dataloader, TMVA::Types::kBDT, name,
+TMVA::MethodBDT* BDTOptions::BookMethod( Factory* factory , DataLoader* dataloader, TString extension ){
+  TMVA::MethodBase* method = factory->BookMethod( dataloader, TMVA::Types::kBDT, name+extension,
 						  "NegWeightTreatment=InverseBoostNegWeights:!H:!V:BoostType=AdaBoost:SeparationType=GiniIndex:CreateMVAPdfs:nCuts="+to_string(ncuts) );
   MethodBDT* ret = dynamic_cast<TMVA::MethodBDT*>( method );
   
@@ -383,6 +384,6 @@ TMVA::MethodBDT* BDTOptions::BookMethod( Factory* factory , DataLoader* dataload
   ret->SetMinNodeSize(minnodesize);
   ret->SetMaxDepth(maxdepth);
   ret->SetAdaBoostBeta(adaboostbeta);
-  
+  cout << ret->GetName() << endl;
   return ret;
 }

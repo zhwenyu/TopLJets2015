@@ -69,12 +69,13 @@ void VBFVectorBoson::RunVBFVectorBoson()
   TMVA::Reader *reader = new TMVA::Reader( "!Color:!Silent" );
   reader->AddVariable("ht",&scalarht);
   reader->AddVariable("forwardeta",&forwardeta);
-  reader->AddVariable("j_c2_02[1]",&subleadj_c2_02);
+  //  reader->AddVariable("j_c2_02[1]",&subleadj_c2_02);
   reader->AddVariable("balance",&balance);
-  reader->AddVariable("aplanarity",&aplanarity);
+  //  reader->AddVariable("aplanarity",&aplanarity);
   reader->AddVariable("dphivj0",&dphivj0);
   reader->AddVariable("mjj", &mjj);
-  reader->AddVariable("D",&D);
+  reader->AddVariable("j_qg[0]", &lead_qg) ;
+  //  reader->AddVariable("D",&D);
   //  reader->AddVariable("j_pt[1]",&subleadj_pt);
   //  reader->AddVariable("j_gawidth[0]",&leadj_gawidth);
   //  reader->AddVariable("j_c1_05[0]",&leadj_c1_05);
@@ -86,12 +87,17 @@ void VBFVectorBoson::RunVBFVectorBoson()
 
   TString weightFiles[]={//"${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBF_weights/BDT.weights.xml",
                          //"${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBF_weights/Fisher.weights.xml",
-			 "${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBF_weights/FisherHighMJJ.weights.xml",
-                         "${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBF_weights/FisherLowMJJ.weights.xml"};
+			 //"${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBF_weights/FisherHighMJJ.weights.xml",
+                         //"${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBF_weights/FisherLowMJJ.weights.xml"};
+    "${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBF_weights/BDTHighMJJ.weights.xml",
+    "${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBF_weights/BDTLowMJJ.weights.xml"};
   TString mvaMethod[]={//"BDT",
 		       //"Fisher",
-		       "FisherHighMJJ",
-		       "FisherLowMJJ"};
+		       // "FisherHighMJJ",
+		       // "FisherLowMJJ"};
+		       "BDT_VBF0HighMJJ",
+		       "BDT_VBF0LowMJJ"};
+
   for(size_t i=0; i<2; i++){
     gSystem->ExpandPathName(weightFiles[i]);
     reader->BookMVA(mvaMethod[i], weightFiles[i] );
@@ -306,11 +312,11 @@ void VBFVectorBoson::RunVBFVectorBoson()
       D           = esv.D(1.);
       dphivj0 = (jets.size() >= 2) ? fabs(jets[0].DeltaPhi(boson)) : -99;
       
-      vbfmva = passJets ? reader->EvaluateMVA(mvaMethod[0]) : -99;
+      vbffisher = passJets ? reader->EvaluateMVA(mvaMethod[0]) : -99;
       if(isHighMJJ) 
-	vbffisher = passJets ? reader->EvaluateMVA(mvaMethod[0]) : -99;
+	vbfmva = passJets ? reader->EvaluateMVA(mvaMethod[0]) : -99;
       else
-	vbffisher = passJets ? reader->EvaluateMVA(mvaMethod[1]) : -99;
+	vbfmva = passJets ? reader->EvaluateMVA(mvaMethod[1]) : -99;
       if(doBlindAnalysis && ev.isData && vbfmva>0.1)    vbfmva=-1000;
       if(doBlindAnalysis && ev.isData && vbffisher>0.1) vbffisher=-1000;
 
@@ -610,12 +616,13 @@ void VBFVectorBoson::initVariables(std::vector<Jet> jets){
   detajj = (jets.size()>=2 ? fabs(jets[0].Eta()-jets[1].Eta()) : -99.);
   dphijj = (jets.size()>=2 ? jets[0].DeltaPhi(jets[1]) : -99.);
   jjpt   = (jets.size()>=2 ? (jets[0]+jets[1]).Pt() : 0.);
-  leadj_gawidth    = (jets.size()>1 ? ev.j_gawidth[jets[0].getJetIndex()] : -99);
+  leadj_gawidth    = (jets.size()>=1 ? ev.j_gawidth[jets[0].getJetIndex()] : -99);
   //leadj_c2_05      = (jets.size()>1 ? ev.j_c2_05[jets[0].getJetIndex()] : -99);
-  subleadj_gawidth = (jets.size()>2 ? ev.j_gawidth[jets[1].getJetIndex()] : -99);
+  subleadj_gawidth = (jets.size()>=2 ? ev.j_gawidth[jets[1].getJetIndex()] : -99);
   //subleadj_c1_05   = (jets.size()>2 ? ev.j_c1_05[jets[1].getJetIndex()] : -99);
-  subleadj_c2_02   = (jets.size()>2 ? ev.j_c2_02[jets[1].getJetIndex()] : -99);
-  subleadj_pt      = (jets.size()>2 ? ev.j_pt[jets[1].getJetIndex()] : -99);
+  subleadj_c2_02   = (jets.size()>=2 ? ev.j_c2_02[jets[1].getJetIndex()] : -99);
+  subleadj_pt      = (jets.size()>=2 ? ev.j_pt[jets[1].getJetIndex()] : -99);
+  lead_qg          = (jets.size()>=1 ? ev.j_qg[jets[0].getJetIndex()] : -99);
   ystar       = -99;
   balance     = -99;
   relbpt      = -99;
