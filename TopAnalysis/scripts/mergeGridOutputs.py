@@ -26,6 +26,7 @@ def main():
     FARMDIR='%s/INTEGRITYFARM'%cmsswBase
     if opt.farm: FARMDIR += opt.farm
     os.system('mkdir -p %s'%FARMDIR)
+    os.system('rm  %s/*'%FARMDIR)
     print 'Submissions scripts @ ',FARMDIR
 
     onlyList=opt.only.split(',') if opt.only else []
@@ -45,9 +46,10 @@ def main():
         shell.write('cd ${WORKDIR}\n')
         shell.write('echo "CMSSW_BASE=${CMSSW_BASE}"\n')
         shell.write('echo "Hadding files"\n')
-        shell.write('hadd -f -k -O ${local_outfile} ${infiles}\n')
+        shell.write('echo "hadd -f -k ${local_outfile} ${infiles}"\n')
+        shell.write('hadd -f -k ${local_outfile} ${infiles}\n')
         shell.write('echo "Copying to final destination and removing local output"\n')
-        shell.write('xrdcp ${local_outfile} ${outfile}\n')
+        shell.write('xrdcp -f ${local_outfile} ${outfile}\n')
         shell.write('rm ${local_outfile}\n')
     os.system('chmod u+x %s/custom_merge.sh'%FARMDIR)
 
@@ -101,7 +103,7 @@ def main():
             chunkList=getChunksInSizeOf(chunkSize=opt.chunkSize,directoryList=count_list,prepend='/eos/cms/')
             print pub,'will be hadded in',len(chunkList),'chunks of approx 2Gb'
             for ichunk in xrange(0,len(chunkList)):
-                outFile='/eos/cms/{0}/{1}/{1}_{2}_{3}.root'.format(opt.outDir,pub,ichunk,pubExt)
+                outFile='/eos/cms/{0}/{1}/Chunk_{2}_{3}.root'.format(opt.outDir,pub,ichunk,pubExt)
                 condor.write('arguments = %s %s\n'%(outFile,' '.join(chunkList[ichunk])))
                 condor.write('queue 1\n')
 

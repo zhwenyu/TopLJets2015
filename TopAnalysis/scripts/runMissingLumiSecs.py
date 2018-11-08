@@ -13,7 +13,7 @@ def getListOfFiles(inputPD,runSel):
       das_output = das_output.replace("\"\"","'")
       das_output = das_output.replace("root","root',")
       das_output = das_output.replace("\n","") #don't want newline in string
-      das_output = das_output[:-1]#remove last comma in list of secondary files
+      das_output = das_output[:-1] #remove last comma in list of secondary files
       return das_output
 
 def main():
@@ -35,14 +35,22 @@ def main():
       newCfg='%s/%s'%(WORKAREA,os.path.basename(cfg.replace('_cfg','_ext_cfg')))
       os.system('mkdir -p grid_new')
       newCfgFile=open(newCfg,'w')
+      lumiMaskSet=False
       for line in open(cfg,'r'):
             newLine=line      
             if 'workArea' in newLine      : newLine='config.General.workArea = \"%s\"\n'%WORKAREA
             if 'requestName' in newLine   : newLine=newLine[:-2]+"_ext\"\n"
-            if 'lumiMask' in newLine      : newLine='config.Data.lumiMask = \"%s\"\n'%os.path.abspath(jsonF)
+            if 'lumiMask' in newLine      : 
+                  newLine='config.Data.lumiMask = \"%s\"\n'%os.path.abspath(jsonF)
+                  lumiMaskSet=True
             if 'unitsPerJob' in newLine   : newLine='config.Data.unitsPerJob = 25\n'
             if 'outLFNDirBase' in newLine : newLine=newLine[:-3]+"_ext\"\n"
             newCfgFile.write( newLine )
+
+      if not lumiMaskSet:
+            print 'Setting lumi mask now'
+            newCfgFile.write('config.Data.lumiMask = \"%s\"\n'%os.path.abspath(jsonF))
+
       newCfgFile.close()
       print '\t new cfg to process missing lumis @',newCfg
          

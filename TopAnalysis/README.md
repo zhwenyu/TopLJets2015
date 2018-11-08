@@ -73,7 +73,7 @@ python scripts/submitToGrid.py -j data/era2016/samples.json -c ${CMSSW_BASE}/src
 As soon as ntuple production starts to finish, to move from crab output directories to a simpler directory structure which can be easily parsed by the local analysis runThe merging can be run locally if needed by using the checkProductionIntegrity.py script
 
 ```
-python scripts/mergeGridOutputs.py -i /store/cmst3/group/top/psilva/113427a -o /store/cmst3/group/top/RunIIReReco/113427a
+python scripts/mergeGridOutputs.py -i /store/cmst3/group/top/psilva/3129835/ -o /store/cmst3/group/top/RunIIReReco/3129835/
 python scripts/mergeGridOutputs.py -i /store/cmst3/group/top/grid_2016/113427a -o /store/cmst3/group/top/RunIIReReco/113427a_2016
 ```
 
@@ -111,15 +111,18 @@ Correction and uncertainty files are stored under data by era directories (e.g d
 
 * Pileup weighting. To update the pileup distributions run the script below. It will store the data pileup distributions for different min.bias cross section in data/pileupWgts.root
 ```
-python scripts/runPileupEstimation.py --json /afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/ReReco/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt --out data/era2017/pileupWgts.root
+python scripts/runPileupEstimation.py --out data/era2017/pileupWgts.root
+python scripts/runPileupEstimation.py --out data/era2016/pileupWgts.root \
+       --json /afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/Final/Cert_271036-284044_13TeV_PromptReco_Collisions16_JSON.txt \
+       --puJson /afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/PileUp/pileup_latest.txt
 ```
 * B-tagging. To apply corrections to the simulation one needs the expected efficiencies stored somwewhere. The script below will project the jet pT spectrum from the TTbar sample before and after applying b-tagging, to compute the expecte efficiencies. The result will be stored in data/expTageff.root
 ```
-python scripts/saveExpectedBtagEff.py -i /store/cmst3/group/top/RunIIReReco/5fb8f4f/MC13TeV_TTJets -o data/era2017/expTageff.root;
+python scripts/saveExpectedBtagEff.py -i /store/cmst3/group/top/RunIIReReco/3129835/MC13TeV_TTJets -o data/era2017/expTageff.root;
 ```
 * MC normalization. This will loop over all the samples available in EOS and produce a normalization cache (weights to normalize MC). The file will be available in data/genweights.pck
 ```
-python scripts/produceNormalizationCache.py -i /store/cmst3/group/top/RunIIReReco/f93b8d8 -o data/era2017/genweights_f93b8d8.root
+python scripts/produceNormalizationCache.py -i /store/cmst3/group/top/RunIIReReco/3129835 -o data/era2017/genweights_3129835.root
 ```
 The lepton/photon trigger/id/iso efficiencies should also be placed under data/era2017. 
 The src/EfficiencyScaleFactorsWrapper.cc  should then be updated to handle the reading of the ROOT files and the application of the scale factors

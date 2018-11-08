@@ -370,6 +370,7 @@ void RunExclusiveTop(TString filename,
             
         if(leptons.size()<2) continue;
         if(!passCombined) continue;
+
         Int_t dilcode=leptons[l1idx].id()*leptons[l2idx].id();
         isSF=( leptons[l1idx].id()==leptons[l2idx].id() );
         isSS=( leptons[l1idx].charge()*leptons[l2idx].charge() > 0 );
