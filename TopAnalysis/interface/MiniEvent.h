@@ -8,7 +8,7 @@ struct MiniEvent_t
   MiniEvent_t()
   {
     g_nw=0; ng=0; ngtop=0; ngpf=0;
-    ngamma=0; nl=0; nj=0; nmet=0; npf=0;
+    ngamma=0; nl=0; nj=0;  npf=0;
   }
 
   Bool_t isData;
@@ -41,7 +41,7 @@ struct MiniEvent_t
   Int_t nl;
   Bool_t l_isPromptFinalState[50], l_isDirectPromptTauDecayProductFinalState[50];
   Int_t l_id[50],l_charge[50],l_pid[50],l_g[200];
-  Float_t l_pt[50],l_eta[50],l_phi[50], l_mass[50], 
+  Float_t l_pt[50],l_eta[50],l_phi[50], l_mass[50], l_highpt[50],
     l_scaleUnc1[50], l_scaleUnc2[50], l_scaleUnc3[50], l_scaleUnc4[50], l_scaleUnc5[50], l_scaleUnc6[50], l_scaleUnc7[50],   
     l_miniIso[50], l_chargedHadronIso[50], l_relIso[50], l_ip3d[50], l_ip3dsig[50],l_mva[50],l_mvaCats[50];
 
@@ -64,8 +64,8 @@ struct MiniEvent_t
   Int_t j_vtxNtracks[200],j_flav[200],j_id[200],j_pid[200],j_hadflav[200],j_g[200];
 
   //met
-  Int_t nmet;
-  Float_t met_pt[2],met_phi[2],met_sig[2];
+  Float_t met_pt,met_phi,met_sig;
+  Float_t met_ptShifted[14],met_phiShifted[14];
   Int_t met_filterBits;
 
   //PF candidates

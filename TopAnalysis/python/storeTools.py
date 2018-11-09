@@ -1,10 +1,14 @@
 import ROOT
 import pickle
+import os
 
-"""
-Takes a directory on eos (starting from /store/...) and returns a list of all files with 'prepend' prepended
-"""
 def getEOSlslist(directory, mask='', prepend='root://eoscms//eos/cms/'):
+
+    """
+    Takes a directory on eos (starting from /store/...) and returns a list of all files with 'prepend' prepended
+    """
+
+
     from subprocess import Popen, PIPE
     print 'looking into: '+directory+'...'
 
@@ -31,3 +35,24 @@ def getEOSlslist(directory, mask='', prepend='root://eoscms//eos/cms/'):
 
     ## return 
     return full_list
+
+def getChunksInSizeOf(chunkSize,directoryList,mask='',prepend='root://eoscms//eos/cms/'):
+    
+    """groups files in directory in chunks of a given size"""
+
+    chunkList=[[]]
+    cursize=0.
+    for directory in directoryList:
+
+        fList=getEOSlslist(directory=directory, mask=mask, prepend='/eos/cms')
+
+        for f in fList:
+            fsize=float(os.path.getsize(f))/(1024.e+6)
+            if cursize+fsize>chunkSize: 
+                chunkList.append([])
+                cursize=fsize
+            else:
+                cursize += fsize
+            chunkList[-1].append(f.replace('/eos/cms/',prepend))
+
+    return chunkList

@@ -27,12 +27,6 @@ using namespace std;
 
 #define ADDVAR(x,name,t,tree) tree->Branch(name,x,TString(name)+TString(t))
 
-//TODO
-//add jet scale uncertainty
-//PPS json
-//lumi, puweighting, genweighting
-//xsec in the analysis json
-
 //
 void RunExclusiveTop(TString filename,
                      TString outname,
@@ -87,9 +81,9 @@ void RunExclusiveTop(TString filename,
   ADDVAR(&ev.rho,"rho","F",outT);
   ADDVAR(&ev.pf_closestDZnonAssoc,"closestDZnonAssoc","F",outT);
   ADDVAR(&ev.pf_ch_wgtSum,"nch","F",outT);
-  ADDVAR(&ev.met_pt[1],"met_pt","F",outT);
-  ADDVAR(&ev.met_phi[1],"met_phi","F",outT);
-  ADDVAR(&ev.met_sig[1],"met_sig","F",outT);
+  ADDVAR(&ev.met_pt,"met_pt","F",outT);
+  ADDVAR(&ev.met_phi,"met_phi","F",outT);
+  ADDVAR(&ev.met_sig,"met_sig","F",outT);
   TString fvars[]={"evwgt", "dilcode", 
                    "l1pt", "l1eta", "l1phi", "ml1", "l1id", "mt1",
                    "l2pt", "l2eta", "l2phi", "ml2", "l2id", "mt2",
@@ -245,9 +239,10 @@ void RunExclusiveTop(TString filename,
 
       //trigger
       hasETrigger=(selector.hasTriggerBit("HLT_Ele35_WPTight_Gsf_v", ev.triggerBits));
-      hasMTrigger=(selector.hasTriggerBit("HLT_IsoMu24_v",     ev.triggerBits) ||
-                   selector.hasTriggerBit("HLT_IsoMu24_2p1_v", ev.triggerBits) ||
-                   selector.hasTriggerBit("HLT_IsoMu27_v",     ev.triggerBits) );
+      bool hasHighPtMTrigger=(selector.hasTriggerBit("HLT_Mu50_v",     ev.triggerBits));
+      bool hasStdMTrigger=(selector.hasTriggerBit("HLT_IsoMu24_v",     ev.triggerBits) ||
+                           selector.hasTriggerBit("HLT_IsoMu24_2p1_v", ev.triggerBits) ||
+                           selector.hasTriggerBit("HLT_IsoMu27_v",     ev.triggerBits) );     
       hasMMTrigger=(selector.hasTriggerBit("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ",                  ev.triggerBits) ||
                     selector.hasTriggerBit("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8_v",          ev.triggerBits) ||
                     selector.hasTriggerBit("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8_v",        ev.triggerBits) );
@@ -262,46 +257,55 @@ void RunExclusiveTop(TString filename,
       if (ev.isData) { 
         //use only these unprescaled triggers for these eras
         if(filename.Contains("2017E") || filename.Contains("2017F")){
-          hasMTrigger=selector.hasTriggerBit("HLT_IsoMu27_v",ev.triggerBits);
+          hasStdMTrigger=selector.hasTriggerBit("HLT_IsoMu27_v",ev.triggerBits);
         }
         if(!(filename.Contains("2017A") || filename.Contains("2017B"))){
           hasMMTrigger=(selector.hasTriggerBit("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8_v",   ev.triggerBits) ||
                         selector.hasTriggerBit("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8_v", ev.triggerBits) );
         }
       }
+      hasMTrigger=(hasHighPtMTrigger || hasStdMTrigger);
 
       //trigger efficiency
       if( (gen_dilCat=="genee" && (hasEETrigger || hasETrigger)) ||
           (gen_dilCat=="genmm" && (hasMMTrigger || hasMTrigger)) ||
-          (gen_dilCat=="genem" && (hasEMTrigger || hasETrigger || hasEMTrigger)) ) { 
+          (gen_dilCat=="genem" && (hasEMTrigger || hasETrigger || hasMTrigger)) ) { 
         ht.fill("ptll", gen_llpt, trivialwgts, gen_dilCat+"trig");
         ht.fill("mll",  gen_mll,  trivialwgts, gen_dilCat+"trig");
-        ht.fill("drll", gen_drll,  trivialwgts, gen_dilCat+"trig");
+        ht.fill("drll", gen_drll, trivialwgts, gen_dilCat+"trig");
       }
       if( (gen_dilCat=="genee" && hasETrigger) ||
-          (gen_dilCat=="genmm" && hasMTrigger) ||
-          (gen_dilCat=="genem" && (hasETrigger || hasEMTrigger)) ) { 
+          (gen_dilCat=="genmm" && hasStdMTrigger) ||
+          (gen_dilCat=="genem" && (hasETrigger || hasStdMTrigger)) ) { 
         ht.fill("ptll", gen_llpt, trivialwgts, gen_dilCat+"singletrig");
         ht.fill("mll",  gen_mll,  trivialwgts, gen_dilCat+"singletrig");
-        ht.fill("drll", gen_drll,  trivialwgts, gen_dilCat+"singletrig");
+        ht.fill("drll", gen_drll, trivialwgts, gen_dilCat+"singletrig");
       }
 
       
       //identify the offline final state from the leading leptons
       int l1idx(0),l2idx(1);
-      std::vector<Particle> flaggedLeptons = selector.flaggedLeptons(ev);
-      std::vector<Particle> leptons  = selector.selLeptons(flaggedLeptons, SelectionTool::MEDIUM, SelectionTool::MVA90,20.,2.4);
-      //require the leading lepton to be tight
-      bool hasLeadingTightLepton(false), hasSubLeadingTightLepton(false);
-      if(leptons.size()){
-        if(leptons[0].Pt()>30 && fabs(leptons[0].Eta())<2.1){
-          if( (leptons[0].id()==11  && leptons[0].hasQualityFlag(SelectionTool::MVA80) ) ||
-              (leptons[0].id()==13 && leptons[0].hasQualityFlag(SelectionTool::TIGHT) ) ) hasLeadingTightLepton=true;
-        }
-        if(leptons[1].Pt()>30 && fabs(leptons[0].Eta())<2.1){
-          if( (leptons[1].id()==11  && leptons[0].hasQualityFlag(SelectionTool::MVA80) ) ||
-              (leptons[1].id()==13 && leptons[0].hasQualityFlag(SelectionTool::TIGHT) ) ) hasSubLeadingTightLepton=true;
-        }
+      std::vector<Particle> leptons = selector.flaggedLeptons(ev);
+      //std::vector<Particle> leptons  = selector.selLeptons(flaggedLeptons, SelectionTool::LOOSEIDONLY, SelectionTool::MVANONISOWPLOOSE,20.,2.4);
+
+      //possible selections
+      bool pass2T(false),passCombined(false);
+      if(leptons.size()>1){
+        
+        bool isTrigSafe(leptons[0].Pt()>30 && fabs(leptons[0].Eta())<2.1);
+
+        bool isLeadingTight( (leptons[0].id()==11 && leptons[0].hasQualityFlag(SelectionTool::MVA80)) ||
+                             (leptons[0].id()==13 && leptons[0].hasQualityFlag(SelectionTool::TIGHT)) );
+        bool isSubLeadingTight( (leptons[1].id()==11 && leptons[1].hasQualityFlag(SelectionTool::MVA80)) ||
+                                (leptons[1].id()==13 && leptons[1].hasQualityFlag(SelectionTool::TIGHT)) );
+        pass2T = (isTrigSafe && isLeadingTight && isSubLeadingTight);
+        
+        bool isLeadingCombined( (leptons[0].id()==11 && leptons[0].hasQualityFlag(SelectionTool::MVA90)) ||
+                                (leptons[0].id()==13 && (leptons[0].hasQualityFlag(SelectionTool::MEDIUM || leptons[0].hasQualityFlag(SelectionTool::HIGHPT) ) ) ) );
+        
+        bool isSubLeadingCombined( (leptons[1].id()==11 && leptons[1].hasQualityFlag(SelectionTool::MVA90)) ||
+                                   (leptons[1].id()==13 && (leptons[1].hasQualityFlag(SelectionTool::MEDIUM || leptons[1].hasQualityFlag(SelectionTool::HIGHPT) ) ) ) );                      
+        passCombined = (isTrigSafe && isLeadingCombined && isSubLeadingCombined);        
       }
 
       //photons
@@ -342,7 +346,8 @@ void RunExclusiveTop(TString filename,
         if(!hasJetTrigger) continue;
 
         outVars["dilcode"]=0;
-        if(leptons.size()>=2 && hasLeadingTightLepton){
+
+        if(leptons.size()>=2 && passCombined){
           outVars["l1pt"]=leptons[0].Pt();
           outVars["l1eta"]=leptons[0].Eta();
           outVars["l1phi"]=leptons[0].Phi(); 
@@ -358,7 +363,8 @@ void RunExclusiveTop(TString filename,
       else {
             
         if(leptons.size()<2) continue;
-        if(!hasLeadingTightLepton) continue;
+        if(!passCombined) continue;
+
         Int_t dilcode=leptons[l1idx].id()*leptons[l2idx].id();
         isSF=( leptons[l1idx].id()==leptons[l2idx].id() );
         isSS=( leptons[l1idx].charge()*leptons[l2idx].charge() > 0 );
@@ -380,7 +386,7 @@ void RunExclusiveTop(TString filename,
             if( !selector.isMuonEGPD()        && !selector.isSingleElectronPD() && !selector.isSingleMuonPD()) continue;
             if( selector.isMuonEGPD()         && !hasEMTrigger ) continue;
             if( selector.isSingleElectronPD() && !(hasETrigger && !hasEMTrigger) ) continue;
-            if( selector.isSingleMuonPD()     && !(hasMTrigger && !hasETrigger && !hasMTrigger) ) continue;
+            if( selector.isSingleMuonPD()     && !(hasMTrigger && !hasETrigger && !hasEMTrigger) ) continue;
           }
 
           //check trigger rates and final channel assignment
@@ -414,8 +420,8 @@ void RunExclusiveTop(TString filename,
         
         //met
         TLorentzVector met(0,0,0,0);
-        met.SetPtEtaPhiM(ev.met_pt[1],0,ev.met_phi[1],0.);
-        Float_t metScaleUnc(1./ev.met_sig[1]);
+        met.SetPtEtaPhiM(ev.met_pt,0,ev.met_phi,0.);
+        Float_t metScaleUnc(1./ev.met_sig);
         
         //jets (require PU jet id)
         std::vector<Jet> allJets = selector.getGoodJets(ev,25.,2.5,leptons,photons);
@@ -457,19 +463,18 @@ void RunExclusiveTop(TString filename,
         dilCat+=!isSF ? "em" : dilcode==121 ? "ee" : "mm";        
         cats.push_back(dilCat);       
         
-        //selection efficiency
+        //selection efficiency                   
+        ht.fill("mll",  gen_mll,  trivialwgts,gen_dilCat+"rec");
+        if(pass2T) ht.fill("mll",  gen_mll,  trivialwgts,gen_dilCat+"2trec");
         if(isZ) {
           ht.fill("ptll", gen_llpt, trivialwgts,gen_dilCat+"rec");
-          ht.fill("mll",  gen_mll,  trivialwgts,gen_dilCat+"rec");
           ht.fill("drll", gen_drll,  trivialwgts, gen_dilCat+"rec");
-          
-          if(hasSubLeadingTightLepton){
-            ht.fill("ptll", gen_llpt, trivialwgts,gen_dilCat+"tightrec");
-            ht.fill("mll",  gen_mll,  trivialwgts,gen_dilCat+"tightrec");
-            ht.fill("drll", gen_drll,  trivialwgts, gen_dilCat+"tightrec");
+          if(pass2T) {
+            ht.fill("ptll", gen_llpt, trivialwgts,gen_dilCat+"2trec");
+            ht.fill("drll", gen_drll,  trivialwgts, gen_dilCat+"2trec");
           }
         }
-        
+
         TLorentzVector X(met);
         float xScaleUnc(metScaleUnc);
         float xEtaUnc(0);
@@ -557,10 +562,9 @@ void RunExclusiveTop(TString filename,
           wgt  = (normH? normH->GetBinContent(1) : 1.0);
           
           // lepton trigger*selection weights
-          EffCorrection_t trigSF(1.,0.);
-          //EffCorrection_t trigSF = lepEffH.getTriggerCorrection(leptons,{},{},period);
-          EffCorrection_t  sel1SF = lepEffH.getOfflineCorrection(leptons[l1idx], period);
-          EffCorrection_t  sel2SF = lepEffH.getOfflineCorrection(leptons[l2idx], period);
+          EffCorrection_t trigSF(1.,0.); // = lepEffH.getTriggerCorrection(leptons,{},{},period);
+          EffCorrection_t  sel1SF(1.,0.); // = lepEffH.getOfflineCorrection(leptons[l1idx], period);
+          EffCorrection_t  sel2SF(1.,0.); // = lepEffH.getOfflineCorrection(leptons[l2idx], period);
           
           
           wgt *= puWgt*trigSF.first*sel1SF.first*sel2SF.first;

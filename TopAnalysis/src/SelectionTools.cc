@@ -136,7 +136,7 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
   //getGoodJets(ev,30.,maxJetEta,leptons_,photons_);
 
   //build the met
-  met_.SetPtEtaPhiM( ev.met_pt[1], 0, ev.met_phi[1], 0. );
+  met_.SetPtEtaPhiM( ev.met_pt, 0, ev.met_phi, 0. );
 
   //check if triggers have fired and are consistent with the offline selection
   bool hasETrigger(  hasTriggerBit("HLT_Ele35_WPTight_Gsf_v",                               ev.triggerBits) );
@@ -239,7 +239,7 @@ std::vector<Particle> SelectionTool::flaggedLeptons(MiniEvent_t &ev)
 
     float pt(ev.l_pt[il]);
     float eta(fabs(ev.l_eta[il]));
-    int pid(ev.l_pid[il]);
+    unsigned int pid(ev.l_pid[il]);
     float relIso(ev.l_relIso[il]);
 
     //see bits in plugins/MiniAnalyzer.cc
@@ -249,10 +249,15 @@ std::vector<Particle> SelectionTool::flaggedLeptons(MiniEvent_t &ev)
       {
 	if( pt>20 && eta<2.5 ) {
           if((pid>>1)&0x1)  qualityFlagsWord |= (0x1 << VETO);
+          if((pid>>2)&0x1)  qualityFlagsWord |= (0x1 << LOOSEIDONLY);
+          if((pid>>3)&0x1)  qualityFlagsWord |= (0x1 << LOOSE);
+          if((pid>>4)&0x1)  qualityFlagsWord |= (0x1 << MEDIUMIDONLY);
           if((pid>>5)&0x1)  qualityFlagsWord |= (0x1 << MEDIUM);
+          if((pid>>6)&0x1)  qualityFlagsWord |= (0x1 << TIGHTIDONLY);
           if((pid>>7)&0x1)  qualityFlagsWord |= (0x1 << TIGHT);
           if((pid>>9)&0x1)  qualityFlagsWord |= (0x1 << MVA80);
           if((pid>>10)&0x1) qualityFlagsWord |= (0x1 << MVA90);
+          if((pid>>10)&0x1) qualityFlagsWord |= (0x1 << MVANONISOWPLOOSE);
         }
         unc = TMath::Sqrt(
                           pow(ev.l_scaleUnc1[il],2)+
@@ -267,9 +272,26 @@ std::vector<Particle> SelectionTool::flaggedLeptons(MiniEvent_t &ev)
     else
       {
         if(pt>20 && eta<2.5) {
-          if( ((pid>>reco::Muon::Selector::CutBasedIdMediumPrompt)&0x1) && relIso<0.15)  qualityFlagsWord |= (0x1 << MEDIUM);
-          if( ((pid>>reco::Muon::Selector::CutBasedIdTight) &0x1)       && relIso<0.15)  qualityFlagsWord |= (0x1 << TIGHT);
-          if( ((pid>>reco::Muon::Selector::CutBasedIdLoose) &0x1)       && relIso<0.25)  qualityFlagsWord |= (0x1 << VETO);
+          if( (pid&reco::Muon::Selector::CutBasedIdLoose)==reco::Muon::Selector::CutBasedIdLoose ) {
+            qualityFlagsWord |= (0x1 << LOOSEIDONLY);
+            if( (pid&reco::Muon::Selector::PFIsoLoose)==reco::Muon::Selector::PFIsoLoose ) 
+              qualityFlagsWord |= (0x1 << LOOSE);
+          }
+          if( (pid&reco::Muon::Selector::CutBasedIdMedium)==reco::Muon::Selector::CutBasedIdMedium ) {
+            qualityFlagsWord |= (0x1 << MEDIUMIDONLY);
+            if( (pid&reco::Muon::Selector::PFIsoMedium)==reco::Muon::Selector::PFIsoMedium ) 
+              qualityFlagsWord |= (0x1 << MEDIUM);
+          }
+          if( (pid&reco::Muon::Selector::CutBasedIdTight)==reco::Muon::Selector::CutBasedIdTight ) {
+            qualityFlagsWord |= (0x1 << TIGHTIDONLY);
+            if( (pid&reco::Muon::Selector::PFIsoTight)==reco::Muon::Selector::PFIsoTight ) 
+              qualityFlagsWord |= (0x1 << TIGHT);
+          }
+          if( (pid&reco::Muon::Selector::CutBasedIdTrkHighPt)==reco::Muon::Selector::CutBasedIdTrkHighPt ) {
+            qualityFlagsWord |= (0x1 << HIGHPTIDONLY);
+            if( (pid&reco::Muon::Selector::TkIsoLoose)==reco::Muon::Selector::TkIsoLoose) 
+              qualityFlagsWord |= (0x1 << HIGHPT);            
+          }
         }
       }
 
@@ -339,10 +361,10 @@ std::vector<Particle> SelectionTool::flaggedPhotons(MiniEvent_t &ev)
         if( (pid&0x7f)==0x7f )            qualityFlagsWord |= (0x1 << LOOSE);
         if( ((pid>>10)&0x7f)==0x7f   )    qualityFlagsWord |= (0x1 << MEDIUM);
         if( ((pid>>20)&0x7f)==0x7f   )    qualityFlagsWord |= (0x1 << TIGHT);
-        if( ((addpid>>2)&0x1) )   qualityFlagsWord |= (0x1 << MVA80);
-        if( ((addpid>>3)&0x1) )   qualityFlagsWord |= (0x1 << MVA90);
+        if( ((addpid>>2)&0x1)         )   qualityFlagsWord |= (0x1 << MVA80);
+        if( ((addpid>>3)&0x1) )           qualityFlagsWord |= (0x1 << MVA90);
 	if( isInclusivePhoton(ev,ig) )    qualityFlagsWord |= (0x1 << CONTROL);
-	if( isQCDTemplate(ev,ig))    qualityFlagsWord |= (0x1 << QCDTEMP);
+	if( isQCDTemplate(ev,ig))         qualityFlagsWord |= (0x1 << QCDTEMP);
 	if( isRelaxedTight(ev,ig)    )    qualityFlagsWord |= (0x1 << RELAXEDTIGHT);
       }
     if(qualityFlagsWord==0) continue;

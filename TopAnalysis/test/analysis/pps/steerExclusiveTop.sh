@@ -15,7 +15,7 @@ fi
 
 #to run locally use local as queue + can add "--njobs 8" to use 8 parallel jobs
 queue=tomorrow
-githash=f93b8d8
+githash=3129835
 eosdir=/store/cmst3/group/top/RunIIReReco/${githash}
 outdir=/store/cmst3/user/psilva/ExclusiveAna
 samples_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/samples.json
@@ -23,11 +23,11 @@ jetht_samples_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/je
 zx_samples_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/zx_samples.json
 RPout_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/golden_noRP.json
 wwwdir=~/www/ExclusiveAna
-inputfileTag=MC13TeV_2017_ZH
-inputfileTESTSEL=/store/cmst3/group/top/RunIIReReco/f93b8d8/${inputfileTag}/MergedMiniEvents_0_ext0.root
+inputfileTag=MC13TeV_2017_GGH2000toZZ2L2Nu
+inputfileTESTSEL=${eosdir}/${inputfileTag}/Chunk_0_ext0.root
 #inputfileTag=Data13TeV_2017B_DoubleMuon
-#inputfileTESTSEL=/store/cmst3/group/top/RunIIReReco/f93b8d8/${inputfileTag}/MergedMiniEvents_0_ext0.root
-lumi=41367
+#inputfileTESTSEL=/store/cmst3/group/top/RunIIReReco/f93b8d8/${inputfileTag}/Chunk_0_ext0.root
+lumi=41833
 ppsLumi=37500
 lumiUnc=0.025
 
@@ -51,7 +51,7 @@ case $WHAT in
         baseOpt="${baseOpt} --exactonly"
 	python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py ${baseOpt} --only ${samples_json};
 	python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py ${baseOpt} --only ${zx_samples_json};
-        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py ${baseOpt} --only ${jetht_samples_json};
+        #python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py ${baseOpt} --only ${jetht_samples_json};
 	;;
 
     MERGESEL )
@@ -60,7 +60,7 @@ case $WHAT in
 
     PLOTSEL )
 	commonOpts="-i /eos/cms/${outdir} --puNormSF puwgtctr -l ${lumi} --mcUnc ${lumiUnc} "
-	python scripts/plotter.py ${commonOpts} -j ${samples_json}    -O plots/sel; 
+	python scripts/plotter.py ${commonOpts} -j ${samples_json}    -O plots/sel --only mll,ptll,pt,eta,met,jets,nvtx,ratevsrun --saveLog; 
         python scripts/plotter.py ${commonOpts} -j ${samples_json}    --rawYields --silent --only gen -O plots/zx_sel -o bkg_plotter.root ; 
 	python scripts/plotter.py ${commonOpts} -j ${zx_samples_json} --rawYields --silent --only gen -O plots/zx_sel;
         python test/analysis/pps/computeDileptonSelEfficiency.py 
