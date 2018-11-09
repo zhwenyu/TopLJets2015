@@ -27,7 +27,7 @@ inputfileTag=MC13TeV_2017_GGH2000toZZ2L2Nu
 inputfileTESTSEL=${eosdir}/${inputfileTag}/Chunk_0_ext0.root
 #inputfileTag=Data13TeV_2017B_DoubleMuon
 #inputfileTESTSEL=/store/cmst3/group/top/RunIIReReco/f93b8d8/${inputfileTag}/Chunk_0_ext0.root
-lumi=41367
+lumi=41833
 ppsLumi=37500
 lumiUnc=0.025
 
@@ -63,8 +63,8 @@ case $WHAT in
 	python scripts/plotter.py ${commonOpts} -j ${samples_json}    -O plots/sel --only mll,ptll,pt,eta,met,jets,nvtx,ratevsrun --saveLog; 
         python scripts/plotter.py ${commonOpts} -j ${samples_json}    --rawYields --silent --only gen -O plots/zx_sel -o bkg_plotter.root ; 
 	python scripts/plotter.py ${commonOpts} -j ${zx_samples_json} --rawYields --silent --only gen -O plots/zx_sel;
-        #python test/analysis/pps/computeDileptonSelEfficiency.py 
-        #mv *.png plots/zx_sel/
+        python test/analysis/pps/computeDileptonSelEfficiency.py 
+        mv *.png plots/zx_sel/
 	;;
 
     WWWSEL )

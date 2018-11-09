@@ -1,17 +1,19 @@
 import ROOT
 from TopLJets2015.TopAnalysis.Plot import fixExtremities, scaleTo, divideByBinWidth
 
-def getPassGenDistributions(pName,gName,plotter,ci,fill=0):
+def getPassGenDistributions(pName,gName,plotter,ci,fill=0,marker=20):
 
     """reads the distributions from the plotter"""
 
     passH=plotter.Get(pName)
+
     fixExtremities(passH)
     passH.SetDirectory(0)
     passH.SetFillStyle(fill)
     passH.SetLineColor(ci)
     passH.SetMarkerColor(ci)
     passH.SetLineWidth(2)
+    passH.SetMarkerStyle(marker)
 
     genH=plotter.Get(gName)
     fixExtremities(genH)
@@ -20,6 +22,7 @@ def getPassGenDistributions(pName,gName,plotter,ci,fill=0):
     genH.SetLineColor(ci)
     genH.SetMarkerColor(ci)
     genH.SetLineWidth(2)
+    genH.SetMarkerStyle(marker)
     
     return passH,genH
 
@@ -187,16 +190,23 @@ def runSelectionEfficiencyFor(ch,d):
     zxROOT=ROOT.TFile.Open('plots/zx_sel/plotter.root')
 
     procList  =[('DY','#000000',1001,20,bkgROOT),
-                ("ZH#rightarrowllbb",'#666666',0,24,zxROOT),
+                ("ZH#rightarrowllbb",'#666666',0,20,zxROOT),
                 ("qqH(900)#rightarrowZZ#rightarrow2l2#nu",'#8c510a',0,21,zxROOT),
-                ("ggH(900)#rightarrowZZ#rightarrow2l2#nu",'#7fc97f',0,21,zxROOT),
-                ("qqH(1500)#rightarrowZZ#rightarrow2l2#nu",'#f0027f',0,25,zxROOT),
-                ("ggH(1500)#rightarrowZZ#rightarrow2l2#nu",'#fdc086',0,25,zxROOT),
-                ("G_{RS}(800)#rightarrowZZ", '#358CEF',0,23,zxROOT),
-                #("G_{RS}(1200)#rightarrowZZ", '#bf5b17',0,26,zxROOT),
-                ("G_{bulk}(800)#rightarrowZZ#rightarrow2l2#nu","#c2a5cf",0,23,zxROOT)]
+                ("ggH(900)#rightarrowZZ#rightarrow2l2#nu",'#8c510a',0,25,zxROOT),
+                #("qqH(1500)#rightarrowZZ#rightarrow2l2#nu",'#f0027f',0,22,zxROOT),
+                #("ggH(1500)#rightarrowZZ#rightarrow2l2#nu",'#f0027f',0,26,zxROOT),
+                ("qqH(2000)#rightarrowZZ#rightarrow2l2#nu",'#358CEF',0,23,zxROOT),
+                ("ggH(2000)#rightarrowZZ#rightarrow2l2#nu",'#358CEF',0,27,zxROOT)
+                ]
+
+
+    procList  =[('DY','#000000',1001,20,bkgROOT),
+                ("H^{#pm}(1000)#rightarrowWZ",'#666666',0,20,zxROOT),
+                ("H^{#pm}(2000)#rightarrowWZ",'#fdc086',0,21,zxROOT),
+    #            ("G_{bulk}(2000)#rightarrowZZ#rightarrow2l2#nu",'#358CEF',0,27,zxROOT)
+                ]
     
-    tagsList=['singletrig','trig','rec','tightrec']
+    tagsList=['singletrig','trig','rec','2trec']
 
     genSummary={}
     effSummary={}
@@ -208,7 +218,8 @@ def runSelectionEfficiencyFor(ch,d):
                                                  gName='gen{0}_{1}/gen{0}_{1}_{2}'.format(ch,d,p),
                                                  plotter=plotter,
                                                  ci=ROOT.TColor.GetColor(color),
-                                                 fill=fill)        
+                                                 fill=fill,
+                                                 marker=marker)        
             effGr=getEfficiencyCurve(passH,genH,marker=marker)
 
             genSummary[tag].append(genH)
@@ -219,13 +230,13 @@ def runSelectionEfficiencyFor(ch,d):
     effSummary['rec_gain']=[]
     for i in xrange(0,len(effSummary[tagsList[0]])):
         effSummary['trig_gain'].append(getCurveRatio(gr_den=effSummary['singletrig'][i], gr_num=effSummary['trig'][i]))
-        effSummary['rec_gain'].append(getCurveRatio(gr_den=effSummary['tightrec'][i],    gr_num=effSummary['rec'][i]))
+        effSummary['rec_gain'].append(getCurveRatio(gr_den=effSummary['2trec'][i],    gr_num=effSummary['rec'][i]))
 
     #cut efficiency
     if d=='ptll':
         effSummary['cut']=[]
         for i in xrange(0,len(effSummary[tagsList[0]])):
-            effSummary['cut'].append( getCutEfficiencyCurve(h=genSummary['rec'][i],marker=marker) )
+            effSummary['cut'].append( getCutEfficiencyCurve(h=genSummary['rec'][i],marker=genSummary['rec'][i].GetMarkerStyle()) )
 
     doLogx=True if d=='ptll' else False
     doDivideByBinWidth=True if d in ['ptll','mll'] else False
@@ -234,7 +245,7 @@ def runSelectionEfficiencyFor(ch,d):
     showSimpleDistribution(genSummary['rec'],doLogx=False,doDivideByBinWidth=doDivideByBinWidth,outName='gen_%s_%s'%(ch,d))
 
     #efficiency plots
-    for tag,xtit,ytit,logx,logy,yran,legPos in [('trig',      genSummary['rec'][0].GetXaxis().GetTitle(),'Trigger acceptance x #varepsilon',  doLogx,False,(0.6,1),  'bl'),
+    for tag,xtit,ytit,logx,logy,yran,legPos in [('trig',      genSummary['rec'][0].GetXaxis().GetTitle(),'Trigger acceptance x #varepsilon',  doLogx,False,(0.8,1),  'bl'),
                                                 ('trig_gain', genSummary['rec'][0].GetXaxis().GetTitle(),'Ratio to single triggers',          doLogx,False,(0.95,1.15),'tr'),
                                                 ('rec',       genSummary['rec'][0].GetXaxis().GetTitle(),'Selection acceptance x #varepsilon',doLogx,False,(0.,1),   'tl' if d=='ptll' else 'tr'),
                                                 ('rec_gain',  genSummary['rec'][0].GetXaxis().GetTitle(),'Ratio to tight selection',          doLogx,False,(0.7,2.2),'tr'),

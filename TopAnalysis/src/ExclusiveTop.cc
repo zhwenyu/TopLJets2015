@@ -27,12 +27,6 @@ using namespace std;
 
 #define ADDVAR(x,name,t,tree) tree->Branch(name,x,TString(name)+TString(t))
 
-//TODO
-//add jet scale uncertainty
-//PPS json
-//lumi, puweighting, genweighting
-//xsec in the analysis json
-
 //
 void RunExclusiveTop(TString filename,
                      TString outname,
@@ -568,10 +562,9 @@ void RunExclusiveTop(TString filename,
           wgt  = (normH? normH->GetBinContent(1) : 1.0);
           
           // lepton trigger*selection weights
-          EffCorrection_t trigSF(1.,0.);
-          //EffCorrection_t trigSF = lepEffH.getTriggerCorrection(leptons,{},{},period);
-          EffCorrection_t  sel1SF = lepEffH.getOfflineCorrection(leptons[l1idx], period);
-          EffCorrection_t  sel2SF = lepEffH.getOfflineCorrection(leptons[l2idx], period);
+          EffCorrection_t trigSF(1.,0.); // = lepEffH.getTriggerCorrection(leptons,{},{},period);
+          EffCorrection_t  sel1SF(1.,0.); // = lepEffH.getOfflineCorrection(leptons[l1idx], period);
+          EffCorrection_t  sel2SF(1.,0.); // = lepEffH.getOfflineCorrection(leptons[l2idx], period);
           
           
           wgt *= puWgt*trigSF.first*sel1SF.first*sel2SF.first;

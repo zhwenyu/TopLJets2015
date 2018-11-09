@@ -34,7 +34,7 @@
 "MC13TeV_2017_QCDEM_50to80"          : [2890800, 0,  "/QCD_Pt-50to80_EMEnriched_TuneCP5_13TeV_pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM", "QCD", 41, false, false, 1],
 "MC13TeV_2017_QCDEM_80to120"         : [350000,  0,  "/QCD_Pt-80to120_EMEnriched_TuneCP5_13TeV_pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM", "QCD", 41, false, false, 1],
 "MC13TeV_2017_QCDEM_120to170"        : [62964,   0,  "/QCD_Pt-120to170_EMEnriched_TuneCP5_13TeV_pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v2/MINIAODSIM", "QCD", 41, false, false, 1],
-"MC13TeV_2017_QCDEM_170to300"        : [18810,   0,  "/QCD_Pt-300toInf_EMEnriched_TuneCP5_13TeV_pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM", "QCD", 41, false, false, 1],
+"MC13TeV_2017_QCDEM_170to300"        : [18810,   0,  "/QCD_Pt-170to300_EMEnriched_TuneCP5_13TeV_pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM", "QCD", 41, false, false, 1],
 "MC13TeV_2017_QCDEM_300toInf"        : [1350,    0,  "/QCD_Pt-300toInf_EMEnriched_TuneCP5_13TeV_pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM", "QCD", 41, false, false, 1],
 "MC13TeV_2017_GJets_HT40to100"       : [20790 ,  0,  "/GJets_HT-40To100_TuneCP5_13TeV-madgraphMLM-pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_1core_94X_mc2017_realistic_v14_ext1-v1/MINIAODSIM", "#gamma+jets", 41, false, false, 1],
 "MC13TeV_2017_GJets_HT40to100_ext"   : [20790 ,  0,  "/GJets_HT-40To100_TuneCP5_13TeV-madgraphMLM-pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v2/MINIAODSIM", "#gamma+jets", 41, false, false, 1],
