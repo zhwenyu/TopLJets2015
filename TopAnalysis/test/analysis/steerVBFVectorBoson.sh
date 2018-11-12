@@ -18,7 +18,7 @@ if [ "$#" -gt 2 ]; then
 fi
 #to run locally use local as queue + can add "--njobs 8" to use 8 parallel jobs
 queue=workday
-githash=f93b8d8
+githash=3129835
 eosdir=/store/cmst3/group/top/RunIIReReco/${githash}
 fulllumi=41367
 vbflumi=7661
@@ -33,9 +33,9 @@ case $WHAT in
 
     TESTSEL )
 
-        input=${eosdir}/Data13TeV_2017F_SingleMuon/MergedMiniEvents_12_ext0.root
-        output=Data13TeV_2017F_SingleMuon_4.root #MC13TeV_AJJ_EWK_INT_LO_mjj500_dr04.root
-        tag="--tag Data13TeV_2017F_SingleMuon" #MC13TeV_AJJ_EWK_INT_LO_mjj500_dr04"
+        input=${eosdir}/Data13TeV_2017C_SinglePhoton/Chunk_0_ext0.root
+        output=Data13TeV_2017C_SinglePhoton.root #MC13TeV_AJJ_EWK_INT_LO_mjj500_dr04.root
+        tag="--tag Data13TeV_2017C_SinglePhoton" #MC13TeV_AJJ_EWK_INT_LO_mjj500_dr04"
 
 
 	python scripts/runLocalAnalysis.py \
@@ -132,13 +132,13 @@ case $WHAT in
             vbflumi=${lumi}
             gh=${githash2018}
         fi
-        kFactors="--procSF MC13TeV_"${era}"_QCDEM_15to20:1.26,MC13TeV_"${era}"_QCDEM_20to30:1.26,MC13TeV_"${era}"_QCDEM_30to50:1.26,MC13TeV_"${era}"_QCDEM_50to80:1.26,MC13TeV_"${era}"_QCDEM_80to120:1.26,MC13TeV_"${era}"_QCDEM_120to170:1.26,MC13TeV_"${era}"_QCDEM_170to300:1.26,MC13TeV_"${era}"_QCDEM_300toInf:1.26,MC13TeV_"${era}"_GJets_HT40to100:1.26,MC13TeV_"${era}"_GJets_HT100to200:1.26,MC13TeV_"${era}"_GJets_HT200to400:1.26,MC13TeV_"${era}"_GJets_HT600toInf:1.26"
+        kFactors="--procSF MC13TeV_"${era}"_QCDEM_15to20:1.26,MC13TeV_"${era}"_QCDEM_20to30:1.26,MC13TeV_"${era}"_QCDEM_30to50:1.26,MC13TeV_"${era}"_QCDEM_50to80:1.26,MC13TeV_"${era}"_QCDEM_80to120:1.26,MC13TeV_"${era}"_QCDEM_120to170:1.26,MC13TeV_"${era}"_QCDEM_170to300:1.26,MC13TeV_"${era}"_QCDEM_300toInf:1.26,MC13TeV_"${era}"_GJets_HT40to100:1.26,MC13TeV_"${era}"_GJets_HT100to200:1.26,MC13TeV_"${era}"_GJets_HT200to400:1.26,MC13TeV_"${era}"_GJets_HT400to600:1.26,MC13TeV_"${era}"_GJets_HT600toInf:1.26"
 	commonOpts="-i ${outdir}/${gh}/${EXTRA} --puNormSF puwgtctr --saveLog -l ${lumi} --mcUnc ${lumiUnc} --lumiSpecs HighMJJA:${vbflumi},LowMJJA:${fulllumi},HighMJJMM:${fulllumi},LowMJJMM:${fulllumi} -O ${plotOutDir}"
 	python scripts/plotter.py ${commonOpts} -j ${json} --only HighMJJ,LowMJJ ${kFactors}
 	#python scripts/plotter.py ${commonOpts} -j ${syst_json} ${kFactors} --only HighMJJ,LowMJJ --silent -o syst_plotter.root
 
         #trigger efficiencies
-        #python test/analysis/computeVBFTriggerEff.py -p ${plotOutDir}/plotter.root -o ${plotOutDir};
+        python test/analysis/computeVBFTriggerEff.py -p ${plotOutDir}/plotter.root -o ${plotOutDir};
 
         #transfer factors
 	#python test/analysis/computeTransferFactor.py -p ${plotOutDir}/plotter.root -s ${plotOutDir}/syst_plotter.root -o ${plotOutDir} --var vbffisher --binList -2,-0.5,-0.4,-0.3,-0.2,-0.1,0,0.1,0.2,0.3,0.4,0.5,2,3;
@@ -167,7 +167,7 @@ case $WHAT in
 
     WWW )
 
-        plotList=(plots_signal) # plots plots_trigger plots_signal plots_gjets)
+        plotList=(plots) #plots_signal) # plots plots_trigger plots_signal plots_gjets)
         gh=${githash}
         if [[ "${EXTRA}" = *"2018"* ]]; then
             gh=${githash2018}
