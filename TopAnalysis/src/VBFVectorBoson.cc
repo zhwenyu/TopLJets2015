@@ -42,7 +42,7 @@ void VBFVectorBoson::RunVBFVectorBoson()
   float minBosonHighPt(200.);
   TString vbfPhotonTrigger = "HLT_Photon75_R9Id90_HE10_IsoM_EBOnly_PFJetsMJJ300DEta3_v";
   TString highPtPhotonTrigger("HLT_Photon200_v");
-  SelectionTool::QualityFlags offlinePhoton(SelectionTool::MVA80);
+  SelectionTool::QualityFlags offlinePhoton(SelectionTool::TIGHT);
   if(is2018) {
     cout << "[VBFVectorBoson::RunVBFVectorBoson] this is 2018, adapting" << endl;
     vbfPhotonTrigger="HLT_Photon75_R9Id90_HE10_IsoM_EBOnly_PFJetsMJJ300DEta3_v";
