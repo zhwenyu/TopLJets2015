@@ -267,8 +267,9 @@ ROOT.gStyle.SetOptStat(0)
 ROOT.gStyle.SetOptTitle(0)
 ROOT.gROOT.SetBatch(True)
 
-for d in ['ptll','mll','drll']:
-    for ch in ['ee','mm']:
+for d in ['ptboson','mll','drll']:
+    for ch in ['ee','mm','a']:
+        if ch=='a' and not 'boson' in d: continue
         runSelectionEfficiencyFor(ch,d)
 
 
