@@ -11,7 +11,6 @@
 #include "TopLJets2015/TopAnalysis/interface/CommonTools.h"
 #include "TopLJets2015/TopAnalysis/interface/VBFVectorBoson.h"
 #include "TopLJets2015/TopAnalysis/interface/EfficiencyScaleFactorsWrapper.h"
-
 #include "PhysicsTools/CandUtils/interface/EventShapeVariables.h"
 
 #include <vector>
@@ -25,10 +24,6 @@
 #include "TMVA/MethodCuts.h"
 
 using namespace std;
-
-//TODOS
-// pedro: jet distribution before pu id in boson+1jet
-//
 
 //
 void VBFVectorBoson::RunVBFVectorBoson()
@@ -447,6 +442,7 @@ void VBFVectorBoson::readTree(){
   //nentries = 10000;
   t->GetEntry(0);
   vetoPromptPhotons = filename.Contains("_QCDEM_") || filename.Contains("_TTJets");
+  weightSysts_=getWeightSysts(f);
 }
 
 void VBFVectorBoson::prepareOutput(){
@@ -546,6 +542,18 @@ void VBFVectorBoson::bookHistograms(){
   //final analyses distributions
   ht->addHist("evcount",         new TH1F("evcount",        ";Pass;Events",1,0,1));  
   ht->addHist("vbfmva",          new TH1F("vbfmva",         ";VBF MVA;Events",20,-1,1));  
+  ht->addHist("vbfmva_exp",      new TH2F("vbfmva_exp",     ";VBF MVA;Systs;Events",20,-1,1,14,0,14));  
+ 
+  size_t nthSysts(weightSysts_.size());
+  if(nthSysts>0){
+    ht->addHist("vbfmva_th",       new TH2F("vbfmva_th",      ";VBF MVA;Systs;Events",20,-1,1,nthSysts,0,nthSysts));  
+    for(size_t is=0; is<nthSysts; is++)
+      ht->get2dPlots()["vbfmva_th"]->GetYaxis()->SetBinLabel(is+1,weightSysts_[is].first);
+  }
+
+
+
+
   ht->addHist("vbffisher",       new TH1F("vbffisher",      ";VBF Fisher;Events",40,-2,3));  
 }
 void VBFVectorBoson::setGammaZPtWeights(){
@@ -773,8 +781,18 @@ void VBFVectorBoson::fill(MiniEvent_t ev, TLorentzVector boson, std::vector<Jet>
 
   //final analysis histograms
   ht->fill("evcount",    0, cplotwgts, c);
-  if(!(doBlindAnalysis && vbfmva<-99))
+  if(!(doBlindAnalysis && vbfmva<-99)) {
     ht->fill("vbfmva",       vbfmva, cplotwgts,c);
+
+    //replicas for theory systs
+    for(size_t is=0; is<weightSysts_.size(); is++){
+      std::vector<double> sweights(1,cplotwgts[0]);
+      size_t idx=weightSysts_[is].second;
+      sweights[0] *= (ev.g_w[idx]/ev.g_w[0])*(normH->GetBinContent(idx+1)/normH->GetBinContent(1));
+      ht->fill2D("vbfmva_th",vbfmva,is,sweights,c);
+    }
+
+  }
   if(!(doBlindAnalysis && vbffisher<-99))
     ht->fill("vbffisher",       vbffisher, cplotwgts,c);
 
