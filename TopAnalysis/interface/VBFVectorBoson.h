@@ -125,7 +125,7 @@ private:
 	TH1F * normH, * genPU;
 	TString era;
 	TH1* triggerList;
-	Bool_t debug, CR, QCDTemp, SRfake, skimtree, isQCDEMEnriched;
+	Bool_t debug, CR, QCDTemp, SRfake, skimtree, vetoPromptPhotons;
 	TFile * f /*inFile*/, *fMVATree, *fOut;
 	TTree * t /*inTree*/, *newTree /*MVA*/;
   	HistTool * ht;

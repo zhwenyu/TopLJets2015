@@ -235,7 +235,7 @@ void VBFVectorBoson::RunVBFVectorBoson()
 	isLowMJJLP = (isLowMJJ & !passLP);
 
         //veto prompt photons on the QCDEM enriched sample
-        if( isQCDEMEnriched && ev.gamma_isPromptFinalState[ photons[0].originalReference() ] ) {
+        if( vetoPromptPhotons && ev.gamma_isPromptFinalState[ photons[0].originalReference() ] ) {
           isVBF                 = false;
           isHighPt              = false;
           isHighPtAndVBF        = false;
@@ -446,7 +446,7 @@ void VBFVectorBoson::readTree(){
   if (debug) nentries = 10000; //restrict number of entries for testing
   //nentries = 10000;
   t->GetEntry(0);
-  isQCDEMEnriched = filename.Contains("_QCDEM_");
+  vetoPromptPhotons = filename.Contains("_QCDEM_") || filename.Contains("_TTJets");
 }
 
 void VBFVectorBoson::prepareOutput(){
