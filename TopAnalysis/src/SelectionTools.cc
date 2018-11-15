@@ -432,7 +432,7 @@ std::vector<Particle> SelectionTool::selPhotons(std::vector<Particle> &photons,i
 
 
 //
-std::vector<Jet> SelectionTool::getGoodJets(MiniEvent_t &ev, double minPt, double maxEta, std::vector<Particle> leptons,std::vector<Particle> photons,int jetUncIdx=-1) {
+std::vector<Jet> SelectionTool::getGoodJets(MiniEvent_t &ev, double minPt, double maxEta, std::vector<Particle> leptons,std::vector<Particle> photons,int jetUncIdx) {
   std::vector<Jet> jets;
   
   for (int k=0; k<ev.nj; k++) {
@@ -476,11 +476,11 @@ std::vector<Jet> SelectionTool::getGoodJets(MiniEvent_t &ev, double minPt, doubl
     //jes/jer uncertainty
     int jflav(abs(ev.j_flav[k]));
     float jecUp(0),jecDn(0);
-    if(jecUncIdx<0){
+    if(jetUncIdx<0){
       jecUp=pow(1-ev.j_jerUp[k],2);
       jecDn=pow(1-ev.j_jerDn[k],2);
     }    
-    for(size_t iunc=0; iunc<30; iunc++){
+    for(int iunc=0; iunc<30; iunc++){
      
       if(jetUncIdx>-2 && iunc!=jetUncIdx) continue;
       
@@ -490,10 +490,8 @@ std::vector<Jet> SelectionTool::getGoodJets(MiniEvent_t &ev, double minPt, doubl
       if(iunc==8 && jflav!=4)  continue; //FlavorPureCharm
       if(iunc==9 && jflav!=5)  continue; //FlavorPureGluon
       
-      if(ev.j_jecUp[iunc][k]!=0)
-        jecUp += pow(1-ev.j_jecUp[iunc][k],2);
-        if(ev.j_jecDn[iunc][k]!=0)
-          jecDn += pow(1-ev.j_jecDn[iunc][k],2);
+      if(ev.j_jecUp[iunc][k]!=0) jecUp += pow(1-ev.j_jecUp[iunc][k],2);
+      if(ev.j_jecDn[iunc][k]!=0) jecDn += pow(1-ev.j_jecDn[iunc][k],2);
     }
     
     jecUp=TMath::Sqrt(jecUp);

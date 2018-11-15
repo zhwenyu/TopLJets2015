@@ -119,7 +119,7 @@ void VBFVectorBoson::RunVBFVectorBoson()
       relaxedTightPhotons                = selector->getRelaxedTightPhotons();
       tmpPhotons                         = selector->getQCDTmpPhotons();
       std::vector<Particle> &leptons     = selector->getSelLeptons(); 
-      std::vector<Jet>      &alljets     = selector->getGoodJets(ev,30.,4.7,leptons,photons);
+      std::vector<Jet>       alljets     = selector->getGoodJets(ev,30.,4.7,leptons,photons);
       int nTotalJets = alljets.size();
       std::vector<Jet> jets;
       std::vector<Particle> fakeACR;
@@ -383,13 +383,15 @@ void VBFVectorBoson::RunVBFVectorBoson()
 	  }
         }
 
-
-	//What is the final weight? 0 or 1 in the array?
+        //fill plots
 	evtWeight = cplotwgts[0]*xsec;
 	training = useForTraining(); 
 	fill( ev,  boson,  jets,  cplotwgts, c, mults, fakeACR, tightACR);
+
         
-        //experimental systs : repeat final category selection with varied objects/weights and re-evaluate mva
+        //experimental systs 
+        //don't do anything after this...
+        //repeat final category selection with varied objects/weights and re-evaluate mva
         if(ev.isData) continue;
         std::vector<std::pair<float,float> > mvaWithWeights;
         for(size_t is=0; is<expSysts_.size(); is++){
@@ -404,6 +406,7 @@ void VBFVectorBoson::RunVBFVectorBoson()
           float iwgt=cplotwgts[0];          
           TLorentzVector iBoson(boson);
           std::vector<Jet> ijets(jets);
+          bool reSelect(false);
 
           if(sname=="puup")        iwgt *= puWgts[1]/puWgts[0];
           if(sname=="pudn")        iwgt *= puWgts[2]/puWgts[0];
@@ -413,9 +416,18 @@ void VBFVectorBoson::RunVBFVectorBoson()
           if(sname=="seldn")       iwgt *= 1-selSF.second/selSF.first;
           if(sname=="l1prefireup") iwgt *= 1+0.3/l1prefireProb;
           if(sname=="l1prefiredn") iwgt *= 1-0.3/l1prefireProb;
-          if(sname.Contains("aes") && chTag=="A")  iBoson *= (1+(isUpVar?1:-1)*bosonScaleUnc); 
-          if(sname.Contains("mes") && chTag=="MM") iBoson *= (1+(isUpVar?1:-1)*bosonScaleUnc); 
+          if(sname.Contains("aes") && chTag=="A")  {
+            reSelect=true;
+            iBoson *= (1+(isUpVar?1:-1)*bosonScaleUnc); 
+          }
+          if(sname.Contains("mes") && chTag=="MM") {
+            //technically we should re-select the leptons but given we're looking to high pT Z's
+            //assume effect is negligible and all that counts is the Z energy scale?
+            reSelect=true;
+            iBoson *= (1+(isUpVar?1:-1)*bosonScaleUnc); 
+          }
           if(sname.Contains("JEC") || sname.Contains("JER") )  {
+            reSelect=true;
             int jecIdx=-1;
             if(sname.Contains("AbsoluteStat"))     jecIdx=0;
             if(sname.Contains("AbsoluteScale"))    jecIdx=1; 
@@ -451,19 +463,57 @@ void VBFVectorBoson::RunVBFVectorBoson()
             std::vector<Jet> newJets = selector->getGoodJets(ev,30.,4.7,leptons,photons,jecIdx);
             ijets.clear();
             for(auto j : alljets) {
-              float unc=j.scaleUnc();
+              float unc=j.getScaleUnc();
               j *= (1+(isUpVar ? 1 : -1)*unc);
               if(j.Pt()<30) continue;
               int idx=j.getJetIndex();
               int jid=ev.j_id[idx];
               bool passLoosePu((jid>>2)&0x1);
               if(!passLoosePu) continue;
+
+              //TODO: additional cleanup for noise? 
+
               ijets.push_back(j);
             }
           }
           
-          //TODO: re-evaluate mva here with new objects
-          
+          //re-select if needed
+          if(reSelect) {
+
+            if (ijets.size()<2) continue;
+            mjj=(ijets[0]+ijets[1]).M();
+            detajj=fabs(ijets[0].Eta()-ijets[1].Eta());
+            if(mjj<minMJJ) continue;
+
+            //final event category
+            bool passVBFJetsTrigger(detajj>3.0 && mjj>highMJJcut);
+            bool isVBF(false),isHighPt(false);
+            if(chTag=="A") {
+              isVBF    = (selector->hasTriggerBit(vbfPhotonTrigger, ev.triggerBits) 
+                          && iBoson.Pt()>75 
+                          && fabs(iBoson.Eta())<1.442
+                          && passVBFJetsTrigger);
+              isHighPt = (selector->hasTriggerBit(highPtPhotonTrigger, ev.triggerBits) 
+                          && iBoson.Pt()>minBosonHighPt);
+            }
+            else {
+              isVBF    = (iBoson.Pt()>75 
+                          && fabs(iBoson.Rapidity())<1.442 
+                          && passVBFJetsTrigger);
+              isHighPt = (iBoson.Pt()>minBosonHighPt);
+            }
+           
+            //set the new tag
+            if(isHighPt) icat="HighPt"+chTag;
+            else if(isVBF) icat="VBF"+chTag;
+            else continue;
+
+            //re-evaluate MVA
+            //TODO Nadjieh
+            //here one needs to update the variables as needed using the updated kinematics
+            imva = reader->EvaluateMVA(mvaMethod[0]);
+          }
+
           //fill with new values/weights
           std::vector<double> eweights(1,iwgt);
           ht->fill2D("vbfmva_exp",imva,is,eweights,icat);
