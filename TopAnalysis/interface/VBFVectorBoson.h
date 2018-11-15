@@ -158,7 +158,7 @@ private:
 	float centraleta, forwardeta, jjetas, centjy, ncentjj, dphivj0, dphivj1, dphivj2, dphivj3;
 	float evtWeight, mjj, detajj , dphijj ,jjpt;
 	float isotropy, circularity,sphericity,	aplanarity, C, D;
-	float scalarht,balance, mht, training;
+	float scalarht,balance, mht, training, lead_qg;
         float leadj_c1_05,subleadj_c1_05;
         float leadj_gawidth,subleadj_gawidth, subleadj_c2_02, subleadj_pt;
         float vbfmva,vbffisher;
