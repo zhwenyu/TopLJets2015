@@ -384,7 +384,7 @@ std::vector<Particle> SelectionTool::flaggedPhotons(MiniEvent_t &ev)
     photons.push_back(Particle(p4, 0, 22, qualityFlagsWord, ig, 1.0, unc));
 
     if(debug_) std::cout << "Photon #"<< photons.size() 
-                         << " pt=" << pt << "+/-" << pt*unc << " eta=" << p4.Eta()
+                         << " pt=" << pt << "+/-" << unc << " eta=" << p4.Eta()
                          << hex << " raw particle id bits=" << pid 
                          << " quality bits=" << qualityFlagsWord 
                          << dec << endl;
