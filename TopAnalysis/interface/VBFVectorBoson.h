@@ -135,6 +135,7 @@ private:
         float sihih,chiso,r9,hoe, ystar,relbpt,dphibjj;
 	double mindrl;
 
+        std::vector<TString> expSysts_;
         std::vector<WeightSysts_t> weightSysts_;
 
 	TRandom3 rnd;
