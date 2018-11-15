@@ -126,7 +126,7 @@ void VBFVectorBoson::RunVBFVectorBoson()
       relaxedTightPhotons                = selector->getRelaxedTightPhotons();
       tmpPhotons                         = selector->getQCDTmpPhotons();
       std::vector<Particle> &leptons     = selector->getSelLeptons(); 
-      std::vector<Jet>      &alljets     = selector->getJets();
+      std::vector<Jet>       alljets     = selector->getGoodJets(ev,30.,4.7,leptons,photons);
       int nTotalJets = alljets.size();
       std::vector<Jet> jets;
       std::vector<Particle> fakeACR;
@@ -202,11 +202,13 @@ void VBFVectorBoson::RunVBFVectorBoson()
 
       //categorize the event according to the boson kinematics
       //for the photon refine also the category according to the trigger  bit
-      TLorentzVector boson(0,0,0,0);     
+      TLorentzVector boson(0,0,0,0);
+      float bosonScaleUnc(0.);
       bool isHighPt(false),isVBF(false),isHighPtAndVBF(false),isHighPtAndOfflineVBF(false),isBosonPlusOneJet(false),isHighMJJ(false),isLowMJJ(false), isHighMJJLP(false),isLowMJJLP(false);
       sihih = 0, chiso = 0 ,r9 = 0, hoe = 0;
       if(chTag=="A") {        
         boson += photons[0];
+        bosonScaleUnc=photons[0].scaleUnc()/photons[0].Pt();
         sihih = ev.gamma_sieie[photons[0].originalReference()];
         chiso = ev.gamma_chargedHadronIso[photons[0].originalReference()];
         r9    = ev.gamma_r9[photons[0].originalReference()];
@@ -245,6 +247,8 @@ void VBFVectorBoson::RunVBFVectorBoson()
       } else {
         boson   += leptons[0];
         boson   += leptons[1];
+        bosonScaleUnc= TMath::Sqrt( pow(leptons[0].Pt()*leptons[1].scaleUnc(),2)+
+                                    pow(leptons[1].Pt()*leptons[0].scaleUnc(),2) )/boson.Pt();
         isVBF    = boson.Pt()>75 && fabs(boson.Rapidity())<1.442 && passVBFJetsTrigger;
         isHighPt = boson.Pt()>minBosonHighPt;
         isHighPtAndVBF = (isHighPt && isVBF);
@@ -271,11 +275,14 @@ void VBFVectorBoson::RunVBFVectorBoson()
       if(isHighPtAndOfflineVBF) cat[6]=true;
       if(isHighMJJ)             cat[7]=true;
       if(isLowMJJ)              cat[8]=true;
-      if(isHighMJJLP)             cat[9]=true;
-      if(isLowMJJLP)              cat[10]=true;
+      if(isHighMJJLP)           cat[9]=true;
+      if(isLowMJJLP)            cat[10]=true;
       category.set(cat);
       std::vector<TString> chTags( category.getChannelTags() );
-      
+      TString baseCategory(chTag);
+      if(isHighPt)   baseCategory="HighPt"+chTag;
+      else if(isVBF) baseCategory="VBF"+chTag;
+
       //leptons and boson
       mindrl = 9999.;
       for(auto &l: leptons) mindrl=min(l.DeltaR(boson),mindrl);
@@ -319,6 +326,9 @@ void VBFVectorBoson::RunVBFVectorBoson()
       // EVENT WEIGHTS //
       //////////////////
       float wgt(1.0);
+      std::vector<float>puWgts(3,1.0);
+      float l1prefireProb(1.0);
+      EffCorrection_t trigSF(1.0,0.),selSF(1.0,0.);
       if (!ev.isData) {
 
         // norm weight
@@ -326,31 +336,32 @@ void VBFVectorBoson::RunVBFVectorBoson()
             
         // pu weight
         ht->fill("puwgtctr",0,plotwgts);
-        double puWgt(lumi->pileupWeight(ev.g_pu,period)[0]);
-        std::vector<double>puPlotWgts(1,puWgt);
+        puWgts=lumi->pileupWeight(ev.g_pu,period);
+        std::vector<double>puPlotWgts(1,puWgts[0]);
         ht->fill("puwgtctr",1,puPlotWgts);
 
         //l1 prefire probability
-        float l1prefireProb=l1PrefireWR->getJetBasedCorrection(jets).first;
+        l1prefireProb=l1PrefireWR->getJetBasedCorrection(jets).first;
         wgt *= l1prefireProb;
 
-        // photon trigger*selection weights
-        float trigSF(1.0), selSF(1.0);
+        // photon trigger*selection weights        
         if(chTag=="A")
           {
-            trigSF *= gammaEffWR->getTriggerCorrection({},photons,{}, period).first;
-            selSF  *= gammaEffWR->getOfflineCorrection(photons[0], period).first;
+            trigSF = gammaEffWR->getTriggerCorrection({},photons,{}, period);
+            selSF  = gammaEffWR->getOfflineCorrection(photons[0], period);
           }
         else
           {
-            trigSF *=gammaEffWR->getTriggerCorrection(leptons,{},{}, period).first;
-            selSF  *=gammaEffWR->getOfflineCorrection(leptons[0], period).first;
-            selSF  *=gammaEffWR->getOfflineCorrection(leptons[1], period).first;
+            trigSF = gammaEffWR->getTriggerCorrection(leptons,{},{}, period);
+            selSF  = gammaEffWR->getOfflineCorrection(leptons[0], period);
+            EffCorrection_t sel2SF=gammaEffWR->getOfflineCorrection(leptons[1], period);
+            selSF.first *= sel2SF.first;
+            selSF.second = TMath::Sqrt( pow(selSF.second,2)+pow(sel2SF.second,2) );
           }
-        wgt *= puWgt*trigSF*selSF;
+        wgt *= puWgts[0]*trigSF.first*selSF.first;
         
        
-        // generaor level weights
+        // generator level weights
         wgt *= (ev.g_nw>0 ? ev.g_w[0] : 1.0);
 
         //update weight for plotter
@@ -381,15 +392,146 @@ void VBFVectorBoson::RunVBFVectorBoson()
 	  }
         }
 
-
-	//What is the final weight? 0 or 1 in the array?
+        //fill plots
 	evtWeight = cplotwgts[0]*xsec;
 	training = useForTraining(); 
 	fill( ev,  boson,  jets,  cplotwgts, c, mults, fakeACR, tightACR);
       }
+        
+      //experimental systs 
+      //don't do anything after this...
+      //repeat final category selection with varied objects/weights and re-evaluate mva
+      if(ev.isData) continue;
+      std::vector<std::pair<float,float> > mvaWithWeights;
+      selector->setDebug(false);
+      for(size_t is=0; is<expSysts_.size(); is++){
+        
+        //uncertainty
+        TString sname=expSysts_[is];
+        bool isUpVar(sname.Contains("up"));
+        
+        //base values and kinematics
+        TString icat(baseCategory);
+        float imva=vbfmva;
+        float iwgt=plotwgts[0];          
+        TLorentzVector iBoson(boson);
+        std::vector<Jet> ijets(jets);
+        bool reSelect(false);
+        
+        if(sname=="puup")        iwgt *= puWgts[1]/puWgts[0];
+        if(sname=="pudn")        iwgt *= puWgts[2]/puWgts[0];
+        if(sname=="trigup")      iwgt *= 1+trigSF.second/trigSF.first;
+        if(sname=="trigdn")      iwgt *= 1-trigSF.second/trigSF.first;
+        if(sname=="selup")       iwgt *= 1+selSF.second/selSF.first;
+        if(sname=="seldn")       iwgt *= 1-selSF.second/selSF.first;
+        if(sname=="l1prefireup") iwgt *= 1+0.3/l1prefireProb;
+        if(sname=="l1prefiredn") iwgt *= 1-0.3/l1prefireProb;
+        if(sname.Contains("aes") && chTag=="A")  {
+          reSelect=true;
+          iBoson *= (1+(isUpVar?1:-1)*bosonScaleUnc); 
+        }
+        if(sname.Contains("mes") && chTag=="MM") {
+          //technically we should re-select the leptons but given we're looking to high pT Z's
+          //assume effect is negligible and all that counts is the Z energy scale?
+          reSelect=true;
+          iBoson *= (1+(isUpVar?1:-1)*bosonScaleUnc); 
+        }
+        if(sname.Contains("JEC") || sname.Contains("JER") )  {
+          reSelect=true;
+          int jecIdx=-1;
+          if(sname.Contains("AbsoluteStat"))     jecIdx=0;
+          if(sname.Contains("AbsoluteScale"))    jecIdx=1; 
+          if(sname.Contains("AbsoluteMPFBias"))  jecIdx=2; 
+          if(sname.Contains("Fragmentation"))    jecIdx=3; 
+          if(sname.Contains("SinglePionECAL"))   jecIdx=4; 
+          if(sname.Contains("SinglePionHCAL"))   jecIdx=5; 
+          if(sname.Contains("FlavorPureGluon"))  jecIdx=6; 
+          if(sname.Contains("FlavorPureQuark"))  jecIdx=7; 
+          if(sname.Contains("FlavorPureCharm"))  jecIdx=8; 
+          if(sname.Contains("FlavorPureBottom")) jecIdx=9; 
+          if(sname.Contains("TimePtEta"))        jecIdx=10; 
+          if(sname.Contains("RelativeJEREC1"))   jecIdx=11; 
+          if(sname.Contains("RelativeJEREC2"))   jecIdx=12; 
+          if(sname.Contains("RelativeJERHF"))    jecIdx=13; 
+          if(sname.Contains("RelativePtBB"))     jecIdx=14; 
+          if(sname.Contains("RelativePtEC1"))    jecIdx=15; 
+          if(sname.Contains("RelativePtEC2"))    jecIdx=16; 
+          if(sname.Contains("RelativePtHF"))     jecIdx=17; 
+          if(sname.Contains("RelativeBal"))      jecIdx=18; 
+          if(sname.Contains("RelativeFSR"))      jecIdx=19; 
+          if(sname.Contains("RelativeStatFSR"))  jecIdx=20; 
+          if(sname.Contains("RelativeStatEC"))   jecIdx=21; 
+          if(sname.Contains("RelativeStatHF"))   jecIdx=22; 
+          if(sname.Contains("PileUpDataMC"))     jecIdx=23; 
+          if(sname.Contains("PileUpPtRef"))      jecIdx=24; 
+          if(sname.Contains("PileUpPtBB"))       jecIdx=25; 
+          if(sname.Contains("PileUpPtEC1"))      jecIdx=26; 
+          if(sname.Contains("PileUpPtEC2"))      jecIdx=27; 
+          if(sname.Contains("PileUpPtHF"))       jecIdx=28;
+          
+          //re-scale and re-select jets
+          std::vector<Jet> newJets = selector->getGoodJets(ev,30.,4.7,leptons,photons,jecIdx);
+          ijets.clear();
+          for(auto j : alljets) {
+            float unc=j.getScaleUnc();
+            j *= (1+(isUpVar ? 1 : -1)*unc);
+            if(j.Pt()<30) continue;
+            int idx=j.getJetIndex();
+            int jid=ev.j_id[idx];
+            bool passLoosePu((jid>>2)&0x1);
+            if(!passLoosePu) continue;
+            
+            //TODO: additional cleanup for noise? 
+            
+            ijets.push_back(j);
+          }
+        }
+        
+        //re-select if needed
+        if(reSelect) {
+          
+          if (ijets.size()<2) continue;
+          mjj=(ijets[0]+ijets[1]).M();
+          detajj=fabs(ijets[0].Eta()-ijets[1].Eta());
+          if(mjj<minMJJ) continue;
+          
+          //final event category
+          bool passVBFJetsTrigger(detajj>3.0 && mjj>highMJJcut);
+          bool isVBF(false),isHighPt(false);
+          if(chTag=="A") {
+            isVBF    = (selector->hasTriggerBit(vbfPhotonTrigger, ev.triggerBits) 
+                        && iBoson.Pt()>75 
+                        && fabs(iBoson.Eta())<1.442
+                        && passVBFJetsTrigger);
+            isHighPt = (selector->hasTriggerBit(highPtPhotonTrigger, ev.triggerBits) 
+                        && iBoson.Pt()>minBosonHighPt);
+          }
+          else {
+            isVBF    = (iBoson.Pt()>75 
+                        && fabs(iBoson.Rapidity())<1.442 
+                        && passVBFJetsTrigger);
+            isHighPt = (iBoson.Pt()>minBosonHighPt);
+          }
+          
+          //set the new tag
+          if(isHighPt) icat="HighPt"+chTag;
+          else if(isVBF) icat="VBF"+chTag;
+          else continue;
+          
+          //re-evaluate MVA
+          //TODO Nadjieh
+          //here one needs to update the variables as needed using the updated kinematics
+          imva = reader->EvaluateMVA(mvaMethod[0]);
+        }
+        
+        //fill with new values/weights
+        std::vector<double> eweights(1,iwgt);
+        ht->fill2D("vbfmva_exp",imva,is,eweights,icat);
+      }
+      selector->setDebug(debug);
+
     }
 
-  
   //close input file
   f->Close();
 
@@ -542,7 +684,19 @@ void VBFVectorBoson::bookHistograms(){
   //final analyses distributions
   ht->addHist("evcount",         new TH1F("evcount",        ";Pass;Events",1,0,1));  
   ht->addHist("vbfmva",          new TH1F("vbfmva",         ";VBF MVA;Events",20,-1,1));  
-  ht->addHist("vbfmva_exp",      new TH2F("vbfmva_exp",     ";VBF MVA;Systs;Events",20,-1,1,14,0,14));  
+
+  TString expSystNames[]={"puup","pudn","trigup","trigdn","selup","seldn","l1prefireup","l1prefiredn",
+                          "aesup","aesdn",
+                          "mesup","mesdn",
+                          "JERup","JERdn",
+                          "AbsoluteStatJECup","AbsoluteScaleJECup","AbsoluteMPFBiasJECup","FragmentationJECup","SinglePionECALJECup","SinglePionHCALJECup","FlavorPureGluonJECup","FlavorPureQuarkJECup","FlavorPureCharmJECup","FlavorPureBottomJECup","TimePtEtaJECup","RelativeJEREC1JECup","RelativeJEREC2JECup","RelativeJERHFJECup","RelativePtBBJECup","RelativePtEC1JECup","RelativePtEC2JECup","RelativePtHFJECup","RelativeBalJECup","RelativeFSRJECup","RelativeStatFSRJECup","RelativeStatECJECup","RelativeStatHFJECup","PileUpDataMCJECup","PileUpPtRefJECup","PileUpPtBBJECup","PileUpPtEC1JECup","PileUpPtEC2JECup","PileUpPtHFJECup",
+                          "AbsoluteStatJECdn","AbsoluteScaleJECdn","AbsoluteMPFBiasJECdn","FragmentationJECdn","SinglePionECALJECdn","SinglePionHCALJECdn","FlavorPureGluonJECdn","FlavorPureQuarkJECdn","FlavorPureCharmJECdn","FlavorPureBottomJECdn","TimePtEtaJECdn","RelativeJEREC1JECdn","RelativeJEREC2JECdn","RelativeJERHFJECdn","RelativePtBBJECdn","RelativePtEC1JECdn","RelativePtEC2JECdn","RelativePtHFJECdn","RelativeBalJECdn","RelativeFSRJECdn","RelativeStatFSRJECdn","RelativeStatECJECdn","RelativeStatHFJECdn","PileUpDataMCJECdn","PileUpPtRefJECdn","PileUpPtBBJECdn","PileUpPtEC1JECdn","PileUpPtEC2JECdn","PileUpPtHFJECdn"};
+  
+  size_t nexpSysts=sizeof(expSystNames)/sizeof(TString);
+  expSysts_=std::vector<TString>(expSystNames,expSystNames+nexpSysts);  
+  ht->addHist("vbfmva_exp",      new TH2F("vbfmva_exp",     ";VBF MVA;Systs;Events",20,-1,1,nexpSysts,0,nexpSysts));
+  for(size_t is=0; is<nexpSysts; is++)
+    ht->get2dPlots()["vbfmva_exp"]->GetYaxis()->SetBinLabel(is+1,expSystNames[is]);
  
   size_t nthSysts(weightSysts_.size());
   if(nthSysts>0){
