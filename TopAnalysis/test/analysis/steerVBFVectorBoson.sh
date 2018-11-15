@@ -13,7 +13,7 @@ if [ "$#" -lt 1 ]; then
     exit 1; 
 fi
 
-if [ "$#" -gt 1 ]; then 
+if [ "$#" -gt 2 ]; then 
     QCD=$3
 fi
 #to run locally use local as queue + can add "--njobs 8" to use 8 parallel jobs
@@ -47,15 +47,15 @@ case $WHAT in
         ;;
 
     SEL )
-	json=data/era2017/vbf_samples.json;
+	json=data/era2017/tmp.json;
 #	json=vbf_syst_samples.json;
-	extraOpts="" #" --SRfake" #"--mvatree"
+	extraOpts=" --mvatree" #" --SRfake" #"--mvatree"
 	python scripts/runLocalAnalysis.py \
-	    -i ${eosdir} --only ${json} --exactonly \
+	    -i ${eosdir} \
             -o ${outdir}/${githash}/${EXTRA} \
             --farmappendix ${githash} \
             -q ${queue} --genWeights genweights_${githash}.root \
-            --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts ${extraOpts};
+            --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --only ${json} --skip DR04 --runSysts ${extraOpts};
 	;;
 
 
@@ -73,7 +73,7 @@ case $WHAT in
 
     SELJETHT )
 	json=data/era2017/JetHT.json;
-	extraOpts=" --CR"
+	extraOpts=""
 	echo ${QCD} 
 	if [[ ${QCD} == "QCDTemp" ]]; then
 	    echo 'I do QCD Template photon selection'
@@ -88,7 +88,7 @@ case $WHAT in
             -o ${outdir}/${githash}/${EXTRA}${QCD} \
             --farmappendix ${githash}${EXTRA}${QCD} \
             -q ${queue} --genWeights genweights_${githash}.root \
-            --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --only ${json} --runSysts ${extraOpts};
+            --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --only ${json} --runSysts ${extraOpts} --skipexisting;
 	;;
 
     SELWEIGHTED )
@@ -103,9 +103,9 @@ case $WHAT in
         if [[ "${EXTRA}" = *"2018"* ]]; then
             gh=${githash2018}
         fi
-	if [[ "${EXTRA}" = *"JetHT"* ]]; then
-	    gh=${githashJetHT}
-	fi
+	# if [[ "${EXTRA}" = *"JetHT"* ]]; then
+	#     gh=${githashJetHT}
+	# fi
 	./scripts/mergeOutputs.py ${outdir}/${gh}/${EXTRA};
 	;;
 
