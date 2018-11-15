@@ -407,7 +407,7 @@ void VBFVectorBoson::RunVBFVectorBoson()
         //base values and kinematics
         TString icat(baseCategory);
         float imva=vbfmva;
-        float iwgt=cplotwgts[0];          
+        float iwgt=plotwgts[0];          
         TLorentzVector iBoson(boson);
         std::vector<Jet> ijets(jets);
         bool reSelect(false);
