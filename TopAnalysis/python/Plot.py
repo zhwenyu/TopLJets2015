@@ -64,7 +64,7 @@ class Plot(object):
         self.plotformats = ['pdf','png']
         self.savelog = False
         self.doChi2 = False
-        self.ratiorange = (0.4,1.6)
+        self.ratiorange = [0.4,1.6]
         self.frameMin=0.01
         self.frameMax=1.45
         self.mcUnc=0
