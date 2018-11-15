@@ -28,6 +28,7 @@ def main():
     parser.add_option(      '--noStack',     dest='noStack',     help='don\'t stack distributions',     default=False,             action='store_true')
     parser.add_option(      '--saveLog',     dest='saveLog' ,    help='save log versions of the plots', default=False,             action='store_true')
     parser.add_option(      '--silent',      dest='silent' ,     help='only dump to ROOT file',         default=False,             action='store_true')
+    parser.add_option(      '--ratioRange',  dest='ratioRange' , help='ratio range',                    default="0.4,1.6",         type='string')
     parser.add_option(      '--onlyData',    dest='onlyData' ,   help='only plots containing data',     default=False,             action='store_true')
     parser.add_option(      '--saveTeX',     dest='saveTeX' ,    help='save as tex file as well',       default=False,             action='store_true')
     parser.add_option(      '--rebin',       dest='rebin',       help='rebin factor',                   default=1,                 type=int)
@@ -38,6 +39,8 @@ def main():
     parser.add_option(      '--puNormSF',    dest='puNormSF',    help='Use this histogram to correct pu weight normalization', default=None, type='string')
     parser.add_option(      '--procSF',      dest='procSF',      help='Use this to scale a given process component e.g. "W":.wjetscalefactors.pck,"DY":dyscalefactors.pck', default=None, type='string')
     (opt, args) = parser.parse_args()
+
+    opt.ratioRange=[float(x) for x in opt.ratioRange.split(',')]
 
     #read lists of samples
     samplesList=[]
@@ -196,12 +199,15 @@ def main():
                             if opt.rebin>1:  hist.Rebin(opt.rebin)
 
                             #create new plot if needed
-                            if not key in plots : plots[key]=Plot(key,com=opt.com)
+                            if not key in plots : 
+                                plots[key]=Plot(key,com=opt.com)
+                                plots[key].ratiorange=opt.ratioRange
 
                             #add process to plot
                             plots[key].add(h=hist,title=hist.GetTitle(),color=sp[2],isData=sample[1],spImpose=isSignal,isSyst=(isSyst or keyIsSyst))
                             
-                    except:
+                    except Exception as e:
+                        print e
                         pass
 
     #show plots
