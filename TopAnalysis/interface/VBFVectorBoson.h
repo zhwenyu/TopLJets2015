@@ -17,6 +17,8 @@
 #include "TopLJets2015/TopAnalysis/interface/VBFVectorBoson.h"
 #include "TopLJets2015/TopAnalysis/interface/EfficiencyScaleFactorsWrapper.h"
 #include "TopLJets2015/TopAnalysis/interface/L1PrefireEfficiencyWrapper.h"
+#include "TopLJets2015/TopAnalysis/interface/GeneratorTools.h"
+
 #include "PhysicsTools/CandUtils/interface/EventShapeVariables.h"
 
 #include <vector>
@@ -132,6 +134,8 @@ private:
 	MiniEvent_t ev;
         float sihih,chiso,r9,hoe, ystar,relbpt,dphibjj;
 	double mindrl;
+
+        std::vector<WeightSysts_t> weightSysts_;
 
 	TRandom3 rnd;
 	

@@ -72,7 +72,7 @@ int main(int argc, char* argv[])
         normH->SetDirectory(0);
       puH=(TH1F *)normF->Get(normTag+"_pu");
       if(puH)
-        puH->SetDirectory(0);    
+        puH->SetDirectory(0);   
       normF->Close();
     }
   if(normH==0)
