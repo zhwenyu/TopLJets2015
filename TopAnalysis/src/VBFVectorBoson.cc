@@ -178,6 +178,7 @@ void VBFVectorBoson::RunVBFVectorBoson()
       //Category selection
       if(chTag!="A" && chTag!="MM") continue;
 
+      
       category.reset();
       std::vector<bool> cat(8,0);
       if(chTag == "MM") cat[0] = true;
@@ -226,7 +227,7 @@ void VBFVectorBoson::RunVBFVectorBoson()
         isHighPtAndVBF = (isHighPt && isVBF);
         isBosonPlusOneJet=(isHighPt && nTotalJets==1);
 	// A very simple categorization based on MJJ and boson Pt
-	isHighMJJ = (isVBF && (photons[0].Pt() < minBosonHighPt) && passMJJ);
+	isHighMJJ = (isVBF && (photons[0].Pt() < minBosonHighPt) && passMJJ );
 
 	isLowMJJ  = (passJets && isHighPt);
 
@@ -391,6 +392,10 @@ void VBFVectorBoson::RunVBFVectorBoson()
 	evtWeight = cplotwgts[0]*xsec;
 	training = useForTraining(); 
 	fill( ev,  boson,  jets,  cplotwgts, c, mults, fakeACR, tightACR);
+	if(skimtree) {
+	  if (float(iev) > nentries*0.2) break;
+	  newTree->Fill();
+	}
       }
     }
 
@@ -535,6 +540,21 @@ void VBFVectorBoson::bookHistograms(){
   ht->addHist("jet_zg", 	  new TH1F("jet_zg",          ";Jet shape var. zg;Jets",100,-1,1));  
   ht->addHist("jet_gaptd", 	  new TH1F("jet_gaptd",          ";Jet shape var. gaptd;Jets",100,-1,1));  
   ht->addHist("jet_gawidth",      new TH1F("jet_gawidth",          ";Jet shape var. gawidth;Jets",100,-1,1));
+  // Study the jet bump
+  ht->addHist("pumvacentj",       new TH2F("pumvacentj",       ";Cent jet MVA puId; #eta_{j}",50,-1,1,25,0,5));  
+  ht->addHist("pumvafwdj",        new TH2F("pumvafwdj",        ";Fwd jet MVA puId; #eta_{j}",50,-1,1,25,0,5));  
+  ht->addHist("ptcentj",          new TH2F("ptcentj",          ";Cent Jet p_{T}; #eta_{j}",25,20,280,25,0,5));  
+  ht->addHist("ptfwdj",           new TH2F("ptfwdj",           ";Fwd Jet p_{T}; #eta_{j}",25,30,280,25,0,5)); 
+  ht->addHist("multcentj",        new TH2F("multcentj",        ";N_{constit} cent jet; #eta_{j}",20,0,20,25,0,5));  
+  ht->addHist("multfwdj",         new TH2F("multfwdj",         ";N_{constit} fwd jet; #eta_{j}",20,0,20,25,0,5)); 
+  ht->addHist("sfcentj",          new TH2F("sfcentj",          ";SF cent jet; #eta_{j}",50,0,2,25,0,5));  
+  ht->addHist("sffwdj",           new TH2F("sffwdj",           ";SF fwd jet; #eta_{j}",50,0,2,25,0,5)); 
+  ht->addHist("rawptcentj",       new TH2F("rawptcentj",       ";Raw pt cent jet; #eta_{j}",25,20,280,25,0,5));  
+  ht->addHist("rawptfwdj",        new TH2F("rawptfwdj",        ";Raw pt fwd jet; #eta_{j}",25,20,280,25,0,5)); 
+  ht->addHist("gawidthcentj",     new TH2F("gawidthcentj",     ";gawidth cent jet;#eta_{j}",100,-1,1,25,0,5));
+  ht->addHist("gawidthfwdj",      new TH2F("gawidthfwdj",      ";gawidth fwd jet;#eta_{j}",100,-1,1,25,0,5));
+  ht->addHist("emfcentj",         new TH2F("emfcentj",         ";emf cent jet;#eta_{j}",100,0,2,25,0,5));
+  ht->addHist("emffwdj",          new TH2F("emffwdj",          ";emf fwd jet;#eta_{j}",100,0,2,25,0,5));
   //additional variables from https://link.springer.com/content/pdf/10.1140/epjc/s10052-017-5315-6.pdf
   ht->addHist("jjetas", 	  new TH1F("jjetas",          ";#eta_{j1}#eta_{j2};Events",200,-25,25));  
   ht->addHist("centjy",		  new TH1F("centjy",          ";Central jet rapidity;Jets",25,0,3));  
@@ -576,6 +596,7 @@ void VBFVectorBoson::loadCorrections(){
 void VBFVectorBoson::addMVAvars(){
   newTree->Branch("centralEta", &centraleta);
   newTree->Branch("subleadj_pt", &subleadj_pt);
+  newTree->Branch("leadj_pt", &leadj_pt);
   newTree->Branch("mjj", &mjj);
   newTree->Branch("detajj", &detajj);
   newTree->Branch("jjpt", &jjpt);
@@ -599,7 +620,6 @@ void VBFVectorBoson::addMVAvars(){
   newTree->Branch("dphivj3", &dphivj3);
   newTree->Branch("evtWeight", &evtWeight);
   newTree->Branch("mht", &mht);
-  newTree->Branch("balance", &balance);
   newTree->Branch("ht", &scalarht);
   newTree->Branch("isotropy", &isotropy);
   newTree->Branch("circularity",&circularity);
@@ -623,6 +643,7 @@ void VBFVectorBoson::initVariables(std::vector<Jet> jets){
   subleadj_c2_02   = (jets.size()>=2 ? ev.j_c2_02[jets[1].getJetIndex()] : -99);
   subleadj_pt      = (jets.size()>=2 ? ev.j_pt[jets[1].getJetIndex()] : -99);
   lead_qg          = (jets.size()>=1 ? ev.j_qg[jets[0].getJetIndex()] : -99);
+  leadj_pt          = (jets.size()>=1 ? ev.j_qg[jets[0].getJetIndex()] : -99);
   ystar       = -99;
   balance     = -99;
   relbpt      = -99;
@@ -706,6 +727,7 @@ void VBFVectorBoson::fill(MiniEvent_t ev, TLorentzVector boson, std::vector<Jet>
   //jet histos
   centraleta = 9999;
   forwardeta = -9999;
+  int idxFwd(-1), idxCent(-1);
   for(size_t ij=0; ij<min(size_t(2),jets.size());ij++) {
     TString jtype(ij==0?"lead":"sublead");
     ht->fill(jtype+"pt",       jets[ij].Pt(),        cplotwgts,c);          
@@ -718,9 +740,33 @@ void VBFVectorBoson::fill(MiniEvent_t ev, TLorentzVector boson, std::vector<Jet>
     ht->fill("jet_gaptd", 	ev.j_gaptd[jets[ij].getJetIndex()]	  ,  cplotwgts,c);
     ht->fill("jet_gawidth", ev.j_gawidth[jets[ij].getJetIndex()]	  ,  cplotwgts,c);
     centraleta=min(centraleta,float(fabs(jets[ij].Eta())));
+    if(centraleta == float(fabs(jets[ij].Eta()))) idxCent = ij;
     forwardeta=max(forwardeta,float(fabs(jets[ij].Eta())));
+    if (forwardeta == float(fabs(jets[ij].Eta()))) idxFwd = ij;
   }
   
+  if(idxFwd != -1){
+    ht->fill2D("pumvafwdj",     ev.j_pumva[jets[idxFwd].getJetIndex()],  fabs(jets[idxFwd].Eta()), cplotwgts,c);
+    ht->fill2D("ptfwdj",        jets[idxFwd].Pt(),                       fabs(jets[idxFwd].Eta()), cplotwgts,c);   
+    ht->fill2D("multfwdj",      ev.j_mult[jets[idxFwd].getJetIndex()],   fabs(jets[idxFwd].Eta()), cplotwgts,c);
+    ht->fill2D("sffwdj",        ev.j_rawsf[jets[idxFwd].getJetIndex()],  fabs(jets[idxFwd].Eta()), cplotwgts,c);
+    if(ev.j_rawsf[jets[idxFwd].getJetIndex()] != 0)
+      ht->fill2D("rawptfwdj",     jets[idxFwd].Pt()/ev.j_rawsf[jets[idxFwd].getJetIndex()],  fabs(jets[idxFwd].Eta()), cplotwgts,c);   
+    ht->fill2D("gawidthfwdj",   ev.j_gawidth[jets[idxFwd].getJetIndex()],  fabs(jets[idxFwd].Eta()), cplotwgts,c);   
+    ht->fill2D("emffwdj",   ev.j_emf[jets[idxFwd].getJetIndex()],  fabs(jets[idxFwd].Eta()), cplotwgts,c);   
+  }
+  if(idxCent != -1){
+    ht->fill2D("pumvacentj", ev.j_pumva[jets[idxCent].getJetIndex()], fabs(jets[idxCent].Eta()), cplotwgts,c);  
+    ht->fill2D("ptcentj",    jets[idxCent].Pt(),                      fabs(jets[idxCent].Eta()), cplotwgts,c);    
+    ht->fill2D("multcentj",  ev.j_mult[jets[idxCent].getJetIndex()],  fabs(jets[idxCent].Eta()), cplotwgts,c);  
+    ht->fill2D("sfcentj",    ev.j_rawsf[jets[idxCent].getJetIndex()], fabs(jets[idxCent].Eta()), cplotwgts,c);    
+    if(ev.j_rawsf[jets[idxCent].getJetIndex()] != 0)
+      ht->fill2D("rawptcentj", jets[idxCent].Pt()/ev.j_rawsf[jets[idxCent].getJetIndex()], fabs(jets[idxCent].Eta()), cplotwgts,c);
+    ht->fill2D("gawidthcentj", ev.j_gawidth[jets[idxCent].getJetIndex()], fabs(jets[idxCent].Eta()), cplotwgts,c);     
+    ht->fill2D("emfcentj",     ev.j_emf[jets[idxCent].getJetIndex()], fabs(jets[idxCent].Eta()), cplotwgts,c);     
+  }
+
+
   if(jets.size() >= 2){
     jjetas = jets[0].Eta()*jets[1].Eta();
     //dphivj0 = fabs(jets[0].DeltaPhi(boson));
@@ -777,6 +823,4 @@ void VBFVectorBoson::fill(MiniEvent_t ev, TLorentzVector boson, std::vector<Jet>
     ht->fill("vbfmva",       vbfmva, cplotwgts,c);
   if(!(doBlindAnalysis && vbffisher<-99))
     ht->fill("vbffisher",       vbffisher, cplotwgts,c);
-
-  if(skimtree) newTree->Fill();
 }

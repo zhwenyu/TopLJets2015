@@ -47,15 +47,16 @@ case $WHAT in
         ;;
 
     SEL )
-	json=data/era2017/vbf_samples.json;
+	json=data/era2017/vbf_samples.json
 #	json=vbf_syst_samples.json;
+	echo ${json}
 	extraOpts="" #" --SRfake" #"--mvatree"
 	python scripts/runLocalAnalysis.py \
 	    -i ${eosdir} \
             -o ${outdir}/${githash}/${EXTRA} \
             --farmappendix ${githash} \
             -q ${queue} --genWeights genweights_${githash}.root \
-            --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --only ${json} --skip DR04 --runSysts ${extraOpts};
+            --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --only ${json} --skip DR04 --skipexisting --runSysts ${extraOpts};
 	;;
 
 
@@ -73,7 +74,7 @@ case $WHAT in
 
     SELJETHT )
 	json=data/era2017/JetHT.json;
-	extraOpts=""
+	extraOpts=" --CR"
 	echo ${QCD} 
 	if [[ ${QCD} == "QCDTemp" ]]; then
 	    echo 'I do QCD Template photon selection'
@@ -138,7 +139,7 @@ case $WHAT in
 	#python scripts/plotter.py ${commonOpts} -j ${syst_json} ${kFactors} --only HighMJJ,LowMJJ --silent -o syst_plotter.root
 
         #trigger efficiencies
-        python test/analysis/computeVBFTriggerEff.py -p ${plotOutDir}/plotter.root -o ${plotOutDir};
+        #python test/analysis/computeVBFTriggerEff.py -p ${plotOutDir}/plotter.root -o ${plotOutDir};
 
         #transfer factors
 	#python test/analysis/computeTransferFactor.py -p ${plotOutDir}/plotter.root -s ${plotOutDir}/syst_plotter.root -o ${plotOutDir} --var vbffisher --binList -2,-0.5,-0.4,-0.3,-0.2,-0.1,0,0.1,0.2,0.3,0.4,0.5,2,3;

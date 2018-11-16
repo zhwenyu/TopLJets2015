@@ -19,7 +19,7 @@ void TMVAGlob::NormalizeHists( TH1* sig, TH1* bkg )
    }
 }
 
-int TMVAClassification( TString myMethodList , TString extention, BDTOptimizer* bdt_options, TString infname, TString category )
+int TMVAClassification( TString myMethodList , TString extention, BDTOptimizer* bdt_options, TString sigName, TString bkgName, TString category )
 {
 
   TMVA::MethodBDT* method;
@@ -61,14 +61,14 @@ int TMVAClassification( TString myMethodList , TString extention, BDTOptimizer* 
    TMVA::Factory *factory = new TMVA::Factory( extention , outputFile,
                                                "!V:!Silent:Color:DrawProgressBar:Transformations=I:AnalysisType=Classification" );
    
-   TFile *inputS = TFile::Open( infname + "/signal.root" ); // To be fixed
+   TFile *inputS = TFile::Open(sigName ); // To be fixed
    TTree *signalTree     = (TTree*)inputS->Get("data"); // To be fixed
    Double_t signalWeight     = 1.0;
    TString default_w_str = "evtWeight";
    
    // TMVA::DataLoader *dataloader = NULL;
    DataLoaderWrapper * dataloader = NULL;
-   TFile *inputB = TFile::Open( infname + "/backgrounds.root" ); //To be fixed
+   TFile *inputB = TFile::Open( bkgName ); //To be fixed
    TTree *background  = (TTree*)inputB->Get("data");
 
    if(bdt_options){
@@ -92,7 +92,7 @@ int TMVAClassification( TString myMethodList , TString extention, BDTOptimizer* 
    TString nTrainBkg = "nTrain_Background=";
    //HighMJJ
    if (isHighMJJ){
-     cut += " && mjj > 1000 && gamma_pt[0] < 200";
+     cut += " && mjj > 1000 && gamma_pt[0] < 200 && j_pt[0]>50";
      nTrainBkg=nTrainBkg+"5000";
    } 
    //LowMJJ
@@ -110,7 +110,13 @@ int TMVAClassification( TString myMethodList , TString extention, BDTOptimizer* 
    TCut mycuts = TCut(cut);
    TCut mycutb = TCut(cut) || dyCut;
 
-   if (Use["VBF"]) dataloader->setBestVars(isHighMJJ,false); 
+   if (Use["VBF"]) {
+     if(isLowMJJ)
+       dataloader->setLowMJJVariables(); 
+     else if (isHighMJJ)
+       dataloader->setHighMJJVariables(); 
+     else dataloader->setAllVariables(false); 
+   }
    else if (Use["Cuts"] || Use["CutsD"]) dataloader->setCutOptVars();
    else if (Use["Fisher"] || Use["BoostedFisher"]) dataloader->setBestVars(isHighMJJ, false);
   
@@ -123,7 +129,8 @@ int TMVAClassification( TString myMethodList , TString extention, BDTOptimizer* 
  
    dataloader->PrepareTrainingAndTestTree( mycuts, mycutb,
 					   //					     "nTrain_Signal=1000:nTrain_Background=5000:SplitMode=Random:NormMode=NumEvents:!V");// To use the info in the Tree
-					     "nTrain_Signal=1000:"+nTrainBkg+":SplitMode=Random:NormMode=NumEvents:!V");// To use the info in the Tree
+					   //  "nTrain_Signal=1000:"+nTrainBkg+":SplitMode=Random:NormMode=NumEvents:!V");// To use the info in the Tree
+					   "nTrain_Signal=0:nTest_Signal=0:nTrain_Background=0:nTest_Background=0:SplitMode=Alternate:NormMode=None:!V");// To use the info in the Tree
 
      
    if( Use["VBF"] ){
