@@ -17,6 +17,7 @@ class EfficiencyScaleFactorsWrapper
 {
  public:
   EfficiencyScaleFactorsWrapper(bool isData,TString era);
+  EfficiencyScaleFactorsWrapper(bool isData,TString era,std::map<TString,TString> cfgMap);
   EffCorrection_t getTriggerCorrection(std::vector<Particle> leptons={}, 
                                        std::vector<Particle> photons={},
                                        std::vector<Particle> jets={},
@@ -29,6 +30,7 @@ class EfficiencyScaleFactorsWrapper
   int era_;
   std::map<TString,TH2 *> scaleFactorsH_;
   std::map<TString,TGraphAsymmErrors *> scaleFactorsGr_;
+  std::map<TString,TString> cfgMap_;
 };
 
 #endif

@@ -16,6 +16,13 @@ EfficiencyScaleFactorsWrapper::EfficiencyScaleFactorsWrapper(bool isData,TString
   init(era);
 }
 
+EfficiencyScaleFactorsWrapper::EfficiencyScaleFactorsWrapper(bool isData,TString era,std::map<TString,TString> cfgMap):
+  cfgMap_(cfgMap)
+{
+  if(isData) return;
+  init(era);
+}
+
 //
 void EfficiencyScaleFactorsWrapper::init(TString era)
 {
@@ -29,11 +36,20 @@ void EfficiencyScaleFactorsWrapper::init(TString era)
            << "\tDon't forget to fix these and update these items!" << endl;
 
       //PHOTONS
-      TString url(era+"/2017_PhotonsMVAwp80.root");
+      TString gid("MVAwp80");
+      if(cfgMap_.find("g_id")!=cfgMap_.end()) gid=cfgMap_["g_id"]; 
+      TString url(era+"/2017_Photons"+gid+".root");
       gSystem->ExpandPathName(url);
       TFile *fIn=TFile::Open(url);
       scaleFactorsH_["g_id"]=(TH2 *)fIn->Get("EGamma_SF2D")->Clone();
       scaleFactorsH_["g_id"]->SetDirectory(0);
+      fIn->Close();
+
+      url=era+"/egammaEffi.txt_EGM2D.root";
+      gSystem->ExpandPathName(url);
+      fIn=TFile::Open(url);
+      scaleFactorsH_["g_rec"]=(TH2 *)fIn->Get("EGamma_SF2D")->Clone();
+      scaleFactorsH_["g_rec"]->SetDirectory(0);     
       fIn->Close();
 
       //MUONS
@@ -52,16 +68,21 @@ void EfficiencyScaleFactorsWrapper::init(TString era)
       fIn->Close();
       */
 
+      TString mid("TightID");
+      if(cfgMap_.find("m_id")!=cfgMap_.end()) mid=cfgMap_["m_id"];
       url=era+"/RunBCDEF_SF_MuID.root";
       gSystem->ExpandPathName(url);
       fIn=TFile::Open(url);
-      scaleFactorsH_["m_id"]=(TH2F *)fIn->Get("NUM_TightID_DEN_genTracks_pt_abseta")->Clone();
+      scaleFactorsH_["m_id"]=(TH2F *)fIn->Get("NUM_"+mid+"_DEN_genTracks_pt_abseta")->Clone();
       scaleFactorsH_["m_id"]->SetDirectory(0);
 
+      TString miso("TightRelIso"),mid4iso(mid);
+      if(cfgMap_.find("m_iso")!=cfgMap_.end())    miso=cfgMap_["m_iso"];
+      if(cfgMap_.find("m_id4iso")!=cfgMap_.end()) mid4iso=cfgMap_["m_id4iso"];
       url=era+"/RunBCDEF_SF_MuISO.root";
       gSystem->ExpandPathName(url);
       fIn=TFile::Open(url);
-      scaleFactorsH_["m_iso"]=(TH2F *)fIn->Get("NUM_TightRelIso_DEN_TightIDandIPCut_pt_abseta")->Clone();
+      scaleFactorsH_["m_iso"]=(TH2F *)fIn->Get("NUM_"+miso+"_DEN_"+mid4iso+"_pt_abseta")->Clone();
       scaleFactorsH_["m_iso"]->SetDirectory(0);
 
 
@@ -82,7 +103,9 @@ void EfficiencyScaleFactorsWrapper::init(TString era)
       scaleFactorsH_["e_rec"]->SetDirectory(0);     
       fIn->Close();
       
-      url=era+"/2017_ElectronMVA80.root";
+      TString eid("MVA80");
+      if(cfgMap_.find("e_id")!=cfgMap_.end()) eid=cfgMap_["e_id"]; 
+      url=era+"/2017_Electron"+eid+".root";
       gSystem->ExpandPathName(url);
       fIn=TFile::Open(url);      
       scaleFactorsH_["e_id"]=(TH2 *)fIn->Get("EGamma_SF2D")->Clone();
