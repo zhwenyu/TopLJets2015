@@ -86,7 +86,7 @@ void RunExclusiveTop(TString filename,
   ADDVAR(&ev.met_pt,"met_pt","F",outT);
   ADDVAR(&ev.met_phi,"met_phi","F",outT);
   ADDVAR(&ev.met_sig,"met_sig","F",outT);
-  TString fvars[]={"evwgt", "dilcode", 
+  TString fvars[]={"evwgt", "evcat", 
                    "l1pt", "l1eta", "l1phi", "ml1", "l1id", "mt1",
                    "l2pt", "l2eta", "l2phi", "ml2", "l2id", "mt2",
                    "bosonpt", "bosonptunc","bosoneta", "bosonphi", "mboson", "bosonht", "mtboson", 
@@ -199,7 +199,7 @@ void RunExclusiveTop(TString filename,
       TString gen_cat("");
       if(!ev.isData){
         std::vector<Particle> genLeptons=selector.getGenLeptons(ev,20.,2.5);
-        std::vector<Particle> genPhotons=selector.getGenPhotons(ev,50,2.5);
+        std::vector<Particle> genPhotons=selector.getGenPhotons(ev,50.,2.5);
         
         if(genLeptons.size()>=2) {
           gen_pt=(genLeptons[0]+genLeptons[1]).Pt();
@@ -297,7 +297,8 @@ void RunExclusiveTop(TString filename,
       
       //identify the offline final state from the leading leptons or the photon
       int l1idx(0),l2idx(1);
-      std::vector<Particle> leptons = selector.flaggedLeptons(ev);      
+      std::vector<Particle> leptons = selector.flaggedLeptons(ev);     
+      leptons = selector.selLeptons(leptons,SelectionTool::LOOSE,SelectionTool::MVA90,20,2.5);
       std::vector<Particle> photons=selector.flaggedPhotons(ev);
       photons=selector.selPhotons(photons,SelectionTool::MVA90,leptons,200.,2.4);
 
@@ -329,12 +330,12 @@ void RunExclusiveTop(TString filename,
         passMediumSel = (isTrigSafe && isLeadingMedium && isSubLeadingMedium);        
       }
       else if(photons.size()>0){
-        bool isTrigSafe(photons[0].Pt()>200 && fabs(photons[0].Eta()<2.4));
+        bool isTrigSafe(photons[0].Pt()>200 && fabs(photons[0].Eta())<2.4);
         bool isTight(photons[0].hasQualityFlag(SelectionTool::MVA80));
         passTightSel=(isTrigSafe && isTight);
         passMediumSel=isTrigSafe;
       }
-    
+
       //apply selection
       TString selCat("");
       int selCode(0);
@@ -381,7 +382,7 @@ void RunExclusiveTop(TString filename,
         llR=computeRsq(lm,lp,met);
         mtm=computeMT(lm,met);
         mtp=computeMT(lp,met);        
-      }else{
+      }else if(photons.size()>0l) {
         selCode=22;
         isSF=false;
         isSS=false;
@@ -391,9 +392,9 @@ void RunExclusiveTop(TString filename,
         bosonht=boson.Pt();
       }
       mtboson=computeMT(boson,met);
-      
+    
       //further selection for dileptons
-      if(selCat!=22 && mass<20) continue;
+      if(selCode!=22 && mass<20) continue;
       isZ=( isSF && !isSS && fabs(mass-91)<10);
       isA=(selCode==22);
 
@@ -454,10 +455,8 @@ void RunExclusiveTop(TString filename,
         }
       
       //baseline categories and additional stuff produced with the dilepton
-      std::vector<TString> cats(1,"inc");
-      if(selCode!=22) 
-        selCat = (isSS ? "ss" : "os")+selCat;
-      cats.push_back(selCat);       
+      std::vector<TString> cats(1,selCat);
+      if(boson.Pt()>50) cats.push_back(selCat+"highpt");
         
       //selection efficiency                   
       ht.fill("mll",  gen_m,  trivialwgts,gen_cat+"rec");
@@ -481,9 +480,14 @@ void RunExclusiveTop(TString filename,
         
         // lepton trigger*selection weights
         EffCorrection_t trigSF(1.,0.); // = lepEffH.getTriggerCorrection(leptons,{},{},period);
-        EffCorrection_t  sel1SF = lepEffH.getOfflineCorrection(leptons[l1idx], period);
-        EffCorrection_t  sel2SF = lepEffH.getOfflineCorrection(leptons[l2idx], period);
-        
+        EffCorrection_t sel1SF(1.,0.),sel2SF(1.,0.);
+        if(selCode!=22){
+          sel1SF = lepEffH.getOfflineCorrection(leptons[l1idx], period);
+          sel2SF = lepEffH.getOfflineCorrection(leptons[l2idx], period);
+        }else{
+          sel1SF = lepEffH.getOfflineCorrection(photons[0], period);
+        }
+
         wgt *= puWgt*trigSF.first*sel1SF.first*sel2SF.first;
         
         // generator level weights
@@ -543,7 +547,7 @@ void RunExclusiveTop(TString filename,
       
       //fill tree with central detector information
       outVars["evwgt"]=plotwgts[0];
-      outVars["selCode"]=float(selCode);
+      outVars["evcat"]=float(selCode);
       
       outVars["l1pt"]=lm.Pt();
       outVars["l1eta"]=lm.Eta();

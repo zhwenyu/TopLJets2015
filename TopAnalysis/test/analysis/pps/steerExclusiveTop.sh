@@ -24,6 +24,7 @@ zx_samples_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/zx_sa
 RPout_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/golden_noRP.json
 wwwdir=~/www/ExclusiveAna
 inputfileTag=MC13TeV_2017_GGH2000toZZ2L2Nu
+#inputfileTag=MC13TeV_2017_GJets_HT400to600
 inputfileTESTSEL=${eosdir}/${inputfileTag}/Chunk_0_ext0.root
 #inputfileTag=Data13TeV_2017B_DoubleMuon
 #inputfileTESTSEL=/store/cmst3/group/top/RunIIReReco/f93b8d8/${inputfileTag}/Chunk_0_ext0.root
