@@ -724,7 +724,13 @@ void VBFVectorBoson::setGammaZPtWeights(){
 void VBFVectorBoson::loadCorrections(){
   fr = new FakeRateTool(era, "fakeRatios.root");
   lumi = new LumiTools(era,genPU);
-  gammaEffWR = new EfficiencyScaleFactorsWrapper(filename.Contains("Data13TeV"),era);
+
+  std::map<TString,TString> cfgMap;
+  cfgMap["g_id"]="Tight";
+  cfgMap["m_id"]="TightID";
+  cfgMap["m_iso"]="TightRelIso";
+  cfgMap["m_id4iso"]="TightIDandIPCut";
+  gammaEffWR = new EfficiencyScaleFactorsWrapper(filename.Contains("Data13TeV"),era,cfgMap);
   //jec = new JECTools(era);
   l1PrefireWR = new L1PrefireEfficiencyWrapper(filename.Contains("Data13TeV"),era);
   if(anFlag>0) this->setGammaZPtWeights();

@@ -126,7 +126,13 @@ void RunExclusiveTop(TString filename,
   std::map<Int_t,Float_t> lumiPerRun=lumi.lumiPerRun();
 
   //LEPTON EFFICIENCIES
-  EfficiencyScaleFactorsWrapper lepEffH(filename.Contains("Data13TeV"),era);
+  std::map<TString,TString> cfgMap;
+  cfgMap["g_id"]="MVAwp90";
+  cfgMap["m_id"]="LooseID";
+  cfgMap["m_iso"]="LooseRelIso";
+  cfgMap["m_id4iso"]="LooseID";
+  cfgMap["e_id"]="MVA90";
+  EfficiencyScaleFactorsWrapper lepEffH(filename.Contains("Data13TeV"),era,cfgMap);
 
   //B-TAG CALIBRATION
   BTagSFUtil btvSF(era,BTagEntry::OperatingPoint::OP_MEDIUM,"",0);
@@ -317,9 +323,9 @@ void RunExclusiveTop(TString filename,
         passTightSel = (isTrigSafe && isLeadingTight && isSubLeadingTight);
         
         bool isLeadingMedium( (leptons[0].id()==11 && leptons[0].hasQualityFlag(SelectionTool::MVA90)) ||
-                              (leptons[0].id()==13 && leptons[0].hasQualityFlag(SelectionTool::MEDIUM)) );        
+                              (leptons[0].id()==13 && leptons[0].hasQualityFlag(SelectionTool::LOOSE)) );        
         bool isSubLeadingMedium( (leptons[1].id()==11 && leptons[1].hasQualityFlag(SelectionTool::MVA90)) ||
-                                 (leptons[1].id()==13 && leptons[1].hasQualityFlag(SelectionTool::MEDIUM)) );
+                                 (leptons[1].id()==13 && leptons[1].hasQualityFlag(SelectionTool::LOOSE)) );
         passMediumSel = (isTrigSafe && isLeadingMedium && isSubLeadingMedium);        
       }
       else if(photons.size()>0){
@@ -475,8 +481,8 @@ void RunExclusiveTop(TString filename,
         
         // lepton trigger*selection weights
         EffCorrection_t trigSF(1.,0.); // = lepEffH.getTriggerCorrection(leptons,{},{},period);
-        EffCorrection_t  sel1SF(1.,0.); // = lepEffH.getOfflineCorrection(leptons[l1idx], period);
-        EffCorrection_t  sel2SF(1.,0.); // = lepEffH.getOfflineCorrection(leptons[l2idx], period);
+        EffCorrection_t  sel1SF = lepEffH.getOfflineCorrection(leptons[l1idx], period);
+        EffCorrection_t  sel2SF = lepEffH.getOfflineCorrection(leptons[l2idx], period);
         
         wgt *= puWgt*trigSF.first*sel1SF.first*sel2SF.first;
         
