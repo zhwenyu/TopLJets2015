@@ -41,6 +41,9 @@ void RunExclusiveTop(TString filename,
   // INITIALIZATION //
   ///////////////////
   const char* CMSSW_BASE = getenv("CMSSW_BASE");
+
+  bool onlyNonPromptPhotons(filename.Contains("_QCDEM_") ? true : false);
+
   // CTPPS reconstruction part
   ctpps::XiReconstructor proton_reco;
   proton_reco.feedDispersions(Form("%s/src/TopLJets2015/CTPPSAnalysisTools/data/2017/dispersions.txt", CMSSW_BASE));
@@ -187,7 +190,6 @@ void RunExclusiveTop(TString filename,
   
   //EVENT SELECTION WRAPPER
   SelectionTool selector(filename, false, triggerList);
-  
   for (Int_t iev=0;iev<nentries;iev++)
     {
       t->GetEntry(iev);
@@ -393,8 +395,16 @@ void RunExclusiveTop(TString filename,
       }
       mtboson=computeMT(boson,met);
     
-      //further selection for dileptons
-      if(selCode!=22 && mass<20) continue;
+      //specific selections depending on final state and sample type
+      if(selCode!=22) {
+        if(mass<20) continue;
+        if(onlyNonPromptPhotons) continue;
+      }
+      if(selCode==22) {
+        if(onlyNonPromptPhotons && ev.gamma_isPromptFinalState[ photons[0].originalReference() ] ) continue;
+      }
+
+      //flags
       isZ=( isSF && !isSS && fabs(mass-91)<10);
       isA=(selCode==22);
 
