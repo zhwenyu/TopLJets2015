@@ -91,6 +91,7 @@ def main():
                     print "Could not open file! Please close Excel!"
                 jsonFile = open(t,'r')
                 samplesList = json.load(jsonFile, encoding='utf-8', object_pairs_hook=OrderedDict).items()
+                print samplesList
                 for s,_ in samplesList: onlyList.append(s)
                 jsonFile.close()
             else:
