@@ -188,31 +188,31 @@ private:
 	// json file                           //
 	/////////////////////////////////////////
 	std::map<TString, float> xsecRefs;
-
+        
 	void setXsecs(){
-	  xsecRefs["MC13TeV_TTJets"        ] = 832;
-	  xsecRefs["MC13TeV_ZZ"            ] = 0.5644; 
-	  xsecRefs["MC13TeV_WZ"            ] = 47.13;  
-	  xsecRefs["MC13TeV_WW"            ] = 12.178; 
-	  xsecRefs["MC13TeV_SingleTbar_tW" ] = 35.85;  
-	  xsecRefs["MC13TeV_SingleT_tW"    ] = 35.85;  
-	  xsecRefs["MC13TeV_DY50toInf"     ] = 5765.4; 
-	  xsecRefs["MC13TeV_QCDEM_15to20"  ] = 2302200;
-	  xsecRefs["MC13TeV_QCDEM_20to30"  ] = 5352960;
-	  xsecRefs["MC13TeV_QCDEM_30to50"  ] = 9928000;
-	  xsecRefs["MC13TeV_QCDEM_50to80"  ] = 2890800;
-	  xsecRefs["MC13TeV_QCDEM_80to120" ] = 350000; 
-	  xsecRefs["MC13TeV_QCDEM_120to170"] = 62964;  
-	  xsecRefs["MC13TeV_QCDEM_170to300"] = 18810;  
-	  xsecRefs["MC13TeV_QCDEM_300toInf"] = 1350;  
-	  xsecRefs["MC13TeV_GJets_HT40to100" ] = 20790 ;
-	  xsecRefs["MC13TeV_GJets_HT100to200"] = 9238;  
-	  xsecRefs["MC13TeV_GJets_HT200to400"] = 2305;  
-	  xsecRefs["MC13TeV_GJets_HT400to600"] = 274.4; 
-	  xsecRefs["MC13TeV_GJets_HT600toInf"] = 93.46; 
-	  xsecRefs["MC13TeV_EWKZJJ"        ] = 4.32;
-	  xsecRefs["MC13TeV_AJJ_EWK_LO"    ] = 32.49;
-	  xsecRefs["MC13TeV_AJJ_EWK_INT_LO"] = 8.3;
+          xsecRefs["MC13TeV_2017_TTJets"        ] = 832;
+          xsecRefs["MC13TeV_2017_ZZ"            ] = 0.5644; 
+          xsecRefs["MC13TeV_2017_WZ"            ] = 47.13;  
+          xsecRefs["MC13TeV_2017_WW"            ] = 12.178; 
+          xsecRefs["MC13TeV_2017_SingleTbar_tW" ] = 35.85;  
+          xsecRefs["MC13TeV_2017_SingleT_tW"    ] = 35.85;  
+          xsecRefs["MC13TeV_2017_DY50toInf"     ] = 5765.4; 
+          xsecRefs["MC13TeV_2017_QCDEM_15to20"  ] = 2302200;
+          xsecRefs["MC13TeV_2017_QCDEM_20to30"  ] = 5352960;
+          xsecRefs["MC13TeV_2017_QCDEM_30to50"  ] = 9928000;
+          xsecRefs["MC13TeV_2017_QCDEM_50to80"  ] = 2890800;
+          xsecRefs["MC13TeV_2017_QCDEM_80to120" ] = 350000; 
+          xsecRefs["MC13TeV_2017_QCDEM_120to170"] = 62964;  
+          xsecRefs["MC13TeV_2017_QCDEM_170to300"] = 18810;  
+          xsecRefs["MC13TeV_2017_QCDEM_300toInf"] = 1350;  
+          xsecRefs["MC13TeV_2017_GJets_HT40to100" ] = 20790 ;
+          xsecRefs["MC13TeV_2017_GJets_HT100to200"] = 9238;  
+          xsecRefs["MC13TeV_2017_GJets_HT200to400"] = 2305;  
+          xsecRefs["MC13TeV_2017_GJets_HT400to600"] = 274.4; 
+          xsecRefs["MC13TeV_2017_GJets_HT600toInf"] = 93.46; 
+          xsecRefs["MC13TeV_2017_EWKZJJ"        ] = 4.32;
+          xsecRefs["MC13TeV_2017_EWKAJJ"    ] = 32.49;
+          xsecRefs["MC13TeV_2017_IntAJJ" ] = 8.3;
 	}
 	
 	float getXsec(){
