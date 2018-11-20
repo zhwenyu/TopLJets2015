@@ -117,8 +117,6 @@ public:
 	void addMVAvars();
 	void fill(MiniEvent_t ev, TLorentzVector boson, std::vector<Jet> jets, std::vector<double> cplotwgts, TString c, std::map<TString, int> mults, std::vector<Particle> fakePhotonCR ={}, std::vector<Particle> tightPhotonCR={});
 	void RunVBFVectorBoson();
-	void initVariables(std::vector<Jet>);
-	
 
 private:
 	TString filename, outname, baseName;
@@ -160,6 +158,9 @@ private:
 
 	//Variables to be added to the MVA Tree
         vbf::DiscriminatorInputs vbfVars_;
+        float vbfmva;
+        float evtWeight;
+        int training;
         bool doBlindAnalysis;
         
 	std::vector<Particle> relaxedTightPhotons, photons, tmpPhotons; 

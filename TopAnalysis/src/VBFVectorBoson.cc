@@ -74,7 +74,7 @@ void VBFVectorBoson::RunVBFVectorBoson()
   reader->AddVariable("j_c2_00[0]",   &vbfVars_.leadj_c2_02);
   reader->AddVariable("j_gawidth[0]", &vbfVars_.leadj_gawidth);
   reader->AddVariable("j_mjj",        &vbfVars_.mjj);
-  reader->AddVariable("j_qg[1]",      &vbfVars_.lead_qg);
+  reader->AddVariable("j_qg[1]",      &vbfVars_.leadj_qg);
 
   TString weightFiles[]={"${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBF_weights/BDTHighMJJ.weights.xml",
                          "${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBF_weights/BDTLowMJJ.weights.xml"};
@@ -166,36 +166,47 @@ void VBFVectorBoson::RunVBFVectorBoson()
       if(chTag == "MM") cat[0] = true;
       if(chTag == "A") cat[1] = true;
 
-      //jet related variables and selection
-      initVariables(jets);
-
       //L1-prefire jet candidates
       int nLPJets(0);
       for(auto j : jets) {
 	if(j.Pt()>100 && fabs(j.Eta()) > 2.25 && fabs(j.Eta()) < 3.0) nLPJets++;
       }
 
-
-      bool passJetMult(jets.size()>=2);
-      bool passMJJ(passJetMult && mjj>highMJJcut);
-      bool passJets(passJetMult && mjj>minMJJ);
-      bool passVBFJetsTrigger(passJets && detajj>3.0);
-      //L1-prefiltering check
-      bool passLP(nLPJets > 0 || nLPGamma > 0);
-
-      //categorize the event according to the boson kinematics
-      //for the photon refine also the category according to the trigger  bit
+      //define the boson
       TLorentzVector boson(0,0,0,0);
       float bosonScaleUnc(0.);
-      bool isHighPt(false),isVBF(false),isHighPtAndVBF(false),isHighPtAndOfflineVBF(false),isBosonPlusOneJet(false),isHighMJJ(false),isLowMJJ(false), isHighMJJLP(false),isLowMJJLP(false);
       sihih = 0, chiso = 0 ,r9 = 0, hoe = 0;
-      if(chTag=="A") {        
+      if(chTag=="A") {
         boson += photons[0];
-        bosonScaleUnc=photons[0].scaleUnc()/photons[0].Pt();
-        sihih = ev.gamma_sieie[photons[0].originalReference()];
-        chiso = ev.gamma_chargedHadronIso[photons[0].originalReference()];
-        r9    = ev.gamma_r9[photons[0].originalReference()];
-        hoe   = ev.gamma_hoe[photons[0].originalReference()];        
+        bosonScaleUnc = photons[0].scaleUnc()/photons[0].Pt();
+        sihih         = ev.gamma_sieie[photons[0].originalReference()];
+        chiso         = ev.gamma_chargedHadronIso[photons[0].originalReference()];
+        r9            = ev.gamma_r9[photons[0].originalReference()];
+        hoe           = ev.gamma_hoe[photons[0].originalReference()];        
+      }else {
+        boson   += leptons[0];
+        boson   += leptons[1];
+        bosonScaleUnc= TMath::Sqrt( pow(leptons[0].Pt()*leptons[1].scaleUnc(),2)+
+                                    pow(leptons[1].Pt()*leptons[0].scaleUnc(),2) )/boson.Pt();
+      }
+
+      //leptons and boson
+      double mindrl(9999.);
+      for(auto &l: leptons) mindrl=min(l.DeltaR(boson),mindrl);
+      
+      //vbf-dedicated
+      vbfVars_.fillDiscriminatorVariables(boson,jets,ev);
+
+      //final categories
+      bool passJetMult(jets.size()>=2);
+      bool passMJJ(passJetMult && vbfVars_.mjj>highMJJcut);
+      bool passJets(passJetMult && vbfVars_.mjj>minMJJ);
+      bool passVBFJetsTrigger(passJets && vbfVars_.detajj>3.0);
+      //L1-prefiltering check
+      bool passLP(nLPJets > 0 || nLPGamma > 0);
+      bool isHighPt(false),isVBF(false),isHighPtAndVBF(false),isHighPtAndOfflineVBF(false),
+        isBosonPlusOneJet(false),isHighMJJ(false),isLowMJJ(false), isHighMJJLP(false),isLowMJJLP(false);
+      if(chTag=="A") {        
         isVBF    = (selector->hasTriggerBit(vbfPhotonTrigger, ev.triggerBits) 
                     && photons[0].Pt()>75 
                     && fabs(photons[0].Eta())<1.442
@@ -207,13 +218,10 @@ void VBFVectorBoson::RunVBFVectorBoson()
         isBosonPlusOneJet=(isHighPt && nTotalJets==1);
 	// A very simple categorization based on MJJ and boson Pt
 	isHighMJJ = (isVBF && (photons[0].Pt() < minBosonHighPt) && passMJJ);
-
 	isLowMJJ  = (passJets && isHighPt);
-
 	//L1 Prefiltering check
 	isHighMJJLP = (isHighMJJ & !passLP);
 	isLowMJJLP = (isLowMJJ & !passLP);
-
         //veto prompt photons on the QCDEM enriched sample
         if( vetoPromptPhotons && ev.gamma_isPromptFinalState[ photons[0].originalReference() ] ) {
           isVBF                 = false;
@@ -226,12 +234,7 @@ void VBFVectorBoson::RunVBFVectorBoson()
 	  isHighMJJLP           = false;
 	  isLowMJJLP            = false;
         }
-          
       } else {
-        boson   += leptons[0];
-        boson   += leptons[1];
-        bosonScaleUnc= TMath::Sqrt( pow(leptons[0].Pt()*leptons[1].scaleUnc(),2)+
-                                    pow(leptons[1].Pt()*leptons[0].scaleUnc(),2) )/boson.Pt();
         isVBF    = boson.Pt()>75 && fabs(boson.Rapidity())<1.442 && passVBFJetsTrigger;
         isHighPt = boson.Pt()>minBosonHighPt;
         isHighPtAndVBF = (isHighPt && isVBF);
@@ -239,17 +242,10 @@ void VBFVectorBoson::RunVBFVectorBoson()
 	// A very simple categorization based on MJJ and boson Pt
 	isHighMJJ = (isVBF && boson.Pt() < minBosonHighPt && passMJJ);
 	isLowMJJ  = (passJets && isHighPt);
-
 	//L1 Prefiltering check
 	isHighMJJLP = (isHighMJJ & !passLP);
 	isLowMJJLP = (isLowMJJ & !passLP);
       }
-
-      //if(!isVBF && !isHighPt && !isBosonPlusOneJet) continue;      
-
-      //leptons and boson
-      double mindrl(9999.);
-      for(auto &l: leptons) mindrl=min(l.DeltaR(boson),mindrl);
 
       if(isVBF)                 cat[2]=true;
       if(isHighPt)	        cat[3]=true;
@@ -266,12 +262,7 @@ void VBFVectorBoson::RunVBFVectorBoson()
       if(isHighPt)   baseCategory="HighPt"+chTag;
       else if(isVBF) baseCategory="VBF"+chTag;
 
-      //leptons and boson
-      mindrl = 9999.;
-      for(auto &l: leptons) mindrl=min(l.DeltaR(boson),mindrl);
-      
-      //evaluate discriminator variables and the MVA
-      vbfVars_.fillDiscriminatorVariables(boson,jets,ev);
+      //evaluate discriminator MVA
       vbfmva = passJets ? reader->EvaluateMVA(mvaMethod[isHighMJJ ? 0 : 1]) : -99;      
       if(doBlindAnalysis && ev.isData && vbfmva>0.1) vbfmva=-1000;
 
@@ -341,7 +332,7 @@ void VBFVectorBoson::RunVBFVectorBoson()
 	    cout << "The Fake Rate will be applied! " <<endl;
 	    TString Cat = "LowMJJ";
 	    if(isHighMJJ) Cat = "HighMJJ";
-	    cplotwgts[0]*=fr->getWeight(Cat, mjj, photons[0].Eta());
+	    cplotwgts[0]*=fr->getWeight(Cat, vbfVars_.mjj, photons[0].Eta());
 	  }
         }
 
@@ -351,9 +342,8 @@ void VBFVectorBoson::RunVBFVectorBoson()
 	fill( ev,  boson,  jets,  cplotwgts, c, mults, fakeACR, tightACR);
       }
         
-      //experimental systs 
-      //don't do anything after this...
-      //repeat final category selection with varied objects/weights and re-evaluate mva
+      //experimental systs cycle: better not to do anything else after this...
+      //final category selection is repeated ad nauseam with varied objects/weights and mva is re-evaluated several times
       if(ev.isData) continue;
       std::vector<std::pair<float,float> > mvaWithWeights;
       selector->setDebug(false);
@@ -444,12 +434,13 @@ void VBFVectorBoson::RunVBFVectorBoson()
         if(reSelect) {
           
           if (ijets.size()<2) continue;
-          mjj=(ijets[0]+ijets[1]).M();
-          detajj=fabs(ijets[0].Eta()-ijets[1].Eta());
-          if(mjj<minMJJ) continue;
+
+          vbf::DiscriminatorInputs ivbfVars;
+          ivbfVars.fillDiscriminatorVariables(iBoson,ijets,ev);
+          if(ivbfVars.mjj<minMJJ) continue;
           
           //final event category
-          bool passVBFJetsTrigger(detajj>3.0 && mjj>highMJJcut);
+          bool passVBFJetsTrigger(ivbfVars.detajj>3.0 && ivbfVars.mjj>highMJJcut);
           bool isVBF(false),isHighPt(false);
           if(chTag=="A") {
             isVBF    = (selector->hasTriggerBit(vbfPhotonTrigger, ev.triggerBits) 
@@ -467,13 +458,11 @@ void VBFVectorBoson::RunVBFVectorBoson()
           }
           
           //set the new tag
-          if(isHighPt) icat="HighPt"+chTag;
+          if(isHighPt)   icat="HighPt"+chTag;
           else if(isVBF) icat="VBF"+chTag;
           else continue;
           
           //re-evaluate MVA
-          vbf::DiscriminatorInputs ivbfVars;
-          ivbfVars.fillDiscriminatorVariables(iBoson,ijets,ev);
           vbfVars_=ivbfVars;
           imva = reader->EvaluateMVA(mvaMethod[ isHighMJJ ? 0 : 1]);
         }
@@ -716,11 +705,11 @@ void VBFVectorBoson::addMVAvars(){
   newTree->Branch("subleadj_c2_02",   &vbfVars_.subleadj_c2_02);
   newTree->Branch("jjetas",           &vbfVars_.jjetas);
   newTree->Branch("centjy",           &vbfVars_.centjy);
-  newTree->Branch("ncentjj",          &vbfVars_.ncentjj);
+  newTree->Branch("ncentjj",          &vbfVars_.ncentj);
   newTree->Branch("dphivj0",          &vbfVars_.dphivj0);
   newTree->Branch("dphivj1",          &vbfVars_.dphivj1);
-  newTree->Branch("dphivj2",          &vbfVars_.dphivj2);
-  newTree->Branch("dphivj3",          &vbfVars_.dphivj3);
+  newTree->Branch("dphivj2",          &vbfVars_.dphivcentj[0]);
+  newTree->Branch("dphivj3",          &vbfVars_.dphivcentj[0]);
   newTree->Branch("mht",              &vbfVars_.mht);
   newTree->Branch("ht",               &vbfVars_.scalarht);
   newTree->Branch("isotropy",         &vbfVars_.isotropy);
@@ -751,24 +740,24 @@ void VBFVectorBoson::fill(MiniEvent_t ev, TLorentzVector boson, std::vector<Jet>
     int idx = a.originalReference();
     ht->fill("allsihih",   ev.gamma_sieie[idx]             ,cplotwgts,c);
     if (fabs(ev.gamma_eta[idx]) < 1.442)
-      ht->fill2D("allMjjEB"  ,   ev.gamma_sieie[idx], mjj        ,cplotwgts,c); 
+      ht->fill2D("allMjjEB"  ,   ev.gamma_sieie[idx], vbfVars_.mjj        ,cplotwgts,c); 
     else
-      ht->fill2D("allMjjEE"  ,   ev.gamma_sieie[idx], mjj        ,cplotwgts,c); 
+      ht->fill2D("allMjjEE"  ,   ev.gamma_sieie[idx], vbfVars_.mjj        ,cplotwgts,c); 
   }
   for(auto a : relaxedTightPhotons) {
     int idx = a.originalReference();
     ht->fill("relaxedTightsihih",   ev.gamma_sieie[idx]             ,cplotwgts,c);
     if (fabs(ev.gamma_eta[idx]) < 1.442)
-      ht->fill2D("relaxedTightMjjEB"  ,   ev.gamma_sieie[idx], mjj        ,cplotwgts,c); 
+      ht->fill2D("relaxedTightMjjEB"  ,   ev.gamma_sieie[idx], vbfVars_.mjj        ,cplotwgts,c); 
     else
-      ht->fill2D("relaxedTightMjjEE"  ,   ev.gamma_sieie[idx], mjj        ,cplotwgts,c); 
+      ht->fill2D("relaxedTightMjjEE"  ,   ev.gamma_sieie[idx], vbfVars_.mjj        ,cplotwgts,c); 
   }
   for(auto a : tmpPhotons) {
     int idx = a.originalReference();
     if (fabs(ev.gamma_eta[idx]) < 1.442)
-      ht->fill2D("tmpQCDMjjEB"  ,   ev.gamma_sieie[idx], mjj        ,cplotwgts,c); 
+      ht->fill2D("tmpQCDMjjEB"  ,   ev.gamma_sieie[idx], vbfVars_.mjj        ,cplotwgts,c); 
     else
-      ht->fill2D("tmpQCDMjjEE"  ,   ev.gamma_sieie[idx], mjj        ,cplotwgts,c); 
+      ht->fill2D("tmpQCDMjjEE"  ,   ev.gamma_sieie[idx], vbfVars_.mjj        ,cplotwgts,c); 
   }
   //bosons in CR and fakes
   for(auto a : fakeACR) {
@@ -778,9 +767,9 @@ void VBFVectorBoson::fill(MiniEvent_t ev, TLorentzVector boson, std::vector<Jet>
     ht->fill("fakeneutiso", ev.gamma_neutralHadronIso[idx]  ,cplotwgts,c);
     ht->fill("fakeaiso",    ev.gamma_photonIso[idx]         ,cplotwgts,c);
     if (fabs(ev.gamma_eta[idx]) < 1.442)
-      ht->fill2D("looseMjjEB"  ,  ev.gamma_sieie[idx], mjj        ,cplotwgts,c);
+      ht->fill2D("looseMjjEB"  ,  ev.gamma_sieie[idx], vbfVars_.mjj        ,cplotwgts,c);
     else
-      ht->fill2D("looseMjjEE"  ,  ev.gamma_sieie[idx], mjj        ,cplotwgts,c);
+      ht->fill2D("looseMjjEE"  ,  ev.gamma_sieie[idx], vbfVars_.mjj        ,cplotwgts,c);
   }
   for(auto a : tightACR) { 
     int idx = a.originalReference();
@@ -789,9 +778,9 @@ void VBFVectorBoson::fill(MiniEvent_t ev, TLorentzVector boson, std::vector<Jet>
     ht->fill("tightneutiso", ev.gamma_neutralHadronIso[idx]  ,cplotwgts,c);
     ht->fill("tightaiso",    ev.gamma_photonIso[idx]         ,cplotwgts,c);
     if (fabs(ev.gamma_eta[idx]) < 1.442)
-      ht->fill2D("tightMjjEB"  ,   ev.gamma_sieie[idx], mjj        ,cplotwgts,c);
+      ht->fill2D("tightMjjEB"  ,   ev.gamma_sieie[idx], vbfVars_.mjj        ,cplotwgts,c);
     else
-      ht->fill2D("tightMjjEE"  ,   ev.gamma_sieie[idx], mjj        ,cplotwgts,c);
+      ht->fill2D("tightMjjEE"  ,   ev.gamma_sieie[idx], vbfVars_.mjj        ,cplotwgts,c);
   }
   ht->fill("nloose",        fakeACR.size(),       cplotwgts,c);
   ht->fill("ntight",        tightACR.size(),      cplotwgts,c);
@@ -801,8 +790,6 @@ void VBFVectorBoson::fill(MiniEvent_t ev, TLorentzVector boson, std::vector<Jet>
   ht->fill("ntightprompt",  mults["tightprompt"], cplotwgts,c);
 
   //jet histos
-  centraleta = 9999; 
-  forwardeta = -9999;
   for(size_t ij=0; ij<min(size_t(2),jets.size());ij++) {
     TString jtype(ij==0?"lead":"sublead");
     ht->fill(jtype+"pt",       jets[ij].Pt(),        cplotwgts,c);          
@@ -832,29 +819,11 @@ void VBFVectorBoson::fill(MiniEvent_t ev, TLorentzVector boson, std::vector<Jet>
   }
 
   //central jet activity
-  if(jets.size() > 2){
-
-    int ncentjj(0);
-    for(unsigned int iJet = 2; iJet < jets.size(); iJet++){	
-
-      if(iJet==2){
-        float dphivj2 = fabs(jets[2].DeltaPhi(boson));
-        ht->fill("dphivj2", dphivj2 ,  cplotwgts,c);
-      }
-      if(iJet==3){
-        float dphivj3 =  fabs(jets[3].DeltaPhi(boson));
-        ht->fill("dphivj3", dphivj3 , cplotwgts,c);
-      }
-
-      float dy = fabs(jets[0].Rapidity() - jets[1].Rapidity())/2;
-      float sumy = (jets[0].Rapidity() + jets[1].Rapidity())/2;
-      if(fabs(jets[iJet].Rapidity() - sumy) < dy){
-        centjy =  jets[iJet].Rapidity();
-        float ht->fill("centjy",centjy,  cplotwgts,c);
-        ncentjj++;
-      }
-    }
-    ht->fill("ncentj", ncentjj, cplotwgts, c);
+  if(vbfVars_.ncentj>0){
+    ht->fill("ncentj", vbfVars_.ncentj, cplotwgts, c);
+    ht->fill("dphivj2", vbfVars_.dphivcentj[0] ,  cplotwgts,c);
+    if(vbfVars_.ncentj>1) 
+      ht->fill("dphivj3", vbfVars_.dphivcentj[1] ,  cplotwgts,c);    
   }
 
   ht->fill("njets",        jets.size(), cplotwgts,c);
