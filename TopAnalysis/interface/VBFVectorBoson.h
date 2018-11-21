@@ -130,7 +130,7 @@ private:
   	HistTool * ht;
 	MiniEvent_t ev;
         float sihih,chiso,r9,hoe, ystar,relbpt,dphibjj;
-	double mindrl;
+	double mindrl,mindrj;
 
         std::vector<TString> expSysts_;
         std::vector<WeightSysts_t> weightSysts_;

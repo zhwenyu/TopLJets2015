@@ -218,9 +218,11 @@ void VBFVectorBoson::RunVBFVectorBoson()
                                     pow(leptons[1].Pt()*leptons[0].scaleUnc(),2) )/boson.Pt();
       }
 
-      //leptons and boson
-      double mindrl(9999.);
+      //leptons,jets and boson
+      mindrl=9999.;
       for(auto &l: leptons) mindrl=min(l.DeltaR(boson),mindrl);
+      mindrj=9999.;
+      for(auto &j: jets) mindrj=min(j.DeltaR(boson),mindrj);
       
       //vbf-dedicated
       vbfVars_.fillDiscriminatorVariables(boson,jets,ev);
@@ -585,9 +587,10 @@ void VBFVectorBoson::bookHistograms(){
   ht->addHist("vpt", 	       new TH1F("vectorbosonPt",    ";Boson p_{T}[GeV];Events",25,50,550));  
   ht->addHist("vy", 	       new TH1F("vectorbosony",     ";Boson rapidity;Events",25,-3,3));  
   ht->addHist("mindrl",        new TH1F("mindrl",           ";min #Delta R(boson,lepton);Events",25,0,6));  
+  ht->addHist("mindrj",        new TH1F("mindrj",           ";min #Delta R(boson,jet);Events",25,0,6));  
   ht->addHist("sihih", 	       new TH1F("sihih",            ";#sigma(i#eta,i#eta);Events",50,0,0.1));  
-  ht->addHist("hoe", 	       new TH1F("hoe",              ";h/e;Events",25,0,0.1));  
-  ht->addHist("r9", 	       new TH1F("r9",               ";r9;Events",25,0,1.0));  
+  ht->addHist("hoe", 	       new TH1F("hoe",              ";h/e;Events",25,0,0.05));  
+  ht->addHist("r9", 	       new TH1F("r9",               ";r9;Events",25,0.5,1.0));  
   ht->addHist("chiso", 	       new TH1F("chiso",            ";Charged isolation [GeV];Events",50,0,10));  
   ht->addHist("vystar",        new TH1F("vectorbosonystar", ";y-(1/2)(y_{j1}+y_{j2});Events",25,-5,5));  
   ht->addHist("njets",         new TH1F("njets",            ";Jet multiplicity;Events",10,-0.5,9.5));  
@@ -649,23 +652,23 @@ void VBFVectorBoson::bookHistograms(){
   ht->addHist("etaphi",           new TH2F("etaphi",       ";Most central jet |#eta|V|#phi|;Events",30,-4.7,4.7,25,-TMath::Pi(),TMath::Pi()));
   ht->addHist("jet_raw_pt", 	  new TH1F("jet_raw_pt",          ";raw PT of jets;Jets",50,0,200));
   ht->addHist("jet_raw_empt", 	  new TH1F("jet_raw_empt",        ";raw e.m. PT of jets;Jets",50,0,200));
-  ht->addHist("jet_emf", 	  new TH1F("jet_emf",          ";EM effect of jets;Jets",100,0,1));
-  ht->addHist("jet_qg", 	  new TH1F("jet_qg",          ";qg of jets;Jets",100,-1,1));
+  ht->addHist("jet_emf", 	  new TH1F("jet_emf",          ";EM effect of jets;Jets",50,0,1));
+  ht->addHist("jet_qg", 	  new TH1F("jet_qg",          ";qg of jets;Jets",50,0,1));
   // ht->addHist("jet_pumva", 	  new TH1F("jet_pumva",          ";pileup mva of jets;Jets",100,-1,1));
-  ht->addHist("jet_c2_00", 	  new TH1F("jet_c2_00",          ";Jet shape var. c2_00;Jets",100,-1,1));  
-  ht->addHist("jet_c2_02", 	  new TH1F("jet_c2_02",          ";Jet shape var. c2_02;Jets",100,-1,1));  
-  ht->addHist("jet_c2_05", 	  new TH1F("jet_c2_05",          ";Jet shape var. c2_05;Jets",100,-1,1));  
-  ht->addHist("jet_zg", 	  new TH1F("jet_zg",          ";Jet shape var. zg;Jets",100,-1,1));  
-  ht->addHist("jet_gaptd", 	  new TH1F("jet_gaptd",          ";Jet shape var. gaptd;Jets",100,-1,1));  
-  ht->addHist("jet_gawidth",      new TH1F("jet_gawidth",          ";Jet shape var. gawidth;Jets",100,-1,1));
+  ht->addHist("jet_c2_00", 	  new TH1F("jet_c2_00",          ";Jet shape var. c2_00;Jets",50,0,1));  
+  ht->addHist("jet_c2_02", 	  new TH1F("jet_c2_02",          ";Jet shape var. c2_02;Jets",50,0,1));  
+  ht->addHist("jet_c2_05", 	  new TH1F("jet_c2_05",          ";Jet shape var. c2_05;Jets",50,0,1));  
+  ht->addHist("jet_zg", 	  new TH1F("jet_zg",          ";Jet shape var. zg;Jets",50,0,1));  
+  ht->addHist("jet_gaptd", 	  new TH1F("jet_gaptd",          ";Jet shape var. gaptd;Jets",50,0,1));  
+  ht->addHist("jet_gawidth",      new TH1F("jet_gawidth",          ";Jet shape var. gawidth;Jets",50,0,1));
   //additional variables from https://link.springer.com/content/pdf/10.1140/epjc/s10052-017-5315-6.pdf
-  ht->addHist("jjetas", 	  new TH1F("jjetas",          ";#eta_{j1}#eta_{j2};Events",200,-25,25));  
+  ht->addHist("jjetas", 	  new TH1F("jjetas",          ";#eta_{j1}#eta_{j2};Events",50,-25,15));  
   ht->addHist("centjy",		  new TH1F("centjy",          ";Central jet rapidity;Jets",25,0,3));  
   ht->addHist("ncentj", 	  new TH1F("ncentjj",          ";Number of central jets;Events",10,-0.5,9.5));  
-  ht->addHist("dphivj0", 	  new TH1F("dphivj0",          ";#Delta#phi(V,j0);Jets",20,0,4));  
-  ht->addHist("dphivj1", 	  new TH1F("dphivj1",          ";#Delta#phi(V,j1);Jets",20,0,4));  
-  ht->addHist("dphivj2", 	  new TH1F("dphivj2",          ";#Delta#phi(V,j2);Jets",20,0,4));  
-  ht->addHist("dphivj3", 	  new TH1F("dphivj3",          ";#Delta#phi(V,j3);Jets",20,0,4));
+  ht->addHist("dphivj0", 	  new TH1F("dphivj0",          ";#Delta#phi(V,j0);Jets",20,0,TMath::Pi()));  
+  ht->addHist("dphivj1", 	  new TH1F("dphivj1",          ";#Delta#phi(V,j1);Jets",20,0,TMath::Pi()));  
+  ht->addHist("dphivj2", 	  new TH1F("dphivj2",          ";#Delta#phi(V,j2);Jets",20,0,TMath::Pi()));  
+  ht->addHist("dphivj3", 	  new TH1F("dphivj3",          ";#Delta#phi(V,j3);Jets",20,0,TMath::Pi()));
   //final analyses distributions
   ht->addHist("evcount",         new TH1F("evcount",        ";Pass;Events",1,0,1));  
   ht->addHist("vbfmva",          new TH1F("vbfmva",         ";VBF MVA;Events",20,0,1));  
@@ -770,6 +773,7 @@ void VBFVectorBoson::fill(MiniEvent_t ev, TLorentzVector boson, std::vector<Jet>
   ht->fill("hoe",    hoe,              cplotwgts,c);   
   ht->fill("chiso",  chiso,            cplotwgts,c);   
   ht->fill("mindrl", mindrl,           cplotwgts,c);   
+  ht->fill("mindrj", mindrj,           cplotwgts,c);   
 
   for(auto a : photons) {
     int idx = a.originalReference();
