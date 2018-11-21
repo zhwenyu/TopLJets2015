@@ -95,7 +95,7 @@ int main(int argc, char* argv[])
   //check method to run
   if(method=="ExclusiveTop::RunExclusiveTop")          RunExclusiveTop(in,out,channel,charge,normH,puH,era,debug);
   else if(method=="VBFVectorBoson::RunVBFVectorBoson") {
-    VBFVectorBoson myVBF(in,out,flag,normH,puH,era,debug,CR,QCDTemp,SRfake,skimtree,false);
+    VBFVectorBoson myVBF(in,out,flag,normH,puH,era,debug,CR,QCDTemp,SRfake,skimtree,true);
     myVBF.RunVBFVectorBoson();
   }
   else {

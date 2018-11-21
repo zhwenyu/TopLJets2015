@@ -203,14 +203,17 @@ void VBFVectorBoson::RunVBFVectorBoson()
       //define the boson
       TLorentzVector boson(0,0,0,0);
       float bosonScaleUnc(0.);
-      sihih = 0, chiso = 0 ,r9 = 0, hoe = 0;
+      sihih = 0, chiso = 0 ,r9 = 0, hoe = 0, eveto=0, pixelseed=0;
       if(chTag=="A") {
         boson += photons[0];
         bosonScaleUnc = photons[0].scaleUnc()/photons[0].Pt();
-        sihih         = ev.gamma_sieie[photons[0].originalReference()];
-        chiso         = ev.gamma_chargedHadronIso[photons[0].originalReference()];
-        r9            = ev.gamma_r9[photons[0].originalReference()];
-        hoe           = ev.gamma_hoe[photons[0].originalReference()];        
+        int pidx=photons[0].originalReference();
+        sihih         = ev.gamma_sieie[pidx];
+        chiso         = ev.gamma_chargedHadronIso[pidx];
+        r9            = ev.gamma_r9[pidx];
+        hoe           = ev.gamma_hoe[pidx];
+        eveto         = ev.gamma_idFlags[pidx] & 0x1;
+        pixelseed     = (ev.gamma_idFlags[pidx]>>1) & 0x1;
       }else {
         boson   += leptons[0];
         boson   += leptons[1];
@@ -590,6 +593,8 @@ void VBFVectorBoson::bookHistograms(){
   ht->addHist("mindrj",        new TH1F("mindrj",           ";min #Delta R(boson,jet);Events",25,0,6));  
   ht->addHist("sihih", 	       new TH1F("sihih",            ";#sigma(i#eta,i#eta);Events",50,0,0.1));  
   ht->addHist("hoe", 	       new TH1F("hoe",              ";h/e;Events",25,0,0.05));  
+  ht->addHist("eveto", 	       new TH1F("eveto",            ";e veto;Events",2,0,2));
+  ht->addHist("pixelseed",     new TH1F("pixelseed",        ";Pixel seed veto;Events",2,0,2) );
   ht->addHist("r9", 	       new TH1F("r9",               ";r9;Events",25,0.5,1.0));  
   ht->addHist("chiso", 	       new TH1F("chiso",            ";Charged isolation [GeV];Events",50,0,10));  
   ht->addHist("vystar",        new TH1F("vectorbosonystar", ";y-(1/2)(y_{j1}+y_{j2});Events",25,-5,5));  
@@ -649,18 +654,17 @@ void VBFVectorBoson::bookHistograms(){
   ht->addHist("allMjjEE",           new TH2F("allMjjEE",";All #sigma_{i#etai#eta}; m_{jj} (GeV)",100,0,0.05,4,bins));
   ht->addHist("tmpQCDMjjEE",        new TH2F("tmpQCDMjjEE",";All #sigma_{i#etai#eta}; m_{jj} (GeV)",100,0,0.05,4,bins));
   // Study of jet variables
-  ht->addHist("etaphi",           new TH2F("etaphi",       ";Most central jet |#eta|V|#phi|;Events",30,-4.7,4.7,25,-TMath::Pi(),TMath::Pi()));
-  ht->addHist("jet_raw_pt", 	  new TH1F("jet_raw_pt",          ";raw PT of jets;Jets",50,0,200));
-  ht->addHist("jet_raw_empt", 	  new TH1F("jet_raw_empt",        ";raw e.m. PT of jets;Jets",50,0,200));
-  ht->addHist("jet_emf", 	  new TH1F("jet_emf",          ";EM effect of jets;Jets",50,0,1));
-  ht->addHist("jet_qg", 	  new TH1F("jet_qg",          ";qg of jets;Jets",50,0,1));
-  // ht->addHist("jet_pumva", 	  new TH1F("jet_pumva",          ";pileup mva of jets;Jets",100,-1,1));
-  ht->addHist("jet_c2_00", 	  new TH1F("jet_c2_00",          ";Jet shape var. c2_00;Jets",50,0,1));  
-  ht->addHist("jet_c2_02", 	  new TH1F("jet_c2_02",          ";Jet shape var. c2_02;Jets",50,0,1));  
-  ht->addHist("jet_c2_05", 	  new TH1F("jet_c2_05",          ";Jet shape var. c2_05;Jets",50,0,1));  
-  ht->addHist("jet_zg", 	  new TH1F("jet_zg",          ";Jet shape var. zg;Jets",50,0,1));  
-  ht->addHist("jet_gaptd", 	  new TH1F("jet_gaptd",          ";Jet shape var. gaptd;Jets",50,0,1));  
-  ht->addHist("jet_gawidth",      new TH1F("jet_gawidth",          ";Jet shape var. gawidth;Jets",50,0,1));
+  ht->addHist("etaphi",           new TH2F("etaphi",          ";Most central jet |#eta|V|#phi|;Events",30,-4.7,4.7,25,-TMath::Pi(),TMath::Pi()));
+  ht->addHist("jet_raw_pt", 	  new TH1F("jet_raw_pt",      ";raw PT of jets;Jets",50,0,200));
+  ht->addHist("jet_raw_empt", 	  new TH1F("jet_raw_empt",    ";raw e.m. PT of jets;Jets",50,0,200));
+  ht->addHist("jet_emf", 	  new TH1F("jet_emf",         ";Electromagnetic fraction;Jets",50,0,1));
+  ht->addHist("jet_qg", 	  new TH1F("jet_qg",          ";q/g discriminator;Jets",50,0,1));
+  ht->addHist("jet_c2_00", 	  new TH1F("jet_c2_00",       ";Energy correlation C_{2}^{(0)};Jets",50,0,1));  
+  ht->addHist("jet_c2_02", 	  new TH1F("jet_c2_02",       ";Energy correlation C_{2}^{(2)};Jets",50,0,1));  
+  ht->addHist("jet_c2_05", 	  new TH1F("jet_c2_05",       ";Energy correlation C_{2}^{(5)};Jets",50,0,1));  
+  ht->addHist("jet_zg", 	  new TH1F("jet_zg",          ";Jet z_{g};Jets",50,0,1));  
+  ht->addHist("jet_gaptd", 	  new TH1F("jet_gaptd",       ";Jet p_{T}^{D};Jets",50,0,1));  
+  ht->addHist("jet_gawidth",      new TH1F("jet_gawidth",     ";Jet width;Jets",50,0,1));
   //additional variables from https://link.springer.com/content/pdf/10.1140/epjc/s10052-017-5315-6.pdf
   ht->addHist("jjetas", 	  new TH1F("jjetas",          ";#eta_{j1}#eta_{j2};Events",50,-25,15));  
   ht->addHist("centjy",		  new TH1F("centjy",          ";Central jet rapidity;Jets",25,0,3));  
@@ -670,8 +674,8 @@ void VBFVectorBoson::bookHistograms(){
   ht->addHist("dphivj2", 	  new TH1F("dphivj2",          ";#Delta#phi(V,j2);Jets",20,0,TMath::Pi()));  
   ht->addHist("dphivj3", 	  new TH1F("dphivj3",          ";#Delta#phi(V,j3);Jets",20,0,TMath::Pi()));
   //final analyses distributions
-  ht->addHist("evcount",         new TH1F("evcount",        ";Pass;Events",1,0,1));  
-  ht->addHist("vbfmva",          new TH1F("vbfmva",         ";VBF MVA;Events",20,0,1));  
+  ht->addHist("evcount",         new TH1F("evcount",        ";Pass;Events",3,0,3));  
+  ht->addHist("vbfmva",          new TH1F("vbfmva",         ";VBF MVA;Events",50,0,1));  
 
   TString expSystNames[]={"puup","pudn","trigup","trigdn","selup","seldn","l1prefireup","l1prefiredn",
                           "aesup","aesdn",
@@ -771,6 +775,8 @@ void VBFVectorBoson::fill(MiniEvent_t ev, TLorentzVector boson, std::vector<Jet>
   ht->fill("sihih",  sihih,            cplotwgts,c);   
   ht->fill("r9",     r9,               cplotwgts,c);   
   ht->fill("hoe",    hoe,              cplotwgts,c);   
+  ht->fill("eveto",      eveto,               cplotwgts,c);   
+  ht->fill("pixelseed",    pixelseed,              cplotwgts,c);   
   ht->fill("chiso",  chiso,            cplotwgts,c);   
   ht->fill("mindrl", mindrl,           cplotwgts,c);   
   ht->fill("mindrj", mindrj,           cplotwgts,c);   
@@ -889,8 +895,13 @@ void VBFVectorBoson::fill(MiniEvent_t ev, TLorentzVector boson, std::vector<Jet>
 
   //final analysis histograms
   ht->fill("evcount",  0, cplotwgts, c);
-  if(vbfmva>=0)
+  if(vbfmva>=0) {
     ht->fill("vbfmva", vbfmva, cplotwgts,c);
+    if(vbfmva>0.9)
+      ht->fill("evcount",  1, cplotwgts, c);
+    if(vbfmva>0.9 && vbfVars_.mjj>1000.)
+      ht->fill("evcount",  2, cplotwgts, c);
+  }
   if(!ev.isData){
     //replicas for theory systs
     for(size_t is=0; is<weightSysts_.size(); is++){
