@@ -296,8 +296,8 @@ void VBFVectorBoson::RunVBFVectorBoson()
       if(passJets) {
         TString key(isHighMJJ ?"BDT_VBF0HighMJJ":"BDT_VBF0LowMJJ");
         vbfmva = readers[key]->EvaluateMVA(key);
-        if(mvaCDFinv[key]) vbfmva=mvaCDFinv[key]->Eval(vbfmva);
-        if(doBlindAnalysis && ev.isData && vbfmva>0.1) vbfmva=-1000;
+        if(mvaCDFinv[key]) vbfmva=max(0.,mvaCDFinv[key]->Eval(vbfmva));
+        if(doBlindAnalysis && ev.isData && vbfmva>0.8) vbfmva=-1000;
       }
       ////////////////////
       // EVENT WEIGHTS //
@@ -499,7 +499,7 @@ void VBFVectorBoson::RunVBFVectorBoson()
           vbfVars_=ivbfVars;
           TString key(isHighMJJ ?"BDT_VBF0HighMJJ":"BDT_VBF0LowMJJ");
           imva = readers[key]->EvaluateMVA(key);
-          if(mvaCDFinv[key]) imva=mvaCDFinv[key]->Eval(imva);
+          if(mvaCDFinv[key]) imva=max(0.,mvaCDFinv[key]->Eval(imva));
         }
         
         //fill with new values/weights
@@ -668,7 +668,7 @@ void VBFVectorBoson::bookHistograms(){
   ht->addHist("dphivj3", 	  new TH1F("dphivj3",          ";#Delta#phi(V,j3);Jets",20,0,4));
   //final analyses distributions
   ht->addHist("evcount",         new TH1F("evcount",        ";Pass;Events",1,0,1));  
-  ht->addHist("vbfmva",          new TH1F("vbfmva",         ";VBF MVA;Events",20,-1,1));  
+  ht->addHist("vbfmva",          new TH1F("vbfmva",         ";VBF MVA;Events",20,0,1));  
 
   TString expSystNames[]={"puup","pudn","trigup","trigdn","selup","seldn","l1prefireup","l1prefiredn",
                           "aesup","aesdn",
@@ -679,13 +679,13 @@ void VBFVectorBoson::bookHistograms(){
   
   size_t nexpSysts=sizeof(expSystNames)/sizeof(TString);
   expSysts_=std::vector<TString>(expSystNames,expSystNames+nexpSysts);  
-  ht->addHist("vbfmva_exp",      new TH2F("vbfmva_exp",     ";VBF MVA;Systs;Events",20,-1,1,nexpSysts,0,nexpSysts));
+  ht->addHist("vbfmva_exp",      new TH2F("vbfmva_exp",     ";VBF MVA;Systs;Events",20,0,1,nexpSysts,0,nexpSysts));
   for(size_t is=0; is<nexpSysts; is++)
     ht->get2dPlots()["vbfmva_exp"]->GetYaxis()->SetBinLabel(is+1,expSystNames[is]);
  
   size_t nthSysts(weightSysts_.size());
   if(nthSysts>0){
-    ht->addHist("vbfmva_th",       new TH2F("vbfmva_th",      ";VBF MVA;Systs;Events",20,-1,1,nthSysts,0,nthSysts));  
+    ht->addHist("vbfmva_th",       new TH2F("vbfmva_th",      ";VBF MVA;Systs;Events",20,0,1,nthSysts,0,nthSysts));  
     for(size_t is=0; is<nthSysts; is++)
       ht->get2dPlots()["vbfmva_th"]->GetYaxis()->SetBinLabel(is+1,weightSysts_[is].first);
   }
@@ -885,9 +885,9 @@ void VBFVectorBoson::fill(MiniEvent_t ev, TLorentzVector boson, std::vector<Jet>
 
   //final analysis histograms
   ht->fill("evcount",  0, cplotwgts, c);
-  if(!(doBlindAnalysis && vbfmva<-99)) {
+  if(vbfmva>=0)
     ht->fill("vbfmva", vbfmva, cplotwgts,c);
-    
+  if(!ev.isData){
     //replicas for theory systs
     for(size_t is=0; is<weightSysts_.size(); is++){
       std::vector<double> sweights(1,cplotwgts[0]);
@@ -895,7 +895,6 @@ void VBFVectorBoson::fill(MiniEvent_t ev, TLorentzVector boson, std::vector<Jet>
       sweights[0] *= (ev.g_w[idx]/ev.g_w[0])*(normH->GetBinContent(idx+1)/normH->GetBinContent(1));
       ht->fill2D("vbfmva_th",vbfmva,is,sweights,c);
     }
-    
   }
 
   if(skimtree) newTree->Fill();
