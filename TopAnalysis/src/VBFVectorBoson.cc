@@ -238,6 +238,7 @@ void VBFVectorBoson::RunVBFVectorBoson()
         isVBF    = (selector->hasTriggerBit(vbfPhotonTrigger, ev.triggerBits) 
                     && photons[0].Pt()>75 
                     && fabs(photons[0].Eta())<1.442
+                    && r9>0.9
                     && passVBFJetsTrigger);
         isHighPt = ( selector->hasTriggerBit(highPtPhotonTrigger, ev.triggerBits) 
                      && photons[0].Pt()>minBosonHighPt);
