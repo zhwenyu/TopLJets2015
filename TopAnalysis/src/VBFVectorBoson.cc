@@ -62,6 +62,7 @@ void VBFVectorBoson::RunVBFVectorBoson()
 
   //TMVA configuration
   std::map<TString,TMVA::Reader *> readers;
+  std::map<TString,TGraph *> mvaCDFinv;
   TString method("BDT_VBF0HighMJJ");
   TString weightFile("${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBF_weights/BDTHighMJJ.weights.xml");
   gSystem->ExpandPathName(weightFile);
@@ -102,6 +103,16 @@ void VBFVectorBoson::RunVBFVectorBoson()
   readers[method]->AddVariable("j_qg[0]",       &vbfVars_.leadj_qg);
   readers[method]->AddVariable("j_qg[1]",       &vbfVars_.subleadj_qg);
   readers[method]->BookMVA(method,weightFile);
+
+  //read the transformations based on CDF^{-1}
+  weightFile="${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBF_weights/inverse_cdfs.root";
+  gSystem->ExpandPathName(weightFile);
+  TFile *fcdf=TFile::Open(weightFile);
+  for(std::map<TString,TMVA::Reader *>::iterator it=readers.begin(); it!=readers.end(); it++) {
+    TString key=it->first;
+    mvaCDFinv[key]=(TGraph *)fcdf->Get(key+"_cdfinv");
+  }
+
 
   ///////////////////////
   // LOOP OVER EVENTS //
@@ -282,11 +293,9 @@ void VBFVectorBoson::RunVBFVectorBoson()
       //evaluate discriminator MVA
       vbfmva = -1000;
       if(passJets) {
-        vbfmva = 
-          isHighMJJ ? 
-          readers["BDT_VBF0HighMJJ"]->EvaluateMVA("BDT_VBF0HighMJJ") :
-          readers["BDT_VBF0LowMJJ"]->EvaluateMVA("BDT_VBF0LowMJJ") ;
-
+        TString key(isHighMJJ ?"BDT_VBF0HighMJJ":"BDT_VBF0LowMJJ");
+        vbfmva = readers[key]->EvaluateMVA(key);
+        if(mvaCDFinv[key]) vbfmva=mvaCDFinv[key]->Eval(vbfmva);
         if(doBlindAnalysis && ev.isData && vbfmva>0.1) vbfmva=-1000;
       }
       ////////////////////
@@ -487,10 +496,9 @@ void VBFVectorBoson::RunVBFVectorBoson()
           
           //re-evaluate MVA
           vbfVars_=ivbfVars;
-          imva=
-            isHighMJJ ? 
-            readers["BDT_VBF0HighMJJ"]->EvaluateMVA("BDT_VBF0HighMJJ") :
-            readers["BDT_VBF0LowMJJ"]->EvaluateMVA("BDT_VBF0LowMJJ") ;
+          TString key(isHighMJJ ?"BDT_VBF0HighMJJ":"BDT_VBF0LowMJJ");
+          imva = readers[key]->EvaluateMVA(key);
+          if(mvaCDFinv[key]) imva=mvaCDFinv[key]->Eval(imva);
         }
         
         //fill with new values/weights

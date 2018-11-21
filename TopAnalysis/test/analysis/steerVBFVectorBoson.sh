@@ -9,6 +9,7 @@ if [ "$#" -lt 1 ]; then
     echo "        SEL          - launches selection jobs to the batch, output will contain summary trees and control plots"; 
     echo "        MERGE        - merge output (if given \"extra\" is appended to the directory)"
     echo "        PLOT         - make plots (if given \"extra\" is appended to the directory)"
+    echo "        BDTTRANSFORM - derive BDT transformation for uniform background yields"
     echo "        WWW          - move plots to web-based (if given \"extra\" is appended to the directory)"
     exit 1; 
 fi
@@ -165,6 +166,10 @@ case $WHAT in
             -o ${outdir}/${githash}/${EXTRA}/plots/ratio_plotter.root
         
 	;;
+
+    BDTTRANSFORM )
+        python test/analysis/VBF_weights/getInverseCDF.py
+        ;;
 
     WWW )
 
