@@ -425,7 +425,7 @@ class Plot(object):
 
         txt.DrawLatex(inix,iniy,self.cmsLabel)
         txt.SetTextAlign(32)
-        if lumi<1:
+        if lumi<10:
             txt.DrawLatex(0.95,0.97,'#scale[0.8]{pPb (%3.0f nb^{-1}, %s)}' % (lumi*1000.,self.com) )
         elif lumi<100:
             txt.DrawLatex(0.95,0.97,'#scale[0.8]{%3.1f pb^{-1} (%s)}' % (lumi,self.com) )

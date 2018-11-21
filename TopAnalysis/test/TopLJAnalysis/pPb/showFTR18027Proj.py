@@ -1,15 +1,59 @@
 #!/usr/bin/env python
 
 import ROOT
-
+C90=1.64485
 onlyStatFromSplot=True
+
+
+def getMCFMPreds(migF):
+
+    mcfmPreds={}
+    for d in ['pt_l','y_l']:
+        mig=getSummed(migF,d+'_mig')
+        f=ROOT.TFile.Open('{0}_CT14_nCTEQ15_PDFunc.root'.format(d))
+        p=ROOT.TGraph(f.Get(d).At(0))
+
+        genX=mig.ProjectionY('{0}_gen'.format(d))
+        genX.Reset('ICE')
+        smearedX=mig.ProjectionX('{0}_smaeared'.format(d))
+        smearedX.Reset('ICE')
+
+        for xbin in xrange(1,genX.GetNbinsX()+1):
+            xcen=genX.GetXaxis().GetBinCenter(xbin)
+            val=p.Eval(xcen)
+            #if d=='y_l':
+            #    val=p.Eval( -1*xcen ) 
+            genX.Fill(xcen,val)
+            
+        for xbin in xrange(1,genX.GetNbinsX()+1):
+            
+            wgtSum=[]
+            for ybin in xrange(1,smearedX.GetNbinsX()+1):
+                wgtSum.append(mig.GetBinContent(xbin,ybin))
+            totalWgts=sum(wgtSum)
+            
+            for ybin in xrange(1,smearedX.GetNbinsX()+1):                         
+                smearedX.Fill(smearedX.GetXaxis().GetBinCenter(ybin),genX.GetBinContent(xbin)*wgtSum[ybin-1]/totalWgts)
+                
+        for xbin in xrange(1,genX.GetNbinsX()+1):
+            genX.SetBinContent(xbin,genX.GetBinContent(xbin)/genX.GetXaxis().GetBinWidth(xbin))
+        for xbin in xrange(1,smearedX.GetNbinsX()+1):
+            smearedX.SetBinContent(xbin,smearedX.GetBinContent(xbin)/smearedX.GetXaxis().GetBinWidth(xbin))
+
+        mcfmPreds[d]=smearedX.Clone(d+'_mcfm')
+        mcfmPreds[d].SetDirectory(0)
+        mcfmPreds[d].SetTitle('MCFM CT14+nCTEQ15')
+        mcfmPreds[d].SetLineColor(ROOT.kRed)
+        mcfmPreds[d].SetLineWidth(2)
+    return mcfmPreds
+
 
 def cmsHeader(doLumi=False):
     tex=ROOT.TLatex()
     tex.SetTextFont(42)
     tex.SetTextSize(0.04)
     tex.SetNDC()
-    tex.DrawLatex(0.12,0.96,'#bf{CMS} #it{simulation preliminary}')
+    tex.DrawLatex(0.12,0.96,'#bf{CMS} #it{Simulation}')
     if doLumi:
         tex.SetTextAlign(32)
         tex.DrawLatex(0.95,0.97,'#scale[0.8]{pPb (2pb^{-1}, #sqrt{s}=8.16 TeV)}')
@@ -84,6 +128,8 @@ def getSummed(inF,hname,divideXwid=False):
 
 inF=ROOT.TFile.Open('plots/MC8.16TeV_TTbar_pPb_Pohweg/controlplots.root')
 splots=ROOT.TFile.Open('splots.root')
+
+mcfmPreds=getMCFMPreds(inF)
 
 ROOT.gROOT.SetBatch(True)
 ROOT.gStyle.SetOptStat(0)
@@ -214,14 +260,14 @@ for hname in ['pt_l','y_l','pt_l_mig','y_l_mig']:
             pdfEnv.SetPointError(xbin-1,
                                  0.5*h.GetBinWidth(xbin),
                                  0.5*h.GetBinWidth(xbin),
-                                 ROOT.TMath.Sqrt(varMin.GetBinContent(xbin)),
-                                 ROOT.TMath.Sqrt(varMax.GetBinContent(xbin)))
+                                 ROOT.TMath.Sqrt(varMin.GetBinContent(xbin))/C90,
+                                 ROOT.TMath.Sqrt(varMax.GetBinContent(xbin))/C90)
             pdfRelEnv.SetPoint(xbin-1,h.GetBinCenter(xbin),1)
             pdfRelEnv.SetPointError(xbin-1,
                                     0.5*h.GetBinWidth(xbin),
                                     0.5*h.GetBinWidth(xbin),
-                                    ROOT.TMath.Sqrt(varMin.GetBinContent(xbin))/cenVal,
-                                    ROOT.TMath.Sqrt(varMax.GetBinContent(xbin))/cenVal)
+                                    ROOT.TMath.Sqrt(varMin.GetBinContent(xbin))/(C90*cenVal),
+                                    ROOT.TMath.Sqrt(varMax.GetBinContent(xbin))/(C90*cenVal))
         for g in [pdfEnv,pdfRelEnv]:
             g.SetFillStyle(3001)
             g.SetFillColor(ROOT.kAzure+7)
@@ -233,12 +279,16 @@ for hname in ['pt_l','y_l','pt_l_mig','y_l_mig']:
         for i in xrange(0,len(projh)):
             projh[i].SetLineWidth(2)
             projh[i].SetLineColor(ROOT.kTeal-8)
-            projh[i].Draw('histsame')
+            #projh[i].Draw('histsame')
             projh[i].GetYaxis().SetTitle(h.GetYaxis().GetTitle())
             projh[i].GetXaxis().SetTitle(h.GetXaxis().GetTitle())
             ratioh.append(projh[i].Clone('{0}_p{1}_ratio'.format(hname,ybin)))
-            ratioh[i].Divide(h)
-                          
+            ratioh[i].Divide(h)                  
+
+        if hname in mcfmPreds:
+            mcfmPreds[hname].Scale(h.Integral()/mcfmPreds[hname].Integral())
+            mcfmPreds[hname].Draw('histsame')
+        
         h.Draw('histsame')
         ROOT.gStyle.SetErrorX(0.)
         sh.Draw('e1same')
@@ -249,9 +299,12 @@ for hname in ['pt_l','y_l','pt_l_mig','y_l_mig']:
         leg.SetBorderSize(0)
         leg.SetFillStyle(0)
         leg.SetTextSize(0.035)
-        leg.AddEntry(sh,       'Pseudo data', 'ep')
-        leg.AddEntry(pdfEnv,   'pPb#rightarrow t#bar{t} Powheg',  'lf')
-        leg.AddEntry(projh[0], 'EPPS16 error sets',     'l')
+        leg.AddEntry(sh,       'Pseudo-data', 'ep')
+        leg.AddEntry(pdfEnv,   'pPb#rightarrow t#bar{t} Powheg (EPPS16)',  'lf')
+        #leg.AddEntry(projh[0], 'EPPS16 error sets',     'l')
+        if hname in mcfmPreds:
+            leg.AddEntry(mcfmPreds[hname],mcfmPreds[hname].GetTitle(),'l')
+
         leg.Draw()
         frame.GetYaxis().SetRangeUser(0,h.GetMaximum()*1.5)
         cmsHeader(True)
@@ -273,8 +326,8 @@ for hname in ['pt_l','y_l','pt_l_mig','y_l_mig']:
         frame.GetYaxis().SetRangeUser(0.8,1.2)
         frame.Draw()
         pdfRelEnv.Draw('2')
-        for r in ratioh:             
-            r.Draw('histsame')
+        #for r in ratioh:             
+        #    r.Draw('histsame')
         for xbin in xrange(1,sh.GetNbinsX()+1):
             val=sh.GetBinContent(xbin)
             valUnc=sh.GetBinError(xbin)
@@ -294,9 +347,9 @@ for hname in ['pt_l','y_l','pt_l_mig','y_l_mig']:
         leg.SetFillStyle(0)
         leg.SetTextSize(0.035)
         leg.SetNColumns(3)
-        leg.AddEntry(sh,        'Pseudo data', 'ep')
-        leg.AddEntry(pdfRelEnv, 'pPb#rightarrow t#bar{t} Powheg',  'lf')
-        leg.AddEntry(ratioh[0], 'EPPS16 error sets',     'l')
+        leg.AddEntry(sh,        'Pseudo-data', 'ep')
+        leg.AddEntry(pdfRelEnv, 'pPb#rightarrow t#bar{t} Powheg (EPPS16)',  'lf')
+        #leg.AddEntry(ratioh[0], 'EPPS16 error sets',     'l')
         leg.Draw()
 
         cmsHeader(True)

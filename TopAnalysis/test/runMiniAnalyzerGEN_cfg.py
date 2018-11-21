@@ -12,6 +12,11 @@ options.register('inputFile', None,
                  VarParsing.varType.string,
                  "input file to process"
                  )
+options.register('usePool', False,
+                 VarParsing.multiplicity.singleton,
+                 VarParsing.varType.bool,
+                 "use pool source"
+                 )
 options.register('saveTree', True,
                  VarParsing.multiplicity.singleton,
                  VarParsing.varType.bool,
@@ -59,42 +64,39 @@ process.options   = cms.untracked.PSet(
     allowUnscheduled = cms.untracked.bool(True)
 )
 # Input source
-#process.source = cms.Source("PoolSource",
-#    dropDescendantsOfDroppedBranches = cms.untracked.bool(False),
-#    fileNames = cms.untracked.vstring( 
-#        '/store/mc/RunIIWinter15wmLHE/TT_13TeV-powheg/LHE/MCRUN2_71_V1_ext1-v1/40000/E0E60B0A-EFD9-E411-944B-002590494C44.root',
-#        '/store/mc/RunIIWinter15wmLHE/TT_13TeV-powheg/LHE/MCRUN2_71_V1_ext1-v1/40000/E216B380-EFD9-E411-A286-003048FEC15C.root',
-#        '/store/mc/RunIIWinter15wmLHE/TT_13TeV-powheg/LHE/MCRUN2_71_V1_ext1-v1/40000/E41672D8-EFD9-E411-96A4-02163E00F2F9.root',
-#        '/store/mc/RunIIWinter15wmLHE/TT_13TeV-powheg/LHE/MCRUN2_71_V1_ext1-v1/40000/E41DFBBB-EFD9-E411-B7E3-02163E00F319.root',
-#        '/store/mc/RunIIWinter15wmLHE/TT_13TeV-powheg/LHE/MCRUN2_71_V1_ext1-v1/40000/E4F6FEEE-EED9-E411-ABA1-02163E00F4EF.root',
-#        '/store/mc/RunIIWinter15wmLHE/TT_13TeV-powheg/LHE/MCRUN2_71_V1_ext1-v1/40000/E612966B-EFD9-E411-A4DB-02163E00EAD0.root',
-#        '/store/mc/RunIIWinter15wmLHE/TT_13TeV-powheg/LHE/MCRUN2_71_V1_ext1-v1/40000/E85BB4DA-EED9-E411-8FE2-02163E00E9BC.root',
-#    ),
-#    inputCommands = cms.untracked.vstring('keep *', 
-#        'drop LHEXMLStringProduct_*_*_*'),
-#    secondaryFileNames = cms.untracked.vstring()
-#)
-
-process.source = cms.Source("EmptySource")
-process.externalLHEProducer = cms.EDProducer("ExternalLHEProducer",
-    nEvents = cms.untracked.uint32(options.nevents),
-    outputFile = cms.string('cmsgrid_final.lhe'),
-    scriptName = cms.FileInPath('GeneratorInterface/LHEInterface/data/run_generic_tarball_cvmfs.sh'),
-    numberOfParameters = cms.uint32(1),
-    args = cms.vstring('/eos/user/m/mseidel/ReReco2016/b312177_merged/TT_hdamp_TuneT4_noweights_NNPDF30_13TeV_powheg_hvq.tgz')
-)
+if options.usePool:
+    process.source = cms.Source("LHESource",
+                                dropDescendantsOfDroppedBranches = cms.untracked.bool(False),
+                                fileNames = cms.untracked.vstring('/store/group/phys_top/gkrintir/TopHI/TT_8160GeV/PowHeg/LHAPDF6/TT_hdamp_pPb_CT14_EPPS16_8.16TeV_powheg_hvq/seed_9_pwgevents.lhe'
+                                                                  ),
+                                inputCommands = cms.untracked.vstring('keep *', 
+                                                                      'drop LHEXMLStringProduct_*_*_*'),
+                                secondaryFileNames = cms.untracked.vstring()
+                                )
+else:
+    process.source = cms.Source("EmptySource")
+    process.externalLHEProducer = cms.EDProducer("ExternalLHEProducer",
+                                                 nEvents = cms.untracked.uint32(options.nevents),
+                                                 outputFile = cms.string('cmsgrid_final.lhe'),
+                                                 scriptName = cms.FileInPath('GeneratorInterface/LHEInterface/data/run_generic_tarball_cvmfs.sh'),
+                                                 numberOfParameters = cms.uint32(1),
+                                                 args = cms.vstring(
+            '/afs/cern.ch/user/g/gkrintir/public/ForPedro/CT14/TT_hdamp_Pbp_CT14_8.16TeV_powheg_hvq.tgz'
+            #'/eos/user/m/mseidel/ReReco2016/b312177_merged/TT_hdamp_TuneT4_noweights_NNPDF30_13TeV_powheg_hvq.tgz'
+            )
+                                                 )
 
 if (options.generator == "pythia8"):
     from Configuration.Generator.Pythia8CommonSettings_cfi import *
     from Configuration.Generator.Pythia8CUEP8M1Settings_cfi import *
     from Configuration.Generator.Pythia8PowhegEmissionVetoSettings_cfi import *
     process.generator = cms.EDFilter("Pythia8HadronizerFilter",
-        maxEventsToPrint = cms.untracked.int32(0),
-        pythiaPylistVerbosity = cms.untracked.int32(0),
-        filterEfficiency = cms.untracked.double(1.0),
-        pythiaHepMCVerbosity = cms.untracked.bool(False),
-        comEnergy = cms.double(13000.),
-        PythiaParameters = cms.PSet(
+                                     maxEventsToPrint = cms.untracked.int32(0),
+                                     pythiaPylistVerbosity = cms.untracked.int32(0),
+                                     filterEfficiency = cms.untracked.double(1.0),
+                                     pythiaHepMCVerbosity = cms.untracked.bool(False),
+                                     comEnergy = cms.double(13000.),
+                                     PythiaParameters = cms.PSet(
             pythia8CommonSettingsBlock,
             pythia8CUEP8M1SettingsBlock,
             pythia8PowhegEmissionVetoSettingsBlock,
@@ -109,28 +111,28 @@ if (options.generator == "pythia8"):
                 'MultipartonInteractions:pT0Ref=2.197139e+00',
                 'MultipartonInteractions:expPow=1.608572e+00',
                 'ColourReconnection:range=6.593269e+00',
-            ),
+                ),
             fsrParameters = cms.vstring(
                 'TimeShower:renormMultFac   = ' + str(options.scale**2),
                 'TimeShower:factorMultFac   = ' + str(options.scale**2),
                 'TimeShower:alphaSvalue     = ' + str(options.asfsr),
                 'TimeShower:MEcorrections   = ' + options.me,
-            ),
+                ),
             isrParameters = cms.vstring(
                 'SpaceShower:alphaSvalue     = ' + str(options.asisr),
                 ),
             parameterSets = cms.vstring('pythia8CommonSettings',
-                #'pythia8CUEP8M1Settings',
-                'pythia8PowhegEmissionVetoSettings',
-                'processParameters',
-                'fsrParameters'
+                                        #'pythia8CUEP8M1Settings',
+                                        'pythia8PowhegEmissionVetoSettings',
+                                        'processParameters',
+                                        'fsrParameters'
+                                        )
             )
-        )
-    )
-
+                                     )
+    
     if (options.cr == "off"):
         process.generator.PythiaParameters.processParameters.append('ColourReconnection:reconnect = off')
-
+        
     # Tune from TOP-RunIISummer15wmLHEGS-00176
     if ('qcd' in options.cr):
         process.generator.PythiaParameters.processParameters = cms.vstring(
@@ -161,8 +163,8 @@ if (options.generator == "pythia8"):
             'ColourReconnection:junctionCorrection=0.1222',
             'MultipartonInteractions:pT0Ref=2.174',
             'MultipartonInteractions:expPow=1.312',
-        )
-    
+            )
+        
     # Tune from TOP-RunIISummer15wmLHEGS-00223
     if ('move' in options.cr):
         process.generator.PythiaParameters.processParameters = cms.vstring(
@@ -181,8 +183,8 @@ if (options.generator == "pythia8"):
             'MultipartonInteractions:expPow=1.346e+00',
             'ColourReconnection:mode=2',
             'ColourReconnection:m2Lambda=1.89',
-          )
-    
+            )
+        
     if ('erd' in options.cr):
         process.generator.PythiaParameters.processParameters.append('PartonLevel:earlyResDec = on')
 
@@ -195,39 +197,40 @@ if (options.generator == "herwigpp"):
     from Configuration.Generator.HerwigppEnergy_13TeV_cfi import *
     from Configuration.Generator.HerwigppLHEFile_cfi import *
     from Configuration.Generator.HerwigppMECorrections_cfi import *
-
+    
     process.generator = cms.EDFilter("ThePEGHadronizerFilter",
-	      herwigDefaultsBlock,
-	      herwigppUESettingsBlock,
-	      herwigppPDFSettingsBlock,
-	      herwigppHardPDFSettingsBlock,			# Implementing renamed NNPDF30 config block
-	      herwigppEnergySettingsBlock,
-	      herwigppLHEFileSettingsBlock,
-	      herwigppMECorrectionsSettingsBlock,
-
-	      configFiles = cms.vstring(),
-	      parameterSets = cms.vstring(
-		        'hwpp_cmsDefaults',
-		        'hwpp_ue_EE5C',
-		        'hwpp_cm_13TeV',
-		        'hwpp_pdf_CTEQ6L1',			# Shower PDF matching with the tune
-		        'hwpp_pdf_NNPDF30NLO_Hard',		# PDF of hard subprocess
-		        'hwpp_LHE_Powheg_DifferentPDFs',
-		        'hwpp_MECorr_' + options.me.capitalize(),
-		        'productionParameters',
-	      ),
-	      productionParameters = cms.vstring(
-		        'set /Herwig/Shower/AlphaQCD:RenormalizationScaleFactor ' + str(options.scale),
-		        'set /Herwig/Shower/AlphaQCD:AlphaMZ ' + str(options.asfsr)
-        ),
-        crossSection = cms.untracked.double(-1),
-        filterEfficiency = cms.untracked.double(1.0),
-        #dumpConfig  = cms.untracked.string("dump_me_" + options.me + ".config"),
-    )
-
+                                     herwigDefaultsBlock,
+                                     herwigppUESettingsBlock,
+                                     herwigppPDFSettingsBlock,
+                                     herwigppHardPDFSettingsBlock,			# Implementing renamed NNPDF30 config block
+                                     herwigppEnergySettingsBlock,
+                                     herwigppLHEFileSettingsBlock,
+                                     herwigppMECorrectionsSettingsBlock,
+                                     
+                                     configFiles = cms.vstring(),
+                                     parameterSets = cms.vstring(
+            'hwpp_cmsDefaults',
+            'hwpp_ue_EE5C',
+            'hwpp_cm_13TeV',
+            'hwpp_pdf_CTEQ6L1',			# Shower PDF matching with the tune
+            'hwpp_pdf_NNPDF30NLO_Hard',		# PDF of hard subprocess
+            'hwpp_LHE_Powheg_DifferentPDFs',
+            'hwpp_MECorr_' + options.me.capitalize(),
+            'productionParameters',
+            ),
+                                     productionParameters = cms.vstring(
+            'set /Herwig/Shower/AlphaQCD:RenormalizationScaleFactor ' + str(options.scale),
+            'set /Herwig/Shower/AlphaQCD:AlphaMZ ' + str(options.asfsr)
+            ),
+                                     crossSection = cms.untracked.double(-1),
+                                     filterEfficiency = cms.untracked.double(1.0),
+                                     #dumpConfig  = cms.untracked.string("dump_me_" + options.me + ".config"),
+                                     )
+    
 #pseudo-top
 process.load("TopQuarkAnalysis.TopEventProducers.producers.pseudoTop_cfi")
 process.pseudoTop.src = 'generator:unsmeared'
+    
 process.pseudoTop.runTopReconstruction = False
 
 process.load('TopQuarkAnalysis.BFragmentationAnalyzer.bfragWgtProducer_cfi')
@@ -258,6 +261,8 @@ if not process.analysis.savePF :
 #process.lhe_step = cms.Path(process.externalLHEProducer)
 process.generation_step = cms.Path(process.generator*process.pseudoTop*process.bfragWgtProducer*process.analysis)
 process.genfiltersummary_step = cms.EndPath(process.genFilterSummary)
+    
+
 process.endjob_step = cms.EndPath(process.endOfProcess)
 #process.RECOSIMoutput_step = cms.EndPath(process.RECOSIMoutput)
 
@@ -272,6 +277,7 @@ process.genParticleCandidates = cms.EDProducer("GenParticleProducer",
 # Schedule definition
 process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary_step,process.endjob_step)
 # filter all path with the production filter sequence
+
 for path in process.paths:
-	  if path in ['lhe_step']: continue
-	  getattr(process,path)._seq = process.generator * getattr(process,path)._seq 
+    if path in ['lhe_step']: continue      
+    getattr(process,path)._seq = process.generator * getattr(process,path)._seq 

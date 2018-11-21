@@ -51,8 +51,8 @@ def showPlotFor(args,var,opt):
                     nevts=p.mc[m].Integral()
                     for i in xrange(0,ROOT.gRandom.Poisson(nevts)):
                         histos['data'][key].Fill( p.mc[m].GetRandom() )                        
-                p.add(histos['data'][key],'Pseudo data',1,True,False,False)
-                p.cmsLabel='#scale[0.9]{#bf{CMS} #it{simulation preliminary}}'
+                p.add(histos['data'][key],'Pseudo-data',1,True,False,False)
+                p.cmsLabel='#scale[0.9]{#bf{CMS} #it{Simulation}}'
             else:
                 p.add(histos['data'][key],'Data',1,True,False,False)
 
@@ -84,10 +84,11 @@ def showPlotFor(args,var,opt):
         p.add(histTotal['wjets'],'W+jets',ROOT.TColor.GetColor('#3ed2e0'),False,False,False)
         p.add(histTotal['dy'],'DY',ROOT.TColor.GetColor('#2baeba'),False,False,False)
         p.add(histTotal['qcd'],'Multijets',ROOT.TColor.GetColor('#2b83ba'),False,False,False)
-        p.add(histTotal['data'],'Data',1,True,False,False)
         if opt.pseudoData:
-            p.cmsLabel='#scale[0.9]{#bf{CMS} #it{simulation preliminary}}'            
+            p.add(histTotal['data'],'Pseudo-data',1,True,False,False)
+            p.cmsLabel='#scale[0.9]{#bf{CMS} #it{Simulation}}'            
         else:
+            p.add(histTotal['data'],'Data',1,True,False,False)
             p.cmsLabel='#scale[1.2]{#bf{CMS}} #scale[0.75]{#it{Supplementary}}'
         p.ratiorange=(0.4,1.7)
         p.ratioTitle='#scale[0.9]{Data/Exp.}'
