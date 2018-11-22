@@ -56,7 +56,7 @@ EffCorrection_t L1PrefireEfficiencyWrapper::getJetBasedCorrection(std::vector<Je
     Float_t effVal(eff->GetEfficiency(ibin));
     corr.first *= (1-effVal);
     corr.second += pow(0.5*(eff->GetEfficiencyErrorLow(ibin)+eff->GetEfficiencyErrorUp(ibin)),2);
-    corr.second += pow(0.2*effVal,2);
+    corr.second += pow(0.2*effVal,2);    
   }
   corr.second=sqrt(corr.second);
 

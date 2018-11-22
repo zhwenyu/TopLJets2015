@@ -25,6 +25,11 @@
 
 using namespace std;
 
+float LEADINGJETCUT=50.;
+bool APPLYEECLEANING=true;
+bool APPLYPHOTONTRIGSAFE=true;
+int PUIDX=1;
+
 //
 void VBFVectorBoson::RunVBFVectorBoson()
 {
@@ -64,7 +69,7 @@ void VBFVectorBoson::RunVBFVectorBoson()
   std::map<TString,TMVA::Reader *> readers;
   std::map<TString,TGraph *> mvaCDFinv;
   TString method("BDT_VBF0HighMJJ");
-  TString weightFile("${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBF_weights/BDTHighMJJ.weights.xml");
+  TString weightFile("${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBF_weights/HighMJJ_BDT_VBF0HighMJJ.weights.xml");
   gSystem->ExpandPathName(weightFile);
   readers[method]=new TMVA::Reader( "!Color:!Silent" );
   readers[method]->AddVariable("D",             &vbfVars_.D);
@@ -84,7 +89,7 @@ void VBFVectorBoson::RunVBFVectorBoson()
   readers[method]->BookMVA(method,weightFile);
   
   method="BDT_VBF0LowMJJ";
-  weightFile="${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBF_weights/BDTLowMJJ.weights.xml";
+  weightFile="${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBF_weights/LowMJJ_BDT_VBF0LowMJJ.weights.xml";
   gSystem->ExpandPathName(weightFile);
   readers[method]=new TMVA::Reader( "!Color:!Silent" );
   readers[method]->AddVariable("D",             &vbfVars_.D);
@@ -158,11 +163,14 @@ void VBFVectorBoson::RunVBFVectorBoson()
       for(auto j : alljets) {
         int idx=j.getJetIndex();
         int jid=ev.j_id[idx];
-	bool passLoosePu((jid>>2)&0x1);
+        //cleanup for ecal noise
+        if(APPLYEECLEANING && fabs(j.Eta())>2.7 && fabs(j.Eta())<3 && ev.j_emf[idx]>0.55) continue;
+	//bool passPu((jid>>2)&0x1);
+	bool passPu((jid>>PUIDX)&0x1);
 	if(CR){
-	  if(jets.size() == 0 && passLoosePu)
+	  if(jets.size() == 0 && passPu)
 	    continue;
-	} else if(!passLoosePu) continue;
+	} else if(!passPu) continue;
       	jets.push_back(j);
       }
      //Fake and tight photons in CR
@@ -231,7 +239,7 @@ void VBFVectorBoson::RunVBFVectorBoson()
       vbfVars_.fillDiscriminatorVariables(boson,jets,ev);
 
       //final categories
-      bool passJetMult(jets.size()>=2);
+      bool passJetMult(jets.size()>=2 && jets[0].Pt()>LEADINGJETCUT);
       bool passMJJ(passJetMult && vbfVars_.mjj>highMJJcut);
       bool passJets(passJetMult && vbfVars_.mjj>minMJJ);
       bool passVBFJetsTrigger(passJets && vbfVars_.detajj>3.0);
@@ -240,12 +248,15 @@ void VBFVectorBoson::RunVBFVectorBoson()
       bool isHighPt(false),isVBF(false),isHighPtAndVBF(false),isHighPtAndOfflineVBF(false),
         isBosonPlusOneJet(false),isHighMJJ(false),isLowMJJ(false), isHighMJJLP(false),isLowMJJLP(false);
       if(chTag=="A") {        
+        bool isPhotonTrigSafe(r9>0.9 && hoe<0.01 && eveto>0 && pixelseed<1);
+        if(!APPLYPHOTONTRIGSAFE) isPhotonTrigSafe=true;
         isVBF    = (selector->hasTriggerBit(vbfPhotonTrigger, ev.triggerBits) 
                     && photons[0].Pt()>75 
                     && fabs(photons[0].Eta())<1.442
-                    && r9>0.9
+                    && isPhotonTrigSafe
                     && passVBFJetsTrigger);
         isHighPt = ( selector->hasTriggerBit(highPtPhotonTrigger, ev.triggerBits) 
+                     && isPhotonTrigSafe
                      && photons[0].Pt()>minBosonHighPt);
         isHighPtAndOfflineVBF = (isHighPt && fabs(photons[0].Eta())<1.442 && passVBFJetsTrigger);
         isHighPtAndVBF = (isHighPt && isVBF);
@@ -309,8 +320,7 @@ void VBFVectorBoson::RunVBFVectorBoson()
       //////////////////
       float wgt(1.0);
       std::vector<float>puWgts(3,1.0);
-      float l1prefireProb(1.0);
-      EffCorrection_t trigSF(1.0,0.),selSF(1.0,0.);
+      EffCorrection_t trigSF(1.0,0.),selSF(1.0,0.),l1prefireProb(1.0,0.);
       if (!ev.isData) {
 
         // norm weight
@@ -323,8 +333,8 @@ void VBFVectorBoson::RunVBFVectorBoson()
         ht->fill("puwgtctr",1,puPlotWgts);
 
         //l1 prefire probability
-        l1prefireProb=l1PrefireWR->getJetBasedCorrection(jets).first;
-        wgt *= l1prefireProb;
+        EffCorrection_t l1prefireProb=l1PrefireWR->getJetBasedCorrection(jets);
+        wgt *= l1prefireProb.first;
 
         // photon trigger*selection weights        
         if(chTag=="A")
@@ -385,8 +395,12 @@ void VBFVectorBoson::RunVBFVectorBoson()
       if(ev.isData) continue;
       std::vector<std::pair<float,float> > mvaWithWeights;
       selector->setDebug(false);
+      vbf::DiscriminatorInputs origVbfVars(vbfVars_);
       for(size_t is=0; is<expSysts_.size(); is++){
         
+        //reset to the original values
+        vbfVars_.assignValuesFrom(origVbfVars);
+
         //uncertainty
         TString sname=expSysts_[is];
         bool isUpVar(sname.Contains("up"));
@@ -394,19 +408,19 @@ void VBFVectorBoson::RunVBFVectorBoson()
         //base values and kinematics
         TString icat(baseCategory);
         float imva=vbfmva;
-        float iwgt=plotwgts[0];          
+        float iwgt=(ev.g_nw>0 ? ev.g_w[0] : 1.0);
         TLorentzVector iBoson(boson);
         std::vector<Jet> ijets(jets);
-        bool reSelect(false);
-        
-        if(sname=="puup")        iwgt *= puWgts[1]/puWgts[0];
-        if(sname=="pudn")        iwgt *= puWgts[2]/puWgts[0];
-        if(sname=="trigup")      iwgt *= 1+trigSF.second/trigSF.first;
-        if(sname=="trigdn")      iwgt *= 1-trigSF.second/trigSF.first;
-        if(sname=="selup")       iwgt *= 1+selSF.second/selSF.first;
-        if(sname=="seldn")       iwgt *= 1-selSF.second/selSF.first;
-        if(sname=="l1prefireup") iwgt *= 1+0.3/l1prefireProb;
-        if(sname=="l1prefiredn") iwgt *= 1-0.3/l1prefireProb;
+        bool reSelect(false);        
+
+        if(sname=="puup")        iwgt *= puWgts[1]*trigSF.first*selSF.first*l1prefireProb.first;
+        if(sname=="pudn")        iwgt *= puWgts[2]*trigSF.first*selSF.first*l1prefireProb.first;
+        if(sname=="trigup")      iwgt *= puWgts[0]*(trigSF.first+trigSF.second)*selSF.first*l1prefireProb.first;
+        if(sname=="trigdn")      iwgt *= puWgts[0]*(trigSF.first-trigSF.second)*selSF.first*l1prefireProb.first;
+        if(sname=="selup")       iwgt *= puWgts[2]*trigSF.first*(selSF.first+selSF.second)*l1prefireProb.first;
+        if(sname=="seldn")       iwgt *= puWgts[2]*trigSF.first*(selSF.first+selSF.second)*l1prefireProb.first;
+        if(sname=="l1prefireup") iwgt *= puWgts[1]*trigSF.first*selSF.first*(l1prefireProb.first+l1prefireProb.second);
+        if(sname=="l1prefiredn") iwgt *= puWgts[1]*trigSF.first*selSF.first*(l1prefireProb.first+l1prefireProb.second);
         if(sname.Contains("aes") && chTag=="A")  {
           reSelect=true;
           iBoson *= (1+(isUpVar?1:-1)*bosonScaleUnc); 
@@ -451,19 +465,34 @@ void VBFVectorBoson::RunVBFVectorBoson()
           if(sname.Contains("PileUpPtHF"))       jecIdx=28;
           
           //re-scale and re-select jets
-          std::vector<Jet> newJets = selector->getGoodJets(ev,30.,4.7,leptons,photons,jecIdx);
+          std::vector<Jet> newJets = selector->getGoodJets(ev,20.,4.7,leptons,photons);
           ijets.clear();
           for(auto j : alljets) {
-            float unc=j.getScaleUnc();
-            j *= (1+(isUpVar ? 1 : -1)*unc);
-            if(j.Pt()<30) continue;
+
             int idx=j.getJetIndex();
+            int jflav(abs(ev.j_flav[idx]));
+
+            //shift jet energy
+            float scaleVar(1.0);
+            if(jecIdx<0) {
+              scaleVar=isUpVar ? ev.j_jerUp[idx] : ev.j_jerDn[idx];
+            } 
+            else {
+              bool flavorMatches(true);
+              if(jecIdx==6 && jflav!=21) flavorMatches=false; //FlavorPureGluon
+              if(jecIdx==7 && jflav>=4)  flavorMatches=false; //FlavorPureQuark
+              if(jecIdx==8 && jflav!=4)  flavorMatches=false; //FlavorPureCharm
+              if(jecIdx==9 && jflav!=5)  flavorMatches=false; //FlavorPureGluon
+              if(flavorMatches)
+                scaleVar=isUpVar ? ev.j_jecUp[jecIdx][idx] : ev.j_jecDn[jecIdx][idx];
+            }
+            j*=scaleVar;
+            if(j.Pt()<30) continue;
+            
             int jid=ev.j_id[idx];
-            bool passLoosePu((jid>>2)&0x1);
-            if(!passLoosePu) continue;
-            
-            //TODO: additional cleanup for noise? 
-            
+            if(APPLYEECLEANING && fabs(j.Eta())>2.7 && fabs(j.Eta())<3 && ev.j_emf[idx]>0.55) continue;
+            bool passPu((jid>>PUIDX)&0x1);
+            if(!passPu) continue;
             ijets.push_back(j);
           }
         }
@@ -471,14 +500,13 @@ void VBFVectorBoson::RunVBFVectorBoson()
         //re-select if needed
         if(reSelect) {
           
-          if (ijets.size()<2) continue;
+          if (ijets.size()<2 || ijets[0].Pt()<LEADINGJETCUT) continue;
 
-          vbf::DiscriminatorInputs ivbfVars;
-          ivbfVars.fillDiscriminatorVariables(iBoson,ijets,ev);
-          if(ivbfVars.mjj<minMJJ) continue;
+          vbfVars_.fillDiscriminatorVariables(iBoson,ijets,ev);
+          if(vbfVars_.mjj<minMJJ) continue;
           
           //final event category
-          bool passVBFJetsTrigger(ivbfVars.detajj>3.0 && ivbfVars.mjj>highMJJcut);
+          bool passVBFJetsTrigger(vbfVars_.detajj>3.0 && vbfVars_.mjj>highMJJcut);
           bool isVBF(false),isHighPt(false);
           if(chTag=="A") {
             isVBF    = (selector->hasTriggerBit(vbfPhotonTrigger, ev.triggerBits) 
@@ -500,19 +528,17 @@ void VBFVectorBoson::RunVBFVectorBoson()
           else if(isVBF) icat="VBF"+chTag;
           else continue;
           
-          //re-evaluate MVA
-          vbfVars_=ivbfVars;
+          //re-evaluate MVA         
           TString key(isHighMJJ ?"BDT_VBF0HighMJJ":"BDT_VBF0LowMJJ");
           imva = readers[key]->EvaluateMVA(key);
           if(mvaCDFinv[key]) imva=max(0.,mvaCDFinv[key]->Eval(imva));
         }
-        
+
         //fill with new values/weights
         std::vector<double> eweights(1,iwgt);
         ht->fill2D("vbfmva_exp",imva,is,eweights,icat);
       }
       selector->setDebug(debug);
-
     }
 
   //close input file

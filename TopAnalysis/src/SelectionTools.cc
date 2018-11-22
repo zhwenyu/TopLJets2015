@@ -132,7 +132,7 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
   //select jets based on the leptons and photon candidates
   float maxJetEta(2.4);
   if(anType_==VBF) maxJetEta=4.7;
-  jets_=getGoodJets(ev,30.,maxJetEta,leptons_,photons_,-2);
+  jets_=getGoodJets(ev,30.,maxJetEta,leptons_,photons_);
   //getGoodJets(ev,30.,maxJetEta,leptons_,photons_);
 
   //build the met
@@ -432,7 +432,7 @@ std::vector<Particle> SelectionTool::selPhotons(std::vector<Particle> &photons,i
 
 
 //
-std::vector<Jet> SelectionTool::getGoodJets(MiniEvent_t &ev, double minPt, double maxEta, std::vector<Particle> leptons,std::vector<Particle> photons,int jetUncIdx) {
+std::vector<Jet> SelectionTool::getGoodJets(MiniEvent_t &ev, double minPt, double maxEta, std::vector<Particle> leptons,std::vector<Particle> photons) {
   std::vector<Jet> jets;
   
   for (int k=0; k<ev.nj; k++) {
@@ -475,15 +475,11 @@ std::vector<Jet> SelectionTool::getGoodJets(MiniEvent_t &ev, double minPt, doubl
 
     //jes/jer uncertainty
     int jflav(abs(ev.j_flav[k]));
-    float jecUp(0),jecDn(0);
-    if(jetUncIdx<0){
-      jecUp=pow(1-ev.j_jerUp[k],2);
-      jecDn=pow(1-ev.j_jerDn[k],2);
-    }    
+    float jecUp(0),jecDn(0);   
+    jecUp=pow(1-ev.j_jerUp[k],2);
+    jecDn=pow(1-ev.j_jerDn[k],2);
     for(int iunc=0; iunc<30; iunc++){
-     
-      if(jetUncIdx>-2 && iunc!=jetUncIdx) continue;
-      
+           
       //see python/miniAnalyzer_cfi.py for these
       if(iunc==6 && jflav!=21) continue; //FlavorPureGluon
       if(iunc==7 && jflav>=4)  continue; //FlavorPureQuark
@@ -498,11 +494,11 @@ std::vector<Jet> SelectionTool::getGoodJets(MiniEvent_t &ev, double minPt, doubl
     jecDn=TMath::Sqrt(jecDn);
     jet.setScaleUnc(0.5*(jecUp+jecDn));
 
-    if(debug_) 
+    if(debug_)
       cout << "Jet #" << jets.size() 
            << " pt=" << jp4.Pt() << "+/-" << jet.getScaleUnc()*jp4.Pt() << " (jec+jer)"
            << " eta=" << jp4.Eta() << " deepCSV=" << ev.j_deepcsv[k] << " flav=" << jflav << endl;
-
+    
     jets.push_back(jet);
   }
   

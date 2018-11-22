@@ -39,6 +39,8 @@ namespace vbf{
       isotropy(o.isotropy),circularity(o.circularity),sphericity(o.sphericity),aplanarity(o.aplanarity),C(o.C),D(o.D),
       scalarht(o.scalarht), mht(o.mht),
       ncentj(o.ncentj) {
+      dphivcentj.resize(o.dphivcentj.size());
+      centjy.resize(o.centjy.size());
       for(size_t ij=0; ij<dphivcentj.size(); ij++){
         dphivcentj[ij] = o.dphivcentj[ij];
         centjy[ij]      = o.centjy[ij];
@@ -46,9 +48,8 @@ namespace vbf{
     }
 
     //assignment operator
-    DiscriminatorInputs& operator=(const DiscriminatorInputs& o)
+    void assignValuesFrom(const DiscriminatorInputs& o)
       {
-        if(&o == this) return *this;
         leadj_pt         = o.leadj_pt;  
         leadj_gawidth    = o.leadj_gawidth;  
         leadj_c2_02      = o.leadj_c2_02;  
@@ -83,7 +84,6 @@ namespace vbf{
           dphivcentj[ij] = o.dphivcentj[ij];
           centjy[ij]      = o.centjy[ij];
         } 
-        return *this;
       }
 
     //filler method
