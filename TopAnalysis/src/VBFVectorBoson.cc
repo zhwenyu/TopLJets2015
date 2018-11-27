@@ -145,12 +145,13 @@ void VBFVectorBoson::runAnalysis()
         //check trigger
         if(selCode==11*11) {
           if(ev_.isData && !selector_->isDoubleEGPD() ) continue;
-          if(!selector_->hasTriggerBit("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_v",    ev_.triggerBits) &&
-             !selector_->hasTriggerBit("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ_v", ev_.triggerBits) );
+          bool passTrigger=(selector_->hasTriggerBit("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_v",    ev_.triggerBits) ||
+                            selector_->hasTriggerBit("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ_v", ev_.triggerBits) );
+          if(!passTrigger) continue;
           chTag="EE";
         }
-        if(selCode==13*13) {
-          if( ev_.isData && !selector_->isSingleMuonPD() ) continue; 
+        else if(selCode==13*13) {
+          if(ev_.isData && !selector_->isSingleMuonPD() ) continue; 
           bool passTrigger=(selector_->hasTriggerBit("HLT_IsoMu24_v",     ev_.triggerBits) ||
                             selector_->hasTriggerBit("HLT_IsoMu24_2p1_v", ev_.triggerBits) ||
                             selector_->hasTriggerBit("HLT_IsoMu27_v",     ev_.triggerBits) );     

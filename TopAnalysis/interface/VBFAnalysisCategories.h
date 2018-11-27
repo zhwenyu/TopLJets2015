@@ -25,7 +25,7 @@ namespace vbf {
     std::vector<TString> getChannelTags() {
       std::vector<TString> chTags;
       TString chTag("");    
-      if(EE>0) chTag="MM";
+      if(EE>0) chTag="EE";
       if(MM>0) chTag="MM";
       if(A>0)  chTag="A";
       if(chTag=="") return chTags;
