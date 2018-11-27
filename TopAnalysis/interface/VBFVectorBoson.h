@@ -45,9 +45,11 @@ class VBFVectorBoson{
                 Bool_t QCDTemp=true, 
                 Bool_t SRfake= false, 
                 Bool_t skimtree=false, 
+                bool runSysts=false,
                 bool blind =true)
    : filename_(filename), outname_(outname), normH_(normH), genPU_(genPU), era_(era), 
-    debug_(debug), CR_(CR), QCDTemp_(QCDTemp), SRfake_(SRfake), skimtree_(skimtree), doBlindAnalysis_(blind),
+    debug_(debug), CR_(CR), QCDTemp_(QCDTemp), SRfake_(SRfake), skimtree_(skimtree), 
+    runSysts_(runSysts), doBlindAnalysis_(blind),
     xsec_(xsec)
   {
     fMVATree_ = NULL;
@@ -173,6 +175,7 @@ private:
   float evtWeight_;
   float sihih_,chiso_,r9_,hoe_,mindrl_,mindrj_;
   int training_;
+  bool runSysts_;
   bool doBlindAnalysis_;  
 
   float xsec_;

@@ -62,6 +62,7 @@ def main():
     parser.add_option(      '--systVar',     dest='systVar',     help='single systematic variation  [%default]',   default='nominal',       type='string')
     parser.add_option(      '--debug',       dest='debug',       help='debug mode  [%default]',                            default=False,      action='store_true')
     parser.add_option(      '--flag',        dest='flag',        help='job specific flag  [%default]',   default=0,          type=int)
+    parser.add_option(      '--xsec',        dest='xsec',        help='use this xsec value instead of the json one  [%default]',   default=None,          type=float)
     parser.add_option(      '--ch',          dest='channel',     help='channel  [%default]',                                    default=13,         type=int)
     parser.add_option(      '--charge',      dest='charge',      help='charge  [%default]',                                     default=0,          type=int)
     parser.add_option(      '--era',         dest='era',         help='era to use for corrections/uncertainties  [%default]',   default='era2016',       type='string')
@@ -150,6 +151,7 @@ def main():
             outF=opt.output
             xsec=1.
             if opt.tag in onlyListXsec: xsec=onlyListXsec[opt.tag]
+            if opt.xsec: xsec=opt.xsec
             if systVar != 'nominal' and not systVar in opt.output: outF=opt.output[:-5]+'_'+systVar+'.root'
             task_list.append( (opt.method,inF,outF,opt.channel,opt.charge,opt.flag,opt.runSysts,systVar,opt.era,opt.tag,opt.debug, opt.CR, opt.QCDTemp, opt.SRfake, opt.mvatree,opt.genWeights,xsec) )
     else:
@@ -161,6 +163,7 @@ def main():
             if tag=='backup' : continue
             xsec=1.
             if tag in onlyListXsec: xsec=onlyListXsec[tag]
+            if opt.xsec: xsec=opt.xsec
 
             #filter tags            
             if len(onlyList)>0:

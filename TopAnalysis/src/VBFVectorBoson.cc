@@ -378,6 +378,7 @@ void VBFVectorBoson::runAnalysis()
       //experimental systs cycle: better not to do anything else after this...
       //final category selection is repeated ad nauseam with varied objects/weights and mva is re-evaluated several times
       if(ev_.isData) continue;
+      if(!runSysts_) continue;
       std::vector<std::pair<float,float> > mvaWithWeights;
       selector_->setDebug(false);
       vbf::DiscriminatorInputs origVbfVars(vbfVars_);
@@ -930,7 +931,7 @@ void VBFVectorBoson::fillControlHistos(TLorentzVector boson, std::vector<Jet> je
   }
 
   //theory uncertainties are filled only for MC
-  if(!ev_.isData && ev_.g_w[0]!=0 && normH_ && normH_->GetBinContent(1)>0 && c.Contains("MJJ")) {
+  if(runSysts_ && !ev_.isData && ev_.g_w[0]!=0 && normH_ && normH_->GetBinContent(1)>0 && c.Contains("MJJ")) {
     
     //replicas for theory systs
     for(size_t is=0; is<weightSysts_.size(); is++){
