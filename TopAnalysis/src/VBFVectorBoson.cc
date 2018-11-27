@@ -125,6 +125,7 @@ void VBFVectorBoson::runAnalysis()
       TString chTag("");
       TLorentzVector boson(0,0,0,0);
       float bosonScaleUnc(0.);
+      bool isBosonTrigSafe(false);
 
       //leptons
       std::vector<Particle> leptons = selector_->flaggedLeptons(ev_);     
@@ -149,6 +150,7 @@ void VBFVectorBoson::runAnalysis()
                             selector_->hasTriggerBit("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ_v", ev_.triggerBits) );
           if(!passTrigger) continue;
           chTag="EE";
+          isBosonTrigSafe=true;
         }
         else if(selCode==13*13) {
           if(ev_.isData && !selector_->isSingleMuonPD() ) continue; 
@@ -160,6 +162,7 @@ void VBFVectorBoson::runAnalysis()
           }
           if(!passTrigger) continue;
           chTag="MM";
+          isBosonTrigSafe=true;
         }
       }
       
@@ -175,7 +178,6 @@ void VBFVectorBoson::runAnalysis()
       mults["looseprompt"] = 0;
       mults["tightprompt"] = 0;
       std::vector<Particle> allPhotons = selector_->flaggedPhotons(ev_);      
-      bool isPhotonTrigSafe(false);
       if(chTag=="") {
 
         //in data photons can only come from these PDs
@@ -209,9 +211,9 @@ void VBFVectorBoson::runAnalysis()
           if(!CR_ && applyTrigSafePhoton_) {
             bool eveto       = ev_.gamma_idFlags[pidx] & 0x1;
             bool pixelseed   = ((ev_.gamma_idFlags[pidx]>>1) & 0x1);
-            isPhotonTrigSafe = (r9_>0.9 && eveto && !pixelseed && hoe_<0.01); 
+            isBosonTrigSafe = (r9_>0.9 && eveto && !pixelseed && hoe_<0.01); 
           }else{
-            isPhotonTrigSafe=true;
+            isBosonTrigSafe=true;
           }          
           
           //trigger will be verified later when dividing the categories
@@ -283,8 +285,8 @@ void VBFVectorBoson::runAnalysis()
         passHighVPtTrig=false;
         for(auto tname : highVPtPhotonTrigs_) passHighVPtTrig |= selector_->hasTriggerBit(tname,ev_.triggerBits);
       }
-      cat[3]  = ( boson.Pt()>lowVPtCut_  && boson.Pt()<=highVPtCut_ && isPhotonTrigSafe);
-      cat[4]  = ( boson.Pt()>highVPtCut_ && isPhotonTrigSafe);
+      cat[3]  = ( boson.Pt()>lowVPtCut_  && boson.Pt()<=highVPtCut_ && isBosonTrigSafe);
+      cat[4]  = ( boson.Pt()>highVPtCut_ && isBosonTrigSafe);
       if(jets.size()>=2) {
         cat[5]  =  (vbfVars_.mjj>lowMJJCut_ && vbfVars_.mjj<=highMJJCut_);
         cat[6]  =  (vbfVars_.mjj>highMJJCut_);
@@ -507,10 +509,10 @@ void VBFVectorBoson::runAnalysis()
           bool isLowVPt = (passLowVPtTrig                                                      
                            && iBoson.Pt()>lowVPtCut_
                            && iBoson.Pt()<=highVPtCut_
-                           && isPhotonTrigSafe);
+                           && isBosonTrigSafe);
           bool isHighVPt = (passHighVPtTrig
                             && iBoson.Pt()>highVPtCut_
-                            && isPhotonTrigSafe );
+                            && isBosonTrigSafe );
           bool isLowMJJ(vbfVars_.mjj>lowMJJCut_ && vbfVars_.mjj<=highMJJCut_);
           bool isHighMJJ(vbfVars_.mjj>highMJJCut_);
 
