@@ -51,6 +51,7 @@ class SelectionTool {
   std::vector<Particle> &getSelPhotons()  { return photons_; }
   std::vector<Particle> &getRelaxedTightPhotons()  { return relaxedTightPhotons; }
   std::vector<Particle> &getQCDTmpPhotons()  { return tmpPhotons; }
+  //jetUncIdx:-2 = all JER+JES -1: only JER >=0 specific JES
   std::vector<Jet>      getGoodJets(MiniEvent_t &ev, double minPt = 30., double maxEta = 4.7, std::vector<Particle> leptons = {},std::vector<Particle> photons = {}); // changed for the moment to VBF
   std::vector<Jet>      &getJets()        { return jets_; }
   bool                   passMETFilters(MiniEvent_t &ev);

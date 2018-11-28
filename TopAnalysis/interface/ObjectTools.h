@@ -81,7 +81,7 @@ class Jet : public TLorentzVector {
     std::vector<IdTrack> &getTracks() { return trks_; }
     void sortTracksByPt() { sort(trks_.begin(),trks_.end(), sortIdTracksByPt); }
     void setScaleUnc(float scaleUnc) { scaleUnc_=scaleUnc; }
-    float getScaleUnc() { return scaleUnc_; }
+    float getScaleUnc() { return scaleUnc_; }   
     static bool sortJetsByPt(Jet i, Jet j)  { return i.Pt() > j.Pt(); }
     static bool sortJetsByCSV(Jet i, Jet j) { return i.getCSV() > j.getCSV(); }
   

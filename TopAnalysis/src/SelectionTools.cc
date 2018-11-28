@@ -385,7 +385,7 @@ std::vector<Particle> SelectionTool::flaggedPhotons(MiniEvent_t &ev)
     photons.push_back(Particle(p4, 0, 22, qualityFlagsWord, ig, 1.0, unc));
 
     if(debug_) std::cout << "Photon #"<< photons.size() 
-                         << " pt=" << pt << "+/-" << pt*unc << " eta=" << p4.Eta()
+                         << " pt=" << pt << "+/-" << unc << " eta=" << p4.Eta()
                          << hex << " raw particle id bits=" << pid 
                          << " quality bits=" << qualityFlagsWord 
                          << dec << endl;
@@ -487,29 +487,30 @@ std::vector<Jet> SelectionTool::getGoodJets(MiniEvent_t &ev, double minPt, doubl
 
     //jes/jer uncertainty
     int jflav(abs(ev.j_flav[k]));
-    float jecUp(pow(1-ev.j_jerUp[k],2)),jecDn(pow(1-ev.j_jerDn[k],2));
-    for(size_t iunc=0; iunc<30; iunc++){
-
+    float jecUp(0),jecDn(0);   
+    jecUp=pow(1-ev.j_jerUp[k],2);
+    jecDn=pow(1-ev.j_jerDn[k],2);
+    for(int iunc=0; iunc<30; iunc++){
+           
       //see python/miniAnalyzer_cfi.py for these
       if(iunc==6 && jflav!=21) continue; //FlavorPureGluon
       if(iunc==7 && jflav>=4)  continue; //FlavorPureQuark
       if(iunc==8 && jflav!=4)  continue; //FlavorPureCharm
       if(iunc==9 && jflav!=5)  continue; //FlavorPureGluon
       
-      if(ev.j_jecUp[iunc][k]!=0)
-        jecUp += pow(1-ev.j_jecUp[iunc][k],2);
-      if(ev.j_jecDn[iunc][k]!=0)
-        jecDn += pow(1-ev.j_jecDn[iunc][k],2);
+      if(ev.j_jecUp[iunc][k]!=0) jecUp += pow(1-ev.j_jecUp[iunc][k],2);
+      if(ev.j_jecDn[iunc][k]!=0) jecDn += pow(1-ev.j_jecDn[iunc][k],2);
     }
+    
     jecUp=TMath::Sqrt(jecUp);
     jecDn=TMath::Sqrt(jecDn);
     jet.setScaleUnc(0.5*(jecUp+jecDn));
 
-    if(debug_) 
+    if(debug_)
       cout << "Jet #" << jets.size() 
            << " pt=" << jp4.Pt() << "+/-" << jet.getScaleUnc()*jp4.Pt() << " (jec+jer)"
            << " eta=" << jp4.Eta() << " deepCSV=" << ev.j_deepcsv[k] << " flav=" << jflav << endl;
-
+    
     jets.push_back(jet);
   }
   

@@ -24,6 +24,7 @@ zx_samples_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/zx_sa
 RPout_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/golden_noRP.json
 wwwdir=~/www/ExclusiveAna
 inputfileTag=MC13TeV_2017_GGH2000toZZ2L2Nu
+#inputfileTag=MC13TeV_2017_GJets_HT400to600
 inputfileTESTSEL=${eosdir}/${inputfileTag}/Chunk_0_ext0.root
 #inputfileTag=Data13TeV_2017B_DoubleMuon
 #inputfileTESTSEL=/store/cmst3/group/top/RunIIReReco/f93b8d8/${inputfileTag}/Chunk_0_ext0.root
@@ -59,8 +60,10 @@ case $WHAT in
 	;;
 
     PLOTSEL )
-	commonOpts="-i /eos/cms/${outdir} --puNormSF puwgtctr -l ${lumi} --mcUnc ${lumiUnc} "
-	python scripts/plotter.py ${commonOpts} -j ${samples_json}    -O plots/sel --only mll,ptll,pt,eta,met,jets,nvtx,ratevsrun --saveLog; 
+        kFactors="--procSF MC13TeV_2017_QCDEM_15to20:1.26,MC13TeV_2017_QCDEM_20to30:1.26,MC13TeV_2017_QCDEM_30to50:1.26,MC13TeV_2017_QCDEM_50to80:1.26,MC13TeV_2017_QCDEM_80to120:1.26,MC13TeV_2017_QCDEM_120to170:1.26,MC13TeV_2017_QCDEM_170to300:1.26,MC13TeV_2017_QCDEM_300toInf:1.26,MC13TeV_2017_GJets_HT40to100:1.26,MC13TeV_2017_GJets_HT100to200:1.26,MC13TeV_2017_GJets_HT200to400:1.26,MC13TeV_2017_GJets_HT600toInf:1.26"
+
+	commonOpts="-i /eos/cms/${outdir} --puNormSF puwgtctr -l ${lumi} --mcUnc ${lumiUnc} ${kFactors}"
+	python scripts/plotter.py ${commonOpts} -j ${samples_json}    -O plots/sel --only mboson,mtboson,pt,eta,met,jets,nvtx,ratevsrun --saveLog; 
         python scripts/plotter.py ${commonOpts} -j ${samples_json}    --rawYields --silent --only gen -O plots/zx_sel -o bkg_plotter.root ; 
 	python scripts/plotter.py ${commonOpts} -j ${zx_samples_json} --rawYields --silent --only gen -O plots/zx_sel;
         python test/analysis/pps/computeDileptonSelEfficiency.py 
