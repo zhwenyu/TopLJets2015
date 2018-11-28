@@ -89,15 +89,20 @@ int TMVAClassification( TString myMethodList , TString extention, BDTOptimizer* 
        cut+= " && ";
      
    }
+   cut += " && j_pt[1] > 50 && j_pt[0] > 50 ";
    TString nTrainBkg = "nTrain_Background=";
    //HighMJJ
    if (isHighMJJ){
-     cut += " && mjj > 1000 && gamma_pt[0] < 200 && j_pt[0]>50";
+     cut += " && mjj > 1000 && gamma_pt[0] < 200 ";
      nTrainBkg=nTrainBkg+"5000";
    } 
    //LowMJJ
    else if (isLowMJJ){
-     cut += " && mjj > 150";
+     cut += " && mjj > 500";
+     if (extention.Contains("HPtHM"))
+       cut += " && mjj > 1000";
+     if (extention.Contains("HPtLM"))
+       cut += " && mjj < 1000";
      nTrainBkg=nTrainBkg+"10000";
    }
 
@@ -111,10 +116,17 @@ int TMVAClassification( TString myMethodList , TString extention, BDTOptimizer* 
    TCut mycutb = TCut(cut) || dyCut;
 
    if (Use["VBF"]) {
-     if(isLowMJJ)
-       dataloader->setLowMJJVariables(); 
-     else if (isHighMJJ)
-       dataloader->setHighMJJVariables(); 
+     if(isLowMJJ){
+       if(extention.Contains("HPtHM"))
+	 //dataloader->setHPtHMVariables();
+	 dataloader->setAllVariables();
+       else if(extention.Contains("HPtLM"))
+	 //	 dataloader->setHPtLMVariables();
+	 dataloader->setAllVariables();
+       else  	 dataloader->setAllVariables(); //dataloader->setLowMJJVariables(); 
+     } else if (isHighMJJ)
+       //       dataloader->setHighMJJVariables(); 
+       dataloader->setAllVariables();
      else dataloader->setAllVariables(false); 
    }
    else if (Use["Cuts"] || Use["CutsD"]) dataloader->setCutOptVars();
