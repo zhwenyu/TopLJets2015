@@ -658,11 +658,11 @@ void VBFVectorBoson::bookHistograms() {
   ht_->addHist("gawidthfwdj",      new TH2F("gawidthfwdj",      ";gawidth fwd jet;#eta_{j}",100,-1,1,25,0,5));
   ht_->addHist("emfcentj",         new TH2F("emfcentj",         ";emf cent jet;#eta_{j}",100,0,2,25,0,5));
   ht_->addHist("emffwdj",          new TH2F("emffwdj",          ";emf fwd jet;#eta_{j}",100,0,2,25,0,5));
-  ht_->addHist("etaphi",           new TH2F("etaphi",           ";Most central jet |#eta|V|#phi|;Events",30,-4.7,4.7,25,-TMath::Pi(),TMath::Pi()));
-  ht_->addHist("centralEtaVphi",   new TH2F("centralEtaVphi",    ";Most central jet #eta;#phi",30,-4.7,4.7,25,-TMath::Pi(),TMath::Pi()));
-  ht_->addHist("centralEtaVpuMva", new TH2F("centralEtaVpuMva",  ";Most central jet #eta;PUMVA",30,-4.7,4.7,25,-1,1));
-  ht_->addHist("forwardEtaVphi",   new TH2F("forwardEtaVphi",    ";Most forward jet #eta;#phi",30,-4.7,4.7,25,-TMath::Pi(),TMath::Pi()));
-  ht_->addHist("forwardEtaVpuMva", new TH2F("forwardEtaVpuMva",  ";Most forward jet #eta;PUMVA",30,-4.7,4.7,25,-1,1));
+  ht_->addHist("etaphi",           new TH2F("etaphi",           ";Most central jet #eta;#phi [rad];Events",30,-4.7,4.7,25,-TMath::Pi(),TMath::Pi()));
+  ht_->addHist("centEtaVphi",      new TH2F("centEtaVphi",      ";Most central jet #eta;#phi [rad]",30,-4.7,4.7,25,-TMath::Pi(),TMath::Pi()));
+  ht_->addHist("centEtaVpuMva",    new TH2F("centEtaVpuMva",    ";Most central jet #eta;PUMVA",30,-4.7,4.7,25,-1,1));
+  ht_->addHist("fwdEtaVphi",       new TH2F("fwdEtaVphi",       ";Most forward jet #eta;#phi [rad]",30,-4.7,4.7,25,-TMath::Pi(),TMath::Pi()));
+  ht_->addHist("fwdEtaVpuMva",     new TH2F("fwdEtaVpuMva",     ";Most forward jet #eta;PUMVA",30,-4.7,4.7,25,-1,1));
 
   //other jet variables
   ht_->addHist("jet_raw_pt",    new TH1F("jet_raw_pt",       ";raw PT of jets;Jets",                50,0,200));
@@ -935,14 +935,12 @@ void VBFVectorBoson::fillControlHistos(TLorentzVector boson, std::vector<Jet> je
     ht_->fill("jet_qg"   ,ev_.j_qg[jets[ij].getJetIndex()]    , cplotwgts,c);
     ht_->fill2D("etaphi",  jets[ij].Eta(),jets[ij].Phi() ,   cplotwgts,c);    
 
-    TString pfix("central");
     TString postfix("centj");
     if(fabs(fabs(jets[ij].Eta())-vbfVars_.forwardeta)<0.05) {
-      pfix    = "forward";
       postfix = "fwdj";
     }
-    ht_->fill2D(pfix+"EtaVphi",    jets[ij].Eta(), jets[ij].Phi(),      cplotwgts,c);
-    ht_->fill2D(pfix+"EtaVpuMva",  jets[ij].Eta(), jets[ij].getPUMVA(), cplotwgts,c);
+    ht_->fill2D(postfix+"EtaVphi",    jets[ij].Eta(), jets[ij].Phi(),      cplotwgts,c);
+    ht_->fill2D(postfix+"EtaVpuMva",  jets[ij].Eta(), jets[ij].getPUMVA(), cplotwgts,c);
     ht_->fill2D("pt"+postfix,      fabs(jets[ij].Eta()), jets[ij].Pt(), cplotwgts,c);
     ht_->fill2D("gawidth"+postfix, ev_.j_gawidth[jets[ij].getJetIndex()],  fabs(jets[ij].Eta()), cplotwgts,c);
     ht_->fill2D("emf"+postfix,     ev_.j_emf[jets[ij].getJetIndex()],      fabs(jets[ij].Eta()), cplotwgts,c);

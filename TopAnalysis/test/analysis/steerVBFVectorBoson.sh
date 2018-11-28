@@ -55,7 +55,7 @@ case $WHAT in
         ### --CR     : gives a control region to evaluate fake rates in the photon data samples
         ### --SRfake : gives the distributions of fakes, normalised based on fake rates
 
-        json=data/era2017/vbf_samples.json
+        json=data/era2017/vbf_samples.json,data/era2017/vbf_syst_samples.json
 	if [[ -z ${EXTRA} ]]; then
 	    extraOpts=" --mvatree"
         fi
