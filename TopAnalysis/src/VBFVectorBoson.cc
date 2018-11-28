@@ -287,7 +287,7 @@ void VBFVectorBoson::runAnalysis()
       }
       cat[3]  = ( boson.Pt()>lowVPtCut_  && boson.Pt()<=highVPtCut_ && isBosonTrigSafe);
       cat[4]  = ( boson.Pt()>highVPtCut_ && isBosonTrigSafe);
-      if(jets.size()>=2) {
+      if(jets.size()>=2 && jets[0].Pt()>leadJetPt_ && jets[1].Pt()>subLeadJetPt_) {
         cat[5]  =  (vbfVars_.mjj>lowMJJCut_ && vbfVars_.mjj<=highMJJCut_);
         cat[6]  =  (vbfVars_.mjj>highMJJCut_);
       }

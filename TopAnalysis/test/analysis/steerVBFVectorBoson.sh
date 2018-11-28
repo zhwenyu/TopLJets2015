@@ -97,8 +97,7 @@ case $WHAT in
         gh=${githash}/
 	plotOutDir=${outdir}/${githash}/${EXTRA}/plots/
         kFactors="--procSF MC13TeV_2017_QCDEM_15to20:1.26,MC13TeV_2017_QCDEM_20to30:1.26,MC13TeV_2017_QCDEM_30to50:1.26,MC13TeV_2017_QCDEM_50to80:1.26,MC13TeV_2017_QCDEM_80to120:1.26,MC13TeV_2017_QCDEM_120to170:1.26,MC13TeV_2017_QCDEM_170to300:1.26,MC13TeV_2017_QCDEM_300toInf:1.26,MC13TeV_2017_GJets_HT40to100:1.26,MC13TeV_2017_GJets_HT100to200:1.26,MC13TeV_2017_GJets_HT200to400:1.26,MC13TeV_2017_GJets_HT600toInf:1.26"
-	commonOpts="-i ${outdir}/${gh}/${EXTRA} --puNormSF puwgtctr -l ${lumi} --saveLog --mcUnc ${lumiUnc} --lumiSpecs HighMJJA:${vbflumi},HighMJJLPA:${vbflumi},OfflineVBFA:${fulllumi}"
-	commonOpts="-i ${outdir}/${gh}/${EXTRA} --puNormSF puwgtctr --saveLog -l ${lumi} --mcUnc ${lumiUnc} --lumiSpecs HighMJJA:${vbflumi},HighMJJLPA:${vbflumi},LowMJJA:${fulllumi},HighMJJMM:${fulllumi},LowMJJMM:${fulllumi} -O ${plotOutDir}"
+	commonOpts="-i ${outdir}/${gh}/${EXTRA} --puNormSF puwgtctr -l ${lumi} --saveLog --mcUnc ${lumiUnc} --lumiSpecs LowVPtLowMJJA:${vbflumi},LowVPtHighMJJA:${vbflumi}"
 	python scripts/plotter.py ${commonOpts} -j ${json} --only HighMJJ,LowMJJ ${kFactors}
 	python scripts/plotter.py ${commonOpts} -j ${syst_json} ${kFactors} --only HighMJJ,LowMJJ --silent -o syst_plotter.root
 
