@@ -220,7 +220,7 @@ void VBFVectorBoson::runAnalysis()
 	    else                photons_   =tmpPhotons_;
 	  }
 	}
-       
+
         //assign relevant information
         if(photons_.size()>0) {
           boson         = photons_[0];
