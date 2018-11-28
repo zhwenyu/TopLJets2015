@@ -51,9 +51,9 @@ case $WHAT in
 
     SEL )
 	##### NOTE: There are three options here:
-    ### --mvatree: to store trees for BDT training in signal region
-    ### --CR     : gives a control region to evaluate fake rates in the photon data samples
-    ### --SRfake : gives the distributions of fakes, normalised based on fake rates
+        ### --mvatree: to store trees for BDT training in signal region
+        ### --CR     : gives a control region to evaluate fake rates in the photon data samples
+        ### --SRfake : gives the distributions of fakes, normalised based on fake rates
 
         json=data/era2017/vbf_samples.json
 	if [[ -z ${EXTRA} ]]; then

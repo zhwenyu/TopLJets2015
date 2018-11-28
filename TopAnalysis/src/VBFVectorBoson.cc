@@ -191,7 +191,7 @@ void VBFVectorBoson::runAnalysis()
 	inclusivePhotons_     = selector_->selPhotons(allPhotons,SelectionTool::CONTROL, leptons);
 	for(auto a : inclusivePhotons_) {
 	  int idx = a.originalReference();
-	  if (!this->isFakePhoton(ev,idx)) continue;
+	  if (!selector_->isFakePhoton(ev_,idx)) continue;
 	  fakePhotons_.push_back(a);
 	}
 
@@ -204,19 +204,19 @@ void VBFVectorBoson::runAnalysis()
 	  if (!SRfake_) {
 	    if( photons_.size()>=1) chTag="A";
 	  } else {
-	    if(fakePhotons.size()>=1){
+	    if(fakePhotons_.size()>=1){
 	      chTag="A";
 	      photons_.clear();
-	      photons_   =fakePhotons;
+	      photons_   =fakePhotons_;
 	    }
 	  }
 	} else {
 	  if(SRfake_) chTag = "";
-	  bool passPhoton = (!SRfake_ && !isQCDTemp && inclusivePhotons_.size()>=1) || (!SRfake_ && isQCDTemp && tmpPhotons_.size()>=1);
+	  bool passPhoton = (!SRfake_ && !QCDTemp_ && inclusivePhotons_.size()>=1) || (!SRfake_ && QCDTemp_ && tmpPhotons_.size()>=1);
 	  if(passPhoton) {
 	    chTag="A";
 	    photons_.clear();
-	    if(!isQCDTemp)      photons_   =inclusivePhotons_;
+	    if(!QCDTemp_)      photons_   =inclusivePhotons_;
 	    else                photons_   =tmpPhotons_;
 	  }
 	}
@@ -276,7 +276,7 @@ void VBFVectorBoson::runAnalysis()
 	if(!CR_) {
 	  if(!passPu) continue;
 	} else {
-	  if(jets.size()=!1 && !passPu) continue;
+	  if(jets.size()!=1 && !passPu) continue;
 	  if(jets.size()==1 && passLoosePu) continue;
 	}
         
@@ -944,8 +944,8 @@ void VBFVectorBoson::fillControlHistos(TLorentzVector boson, std::vector<Jet> je
     ht_->fill2D(pfix+"EtaVphi",    jets[ij].Eta(), jets[ij].Phi(),      cplotwgts,c);
     ht_->fill2D(pfix+"EtaVpuMva",  jets[ij].Eta(), jets[ij].getPUMVA(), cplotwgts,c);
     ht_->fill2D("pt"+postfix,      fabs(jets[ij].Eta()), jets[ij].Pt(), cplotwgts,c);
-    ht_->fill2D("gawidth"+postfix, ev.j_gawidth[jets[ij].getJetIndex()],  fabs(jets[ij].Eta()), cplotwgts,c);
-    ht_->fill2D("emf"+postfix,     ev.j_emf[jets[ij].getJetIndex()],      fabs(jets[ij].Eta()), cplotwgts,c);
+    ht_->fill2D("gawidth"+postfix, ev_.j_gawidth[jets[ij].getJetIndex()],  fabs(jets[ij].Eta()), cplotwgts,c);
+    ht_->fill2D("emf"+postfix,     ev_.j_emf[jets[ij].getJetIndex()],      fabs(jets[ij].Eta()), cplotwgts,c);
   }
   ht_->fill("centraleta",   vbfVars_.centraleta,  cplotwgts,c);
   ht_->fill("forwardeta",   vbfVars_.forwardeta,  cplotwgts,c);
