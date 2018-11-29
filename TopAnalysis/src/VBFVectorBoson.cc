@@ -397,6 +397,7 @@ void VBFVectorBoson::runAnalysis()
       if(skimtree_) {
         evtWeight_ = plotwgts[0]*xsec_;
         training_ = useForTraining(); 	
+	if (float(iev) > nentries_*0.2) break;
         newTree_->Fill();
       }
 

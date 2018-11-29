@@ -57,7 +57,10 @@ case $WHAT in
 
         json=data/era2017/vbf_samples.json
 	if [[ -z ${EXTRA} ]]; then
+	    echo "Making trees ... "
 	    extraOpts=" --mvatree"
+	    json=data/era2017/vbf_trees.json
+	    EXTRA="MVATrees"
         fi
 	python scripts/runLocalAnalysis.py \
 	    -i ${eosdir} --only ${json}\
