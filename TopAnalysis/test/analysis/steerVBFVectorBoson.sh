@@ -44,7 +44,7 @@ case $WHAT in
 	python scripts/runLocalAnalysis.py \
             -i ${input} -o ${output} --tag ${tag} --only ${json}\
             --njobs 1 -q local --genWeights genweights_${githash}.root \
-            --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts --debug;
+            --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts --debug --mvatree;
 
         #--debug --mvatree \
         ;;
@@ -67,7 +67,7 @@ case $WHAT in
             -o ${outdir}/${githash}/${EXTRA} \
             --farmappendix ${githash} \
             -q ${queue} --genWeights genweights_${githash}.root \
-            --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts ${extraOpts};
+            --era era2017 -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts --skip DR04 ${extraOpts};
 	;;
 
 
