@@ -86,7 +86,7 @@ def main():
     try:
         for t in opt.only.split(','):
             if '.json' in t:
-                print "The json file is %s" %opt.only
+                print "The json file is %s" %t
                 try:
                     myfile = open(t, 'r') # or "a+", whatever you need
                 except IOError:
