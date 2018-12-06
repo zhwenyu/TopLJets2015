@@ -146,19 +146,25 @@ void VBFVectorBoson::runAnalysis()
         //check trigger
         if(selCode==11*11) {
           if(ev_.isData && !selector_->isDoubleEGPD() ) continue;
-          bool passTrigger=(selector_->hasTriggerBit("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_v",    ev_.triggerBits) ||
-                            selector_->hasTriggerBit("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ_v", ev_.triggerBits) );
-          if(!passTrigger) continue;
+	  // bool passTrigger=(selector_->hasTriggerBit("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_v",    ev_.triggerBits) ||
+	  //                selector_->hasTriggerBit("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ_v", ev_.triggerBits) );
+	  //..........2016
+	  bool passTrigger=(selector_->hasTriggerBit("HLT_DoubleEle24_22_eta2p1_WPLoose_Gsf_v",    ev_.triggerBits) ||
+			    selector_->hasTriggerBit("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ_v", ev_.triggerBits) );
+
+	  
+
+	  if(!passTrigger) continue;
           chTag="EE";
           isBosonTrigSafe=true;
         }
         else if(selCode==13*13) {
           if(ev_.isData && !selector_->isSingleMuonPD() ) continue; 
           bool passTrigger=(selector_->hasTriggerBit("HLT_IsoMu24_v",     ev_.triggerBits) ||
-                            selector_->hasTriggerBit("HLT_IsoMu24_2p1_v", ev_.triggerBits) ||
-                            selector_->hasTriggerBit("HLT_IsoMu27_v",     ev_.triggerBits) );     
-          if(filename_.Contains("2017E") || filename_.Contains("2017F")){
-            passTrigger=selector_->hasTriggerBit("HLT_IsoMu27_v",ev_.triggerBits);
+                            selector_->hasTriggerBit("HLT_IsoMu24_eta2p1_v", ev_.triggerBits) ||
+                            selector_->hasTriggerBit("HLT_IsoTkMu24_v",     ev_.triggerBits) );     
+          if(filename_.Contains("2016E") || filename_.Contains("2016F")){
+            passTrigger=selector_->hasTriggerBit("HLT_IsoTkMu24_eta2p1_v",ev_.triggerBits);
           }
           if(!passTrigger) continue;
           chTag="MM";
@@ -935,11 +941,16 @@ void VBFVectorBoson::fillControlHistos(TLorentzVector boson, std::vector<Jet> je
     float j_rawpt   = jets[ij].pt()/ev_.j_rawsf[jets[ij].getJetIndex()];
     float j_emf     = ev_.j_emf[jets[ij].getJetIndex()];
     float j_rawempt = j_rawpt*j_emf;
+    leadeta=jets[0].Eta();
+    subleadeta=jets[1].Eta();
+    leadPt=jets[0].Pt();
+    subleadPt=jets[1].Pt();
     ht_->fill("jet_emf"     , j_emf        ,cplotwgts,c);
     ht_->fill("jet_raw_pt" ,j_rawpt        , cplotwgts,c );
     ht_->fill("jet_raw_empt" ,j_rawempt        , cplotwgts,c );
     ht_->fill("jet_qg"   ,ev_.j_qg[jets[ij].getJetIndex()]    , cplotwgts,c);
-    ht_->fill2D("etaphi",  jets[ij].Eta(),jets[ij].Phi() ,   cplotwgts,c);    
+    ht_->fill2D("etaphi",  jets[ij].Eta(),jets[ij].Phi() ,   cplotwgts,c);
+    
 
     TString postfix("centj");
     if(fabs(fabs(jets[ij].Eta())-vbfVars_.forwardeta)<0.05) {
@@ -960,6 +971,10 @@ void VBFVectorBoson::fillControlHistos(TLorentzVector boson, std::vector<Jet> je
   ht_->fill("jjetas",       vbfVars_.jjetas,   cplotwgts,c);
   ht_->fill("dphivj0",      vbfVars_.dphivj0 ,  cplotwgts,c);
   ht_->fill("dphivj1",      vbfVars_.dphivj1 ,  cplotwgts,c);
+  ht_->fill("leadeta"     ,leadeta        ,cplotwgts,c);
+  ht_->fill("subleadeta"     ,subleadeta        ,cplotwgts,c);
+  ht_->fill("leadpt"     ,  leadPt        ,cplotwgts,c);
+  ht_->fill("subleadpt"     , subleadPt       ,cplotwgts,c);
  
   //central jet activity
   ht_->fill("ncentj", vbfVars_.ncentj, cplotwgts, c);
