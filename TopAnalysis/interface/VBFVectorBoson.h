@@ -32,7 +32,7 @@ class VBFVectorBoson{
  public:
 
   
-  //   @short CTOR for VBF V analysis
+  //   @short CTOR for VBF Z/gamma analysis
   
  VBFVectorBoson(TString filename,
                 TString outname,
