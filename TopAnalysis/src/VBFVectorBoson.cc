@@ -1,4 +1,4 @@
-#include <TFile.h>
+ #include <TFile.h>
 #include <TROOT.h>
 #include <TH1.h>
 #include <TH2.h>
@@ -25,7 +25,7 @@
 
 using namespace std;
 
-
+float era=2016;
 
 //
 void VBFVectorBoson::runAnalysis()
@@ -146,29 +146,56 @@ void VBFVectorBoson::runAnalysis()
         //check trigger
         if(selCode==11*11) {
           if(ev_.isData && !selector_->isDoubleEGPD() ) continue;
-	  // bool passTrigger=(selector_->hasTriggerBit("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_v",    ev_.triggerBits) ||
-	  //                selector_->hasTriggerBit("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ_v", ev_.triggerBits) );
+	  if (era==2017)
+	    {
+	      bool passTrigger=(selector_->hasTriggerBit("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_v",    ev_.triggerBits) ||
+				selector_->hasTriggerBit("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ_v", ev_.triggerBits) );
+
+	      if(!passTrigger) continue;
+	      chTag="EE";
+	      isBosonTrigSafe=true;
+	    }
+	  
 	  //..........2016
+	  else if(era==2016)
+	    {
 	  bool passTrigger=(selector_->hasTriggerBit("HLT_DoubleEle24_22_eta2p1_WPLoose_Gsf_v",    ev_.triggerBits) ||
 			    selector_->hasTriggerBit("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ_v", ev_.triggerBits) );
-
-	  
-
+	    
 	  if(!passTrigger) continue;
           chTag="EE";
           isBosonTrigSafe=true;
         }
+	}
         else if(selCode==13*13) {
-          if(ev_.isData && !selector_->isSingleMuonPD() ) continue; 
-          bool passTrigger=(selector_->hasTriggerBit("HLT_IsoMu24_v",     ev_.triggerBits) ||
-                            selector_->hasTriggerBit("HLT_IsoMu24_eta2p1_v", ev_.triggerBits) ||
+          if(ev_.isData && !selector_->isSingleMuonPD() ) continue;
+	  if (era==2016)
+	    {
+	      bool passTrigger=(selector_->hasTriggerBit("HLT_IsoMu24_v",     ev_.triggerBits) ||
+				selector_->hasTriggerBit("HLT_IsoMu24_eta2p1_v", ev_.triggerBits) ||
                             selector_->hasTriggerBit("HLT_IsoTkMu24_v",     ev_.triggerBits) );     
-          if(filename_.Contains("2016E") || filename_.Contains("2016F")){
-            passTrigger=selector_->hasTriggerBit("HLT_IsoTkMu24_eta2p1_v",ev_.triggerBits);
-          }
-          if(!passTrigger) continue;
-          chTag="MM";
-          isBosonTrigSafe=true;
+	      if(filename_.Contains("2016E") || filename_.Contains("2016F")){
+		passTrigger=selector_->hasTriggerBit("HLT_IsoTkMu24_eta2p1_v",ev_.triggerBits);
+	      }
+	      if(!passTrigger) continue;
+	      chTag="MM";
+	      isBosonTrigSafe=true;
+	    }
+	  
+	  else if (era==2017)
+	    {
+	      
+	      bool passTrigger=(selector_->hasTriggerBit("HLT_IsoMu24_v",     ev_.triggerBits) ||
+				selector_->hasTriggerBit("HLT_IsoMu24_eta2p1_v", ev_.triggerBits) ||
+				selector_->hasTriggerBit("HLT_IsoTkMu24_v",     ev_.triggerBits) );     
+	      if(filename_.Contains("2017E") || filename_.Contains("2017F")){
+		passTrigger=selector_->hasTriggerBit("HLT_IsoTkMu24_eta2p1_v",ev_.triggerBits);
+	      }
+	      if(!passTrigger) continue;
+	      chTag="MM";
+	      isBosonTrigSafe=true;
+	    }
+	  
         }
       }
       
