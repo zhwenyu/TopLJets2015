@@ -269,7 +269,7 @@ void VBFVectorBoson::runAnalysis()
           if(!CR_ && applyTrigSafePhoton_) {
             bool eveto       = ev_.gamma_idFlags[pidx] & 0x1;
             bool pixelseed   = ((ev_.gamma_idFlags[pidx]>>1) & 0x1);
-            isBosonTrigSafe = (r9_>0.9 && eveto && !pixelseed && hoe_<0.01); 
+            isBosonTrigSafe = (r9_>0.9 && eveto && !pixelseed && hoe_<0.1); 
           }else{
             isBosonTrigSafe=true;
           }          
