@@ -39,7 +39,7 @@ case $WHAT in
     TESTSEL )
                
         json=data/era${era}/vbf_samples.json
-        tag=MC13TeV_2017_EWKAJJ
+        tag=MC13TeV_2016_EWKAJJ
         #tag=Data13TeV_2017B_DoubleEG
         input=${eosdir}/${tag}/Chunk_0_ext0.root
         output=${tag}.root 

@@ -306,7 +306,7 @@ void VBFVectorBoson::runAnalysis()
         if(cleanEENoise_ && fabs(j.Eta())>2.7 && fabs(j.Eta())<3 && ev_.j_emf[idx]>0.55) continue;
         int jid=ev_.j_id[idx];
         bool passPu((jid>>jetPuId_)&0x1);
-        bool passLoosePu((jid>>0)&0x1);
+        bool passLoosePu((jid>>2)&0x1);
 
         //for the control region the second jet is required to fail a loose PU ID
 	if(!CR_) {
