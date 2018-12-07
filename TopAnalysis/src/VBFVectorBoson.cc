@@ -25,7 +25,7 @@
 
 using namespace std;
 
-float era=2016;
+
 
 //
 void VBFVectorBoson::runAnalysis()
@@ -146,30 +146,33 @@ void VBFVectorBoson::runAnalysis()
         //check trigger
         if(selCode==11*11) {
           if(ev_.isData && !selector_->isDoubleEGPD() ) continue;
-	  if (era==2017)
+	  if (era_.Contains("2016"))
 	    {
-	      bool passTrigger=(selector_->hasTriggerBit("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_v",    ev_.triggerBits) ||
+	      bool passTrigger=(selector_->hasTriggerBit("HLT_DoubleEle24_22_eta2p1_WPLoose_Gsf_v",    ev_.triggerBits) ||
 				selector_->hasTriggerBit("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ_v", ev_.triggerBits) );
-
+	    
 	      if(!passTrigger) continue;
 	      chTag="EE";
 	      isBosonTrigSafe=true;
 	    }
 	  
 	  //..........2016
-	  else if(era==2016)
+	  else 
 	    {
-	  bool passTrigger=(selector_->hasTriggerBit("HLT_DoubleEle24_22_eta2p1_WPLoose_Gsf_v",    ev_.triggerBits) ||
-			    selector_->hasTriggerBit("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ_v", ev_.triggerBits) );
-	    
-	  if(!passTrigger) continue;
-          chTag="EE";
-          isBosonTrigSafe=true;
-        }
+
+	      bool passTrigger=(selector_->hasTriggerBit("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_v",    ev_.triggerBits) ||
+				selector_->hasTriggerBit("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ_v", ev_.triggerBits) );
+	      
+	      if(!passTrigger) continue;
+	      chTag="EE";
+	      isBosonTrigSafe=true;
+	    }
 	}
+	
+	
         else if(selCode==13*13) {
           if(ev_.isData && !selector_->isSingleMuonPD() ) continue;
-	  if (era==2016)
+	  if (era_.Contains("2016"))
 	    {
 	      bool passTrigger=(selector_->hasTriggerBit("HLT_IsoMu24_v",     ev_.triggerBits) ||
 				selector_->hasTriggerBit("HLT_IsoMu24_eta2p1_v", ev_.triggerBits) ||
@@ -182,7 +185,7 @@ void VBFVectorBoson::runAnalysis()
 	      isBosonTrigSafe=true;
 	    }
 	  
-	  else if (era==2017)
+	  else 
 	    {
 	      
 	      bool passTrigger=(selector_->hasTriggerBit("HLT_IsoMu24_v",     ev_.triggerBits) ||
@@ -303,7 +306,7 @@ void VBFVectorBoson::runAnalysis()
         if(cleanEENoise_ && fabs(j.Eta())>2.7 && fabs(j.Eta())<3 && ev_.j_emf[idx]>0.55) continue;
         int jid=ev_.j_id[idx];
         bool passPu((jid>>jetPuId_)&0x1);
-        bool passLoosePu((jid>>2)&0x1);
+        bool passLoosePu((jid>>0)&0x1);
 
         //for the control region the second jet is required to fail a loose PU ID
 	if(!CR_) {
