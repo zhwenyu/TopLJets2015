@@ -31,9 +31,9 @@
 class VBFVectorBoson{
  public:
 
-  /**
-     @short CTOR for VBF V analysis
-  */
+  
+  //   @short CTOR for VBF Z/gamma analysis
+  
  VBFVectorBoson(TString filename,
                 TString outname,
                 TH1F *normH, 
@@ -59,16 +59,16 @@ class VBFVectorBoson{
     rnd_.SetSeed(123456789);
   };
 
-  /**
-     @short DTOR
-  */
+ 
+  //   @short DTOR
+  
   ~VBFVectorBoson()
     {
     }
 
-  /**
-     @short initialize all variables
-   */
+ 
+  //   @short initialize all variables
+  
   inline void init()
   {
     this->readTree();
@@ -81,9 +81,9 @@ class VBFVectorBoson{
     std::cout << "init done" << std::endl;
   }
 
-  /**
-     @short define baseline selection cuts
-  */
+ 
+  //   @short define baseline selection cuts
+  
   inline void setSelectionCuts()
   {
     zMassWindow_  = 15.;
@@ -97,11 +97,10 @@ class VBFVectorBoson{
     lowVPtDetaJJCut_  = 3.0;
     lowVPtMaxRapCut_  = 1.4442;
     if (era_.Contains("2017")) lowVPtPhotonTrigs_.push_back("HLT_Photon75_R9Id90_HE10_IsoM_EBOnly_PFJetsMJJ300DEta3_v");
-    else lowVPtPhotonTrigs_.push_back("HLT_Photon75_R9Id90_HE10_Iso40_EBOnly_VBF");
-
+    else                       lowVPtPhotonTrigs_.push_back("HLT_Photon75_R9Id90_HE10_Iso40_EBOnly_VBF");
     highVPtCut_       = 200.;
     if (era_.Contains("2017")) highVPtPhotonTrigs_.push_back("HLT_Photon200_v");
-    else highVPtPhotonTrigs_.push_back("HLT_Photon175_v");
+    else                       highVPtPhotonTrigs_.push_back("HLT_Photon175_v");
 
     lowMJJCut_  = 500.;
     highMJJCut_ = 1000.;        
@@ -116,14 +115,14 @@ class VBFVectorBoson{
   void loadCorrections();
   void addMVAvars();
 
-  /**
-     @short the working horse method
-   */
+ 
+  // @short the working horse method
+   
   void runAnalysis();
 
-  /**
-     @short histogram filler
-   */
+ 
+  // @short histogram filler
+  
   void fillControlHistos(TLorentzVector boson, 
                          std::vector<Jet> jets, 
                          float wgt,
@@ -135,9 +134,9 @@ class VBFVectorBoson{
 
 private:
 
-  /**
-     @short dice a random number and select for training
-  */
+ 
+  //   @short dice a random number and select for training
+  
   inline int useForTraining(float selFrac=0.5)
   {
     double myRnd = rnd_.Rndm();
@@ -182,7 +181,7 @@ private:
   float xsec_;
 
   //selection configuration
-  float leadJetPt_, subLeadJetPt_;
+  float leadJetPt_, subLeadJetPt_,leadeta,subleadeta,leadPt, subleadPt;
   int jetPuId_;
   bool cleanEENoise_;
   float zMassWindow_;
