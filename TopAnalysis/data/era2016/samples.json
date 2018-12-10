@@ -59,12 +59,10 @@
 "MC13TeV_2016_GJets_HT400to600_ext"      : [274.4,   0,  "/GJets_HT-400To600_TuneCUETP8M1_13TeV-madgraphMLM-pythia8/RunIISummer16MiniAODv3-PUMoriond17_94X_mcRun2_asymptotic_v3_ext1-v2/MINIAODSIM", "#gamma+jets", 41, false, false, 1],
 "MC13TeV_2016_GJets_HT600toInf"      : [93.46,   0,  "/GJets_HT-600ToInf_TuneCUETP8M1_13TeV-madgraphMLM-pythia8/RunIISummer16MiniAODv3-PUMoriond17_94X_mcRun2_asymptotic_v3-v2/MINIAODSIM", "#gamma+jets", 41, false, false, 1],
 "MC13TeV_2016_GJets_HT600toInf_ext"      : [93.46,   0,  "/GJets_HT-600ToInf_TuneCUETP8M1_13TeV-madgraphMLM-pythia8/RunIISummer16MiniAODv3-PUMoriond17_94X_mcRun2_asymptotic_v3_ext1-v2/MINIAODSIM", "#gamma+jets", 41, false, false, 1],
-"MC13TeV_2016_GJets_HT40to100_DR04"  : [3150 ,   0,  "", "#gamma+jets", 41, false, false, 1],
-"MC13TeV_2016_GJets_HT100to200_DR04" : [715,     0,  "", "#gamma+jets", 41, false, false, 1],
-"MC13TeV_2016_GJets_HT200to400_DR04" : [143,     0,  "", "#gamma+jets", 41, false, false, 1],
-"MC13TeV_2016_GJets_HT400to600_DR04" : [27.3,    0,  "", "#gamma+jets", 41, false, false, 1],
-"MC13TeV_2016_GJets_HT600toInf_DR04" : [0.4,     0,  "", "#gamma+jets", 41, false, false, 1],
+"MC13TeV_2016_G1Jet_Pt50to100"  : [3150 ,   0,  "/G1Jet_Pt-50To100_TuneCUETP8M1_13TeV-amcatnlo-pythia8/RunIISummer16MiniAODv3-PUMoriond17_94X_mcRun2_asymptotic_v3_ext1-v1/MINIAODSIM", "#gamma+jets NLO", 41, false, false, 1],
+"MC13TeV_2016_G1Jet_Pt250to400"  : [3150 ,   0,  "/G1Jet_Pt-250To400_TuneCUETP8M1_13TeV-amcatnlo-pythia8/RunIISummer16MiniAODv3-PUMoriond17_94X_mcRun2_asymptotic_v3_ext2-v1/MINIAODSIM", "#gamma+jets NLO", 41, false, false, 1],
 "MC13TeV_2016_EWKZJJ"                : [4.32,    0,  "/EWK_LLJJ_MLL-50_MJJ-120_13TeV-madgraph-herwigpp/RunIISummer16MiniAODv3-PUMoriond17_94X_mcRun2_asymptotic_v3-v1/MINIAODSIM", "EWK ZJJ", 41, false, false, 1],
+"MC13TeV_2016_EWKZJJ_hw"                : [4.32,    0,  "/EWK_LLJJ_MLL-50_MJJ-120_13TeV-madgraph-herwigpp/RunIISummer16MiniAODv3-PUMoriond17_94X_mcRun2_asymptotic_v3-v1/MINIAODSI", "EWK ZJJ HW++", 41, false, false, 1],
 "MC13TeV_2016_EWKAJJ"                : [4.74,    0,  "", "EWK AJJ", 41, false, false, 1],
 "MC13TeV_2016_IntZJJ"                : [4.32,    0,  "", "EWK ZJJ", 41, false, false, 1],
 "MC13TeV_2016_IntAJJ"                : [0.7,    0,  "", "EWK AJJ", 41, false, false, 1],
@@ -127,4 +125,3 @@
 "Data13TeV_2016G_JetHT"              : [1,       1, "/JetHT/Run2016G-17Jul2018-v1/MINIAOD", "Data", 1, false, false, 0],
 "Data13TeV_2016H_JetHT"              : [1,       1, "/JetHT/Run2016H-17Jul2018-v1/MINIAOD", "Data", 1, false, false, 0]
 }
-

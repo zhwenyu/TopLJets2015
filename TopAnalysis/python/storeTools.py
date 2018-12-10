@@ -47,6 +47,7 @@ def getChunksInSizeOf(chunkSize,directoryList,mask='',prepend='root://eoscms//eo
         fList=getEOSlslist(directory=directory, mask=mask, prepend='/eos/cms')
 
         for f in fList:
+            if not '.root' in f : continue
             fsize=float(os.path.getsize(f))/(1024.e+6)
             if cursize+fsize>chunkSize: 
                 chunkList.append([])

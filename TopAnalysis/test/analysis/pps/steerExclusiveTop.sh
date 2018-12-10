@@ -84,7 +84,7 @@ case $WHAT in
 
     ANA )
         python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 1 \
-            --json ${samples_json} --RPout ${RPout_json} -o plots/analysis --mix plots/analysis/evmix.pck; 
+            --json ${samples_json} --RPout ${RPout_json} -o plots/analysis --mix plots/analysis/evmix.pck --only MC; 
 	mergeOutputs.py plots/analysis;
         ;;
 

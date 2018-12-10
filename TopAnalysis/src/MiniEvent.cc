@@ -67,6 +67,7 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev,Int_t njecUncs)
   t->Branch("nvtx",          &ev.nvtx,        "nvtx/I");
   t->Branch("rho",           &ev.rho,         "rho/F");
   t->Branch("triggerBits",   &ev.triggerBits, "triggerBits/I");
+  //FIXME: Use this for new ntuples t->Branch("triggerBits",   &ev.triggerBits, "triggerBits/l");
 
   //leptons
   t->Branch("nl", &ev.nl, "nl/I");

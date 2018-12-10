@@ -35,6 +35,7 @@ struct MiniEvent_t
   //reco level event
   Int_t nvtx;
   Int_t triggerBits;
+  //FIXME use this for new ntuples: ULong64_t triggerBits;
   Float_t rho;
 
   //leptons

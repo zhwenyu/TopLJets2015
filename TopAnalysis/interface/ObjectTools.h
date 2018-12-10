@@ -76,6 +76,7 @@ class Jet : public TLorentzVector {
     void setCSV(float csv) { csv_=csv; }
     float &getPUMVA() { return pumva_; }
     void setPUMVA(float pumva) { pumva_=pumva; }
+    float &getDeepCSV() { return deepcsv_; }
     void setDeepCSV(float deepcsv) { deepcsv_=deepcsv; }
     int &getJetIndex() { return idx_; }
     std::vector<IdTrack> &getTracks() { return trks_; }

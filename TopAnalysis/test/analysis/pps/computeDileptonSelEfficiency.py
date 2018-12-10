@@ -195,16 +195,16 @@ def runSelectionEfficiencyFor(ch,d):
                 ("ggH(900)#rightarrowZZ#rightarrow2l2#nu",'#8c510a',0,25,zxROOT),
                 #("qqH(1500)#rightarrowZZ#rightarrow2l2#nu",'#f0027f',0,22,zxROOT),
                 #("ggH(1500)#rightarrowZZ#rightarrow2l2#nu",'#f0027f',0,26,zxROOT),
-                ("qqH(2000)#rightarrowZZ#rightarrow2l2#nu",'#358CEF',0,23,zxROOT),
-                ("ggH(2000)#rightarrowZZ#rightarrow2l2#nu",'#358CEF',0,27,zxROOT)
+                #("qqH(2000)#rightarrowZZ#rightarrow2l2#nu",'#358CEF',0,23,zxROOT),
+                #("ggH(2000)#rightarrowZZ#rightarrow2l2#nu",'#358CEF',0,27,zxROOT)
                 ]
 
 
-    procList  =[('DY','#000000',1001,20,bkgROOT),
-                ("H^{#pm}(1000)#rightarrowWZ",'#666666',0,20,zxROOT),
-                ("H^{#pm}(2000)#rightarrowWZ",'#fdc086',0,21,zxROOT),
+    #procList  =[('DY','#000000',1001,20,bkgROOT),
+    #            ("H^{#pm}(1000)#rightarrowWZ",'#666666',0,20,zxROOT),
+    #            ("H^{#pm}(2000)#rightarrowWZ",'#fdc086',0,21,zxROOT),
     #            ("G_{bulk}(2000)#rightarrowZZ#rightarrow2l2#nu",'#358CEF',0,27,zxROOT)
-                ]
+    #            ]
     
     tagsList=['singletrig','trig','rec','2trec']
 

@@ -441,7 +441,7 @@ void RunExclusiveTop(TString filename,
           int idx=allJets[ij].getJetIndex();
           int jid=ev.j_id[idx];
           bool passLoosePu((jid>>2)&0x1);
-          bool passBtag(ev.j_btag[ij]>0);
+          bool passBtag(ev.j_btag[idx]>0);
           if(!passLoosePu) continue;
           if(passBtag) { bJets.push_back(allJets[ij]);     scalarhtb+=allJets[ij].pt();  }
           else         { lightJets.push_back(allJets[ij]); scalarhtj+= allJets[ij].pt(); }

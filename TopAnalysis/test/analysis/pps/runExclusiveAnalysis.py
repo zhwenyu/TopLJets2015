@@ -168,10 +168,10 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile,mixSel):
         #FIXMME single track mixing
 
         #filter based on the beam crossing angle and high purity of the event
-        passBeamXangle = True if beamXangle in [120,130,140] else False
-        highPur=True if len(rptks[0])==1 and len(rptks[1])==1 else False        
+        passBeamXangle     = True if beamXangle in [120,130,140] else False
+        highPur            = True if len(rptks[0])==1 and len(rptks[1])==1 else False        
         mix_passBeamXangle = True if mixed_beamXangle in [120,130,140] else False
-        mix_highPur=True if len(mixed_rptks[0])==1 and len(mixed_rptks[1])==1 else False
+        mix_highPur        = True if len(mixed_rptks[0])==1 and len(mixed_rptks[1])==1 else False
         
         boson=ROOT.TLorentzVector(0,0,0,0)
         boson.SetPtEtaPhiM(tree.bosonpt,tree.bosoneta,tree.bosonphi,tree.mboson)
@@ -194,6 +194,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile,mixSel):
                 blind=True
 
         #fill histograms
+        mixPFix='_mix' if isData else ''
         for cat in cats:
             
             fillHisto(val=(nvtx,wgt),                key=('nvtx',cat))
@@ -202,8 +203,8 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile,mixSel):
        
             fillHisto(val=(beamXangle,wgt),            key=('xangle',cat))
             fillHisto(val=(beamXangle,nvtx,wgt),       key=('xanglevsnvtx',cat))
-            fillHisto(val=(mixed_beamXangle,wgt),      key=('xangle',cat+'_mix'))
-            fillHisto(val=(mixed_beamXangle,nvtx,wgt), key=('xanglevsnvtx',cat+'_mix'))
+            fillHisto(val=(mixed_beamXangle,wgt),      key=('xangle',cat+mixPFix))
+            fillHisto(val=(mixed_beamXangle,nvtx,wgt), key=('xanglevsnvtx',cat+mixPFix))
 
             if pp and passBeamXangle:
                 if not blind:
@@ -217,18 +218,16 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile,mixSel):
                             fillHisto(val=(csi,wgt), key=('csi',cat+'_'+rpside))
 
             if mixed_pp and mix_passBeamXangle:
-                fillHisto(val=(mixed_pp.M(),wgt),     key=('mpp',cat+'_mix'))
-                fillHisto(val=(mixed_mmass,wgt),      key=('mmass',cat+'_mix'))
-                fillHisto(val=(mixed_mmass,nvtx,wgt), key=('mmassvsnvtx',cat+'_mix'))
+                
+                fillHisto(val=(mixed_pp.M(),wgt),     key=('mpp',cat+mixPFix))
+                fillHisto(val=(mixed_mmass,wgt),      key=('mmass',cat+mixPFix))
+                fillHisto(val=(mixed_mmass,nvtx,wgt), key=('mmassvsnvtx',cat+mixPFix))
 
                 for irp,rpside in [(0,'pos'),(1,'neg')]:
-                    fillHisto(val=(len(rptks[irp]),wgt), key=('ntk',cat+'_'+rpside))
-                    for csi in rptks[irp]:
-                        fillHisto(val=(csi,wgt), key=('csi',cat+'_'+rpside))
 
-                    fillHisto(val=(len(mixed_rptks[irp]),wgt), key=('ntk',cat+'_mix'+rpside))
+                    fillHisto(val=(len(mixed_rptks[irp]),wgt), key=('ntk',cat+'_'+rpside+mixPFix))
                     for csi in mixed_rptks[irp]:
-                        fillHisto(val=(csi,wgt), key=('csi',cat+'_mix'+rpside))
+                        fillHisto(val=(csi,wgt), key=('csi',cat+'_'+rpside+mixPFix))
 
     #save results
     fOut=ROOT.TFile.Open(outFileName,'RECREATE')
