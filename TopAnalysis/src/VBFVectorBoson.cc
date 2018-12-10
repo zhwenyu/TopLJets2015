@@ -53,46 +53,142 @@ void VBFVectorBoson::runAnalysis()
   //FIXME: this may need to change for the new training
   std::map<TString,TMVA::Reader *> readers;
   std::map<TString,TGraph *> mvaCDFinv;
-  TString method("BDT_VBF0HighMJJ");
-  TString weightFile("${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBF_weights/HighMJJ_BDT_VBF0HighMJJ.weights.xml");
-  gSystem->ExpandPathName(weightFile);
-  readers[method]=new TMVA::Reader( "!Color:!Silent" );
-  readers[method]->AddVariable("D",             &vbfVars_.D);
-  readers[method]->AddVariable("C",             &vbfVars_.C);
-  readers[method]->AddVariable("circularity",   &vbfVars_.circularity);
-  readers[method]->AddVariable("balance",       &vbfVars_.balance);
-  readers[method]->AddVariable("jjpt",          &vbfVars_.jjpt);
-  readers[method]->AddVariable("ystar",         &vbfVars_.ystar);
-  readers[method]->AddVariable("dphijj",        &vbfVars_.dphijj);
-  readers[method]->AddVariable("dphivj0",       &vbfVars_.dphivj0);
-  readers[method]->AddVariable("j_pt[1]",       &vbfVars_.subleadj_pt);
-  readers[method]->AddVariable("j_c2_00[0]",    &vbfVars_.leadj_c2_02);
-  readers[method]->AddVariable("j_c2_00[1]",    &vbfVars_.subleadj_c2_02);
-  readers[method]->AddVariable("j_gawidth[0]",  &vbfVars_.leadj_gawidth);
-  readers[method]->AddVariable("mjj",           &vbfVars_.mjj);
-  readers[method]->AddVariable("j_qg[1]",       &vbfVars_.subleadj_qg);
-  readers[method]->BookMVA(method,weightFile);
+  // TString method("BDT_VBF0HighMJJ");
+  // TString weightFile("${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBF_weights/HighMJJ_BDT_VBF0HighMJJ.weights.xml");
+  // gSystem->ExpandPathName(weightFile);
+  // readers[method]=new TMVA::Reader( "!Color:!Silent" );
+  // readers[method]->AddVariable("D",             &vbfVars_.D);
+  // readers[method]->AddVariable("C",             &vbfVars_.C);
+  // readers[method]->AddVariable("circularity",   &vbfVars_.circularity);
+  // readers[method]->AddVariable("balance",       &vbfVars_.balance);
+  // readers[method]->AddVariable("jjpt",          &vbfVars_.jjpt);
+  // readers[method]->AddVariable("ystar",         &vbfVars_.ystar);
+  // readers[method]->AddVariable("dphijj",        &vbfVars_.dphijj);
+  // readers[method]->AddVariable("dphivj0",       &vbfVars_.dphivj0);
+  // readers[method]->AddVariable("j_pt[1]",       &vbfVars_.subleadj_pt);
+  // readers[method]->AddVariable("j_c2_00[0]",    &vbfVars_.leadj_c2_02);
+  // readers[method]->AddVariable("j_c2_00[1]",    &vbfVars_.subleadj_c2_02);
+  // readers[method]->AddVariable("j_gawidth[0]",  &vbfVars_.leadj_gawidth);
+  // readers[method]->AddVariable("mjj",           &vbfVars_.mjj);
+  // readers[method]->AddVariable("j_qg[1]",       &vbfVars_.subleadj_qg);
+  // readers[method]->BookMVA(method,weightFile);
   
-  method="BDT_VBF0LowMJJ";
-  weightFile="${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBF_weights/LowMJJ_BDT_VBF0LowMJJ.weights.xml";
+  // method="BDT_VBF0LowMJJ";
+  // weightFile="${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBF_weights/LowMJJ_BDT_VBF0LowMJJ.weights.xml";
+  // gSystem->ExpandPathName(weightFile);
+  // readers[method]=new TMVA::Reader( "!Color:!Silent" );
+  // readers[method]->AddVariable("D",             &vbfVars_.D);
+  // readers[method]->AddVariable("C",             &vbfVars_.C);
+  // readers[method]->AddVariable("balance",       &vbfVars_.balance);
+  // readers[method]->AddVariable("jjpt",          &vbfVars_.jjpt);
+  // readers[method]->AddVariable("ystar",         &vbfVars_.ystar);
+  // readers[method]->AddVariable("dphijj",        &vbfVars_.dphijj);
+  // readers[method]->AddVariable("dphivj0",       &vbfVars_.dphivj0);
+  // readers[method]->AddVariable("dphivj1",       &vbfVars_.dphivj1);
+  // readers[method]->AddVariable("j_pt[1]",       &vbfVars_.subleadj_pt);
+  // readers[method]->AddVariable("detajj",        &vbfVars_.detajj);
+  // readers[method]->AddVariable("j_c2_00[0]",    &vbfVars_.leadj_c2_02);
+  // readers[method]->AddVariable("j_c2_00[1]",    &vbfVars_.subleadj_c2_02);
+  // readers[method]->AddVariable("mjj",           &vbfVars_.mjj);
+  // readers[method]->AddVariable("j_qg[0]",       &vbfVars_.leadj_qg);
+  // readers[method]->AddVariable("j_qg[1]",       &vbfVars_.subleadj_qg);
+  // readers[method]->BookMVA(method,weightFile);
+
+
+  TString method("BDT_VBF0LowVPtHighMJJ");
+  TString weightFile("${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBF_weights/LowVPtHighMJJ_BDT_VBF0LowVPtHighMJJ.weights.xml");
   gSystem->ExpandPathName(weightFile);
   readers[method]=new TMVA::Reader( "!Color:!Silent" );
-  readers[method]->AddVariable("D",             &vbfVars_.D);
-  readers[method]->AddVariable("C",             &vbfVars_.C);
-  readers[method]->AddVariable("balance",       &vbfVars_.balance);
-  readers[method]->AddVariable("jjpt",          &vbfVars_.jjpt);
-  readers[method]->AddVariable("ystar",         &vbfVars_.ystar);
+  readers[method]->AddVariable("mjj",           &vbfVars_.mjj);
   readers[method]->AddVariable("dphijj",        &vbfVars_.dphijj);
-  readers[method]->AddVariable("dphivj0",       &vbfVars_.dphivj0);
-  readers[method]->AddVariable("dphivj1",       &vbfVars_.dphivj1);
-  readers[method]->AddVariable("j_pt[1]",       &vbfVars_.subleadj_pt);
-  readers[method]->AddVariable("detajj",        &vbfVars_.detajj);
+  readers[method]->AddVariable("ystar",         &vbfVars_.ystar);
+  readers[method]->AddVariable("dphibjj",       &vbfVars_.dphibjj);
+  readers[method]->AddVariable("balance",       &vbfVars_.balance);
+  readers[method]->AddVariable("subleadj_gawidth",&vbfVars_.subleadj_gawidth);
   readers[method]->AddVariable("j_c2_00[0]",    &vbfVars_.leadj_c2_02);
   readers[method]->AddVariable("j_c2_00[1]",    &vbfVars_.subleadj_c2_02);
+  readers[method]->AddVariable("j_qg[0]",       &vbfVars_.leadj_qg);
+  readers[method]->AddVariable("dphivj0",       &vbfVars_.dphivj0);
+  readers[method]->AddVariable("dphivj2",       &vbfVars_.dphivj2);
+  readers[method]->AddVariable("mht",           &vbfVars_.mht);
+  readers[method]->AddVariable("ht",            &vbfVars_.scalarht);
+  readers[method]->AddVariable("aplanarity",    &vbfVars_.aplanarity);
+  readers[method]->AddVariable("sphericity",    &vbfVars_.sphericity);
+  readers[method]->AddVariable("circularity",   &vbfVars_.circularity);
+  readers[method]->BookMVA(method,weightFile);
+
+  method="BDT_VBF0HighPt";
+  weightFile="${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBF_weights/HighPt_BDT_VBF0HighPt.weights.xml";
+  gSystem->ExpandPathName(weightFile);
+  readers[method]=new TMVA::Reader( "!Color:!Silent" );
+
   readers[method]->AddVariable("mjj",           &vbfVars_.mjj);
+  readers[method]->AddVariable("jjpt",          &vbfVars_.jjpt);
+  readers[method]->AddVariable("detajj",        &vbfVars_.detajj);
+  readers[method]->AddVariable("dphijj",        &vbfVars_.dphijj);
+  readers[method]->AddVariable("ystar",         &vbfVars_.ystar);
+  readers[method]->AddVariable("relbpt",        &vbfVars_.relbpt);
+  readers[method]->AddVariable("dphibjj",       &vbfVars_.dphibjj);
+  readers[method]->AddVariable("balance",       &vbfVars_.balance);
+  readers[method]->AddVariable("j_c2_00[0]",    &vbfVars_.leadj_c2_02);
+  readers[method]->AddVariable("j_c2_00[1]",    &vbfVars_.subleadj_c2_02);
   readers[method]->AddVariable("j_qg[0]",       &vbfVars_.leadj_qg);
   readers[method]->AddVariable("j_qg[1]",       &vbfVars_.subleadj_qg);
+  readers[method]->AddVariable("dphivj1",       &vbfVars_.dphivj1);
+  readers[method]->AddVariable("dphivj2",       &vbfVars_.dphivj2);
+  readers[method]->AddVariable("ht",            &vbfVars_.scalarht);
+  readers[method]->AddVariable("isotropy",      &vbfVars_.isotropy);
+  readers[method]->AddVariable("D",             &vbfVars_.D);
   readers[method]->BookMVA(method,weightFile);
+
+
+  method="BDT_VBF0HighVPtLowMJJ";
+  weightFile="${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBF_weights/HighVPtLowMJJ_BDT_VBF0HighVPtLowMJJ.weights.xml";
+  gSystem->ExpandPathName(weightFile);
+  readers[method]=new TMVA::Reader( "!Color:!Silent" );
+
+  readers[method]->AddVariable("leadj_pt",      &vbfVars_.leadj_pt);
+  readers[method]->AddVariable("mjj",           &vbfVars_.mjj);
+  readers[method]->AddVariable("detajj",        &vbfVars_.detajj);
+  readers[method]->AddVariable("dphijj",        &vbfVars_.dphijj);
+  readers[method]->AddVariable("ystar",         &vbfVars_.ystar);
+  readers[method]->AddVariable("dphibjj",       &vbfVars_.dphibjj);
+  readers[method]->AddVariable("balance",       &vbfVars_.balance);
+  readers[method]->AddVariable("j_c2_00[0]",    &vbfVars_.leadj_c2_02);
+  readers[method]->AddVariable("j_c2_00[1]",    &vbfVars_.subleadj_c2_02);
+  readers[method]->AddVariable("j_qg[1]",       &vbfVars_.subleadj_qg);
+  readers[method]->AddVariable("dphivj0",       &vbfVars_.dphivj0);
+  readers[method]->AddVariable("dphivj1",       &vbfVars_.dphivj1);
+  readers[method]->AddVariable("dphivj2",       &vbfVars_.dphivj2);
+  readers[method]->AddVariable("dphivj3",       &vbfVars_.dphivj3);
+  readers[method]->AddVariable("mht",           &vbfVars_.mht);
+  readers[method]->AddVariable("sphericity",    &vbfVars_.sphericity);
+  readers[method]->AddVariable("D",             &vbfVars_.D);
+  readers[method]->BookMVA(method,weightFile);
+
+  method="BDT_VBF0HighVPtHighMJJ";
+  weightFile="${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBF_weights/HighVPtHighMJJ_BDT_VBF0HighVPtHighMJJ.weights.xml";
+  gSystem->ExpandPathName(weightFile);
+  readers[method]=new TMVA::Reader( "!Color:!Silent" );
+  readers[method]->AddVariable("mjj",           &vbfVars_.mjj);
+  readers[method]->AddVariable("detajj",        &vbfVars_.detajj);
+  readers[method]->AddVariable("dphijj",        &vbfVars_.dphijj);
+  readers[method]->AddVariable("ystar",         &vbfVars_.ystar);
+  readers[method]->AddVariable("dphibjj",       &vbfVars_.dphibjj);
+  readers[method]->AddVariable("balance",       &vbfVars_.balance);
+  readers[method]->AddVariable("j_c2_00[0]",    &vbfVars_.leadj_c2_02);
+  readers[method]->AddVariable("j_c2_00[1]",    &vbfVars_.subleadj_c2_02);
+  readers[method]->AddVariable("j_qg[0]",       &vbfVars_.subleadj_qg);
+  readers[method]->AddVariable("j_qg[1]",       &vbfVars_.subleadj_qg);
+  readers[method]->AddVariable("dphivj0",       &vbfVars_.dphivj0);
+  readers[method]->AddVariable("dphivj1",       &vbfVars_.dphivj1);
+  readers[method]->AddVariable("dphivj2",       &vbfVars_.dphivj2);
+  readers[method]->AddVariable("dphivj3",       &vbfVars_.dphivj3);
+  readers[method]->AddVariable("mht",           &vbfVars_.mht);
+  readers[method]->AddVariable("C",             &vbfVars_.C);
+  readers[method]->AddVariable("D",             &vbfVars_.D);
+  readers[method]->BookMVA(method,weightFile);
+
 
   //read the transformations based on CDF^{-1}
   weightFile="${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBF_weights/inverse_cdfs.root";
@@ -286,7 +382,7 @@ void VBFVectorBoson::runAnalysis()
 
       //variables
       vbfVars_.fillDiscriminatorVariables(boson,jets,ev_);
-      //Flexiblity for jet pt cut --- similar to reselect part 
+      //Flexiblity for jet pt cut --- similar to reselect part       
       if(vbfVars_.leadj_pt    < leadJetPt_)    continue;
       if(vbfVars_.subleadj_pt < subLeadJetPt_) continue;
 
@@ -295,7 +391,7 @@ void VBFVectorBoson::runAnalysis()
       mindrj_=9999.;
       for(auto &j: jets)    mindrj_ = min(j.DeltaR(boson),Double_t(mindrj_));
 
-
+      
       //
       // ASSIGN EVENT CATEGORY
       //
@@ -317,6 +413,7 @@ void VBFVectorBoson::runAnalysis()
         cat[5]  =  (vbfVars_.mjj>lowMJJCut_ && vbfVars_.mjj<=highMJJCut_);
         cat[6]  =  (vbfVars_.mjj>highMJJCut_);
       }
+
       category_.set(cat);
       std::vector<TString> chTags( category_.getChannelTags() );
 
@@ -334,13 +431,16 @@ void VBFVectorBoson::runAnalysis()
       //evaluate discriminator MVA for categories of interest
       //FIXME: this probably needs to be modified for the new training
       vbfmva_ = -1000;
-      if(cat[5] || cat[6]) {
-        TString key(cat[3] ?"BDT_VBF0HighMJJ":"BDT_VBF0LowMJJ");
+      vbfmvaHighVPt_ = -1000;
+      if (cat[5] || cat[6]) {
+        TString key(cat[3] ?"BDT_VBF0LowVPtHighMJJ":(cat[5] ? "BDT_VBF0HighVPtLowMJJ" : "BDT_VBF0HighVPtHighMJJ"));
         vbfmva_ = readers[key]->EvaluateMVA(key);
+	vbfmvaHighVPt_ =readers["BDT_VBF0HighPt"]->EvaluateMVA("BDT_VBF0HighPt");
         if(mvaCDFinv[key]) vbfmva_=max(0.,mvaCDFinv[key]->Eval(vbfmva_));
         if(doBlindAnalysis_ && ev_.isData && vbfmva_>0.8) vbfmva_=-1000;
-      }
 
+      }
+      
       ////////////////////
       // EVENT WEIGHTS //
       //////////////////
@@ -407,6 +507,7 @@ void VBFVectorBoson::runAnalysis()
         newTree_->Fill();
       }
 
+      
       //experimental systs cycle: better not to do anything else after this...
       //final category selection is repeated ad nauseam with varied objects/weights and mva is re-evaluated several times
       if(ev_.isData) continue;
@@ -523,7 +624,7 @@ void VBFVectorBoson::runAnalysis()
             ijets.push_back(j);
           }
         }
-
+	
         //re-select if needed
         if(reSelect) {
           
@@ -552,9 +653,16 @@ void VBFVectorBoson::runAnalysis()
           
           //re-evaluate MVA         
           //FIXME: this needs probably to be changed for the next version of the training
-          TString key(isLowVPt ? "BDT_VBF0HighMJJ" : "BDT_VBF0LowMJJ");
-          imva = readers[key]->EvaluateMVA(key);
-          if(mvaCDFinv[key]) imva=max(0.,mvaCDFinv[key]->Eval(imva));
+
+	  if (isLowMJJ || isHighMJJ) {
+	    TString key(isLowVPt ?"BDT_VBF0LowVPtHighMJJ":(isLowMJJ ? "BDT_VBF0HighVPtLowMJJ" : "BDT_VBF0HighVPtHighMJJ"));
+	    imva = readers[key]->EvaluateMVA(key);	    
+	    if(mvaCDFinv[key]) imva=max(0.,mvaCDFinv[key]->Eval(imva));	    
+	  }
+
+          // TString key(isLowVPt ? "BDT_VBF0HighMJJ" : "BDT_VBF0LowMJJ");
+          // imva = readers[key]->EvaluateMVA(key);
+          // if(mvaCDFinv[key]) imva=max(0.,mvaCDFinv[key]->Eval(imva));
         }
         
         if( !icat.Contains("MJJ") ) continue;
@@ -714,6 +822,7 @@ void VBFVectorBoson::bookHistograms() {
   ht_->getPlots()["evcount"]->GetXaxis()->SetBinLabel(1,"Inclusive");
   ht_->getPlots()["evcount"]->GetXaxis()->SetBinLabel(2,"MVA>0.9");
   ht_->addHist("vbfmva",          new TH1F("vbfmva",         ";VBF MVA;Events",50,0,1));  
+  ht_->addHist("vbfmvaHighVPt",   new TH1F("vbfmvaHighVPt",         ";VBF MVA;Events",50,-1,1));  
 
   TString expSystNames[]={"puup","pudn","trigup","trigdn","selup","seldn","l1prefireup","l1prefiredn",
                           "aesup","aesdn",
@@ -983,6 +1092,8 @@ void VBFVectorBoson::fillControlHistos(TLorentzVector boson, std::vector<Jet> je
 
   //final analysis histograms
   ht_->fill("evcount",  0, cplotwgts, c);
+  if(vbfmva_>=0) 
+    ht_->fill("vbfmvaHighVPt", vbfmvaHighVPt_, cplotwgts,c);
   if(vbfmva_>=0) {
     ht_->fill("vbfmva", vbfmva_, cplotwgts,c);
     if(vbfmva_>0.9)
