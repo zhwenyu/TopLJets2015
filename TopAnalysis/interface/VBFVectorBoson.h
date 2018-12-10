@@ -96,10 +96,12 @@ class VBFVectorBoson{
     lowVPtCut_        = 75.;
     lowVPtDetaJJCut_  = 3.0;
     lowVPtMaxRapCut_  = 1.4442;
-    lowVPtPhotonTrigs_.push_back("HLT_Photon75_R9Id90_HE10_IsoM_EBOnly_PFJetsMJJ300DEta3_v");
+    if (era_.Contains("2017")) lowVPtPhotonTrigs_.push_back("HLT_Photon75_R9Id90_HE10_IsoM_EBOnly_PFJetsMJJ300DEta3_v");
+    else lowVPtPhotonTrigs_.push_back("HLT_Photon75_R9Id90_HE10_Iso40_EBOnly_VBF");
 
     highVPtCut_       = 200.;
-    highVPtPhotonTrigs_.push_back("HLT_Photon200_v");
+    if (era_.Contains("2017")) highVPtPhotonTrigs_.push_back("HLT_Photon200_v");
+    else highVPtPhotonTrigs_.push_back("HLT_Photon175_v");
 
     lowMJJCut_  = 500.;
     highMJJCut_ = 1000.;        
