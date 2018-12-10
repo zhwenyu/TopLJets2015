@@ -180,6 +180,46 @@ public:
 
   }
 
+  void setHighVPtHighMJJVariables(){
+    TMVA::DataLoader::AddVariable( "mjj",              "mjj", "", 'F' ) ;
+    TMVA::DataLoader::AddVariable( "detajj",           "detajj", "", 'F' ) ;
+    TMVA::DataLoader::AddVariable( "dphijj",           "dphijj", "", 'F' ) ;
+    TMVA::DataLoader::AddVariable( "ystar",            "ystar", "", 'F' ) ;
+    TMVA::DataLoader::AddVariable( "dphibjj",          "dphibjj", "", 'F' ) ;
+    TMVA::DataLoader::AddVariable( "balance",          "balance", "", 'F' ) ;
+    TMVA::DataLoader::AddVariable( "j_c2_00[0]",       "jet_c2_001",       "", 'F' ) ;
+    TMVA::DataLoader::AddVariable( "j_c2_00[1]",       "jet_c2_002",       "", 'F' ) ;
+    TMVA::DataLoader::AddVariable( "j_qg[0]",          "leadjet_qg", "", 'F' ) ;
+    TMVA::DataLoader::AddVariable( "j_qg[1]",          "subleadjet_qg", "", 'F' ) ;
+    TMVA::DataLoader::AddVariable( "dphivj0",          "dphivj0", "", 'F' ) ;
+    TMVA::DataLoader::AddVariable( "dphivj1",          "dphivj1", "", 'F' ) ;
+    TMVA::DataLoader::AddVariable( "dphivj2",          "dphivj2", "", 'F' ) ;
+    TMVA::DataLoader::AddVariable( "dphivj3",          "dphivj3", "", 'F' ) ;
+    TMVA::DataLoader::AddVariable( "mht",              "mht", "", 'F' ) ;
+    TMVA::DataLoader::AddVariable( "C",                "C", "", 'F' ) ; 
+    TMVA::DataLoader::AddVariable( "D",                "D", "", 'F' ) ; 
+  }
+  void setHighVPtLowMJJVariables(){
+
+    TMVA::DataLoader::AddVariable( "leadj_pt",         "leadj_pt", "", 'F' ) ;
+    TMVA::DataLoader::AddVariable( "mjj",              "mjj", "", 'F' ) ;
+    TMVA::DataLoader::AddVariable( "detajj",           "detajj", "", 'F' ) ;
+    TMVA::DataLoader::AddVariable( "dphijj",           "dphijj", "", 'F' ) ;
+    TMVA::DataLoader::AddVariable( "ystar",            "ystar", "", 'F' ) ;
+    TMVA::DataLoader::AddVariable( "dphibjj",          "dphibjj", "", 'F' ) ;
+    TMVA::DataLoader::AddVariable( "balance",          "balance", "", 'F' ) ;
+    TMVA::DataLoader::AddVariable( "j_c2_00[0]",       "jet_c2_001",       "", 'F' ) ;
+    TMVA::DataLoader::AddVariable( "j_c2_00[1]",       "jet_c2_002",       "", 'F' ) ;
+    TMVA::DataLoader::AddVariable( "j_qg[1]",          "subleadjet_qg", "", 'F' ) ;
+    TMVA::DataLoader::AddVariable( "dphivj0",          "dphivj0", "", 'F' ) ;
+    TMVA::DataLoader::AddVariable( "dphivj1",          "dphivj1", "", 'F' ) ;
+    TMVA::DataLoader::AddVariable( "dphivj2",          "dphivj2", "", 'F' ) ;
+    TMVA::DataLoader::AddVariable( "dphivj3",          "dphivj3", "", 'F' ) ;
+    TMVA::DataLoader::AddVariable( "mht",              "mht", "", 'F' ) ;
+    TMVA::DataLoader::AddVariable( "sphericity",       "sphericity", "", 'F' ) ;
+    TMVA::DataLoader::AddVariable( "D",                "D", "", 'F' ) ;     
+  }
+
   void setHighVPtVariables(){
     TMVA::DataLoader::AddVariable( "mjj",              "mjj", "", 'F' ) ;
     TMVA::DataLoader::AddVariable( "jjpt",             "jjpt", "", 'F' ) ;

@@ -1,3 +1,4 @@
+
 //////////////////////////////////////
 // Currently the simplest case:     //
 //    - Only signal region          //
@@ -13,6 +14,7 @@
 #endif
 #include "RooRealVar.h"
 #include "RooDataSet.h"
+#include "RooHistPdf.h"
 #include "RooGaussian.h"
 #include "RooExponential.h"
 #include "RooConstVar.h"
@@ -95,8 +97,7 @@
 using namespace std;
 using namespace RooFit;
 
-typedef std::map<TString, std::pair<double, std::pair<double, double> > > MeanErr;
-typedef std::map<TString, std::pair <double, double> > YieldsErr;
+
 
 //////////////////////////////////////////////////
 // Simple class to make RooParametricHist       //
@@ -172,6 +173,34 @@ class WorkspaceProvider{
     ws->import(*SR->getSigDH(var));
     ws->import(*SR->getSigHistNorm());
     ws->import(*SR->getBkgHistNorm());
+    for(unsigned int iTh = 0; iTh < SR->Theo->shapeSystBkg.size(); iTh++){
+      TString thName = SR->Theo->shapeSystBkg[iTh]->GetName();
+      RooDataHist * thD = new RooDataHist(thName+"DH",thName+"DH",*var,Import(*SR->Theo->shapeSystBkg[iTh]));
+      RooHistPdf * thPdf = new RooHistPdf(thName,thName,*var,*thD);
+      ws->import(*thD);
+      ws->import(*thPdf);
+    }
+    for(unsigned int iExp = 0; iExp < SR->Exp->shapeSystBkg.size(); iExp++){
+      TString exName = SR->Exp->shapeSystBkg[iExp]->GetName();
+      RooDataHist * exD = new RooDataHist(exName+"DH",exName+"DH",*var,Import(*SR->Exp->shapeSystBkg[iExp]));
+      RooHistPdf * exPdf = new RooHistPdf(exName,exName,*var,*exD);
+      ws->import(*exD);
+      ws->import(*exPdf);
+    }
+    for(unsigned int iTh = 0; iTh < SR->Theo->shapeSystSig.size(); iTh++){
+      TString thName = SR->Theo->shapeSystSig[iTh]->GetName();
+      RooDataHist * thD = new RooDataHist(thName,thName,*var,Import(*SR->Theo->shapeSystSig[iTh]));
+      RooHistPdf * thPdf = new RooHistPdf(thName,thName,*var,*thD);
+      ws->import(*thD);
+      ws->import(*thPdf);
+    }
+    for(unsigned int iExp = 0; iExp < SR->Exp->shapeSystSig.size(); iExp++){
+      TString exName = SR->Exp->shapeSystSig[iExp]->GetName();
+      RooDataHist * exD = new RooDataHist(exName,exName,*var,Import(*SR->Exp->shapeSystSig[iExp]));
+      RooHistPdf * exPdf = new RooHistPdf(exName,exName,*var,*exD);
+      ws->import(*exD);
+      ws->import(*exPdf);
+    }
     if(doSignalPH){
       ws->import(*SR->sigPH);
       ws->import(*SR->sigPH_norm);
@@ -187,6 +216,16 @@ class WorkspaceProvider{
     ws->import(*CR->getSigDH(var));
     ws->import(*CR->getSigHistNorm());
     ws->import(*CR->getBkgHistNorm());
+    /* for(unsigned int iTh = 0; iTh < CR->Theo->shapeSystBkg.size(); iTh++){ */
+    /*   TString thName = CR->Theo->shapeSystBkg[iTh]->GetName(); */
+    /*   RooDataHist * thD = new RooDataHist(thName,thName,*var,Import(*CR->Theo->shapeSystBkg[iTh])); */
+    /*   ws->import(*thD); */
+    /* } */
+    /* for(unsigned int iExp = 0; iExp < CR->Exp->shapeSystBkg.size(); iExp++){ */
+    /*   TString exName = CR->Exp->shapeSystBkg[iExp]->GetName(); */
+    /*   RooDataHist * exD = new RooDataHist(exName,exName,*var,Import(*CR->Exp->shapeSystBkg[iExp])); */
+    /*   ws->import(*exD); */
+    /* } */
     if(doSignalPH){
       ws->import(*CR->sigPH);
       ws->import(*CR->sigPH_norm);
@@ -210,9 +249,42 @@ class WorkspaceProvider{
     wsNoTF->import(*SR->getDataDH(var));
     wsNoTF->import(*SR->getBkgDHNLO(var));
     wsNoTF->import(*SR->getSigDH(var));
+    RooHistPdf * bkgPdf = new RooHistPdf(SR->getBkgDHNLO(var)->GetName()+TString("Pdf"),"",*var,*SR->getBkgDHNLO(var));
+    RooHistPdf * sigPdf = new RooHistPdf(SR->getSigDH(var)->GetName()+TString("Pdf"),"",*var,*SR->getSigDH(var));
+    wsNoTF->import(*bkgPdf);
+    wsNoTF->import(*sigPdf);
     wsNoTF->import(*SR->getSigHistNorm());
     wsNoTF->import(*SR->getBkgNLOHistNorm());
-
+    for(unsigned int iTh = 0; iTh < SR->Theo->shapeSystBkg.size(); iTh++){
+      TString thName = SR->Theo->shapeSystBkg[iTh]->GetName();
+      RooDataHist * thD = new RooDataHist(thName+"DH",thName+"DH",*var,Import(*SR->Theo->shapeSystBkg[iTh]));
+      RooHistPdf * thPdf = new RooHistPdf(thName,thName,*var,*thD);
+      wsNoTF->import(*thD);
+      wsNoTF->import(*thPdf);
+    }
+    for(unsigned int iExp = 0; iExp < SR->Exp->shapeSystBkg.size(); iExp++){
+      TString exName = SR->Exp->shapeSystBkg[iExp]->GetName();
+      RooDataHist * exD = new RooDataHist(exName+"DH",exName+"DH",*var,Import(*SR->Exp->shapeSystBkg[iExp]));
+      RooHistPdf * exPdf = new RooHistPdf(exName,exName,*var,*exD);
+      wsNoTF->import(*exD);
+      wsNoTF->import(*exPdf);
+    }
+    for(unsigned int iTh = 0; iTh < SR->Theo->shapeSystSig.size(); iTh++){
+      TString thName = SR->Theo->shapeSystSig[iTh]->GetName();
+      if(thName.Contains("PDF"))
+	cout <<thName <<" "<<SR->boson <<endl;
+      RooDataHist * thD = new RooDataHist(thName,thName,*var,Import(*SR->Theo->shapeSystSig[iTh]));
+      RooHistPdf * thPdf = new RooHistPdf(thName,thName,*var,*thD);
+      wsNoTF->import(*thD);
+      wsNoTF->import(*thPdf);
+    }
+    for(unsigned int iExp = 0; iExp < SR->Exp->shapeSystSig.size(); iExp++){
+      TString exName = SR->Exp->shapeSystSig[iExp]->GetName();
+      RooDataHist * exD = new RooDataHist(exName,exName,*var,Import(*SR->Exp->shapeSystSig[iExp]));
+      RooHistPdf * exPdf = new RooHistPdf(exName,exName,*var,*exD);
+      wsNoTF->import(*exD);
+      wsNoTF->import(*exPdf);
+    }
     TFile * fOut2 = new TFile("Channel_"+CR->chan+"_BkgNLO.root","recreate");
     fOut2->cd();
     wsNoTF->Write();
@@ -233,9 +305,9 @@ class WorkspaceProvider{
     myfile << "kmax *  number of nuisance parameters (sources of systematical uncertainties)" << endl;
 
     myfile << "\n------------" << endl;
-    myfile << "shapes\tSignal\t" <<binName <<"\tChannel_"<<chan<<"_BkgNLO.root wsNoTF"<<chan<<":"<<SR->getSigDH(var)->GetName()   << endl; 
-    myfile << "shapes\tBkg\t"    <<binName <<"\tChannel_"<<chan<<"_BkgNLO.root wsNoTF"<<chan<<":"<<SR->getBkgDHNLO(var)->GetName()<< endl; 
-    myfile << "shapes\tdata_obs\t"<<binName<<"\tChannel_"<<chan<<"_BkgNLO.root wsNoTF"<<chan<<":"<<"Data"<<chan<<boson << endl;
+    myfile << "shapes\tSignal\t" <<binName <<"\tSignal_"    <<chan<<boson<<".root\t"    <<SR->hSig->GetName()    <<  "\t$PROCESS_$SYSTEMATIC"<< endl; 
+    myfile << "shapes\tBkg\t"    <<binName <<"\tBackground_"<<chan<<boson<<".root\t"    <<SR->hBkgCorr->GetName()<<  "\t$PROCESS_$SYSTEMATIC"<< endl; 
+    myfile << "shapes\tdata_obs\t"<<binName<<"\tData_"<<chan<<boson<<".root\t"          <<SR->hData->GetName()   <<  "\t$PROCESS_$SYSTEMATIC"<< endl;
     myfile << "------------" << endl;
     myfile << "bin\t"<<binName << endl;
     myfile << "observation\t-1.0" << endl;
@@ -247,14 +319,50 @@ class WorkspaceProvider{
     myfile << "rate\t"<<SR->hSig->Integral()<<"\t"<<SR->hBkgCorr->Integral()<< endl;
 
     myfile << "------------" << endl;
-    
+    myfile << "BkgTheoryRate\tlnN\t-\t1.3"<<endl;
     for (auto& x : YieldErrors) {
       if(x.second.first == x.second.second )
 	myfile << x.first << "\tlnN\t" << x.second.first << "\t"<<x.second.first << endl;
       else
 	myfile << x.first << "\tlnN\t" << x.second.first << "/" << x.second.second << "\t-" << endl;
     }
-
+    stringstream line;
+    for (auto& s : SR->Exp->yieldSystSig) {
+      if(boson == "A" && s.first.Contains("mes")) continue;
+      if(boson == "MM" && s.first.Contains("aes")) continue;
+      line.str("");
+      line << s.first << "\tlnN\t";
+      if(s.second.first == s.second.second ) {
+	if( s.second.second != 1)
+	  line << s.second.first << "\t";
+	else
+	  line <<"-\t";
+      } else line << s.second.first << "/" << s.second.second <<"\t" ;
+      for (auto& b : SR->Exp->yieldSystBkg) {
+	if(s.first != b.first) continue;
+	if(b.second.first == b.second.second ) {
+	  if( b.second.second != 1)
+	    line << b.second.first << "\t";
+	  else
+	    line <<"-\t";
+	} else line << b.second.first << "/" << b.second.second;
+      }
+      myfile << line.str() << endl;
+    }
+    for (auto& s : SR->Exp->shapeSystMap) {
+      myfile << s.first << "\tshape";
+      TString tmp(s.second.first == 1 ? "\t1" : "\t-");
+      myfile << tmp;
+      tmp = (s.second.second == 1 ? "\t1" : "\t-");
+      myfile << tmp << endl;
+    }
+    for (auto& s : SR->Theo->shapeSystMap) {
+      myfile << s.first << "\tshape";
+      TString tmp(s.second.first == 1 ? "\t1" : "\t-");
+      myfile << tmp;
+      tmp = (s.second.second == 1 ? "\t1" : "\t-");
+      myfile << tmp << endl;
+    }
     myfile.close();
   }
 

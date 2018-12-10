@@ -1,9 +1,18 @@
 import ROOT
 import numpy as np
 
+# methodList=[('TMVA_HighMJJ.root', 'vbf/TrainTree', 'BDT_VBF0HighMJJ'),
+#             ('TMVA_LowMJJ.root',  'vbf/TrainTree', 'BDT_VBF0LowMJJ')
+#             ]
+
 methodList=[('TMVA_HighMJJ.root', 'vbf/TrainTree', 'BDT_VBF0HighMJJ'),
-            ('TMVA_LowMJJ.root',  'vbf/TrainTree', 'BDT_VBF0LowMJJ')
+            ('TMVA_LowMJJ.root',  'vbf/TrainTree', 'BDT_VBF0LowMJJ'),
+            ('TMVA_HighVPtLowMJJ.root',   'vbf/TrainTree', 'BDT_VBF0HighVPtLowMJJ'),
+            ('TMVA_HighVPtHighMJJ.root',  'vbf/TrainTree', 'BDT_VBF0HighVPtHighMJJ'),
+            ('TMVA_LowVPtHighMJJ.root',   'vbf/TrainTree', 'BDT_VBF0LowVPtHighMJJ'),
+            ('TMVA_HighPt.root',          'vbf/TrainTree', 'BDT_VBF0HighPt')
             ]
+
 fOutName='inverse_cdfs.root'
 
 cdfInv=[]

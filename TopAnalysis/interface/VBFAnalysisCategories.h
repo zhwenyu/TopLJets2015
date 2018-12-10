@@ -14,13 +14,13 @@ namespace vbf {
       set(cat);
     };
     void set(std::vector<bool> &cat){
-      EE      = (float) cat[0];
-      MM      = (float) cat[1];
-      A       = (float) cat[2];
-      LowVPt  = (float) cat[3];
-      HighVPt = (float) cat[4];
-      LowMJJ  = (float) cat[5];
-      HighMJJ = (float) cat[6];
+      EE              = (float) cat[0];
+      MM              = (float) cat[1];
+      A               = (float) cat[2];
+      LowVPt          = (float) cat[3];
+      HighVPt         = (float) cat[4];
+      LowMJJ          = (float) cat[5];
+      HighMJJ         = (float) cat[6];
     };
     std::vector<TString> getChannelTags() {
       std::vector<TString> chTags;
@@ -30,10 +30,10 @@ namespace vbf {
       if(A>0)  chTag="A";
       if(chTag=="") return chTags;
       chTags.push_back(chTag);
-      if(LowVPt>0  && LowMJJ>0)    chTags.push_back("LowVPtLowMJJ"+chTag);
-      if(LowVPt>0  && HighMJJ>0)   chTags.push_back("LowVPtHighMJJ"+chTag);
-      if(HighVPt>0 && LowMJJ>0)    chTags.push_back("HighVPtLowMJJ"+chTag);
-      if(HighVPt>0 && HighMJJ>0)   chTags.push_back("HighVPtHighMJJ"+chTag);
+      if(LowVPt>0  && LowMJJ>0)                  chTags.push_back("LowVPtLowMJJ"+chTag);
+      if(LowVPt>0  && HighMJJ>0)                 chTags.push_back("LowVPtHighMJJ"+chTag);
+      if(HighVPt>0 && LowMJJ>0)                  chTags.push_back("HighVPtLowMJJ"+chTag);
+      if(HighVPt>0 && HighMJJ>0)                 chTags.push_back("HighVPtHighMJJ"+chTag);
       return chTags;
     }
   };
