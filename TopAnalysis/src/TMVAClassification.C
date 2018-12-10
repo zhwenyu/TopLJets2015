@@ -78,12 +78,21 @@ int TMVAClassification( TString myMethodList , TString extention, BDTOptimizer* 
    dataloader = new DataLoaderWrapper(dlName);
 
    std::vector<TString> cats = TMVA::gTools().SplitString( string(category), ':' );
+   TString jet = " j_pt[0] > 50 && j_pt[1] > 50 ";
+   TString lowMJJ = " mjj < 1000 ";
+   TString highMJJ = " mjj > 1000 ";
+   TString lowVpt = " gamma_pt[0] < 200 ";
+
    TString cut = "";
-   bool isLowVptHighMJJ (false), isLowVpt(false), isHighMJJ(false), isHighVpt(false);
+   bool isLowMJJ (false), isLowVpt(false), isHighMJJ(false), isHighVpt(false);
+   bool isHighPt(false), isVBF(false);
    for (unsigned int iCat = 0; iCat < cats.size(); iCat++){
-     if (cats[iCat] == "LowVPt") {cout<<"It is LowVPt!"<<endl; isLowVpt = true;}
+     if (cats[iCat] == "LowVPt")  {cout<<"It is LowVPt!"<<endl; isLowVpt = true;}
      if (cats[iCat] == "HighVPt") {cout<<"It is HighVPt!"<<endl; isHighVpt = true; }
      if (cats[iCat] == "HighMJJ") {cout<<"It is HighMJJ!"<<endl; isHighMJJ = true; }
+     if (cats[iCat] == "LowMJJ")  {cout<<"It is LowMJJ!"<<endl; isLowMJJ = true; }
+     if (cats[iCat] == "HighPt")  {cout<<"It is HighPt!"<<endl; isHighPt = true; }
+     if (cats[iCat] == "VBF")     {cout<<"It is VBF!"<<endl; isVBF = true; }
 
      cut+= "category." + cats[iCat] + " == 1 ";
      if(iCat < cats.size() - 1)
@@ -91,8 +100,23 @@ int TMVAClassification( TString myMethodList , TString extention, BDTOptimizer* 
      
    }
 
-   isLowVptHighMJJ = (isLowVpt && isHighMJJ);
+   bool isLowVptHighMJJ  = (isLowVpt && isHighMJJ);
+   bool isHighVptHighMJJ = (isHighVpt && isHighMJJ);
+   bool isHighVptLowMJJ  = (isHighVpt && isLowMJJ);
+   isHighVpt = (isHighVptHighMJJ && isHighVptLowMJJ);
+   if (isVBF)    isLowVptHighMJJ = true;
+   if (isHighPt) isHighVpt       = true;
+   if (isHighVpt && extention.Contains("HighV") && extention.Contains("HighM")) isHighVptHighMJJ = true;
+   if (isHighVpt && extention.Contains("HighV") && extention.Contains("LowM")) isHighVptLowMJJ = true;
    
+   if (isVBF){
+     cut = cut + " && " + jet + " && " + highMJJ + " && " + lowVpt;
+   }
+   if (isHighPt){
+     cut = cut + " && mjj > 500 && " + jet;
+     if (isHighVptHighMJJ) cut = cut + " && " + highMJJ;
+     if (isHighVptLowMJJ)  cut = cut + " && " + lowMJJ;
+   }
 
    TString cutB = cut;
    int idx = cutB.Index("category.A");
@@ -100,15 +124,21 @@ int TMVAClassification( TString myMethodList , TString extention, BDTOptimizer* 
    TCut dyCut  = TCut(cutB);
    TCut mycuts = TCut(cut);
    TCut mycutb = TCut(cut) || dyCut;
+   cout << "Cut is : " <<cut<<endl;
 
    if (Use["VBF"]) {
-     if(isHighVpt)
-       dataloader->setHighVPtVariables();
-     //dataloader->setAllVariables();
-     else if (isLowVptHighMJJ)
+     if (isLowVptHighMJJ)
        dataloader->setLowVPtHighMJJVariables(); 
      //dataloader->setAllVariables();
-     else dataloader->setAllVariables(false); 
+     else if (isHighVpt && !isHighVptHighMJJ && !isHighVptLowMJJ)
+       dataloader->setHighVPtVariables();
+     //dataloader->setAllVariables(); 
+     else if(isHighVptHighMJJ)
+       dataloader->setHighVPtHighMJJVariables();
+       //       dataloader->setAllVariables();
+     else if(isHighVptLowMJJ)
+       dataloader->setHighVPtLowMJJVariables();
+     //       dataloader->setAllVariables();
    }
    else if (Use["Cuts"] || Use["CutsD"]) dataloader->setCutOptVars();
    else if (Use["Fisher"] || Use["BoostedFisher"]) dataloader->setBestVars(isLowVptHighMJJ, false);

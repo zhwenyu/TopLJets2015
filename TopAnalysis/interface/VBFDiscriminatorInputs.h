@@ -14,7 +14,7 @@ namespace vbf{
     float leadj_pt,leadj_gawidth,leadj_c2_02,leadj_qg;
     float subleadj_pt,subleadj_gawidth,subleadj_c2_02,subleadj_qg;
     float centraleta,forwardeta;
-    float mjj,detajj,dphijj,jjpt,jjetas,ystar,balance,relbpt,dphibjj,dphivj0,dphivj1;
+    float mjj,detajj,dphijj,jjpt,jjetas,ystar,balance,relbpt,dphibjj,dphivj0,dphivj1,dphivj2,dphivj3;
     float isotropy,circularity,sphericity,aplanarity,C,D;
     float scalarht,mht;
     float ncentj;
@@ -25,7 +25,7 @@ namespace vbf{
     leadj_pt(0),leadj_gawidth(-99),leadj_c2_02(-99),leadj_qg(-99),
       subleadj_pt(0),subleadj_gawidth(-99),subleadj_c2_02(-99),subleadj_qg(-99),
       centraleta(-99),forwardeta(-99),
-      mjj(0),detajj(-99),dphijj(-99),jjpt(0),jjetas(-99),ystar(-99),balance(-99),relbpt(-99),dphibjj(-99),dphivj0(-99),dphivj1(-99),
+      mjj(0),detajj(-99),dphijj(-99),jjpt(0),jjetas(-99),ystar(-99),balance(-99),relbpt(-99),dphibjj(-99),dphivj0(-99),dphivj1(-99),dphivj2(-99),dphivj3(-99),
       isotropy(-99),circularity(-99),sphericity(-99),aplanarity(-99),C(-99),D(-99),scalarht(0),mht(0),
       ncentj(0), dphivcentj(10,-99.), centjy(10,-99.){
     }
@@ -35,7 +35,7 @@ namespace vbf{
     leadj_pt(o.leadj_pt),leadj_gawidth(o.leadj_gawidth),leadj_c2_02(o.leadj_c2_02),leadj_qg(o.leadj_qg),
       subleadj_pt(o.subleadj_pt),subleadj_gawidth(o.subleadj_gawidth),subleadj_c2_02(o.subleadj_c2_02),subleadj_qg(o.subleadj_qg),
       centraleta(o.centraleta),forwardeta(o.forwardeta),
-      mjj(o.mjj),detajj(o.detajj),dphijj(o.dphijj),jjpt(o.jjpt),jjetas(o.jjetas),ystar(o.ystar),balance(o.balance),relbpt(o.relbpt),dphibjj(o.dphibjj),dphivj0(o.dphivj0),dphivj1(o.dphivj1),
+      mjj(o.mjj),detajj(o.detajj),dphijj(o.dphijj),jjpt(o.jjpt),jjetas(o.jjetas),ystar(o.ystar),balance(o.balance),relbpt(o.relbpt),dphibjj(o.dphibjj),dphivj0(o.dphivj0),dphivj1(o.dphivj1),dphivj2(o.dphivj2),dphivj3(o.dphivj3),
       isotropy(o.isotropy),circularity(o.circularity),sphericity(o.sphericity),aplanarity(o.aplanarity),C(o.C),D(o.D),
       scalarht(o.scalarht), mht(o.mht),
       ncentj(o.ncentj) {
@@ -71,6 +71,8 @@ namespace vbf{
         dphibjj          = o.dphibjj;  
         dphivj0          = o.dphivj0;  
         dphivj1          = o.dphivj1;  
+	dphivj2          = o.dphivj2;  
+        dphivj3          = o.dphivj3;  
         isotropy         = o.isotropy;  
         circularity      = o.circularity;  
         sphericity       = o.sphericity;  
@@ -105,7 +107,8 @@ namespace vbf{
         subleadj_c2_02   = ev.j_c2_02[jets[1].getJetIndex()];
         subleadj_qg      = ev.j_qg[jets[1].getJetIndex()];
         dphivj1          = fabs(jets[1].DeltaPhi(boson));
-
+	if (jets.size()>2) dphivj2 = fabs(jets[2].DeltaPhi(boson));
+	if (jets.size()>3) dphivj3 = fabs(jets[3].DeltaPhi(boson));
         centraleta       = min(fabs(jets[0].Eta()),fabs(jets[1].Eta()));
         forwardeta       = max(fabs(jets[0].Eta()),fabs(jets[1].Eta()));
 

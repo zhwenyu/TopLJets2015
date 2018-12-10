@@ -17,17 +17,193 @@
 #include <string>
 #include <vector>
 
+typedef std::map<TString, std::pair<double, std::pair<double, double> > > MeanErr;
+typedef std::map<TString, std::pair <double, double> > YieldsErr;
+const int nBackgrounds = 5;
+const TString bkgs[nBackgrounds]={"DY","#gamma+jets","QCD","W,Top,VV","#gamma#gamma"}; 
 using namespace std;
 using namespace RooFit;
 const float nMinInBin = 0.1;
-////////////////////////////////////
-// Acontainer for histograms, etc //
-// of SR or CR                    //
-////////////////////////////////////
+
+/////////////////////////////////
+// A container for systematics //
+/////////////////////////////////
+class systematics{
+ public:
+ systematics(TString name_):name(name_){};
+  ~systematics(){};
+  
+  YieldsErr getYieldSystematics(double nominal, TH2F* h){ 
+    YieldsErr ret;
+    if(name.Contains("exp")){
+      cout << "Nominal: "<<nominal<<endl;
+      for(int iSyst = 0; iSyst < h->GetYaxis()->GetNbins(); iSyst+=2){
+	TString label = h->GetYaxis()->GetBinLabel(iSyst+1);
+	TString syst = label(0,label.Sizeof()-3);
+	double yield = (h->ProjectionX(h->GetName()+label,iSyst+1,iSyst+1))->Integral();
+	cout << label<<": "<<yield<<endl;
+	yield = 1+((yield - nominal)/nominal);
+	std::pair<double,double> var;
+	if(label.EndsWith("up")) var.first = yield;
+	else if(label.EndsWith("dn"))  var.second = yield;
+	label = h->GetYaxis()->GetBinLabel(iSyst+2);
+	yield = (h->ProjectionX(h->GetName()+label,iSyst+2,iSyst+2))->Integral();
+	yield = 1+((yield - nominal)/nominal);
+	if(label.EndsWith("up")) var.first = yield;
+	else if(label.EndsWith("dn"))  var.second = yield;
+
+	if ((var.second < 1. && var.first < 1.) || (var.second > 1. && var.first > 1.)) {
+	  yield = std::max(var.first,var.second);
+	  if (yield < 1) yield = 2 - yield;
+	  var.first = yield;
+	  var.second = yield;
+	}
+	if(!label.Contains("JEC") && !label.Contains("JER") && !label.Contains("prefire"))
+	  ret[syst] = var;
+
+	if(syst.Contains("trig")) ret[syst] = make_pair(1.03,1.03);
+      }
+    } else {
+      cout << "Expect experimental uncertainties for pure yield variation" <<endl;
+      throw std::exception();
+    }
+    return ret;
+  }  
+
+  
+  void setYieldSystematicsB(double nominal){ 
+
+    yieldSystBkg = this->getYieldSystematics(nominal,this->bkg);
+  }  
+  void setYieldSystematicsS(double nominal){ 
+    yieldSystSig =  this->getYieldSystematics(nominal,this->sig);
+  }  
+
+  std::vector<TH1F*> getShapeSystematics(TH2F * h){
+    std::vector<TH1F*> ret;
+    TString hName = h->GetName();
+    TString process( hName.Contains("Background_")? "Bkg":"Signal");
+    std::pair<int,int> hasSyst(0,0);
+    int iPDF = 0;
+    stringstream pdfName;
+    for(int iSyst = 0; iSyst < h->GetYaxis()->GetNbins(); iSyst++){
+      TString label = h->GetYaxis()->GetBinLabel(iSyst+1);
+      if(name.Contains("exp") && !label.Contains("JEC") && !label.Contains("JER") && !label.Contains("prefire")) continue;
+      pdfName.str("");
+      pdfName << "PDF" << iPDF;      
+      TString syst = ((label.EndsWith("dn") || label.EndsWith("up")) ? TString(label(0,label.Sizeof()-3)) : TString(pdfName.str().c_str()));
+      TString postfix(label.EndsWith("dn")? "Down" : "Up");
+      cout << syst <<endl;
+      if(syst.Contains("PDF")) {
+	postfix = "Up" ;
+	iPDF++;
+      }
+      if(syst.Contains("PDF0")) continue;
+      TH1D * H = h->ProjectionX(process+"_"+syst+postfix,iSyst+1,iSyst+1);
+      TH1F * tmpH = new TH1F();
+      H->Copy(*tmpH);
+      ret.push_back(tmpH);
+      if(syst.Contains("PDF")){
+	postfix = "Down";
+	ret.push_back((TH1F*)tmpH->Clone(process+"_"+syst+postfix));
+      }
+      shapeSystMap[syst] = hasSyst;
+    }
+    return ret;
+  }
+  void setShapeSystematicsB(){
+
+    shapeSystBkg = this->getShapeSystematics(bkg);
+  }
+  void setShapeSystematicsS(){
+    cout <<"Signal >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" <<endl;
+    shapeSystSig = this->getShapeSystematics(sig);
+  }
+  
+  void setSystematicsMap(){
+    for (auto& b : shapeSystMap) {
+      for (unsigned int i = 0; i < shapeSystBkg.size(); i++){
+	if (TString(shapeSystBkg[i]->GetName()).Contains(b.first)) {
+	  shapeSystMap[b.first].second = 1;
+	}
+      }
+      for (unsigned int i = 0; i < shapeSystSig.size(); i++){
+	if (TString(shapeSystSig[i]->GetName()).Contains(b.first)){
+	  shapeSystMap[b.first].first = 1;
+	}
+      }
+    }
+  }
+  void printMap(){
+    cout << "Printing ........"<<endl;
+    for (auto& b : shapeSystMap) {
+	  cout << b.first<<" "<< shapeSystMap[b.first].first << " " <<shapeSystMap[b.first].second<<endl;      
+    }
+  }
+  void setBkg(TString chan, TString boson, TString hist, int nBin){     
+     TDirectory * dir = (TDirectory*)((TFile::Open("plotter_"+chan+".root"))->Get(chan+boson+"_"+hist+"_"+name)); 
+     dir->ls();
+     int initBkg = ((boson == "A" )? 1 : 0);
+   
+     bkg = (TH2F*)dir->Get(chan+boson+"_"+hist+"_"+name+"_"+bkgs[initBkg]); 
+     bkg->SetNameTitle("Background_"+chan+boson+"_syst_"+name,"Background "+name+" syst. in "+chan+boson); 
+     bkg->SetLineColor(kBlack);
+     bkg->SetMarkerColor(kBlack);
+
+     int nRebin =(int)((double)bkg->GetXaxis()->GetNbins()/(double)nBin);      
+     for(int i = 1; i < nBackgrounds; i++){ 
+       if(boson == "A") break;
+       if (bkgs[i] == "QCD") continue;
+       TH2F * tmp = (TH2F*)dir->Get(chan+boson+"_"+hist+"_"+name+"_"+bkgs[i]); 
+       if (tmp != NULL) {
+	 tmp->SetLineColor(kBlack);
+	 tmp->SetMarkerColor(kBlack);
+	 bkg->Add(tmp);
+       }
+     } 
+     bkg->RebinX(nRebin);
+     for(int i = 0; i<nRebin; i++){
+       for(int j = 0;  j < bkg->GetYaxis()->GetNbins();j++){
+	 if(bkg->GetBinContent(i,j) == 0)
+	   bkg->SetBinContent(i,j,nMinInBin);
+       }
+     }
+  }
+  void setSig(TString chan, TString boson, TString hist, int nBin){ 
+    TString signal = "EWK #gammajj"; 
+    if(boson == "MM") 
+      signal = "EWK Zjj"; 
+    TDirectory * dir = (TDirectory*)((TFile::Open("plotter_"+chan+".root"))->Get(chan+boson+"_"+hist+"_"+name)); 
+    sig = (TH2F*)dir->Get(chan+boson+"_"+hist+"_"+name+"_"+signal); 
+    sig->SetNameTitle("Signal_"+chan+boson+"_syst_"+name,"Signal "+name+" syst. in "+chan+boson); 
+    int nRebin =(int)((double)sig->GetXaxis()->GetNbins()/(double)nBin); 
+    sig->RebinX(nRebin);     
+    for(int i = 0; i<nRebin; i++){
+      for(int  j = 0;  j < sig->GetYaxis()->GetNbins(); j++){
+	if(sig->GetBinContent(i,j) == 0)
+	  sig->SetBinContent(i,j,nMinInBin);
+      }
+    }
+  }
+  TString name;
+  TH2F * sig, * bkg;
+  std::vector<TH1F*> shapeSystSig, shapeSystBkg;
+  YieldsErr yieldSystSig, yieldSystBkg;
+  std::map<TString, std::pair<int, int> > shapeSystMap;
+};
+
+
+
+/////////////////////////////////////
+// A container for histograms, etc //
+// of SR or CR                     //
+/////////////////////////////////////
 
 class VbfFitRegion{
  public:
  VbfFitRegion(TString channel, TString v, TString Hist, int bin, bool SR):chan(channel),boson(v),hist(Hist),nBin(bin),isSR(SR){
+    Exp = new systematics("exp");
+    Theo = new systematics("th");
     this->setHistograms();
     if(isSR)
       for(int i = 0; i< nBin; i++) {
@@ -45,9 +221,28 @@ class VbfFitRegion{
    VbfFitRegion* clone() const { 
      return new VbfFitRegion(*this); 
    } 
- 
+   
+   void setSystematics(){
+     Exp->setBkg(chan, boson, hist, nBin);
+     Theo->setBkg(chan, boson, hist, nBin);
+     Exp->setSig(chan, boson, hist, nBin);
+     Theo->setSig(chan, boson, hist, nBin);
+     Exp->setShapeSystematicsB();
+     Exp->setShapeSystematicsS();
+     Exp->setSystematicsMap();
+     //     Exp->printMap();
+     Theo->setShapeSystematicsB();
+     Theo->setShapeSystematicsS();
+     Theo->setSystematicsMap();
+     //     Theo->printMap();
+     //Yields
+     double normSig = hSig->Integral();
+     double normBkg = hBkg->Integral();
+     Exp->setYieldSystematicsB(normBkg);
+     Exp->setYieldSystematicsS(normSig);
+   }
+
    void setBkg(){ 
-     TString bkgs[]={"Top+VV","DY","QCD","#gamma+jets"}; 
      TDirectory * dir = (TDirectory*)((TFile::Open("plotter_"+chan+".root"))->Get(chan+boson+"_"+hist)); 
      dir->ls();
      hBkg = (TH1F*)dir->Get(chan+boson+"_"+hist+"_"+bkgs[0]); 
@@ -59,16 +254,18 @@ class VbfFitRegion{
      hBkgCorr->SetTitle("Background (NLO) in "+chan+boson); 
 
      int nRebin =(int)((double)hBkg->GetXaxis()->GetNbins()/(double)nBin);      
-     for(int i = 1; i < 4; i++){ 
+     for(int i = 1; i < nBackgrounds; i++){ 
+       if (bkgs[i] == "QCD") continue;
        TH1F * tmp = (TH1F*)dir->Get(chan+boson+"_"+hist+"_"+bkgs[i]); 
        if (tmp != NULL) {
 	 tmp->SetLineColor(kBlack);
 	 tmp->SetMarkerColor(kBlack);
 	 hBkg->Add(tmp);
-	 if(i == 3){
-	   TH1F * tmpCorr = correctBackground(tmp);
-	   hBkgCorr->Add(tmpCorr);
-	 } else hBkgCorr->Add(tmp);
+	 /* if(i == 3){ */
+	 /*   TH1F * tmpCorr = correctBackground(tmp); */
+	 /*   hBkgCorr->Add(tmpCorr); */
+	 /* } else  */
+	 hBkgCorr->Add(tmp);
        }
      } 
      hBkg->Rebin(nRebin);
@@ -82,9 +279,9 @@ class VbfFitRegion{
    } 
 
    void setSig(){ 
-     TString signal = "EWK #gammaJJ"; 
+     TString signal = "EWK #gammajj"; 
      if(boson == "MM") 
-       signal = "EWK ZJJ"; 
+       signal = "EWK Zjj"; 
      TDirectory * dir = (TDirectory*)((TFile::Open("plotter_"+chan+".root"))->Get(chan+boson+"_"+hist)); 
      hSig = (TH1F*)dir->Get(chan+boson+"_"+hist+"_"+signal); 
      hSig->SetNameTitle("Signal_"+chan+boson,"Signal in "+chan+boson); 
@@ -108,16 +305,20 @@ class VbfFitRegion{
      this->setBkg(); 
      this->setSig(); 
      this->setData(); 
-
+     this->setSystematics();
      TFile* fBkg = new TFile("Background_"+chan+boson+".root","recreate"); 
      fBkg->cd(); 
      hBkg->Write();     
      hBkgCorr->Write();
+     for(unsigned int i = 0; i < (Theo->shapeSystBkg).size(); i++) Theo->shapeSystBkg[i]->Write();
+     for(unsigned int i = 0; i < (Exp->shapeSystBkg).size(); i++) Exp->shapeSystBkg[i]->Write();
      fBkg->Close(); 
 
      TFile* fSig = new TFile("Signal_"+chan+boson+".root","recreate"); 
      fSig->cd(); 
      hSig->Write(); 
+     for(unsigned int i = 0; i < (Theo->shapeSystSig).size(); i++) Theo->shapeSystSig[i]->Write();
+     for(unsigned int i = 0; i < (Exp->shapeSystSig).size(); i++) Exp->shapeSystSig[i]->Write();
      fSig->Close(); 
 
     TFile* fData = new TFile("Data_"+chan+boson+".root","recreate");
@@ -125,6 +326,7 @@ class VbfFitRegion{
     hData->Write();
     fData->Close();
   }
+
   TH1F * correctBackground(TH1F * hin){
     TFile * f = TFile::Open("tf_plotter.root");
     TH1F * tf = (TH1F*) f->Get(chan+"MM_"+hist+"/"+chan+"_"+hist+"_nlo2lo"); 
@@ -213,6 +415,7 @@ class VbfFitRegion{
   std::vector<RooFormulaVar*> binsSigSR;
   std::vector<RooRealVar*>    binsBkgCR;
   std::vector<RooFormulaVar*> binsBkgSR;
+  systematics * Exp, * Theo;
 };
 
 ////////////////////////////////////////////
@@ -265,7 +468,6 @@ class TF{
 
     bkgETF = (TH1F*)bkgTF->Clone(TString("Err_")+bkgTF->GetName());
     for(int i = 0; i < nBin+1; i++){
-      cout << "Background Bin "<<i+1<<": "<<bkgTF->GetBinContent(i)<<" +/- "<<bkgTF->GetBinError(i)<<endl;
       double err = bkgTF->GetBinError(i);
       if(bkgTF->GetBinContent(i) < 0) err = -999;
       bkgETF->SetBinContent(i,err);
@@ -294,7 +496,6 @@ class TF{
 
     sigETF = (TH1F*)sigTF->Clone(TString("Err_")+sigTF->GetName());
     for(int i = 0; i < nBin+1; i++){
-      cout << "Signal Bin "<<i+1<<": "<<sigTF->GetBinContent(i)<<" +/- "<<sigTF->GetBinError(i)<<endl;
       double err = sigTF->GetBinError(i);
       if(sigTF->GetBinContent(i) < 0) err = -999;;
       sigETF->SetBinContent(i,err);
@@ -367,5 +568,6 @@ class TF{
   std::vector<std::pair<RooRealVar*,double> > bkgNuisances, sigNuisances;
   int nBin;
 };
+
 
 #endif
