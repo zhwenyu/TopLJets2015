@@ -32,17 +32,19 @@ TopWidthEvent::TopWidthEvent(std::vector<Particle> &leptons,std::vector<Jet> &je
   for(auto j : jets) {
     if(j.Pt()<jetPt_) continue;
     if(fabs(j.Eta())>maxJetEta_) continue;    
-    bool isBTagged(j.getDeepCSV()>deepCSVCut_);
+    bool isBTagged(j.flavor()==5);
     if(isBTagged) bJets.push_back(j);
     else          lJets.push_back(j);
   }
-  if(bJets.size()<1) return;
-  if(lJets.size()+bJets.size()<2) return;
-  
+  nbjets=bJets.size();
+  njets=nbjets+lJets.size();
+  if(njets<2) return;
+  if(nbjets<1) return;
+
   j1pt  = bJets[0].Pt();
   j1eta = bJets[0].Eta();
-  j2pt  = bJets.size()>1 ? bJets[1].Pt()  : lJets[1].Pt();
-  j2eta = bJets.size()>1 ? bJets[1].Eta() : lJets[1].Eta();
+  j2pt  = bJets.size()>1 ? bJets[1].Pt()  : lJets[0].Pt();
+  j2eta = bJets.size()>1 ? bJets[1].Eta() : lJets[0].Eta();
   
   //lepton-b pairing
   if(bJets.size()==1) {
@@ -94,5 +96,4 @@ void TopWidthEvent::initSelectionCuts() {
   minMll_          = 20.;
   jetPt_           = 30.;
   maxJetEta_       = 2.4;
-  deepCSVCut_      = 0.4941;
 } 

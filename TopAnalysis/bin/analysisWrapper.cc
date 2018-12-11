@@ -38,7 +38,7 @@ int main(int argc, char* argv[])
   std::string systVar("");
   bool runSysts(false);
   bool debug(false), skimtree(false), CR(false), QCDTemp(false), SRfake(false);
-  int channel(0),charge(0),flag(0);
+  int channel(0),charge(0),flag(-1);
   float xsec(1.0);
   for(int i=1;i<argc;i++){
     string arg(argv[i]);
@@ -104,7 +104,7 @@ int main(int argc, char* argv[])
     myVBF.runAnalysis();
   }
   else if(method=="TOP17010::TOP17010") {
-    TOP17010 myTOP17010(in,out,normH,puH,era,debug);
+    TOP17010 myTOP17010(in,out,normH,puH,era,flag,debug);
     myTOP17010.runAnalysis();
   }
   else {

@@ -33,6 +33,13 @@ git checkout v7.0.10
 scramv1 b clean; scramv1 b
 cd -
 
+#additional tools
+mkdir TopQuarkAnalysis 
+cd TopQuarkAnalysis
+git clone -b 94x https://gitlab.cern.ch/CMS-TOPPAG/BFragmentationAnalyzer.git
+scram b
+cd -
+
 #this package
 cd $CMSSW_BASE/src
 git clone https://github.com/pfs/TopLJets2015.git

@@ -72,7 +72,8 @@
 
 #include "DataFormats/EgammaCandidates/interface/GsfElectron.h"
 #include "FWCore/Framework/interface/Run.h"
-//#include "TopQuarkAnalysis/BFragmentationAnalyzer/interface/BFragmentationAnalyzerUtils.h"
+#include "TopQuarkAnalysis/BFragmentationAnalyzer/interface/BFragmentationAnalyzerUtils.h"
+
 #include "TLorentzVector.h"
 #include "TH1.h"
 #include "TH1F.h"
@@ -319,16 +320,14 @@ void MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
         edm::Ref<std::vector<reco::GenJet> > genJetRef(genJets,genJet-genJets->begin());
 
         //map the gen particles which are clustered in this jet
-        //      JetFragInfo_t jinfo=analyzeJet(*genJet);
+        JetFragInfo_t jinfo=analyzeJet(*genJet);
         
         std::vector< const reco::Candidate * > jconst=genJet->getJetConstituentsQuick();
         for(size_t ijc=0; ijc <jconst.size(); ijc++) jetConstsMap[ jconst[ijc] ] = ev_.ng;
-        
-        //      ev_.g_tagCtrs[ev_.ng]       = (jinfo.nbtags&0xf) | ((jinfo.nctags&0xf)<<4) | ((jinfo.ntautags&0xf)<<8);
-        //      ev_.g_xb[ev_.ng]            = jinfo.xb;
-        //      ev_.g_bid[ev_.ng]           = jinfo.leadTagId;
-        //      ev_.g_isSemiLepBhad[ev_.ng] = jinfo.hasSemiLepDecay;
-        //cout << "xb=" << jinfo.xb << " petersonFrag=" << (*petersonFrag)[genJetRef] << endl;
+        ev_.g_tagCtrs[ev_.ng]       = (jinfo.nbtags&0xf) | ((jinfo.nctags&0xf)<<4) | ((jinfo.ntautags&0xf)<<8);
+        ev_.g_xb[ev_.ng]            = jinfo.xb;
+        ev_.g_bid[ev_.ng]           = jinfo.leadTagId;
+        ev_.g_isSemiLepBhad[ev_.ng] = jinfo.hasSemiLepDecay;
         ev_.g_id[ev_.ng]   = genJet->pdgId();
         ev_.g_pt[ev_.ng]   = genJet->pt();
         ev_.g_eta[ev_.ng]  = genJet->eta();

@@ -19,7 +19,7 @@ class TopWidthEvent {
  private:
   std::vector<TLorentzVector> lbPairs_;
   void initSelectionCuts();
-  float leadLeptonPt_,subLeadLeptonPt_,maxLeptonEta_,zMassWindow_,minMll_,jetPt_,maxJetEta_,deepCSVCut_;
+  float leadLeptonPt_,subLeadLeptonPt_,maxLeptonEta_,zMassWindow_,minMll_,jetPt_,maxJetEta_;
 
 };
 

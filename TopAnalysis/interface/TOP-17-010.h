@@ -32,12 +32,16 @@ class TOP17010 {
 
   /**
      @short CTOR for TOP-17-010 analysis
+     scenario is an unsigned 32b integer coded as (imass&0xffff<<16)+(iwidth&0xffff)
+     the indices will be used to set the target mass and width of the reweighting
+     target mass  = 169 + imass*0.25
+     target width = 0.7 + iwidth*0.01
   */
- TOP17010(TString filename, TString outname, TH1F *normH,  TH1F *genPU, TString era, Bool_t debug=false)        
+ TOP17010(TString filename, TString outname, TH1F *normH,  TH1F *genPU, TString era, UInt_t scenario=0, Bool_t debug=false)        
    : filename_(filename), outname_(outname), normH_(normH), genPU_(genPU), era_(era), debug_(debug),
     targetGt_(-1), targetMt_(-1)
   {
-    init();
+    init(scenario);
     bookHistograms();
   };
 
@@ -62,13 +66,13 @@ class TOP17010 {
 
 private:
 
-  void init();
+  void init(UInt_t scenario);
   void readTree();
   void bookHistograms();
   void fillControlHistograms(TopWidthEvent &twe,float &wgt);
 
   //class variables
-  TString filename_, outname_, baseName_;
+  TString filename_, outname_;
   Int_t nentries_;
   TH1F *normH_, *genPU_, *triggerList_;
   TString era_;

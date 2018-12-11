@@ -10,6 +10,7 @@ class L1PrefireEfficiencyWrapper
  public:
   L1PrefireEfficiencyWrapper(bool isData,TString era);
   EffCorrection_t getCorrection(std::vector<Jet> &jets,std::vector<Particle> &photons,bool byMax=true);
+  EffCorrection_t getCorrection(std::vector<Jet> &jets,bool byMax=true);
   ~L1PrefireEfficiencyWrapper();  
  private:
   void init(TString era);

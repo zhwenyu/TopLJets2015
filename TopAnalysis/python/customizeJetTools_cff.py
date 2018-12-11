@@ -45,7 +45,22 @@ def customizeJetTools(process,jecDB,jecTag,jerDB,jerTag,baseJetCollection,runOnD
                                      )        
         process.jerDBPreference = cms.ESPrefer('PoolDBESSource', 'jerDB')
 
-	
+        process.QGPoolDBESSource = cms.ESSource("PoolDBESSource",
+                                                CondDBSetup,
+                                                toGet = cms.VPSet(cms.PSet(record = cms.string('QGLikelihoodRcd'),
+                                                                           tag = cms.string('QGLikelihoodObject_v1_AK4'),
+                                                                           label = cms.untracked.string('QGL_AK4PFchs')
+                                                                           ),
+                                                                  ),
+                                                connect = cms.string('sqlite:qg_db.db')
+                                                )
+        process.es_prefer_qg = cms.ESPrefer('PoolDBESSource','QGPoolDBESSource')
+
+        process.load('RecoJets.JetProducers.QGTagger_cfi')
+        process.QGTagger.srcJets = baseJetCollection
+        process.QGTagger.srcVertexCollection = 'offlineSlimmedPrimaryVertices'
+        process.QGTagger.useQualityCuts = cms.bool(False)
+        	
 	from PhysicsTools.PatAlgos.tools.jetTools import updateJetCollection
 	updateJetCollection(
 		process,

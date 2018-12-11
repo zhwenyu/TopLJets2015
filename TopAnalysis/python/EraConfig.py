@@ -19,7 +19,6 @@ def getEraConfiguration(era,isData):
     muonFiles   = {
         'era2016':'RoccoR2016.txt',
         'era2017':'RoccoR2017.txt'
-
         }
     globalTag = globalTags[era][isData]
     jecFile   = jecFiles[era][isData]
@@ -28,16 +27,19 @@ def getEraConfiguration(era,isData):
     jerFile   = jerFiles[era][isData]
     jerTag    = '_'.join( jerFile.split('_')[0:-1] )
     jerDB     = 'jer_DATA.db'  if isData else 'jer_MC.db'
+    qgDBFile  = 'QGL_AK4chs_94X.db'
 
     #copy correction files to a common CMSSW search path directory
     os.system('cp ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/%s/%s.db %s'%(era,jecFile,jecDB))
+    os.system('cp ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/%s/%s.db %s'%(era,jecFile,jecDB))
     os.system('cp ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/%s/%s.db %s'%(era,jerFile,jerDB))
     os.system('cp ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/%s/%s.txt jecUncSources.txt'%(era,jecFiles[era][2]))
-    os.system('cp ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/%s/%s muoncorr_db.txt'%(era,muonFiles[era]))
+    os.system('cp ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/data/%s qg_db.db'%(qgDBFile))
 
     print 'JEC tag: ',jecTag,'to be read from',jecDB
     print 'JER tag: ',jerTag,'to be read from',jerDB
     print 'Muon corrections to be read from muoncorr_db.txt'
+    print 'q/g discriminator to be read from qg_db.db'
 
     return globalTag, jecTag, jecDB, jerTag, jerDB
     

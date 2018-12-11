@@ -46,7 +46,7 @@ void LumiTools::parseLumiInfo()
 void LumiTools::defineRunPeriods()
 {
   runPeriods_.clear();
-  if(era_.Contains("era2017"))
+  if(era_.Contains("era2017") || era_.Contains("2016"))
     {
       runPeriods_.push_back(std::pair<TString,float> ("",1.0));
     }

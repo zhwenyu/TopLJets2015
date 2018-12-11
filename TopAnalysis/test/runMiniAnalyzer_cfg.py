@@ -115,7 +115,7 @@ process.source = cms.Source("PoolSource",
                             duplicateCheckMode = cms.untracked.string('noDuplicateCheck') 
                             )
 if '2016' in options.era:
-      process.source.fileNames = cms.untracked.vstring('/store/mc/RunIISummer16MiniAODv3/DYToLL_0J_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/PUMoriond17_94X_mcRun2_asymptotic_v3_ext1-v1/00000/004ABB41-17C1-E811-8194-0CC47AB35C32.root')
+      process.source.fileNames = cms.untracked.vstring('/store/mc/RunIISummer16MiniAODv3/ST_t-channel_antitop_4f_mtop1715_inclusiveDecays_13TeV-powhegV2-madspin-pythia8/MINIAODSIM/PUMoriond17_94X_mcRun2_asymptotic_v3_ext1-v1/120000/16CEB785-3FE6-E811-AAE8-FA163E9D74F8.root')
 
 if options.runOnData:
       if '2017' in options.era:
@@ -196,7 +196,7 @@ toSchedule=[]
 if process.egammaPostReco:
       toSchedule.append( process.egammaPostReco )
 if process.updatedPatJetsUpdatedJECBTag:
-      process.custom_jec_seq=cms.Sequence(process.patJetCorrFactorsUpdatedJECBTag * process.updatedPatJetsUpdatedJECBTag)
+      process.custom_jec_seq=cms.Sequence(process.QGTagger * process.patJetCorrFactorsUpdatedJECBTag * process.updatedPatJetsUpdatedJECBTag)
       process.custom_jec=cms.Path(process.custom_jec_seq)
       toSchedule.append( process.custom_jec)
 if process.fullPatMetSequenceModifiedMET:
