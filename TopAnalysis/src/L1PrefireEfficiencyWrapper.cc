@@ -61,7 +61,7 @@ EffCorrection_t L1PrefireEfficiencyWrapper::getCorrection(std::vector<Jet> &jets
     Int_t ibin=effMapsH_["jet"]->FindBin(fabs(jets[i].Eta()),min(jets[i].Pt(),ptmax));
     Float_t effVal(effMapsH_["jet"]->GetBinContent(ibin));
     Float_t effUnc(effMapsH_["jet"]->GetBinError(ibin));
-    if(byMax) {
+    if(!byMax) {
       corr.first *= (1-effVal);
       corr.second += pow(effUnc,2) + pow(0.2*effVal,2);    
     }
@@ -79,7 +79,7 @@ EffCorrection_t L1PrefireEfficiencyWrapper::getCorrection(std::vector<Jet> &jets
     Int_t ibin=effMapsH_["photon"]->FindBin(fabs(photons[i].Eta()),min(photons[i].Pt(),ptmax));
     Float_t effVal(effMapsH_["photon"]->GetBinContent(ibin));
     Float_t effUnc(effMapsH_["photon"]->GetBinError(ibin));
-    if(byMax) {
+    if(!byMax) {
       corr.first *= (1-effVal);
       corr.second += pow(effUnc,2) + pow(0.2*effVal,2);    
     }
@@ -107,7 +107,7 @@ EffCorrection_t L1PrefireEfficiencyWrapper::getCorrection(std::vector<Jet> &jets
     Int_t ibin=effMapsH_["jet"]->FindBin(fabs(jets[i].Eta()),min(jets[i].Pt(),ptmax));
     Float_t effVal(effMapsH_["jet"]->GetBinContent(ibin));
     Float_t effUnc(effMapsH_["jet"]->GetBinError(ibin));
-    if(byMax) {
+    if(!byMax) {
       corr.first *= (1-effVal);
       corr.second += pow(effUnc,2) + pow(0.2*effVal,2);    
     }

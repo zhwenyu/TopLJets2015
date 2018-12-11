@@ -99,17 +99,14 @@ std::map<TString, std::map<int, float> > getSemilepBRWeights(TString era) {
 
 float computeSemilepBRWeight(MiniEvent_t &ev, std::map<int, float> corr, int pid, bool useabs) {
   float weight = 1.;
-  for (int i = 0; i < ev.ng; i++) {
-    cout << ev.g_isSemiLepBhad[i] << endl;
+  for (int i = 0; i < ev.ng; i++) {    
     if (!ev.g_isSemiLepBhad[i]) continue;
-    cout << ev.g_bid[i] << " " << corr.count(ev.g_bid[i]) << endl;
     if (corr.count(ev.g_bid[i]) == 0) continue;
     if (!useabs and (pid == 0 or pid == ev.g_bid[i])) weight *= corr[ev.g_bid[i]];
     else if (useabs and (pid == 0 or pid == abs(ev.g_bid[i]))) {
       weight *= (corr[ev.g_bid[i]]+corr[-ev.g_bid[i]])/2.;
     }
   }
-  cout << weight << endl;
   return weight;
 }
 

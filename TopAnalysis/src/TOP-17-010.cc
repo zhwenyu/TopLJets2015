@@ -55,6 +55,18 @@ void TOP17010::init(UInt_t scenario){
          << "\t (" << origMt_ << ";" << origGt_ << ")"
          << " -> (" << targetMt_ << ";" << targetGt_ << ")" << endl;
     
+    //MC 2 MC corrections
+    TString mc2mcTag("");
+    if( filename_.Contains("TTJets_fsrdn") ) mc2mcTag="MC13TeV_2016_TTJets_fsrdn";
+    if( filename_.Contains("TTJets_fsrup") ) mc2mcTag="MC13TeV_2016_TTJets_fsrup";
+    if(mc2mcTag!=""){
+      cout << "Reading MC2MC corrections for " << mc2mcTag << endl;
+      TFile *mcCorF=TFile::Open("${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/top17010/mc2mc_corrections.root");
+      TString mc2mcCorNames[]={"Rb","Rc","Rudsg","eb","ec","eudsg"};
+      for(size_t icor=0; icor<sizeof(mc2mcCorNames); icor++)
+        mc2mcCorr_[mc2mcCorNames[icor]]=(TGraphErrors *)mcCorF->Get(mc2mcTag+"/"+mc2mcCorNames[icor]);
+      mcCorF->Close();
+    }
   }
 
   t_ = (TTree*)f_->Get("analysis/data");
@@ -81,6 +93,9 @@ void TOP17010::init(UInt_t scenario){
   gammaEffWR_  = new EfficiencyScaleFactorsWrapper(filename_.Contains("Data13TeV"),era_,cfgMap);
   l1PrefireWR_ = new L1PrefireEfficiencyWrapper(filename_.Contains("Data13TeV"),era_);  
   btvSF_       = new BTagSFUtil(era_);
+  if(mc2mcCorr_.find("eb")!=mc2mcCorr_.end())    btvSF_->setMC2MCCorrection(BTagEntry::FLAV_B,mc2mcCorr_["eb"]);
+  if(mc2mcCorr_.find("ec")!=mc2mcCorr_.end())    btvSF_->setMC2MCCorrection(BTagEntry::FLAV_C,mc2mcCorr_["eb"]);
+  if(mc2mcCorr_.find("eudsg")!=mc2mcCorr_.end()) btvSF_->setMC2MCCorrection(BTagEntry::FLAV_UDSG,mc2mcCorr_["eb"]);
 
   //theory uncs
   fragWeights_   = getBFragmentationWeights(era_);
@@ -125,6 +140,8 @@ void TOP17010::bookHistograms() {
 
   TString expSystNames[]={"puup",        "pudn",
                           "eetrigup",    "eetrigdn",
+                          "emtrigup",    "emtrigdn",
+                          "mmtrigup",    "mmtrigdn",
                           "eselup",      "eseldn",
                           "mselup",      "mseldn",
                           "l1prefireup", "l1prefiredn",
@@ -151,7 +168,7 @@ void TOP17010::bookHistograms() {
       ht_->addHist(hoi[ih]+"_exp",      
                   new TH2F(hoi[ih]+"_exp", 
                            Form(";%s;Experimental systematic variation;Events",histo->GetName()),
-                           histo->GetNbinsX(),histo->GetXaxis()->GetXmin(),histo->GetXaxis()->GetXmax(),
+                           histo->GetNbinsX(),histo->GetXaxis()->GetXbins()->GetArray(),
                            nexpSysts,0,nexpSysts));
       for(size_t is=0; is<nexpSysts; is++)
         ht_->get2dPlots()[hoi[ih]+"_exp"]->GetYaxis()->SetBinLabel(is+1,expSystNames[is]);
@@ -162,7 +179,7 @@ void TOP17010::bookHistograms() {
         ht_->addHist(hoi[ih]+"_th",      
                     new TH2F(hoi[ih]+"_th", 
                              Form(";%s;Theory systematic variation;Events",histo->GetName()),
-                             histo->GetNbinsX(),histo->GetXaxis()->GetXmin(),histo->GetXaxis()->GetXmax(),
+                             histo->GetNbinsX(),histo->GetXaxis()->GetXbins()->GetArray(),
                              nthSysts,0,nthSysts));
         for(size_t is=0; is<nthSysts; is++)
           ht_->get2dPlots()[hoi[ih]+"_th"]->GetYaxis()->SetBinLabel(is+1,weightSysts_[is].first);
@@ -261,6 +278,7 @@ void TOP17010::runAnalysis()
       std::vector<Particle> flaggedleptons = selector_->flaggedLeptons(ev_);     
       std::vector<Particle> leptons        = selector_->selLeptons(flaggedleptons,SelectionTool::MEDIUM,SelectionTool::MVA80,20,2.5);
       std::vector<Jet> alljets             = selector_->getGoodJets(ev_,30.,2.4,leptons);
+      applyMC2MC(alljets);
       TopWidthEvent twe(leptons,alljets);
       if(twe.dilcode==0) {
         continue;
@@ -284,7 +302,7 @@ void TOP17010::runAnalysis()
       //////////////////
       float wgt(1.0),widthWgt(1.0);
       std::vector<float>puWgts(3,1.0),topptWgts(2,1.0),bfragWgts(2,1.0),slbrWgts(2,1.0);
-      EffCorrection_t trigSF(1.0,0.),l1SF(1.0,0.),l2SF(1.0,0.0),l1trigprefireProb(1.0,0.);
+      EffCorrection_t trigSF(1.0,0.),l1SF(1.0,0.),l2SF(1.0,0.0),l1trigprefireProb(1.0,0.);      
       if (!ev_.isData) {
             
         // pu weight
@@ -338,21 +356,37 @@ void TOP17010::runAnalysis()
         wgt *= widthWgt;
         wgt *= puWgts[0]*l1trigprefireProb.first*trigSF.first*l1SF.first*l2SF.first;
       }
-      cout << "******************************" << endl;
-      cout << ev_.isData << " "
-           << wgt << " "           
-           << " " << l1trigprefireProb.first
-           << " " << trigSF.first << endl;
-      cout << slbrWgts[0] << " " << slbrWgts[1] << " " << bfragWgts[0] << " " << bfragWgts[1] << endl;
-      cout << "******************************" << endl;
       fillControlHistograms(twe,wgt);
 
       //experimental systs cycle: better not to do anything else after this...
       //final category selection is repeated ad nauseam with varied objects/weights and mva is re-evaluated several times
       if(ev_.isData) continue;
-      selector_->setDebug(false);
-      for(size_t is=0; is<expSysts_.size(); is++){
 
+      selector_->setDebug(false);
+
+      //combined offline efficiencies
+      EffCorrection_t combinedESF(1.0,0.0), combinedMSF(1.0,0.0);
+      if(abs(leptons[0].id())==11) {
+        combinedESF.second+=pow(combinedESF.first*l1SF.second,2)+pow(l1SF.first*combinedESF.second,2);
+        combinedESF.first *=l1SF.first;
+      }
+      if(abs(leptons[0].id())==13) {
+        combinedMSF.second+=pow(combinedMSF.first*l1SF.second,2)+pow(l1SF.first*combinedMSF.second,2);
+        combinedMSF.first *=l1SF.first;
+      }
+      if(abs(leptons[1].id())==11) {
+        combinedESF.second+=pow(combinedESF.first*l2SF.second,2)+pow(l2SF.first*combinedESF.second,2);
+        combinedESF.first *=l2SF.first;
+      }
+      if(abs(leptons[1].id())==13) {
+        combinedMSF.second+=pow(combinedMSF.first*l2SF.second,2)+pow(l2SF.first*combinedMSF.second,2);
+        combinedMSF.first *=l2SF.first;
+      }
+      combinedESF.second=sqrt(combinedESF.second);
+      combinedMSF.second=sqrt(combinedMSF.second);
+      
+      for(size_t is=0; is<expSysts_.size(); is++){
+        
         //uncertainty
         TString sname=expSysts_[is];
         bool isUpVar(sname.EndsWith("up"));
@@ -364,14 +398,26 @@ void TOP17010::runAnalysis()
         iwgt *= widthWgt;
 
         EffCorrection_t selSF(1.0,0.0);
-        if(sname=="puup")             iwgt *= puWgts[1]*trigSF.first*selSF.first*l1trigprefireProb.first;
-        else if(sname=="pudn")        iwgt *= puWgts[2]*trigSF.first*selSF.first*l1trigprefireProb.first;
-        else if(sname=="trigup")      iwgt *= puWgts[0]*(trigSF.first+trigSF.second)*selSF.first*l1trigprefireProb.first;
-        else if(sname=="trigdn")      iwgt *= puWgts[0]*(trigSF.first-trigSF.second)*selSF.first*l1trigprefireProb.first;
-        else if(sname=="selup")       iwgt *= puWgts[0]*trigSF.first*(selSF.first+selSF.second)*l1trigprefireProb.first;
-        else if(sname=="seldn")       iwgt *= puWgts[0]*trigSF.first*(selSF.first-selSF.second)*l1trigprefireProb.first;
-        else if(sname=="l1prefireup") iwgt *= puWgts[0]*trigSF.first*selSF.first*(l1trigprefireProb.first+l1trigprefireProb.second);
-        else if(sname=="l1prefiredn") iwgt *= puWgts[0]*trigSF.first*selSF.first*(l1trigprefireProb.first-l1trigprefireProb.second);
+        if(sname=="puup")       iwgt *= puWgts[1]*trigSF.first*selSF.first*l1trigprefireProb.first;
+        else if(sname=="pudn")  iwgt *= puWgts[2]*trigSF.first*selSF.first*l1trigprefireProb.first;
+        else if( (sname.Contains("eetrig") && twe.dilcode==11*11) ||
+                 (sname.Contains("emtrig") && twe.dilcode==11*13) ||
+                 (sname.Contains("mmtrig") && twe.dilcode==13*13) ) {
+          float newTrigSF( max(float(0.),float(trigSF.first+(isUpVar ? +1 : -1)*trigSF.second)) );
+          iwgt *= puWgts[0]*newTrigSF*selSF.first*l1trigprefireProb.first;
+        }
+        else if(sname.BeginsWith("esel") ) {
+          float newESF( max(float(0.),float(combinedESF.first+(isUpVar ? +1 : -1)*combinedESF.second)) );
+          iwgt *= puWgts[0]*trigSF.first*newESF*combinedMSF.first*l1trigprefireProb.first;
+        }
+        else if(sname.BeginsWith("msel") ) {
+          float newMSF( max(float(0.),float(combinedMSF.first+(isUpVar ? +1 : -1)*combinedMSF.second)) );
+          iwgt *= puWgts[0]*trigSF.first*combinedESF.first*newMSF*l1trigprefireProb.first;
+        }
+        else if(sname.BeginsWith("l1prefire") ){
+          float newL1PrefireProb( max(float(0.),float(l1trigprefireProb.first+(isUpVar ? +1 : -1)*l1trigprefireProb.second)) );
+          iwgt *= puWgts[0]*trigSF.first*selSF.first*newL1PrefireProb;
+        }
         else if(sname=="topptup")     iwgt = wgt*topptWgts[0];
         else if(sname=="topptdn")     iwgt = wgt*topptWgts[1];
         else if(sname=="bfragup")     iwgt = wgt*bfragWgts[0];
@@ -456,6 +502,7 @@ void TOP17010::runAnalysis()
           
           //re-scale and re-select jets
           std::vector<Jet> newJets = selector_->getGoodJets(ev_,20.,2.4,leptons);
+          applyMC2MC(newJets);
           ijets.clear();
           for(auto j : newJets) {
 
@@ -568,4 +615,29 @@ void TOP17010::fillControlHistograms(TopWidthEvent &twe,float &wgt) {
       ht_->fill2D("mlb_th",   p4.M(),  is, sweights, c);
     }
   }
+}
+
+//
+void TOP17010::applyMC2MC(std::vector<Jet> &jetColl) {
+
+  //loop over collection of jets
+  for(size_t i=0; i<jetColl.size(); i++) {
+
+    if(jetColl[i].Pt()<20) continue;
+    
+    //check jet flavour and if MC2MC correction is available
+    int idx=jetColl[i].getJetIndex();
+    int jflav(abs(ev_.j_flav[idx]));
+    TString mcTag("");
+    if(jflav==5)      mcTag="Rb";
+    else if(jflav==4) mcTag="Rc";
+    else              mcTag="Rudsg";
+    if(mc2mcCorr_.find(mcTag)==mc2mcCorr_.end()) continue;
+ 
+    //as mc2mc=var MC / nom MC bring back JES to nom MC response
+    //do not do it if it exceeds 10% corrections...
+    float mc2mcVal=mc2mcCorr_[mcTag]->Eval(jetColl[i].Pt());
+    if(mc2mcVal>0.9 && mc2mcVal<1.1) jetColl[i] *= 1./mc2mcVal;
+  }
+
 }

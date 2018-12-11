@@ -45,6 +45,9 @@ void BTagSFUtil::updateBTagDecisions(MiniEvent_t &ev,std::string optionbc, std::
       expEff    = expBtagEff_[hadFlav]->Eval(jptForBtag); 
       jetBtagSF = btvCalibReaders_[hadFlav]->eval_auto_bounds( option, hadFlav, jetaForBtag, jptForBtag);
       
+      //up-weight further with MC2MC correction if available
+      if(mc2mcCorr_.find(hadFlav)!=mc2mcCorr_.end()) jetBtagSF /= mc2mcCorr_[hadFlav]->Eval(jptForBtag);
+
       //updated b-tagging decision with the data/MC scale factor
       modifyBTagsWithSF(isBTagged, jetBtagSF, expEff);
       ev.j_btag[k] = isBTagged;

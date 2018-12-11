@@ -70,6 +70,7 @@ private:
   void readTree();
   void bookHistograms();
   void fillControlHistograms(TopWidthEvent &twe,float &wgt);
+  void applyMC2MC(std::vector<Jet> &jetColl);
 
   //class variables
   TString filename_, outname_;
@@ -93,6 +94,7 @@ private:
   BTagSFUtil *btvSF_;
   std::map<TString, TGraph*> fragWeights_;
   std::map<TString, std::map<int, float> > semilepBRwgts_;
+  std::map<TString, TGraphErrors *> mc2mcCorr_;
 
   //mass,width and relativistic breit-wigner parameterization
   float targetGt_, origGt_;

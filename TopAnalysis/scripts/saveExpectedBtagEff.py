@@ -45,6 +45,19 @@ def saveExpectedBtagEff(opt):
             effgrs[(tagger,op)][flav]=ROOT.TGraphAsymmErrors()
             effgrs[(tagger,op)][flav].Divide(tagH,preTagH)
 
+    #jet response
+    print 'Projecting out jet energy response per flavour'
+    ptVar='j_pt' 
+    genPtVar='g_pt[j_g]' 
+    respgrs=[]
+    respH=ROOT.TH2F('respH',';p_{T} [GeV];p_{T,rec}/p_{T,gen};',len(ptBins)-1,array('d',ptBins),1000,0.,5)
+    respH.Sumw2() 
+    for flav,cond in flavConds:
+        respH.Reset('ICE') 
+        data.Draw('{0}/{1}:{0} >> respH'.format(ptVar,genPtVar),cond + ' && j_g>=0','goff') 
+        respgrs.append( ROOT.TGraphAsymmErrors(respH.ProfileX()) )  
+        respgrs[-1].SetName('jresp_%s'%flav)
+
     #save in file
     fOut=ROOT.TFile.Open(opt.output,'RECREATE')
     for key in effgrs:
@@ -53,6 +66,8 @@ def saveExpectedBtagEff(opt):
         outDir.cd()
         for flav in effgrs[key]: effgrs[key][flav].Write(flav)
         fOut.cd()
+    for gr in respgrs: 
+        gr.Write()
     fOut.Close()
 
 def main():
