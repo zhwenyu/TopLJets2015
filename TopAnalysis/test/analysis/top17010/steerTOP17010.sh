@@ -65,42 +65,35 @@ case $WHAT in
     SEL )
         
 	python scripts/runLocalAnalysis.py \
-	    -i ${eosdir} --only ${json}\
-            -o ${outdir}/${githash}/${EXTRA} \
+	    -i ${eosdir} --only ${json} --flag 0\
+            -o ${outdir}/${githash} \
             --farmappendix ${githash} \
             -q ${queue} --genWeights genweights_${githash}.root \
             --era era${ERA} -m  TOP17010::TOP17010 --ch 0 --runSysts;
 	;;
 
     MERGE )
-	./scripts/mergeOutputs.py ${outdir}/${githash}/${EXTRA};
+	./scripts/mergeOutputs.py ${outdir}/${githash};
 	;;
 
     PLOT )
-	#FIXME
-        json=data/era${ERA}/vbf_samples.json;
-	syst_json=data/${ERA}/vbf_syst_samples.json;
-	plotOutDir=${outdir}/${githash}/${EXTRA}/plots/
-        kFactors="--procSF MC13TeV_era${ERA}_QCDEM_15to20:1.26,MC13TeV_era${ERA}_QCDEM_20to30:1.26,MC13TeV_era${ERA}_QCDEM_30to50:1.26,MC13TeV_era${ERA}_QCDEM_50to80:1.26,MC13TeV_era${ERA}_QCDEM_80to120:1.26,MC13TeV_era${ERA}_QCDEM_120to170:1.26,MC13TeV_era${ERA}_QCDEM_170to300:1.26,MC13TeV_era${ERA}_QCDEM_300toInf:1.26,MC13TeV_era${ERA}_GJets_HT40to100:1.26,MC13TeV_era${ERA}_GJets_HT100to200:1.26,MC13TeV_era${ERA}_GJets_HT200to400:1.26,MC13TeV_era${ERA}_GJets_HT600toInf:1.26"
-	commonOpts="-i ${outdir}/${githash}/${EXTRA} --puNormSF puwgtctr -l ${fulllumi} --saveLog --mcUnc ${lumiUnc} --lumiSpecs LowVPtLowMJJA:${vbflumi},LowVPtHighMJJA:${vbflumi}"
-	python scripts/plotter.py ${commonOpts} -j ${json} --only HighMJJ,LowMJJ ${kFactors}
-        python scripts/plotter.py ${commonOpts} -j ${json} --only evcount ${kFactors} --saveTeX -o evcout_plotter.root
-	python scripts/plotter.py ${commonOpts} -j ${syst_json} ${kFactors} --only HighMJJ,LowMJJ --silent -o syst_plotter.root
+
+	commonOpts="-i ${outdir}/${githash} --puNormSF puwgtctr -l ${fulllumi} --saveLog --mcUnc ${lumiUnc}"
+	#python scripts/plotter.py ${commonOpts} -j ${json};
+        #python scripts/plotter.py ${commonOpts} -j ${json} --only evcount --saveTeX -o evcout_plotter.root;
+        python scripts/plotter.py ${commonOpts} -j ${json} --only mlb,ptlb --binWid -o lb_plotter.root;
+
         ;;
     
     WWW )
-        #FIXME
-        plotList=(plots)
-        gh=${githash}
-        for p in ${plotList[@]}; do
-            pdir=${outdir}/${gh}/${EXTRA}/${p}
-            if [ -d ${pdir} ]; then
-                fdir=${wwwdir}/${gh}/${EXTRA}/${p}
-	        mkdir -p ${fdir}
-	        cp ${pdir}/*.{png,pdf,dat} ${fdir};
-	        cp test/index.php ${fdir};
-                echo "Check plots in ${fdir} for ${p}"
-            fi
-        done
+        pdir=${outdir}/${githash}/plots
+        if [ -d ${pdir} ]; then
+            fdir=${wwwdir}/${githash}
+	    mkdir -p ${fdir}
+	    cp ${pdir}/*.{png,pdf,dat} ${fdir};
+	    cp test/index.php ${fdir};
+            echo "Check plots in ${fdir}"
+        fi
+        
 	;;
 esac
