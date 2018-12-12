@@ -31,7 +31,7 @@ JetPullInfo_t getPullVector( MiniEvent_t &ev, int ijet)
 	  ++nCharged;      
 	}
     }
-  std::cout << std::endl;
+
   result.n=(Int_t) allConstituents.size();
   result.nch=nCharged;
 

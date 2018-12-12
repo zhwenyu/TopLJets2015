@@ -24,7 +24,7 @@ fi
 
 githash=0c522df
 eosdir=/store/cmst3/group/top/RunIIReReco/2016/${githash}
-fulllumi=35922
+fulllumi=35505
 lumiUnc=0.025
 if [[ ${ERA} = "2017" ]]; then
     githash=3129835

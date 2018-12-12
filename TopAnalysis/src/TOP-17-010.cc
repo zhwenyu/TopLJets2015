@@ -125,7 +125,7 @@ void TOP17010::bookHistograms() {
   ht_->addHist("j2pt",     new TH1F("j2pt",     ";Jet 2 transverse momentum [GeV];Events",  50,30,200));
   ht_->addHist("j2eta",    new TH1F("j2eta",    ";Jet 2 pseudo-rapidity;Events",            10,0,2.5));
   ht_->addHist("evcount",  new TH1F("evcount",  ";Pass;Events", 1,0,1));  
-
+  ht_->addHist("drlb",     new TH1F("drlb",     ";#DeltaR(l,b);Events", 15,0,2*TMath::Pi()));  
   TFile *rIn=TFile::Open("$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/top17010/mlbresol.root");  
   std::vector<TString> templates={"mlb","ptlb"};
   for(auto t : templates) {
@@ -157,7 +157,7 @@ void TOP17010::bookHistograms() {
                           "slbrup",  "slbrdn"};
   
   //instantiate 2D histograms for most relevant variables to trace with systs
-  TString hoi[]={"ptlb","mlb","evcount"};
+  TString hoi[]={"ptlb","drlb","mlb","evcount"};
   size_t nexpSysts=sizeof(expSystNames)/sizeof(TString);
   expSysts_=std::vector<TString>(expSystNames,expSystNames+nexpSysts);  
   for(size_t ih=0; ih<sizeof(hoi)/sizeof(TString); ih++)
@@ -198,9 +198,9 @@ void TOP17010::runAnalysis()
   for (Int_t iev=0;iev<nentries_;iev++)
     {
       t_->GetEntry(iev);
-      if(debug_) cout << "Number of event: "<<iev<<endl;
+      if(debug_) cout << "Event number: "<<iev<<endl;
       if(iev%10000==0) printf ("\r [%3.0f%%] done", 100.*(float)iev/(float)nentries_);
-       
+      
       //////////////////
       // CORRECTIONS  //
       //////////////////
@@ -271,7 +271,7 @@ void TOP17010::runAnalysis()
         if( selector_->isSingleElectronPD() && !hasETrigger )  continue;
         if( selector_->isSingleMuonPD()     && !hasMTrigger )  continue;          
       }
-    
+
       ///////////////////////////
       // RECO LEVEL SELECTION //
       /////////////////////////
@@ -296,7 +296,7 @@ void TOP17010::runAnalysis()
         if(selector_->isSingleMuonPD()     && hasEMTrigger) continue;
         if(selector_->isSingleElectronPD() && (hasEMTrigger || hasMTrigger)) continue;
       }
-       
+
       ////////////////////
       // EVENT WEIGHTS //
       //////////////////
@@ -304,10 +304,10 @@ void TOP17010::runAnalysis()
       std::vector<float>puWgts(3,1.0),topptWgts(2,1.0),bfragWgts(2,1.0),slbrWgts(2,1.0);
       EffCorrection_t trigSF(1.0,0.),l1SF(1.0,0.),l2SF(1.0,0.0),l1trigprefireProb(1.0,0.);      
       if (!ev_.isData) {
-            
+
         // pu weight
         std::vector<double> plotwgts(1,1);
-        ht_->fill("puwgtctr",0,plotwgts);
+        ht_->fill("puwgtctr",0,plotwgts); 
         puWgts=lumi_->pileupWeight(ev_.g_pu,period);
         std::vector<double>puPlotWgts(1,puWgts[0]);
         ht_->fill("puwgtctr",1,puPlotWgts);
@@ -532,7 +532,7 @@ void TOP17010::runAnalysis()
 
         //re-select lb pairs if needed
         TString icat=twe.cat;
-        std::vector<TLorentzVector> lbPairs=twe.getPairs();
+        std::vector<LeptonBJetPair> lbPairs=twe.getPairs();
         if(reSelect) {
           TopWidthEvent itwe(ileptons,ijets);
           icat=itwe.cat;
@@ -543,10 +543,11 @@ void TOP17010::runAnalysis()
         std::vector<double> eweights(1,iwgt);
         ht_->fill2D("evcount_exp", 0.,  is, eweights, icat);
         for(auto p4 : lbPairs){
-          ht_->fill2D("ptlb_exp",  p4.M(),  is, eweights, icat);
-          ht_->fill2D("mlb_exp",   p4.M(),  is, eweights, icat);
+          ht_->fill2D("drlb_exp",  p4.getDR(),  is, eweights, icat);
+          ht_->fill2D("ptlb_exp",  p4.M(),      is, eweights, icat);
+          ht_->fill2D("mlb_exp",   p4.M(),      is, eweights, icat);
           TString c(icat+(p4.Pt()>100?"highpt":"lowpt"));
-          ht_->fill2D("mlb_exp",   p4.M(),  is, eweights, c);
+          ht_->fill2D("mlb_exp",   p4.M(),      is, eweights, c);
         }
       }
 
@@ -590,8 +591,9 @@ void TOP17010::fillControlHistograms(TopWidthEvent &twe,float &wgt) {
   ht_->fill("j2pt",    twe.j2pt,        cplotwgts,twe.cat);
   ht_->fill("j2eta",   fabs(twe.j2eta), cplotwgts,twe.cat);
   ht_->fill("evcount", 0.,              cplotwgts,twe.cat);
-  std::vector<TLorentzVector> lbPairs=twe.getPairs();
+  std::vector<LeptonBJetPair> lbPairs=twe.getPairs();
   for(auto p4 : lbPairs) {
+    ht_->fill("drlb", p4.getDR(), cplotwgts, twe.cat);
     ht_->fill("ptlb", p4.Pt(), cplotwgts, twe.cat);
     ht_->fill("mlb",  p4.M(),  cplotwgts, twe.cat);
     TString c(twe.cat+(p4.Pt()>100?"highpt":"lowpt"));
@@ -609,6 +611,7 @@ void TOP17010::fillControlHistograms(TopWidthEvent &twe,float &wgt) {
     sweights[0] *= (ev_.g_w[idx]/ev_.g_w[0])*(normH_->GetBinContent(idx+1)/normH_->GetBinContent(1));
     ht_->fill2D("evcount_th",  0., is, sweights, twe.cat);
     for(auto p4 : lbPairs) {
+      ht_->fill2D("drlb_th",  p4.getDR(), is, sweights, twe.cat);
       ht_->fill2D("ptlb_th",  p4.Pt(), is, sweights, twe.cat);
       ht_->fill2D("mlb_th",   p4.M(),  is, sweights, twe.cat);
       TString c(twe.cat+(p4.Pt()>100?"highpt":"lowpt"));

@@ -453,22 +453,9 @@ std::vector<Jet> SelectionTool::getGoodJets(MiniEvent_t &ev, double minPt, doubl
     //jet kinematic selection
     if(jp4.Pt() < minPt || abs(jp4.Eta()) > maxEta) continue;
 
-    //ECAL noise cleaning 
-    //if(ev.isData && dataset.Contains("2017")){
-    // if(dataset.Contains("2017")){
-    //   if(abs(jp4.Eta()) > 2.7 && abs(jp4.Eta()) < 3.0)
-    // 	if(jp4.Pt() < 60) continue;
-    // }
-    // if(dataset.Contains("2017")){
-    //   if(abs(jp4.Eta()) > 2.7 && abs(jp4.Eta()) < 3.0)
-    // 	if(ev.j_emf[k] > 0.5) continue;
-    // }
-
     //flavor based on b tagging
     int flavor = 0;
-    if (ev.j_btag[k]) {
-      flavor = 5;
-    }
+    if (ev.j_btag[k]) flavor = 5;
     
     Jet jet(jp4, flavor, k);
     jet.setCSV(ev.j_csv[k]);

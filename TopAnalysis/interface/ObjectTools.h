@@ -72,13 +72,13 @@ class Jet : public TLorentzVector {
     
     void addTrack(TLorentzVector p4, int pfid) { trks_.push_back( IdTrack(p4,pfid) ); }
     //TLorentzVector &getVec() { return p4_; }
-    float &getCSV() { return csv_; }
+    float getCSV() { return csv_; }
     void setCSV(float csv) { csv_=csv; }
-    float &getPUMVA() { return pumva_; }
+    float getPUMVA() { return pumva_; }
     void setPUMVA(float pumva) { pumva_=pumva; }
-    float &getDeepCSV() { return deepcsv_; }
+    float getDeepCSV() { return deepcsv_; }
     void setDeepCSV(float deepcsv) { deepcsv_=deepcsv; }
-    int &getJetIndex() { return idx_; }
+    int getJetIndex() { return idx_; }
     std::vector<IdTrack> &getTracks() { return trks_; }
     void sortTracksByPt() { sort(trks_.begin(),trks_.end(), sortIdTracksByPt); }
     void setScaleUnc(float scaleUnc) { scaleUnc_=scaleUnc; }

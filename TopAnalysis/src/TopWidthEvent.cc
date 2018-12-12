@@ -1,6 +1,5 @@
 #include "TopLJets2015/TopAnalysis/interface/TopWidthEvent.h"
 #include <algorithm>
-#include <tuple>
 #include <iostream>
 
 using namespace std;
@@ -47,37 +46,37 @@ TopWidthEvent::TopWidthEvent(std::vector<Particle> &leptons,std::vector<Jet> &je
   j2eta = bJets.size()>1 ? bJets[1].Eta() : lJets[0].Eta();
   
   //lepton-b pairing
+  lbPairs_.clear();
   if(bJets.size()==1) {
     
     //choose pair with leading ptlb
-    TLorentzVector lb1(leptons[0]+bJets[0]),lb2(leptons[1]+bJets[0]);
+    LeptonBJetPair lb1(leptons[0]+bJets[0],leptons[0].DeltaR(bJets[0]),leptons[0].originalReference(),bJets[0].getJetIndex());
+    LeptonBJetPair lb2(leptons[1]+bJets[0],leptons[1].DeltaR(bJets[0]),leptons[1].originalReference(),bJets[1].getJetIndex());
     lbPairs_.push_back( lb1.Pt()>lb2.Pt() ? lb1 : lb2 );
   }
   else {
     
     //sort pairs by decreasing ptlb
-    std::vector< std::tuple<int,int,TLorentzVector,float> > allPairs;
+    std::vector< LeptonBJetPair > allPairs;
     for(size_t il=0; il<2; il++)
       for(size_t ib=0; ib<2; ib++) {
-        TLorentzVector lb(leptons[il]+bJets[il]);
-        allPairs.push_back( std::make_tuple(il,ib,lb,lb.Pt()) );
+        LeptonBJetPair lb(leptons[il]+bJets[ib],leptons[il].DeltaR(bJets[ib]),leptons[il].originalReference(),bJets[ib].getJetIndex());
+        allPairs.push_back( lb );
       }
     std::sort(allPairs.begin(),allPairs.end(),
-              [](const tuple<int,int,TLorentzVector,float>& a,
-                 const tuple<int,int,TLorentzVector,float>& b) -> bool
+              [](const LeptonBJetPair& a, const LeptonBJetPair& b) -> bool
               {
-                return std::get<3>(a) > std::get<3>(b);
+                return a.Pt() > b.Pt();
               });
-
-    lbPairs_.push_back( std::get<2>(allPairs[0]) );
+    
+    lbPairs_.push_back( allPairs[0] );
     for(size_t ipair=1; ipair<4; ipair++) {
-      if( std::get<0>(allPairs[0]) ==  std::get<0>(allPairs[ipair]) ) continue;
-      if( std::get<0>(allPairs[1]) ==  std::get<1>(allPairs[ipair]) ) continue;
-      lbPairs_.push_back( std::get<2>(allPairs[ipair]) );
+      if( allPairs[0].leptonId() ==  allPairs[ipair].leptonId() ) continue;
+      if( allPairs[0].bId()      ==  allPairs[ipair].bId() ) continue;
+      lbPairs_.push_back(allPairs[ipair]);
       break;
     }
   }
-
 
   //assign category
   dilcode=(abs(leptons[0].id()*leptons[1].id()));
