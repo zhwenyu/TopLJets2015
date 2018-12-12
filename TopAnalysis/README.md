@@ -36,7 +36,7 @@ cd -
 #additional tools
 mkdir TopQuarkAnalysis 
 cd TopQuarkAnalysis
-git clone -b 94x https://gitlab.cern.ch/CMS-TOPPAG/BFragmentationAnalyzer.git
+git clone -b 94x https://gitlab.cern.ch/psilva/BFragmentationAnalyzer.git
 scram b
 cd -
 
