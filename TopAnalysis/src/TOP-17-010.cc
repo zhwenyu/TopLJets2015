@@ -550,7 +550,7 @@ void TOP17010::runAnalysis()
 
           TString c(icat+(p4.Pt()>100?"highpt":"lowpt"));
           std::vector<TString> cat_vec(2,c);
-          cat_vec[1] += (itwe.nbjets==1 ? "1b" : "2b");
+          cat_vec[1] += (lbPairs.size()==1 ? "1b" : "2b");
           ht_->fill2D("mlb_exp",   p4.M(),      is, eweights, cat_vec);
         }
       }
@@ -602,7 +602,7 @@ void TOP17010::fillControlHistograms(TopWidthEvent &twe,float &wgt) {
     ht_->fill("mlb",  p4.M(),  cplotwgts, twe.cat);
     TString c(twe.cat+(p4.Pt()>100?"highpt":"lowpt"));
     std::vector<TString> cat_vec(2,c);
-    cat_vec[1] += (twe.nbjets==1 ? "1b" : "2b");
+    cat_vec[1] += (lbPairs.size()==1 ? "1b" : "2b");
     ht_->fill("mlb",  p4.M(),  cplotwgts, cat_vec);
   }
 
@@ -622,7 +622,7 @@ void TOP17010::fillControlHistograms(TopWidthEvent &twe,float &wgt) {
       ht_->fill2D("mlb_th",   p4.M(),  is, sweights, twe.cat);
       TString c(twe.cat+(p4.Pt()>100?"highpt":"lowpt"));
       std::vector<TString> cat_vec(2,c);
-      cat_vec[1] += (twe.nbjets==1 ? "1b" : "2b");
+      cat_vec[1] += (lbPairs.size()==1 ? "1b" : "2b");
       ht_->fill2D("mlb_th",   p4.M(),  is, sweights, cat_vec);
     }
   }
