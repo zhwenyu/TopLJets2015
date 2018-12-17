@@ -106,7 +106,7 @@ case $WHAT in
 	python scripts/plotter.py ${commonOpts} -j ${json};
         python scripts/plotter.py ${commonOpts} -j ${json}      --only evcount  --saveTeX -o evcount_plotter.root;
         python scripts/plotter.py ${commonOpts} -j ${json}      --only mlb,ptlb --binWid  -o lb_plotter.root;
-        python scripts/plotter.py ${commonOpts} -j ${syts_json} --only mlb      --silent  -o syst_plotter.root;
+        python scripts/plotter.py ${commonOpts} -j ${syst_json} --only mlb      --silent  -o syst_plotter.root;
 
         ;;
     
