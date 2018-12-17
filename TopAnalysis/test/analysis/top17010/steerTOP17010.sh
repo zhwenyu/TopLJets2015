@@ -16,6 +16,7 @@ if [ -z "$WHAT" ]; then
     echo "        RESOL        - preliminary resolution study"
     echo "        TESTSEL      - test selection locally"
     echo "        SEL          - launches selection jobs to the batch, output will contain summary trees and control plots"; 
+    echo "        SELSCAN      - launches signal selection jobs to the batch for the mass vs width scan";
     echo "        MERGE        - merge output (if given \"extra\" is appended to the directory)"
     echo "        PLOT         - make plots (if given \"extra\" is appended to the directory)"
     echo "        WWW          - move plots to web-based (if given \"extra\" is appended to the directory)"
@@ -71,6 +72,29 @@ case $WHAT in
             -q ${queue} --genWeights genweights_${githash}.root \
             --era era${ERA} -m  TOP17010::TOP17010 --ch 0 --runSysts;
 	;;
+
+
+    SELSCAN )
+        
+        gtList=(0.7 0.75 0.8 0.85 0.9 0.95 1.0 1.05 1.1 1.15 1.2 1.25 1.3 1.35 1.4 1.45 1.5 1.55 1.6 1.65 1.7 1.75 1.85 1.9 1.95 2.0 2.2 2.4 2.6 2.8 3.0 4.0)
+        mtList=(169.5 170 170.5 171 171.5 172 172.5 173 173.5 174 174.5 175 175.5)
+        for g in ${gtList[@]}; do
+            gidx=`python -c "print int(($g-0.7)/0.01)"`
+            for m in ${mtList[@]}; do
+                midx=`python -c "print int(($m-169)/0.25)"`
+                flag=`python -c "print (($midx<<16)|($gidx))"`
+
+	        python scripts/runLocalAnalysis.py \
+	            -i ${eosdir} --only MC13TeV_${ERA}_TTJets --exactonly --flag ${flag} \
+                    -o ${outdir}/${githash} \
+                    --farmappendix ${githash}SCAN${flag} \
+                    -q ${queue} --genWeights genweights_${githash}.root \
+                    --era era${ERA} -m  TOP17010::TOP17010 --ch 0 --runSysts;
+
+            done
+        done
+	;;
+
 
     MERGE )
 	./scripts/mergeOutputs.py ${outdir}/${githash};
