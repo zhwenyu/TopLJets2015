@@ -19,6 +19,7 @@ if [ -z "$WHAT" ]; then
     echo "        SELSCAN      - launches signal selection jobs to the batch for the mass vs width scan";
     echo "        MERGE        - merge output (if given \"extra\" is appended to the directory)"
     echo "        PLOT         - make plots (if given \"extra\" is appended to the directory)"
+    echo "        BKG          - performs an estiation of the DY bacgrkound from data"
     echo "        WWW          - move plots to web-based (if given \"extra\" is appended to the directory)"
     exit 1; 
 fi
