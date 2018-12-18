@@ -25,7 +25,7 @@ fi
 
 githash=0c522df
 eosdir=/store/cmst3/group/top/RunIIReReco/2016/${githash}
-fulllumi=35505
+fulllumi=35882
 lumiUnc=0.025
 if [[ ${ERA} = "2017" ]]; then
     githash=3129835
@@ -109,6 +109,13 @@ case $WHAT in
         python scripts/plotter.py ${commonOpts} -j ${syst_json} --only mlb      --silent  -o syst_plotter.root;
 
         ;;
+
+    BKG )
+
+        python test/analysis/top17010/estimateDY.py -i ${outdir}/${githash}/plots/plotter.root -o ${outdir}/${githash}/plots/;
+
+        ;;
+
     
     WWW )
         pdir=${outdir}/${githash}/plots
