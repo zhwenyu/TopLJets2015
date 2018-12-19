@@ -61,7 +61,7 @@ case $WHAT in
 	python scripts/runLocalAnalysis.py \
             -i ${input} -o ${output} --tag ${tag} --only ${json} --flag 0\
             --njobs 1 -q local --genWeights genweights_${githash}.root \
-            --era era${ERA} -m TOP17010::TOP17010 --ch 0 --runSysts; --debug;
+            --era era${ERA} -m TOP17010::TOP17010 --ch 0 --runSysts --debug;
         ;;
 
     SEL )
