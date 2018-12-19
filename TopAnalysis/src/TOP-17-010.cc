@@ -57,8 +57,13 @@ void TOP17010::init(UInt_t scenario){
     
     //MC 2 MC corrections
     TString mc2mcTag("");
-    if( filename_.Contains("TTJets_fsrdn") ) mc2mcTag="MC13TeV_2016_TTJets_fsrdn";
-    if( filename_.Contains("TTJets_fsrup") ) mc2mcTag="MC13TeV_2016_TTJets_fsrup";
+    if( filename_.Contains("TTJets_fsrdn") )   mc2mcTag="MC13TeV_2016_TTJets_fsrdn";
+    if( filename_.Contains("TTJets_fsrup") )   mc2mcTag="MC13TeV_2016_TTJets_fsrup";
+    if( filename_.Contains("TTJets_hdampup") ) mc2mcTag="MC13TeV_2016_TTJets_hdampup";
+    if( filename_.Contains("TTJets_hdampdn") ) mc2mcTag="MC13TeV_2016_TTJets_hdampdn";
+    if( filename_.Contains("TTJets_uedn") )    mc2mcTag="MC13TeV_2016_TTJets_uedn";
+    if( filename_.Contains("TTJets_ueup") )    mc2mcTag="MC13TeV_2016_TTJets_ueup";
+    if( filename_.Contains("TTJets_erdon") )   mc2mcTag="MC13TeV_2016_TTJets_erdon";
     if(mc2mcTag!=""){
       cout << "Reading MC2MC corrections for " << mc2mcTag << endl;
       TFile *mcCorF=TFile::Open("${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/top17010/mc2mc_corrections.root");
@@ -78,18 +83,16 @@ void TOP17010::init(UInt_t scenario){
 
   TString baseName=gSystem->BaseName(outname_); 
   TString dirName=gSystem->DirName(outname_);
-  if(scenario!=0) baseName=baseName.ReplaceAll("TTJets",Form("TTJets_scenario%d",scenario));
   fOut_=TFile::Open(dirName+"/"+baseName,"RECREATE");
 
   //corrections
   lumi_ = new LumiTools(era_,genPU_);
 
   std::map<TString,TString> cfgMap;
-  cfgMap["g_id"]     = "MVAWP80";
   cfgMap["m_id"]     = "TightID";
   cfgMap["m_iso"]    = "TightRelIso";
   cfgMap["m_id4iso"] = "TightIDandIPCut";
-  cfgMap["e_id"]     = "MVAWP80";
+  cfgMap["e_id"]     = "Tight";
   gammaEffWR_  = new EfficiencyScaleFactorsWrapper(filename_.Contains("Data13TeV"),era_,cfgMap);
   l1PrefireWR_ = new L1PrefireEfficiencyWrapper(filename_.Contains("Data13TeV"),era_);  
   btvSF_       = new BTagSFUtil(era_);
@@ -276,7 +279,7 @@ void TOP17010::runAnalysis()
       // RECO LEVEL SELECTION //
       /////////////////////////
       std::vector<Particle> flaggedleptons = selector_->flaggedLeptons(ev_);     
-      std::vector<Particle> leptons        = selector_->selLeptons(flaggedleptons,SelectionTool::MEDIUM,SelectionTool::MVA80,20,2.5);
+      std::vector<Particle> leptons        = selector_->selLeptons(flaggedleptons,SelectionTool::TIGHT,SelectionTool::TIGHT,20,2.5);
       std::vector<Jet> alljets             = selector_->getGoodJets(ev_,30.,2.4,leptons);
       applyMC2MC(alljets);
       TopWidthEvent twe(leptons,alljets);
@@ -320,7 +323,7 @@ void TOP17010::runAnalysis()
         if(era_.Contains("2016")) {
           if(gRandom->Uniform()>16551.4/35874.8) lperiod="GH";
         }
-        trigSF = gammaEffWR_->getTriggerCorrection(leptons,{},{}, lperiod);
+        trigSF = gammaEffWR_->getDileptonTriggerCorrection(leptons);
         l1SF   = gammaEffWR_->getOfflineCorrection(leptons[0].id(),leptons[0].pt(),leptons[0].eta(), lperiod);
         l2SF   = gammaEffWR_->getOfflineCorrection(leptons[1].id(),leptons[1].pt(),leptons[1].eta(), lperiod);
 
@@ -359,7 +362,7 @@ void TOP17010::runAnalysis()
       fillControlHistograms(twe,wgt);
 
       //experimental systs cycle: better not to do anything else after this...
-      //final category selection is repeated ad nauseam with varied objects/weights and mva is re-evaluated several times
+      //final category selection is repeated ad nauseam with varied objects/weights 
       if(ev_.isData) continue;
 
       selector_->setDebug(false);
@@ -454,7 +457,7 @@ void TOP17010::runAnalysis()
             }
             ileptons[il] *= eScale;
           }
-          ileptons=selector_->selLeptons(ileptons,SelectionTool::MEDIUM,SelectionTool::MVA80,20,2.5);        
+          ileptons=selector_->selLeptons(ileptons,SelectionTool::TIGHT,SelectionTool::TIGHT,20,2.5);        
         }
         if(ileptons.size()<2) continue;
         
