@@ -57,8 +57,13 @@ void TOP17010::init(UInt_t scenario){
     
     //MC 2 MC corrections
     TString mc2mcTag("");
-    if( filename_.Contains("TTJets_fsrdn") ) mc2mcTag="MC13TeV_2016_TTJets_fsrdn";
-    if( filename_.Contains("TTJets_fsrup") ) mc2mcTag="MC13TeV_2016_TTJets_fsrup";
+    if( filename_.Contains("TTJets_fsrdn") )   mc2mcTag="MC13TeV_2016_TTJets_fsrdn";
+    if( filename_.Contains("TTJets_fsrup") )   mc2mcTag="MC13TeV_2016_TTJets_fsrup";
+    if( filename_.Contains("TTJets_hdampup") ) mc2mcTag="MC13TeV_2016_TTJets_hdampup";
+    if( filename_.Contains("TTJets_hdampdn") ) mc2mcTag="MC13TeV_2016_TTJets_hdampdn";
+    if( filename_.Contains("TTJets_uedn") )    mc2mcTag="MC13TeV_2016_TTJets_uedn";
+    if( filename_.Contains("TTJets_ueup") )    mc2mcTag="MC13TeV_2016_TTJets_ueup";
+    if( filename_.Contains("TTJets_erdon") )   mc2mcTag="MC13TeV_2016_TTJets_erdon";
     if(mc2mcTag!=""){
       cout << "Reading MC2MC corrections for " << mc2mcTag << endl;
       TFile *mcCorF=TFile::Open("${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/top17010/mc2mc_corrections.root");
@@ -78,7 +83,6 @@ void TOP17010::init(UInt_t scenario){
 
   TString baseName=gSystem->BaseName(outname_); 
   TString dirName=gSystem->DirName(outname_);
-  if(scenario!=0) baseName=baseName.ReplaceAll("TTJets",Form("TTJets_scenario%d",scenario));
   fOut_=TFile::Open(dirName+"/"+baseName,"RECREATE");
 
   //corrections

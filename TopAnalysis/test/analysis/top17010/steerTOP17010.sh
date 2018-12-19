@@ -1,19 +1,21 @@
 #!/bin/bash
 
 ERA=2016
-
-while getopts "o:e:q:y:" opt; do
+STORAGE=""
+while getopts "o:y:s:" opt; do
     case "$opt" in
         o) WHAT=$OPTARG
             ;;
         y) ERA=$OPTARG
+            ;;
+        s) STORAGE=$OPTARG
             ;;
     esac
 done
 
 if [ -z "$WHAT" ]; then 
     echo "steerTopWidth.sh -o <SEL/MERGE/...> [-y 2016/7]";
-    echo "        RESOL        - preliminary resolution study"
+    echo "        PREPARE      - prepare analysis: resolution study + MC2MC corrections"
     echo "        TESTSEL      - test selection locally"
     echo "        SEL          - launches selection jobs to the batch, output will contain summary trees and control plots"; 
     echo "        SELSCAN      - launches signal selection jobs to the batch for the mass vs width scan";
@@ -36,22 +38,30 @@ fi
 echo "Selection adapted to YEAR=${ERA}, inputs from ${eosdir}"
 
 queue=workday
-outdir=${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/top17010
+outdir=${STORAGE}
+if [ -z ${outdir} ]; then
+    outdir=${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/top17010
+fi
+
 json=test/analysis/top17010/samples_${ERA}.json
 syst_json=test/analysis/top17010/syst_samples_${ERA}.json
 wwwdir=${HOME}/www/top17010
-
-mkdir -p ${outdir}
 
 RED='\e[31m'
 NC='\e[0m'
 case $WHAT in
 
-    RESOL )
+    PREPARE )
+        
+        echo "Deriving baseline expected resolutions"
         tag=MC13TeV_${ERA}_TTJets_m1755
         python test/analysis/top17010/getMlbResolution.py /eos/cms/${eosdir}/${tag}/Chunk_0_ext0.root
         mkdir -p ${outdir}/plots
         mv mlbresol_*.{png,pdf} ${outdir}/plots
+        
+        echo "Computing MC2MC corrections"
+        echo "[WARN] currently hardcoded for 2016 samples"
+        python test/analysis/top17010/prepareMC2MCCorrections.py;
         ;;
 
     TESTSEL )               
@@ -87,7 +97,7 @@ case $WHAT in
 
 	        python scripts/runLocalAnalysis.py \
 	            -i ${eosdir} --only MC13TeV_${ERA}_TTJets --exactonly --flag ${flag} \
-                    -o ${outdir}/${githash} \
+                    -o ${outdir}/${githash}/scenario${flag} \
                     --farmappendix ${githash}SCAN${flag} \
                     -q ${queue} --genWeights genweights_${githash}.root \
                     --era era${ERA} -m  TOP17010::TOP17010 --ch 0 --runSysts;
