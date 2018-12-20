@@ -342,10 +342,11 @@ def getDirectUncertainties(opt,fIn,d,proc_systs,hnom):
 
         #show plot with warnings found
         if opt.debug: 
+            pfix=s.format(d) if '{0}' in s else s
             showVariation(hnom,
                           varH,
                           '',
-                          os.path.join(opt.output,'{0}_{1}_{2}'.format(hnom.GetTitle(),d,s.format(d))))
+                          os.path.join(opt.output,'{0}_{1}_{2}'.format(hnom.GetTitle(),d,s)))
         
 
     #if nothing found
@@ -390,11 +391,11 @@ def getTemplateHistos(opt,d,proc,proc_systs):
         try:
 
             if 'proj' in proc_systs and not projFound:
-                histos+=getUncertaintiesFromProjection(opt,fIn,d,proc_systs,histos[-1])
+                histos+=getUncertaintiesFromProjection(opt,fIn,d,proc_systs,histos[0])
                 projFound=True
 
             if 'dir' in proc_systs and not dirFound:
-                dirHistos=getDirectUncertainties(opt,fIn,d,proc_systs,histos[-1])
+                dirHistos=getDirectUncertainties(opt,fIn,d,proc_systs,histos[0])
                 histos+=dirHistos
                 systbbbUncHistos=getBinByBinUncertaintiesForSysts(histos[0],dirHistos)
                 dirFound=True
