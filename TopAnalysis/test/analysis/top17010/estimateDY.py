@@ -179,7 +179,7 @@ def main():
                       type='string')
     (opt, args) = parser.parse_args()
 
-    #ROOT.gROOT.SetBatch(True)
+    ROOT.gROOT.SetBatch(True)
     ROOT.gStyle.SetOptStat(0)
     ROOT.gStyle.SetOptTitle(0)
 

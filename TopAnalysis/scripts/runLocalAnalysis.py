@@ -90,7 +90,7 @@ def main():
                 try:
                     myfile = open(t, 'r') # or "a+", whatever you need
                 except IOError:
-                    print "Could not open file! Please close Excel!"
+                    print "Could not open json file",t
                 jsonFile = open(t,'r')
                 samplesList = json.load(jsonFile, encoding='utf-8', object_pairs_hook=OrderedDict).items()
                 for s,desc in samplesList: 
