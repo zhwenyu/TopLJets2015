@@ -134,7 +134,13 @@ case $WHAT in
         inputs=${inputs},${outdir}/${githash}/plots/syst_plotter.root
         inputs=${inputs},${outdir}/${githash}/plots/plotter_dydata.root
         output=${outdir}/${githash}/templates/
-        python test/analysis/top17010/prepareTemplateFiles.py -i ${inputs} -o ${output} --debug --bbbThr 0.05;
+        dists=emhighpt_mlb,emhighpt1b_mlb,emhighpt2b_mlb
+        dists=${dists},emlowpt_mlb,emlowpt1b_mlb,emlowpt2b_mlb
+        dists=${dists},eehighpt_mlb,eehighpt1b_mlb,eehighpt2b_mlb
+        dists=${dists},eelowpt_mlb,eelowpt1b_mlb,eelowpt2b_mlb
+        dists=${dists},mmhighpt_mlb,mmhighpt1b_mlb,mmhighpt2b_mlb
+        dists=${dists},mmlowpt_mlb,mmlowpt1b_mlb,mmlowpt2b_mlb
+        python test/analysis/top17010/prepareTemplateFiles.py -i ${inputs} -d ${dists} -o ${output} --debug --bbbThr 0.05;
 
         ;;
     
