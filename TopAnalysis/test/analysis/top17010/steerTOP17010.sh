@@ -123,14 +123,17 @@ case $WHAT in
         ;;
 
     BKG )
-
+        
         python test/analysis/top17010/estimateDY.py -i ${outdir}/${githash}/plots/plotter.root -o ${outdir}/${githash}/plots/;
 
         ;;
 
     TEMPL )
         
-        python test/analysis/top17010/prepareTemplateFiles.py --debug --bbbThr 0.05;
+        inputs=${outdir}/${githash}/plots/plotter.root
+        inputs=${inputs},${outdir}/${githash}/plots/syst_plotter.root
+        inputs=${inputs},${outdir}/${githash}/plots/plotter_dydata.root
+        python test/analysis/top17010/prepareTemplateFiles.py -i ${inputs} --debug --bbbThr 0.05;
 
         ;;
     

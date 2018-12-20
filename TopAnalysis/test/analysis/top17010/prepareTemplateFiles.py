@@ -68,6 +68,17 @@ def showVariation(h,varList,warns,output):
     c.Update()
     for ext in ['png','pdf']: c.SaveAs(output+'.'+ext)           
 
+
+def getMirrored(var,nom,name) :
+
+    """mirrors a shape"""
+
+    mirrored_var=var.Clone(name)
+    for xbin in range(nom.GetNbinsX()):
+        mirrored_var.SetBinContent(xbin+1,2*nom.GetBinContent(xbin+1)-var.GetBinContent(xbin+1))
+    return mirrored_var
+
+
 def formatTemplate(h,hname,htit=None,ci=1,fs=0,norm=None):
     
     """ applies a bunch of standard formatting operations """
@@ -88,6 +99,8 @@ def formatTemplate(h,hname,htit=None,ci=1,fs=0,norm=None):
     return h
 
 def doFinalTemplateCheck(h,hup,hdn):
+
+    """ checks if there are variations of yields or shape """
 
     keep=True
     report=''
@@ -114,24 +127,53 @@ def doFinalTemplateCheck(h,hup,hdn):
     
     return keep,report
 
-def getBinByBinUncertainties(h,predef_histos=None):
+def getBinByBinUncertainties(h):
 
     """loops over the bins of a template and builds the bin-by-bin uncertainties"""
 
-    #init the up and down variations if needed
-    histos=predef_histos
-    if not histos:
-        histos = [ [h.Clone('bin%dUp'%xbin),h.Clone('bin%dDn'%xbin)] for xbin in xrange(1,h.GetNbinsX()+1) ]
-        for hup,hdn in histos:
-            formatTemplate(hup,hup.GetName())
-            formatTemplate(hdn,hdn.GetName())
+    #init the up and down variations
+    histos = [ [h.Clone('bin%dUp'%(xbin)),h.Clone('bin%dDn'%(xbin))] for xbin in xrange(1,h.GetNbinsX()+1) ]
+    for hup,hdn in histos:
+        formatTemplate(hup,hup.GetName())
+        formatTemplate(hdn,hdn.GetName())
 
     for xbin in range(h.GetNbinsX()):
         val=h.GetBinContent(xbin+1)
         if val==0: continue
         valUnc=h.GetBinError(xbin+1)        
-        histos[xbin][0].SetBinContent(xbin+1,histos[xbin][0].GetBinContent(xbin+1)+valUnc)
-        histos[xbin][1].SetBinContent(xbin+1,max(histos[xbin][1].GetBinContent(xbin+1)-valUnc,1.e-6))
+        histos[xbin][0].SetBinContent(xbin+1,val+valUnc)
+        histos[xbin][1].SetBinContent(xbin+1,max(val-valUnc,1e-6))
+
+    return histos
+
+def getBinByBinUncertaintiesForSysts(h,hvars):
+    
+    """loops over the bins of a template and build the bin-by-bin stat unc associated to systs"""
+    
+    #init the up and down variations
+    histos = [ [h.Clone('sysbin%dUp'%(xbin)),h.Clone('sysbin%dDn'%(xbin))] for xbin in xrange(1,h.GetNbinsX()+1) ]
+    for hup,hdn in histos:
+        formatTemplate(hup,hup.GetName())
+        formatTemplate(hdn,hdn.GetName())
+
+    for xbin in range(h.GetNbinsX()):
+
+        #reset contents in this bin
+        histos[xbin][0].SetBinContent(xbin+1,0)
+        histos[xbin][1].SetBinContent(xbin+1,0)
+
+        #build total uncertainty
+        for ihvar in hvars:
+            ival = ihvar.GetBinContent(xbin+1)
+            if ival==0: continue
+            relUnc = ihvar.GetBinError(xbin+1)/ival
+            histos[xbin][0].SetBinContent(xbin+1,histos[xbin][0].GetBinContent(xbin+1)**2 + relUnc**2)
+
+        #scale central yields up/down
+        val=h.GetBinContent(xbin+1)
+        unc=ROOT.TMath.Sqrt(histos[xbin][0].GetBinContent(xbin+1))
+        histos[xbin][0].SetBinContent(xbin+1, (1+unc)*val)
+        histos[xbin][1].SetBinContent(xbin+1, (1-unc)*val)
 
     return histos
 
@@ -157,15 +199,15 @@ def getUncertaintiesFromProjection(opt,fIn,d,proc_systs,hnom):
     #project systematics
     for s in proc_systs['proj']:
         slist,norm,doEnvelope=proc_systs['proj'][s]
-
-        try:
+     
+        try:            
             h2d,ybin=allSysts[ slist[0] ]
             varUp=h2d.ProjectionX('varup',ybin,ybin)
             fixExtremities(varUp) #add the overflow as for the main plot
-        except:
+        except:            
             errors.append('Failed to prepare %s'%slist[0])
             continue
-            
+
         varDn=None
 
         #project down variation if available
@@ -185,8 +227,8 @@ def getUncertaintiesFromProjection(opt,fIn,d,proc_systs,hnom):
                 varUp.Reset('ICE')
                 varUp.Add(hnom) 
                 varDn=hnom.Clone('vardn')
-                varDn.Reset('ICE')
                 for s_i in slist:
+
                     h2d,ybin=allSysts[ s_i ]
                     vartemp=h2d.ProjectionX('vartemp',ybin,ybin)
                     fixExtremities(vartemp) #add the overflow as for the main plot
@@ -211,12 +253,11 @@ def getUncertaintiesFromProjection(opt,fIn,d,proc_systs,hnom):
                 errors.append('Failed to prepare %s'%s_i)
                 continue
 
+
         #mirror the shape if down variation is not available yet
         if not varDn:
-            varDn=varUp.Clone('vardn')
-            for xbin in range(hnom.GetNbinsX()):
-                varDn.SetBinContent(xbin+1,2*hnom.GetBinContent(xbin+1)-varUp.GetBinContent(xbin+1))
-
+            varDn=getMirrored(varUp,hnom,'vardn')
+            
         #check, format and add to the list if variation is to keep
         keep,checkReport=doFinalTemplateCheck(hnom,varUp,varDn)
         if len(checkReport):
@@ -249,27 +290,70 @@ def getUncertaintiesFromProjection(opt,fIn,d,proc_systs,hnom):
 
 
 def getDirectUncertainties(opt,fIn,d,proc_systs,hnom):
-    """ """
+
+    """ reads directly from the histograms and eventually normalizes, mirrors or takes an envelope """
 
     histos=[]
     errors=[]
     warns=[]
 
     #get systematics
+    fIn.cd()
     for s in proc_systs['dir']:
+
         slist,norm,doEnvelope=proc_systs['dir'][s]
+
+        varH=[]
         try:
             for s_i in slist:
-                hname=s_i.format(d)
-                hname='{0}/{0}_{1}'.format(hname,proc_systs["title"])
-                h=fIn.Get(hname)
-                formatTemplate(h,h.GetName(),norm=hnom.Integral() if norm else None)
-                print h.GetName()
-                histos.append(h)
+
+                h=None
+
+                #check if there is some placeholder to substitute
+                if '{0}' in s_i:
+                    hname=s_i.format(d)
+                    hname='{0}/{0}_{1}'.format(hname,proc_systs["title"])
+                    h=fIn.Get(hname)
+                #otherwise look in the sub-directories
+                else:                    
+                    for k in fIn.GetListOfKeys():
+                        if k.GetName()!=d: continue
+                        for kk in k.ReadObj().GetListOfKeys():
+                            if kk.GetName()!=d+'_'+s_i: continue
+                            h=kk.ReadObj()
+                            break
+
+                if not h: continue
+                h.GetName()
+                varH.append(h)
         except:
             pass
+        if len(varH)==0 : continue
+
+        #mirror the shape if only one variation is available
+        if len(varH)==1:
+            varH.append( getMirrored(varH[0],hnom,'vardn') )
+
+        #add to the histograms
+        for i in xrange(0,2):
+            pfix='Up' if i==0 else 'Dn'
+            formatTemplate(varH[i],s.format(d)+pfix,norm=hnom.Integral() if norm else None)
+            histos.append(varH[i])
+
+        #show plot with warnings found
+        if opt.debug: 
+            showVariation(hnom,
+                          varH,
+                          '',
+                          os.path.join(opt.output,'{0}_{1}_{2}'.format(hnom.GetTitle(),d,s.format(d))))
+        
+
+    #if nothing found
+    if len(histos)==0:
+        raise Exception('No direct histograms were retrieved from {0} for {1} {2}'.format(fIn.GetName(),proc_systs["title"],d))
 
     return histos
+
             
 def getTemplateHistos(opt,d,proc,proc_systs):
 
@@ -277,9 +361,11 @@ def getTemplateHistos(opt,d,proc,proc_systs):
     
     histos=[]
     bbbUncHistos=[]
+    systbbbUncHistos=[]
     
-    #nominal histogram
+    #nominal histogram (use first found in inputs)
     for url in opt.input.split(','):        
+        if not os.path.isfile(url) : continue
         fIn=ROOT.TFile.Open(url)
         h=fIn.Get('{0}/{0}_{1}'.format(d,proc_systs['title']))
         try:
@@ -295,47 +381,61 @@ def getTemplateHistos(opt,d,proc,proc_systs):
         print 'Error: unable to find histogram',d,'for',proc
         return histos
 
-    #associated experimental/weighted theory uncertainties
+    #associated experimental/weighted theory uncertainties (use first found in inputs)
+    projFound=False
+    dirFound=False
     for url in opt.input.split(','):        
+        if not os.path.isfile(url) : continue
         fIn=ROOT.TFile.Open(url)
         try:
-            if 'proj' in proc_systs:
-                histos+=getUncertaintiesFromProjection(opt,fIn,d,proc_systs,histos[-1])
 
-            if 'dir' in proc_systs:
-                histos+=getDirectUncertainties(opt,fIn,d,proc_systs,histos[-1])
-        except: 
+            if 'proj' in proc_systs and not projFound:
+                histos+=getUncertaintiesFromProjection(opt,fIn,d,proc_systs,histos[-1])
+                projFound=True
+
+            if 'dir' in proc_systs and not dirFound:
+                dirHistos=getDirectUncertainties(opt,fIn,d,proc_systs,histos[-1])
+                histos+=dirHistos
+                systbbbUncHistos=getBinByBinUncertaintiesForSysts(histos[0],dirHistos)
+                dirFound=True
+
+        except Exception as e:
+            print e
             pass
         fIn.Close()
 
-    nHistos=len(histos)
 
     #finalize bin-by bin uncertainties: if max. variation does not exceed threshold discard it
-    for xbin in range(0,len(bbbUncHistos)):
-        bbbUp,bbbDn=bbbUncHistos[xbin]
-        varUp=abs(bbbUp.GetBinContent(xbin+1)/histos[0].GetBinContent(xbin+1)-1)
-        varDn=abs(bbbDn.GetBinContent(xbin+1)/histos[0].GetBinContent(xbin+1)-1)
-        if max(varUp,varDn)<opt.bbbThr : continue
-        histos.append(bbbUp)
-        histos.append(bbbDn)
+    for bbbColl,tag in [(bbbUncHistos,'cen'),(systbbbUncHistos,'sys')]:
 
-    #show overall sum for clarity, even if each bin has its own template
-    if opt.debug and len(histos)>nHistos:
-        totalbbb=[ histos[0].Clone('totalbbb%s'%x) for x in ['Up','Dn']]
-        for h in totalbbb: 
-            h.SetTitle(h.GetName())
-        nAdded=0
-        for i in xrange(nHistos,len(histos),2):
-            totalbbb[0].Add(histos[i])
-            totalbbb[1].Add(histos[i+1])
-            nAdded+=1        
-        #subtract what has been added in excess
-        for h in totalbbb:
-            h.Add(histos[0],-nAdded)        
-        showVariation(histos[0],
-                      totalbbb,
-                      None,
-                      os.path.join(opt.output,'{0}_{1}_bbb'.format(proc,d)))
+        nHistos=len(histos)
+        for xbin in range(0,len(bbbColl)):
+            bbbUp,bbbDn=bbbColl[xbin]
+            varUp=abs(bbbUp.GetBinContent(xbin+1)/histos[0].GetBinContent(xbin+1)-1)
+            varDn=abs(bbbDn.GetBinContent(xbin+1)/histos[0].GetBinContent(xbin+1)-1)
+            if max(varUp,varDn)<opt.bbbThr : continue
+            histos.append(bbbUp)
+            histos.append(bbbDn)
+
+
+        #show overall sum for clarity, even if each bin has its own template
+        if opt.debug and len(histos)>nHistos:
+            totalbbb=[ histos[0].Clone('totalbbb%s'%(x)) for x in ['Up','Dn'] ]
+            for h in totalbbb: 
+                h.SetTitle(h.GetName())
+            nAdded=0
+            for i in xrange(nHistos,len(histos),2):
+                totalbbb[0].Add(histos[i])
+                totalbbb[1].Add(histos[i+1])
+                nAdded+=1        
+
+            #subtract what has been added in excess
+            for h in totalbbb:
+                h.Add(histos[0],-nAdded)        
+            showVariation(histos[0],
+                          totalbbb,
+                          None,
+                          os.path.join(opt.output,'{0}_{1}_{2}bbb'.format(proc,d,tag)))
                       
     return histos
 
@@ -369,7 +469,7 @@ def main():
     parser.add_option('-i', '--in',          
                       dest='input',       
                       help='plotter files [%default]',  
-                      default='test/analysis/top17010/0c522df/plots/plotter.root,test/analysis/top17010/0c522df/plots/plotter_dydata.root',       
+                      default='test/analysis/top17010/0c522df/plots/plotter.root,test/analysis/top17010/0c522df/plots/syst_plotter.root,test/analysis/top17010/0c522df/plots/plotter_dydata.root',       
                       type='string')
     parser.add_option('-d', '--dist',          
                       dest='distList',       
@@ -407,7 +507,6 @@ def main():
 
     #loop over processes
     for proc,proc_systs in syst_dict:
-        if proc != "dy" : continue
         prepareTemplateFile(opt,proc,proc_systs)
 
 
