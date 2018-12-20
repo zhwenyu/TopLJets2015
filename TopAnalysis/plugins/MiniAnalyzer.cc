@@ -1004,7 +1004,7 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
         ev_.j_tau32[ev_.nj]    = getTau(3,2,&(*j),true,0.9);
         ev_.j_tau21[ev_.nj]    = getTau(2,1,&(*j),true,0.9);
       }
-      except(...){
+      catch(...){
         ev_.j_tau32[ev_.nj]=-99;
         ev_.j_tau21[ev_.nj]=-99;
       }
