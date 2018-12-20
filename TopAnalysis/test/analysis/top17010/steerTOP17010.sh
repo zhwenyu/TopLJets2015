@@ -133,7 +133,8 @@ case $WHAT in
         inputs=${outdir}/${githash}/plots/plotter.root
         inputs=${inputs},${outdir}/${githash}/plots/syst_plotter.root
         inputs=${inputs},${outdir}/${githash}/plots/plotter_dydata.root
-        python test/analysis/top17010/prepareTemplateFiles.py -i ${inputs} --debug --bbbThr 0.05;
+        output=${outdir}/${githash}
+        python test/analysis/top17010/prepareTemplateFiles.py -i ${inputs} -o ${output} --debug --bbbThr 0.05;
 
         ;;
     
