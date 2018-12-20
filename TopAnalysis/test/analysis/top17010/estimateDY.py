@@ -215,11 +215,11 @@ def main():
     sfProd=dySF['ee'][0]*dySF['mm'][0]
     sfProdUnc=ROOT.TMath.Sqrt((dySF['ee'][0]*dySF['mm'][1])**2+(dySF['mm'][0]*dySF['ee'][1])**2)        
     dySF['em']=[ROOT.TMath.Sqrt(sfProd),0.5*sfProdUnc/ROOT.TMath.Sqrt(sfProd)]
-    dySF['em'].append('SF_{e\\mu}=%s'%toLatexRounded(dySF['em'][0],dySF['em'][1]))
+    dySF['em'].append('SF_{e\\mu}=%s\n'%toLatexRounded(dySF['em'][0],dySF['em'][1]))
     
 
     #estimate the DY shape in the different categories and scale to the final yields
-    fOut=ROOT.TFile.Open(os.path.join(opt.output,'Data_DY.root'),'RECREATE')
+    fOut=ROOT.TFile.Open(os.path.join(opt.output,'plotter_dydata.root'),'RECREATE')
     for srCat in ['highpt', 'highpt1b', 'highpt2b', 'lowpt', 'lowpt1b', 'lowpt2b']:
         crCat = 'highpt1b' if 'highpt' in srCat else 'lowpt1b'
         datady_sr = estimateDY(srCat=srCat,crCat=crCat,dist=opt.dist,fIn=fIn,outDir=opt.output)
@@ -235,23 +235,24 @@ def main():
             fOut.cd()
             for key in datady_sr:
                 outName=ch+srCat+'_'+opt.dist
-                if key!='nom' : outName += '_dy{0}shape{1}'.format(ch,key)
-                h=datady_sr[key].Clone(outName)
+                if key!='nom' : outName += '_dyshape{0}'.format(key)
+                outDir=fOut.mkdir(outName)
+                outDir.cd()
+                h=datady_sr[key].Clone(outName+'_DY (data)')
                 h.SetTitle('DY (data)')
                 h.Scale(dyExp/h.Integral())
                 h.Write()
-                         
+                
     fOut.Close()
-    print 'Shapes have been saved in %s/Data_DY.root'%opt.output
     
-    #print a report
-    for key in dySF:
-        print '-'*50
-        print key,'channel'
-        print dySF[key][-1]
-        print '-'*50
-        
-
+    #save the report
+    with open('%s/dy_table.dat'%opt.output,'w') as cache:
+        for key in dySF:
+            cache.write('['+key+' channel]\n')
+            cache.write(dySF[key][-1])
+            cache.write('-'*50+'\n')
+            
+    print '{Shapes,report} have been saved in %s/{plotter_dydata.root,dy_report.dat}'%opt.output
 
 
 if __name__ == "__main__":

@@ -1,0 +1,69 @@
+{
+"ttbar": { "title":"t#bar{t}",
+           "comments" : "List of variations, true/false for normalization, true/false to use mirrored envelope instead of up/down variation",
+           "proj":{
+                "pileup"              : [["puup",                  "pudn"],                  true, false  ],
+                "eetrig"              : [["eetrigup",              "eetrigdn"],              true, true   ],
+                "emtrig"              : [["emtrigup",              "emtrigdn"],              true, true   ],
+                "mmtrig"              : [["mmtrigup",              "mmtrigdn"],              true, true   ],
+                "esel"                : [["eselup",                "eseldn"],                true, false  ],
+                "msel"                : [["mselup",                "mseldn"],                true, false  ],
+                "l1prefire"           : [["l1prefireup",           "l1prefiredn"],           true, true   ],
+                "messtat"             : [["mes1up",                "mes1dn"],                true, false  ],
+                "meszpt"              : [["mes2up",                "mes2dn"],                true, false  ],
+                "mesewk"              : [["mes3up",                "mes3dn"],                true, false  ],
+                "mesdm"               : [["mes4up",                "mes4dn"],                true, false  ],
+                "eesstat"             : [["ees1up",                "ees1dn"],                true, false  ],
+                "eesgain"             : [["ees2up",                "ees2dn"],                true, false  ],
+                "eessyst"             : [["ees3up",                "ees3dn"],                true, false  ],
+                "eessigma"            : [["ees4up",                "ees4dn"],                true, false  ],
+                "eessphi"             : [["ees5up",                "ees5dn"],                true, false  ],
+                "eessrho"             : [["ees6up",                "ees6dn"],                true, false  ],
+                "eesscalet"           : [["ees7up",                "ees7dn"],                true, false  ],
+                "beff"                : [["btagup",                "btagdn"],                true, false  ],
+                "leff"                : [["ltagup",                "ltagdn"],                true, false  ],
+                "JER"                 : [["JERup",                 "JERdn"],                 true, true   ],
+                "bfrag"               : [["bfragup",               "bfragdn"],               true, true   ],
+                "slepbr"              : [["slbrup",                "slbrdn"],                true, true   ],
+                "toppt"               : [["topptup",               "topptdn"],               true, false  ],
+                "AbsoluteStatJEC"     : [["AbsoluteStatJECup",     "AbsoluteStatJECdn"],     true, true   ],
+                "AbsoluteScaleJEC"    : [["AbsoluteScaleJECup",    "AbsoluteScaleJECdn"],    true, true   ],
+                "AbsoluteMPFBiasJEC"  : [["AbsoluteMPFBiasJECup",  "AbsoluteMPFBiasJECdn"],  true, true   ],
+                "FragmentationJEC"    : [["FragmentationJECup",    "FragmentationJECdn"],    true, true   ],
+                "SinglePionECALJEC"   : [["SinglePionECALJECup",   "SinglePionECALJECdn"],   true, true   ],
+                "SinglePionHCALJEC"   : [["SinglePionHCALJECup",   "SinglePionHCALJECdn"],   true, true   ],
+                "FlavorPureGluonJEC"  : [["FlavorPureGluonJECup",  "FlavorPureGluonJECdn"],  true, true   ],
+                "FlavorPureQuarkJEC"  : [["FlavorPureQuarkJECup",  "FlavorPureQuarkJECdn"],  true, true   ],
+                "FlavorPureCharmJEC"  : [["FlavorPureCharmJECup",  "FlavorPureCharmJECdn"],  true, true   ],
+                "FlavorPureBottomJEC" : [["FlavorPureBottomJECup", "FlavorPureBottomJECdn"], true, true   ],
+                "TimePtEtaJEC"        : [["TimePtEtaJECup",        "TimePtEtaJECdn"],        true, true   ],
+                "RelativeJEREC1JEC"   : [["RelativeJEREC1JECup",   "RelativeJEREC1JECdn"],   true, true   ],
+                "RelativeJEREC2JEC"   : [["RelativeJEREC2JECup",   "RelativeJEREC2JECdn"],   true, true   ],
+                "RelativeJERHFJEC"    : [["RelativeJERHFJECup",    "RelativeJERHFJECdn"],    true, true   ],
+                "RelativePtBBJEC"     : [["RelativePtBBJECup",     "RelativePtBBJECdn"],     true, true   ],
+                "RelativePtEC1JEC"    : [["RelativePtEC1JECup",    "RelativePtEC1JECdn"],    true, true   ],
+                "RelativePtEC2JEC"    : [["RelativePtEC2JECup",    "RelativePtEC2JECdn"],    true, true   ],
+                "RelativePtHFJEC"     : [["RelativePtHFJECup",     "RelativePtHFJECdn"],     true, true   ],
+                "RelativeBalJEC"      : [["RelativeBalJECup",      "RelativeBalJECdn"],      true, true   ],
+                "RelativeFSRJEC"      : [["RelativeFSRJECup",      "RelativeFSRJECdn"],      true, true   ],
+                "RelativeStatFSRJEC"  : [["RelativeStatFSRJECup",  "RelativeStatFSRJECdn"],  true, true   ],
+                "RelativeStatECJEC"   : [["RelativeStatECJECup",   "RelativeStatECJECdn"],   true, true   ],
+                "RelativeStatHFJEC"   : [["RelativeStatHFJECup",   "RelativeStatHFJECdn"],   true, true   ],
+                "PileUpDataMCJEC"     : [["PileUpDataMCJECup",     "PileUpDataMCJECdn"],     true, true   ],
+                "PileUpPtRefJEC"      : [["PileUpPtRefJECup",      "PileUpPtRefJECdn"],      true, true   ],
+                "PileUpPtBBJEC"       : [["PileUpPtBBJECup",       "PileUpPtBBJECdn"],       true, true   ],
+                "PileUpPtEC1JEC"      : [["PileUpPtEC1JECup",      "PileUpPtEC1JECdn"],      true, true   ],
+                "PileUpPtEC2JEC"      : [["PileUpPtEC2JECup",      "PileUpPtEC2JECdn"],      true, true   ],
+                "PileUpPtHFJEC"       : [["PileUpPtHFJECup",       "PileUpPtHFJECdn"],       true, true   ]
+            }
+      },
+
+
+"dy": { "title":"DY (data)",        
+        "dir":{
+               "{0}_dyshape"         : [["{0}_dyshapeup",         "{0}_dyshapedn"],         true, false ]
+        }
+      }
+
+}
+

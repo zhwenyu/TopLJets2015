@@ -22,6 +22,7 @@ if [ -z "$WHAT" ]; then
     echo "        MERGE        - merge output (if given \"extra\" is appended to the directory)"
     echo "        PLOT         - make plots (if given \"extra\" is appended to the directory)"
     echo "        BKG          - performs an estiation of the DY bacgrkound from data"
+    echo "        TEMPL        - prepares the ROOT files with the template histograms"
     echo "        WWW          - move plots to web-based (if given \"extra\" is appended to the directory)"
     exit 1; 
 fi
@@ -127,6 +128,11 @@ case $WHAT in
 
         ;;
 
+    TEMPL )
+        
+        python test/analysis/top17010/prepareTemplateFiles.py --debug --bbbThr 0.05;
+
+        ;;
     
     WWW )
         pdir=${outdir}/${githash}/plots
