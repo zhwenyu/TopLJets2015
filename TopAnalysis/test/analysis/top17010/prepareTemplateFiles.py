@@ -346,7 +346,7 @@ def getDirectUncertainties(opt,fIn,d,proc_systs,hnom):
             showVariation(hnom,
                           varH,
                           '',
-                          os.path.join(opt.output,'{0}_{1}_{2}'.format(hnom.GetTitle(),d,s)))
+                          os.path.join(opt.output,'{0}_{1}_{2}'.format(hnom.GetTitle(),d,pfix)))
         
 
     #if nothing found
