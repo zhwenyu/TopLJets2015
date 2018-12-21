@@ -5,6 +5,7 @@ import sys
 import os
 from collections import OrderedDict
 from TopLJets2015.TopAnalysis.Plot import fixExtremities
+from TopLJets2015.TopAnalysis.gaussianFilterSmoother import GFSmoother
 
 def showVariation(h,varList,warns,output):
     
@@ -177,6 +178,12 @@ def getBinByBinUncertaintiesForSysts(h,hvars):
 
     return histos
 
+def applySmoothing(h,ntoys=100,sigma=1):
+    """ applies a Gaussian KDE smoothing to the histogram """
+    print '[applySmoothing] with ',h.GetName(),'toys=',ntoys
+    gfs=GFSmoother(h,ntoys=ntoys,sigma=sigma)
+    h=gfs.smooth
+    return h
 
 def getUncertaintiesFromProjection(opt,fIn,d,proc_systs,hnom):
 
@@ -198,12 +205,13 @@ def getUncertaintiesFromProjection(opt,fIn,d,proc_systs,hnom):
 
     #project systematics
     for s in proc_systs['proj']:
-        slist,norm,doEnvelope=proc_systs['proj'][s]
+        slist,norm,doEnvelope,smooth=proc_systs['proj'][s]
      
         try:            
             h2d,ybin=allSysts[ slist[0] ]
             varUp=h2d.ProjectionX('varup',ybin,ybin)
             fixExtremities(varUp) #add the overflow as for the main plot
+            if smooth: applySmoothing(varUp)
         except:            
             errors.append('Failed to prepare %s'%slist[0])
             continue
@@ -216,6 +224,7 @@ def getUncertaintiesFromProjection(opt,fIn,d,proc_systs,hnom):
                 h2d,ybin=allSysts[ slist[1] ]
                 varDn=h2d.ProjectionX('vardn',ybin,ybin)
                 fixExtremities(varDn) #add the overflow as for the main plot
+                if smooth: applySmoothing(varDn)
             except:
                 errors.append('Failed to prepare %s'%slist[1])
                 continue
@@ -232,6 +241,7 @@ def getUncertaintiesFromProjection(opt,fIn,d,proc_systs,hnom):
                     h2d,ybin=allSysts[ s_i ]
                     vartemp=h2d.ProjectionX('vartemp',ybin,ybin)
                     fixExtremities(vartemp) #add the overflow as for the main plot
+                    if smooth: applySmoothing(vartemp)
 
                     #do max(var_i-nom,var_j-nom) per bin
                     for xbin in range(hnom.GetNbinsX()):
@@ -301,7 +311,7 @@ def getDirectUncertainties(opt,fIn,d,proc_systs,hnom):
     fIn.cd()
     for s in proc_systs['dir']:
 
-        slist,norm,doEnvelope=proc_systs['dir'][s]
+        slist,norm,doEnvelope,smooth=proc_systs['dir'][s]
 
         varH=[]
         try:
@@ -314,6 +324,7 @@ def getDirectUncertainties(opt,fIn,d,proc_systs,hnom):
                     hname=s_i.format(d)
                     hname='{0}/{0}_{1}'.format(hname,proc_systs["title"])
                     h=fIn.Get(hname)
+
                 #otherwise look in the sub-directories
                 else:                    
                     for k in fIn.GetListOfKeys():
@@ -325,6 +336,7 @@ def getDirectUncertainties(opt,fIn,d,proc_systs,hnom):
 
                 if not h: continue
                 h.GetName()
+                if smooth: applySmoothing(varUp)
                 varH.append(h)
         except:
             pass
@@ -371,6 +383,7 @@ def getTemplateHistos(opt,d,proc,proc_systs):
         h=fIn.Get('{0}/{0}_{1}'.format(d,proc_systs['title']))
         try:
             formatTemplate(h,'central',proc)
+            if 'smooth' in proc_systs and proc_systs['smooth']: applySmoothing(h)
             histos.append(h)
             bbbUncHistos=getBinByBinUncertainties(h)
             break
