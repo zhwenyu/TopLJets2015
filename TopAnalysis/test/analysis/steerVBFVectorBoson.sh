@@ -85,7 +85,7 @@ case $WHAT in
             -o ${outdir}/${githash}/${EXTRA} \
             --farmappendix ${githash} \
             -q ${queue} --genWeights genweights_${githash}.root \
-            --era era${ERA} -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts --skipexisting --skip DR04 ${extraOpts};
+            --era era${ERA} -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts --only MC13TeV --skipexisting --skip DR04 ${extraOpts};
 	;;
 
 
