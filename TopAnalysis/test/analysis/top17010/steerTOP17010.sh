@@ -19,7 +19,8 @@ if [ -z "$WHAT" ]; then
     echo "        TESTSEL      - test selection locally"
     echo "        SEL          - launches selection jobs to the batch, output will contain summary trees and control plots"; 
     echo "        SELSCAN      - launches signal selection jobs to the batch for the mass vs width scan";
-    echo "        MERGE        - merge output (if given \"extra\" is appended to the directory)"
+    echo "        MERGE        - merge output"
+    echo "        MERGESCAN    - merge output for the mass/width scan and plot local sensitivity"
     echo "        PLOT         - make plots (if given \"extra\" is appended to the directory)"
     echo "        BKG          - performs an estiation of the DY bacgrkound from data"
     echo "        TEMPL        - prepares the ROOT files with the template histograms"
@@ -129,6 +130,9 @@ case $WHAT in
 	        ./scripts/mergeOutputs.py ${outdir}/${githash}/scenario${flag};
             done
         done
+
+        #local sensitivities
+        python test/analysis/top17010/estimateLocalSensitivity.py -i ${outdir}/${githash}
 	;;
 
     PLOT )

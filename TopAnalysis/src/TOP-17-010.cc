@@ -358,7 +358,6 @@ void TOP17010::runAnalysis()
               ht_->fill("genmass",  genm, bwWgts,"rwgt");
             }
           }
-     
         }
 
         //b-fragmentation and semi-leptonic branching fractions
