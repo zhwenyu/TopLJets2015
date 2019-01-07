@@ -51,7 +51,6 @@ std::vector< WeightSysts_t > getWeightSysts(TFile *f,TString sample){
     }
     
     if(sample=="TTJets2016") {
-      cout <<"It is TTJets!"<<endl;
       if(label.Contains("muR=0.5 muF=1")   && label.Contains("hdamp=mt"))   systsOfInterest.push_back( WeightSysts_t("muRdn",    xbin-1) );
       if(label.Contains("muR=2 muF=1")     && label.Contains("hdamp=mt"))   systsOfInterest.push_back( WeightSysts_t("muRup",    xbin-1) );
       if(label.Contains("muR=1 muF=0.5")   && label.Contains("hdamp=mt"))   systsOfInterest.push_back( WeightSysts_t("muFdn",    xbin-1) );
@@ -162,14 +161,14 @@ float weightBW(TF1 *bwigner,std::vector<float> &obsm,float g,float m,float gini,
   float n=bwigner->Integral(max(m-50*g,float(0.)),m+50*g);
 
   float wgt(1.0);
-  for(auto m : obsm){
+  for(auto obsm_i : obsm){
     bwigner->FixParameter(1,mini);
     bwigner->FixParameter(2,gini);
-    float vini=bwigner->Eval(m);
+    float vini=bwigner->Eval(obsm_i);
 
     bwigner->FixParameter(1,m);
     bwigner->FixParameter(2,g);
-    float v=bwigner->Eval(m);
+    float v=bwigner->Eval(obsm_i);
 
     wgt *= (v/n) / (vini/nini);
   }

@@ -36,6 +36,10 @@ if [[ ${ERA} = "2017" ]]; then
     eosdir=/store/cmst3/group/top/RunIIReReco/${githash}
     fulllumi=41367
 fi
+
+gtList=(0.7 0.75 0.8 0.85 0.9 0.95 1.0 1.05 1.1 1.15 1.2 1.25 1.3 1.35 1.4 1.45 1.5 1.55 1.6 1.65 1.7 1.75 1.85 1.9 1.95 2.0 2.2 2.4 2.6 2.8 3.0 4.0)
+mtList=(169.5 170 170.5 171 171.5 172 172.5 173 173.5 174 174.5 175 175.5)
+
 echo "Selection adapted to YEAR=${ERA}, inputs from ${eosdir}"
 
 queue=workday
@@ -69,8 +73,13 @@ case $WHAT in
         tag=MC13TeV_${ERA}_TTJets
         input=${eosdir}/${tag}/Chunk_0_ext0.root
         output=${tag}.root 
+
+        gidx=`python -c "print int((2-0.7)/0.01)"`
+        midx=`python -c "print int((172.5-169)/0.25)"`
+        flag=`python -c "print (($midx<<16)|($gidx))"`
+
 	python scripts/runLocalAnalysis.py \
-            -i ${input} -o ${output} --tag ${tag} --only ${json} --flag 0\
+            -i ${input} -o ${output} --tag ${tag} --only ${json} --flag ${flag}\
             --njobs 1 -q local --genWeights genweights_${githash}.root \
             --era era${ERA} -m TOP17010::TOP17010 --ch 0 --runSysts --debug;
         ;;
@@ -88,8 +97,6 @@ case $WHAT in
 
     SELSCAN )
         
-        gtList=(0.7 0.75 0.8 0.85 0.9 0.95 1.0 1.05 1.1 1.15 1.2 1.25 1.3 1.35 1.4 1.45 1.5 1.55 1.6 1.65 1.7 1.75 1.85 1.9 1.95 2.0 2.2 2.4 2.6 2.8 3.0 4.0)
-        mtList=(169.5 170 170.5 171 171.5 172 172.5 173 173.5 174 174.5 175 175.5)
         for g in ${gtList[@]}; do
             gidx=`python -c "print int(($g-0.7)/0.01)"`
             for m in ${mtList[@]}; do
@@ -110,6 +117,18 @@ case $WHAT in
 
     MERGE )
 	./scripts/mergeOutputs.py ${outdir}/${githash};
+	;;
+
+
+    MERGESCAN )
+        for g in ${gtList[@]}; do
+            gidx=`python -c "print int(($g-0.7)/0.01)"`
+            for m in ${mtList[@]}; do
+                midx=`python -c "print int(($m-169)/0.25)"`
+                flag=`python -c "print (($midx<<16)|($gidx))"`
+	        ./scripts/mergeOutputs.py ${outdir}/${githash}/scenario${flag};
+            done
+        done
 	;;
 
     PLOT )

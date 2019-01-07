@@ -80,7 +80,6 @@ void TOP17010::init(UInt_t scenario){
   if (debug_) nentries_ = 10000; //restrict number of entries for testing
   t_->GetEntry(0);
 
-
   TString baseName=gSystem->BaseName(outname_); 
   TString dirName=gSystem->DirName(outname_);
   fOut_=TFile::Open(dirName+"/"+baseName,"RECREATE");
@@ -114,6 +113,13 @@ void TOP17010::bookHistograms() {
 
   ht_ = new HistTool(0);
   ht_->addHist("puwgtctr", new TH1F("puwgtctr", ";Weight sums;Events",                        2,0,2));  
+  ht_->addHist("genscan",  new TH1F("gennscan", ";Parameter;Value",                           4,0,4));  
+  TH1 *gscan=ht_->getPlots()["genscan"];
+  gscan->SetBinContent(1,origMt_);    gscan->GetXaxis()->SetBinLabel(1,"m_{t}^{i}");
+  gscan->SetBinContent(2,origGt_);    gscan->GetXaxis()->SetBinLabel(2,"#Gamma_{t}^{i}");
+  gscan->SetBinContent(3,targetMt_);  gscan->GetXaxis()->SetBinLabel(3,"m_{t}^{f}");
+  gscan->SetBinContent(4,targetGt_);  gscan->GetXaxis()->SetBinLabel(4,"#Gamma_{t}^{f}");
+  ht_->addHist("genmass",  new TH1F("genmass",     ";Mass [GeV];Events",                         100,169,176));  
   ht_->addHist("nvtx",     new TH1F("nvtx",     ";Vertex multiplicity;Events",                100,-0.5,99.5));
   ht_->addHist("mll", 	   new TH1F("mll",      ";Dilepton invariant mass [GeV];Events",      50,0,550));  
   ht_->addHist("ptll", 	   new TH1F("ptll",     ";Dilepton p_{T}[GeV];Events",                50,0,550));  
@@ -338,13 +344,21 @@ void TOP17010::runAnalysis()
               topptWgts[1] *= 1./topsf;
               genmt.push_back(ev_.gtop_m[igen]);
             }
-
           if(genmt.size()==2 
              && rbwigner_ 
-             && targetGt_>0        && targetMt_>0 
-             && origMt_>0          && origGt_>0
-             && targetGt_!=origGt_ && targetMt_ != origMt_ )
-            widthWgt=weightBW(rbwigner_,genmt,targetGt_,targetMt_,origGt_,origMt_);
+             && targetGt_>0 && targetMt_>0 && origGt_>0  && origMt_>0
+             && (targetGt_!=origGt_ || targetMt_ != origMt_) ) {
+            widthWgt=weightBW(rbwigner_,genmt,targetGt_,targetMt_,origGt_,origMt_); 
+
+            //control the re-weighted BW
+            for(auto genm:genmt) {
+              std::vector<double> bwWgts(1,1.0);
+              ht_->fill("genmass",  genm, bwWgts);
+              bwWgts[0]=widthWgt;
+              ht_->fill("genmass",  genm, bwWgts,"rwgt");
+            }
+          }
+     
         }
 
         //b-fragmentation and semi-leptonic branching fractions
