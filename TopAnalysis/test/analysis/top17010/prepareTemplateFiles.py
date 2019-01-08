@@ -133,7 +133,7 @@ def getBinByBinUncertainties(h):
     """loops over the bins of a template and builds the bin-by-bin uncertainties"""
 
     #init the up and down variations
-    histos = [ [h.Clone('bin%dUp'%(xbin)),h.Clone('bin%dDn'%(xbin))] for xbin in xrange(1,h.GetNbinsX()+1) ]
+    histos = [ [h.Clone('bin%dUp'%(xbin)),h.Clone('bin%dDown'%(xbin))] for xbin in xrange(1,h.GetNbinsX()+1) ]
     for hup,hdn in histos:
         formatTemplate(hup,hup.GetName())
         formatTemplate(hdn,hdn.GetName())
@@ -152,7 +152,7 @@ def getBinByBinUncertaintiesForSysts(h,hvars):
     """loops over the bins of a template and build the bin-by-bin stat unc associated to systs"""
     
     #init the up and down variations
-    histos = [ [h.Clone('sysbin%dUp'%(xbin)),h.Clone('sysbin%dDn'%(xbin))] for xbin in xrange(1,h.GetNbinsX()+1) ]
+    histos = [ [h.Clone('sysbin%dUp'%(xbin)),h.Clone('sysbin%dDown'%(xbin))] for xbin in xrange(1,h.GetNbinsX()+1) ]
     for hup,hdn in histos:
         formatTemplate(hup,hup.GetName())
         formatTemplate(hdn,hdn.GetName())
@@ -275,7 +275,7 @@ def getUncertaintiesFromProjection(opt,fIn,d,proc_systs,hnom):
             warns.append('%s %s for %s'%(pfix,checkReport.replace('\n',','),s))
 
         formatTemplate(varUp,s+'Up',norm=hnom.Integral() if norm else None)
-        formatTemplate(varDn,s+'Dn',norm=hnom.Integral() if norm else None)
+        formatTemplate(varDn,s+'Down',norm=hnom.Integral() if norm else None)
         if keep:            
             histos.append(varUp)
             histos.append(varDn)
@@ -348,7 +348,7 @@ def getDirectUncertainties(opt,fIn,d,proc_systs,hnom):
 
         #add to the histograms
         for i in xrange(0,2):
-            pfix='Up' if i==0 else 'Dn'
+            pfix='Up' if i==0 else 'Down'
             formatTemplate(varH[i],s.format(d)+pfix,norm=hnom.Integral() if norm else None)
             histos.append(varH[i])
 
@@ -434,7 +434,7 @@ def getTemplateHistos(opt,d,proc,proc_systs):
 
         #show overall sum for clarity, even if each bin has its own template
         if opt.debug and len(histos)>nHistos:
-            totalbbb=[ histos[0].Clone('totalbbb%s'%(x)) for x in ['Up','Dn'] ]
+            totalbbb=[ histos[0].Clone('totalbbb%s'%(x)) for x in ['Up','Down'] ]
             for h in totalbbb: 
                 h.SetTitle(h.GetName())
             nAdded=0

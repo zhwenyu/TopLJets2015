@@ -96,6 +96,7 @@ def estimateLocalSensitivity(dist,opt):
         mls.SetBinContent(xbin+1,grad)
 
     #display results
+    ROOT.gROOT.SetBatch(True)
     ROOT.gStyle.SetOptStat(0)
     ROOT.gStyle.SetOptTitle(0)
     c=ROOT.TCanvas('c','c',500,500)
@@ -127,8 +128,9 @@ def estimateLocalSensitivity(dist,opt):
     c.Modified()
     c.Update()
     c.RedrawAxis()
+    outDir=opt.output if opt.output else './'
     for ext in ['png','pdf']:
-        c.SaveAs('localsens_%s.%s'%(dist,ext))
+        c.SaveAs('%slocalsens_%s.%s'%(outDir,dist,ext))
 
 def main():
 
@@ -139,13 +141,19 @@ def main():
                       help='input directory [%default]',  
                       default='/eos/cms/store/cmst3/group/top/TOP17010/0c522df',
                       type='string')
+    parser.add_option('-o', '--out',          
+                      dest='output',
+                      help='output directory [%default]',  
+                      default=None,
+                      type='string')
     parser.add_option('-d', '--dist',          
                       dest='dist',       
                       help='distribution',
-                      default='highpt2b_mlb,highpt1b_mlb,highpt_mlb,lowpt2b_mlb,lowpt1b_mlb,lowpt_mlb',
+                      default='_mlb,highpt2b_mlb,highpt1b_mlb,highpt_mlb,lowpt2b_mlb,lowpt1b_mlb,lowpt_mlb',
                       type='string')
     (opt, args) = parser.parse_args()
 
+    if opt.output: os.system('mkdir -p %s'%opt.output)
     for d in opt.dist.split(','): estimateLocalSensitivity(d,opt)
 
 if __name__ == "__main__":

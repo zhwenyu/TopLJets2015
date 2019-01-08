@@ -60,7 +60,7 @@ case $WHAT in
     PREPARE )
         
         echo "Deriving baseline expected resolutions"
-        tag=MC13TeV_${ERA}_TTJets_m1755
+        tag=MC13TeV_${ERA}_TTJets
         python test/analysis/top17010/getMlbResolution.py /eos/cms/${eosdir}/${tag}/Chunk_0_ext0.root
         mkdir -p ${outdir}/plots
         mv mlbresol_*.{png,pdf} ${outdir}/plots
@@ -86,9 +86,8 @@ case $WHAT in
         ;;
 
     SEL )
-        
 	python scripts/runLocalAnalysis.py \
-	    -i ${eosdir} --only ${json},${syst_json} --flag 0\
+	    -i ${eosdir} --only ${json},${syst_json} --flag 0 \
             -o ${outdir}/${githash} \
             --farmappendix ${githash} \
             -q ${queue} --genWeights genweights_${githash}.root \
@@ -132,11 +131,10 @@ case $WHAT in
         done
 
         #local sensitivities
-        python test/analysis/top17010/estimateLocalSensitivity.py -i ${outdir}/${githash}
+        python test/analysis/top17010/estimateLocalSensitivity.py -i ${outdir}/${githash} -o ${outdir}/${githash}/localsens/
 	;;
 
     PLOT )
-
 	commonOpts="-i ${outdir}/${githash} --puNormSF puwgtctr -l ${fulllumi} --saveLog --mcUnc ${lumiUnc}"
 	python scripts/plotter.py ${commonOpts} -j ${json};
         python scripts/plotter.py ${commonOpts} -j ${json}      --only evcount  --saveTeX -o evcount_plotter.root;
@@ -146,9 +144,7 @@ case $WHAT in
         ;;
 
     BKG )
-        
         python test/analysis/top17010/estimateDY.py -i ${outdir}/${githash}/plots/plotter.root -o ${outdir}/${githash}/plots/;
-
         ;;
 
     TEMPL )
@@ -157,23 +153,34 @@ case $WHAT in
         inputs=${inputs},${outdir}/${githash}/plots/syst_plotter.root
         inputs=${inputs},${outdir}/${githash}/plots/plotter_dydata.root
         output=${outdir}/${githash}/templates/
-        dists=emhighpt_mlb #,emhighpt1b_mlb,emhighpt2b_mlb
-        #dists=${dists},emlowpt_mlb,emlowpt1b_mlb,emlowpt2b_mlb
-        #dists=${dists},eehighpt_mlb,eehighpt1b_mlb,eehighpt2b_mlb
-        #dists=${dists},eelowpt_mlb,eelowpt1b_mlb,eelowpt2b_mlb
-        #dists=${dists},mmhighpt_mlb,mmhighpt1b_mlb,mmhighpt2b_mlb
-        #dists=${dists},mmlowpt_mlb,mmlowpt1b_mlb,mmlowpt2b_mlb
+        dists=em_mlb,ee_mlb,mm_mlb
+        dists=${dists},emhighpt_mlb,emhighpt1b_mlb,emhighpt2b_mlb
+        dists=${dists},emlowpt_mlb,emlowpt1b_mlb,emlowpt2b_mlb
+        dists=${dists},eehighpt_mlb,eehighpt1b_mlb,eehighpt2b_mlb
+        dists=${dists},eelowpt_mlb,eelowpt1b_mlb,eelowpt2b_mlb
+        dists=${dists},mmhighpt_mlb,mmhighpt1b_mlb,mmhighpt2b_mlb
+        dists=${dists},mmlowpt_mlb,mmlowpt1b_mlb,mmlowpt2b_mlb
         python test/analysis/top17010/prepareTemplateFiles.py -i ${inputs} -d ${dists} -o ${output} --debug --bbbThr 0.05;
 
         ;;
     
     WWW )
-        pdir=${outdir}/${githash}/plots
+        pdir=${outdir}/${githash}
         if [ -d ${pdir} ]; then
             fdir=${wwwdir}/${githash}
+
+            #selection plots
 	    mkdir -p ${fdir}
-	    cp ${pdir}/*.{png,pdf,dat} ${fdir};
+	    mv ${pdir}/plots/*.{png,pdf,dat} ${fdir};
 	    cp test/index.php ${fdir};
+
+            #additional plots
+            for e in localsens templates; do
+                mkdir -p ${fdir}/${e};
+	        mv ${pdir}/${e}/*.{png,pdf,dat} ${fdir}/${e};
+	        cp test/index.php ${fdir}/${e};
+            done
+
             echo "Check plots in ${fdir}"
         fi
         

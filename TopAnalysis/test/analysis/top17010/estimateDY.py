@@ -220,6 +220,7 @@ def main():
 
     #estimate the DY shape in the different categories and scale to the final yields
     fOut=ROOT.TFile.Open(os.path.join(opt.output,'plotter_dydata.root'),'RECREATE')
+    finalHistos={}
     for srCat in ['highpt', 'highpt1b', 'highpt2b', 'lowpt', 'lowpt1b', 'lowpt2b']:
         crCat = 'highpt1b' if 'highpt' in srCat else 'lowpt1b'
         datady_sr = estimateDY(srCat=srCat,crCat=crCat,dist=opt.dist,fIn=fIn,outDir=opt.output)
@@ -242,7 +243,29 @@ def main():
                 h.SetTitle('DY (data)')
                 h.Scale(dyExp/h.Integral())
                 h.Write()
-                
+                finalHistos[outName]=h
+
+    #add the inclusive shapes
+    for ch in ['ee','mm','em']:
+
+        for key in datady_sr.keys():
+            incH=None
+            for srCat in ['highpt','lowpt']:
+                outName=ch+srCat+'_'+opt.dist
+                if key!='nom' : outName += '_dyshape{0}'.format(key)
+                ih=finalHistos[outName]
+                if not incH:
+                    incOutName=outName.replace(srCat,'')
+                    incH=ih.Clone('{0}_DY (data)'.format(incOutName))
+                    incH.SetDirectory(0)
+                else:
+                    incH.Add(ih)
+
+            fOut.cd()
+            outDir=fOut.mkdir(incOutName)
+            outDir.cd()
+            incH.Write()
+
     fOut.Close()
     
     #save the report
