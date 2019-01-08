@@ -14,7 +14,7 @@ while getopts "o:y:s:" opt; do
 done
 
 if [ -z "$WHAT" ]; then 
-    echo "steerTopWidth.sh -o <SEL/MERGE/...> [-y 2016/7]";
+    echo "steerTopWidth.sh -o <SEL/MERGE/...> [-y 2016/7] [-h higgs_combine]";
     echo "        PREPARE      - prepare analysis: resolution study + MC2MC corrections"
     echo "        TESTSEL      - test selection locally"
     echo "        SEL          - launches selection jobs to the batch, output will contain summary trees and control plots"; 
@@ -24,6 +24,8 @@ if [ -z "$WHAT" ]; then
     echo "        PLOT         - make plots (if given \"extra\" is appended to the directory)"
     echo "        BKG          - performs an estiation of the DY bacgrkound from data"
     echo "        TEMPL        - prepares the ROOT files with the template histograms"
+    echo "        DATACARD     - prepares the datacards for combine"
+    echo "        FIT          - this is a dummy step with the instructions to setup combine (tensorflow version)"
     echo "        WWW          - move plots to web-based (if given \"extra\" is appended to the directory)"
     exit 1; 
 fi
@@ -163,7 +165,49 @@ case $WHAT in
         python test/analysis/top17010/prepareTemplateFiles.py -i ${inputs} -d ${dists} -o ${output} --debug --bbbThr 0.05;
 
         ;;
-    
+
+    DATACARD )
+        
+        dists=(em_mlb 
+            #ee_mlb mm_mlb 
+            #emhighpt_mlb emhighpt1b_mlb emhighpt2b_mlb 
+            #emlowpt_mlb emlowpt1b_mlb emlowpt2b_mlb
+            #eehighpt_mlb eehighpt1b_mlb eehighpt2b_mlb
+            #eelowpt_mlb eelowpt1b_mlb eelowpt2b_mlb
+            #mmhighpt_mlb mmhighpt1b_mlb mmhighpt2b_mlb
+            #mmlowpt_mlb mmlowpt1b_mlb mmlowpt2b_mlb
+        )
+        scenarios=(`find ${outdir}/${githash}/ -maxdepth 1 | grep scenario`)
+        echo "I have ${#dists[@]} distributions for ${#scenarios[@]} signal scenarios... this may take a while"
+
+        for d in ${dists[@]}; do 
+            echo "Generating datacards for ${d}"
+            outname="${d/_mlb/}"
+            opt="-d ${d} -o ${outname}_datacards"
+            python test/analysis/top17010/prepareDataCard.py ${opt}/nom -s ${outdir}/${githash}/MC13TeV_2016_TTJets.root
+            for s in ${scenarios[@]}; do
+                base_s=`basename ${s}`;
+                python test/analysis/top17010/prepareDataCard.py ${opt}/${base_s} -s ${s}/MC13TeV_2016_TTJets.root
+            done
+        done
+        ;;
+
+    FIT )
+        
+        echo ""
+        echo "The fits have to be run with a dedicated script (tba)"
+        echo "If not yet installed please install the combination tool (TF version) as follows"
+        echo ""
+        echo "cmsrel CMSSW_10_3_0_pre4"
+        echo "cd CMSSW_10_3_0_pre4/src/"
+        echo "cmsenv"
+        echo "git clone -b tensorflowfit https://github.com/bendavid/HiggsAnalysis-CombinedLimit.git HiggsAnalysis/CombinedLimit"
+        echo "cd HiggsAnalysis/CombinedLimit"
+        echo "scram b -j 8"
+        echo "source /afs/cern.ch/user/b/bendavid/work/cmspublic/pythonvenv/tensorflowfit_h5py/bin/activate"
+        echo "" 
+        ;;
+
     WWW )
         pdir=${outdir}/${githash}
         if [ -d ${pdir} ]; then
