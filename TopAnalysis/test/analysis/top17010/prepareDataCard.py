@@ -56,7 +56,7 @@ def customizeData(binName,dataDef,bkgList,templDir,outDir):
 
     """ customizes data to use as observation """
 
-    dataType,dataF,dataHisto=dataDef.split(':')
+    dataType,dataF,dataHisto=dataDef.split(',')
 
     #get the data
     inF=ROOT.TFile.Open(dataF)
@@ -254,8 +254,8 @@ def main():
                       type='string')
     parser.add_option('--data',
                       dest='data',
-                      help='data type(sig/data):file:histo [%default]',  
-                      default='sig:/eos/cms/store/cmst3/group/top/TOP17010/0c522df/plots/plotter.root:em_mlb/em_mlb_t#bar{t}',
+                      help='data type(sig/data),file,histo [%default]',  
+                      default='sig,/eos/cms/store/cmst3/group/top/TOP17010/0c522df/plots/plotter.root,em_mlb/em_mlb_t#bar{t}',
                       type='string')
     parser.add_option('-s', '--sig',
                       dest='signal',

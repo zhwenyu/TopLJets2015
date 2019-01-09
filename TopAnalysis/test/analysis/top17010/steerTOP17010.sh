@@ -171,10 +171,10 @@ case $WHAT in
         dists=(em_mlb ee_mlb mm_mlb
             emhighpt_mlb emlowpt_mlb
             emhighpt1b_mlb emhighpt2b_mlb emlowpt1b_mlb emlowpt2b_mlb
-            #eehighpt_mlb eehighpt1b_mlb eehighpt2b_mlb
-            #eelowpt_mlb eelowpt1b_mlb eelowpt2b_mlb
-            #mmhighpt_mlb mmhighpt1b_mlb mmhighpt2b_mlb
-            #mmlowpt_mlb mmlowpt1b_mlb mmlowpt2b_mlb
+            eehighpt_mlb eehighpt1b_mlb eehighpt2b_mlb
+            eelowpt_mlb eelowpt1b_mlb eelowpt2b_mlb
+            mmhighpt_mlb mmhighpt1b_mlb mmhighpt2b_mlb
+            mmlowpt_mlb mmlowpt1b_mlb mmlowpt2b_mlb
         )
         scenarios=(`find ${outdir}/${githash}/ -maxdepth 1 | grep scenario`)
         echo "I have ${#dists[@]} distributions for ${#scenarios[@]} signal scenarios... this may take a while"
@@ -182,12 +182,12 @@ case $WHAT in
         for d in ${dists[@]}; do 
             echo "Generating datacards for ${d}"
             outname="${d/_mlb/}"
-            opt="-d ${d} -o ${outname}_datacards"
-            python test/analysis/top17010/prepareDataCard.py ${opt}/nom -s ${outdir}/${githash}/MC13TeV_2016_TTJets.root
+            opt="-d ${d} --data sig,/eos/cms/store/cmst3/group/top/TOP17010/0c522df/plots/plotter.root,${d}/${d}_t#bar{t}"            
+            python test/analysis/top17010/prepareDataCard.py ${opt} -o ${outname}_datacards/nom -s ${outdir}/${githash}/MC13TeV_2016_TTJets.root
             continue
             for s in ${scenarios[@]}; do
                 base_s=`basename ${s}`;
-                python test/analysis/top17010/prepareDataCard.py ${opt}/${base_s} -s ${s}/MC13TeV_2016_TTJets.root
+                python test/analysis/top17010/prepareDataCard.py ${opt}  -o ${outname}_datacards/${base_s} -s ${s}/MC13TeV_2016_TTJets.root
             done
         done
         ;;
