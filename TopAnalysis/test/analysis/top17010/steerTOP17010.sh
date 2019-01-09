@@ -184,7 +184,6 @@ case $WHAT in
             outname="${d/_mlb/}"
             opt="-d ${d} --data sig,/eos/cms/store/cmst3/group/top/TOP17010/0c522df/plots/plotter.root,${d}/${d}_t#bar{t}"            
             python test/analysis/top17010/prepareDataCard.py ${opt} -o ${outname}_datacards/nom -s ${outdir}/${githash}/MC13TeV_2016_TTJets.root
-            continue
             for s in ${scenarios[@]}; do
                 base_s=`basename ${s}`;
                 python test/analysis/top17010/prepareDataCard.py ${opt}  -o ${outname}_datacards/${base_s} -s ${s}/MC13TeV_2016_TTJets.root
