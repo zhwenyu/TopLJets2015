@@ -185,6 +185,56 @@ def printShapeSysts(dc,syst_dict,binName,shapeFiles):
         dc.write(sline+'\n')
 
 
+def printBinByBinUncs(dc,binName,procList,shapeFiles):
+
+    """
+    loops over the template files and looks for bin-by-bin uncertainty histograms
+    if found they are added to the datacard
+    """
+
+    #check if there are bin-by-bin uncertainty histograms
+    dirName='%s_mlb'%binName
+    nprocs=len(procList)
+    for i in range(nprocs):
+
+        p=procList[i]
+
+        #loop over all template histos and match bin-by-bin uncertainty name
+        matchTag='{0}_{1}_mlb_bin'.format(p,binName)
+        fIn=ROOT.TFile.Open(shapeFiles[p])
+        for obj in fIn.Get(dirName).GetListOfKeys():
+            objname=obj.GetName()
+            if not 'Up' in objname: continue
+            if not matchTag in objname:continue
+            
+            #dump uncertainty to datacard
+            uncName=objname[0:-2]
+            sline='%20s  shape   '%uncName
+            for j in range(nprocs):
+                sline+='%15s'%('1' if j==i else '-')
+            dc.write(sline+'\n')
+
+
+def printRateSysts(dc,binName,procList):
+    """ this dumps to the datacard a series of hardcoded rate systematics """
+ 
+    rateSysts=[
+        ('lumi_13TeV',                  1.025,  None,     ['dy']),
+        ('dynorm_{0}'.format(binName),  1.30,   ['dy'],   None),
+        ('twnorm_th',                   1.15,   ['tw'],   None),
+        ('vvnorm_th',                   1.20,   ['vv'],   None),
+        ]
+
+    for uncName,uncVal,whiteList,blackList in rateSysts:
+        sline='%20s  ln      '%uncName
+        for p in procList:
+            hasSyst=True
+            if whiteList and not p in whiteList: hasSyst=False
+            if blackList and p in blackList: hasSyst=False
+            sline+='%15s'%('%3.3f'%uncVal if hasSyst else '-')
+        dc.write(sline+'\n')
+            
+
 
 def main():
 
@@ -263,6 +313,17 @@ def main():
                         syst_dict=syst_dict,
                         binName=cat,
                         shapeFiles=shapeFiles)
+        
+        printBinByBinUncs(dc=dc,
+                          procList=procList,
+                          binName=cat,
+                          shapeFiles=shapeFiles)    
+
+        printRateSysts(dc=dc,
+                       binName=cat,
+                       procList=procList)
+
+
 
 if __name__ == "__main__":
     sys.exit(main())

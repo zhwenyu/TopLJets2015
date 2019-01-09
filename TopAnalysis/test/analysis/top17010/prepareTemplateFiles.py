@@ -428,6 +428,8 @@ def getTemplateHistos(opt,d,proc,proc_systs):
             varUp=abs(bbbUp.GetBinContent(xbin+1)/histos[0].GetBinContent(xbin+1)-1)
             varDn=abs(bbbDn.GetBinContent(xbin+1)/histos[0].GetBinContent(xbin+1)-1)
             if max(varUp,varDn)<opt.bbbThr : continue
+            bbbUp.SetName('{0}_{1}_{2}'.format(proc,d,bbbUp.GetName()))
+            bbbDn.SetName('{0}_{1}_{2}'.format(proc,d,bbbDn.GetName()))
             histos.append(bbbUp)
             histos.append(bbbDn)
 
