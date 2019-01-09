@@ -13,11 +13,11 @@ def doNuisanceReport(args,outdir):
 
     blackList=['seed','itoy','status','errstatus','scanidx','edmval','nllval','nllvalfull','dnllval','chisq','chisqpartial','ndof','ndofpartial']
 
-    allVars=[]
     results=[]
+    varsMaxConstr={}
     for i in xrange(0,len(args)):
 
-        title,url=args[i].split(':')
+        title,url=args[i].split('=')
 
         inF=ROOT.TFile.Open(url)
         fitres=inF.Get('fitresults')
@@ -52,13 +52,20 @@ def doNuisanceReport(args,outdir):
         else:
 
             fitres.GetEntry(0)
-            for v in varVals: 
+            for v in varVals:      
                 varVals[v]=[ getattr(fitres,v),getattr(fitres,v+'_err'),getattr(fitres,v+'_err') ]
+                if not v in varsMaxConstr: varsMaxConstr[v]=9999.
+                varsMaxConstr[v]=min(varsMaxConstr[v],min(varVals[v][1],varVals[v][2]))
 
-        for v in varVals: allVars.append(v)
         results.append( (title,varVals) )
 
-    allVars=list(set(allVars))
+    #form a list of the nuisances ordered by post-fit constrained values
+    allVars=sorted(varsMaxConstr,key=varsMaxConstr.get)
+    
+    for _,varVals in results:
+        for v in varVals:
+            unc=min(varVals[v][1],varVals[v][2])
+
     
 
     #show nuisances
@@ -123,8 +130,9 @@ def doNuisanceReport(args,outdir):
         txt.SetTextFont(42)
         txt.SetTextSize(0.03)
         txt.SetTextColor(ROOT.kGray+3)
-        for delta,title in [(1.0,'-1#sigma'),(2,'+2#sigma'),(-1,'-1#sigma'),(-2,'-2#sigma')]:
-            txt.DrawLatex(delta-0.2,frame.GetYaxis().GetXmax()+0.2,title)
+        txt.SetNDC(True)
+        for delta,title in [(0.72,'-1#sigma'),(0.82,'+2#sigma'),(0.5,'-1#sigma'),(0.4,'-2#sigma')]:
+            txt.DrawLatex(delta,0.91,title)
 
         txt=ROOT.TLatex()
         txt.SetNDC(True)

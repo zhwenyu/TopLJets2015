@@ -174,7 +174,7 @@ def printShapeSysts(dc,syst_dict,binName,shapeFiles):
 
     for s in allSysts:
         validShape=False
-        sline='%20s  shape   '%s
+        sline='%30s  shape   '%s
         for p in procList:
             if p in allSysts[s] and shapeIsPresent(shapeFiles[p],s,binName) and systIsConsistent(s,binName,p):
                 sline+='%15s'%'1'
@@ -200,20 +200,22 @@ def printBinByBinUncs(dc,binName,procList,shapeFiles):
         p=procList[i]
 
         #loop over all template histos and match bin-by-bin uncertainty name
-        matchTag='{0}_{1}_mlb_bin'.format(p,binName)
+        matchTags=['{0}_{1}_mlb_bin'.format(p,binName),
+                   '{0}_{1}_mlb_sysbin'.format(p,binName)]
         fIn=ROOT.TFile.Open(shapeFiles[p])
         for obj in fIn.Get(dirName).GetListOfKeys():
             objname=obj.GetName()
             if not 'Up' in objname: continue
-            if not matchTag in objname:continue
-            
-            #dump uncertainty to datacard
-            uncName=objname[0:-2]
-            sline='%20s  shape   '%uncName
-            for j in range(nprocs):
-                sline+='%15s'%('1' if j==i else '-')
-            dc.write(sline+'\n')
 
+            #dump uncertainty to datacard if it matches a tag
+            for m in matchTags:
+                if not m in objname: continue                        
+                uncName=objname[0:-2]
+                sline='%30s  shape   '%uncName
+                for j in range(nprocs):
+                    sline+='%15s'%('1' if j==i else '-')
+                dc.write(sline+'\n')
+                break
 
 def printRateSysts(dc,binName,procList):
     """ this dumps to the datacard a series of hardcoded rate systematics """
@@ -226,7 +228,7 @@ def printRateSysts(dc,binName,procList):
         ]
 
     for uncName,uncVal,whiteList,blackList in rateSysts:
-        sline='%20s  ln      '%uncName
+        sline='%30s  lnN     '%uncName
         for p in procList:
             hasSyst=True
             if whiteList and not p in whiteList: hasSyst=False

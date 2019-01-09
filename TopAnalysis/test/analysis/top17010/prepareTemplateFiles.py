@@ -147,6 +147,7 @@ def getBinByBinUncertainties(h):
 
     return histos
 
+
 def getBinByBinUncertaintiesForSysts(h,hvars):
     
     """loops over the bins of a template and build the bin-by-bin stat unc associated to systs"""
@@ -159,27 +160,26 @@ def getBinByBinUncertaintiesForSysts(h,hvars):
 
     for xbin in range(h.GetNbinsX()):
 
-        #reset contents in this bin
-        histos[xbin][0].SetBinContent(xbin+1,0)
-        histos[xbin][1].SetBinContent(xbin+1,0)
-
-        #build total uncertainty
+        #assign an uncertainty based on the max. found
+        unc=0
         for ihvar in hvars:
             ival = ihvar.GetBinContent(xbin+1)
             if ival==0: continue
             relUnc = ihvar.GetBinError(xbin+1)/ival
-            histos[xbin][0].SetBinContent(xbin+1,histos[xbin][0].GetBinContent(xbin+1)**2 + relUnc**2)
+            unc = max(unc,relUnc)
 
         #scale central yields up/down
         val=h.GetBinContent(xbin+1)
-        unc=ROOT.TMath.Sqrt(histos[xbin][0].GetBinContent(xbin+1))
         histos[xbin][0].SetBinContent(xbin+1, (1+unc)*val)
         histos[xbin][1].SetBinContent(xbin+1, (1-unc)*val)
 
     return histos
 
+
 def applySmoothing(h,ntoys=100,sigma=1):
+
     """ applies a Gaussian KDE smoothing to the histogram """
+
     print '[applySmoothing] with ',h.GetName(),'toys=',ntoys
     gfs=GFSmoother(h,ntoys=ntoys,sigma=sigma)
     h=gfs.smooth

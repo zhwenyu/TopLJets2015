@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import os,sys
 import optparse
 
@@ -9,7 +11,7 @@ def main():
     parser.add_option('-c', '--combine',
                       dest='combine',       
                       help='higgs combination tool location [%default]',
-                      default='/afs/cern.ch/user/p/psilva/work/CMSSW_10_3_0_pre2/src/HiggsAnalysis/CombinedLimit',
+                      default='/afs/cern.ch/user/p/psilva/work/CMSSW_10_3_0_pre4/src/HiggsAnalysis/CombinedLimit',
                       type='string')
     parser.add_option('-o', '--outdir',          
                       dest='outdir',       
@@ -48,7 +50,7 @@ def main():
     if len(args)>1:
         script.write('#combine cards\n')
         absPathArgs=[ '{0}={1}'.format(a.split('=')[0],os.path.abspath(a.split('=')[1])) for a in args ]
-        script.write('combineCards.py %s > datacard.dat\n'%' '.join(absPathArgs))
+        script.write('combineCards.py --noDirPrefix %s > datacard.dat\n'%' '.join(absPathArgs))
     else:
         script.write('#make local copy of the datacard\n')
         script.write('cat %s > datacard.dat\n'%os.path.abspath(args[0]))

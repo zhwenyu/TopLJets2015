@@ -155,24 +155,22 @@ case $WHAT in
         inputs=${inputs},${outdir}/${githash}/plots/syst_plotter.root
         inputs=${inputs},${outdir}/${githash}/plots/plotter_dydata.root
         output=${outdir}/${githash}/templates/
-        dists=em_mlb
-        #dists=${dists},ee_mlb,mm_mlb
-        #dists=${dists},emhighpt_mlb,emhighpt1b_mlb,emhighpt2b_mlb
-        #dists=${dists},emlowpt_mlb,emlowpt1b_mlb,emlowpt2b_mlb
-        #dists=${dists},eehighpt_mlb,eehighpt1b_mlb,eehighpt2b_mlb
-        #dists=${dists},eelowpt_mlb,eelowpt1b_mlb,eelowpt2b_mlb
-        #dists=${dists},mmhighpt_mlb,mmhighpt1b_mlb,mmhighpt2b_mlb
-        #dists=${dists},mmlowpt_mlb,mmlowpt1b_mlb,mmlowpt2b_mlb
-        python test/analysis/top17010/prepareTemplateFiles.py -i ${inputs} -d ${dists} -o ${output} --debug --bbbThr 0.05;
+        dists=em_mlb,ee_mlb,mm_mlb
+        dists=${dists},emhighpt_mlb,emhighpt1b_mlb,emhighpt2b_mlb
+        dists=${dists},emlowpt_mlb,emlowpt1b_mlb,emlowpt2b_mlb
+        dists=${dists},eehighpt_mlb,eehighpt1b_mlb,eehighpt2b_mlb
+        dists=${dists},eelowpt_mlb,eelowpt1b_mlb,eelowpt2b_mlb
+        dists=${dists},mmhighpt_mlb,mmhighpt1b_mlb,mmhighpt2b_mlb
+        dists=${dists},mmlowpt_mlb,mmlowpt1b_mlb,mmlowpt2b_mlb
+        python test/analysis/top17010/prepareTemplateFiles.py -i ${inputs} -d ${dists} -o ${output} --debug --bbbThr 0.005;
 
         ;;
 
     DATACARD )
         
-        dists=(em_mlb 
-            #ee_mlb mm_mlb 
-            #emhighpt_mlb emhighpt1b_mlb emhighpt2b_mlb 
-            #emlowpt_mlb emlowpt1b_mlb emlowpt2b_mlb
+        dists=(em_mlb ee_mlb mm_mlb
+            emhighpt_mlb emlowpt_mlb
+            emhighpt1b_mlb emhighpt2b_mlb emlowpt1b_mlb emlowpt2b_mlb
             #eehighpt_mlb eehighpt1b_mlb eehighpt2b_mlb
             #eelowpt_mlb eelowpt1b_mlb eelowpt2b_mlb
             #mmhighpt_mlb mmhighpt1b_mlb mmhighpt2b_mlb
@@ -186,7 +184,7 @@ case $WHAT in
             outname="${d/_mlb/}"
             opt="-d ${d} -o ${outname}_datacards"
             python test/analysis/top17010/prepareDataCard.py ${opt}/nom -s ${outdir}/${githash}/MC13TeV_2016_TTJets.root
-            exit
+            continue
             for s in ${scenarios[@]}; do
                 base_s=`basename ${s}`;
                 python test/analysis/top17010/prepareDataCard.py ${opt}/${base_s} -s ${s}/MC13TeV_2016_TTJets.root
@@ -197,8 +195,10 @@ case $WHAT in
     FIT )
         
         echo ""
-        echo "The fits have to be run with a dedicated script (tba)"
-        echo "If not yet installed please install the combination tool (TF version) as follows"
+        echo "The fits have to be run with a dedicated script"
+        echo "An example can be found test/analysis/top17010/steerFits.sh"
+        echo "(Note that the createFit.py script called there needs to be pointed to the location of the installation of the combination tool)"
+        echo "If not yet installed please install the combination tool (TensorFlow version) as follows"
         echo ""
         echo "cmsrel CMSSW_10_3_0_pre4"
         echo "cd CMSSW_10_3_0_pre4/src/"
