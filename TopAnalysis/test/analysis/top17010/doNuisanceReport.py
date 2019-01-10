@@ -19,8 +19,13 @@ def doNuisanceReport(args,outdir):
 
         title,url=args[i].split('=')
 
-        inF=ROOT.TFile.Open(url)
-        fitres=inF.Get('fitresults')
+        try:
+            inF=ROOT.TFile.Open(url)
+            fitres=inF.Get('fitresults')
+            fitres.GetEntriesFast()
+        except:
+            print '[doNuisanceReport] Unable to get results from',url
+            continue
 
         #get the names of systematics
         varVals=defaultdict(dict)
@@ -59,14 +64,12 @@ def doNuisanceReport(args,outdir):
 
         results.append( (title,varVals) )
 
+    if len(results)==0:
+        print '[doNuisanceReport] no valid results have been found'
+        return
+
     #form a list of the nuisances ordered by post-fit constrained values
     allVars=sorted(varsMaxConstr,key=varsMaxConstr.get)
-    
-    for _,varVals in results:
-        for v in varVals:
-            unc=min(varVals[v][1],varVals[v][2])
-
-    
 
     #show nuisances
     c=ROOT.TCanvas('c','c',500,500)
@@ -145,9 +148,13 @@ def doNuisanceReport(args,outdir):
 
         nuisGrs={}
         dy=1.0/float(len(results)+1)
-        for v in varList:
+
+        
+        for iv in range(len(varList)):
+            v=varList[iv]
+
             for ir in range(len(results)):
-                title,varVals=results[ir]
+                title,varVals=results[ir]                
                 if not title in nuisGrs:               
                     nuisGrs[title]=ROOT.TGraphAsymmErrors()
                     nuisGrs[title].SetTitle(title)
@@ -160,7 +167,7 @@ def doNuisanceReport(args,outdir):
                 if not v in varVals: continue
                 npts=nuisGrs[title].GetN()
                 val,uncLo,uncHi = varVals[v]
-                nuisGrs[title].SetPoint(npts,val,npts+dy*(ir+1))
+                nuisGrs[title].SetPoint(npts,val,iv+dy*(ir+1))
                 nuisGrs[title].SetPointError(npts,abs(uncLo),abs(uncHi),0.,0.)
                 
         leg=ROOT.TLegend(0.8,0.9,0.95,0.9-0.06*len(args))
@@ -203,8 +210,6 @@ def main():
     os.system('mkdir -p %s'%opt.outdir)
     doNuisanceReport(args,opt.outdir)
 
-"""
-for execution from another script
-"""
+
 if __name__ == "__main__":
     sys.exit(main())

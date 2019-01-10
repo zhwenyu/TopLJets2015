@@ -115,8 +115,6 @@ def systIsConsistent(sname,binName,proc):
     if sname=='msel'        and binName.find('ee')==0 : return False
     if sname.find('ees')==0 and binName.find('mm')==0 : return False
     if sname.find('mes')==0 and binName.find('ee')==0 : return False
-    
-
 
     return True
 

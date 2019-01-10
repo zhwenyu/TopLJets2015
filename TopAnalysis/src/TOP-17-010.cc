@@ -2,6 +2,7 @@
 #include <TROOT.h>
 #include <TH1.h>
 #include <TH2.h>
+#include <TKey.h>
 #include <TSystem.h>
 #include <TGraph.h>
 #include <TLorentzVector.h>
@@ -72,6 +73,18 @@ void TOP17010::init(UInt_t scenario){
         mc2mcCorr_[mc2mcCorNames[icor]]=(TGraphErrors *)mcCorF->Get(mc2mcTag+"/"+mc2mcCorNames[icor]);
       mcCorF->Close();
     }
+
+    //JER SF breakdown
+    TFile *jerSFF=TFile::Open("${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/top17010/jer_relunc.root");
+    TKey *key;
+    TIter next( jerSFF->GetListOfKeys());
+    while ((key = (TKey *) next())) {     
+      TString kname=key->GetName();
+      jerSFBreakdown_[kname]=(TH1 *)key->ReadObj();
+      jerSFBreakdown_[kname]->SetDirectory(0);
+    }
+    jerSFF->Close();
+      
   }
 
   t_ = (TTree*)f_->Get("analysis/data");
@@ -159,6 +172,7 @@ void TOP17010::bookHistograms() {
                           "btagup",  "btagdn",
                           "ltagup",  "ltagdn",
                           "JERup",       "JERdn",
+                          "JERstat","JERJEC", "JERPU", "JERPLI", "JERptCut", "JERtrunc", "JERpTdep", "JERSTmFE",
                           "topptup",     "topptdn",
                           "AbsoluteStatJECup","AbsoluteScaleJECup","AbsoluteMPFBiasJECup","FragmentationJECup","SinglePionECALJECup","SinglePionHCALJECup","FlavorPureGluonJECup","FlavorPureQuarkJECup","FlavorPureCharmJECup","FlavorPureBottomJECup","TimePtEtaJECup","RelativeJEREC1JECup","RelativeJEREC2JECup","RelativeJERHFJECup","RelativePtBBJECup","RelativePtEC1JECup","RelativePtEC2JECup","RelativePtHFJECup","RelativeBalJECup","RelativeFSRJECup","RelativeStatFSRJECup","RelativeStatECJECup","RelativeStatHFJECup","PileUpDataMCJECup","PileUpPtRefJECup","PileUpPtBBJECup","PileUpPtEC1JECup","PileUpPtEC2JECup","PileUpPtHFJECup",
                           "AbsoluteStatJECdn","AbsoluteScaleJECdn","AbsoluteMPFBiasJECdn","FragmentationJECdn","SinglePionECALJECdn","SinglePionHCALJECdn","FlavorPureGluonJECdn","FlavorPureQuarkJECdn","FlavorPureCharmJECdn","FlavorPureBottomJECdn","TimePtEtaJECdn","RelativeJEREC1JECdn","RelativeJEREC2JECdn","RelativeJERHFJECdn","RelativePtBBJECdn","RelativePtEC1JECdn","RelativePtEC2JECdn","RelativePtHFJECdn","RelativeBalJECdn","RelativeFSRJECdn","RelativeStatFSRJECdn","RelativeStatECJECdn","RelativeStatHFJECdn","PileUpDataMCJECdn","PileUpPtRefJECdn","PileUpPtBBJECdn","PileUpPtEC1JECdn","PileUpPtEC2JECdn","PileUpPtHFJECdn",
@@ -515,7 +529,7 @@ void TOP17010::runAnalysis()
           if(sname.Contains("PileUpPtEC1"))      jecIdx=26; 
           if(sname.Contains("PileUpPtEC2"))      jecIdx=27; 
           if(sname.Contains("PileUpPtHF"))       jecIdx=28;
-          
+        
           //re-scale and re-select jets
           std::vector<Jet> newJets = selector_->getGoodJets(ev_,20.,2.4,leptons);
           applyMC2MC(newJets);
@@ -528,7 +542,18 @@ void TOP17010::runAnalysis()
             //shift jet energy
             float scaleVar(1.0);
             if(jecIdx<0) {
-              scaleVar=isUpVar ? ev_.j_jerUp[idx] : ev_.j_jerDn[idx];
+              float jerUnc=1-(isUpVar ? ev_.j_jerUp[idx] : ev_.j_jerDn[idx]);
+              float jerUncSgn(jerUnc<0 ? -1 : 1);
+              jerUnc=fabs(jerUnc);
+              if(sname=="JERstat")   jerUnc *= getJERSFBreakdown("stat", fabs(j.eta()));
+              if(sname=="JERJEC")    jerUnc *= max(getJERSFBreakdown("JECup", fabs(j.eta())), getJERSFBreakdown("JECdown", fabs(j.eta())));
+              if(sname=="JERPU")     jerUnc *= max(getJERSFBreakdown("PUup",  fabs(j.eta())), getJERSFBreakdown("PUudown", fabs(j.eta())));
+              if(sname=="JERPLI")    jerUnc *= max(getJERSFBreakdown("PLIup", fabs(j.eta())), getJERSFBreakdown("PLIdown", fabs(j.eta())));
+              if(sname=="JERptCut")  jerUnc *= getJERSFBreakdown("ptCut", fabs(j.eta()));
+              if(sname=="JERtrunc")  jerUnc *= getJERSFBreakdown("trunc", fabs(j.eta()));
+              if(sname=="JERpTdep")  jerUnc *= getJERSFBreakdown("pTdep", fabs(j.eta()));
+              if(sname=="JERSTmFE")  jerUnc *= getJERSFBreakdown("STmFE", fabs(j.eta()));
+              scaleVar*=(1+jerUncSgn*jerUnc);
             } 
             else {
               bool flavorMatches(true);
@@ -667,4 +692,11 @@ void TOP17010::applyMC2MC(std::vector<Jet> &jetColl) {
     if(mc2mcVal>0.9 && mc2mcVal<1.1) jetColl[i] *= 1./mc2mcVal;
   }
 
+}
+
+//
+float TOP17010::getJERSFBreakdown(TString key,float abseta){
+  if(jerSFBreakdown_.find(key)==jerSFBreakdown_.end()) return 1.0;
+  int xbin=jerSFBreakdown_[key]->GetXaxis()->FindBin(abseta);
+  return jerSFBreakdown_[key]->GetBinContent(xbin);
 }

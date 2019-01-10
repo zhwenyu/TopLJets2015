@@ -148,7 +148,7 @@ def getBinByBinUncertainties(h):
     return histos
 
 
-def getBinByBinUncertaintiesForSysts(h,hvars):
+def getBinByBinUncertaintiesForSysts(h,hvars,byMax=False):
     
     """loops over the bins of a template and build the bin-by-bin stat unc associated to systs"""
     
@@ -166,7 +166,13 @@ def getBinByBinUncertaintiesForSysts(h,hvars):
             ival = ihvar.GetBinContent(xbin+1)
             if ival==0: continue
             relUnc = ihvar.GetBinError(xbin+1)/ival
-            unc = max(unc,relUnc)
+            if byMax:
+                unc = max(unc,relUnc)
+            else:
+                unc += relUnc**2
+
+        #finalize computation of total unc. for this bin
+        if not byMax: unc=ROOT.TMath.Sqrt(unc)
 
         #scale central yields up/down
         val=h.GetBinContent(xbin+1)

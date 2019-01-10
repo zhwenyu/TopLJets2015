@@ -61,11 +61,11 @@ def getScanPoint(inDir):
         
 
 
-def doContour(data,
+def doContour(data,outdir,              
+              method='linear',
               levels=[2.30,4.61,9.21],
               levelLabels=['68.3%','90%','99%'],
-              linestyles=['-','-','-']
-):
+              linestyles=['-','-','-']):
 
     """ interpolates the grid to obtain the likelihood contour 
     2 parameter fit levels (see PDG Statistics Table 38.2) """
@@ -78,13 +78,13 @@ def doContour(data,
     #interpolate and find minimum
     xi = np.linspace(169.5, 175.5,100)
     yi = np.linspace(0.7,4.0,100)
-    zi = griddata((x, y), z, (xi[None,:], yi[:,None]), method='linear')
+    zi = griddata((x, y), z, (xi[None,:], yi[:,None]), method=method)
     minz=zi.min()
     bestFitIdx = np.where(zi==minz)
     bestX=xi[ bestFitIdx[1][0] ]
     bestY=yi[ bestFitIdx[0][0] ]
-    zi = 2*(zi-minz)
-    z  = 2*(z-minz)
+    zi=(zi-minz)*2
+    z=(z-minz)*2
 
     fig, ax = plt.subplots()
     cntr=ax.contour(xi, yi, zi, levels=levels, linewidths=1.0, linestyles=linestyles, colors='k')
@@ -111,7 +111,8 @@ def doContour(data,
     ax.text(1.0,1.02,r'34.5 fb$^{-1}$ (13 TeV)', transform=ax.transAxes,horizontalalignment='right',fontsize=14)
     ax.legend(framealpha=0.0, fontsize=14, loc='upper left', numpoints=1)
 
-    plt.savefig('test_contour.png')
+    for ext in ['png','pdf']:
+        plt.savefig(os.path.join(outdir,'nllcontour.%s'%ext))
 
 
 def main():
@@ -123,19 +124,25 @@ def main():
                       help='input directory [%default]',  
                       default='store/TOP17010/fit_results/em_inc',
                       type='string')
+    parser.add_option('-o', '--out',          
+                      dest='outdir',
+                      help='output directory [%default]',  
+                      default='store/TOP17010/fit_results/em_inc',
+                      type='string')
     (opt, args) = parser.parse_args()
 
 
     #build nll scan
     fitres=[]
     for f in os.listdir(opt.input):
-        #if 'nom' in f: continue
-        fitres.append( getScanPoint(inDir=os.path.join(opt.input,f)) )
+        scanRes=getScanPoint(inDir=os.path.join(opt.input,f))
+        if not scanRes[-1]: continue
+        fitres.append( scanRes )
     fitres=np.array(fitres)
 
-    doContour(fitres)
+    #plot the contour interpolating the available points
+    doContour(fitres,outdir=opt.outdir)
     
-
 
 if __name__ == "__main__":
     sys.exit(main())
