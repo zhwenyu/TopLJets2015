@@ -116,7 +116,7 @@ def main():
 
     #generate the jobs
     njobs=generateJobs(scanAnchors,signals,opt)
-    print '%d jobs submitted to create the scan datacards in datacard_condor.sub'%njobs
+    print '%d jobs will be submitted to create the likelihood scan datacards - see datacard_condor.sub'%njobs
 
     os.system('condor_submit datacard_condor.sub')
 
