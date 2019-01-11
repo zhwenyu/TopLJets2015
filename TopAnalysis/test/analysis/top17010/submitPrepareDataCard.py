@@ -59,15 +59,18 @@ def generateJobs(scanAnchors,signals,opt):
     condor.write('log         = datacard_condor.log\n')
     condor.write('+JobFlavour = "workday"\n')
 
-    dataStr='+'.join(signals)
+    dataStr=''
+    for s in signals:
+        dataStr='dataDef=%s %s'%(s,dataStr)
+    
     script='{0}/src/TopLJets2015/TopAnalysis/test/analysis/top17010/prepareDataCard.py'.format(cmssw_base)
-    condor.write('arguments = %s %s -d $(dist) -t %s --data \\"%s\\" -s $(anchor) -o %s --systs %s\n'%(cmssw_base,script,opt.templ,dataStr,opt.outDir,opt.systs))
+    condor.write('arguments = %s %s -d $(dist) -t %s %s -s $(anchor) -o %s --systs %s\n'%(cmssw_base,script,opt.templ,dataStr,opt.outDir,opt.systs))
     condor.write('queue dist, anchor from (\n')
     ijobs=0
     for d in opt.dists.split(','):
         for a in scanAnchors:
             condor.write('%s %s\n'%(d,','.join(a)))
-            ijobs+=1
+            ijobs+=1     
     condor.write(')\n')
 
     condor.close()

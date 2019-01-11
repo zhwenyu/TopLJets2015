@@ -69,12 +69,12 @@
                 "PDFenv"              : [["PDF001", "PDF002", "PDF003", "PDF004", "PDF005", "PDF006", "PDF007", "PDF008", "PDF009", "PDF010", "PDF011", "PDF012", "PDF013", "PDF014", "PDF015", "PDF016", "PDF017", "PDF018", "PDF019", "PDF020", "PDF021", "PDF022", "PDF023", "PDF024", "PDF025", "PDF026", "PDF027", "PDF028", "PDF029", "PDF030", "PDF031", "PDF032", "PDF033", "PDF034", "PDF035", "PDF036", "PDF037", "PDF038", "PDF039", "PDF040", "PDF041", "PDF042", "PDF043", "PDF044", "PDF045", "PDF046", "PDF047", "PDF048", "PDF049", "PDF050", "PDF051", "PDF052", "PDF053", "PDF054", "PDF055", "PDF056", "PDF057", "PDF058", "PDF059", "PDF060", "PDF061", "PDF062", "PDF063", "PDF064", "PDF065", "PDF066", "PDF067", "PDF068", "PDF069", "PDF070", "PDF071", "PDF072", "PDF073", "PDF074", "PDF075", "PDF076", "PDF077", "PDF078", "PDF079", "PDF080", "PDF081", "PDF082", "PDF083", "PDF084", "PDF085", "PDF086", "PDF087", "PDF088", "PDF089", "PDF090", "PDF091", "PDF092", "PDF093", "PDF094", "PDF095", "PDF096", "PDF097", "PDF098", "PDF099", "PDF100"],                                                   true, true  , false ]
             },
          "dir":{
-                "ISR"                 : [["t#bar{t} isrup",    "t#bar{t} isrdn"],    true, true  , false],
-                "hdamp"               : [["t#bar{t} hdampup",  "t#bar{t} hdampdn"],  true, false , false],
-                "FSR"                 : [["t#bar{t} fsrup",    "t#bar{t} fsrdn"],    true, true  , false],
-                "UE"                  : [["t#bar{t} ueup",     "t#bar{t} uedn"],     true, true  , false],
-                "CR"                  : [["t#bar{t} erdon"],                         true, false , false],
-                "CRqcdModel"          : [["t#bar{t} qcdBased"],                      true, false , false]
+                "ISR"                 : [["t#bar{t}isrup",    "t#bar{t}isrdn"],    true, true  , false],
+                "hdamp"               : [["t#bar{t}hdampup",  "t#bar{t}hdampdn"],  true, false , false],
+                "FSR"                 : [["t#bar{t}fsrup",    "t#bar{t}fsrdn"],    true, true  , false],
+                "UE"                  : [["t#bar{t}ueup",     "t#bar{t}uedn"],     true, true  , false],
+                "CR"                  : [["t#bar{t}erdon"],                        true, false , false],
+                "CRqcdModel"          : [["t#bar{t}qcdBased"],                     true, false , false]
          }
       },
 

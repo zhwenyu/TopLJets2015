@@ -57,7 +57,7 @@ def customizeSignalShapes(binName,sigName,sigF,baseSigF,outDir):
 def customizeData(binName,dataDef,bkgList,templDir,outDir):
 
     """ customizes data to use as observation """
-
+    dataDef=dataDef.replace("\"","")
     dataType,dataF,dataHisto=dataDef.split(',')
 
     #get the data
@@ -249,7 +249,7 @@ def printRateSysts(dc,binName,procList):
 
 def main():
 
-    usage = 'usage: %prog [options]'
+    usage = 'usage: %prog dataDef1="type1,plotter1,dir1" ... [options]'
     parser = optparse.OptionParser(usage)
     parser.add_option('-d', '--dist',          
                       dest='dist',       
@@ -260,11 +260,6 @@ def main():
                       dest='templ',
                       help='template directory [%default]',  
                       default='/eos/cms/store/cmst3/group/top/TOP17010/0c522df/templates',
-                      type='string')
-    parser.add_option('--data',
-                      dest='data',
-                      help='a + separated list type(sig/data),file,histo_to_use [%default]',  
-                      default='sig,/eos/cms/store/cmst3/group/top/TOP17010/0c522df/plots/plotter.root,em_mlb/em_mlb_t#bar{t}',
                       type='string')
     parser.add_option('-s', '--sig',
                       dest='signal',
@@ -309,11 +304,11 @@ def main():
 
     #customize data
     dataFiles=[customizeData(binName=cat,
-                             dataDef=dataDef,
+                             dataDef=dataDef.split("=")[1],
                              bkgList=procList[1:],
                              templDir=opt.templ,
                              outDir=opt.outDir)
-               for dataDef in opt.data.split('+') ]
+               for dataDef in args]
         
     #dump the template datacard
     dcTemplURL=os.path.join(opt.outDir,'datacard.dat.templ')

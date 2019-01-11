@@ -9,4 +9,5 @@ cd -
 
 #run with the arguments passed
 shift
+echo $@
 $*
