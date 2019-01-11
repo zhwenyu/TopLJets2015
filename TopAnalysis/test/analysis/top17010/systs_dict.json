@@ -22,7 +22,6 @@
                 "eesscalet"           : [["ees7up",                "ees7dn"],                true, false  , false],
                 "beff"                : [["btagup",                "btagdn"],                true, false  , false],
                 "leff"                : [["ltagup",                "ltagdn"],                true, false  , false],
-                "JER"                 : [["JERup",                 "JERdn"],                 true, true   , false],
                 "JERstat"             : [["JERstat"],                                        true, true   , false],
                 "JERJEC"              : [["JERJEC"],                                         true, true   , false],
                 "JERPU"               : [["JERPU"],                                          true, true   , false],
@@ -74,7 +73,8 @@
                 "hdamp"               : [["t#bar{t} hdampup",  "t#bar{t} hdampdn"],  true, false , false],
                 "FSR"                 : [["t#bar{t} fsrup",    "t#bar{t} fsrdn"],    true, true  , false],
                 "UE"                  : [["t#bar{t} ueup",     "t#bar{t} uedn"],     true, true  , false],
-                "CR"                  : [["t#bar{t} erdon"],                         true, false , false]
+                "CR"                  : [["t#bar{t} erdon"],                         true, false , false],
+                "CRqcdModel"          : [["t#bar{t} qcdBased"],                      true, false , false]
          }
       },
 

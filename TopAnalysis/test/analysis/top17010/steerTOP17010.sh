@@ -42,6 +42,13 @@ fi
 
 gtList=(0.7 0.75 0.8 0.85 0.9 0.95 1.0 1.05 1.1 1.15 1.2 1.25 1.3 1.35 1.4 1.45 1.5 1.55 1.6 1.65 1.7 1.75 1.85 1.9 1.95 2.0 2.2 2.4 2.6 2.8 3.0 4.0)
 mtList=(169.5 170 170.5 171 171.5 172 172.5 173 173.5 174 174.5 175 175.5)
+dists=em_mlb,ee_mlb,mm_mlb
+dists=${dists},emhighpt_mlb,emhighpt1b_mlb,emhighpt2b_mlb
+dists=${dists},emlowpt_mlb,emlowpt1b_mlb,emlowpt2b_mlb
+dists=${dists},eehighpt_mlb,eehighpt1b_mlb,eehighpt2b_mlb
+dists=${dists},eelowpt_mlb,eelowpt1b_mlb,eelowpt2b_mlb
+dists=${dists},mmhighpt_mlb,mmhighpt1b_mlb,mmhighpt2b_mlb
+dists=${dists},mmlowpt_mlb,mmlowpt1b_mlb,mmlowpt2b_mlb
 
 echo "Selection adapted to YEAR=${ERA}, inputs from ${eosdir}"
 
@@ -155,40 +162,18 @@ case $WHAT in
         inputs=${inputs},${outdir}/${githash}/plots/syst_plotter.root
         inputs=${inputs},${outdir}/${githash}/plots/plotter_dydata.root
         output=${outdir}/${githash}/templates/
-        dists=em_mlb,ee_mlb,mm_mlb
-        dists=${dists},emhighpt_mlb,emhighpt1b_mlb,emhighpt2b_mlb
-        dists=${dists},emlowpt_mlb,emlowpt1b_mlb,emlowpt2b_mlb
-        dists=${dists},eehighpt_mlb,eehighpt1b_mlb,eehighpt2b_mlb
-        dists=${dists},eelowpt_mlb,eelowpt1b_mlb,eelowpt2b_mlb
-        dists=${dists},mmhighpt_mlb,mmhighpt1b_mlb,mmhighpt2b_mlb
-        dists=${dists},mmlowpt_mlb,mmlowpt1b_mlb,mmlowpt2b_mlb
         python test/analysis/top17010/prepareTemplateFiles.py -i ${inputs} -d ${dists} -o ${output} --debug --bbbThr 0.005;
 
         ;;
 
     DATACARD )
-        
-        dists=(em_mlb ee_mlb mm_mlb
-            emhighpt_mlb emlowpt_mlb
-            emhighpt1b_mlb emhighpt2b_mlb emlowpt1b_mlb emlowpt2b_mlb
-            eehighpt_mlb eehighpt1b_mlb eehighpt2b_mlb
-            eelowpt_mlb eelowpt1b_mlb eelowpt2b_mlb
-            mmhighpt_mlb mmhighpt1b_mlb mmhighpt2b_mlb
-            mmlowpt_mlb mmlowpt1b_mlb mmlowpt2b_mlb
-        )
-        scenarios=(`find ${outdir}/${githash}/ -maxdepth 1 | grep scenario`)
-        echo "I have ${#dists[@]} distributions for ${#scenarios[@]} signal scenarios... this may take a while"
 
-        for d in ${dists[@]}; do 
-            echo "Generating datacards for ${d}"
-            outname="${d/_mlb/}"
-            opt="-d ${d} --data sig,/eos/cms/store/cmst3/group/top/TOP17010/0c522df/plots/plotter.root,${d}/${d}_t#bar{t}"            
-            python test/analysis/top17010/prepareDataCard.py ${opt} -o ${outname}_datacards/nom -s ${outdir}/${githash}/MC13TeV_2016_TTJets.root
-            for s in ${scenarios[@]}; do
-                base_s=`basename ${s}`;
-                python test/analysis/top17010/prepareDataCard.py ${opt}  -o ${outname}_datacards/${base_s} -s ${s}/MC13TeV_2016_TTJets.root
-            done
-        done
+        python test/analysis/top17010/submitPrepareDataCard.py --dists ${dists} \
+            --systs ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/top17010/systs_dict.json \
+            --templ ${outdir}/${githash}/templates \
+            --nom MC13TeV_${ERA}_TTJets.root \
+            -o ${outdir}/${githash}/datacards
+
         ;;
 
     FIT )

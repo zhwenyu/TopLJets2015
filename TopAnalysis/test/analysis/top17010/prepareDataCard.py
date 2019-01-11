@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import os
 import sys
 import optparse
@@ -240,10 +242,10 @@ def main():
 
     usage = 'usage: %prog [options]'
     parser = optparse.OptionParser(usage)
-    parser.add_option('--systs',          
-                      dest='systs',       
-                      help='description of the systematics [%default]',
-                      default='test/analysis/top17010/systs_dict.json',
+    parser.add_option('-d', '--dist',          
+                      dest='dist',       
+                      help='distribution',
+                      default=None,
                       type='string')
     parser.add_option('-t', '--templ',          
                       dest='templ',
@@ -252,23 +254,23 @@ def main():
                       type='string')
     parser.add_option('--data',
                       dest='data',
-                      help='data type(sig/data),file,histo [%default]',  
+                      help='a + separated list type(sig/data),file,histo_to_use [%default]',  
                       default='sig,/eos/cms/store/cmst3/group/top/TOP17010/0c522df/plots/plotter.root,em_mlb/em_mlb_t#bar{t}',
                       type='string')
     parser.add_option('-s', '--sig',
                       dest='signal',
-                      help='template directory [%default]',  
-                      default='/eos/cms/store/cmst3/group/top/TOP17010/0c522df/templates',
+                      help='signal to use in the datacard to fit the data [%default]',  
+                      default=None,
                       type='string')
     parser.add_option('-o', '--outdir',          
                       dest='outDir',
                       help='output directory [%default]',  
                       default='datacard',
                       type='string')
-    parser.add_option('-d', '--dist',          
-                      dest='dist',       
-                      help='distribution',
-                      default=None,
+    parser.add_option('--systs',          
+                      dest='systs',       
+                      help='description of the systematics [%default]',
+                      default='test/analysis/top17010/systs_dict.json',
                       type='string')
     (opt, args) = parser.parse_args()
 
