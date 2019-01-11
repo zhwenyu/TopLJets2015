@@ -204,7 +204,9 @@ case $WHAT in
         anchors=(`ls ${outdir}/${githash}/datacards/em`)
         signals=(`ls ${outdir}/${githash}/datacards/em/nom/*datacard.dat`)
 
-        echo "Preparing submission of create fit scripts"
+        echo "${#anchors[@]} anchors for ${#signals[@]} data/signals... it may take a while to prepare all the scripts to submit"
+
+        echo "Preparing submission of create fit scripts (A)"
         condor_prep=fitprep${FITTYPE}_condor.sub
         echo "executable  = ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh" > $condor_prep
         echo "output      = ${condor_prep}.out" >> $condor_prep
@@ -236,7 +238,7 @@ case $WHAT in
             done
         done
 
-        echo "Preparing submission of fits"
+        echo "Preparing submission of fits (B)"
         condor_fit=fit${FITTYPE}_condor.sub
         echo "executable  = ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/top17010/runFitWrapper.sh" > $condor_fit
         echo "output      = ${condor_fit}.out" >> $condor_fit
@@ -255,7 +257,7 @@ case $WHAT in
         done        
 
 
-        echo "Submitting both jobs as a DAG"
+        echo "Submitting both jobs as a simple DAG (A->B)"
         condor_dag=fit${FITTYPE}_condor.dag
         echo "JOB A ${condor_prep}" > $condor_dag
         echo "JOB B ${condor_fit}" >> $condor_dag
