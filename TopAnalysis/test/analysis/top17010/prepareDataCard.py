@@ -66,9 +66,9 @@ def customizeData(binName,dataDef,bkgList,templDir,outDir):
     dataH.SetDirectory(0)
     inF.Close()
     
-
-    #sum up signal to background expectations if dataType is 'sig' type
-    #and round each bin to an integer
+    #specific for pseudo-data
+    #sum up signal to background expectations when dataType is 'sig' type
+    #round each bin to an integer
     if dataType=='sig':
         for proc in bkgList:
             inF=ROOT.TFile.Open('{0}/templates_{1}.root'.format(templDir,proc))
@@ -79,14 +79,23 @@ def customizeData(binName,dataDef,bkgList,templDir,outDir):
         for xbin in range(dataH.GetNbinsX()):
             dataH.SetBinContent(xbin+1,int(dataH.GetBinContent(xbin+1)))
     
+        dataType=dataH.GetTitle()
+        for tkn in [' ','#','_','^','{','}',',',':','+','-']:
+            dataType=dataType.replace(tkn,'')
+        dataType=dataType.replace('.','p')
+        dataType='pseudodata.%s'%dataType
+
     #save to file
-    fOut=ROOT.TFile.Open(os.path.join(outDir,'data.shapes.root'),'RECREATE')
+    dataShapesURL=os.path.join(outDir,'%s.shapes.root'%dataType)
+    fOut=ROOT.TFile.Open(dataShapesURL,'RECREATE')
     fdir=fOut.mkdir('{0}_mlb'.format(binName))
     fdir.cd()
     dataH.SetTitle('')
     dataH.SetDirectory(fdir)
     dataH.Write('data_obs')
     fOut.Close()
+
+    return dataShapesURL
 
 def shapeIsPresent(url,sname,binName):
 
@@ -141,7 +150,7 @@ def printHeader(dc,binName,procList,templDir,outDir):
         templFile='{0}/templates_{1}.root'.format(templDir,procList[i]) if i>0 else os.path.join(outDir,'{0}.shapes.root'.format(procList[0]))
         dc.write('shapes {0} {1} {2} $CHANNEL_mlb/central $CHANNEL_mlb/$SYSTEMATIC\n'.format(procList[i],binName,templFile))
         shapeFiles[procList[i]]=templFile
-    dc.write('shapes data_obs {0} {1}/data.shapes.root $CHANNEL_mlb/$PROCESS $CHANNEL_mlb/$PROCESS_$SYSTEMATIC \n'.format(binName,outDir))
+    dc.write('shapes data_obs {0} {1}/_DATAOBSSHAPES_ $CHANNEL_mlb/$PROCESS $CHANNEL_mlb/$PROCESS_$SYSTEMATIC \n'.format(binName,outDir))
     dc.write('-'*50 + '\n')
     dc.write('bin %s\n'%binName)
     dc.write('observation -1\n')
@@ -274,38 +283,41 @@ def main():
                       type='string')
     (opt, args) = parser.parse_args()
 
-    #prepare output directory
-    os.system('mkdir -p %s'%opt.outDir)
-
-    #decode systematics map from the json file
-    with open(opt.systs,'r') as cache:
-        syst_dict=json.load( cache, encoding='utf-8', object_pairs_hook=OrderedDict ).items()
-       
     #category
     cat=opt.dist.split('_')[0]
 
-    #process list
+    #signal to use in the fit
+    sigName,sigFile=opt.signal.split(',')
+
+    #prepare output directory (append category and signal name
+    opt.outDir='%s/%s/%s'%(opt.outDir,cat,sigName)
+    os.system('mkdir -p %s'%opt.outDir)
+
+    #decode process and systs needed from the json file
+    with open(opt.systs,'r') as cache:
+        syst_dict=json.load( cache, encoding='utf-8', object_pairs_hook=OrderedDict ).items()
     procList=[x for x,_ in syst_dict]
+
 
     #customize signal shapes
     sigName=syst_dict[0][0]
     customizeSignalShapes(binName=cat,
                           sigName=sigName,
-                          sigF=opt.signal,
+                          sigF=sigFile,
                           baseSigF=os.path.join(opt.templ,'templates_%s.root'%sigName),
                           outDir=opt.outDir)
 
     #customize data
-    customizeData(binName=cat,
-                  dataDef=opt.data,
-                  bkgList=procList[1:],
-                  templDir=opt.templ,
-                  outDir=opt.outDir)
-                  
-
-
-    #dump the datacard
-    with open(os.path.join(opt.outDir,'datacard.dat'),'w') as dc:
+    dataFiles=[customizeData(binName=cat,
+                             dataDef=dataDef,
+                             bkgList=procList[1:],
+                             templDir=opt.templ,
+                             outDir=opt.outDir)
+               for dataDef in opt.data.split('+') ]
+        
+    #dump the template datacard
+    dcTemplURL=os.path.join(opt.outDir,'datacard.dat.templ')
+    with open(dcTemplURL,'w') as dc:
         shapeFiles=printHeader(dc=dc,
                                binName=cat,
                                procList=procList,
@@ -315,17 +327,21 @@ def main():
                         syst_dict=syst_dict,
                         binName=cat,
                         shapeFiles=shapeFiles)
-        
         printBinByBinUncs(dc=dc,
                           procList=procList,
                           binName=cat,
                           shapeFiles=shapeFiles)    
-
         printRateSysts(dc=dc,
                        binName=cat,
                        procList=procList)
 
-
+    #customize for the different data
+    for dataURL in dataFiles: 
+        fname=os.path.basename(dataURL)
+        tag=fname.split('.')[1]
+        if tag=='shapes' : tag='data'
+        dcURL=os.path.join(opt.outDir,'%s.datacard.dat'%tag)
+        os.system("sed s/_DATAOBSSHAPES_/%s/g < %s > %s"%(fname,dcTemplURL,dcURL))
 
 if __name__ == "__main__":
     sys.exit(main())

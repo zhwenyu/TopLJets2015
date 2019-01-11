@@ -1,15 +1,12 @@
 #!/bin/bash
 
-#determine CMSSW config
-SCRIPT=$(readlink -f $0)
-SCRIPTPATH=`dirname $SCRIPT`
-WORKDIR=`dirname ${SCRIPTPATH}`
-
 #configure environment
+WORKDIR=${1}/src
+echo "Setting environment from $WORKDIR"
 cd $WORKDIR
 eval `scram r -sh`
 cd -
 
 #run with the arguments passed
-echo $@
-#$*
+shift
+$*

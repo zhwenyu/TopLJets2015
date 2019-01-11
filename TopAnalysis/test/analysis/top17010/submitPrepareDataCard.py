@@ -60,8 +60,8 @@ def generateJobs(scanAnchors,signals,opt):
     condor.write('+JobFlavour = "workday"\n')
 
     dataStr='+'.join(signals)
-    script='%s/src/TopLJets2015/TopAnalysis/test/analysis/top17010/prepareDataCard.py'%cmssw_base
-    condor.write('arguments = %s -d $(dist) -t %s --data \\"%s\\" -s $(anchor) -o %s --systs %s\n'%(script,opt.templ,dataStr,opt.outDir,opt.systs))
+    script='{0}/src/TopLJets2015/TopAnalysis/test/analysis/top17010/prepareDataCard.py'.format(cmssw_base)
+    condor.write('arguments = %s %s -d $(dist) -t %s --data \\"%s\\" -s $(anchor) -o %s --systs %s\n'%(cmssw_base,script,opt.templ,dataStr,opt.outDir,opt.systs))
     condor.write('queue dist, anchor from (\n')
     ijobs=0
     for d in opt.dists.split(','):
