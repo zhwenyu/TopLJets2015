@@ -2,7 +2,9 @@
 
 ERA=2016
 STORAGE=""
-while getopts "o:y:s:" opt; do
+FITTYPE="em_inc"
+COMBINE=`dirname ${CMSSW_BASE}`/CMSSW_10_3_0_pre4
+while getopts "o:y:s:f:c:" opt; do
     case "$opt" in
         o) WHAT=$OPTARG
             ;;
@@ -10,11 +12,15 @@ while getopts "o:y:s:" opt; do
             ;;
         s) STORAGE=$OPTARG
             ;;
+        f) FITTYPE=$OPTARG
+            ;;
+        c) COMBINE=$OPTARG
+            ;;
     esac
 done
 
 if [ -z "$WHAT" ]; then 
-    echo "steerTopWidth.sh -o <SEL/MERGE/...> [-y 2016/7] [-h higgs_combine]";
+    echo "steerTopWidth.sh -o <SEL/MERGE/...> [-y 2016/7] [-c higgs_combine] [-f fit_type]";
     echo "        PREPARE      - prepare analysis: resolution study + MC2MC corrections"
     echo "        TESTSEL      - test selection locally"
     echo "        SEL          - launches selection jobs to the batch, output will contain summary trees and control plots"; 
@@ -25,7 +31,7 @@ if [ -z "$WHAT" ]; then
     echo "        BKG          - performs an estiation of the DY bacgrkound from data"
     echo "        TEMPL        - prepares the ROOT files with the template histograms"
     echo "        DATACARD     - prepares the datacards for combine"
-    echo "        FIT          - this is a dummy step with the instructions to setup combine (tensorflow version)"
+    echo "        FIT          - this submits the fits to condor (additional instructions are printed"
     echo "        WWW          - move plots to web-based (if given \"extra\" is appended to the directory)"
     exit 1; 
 fi
@@ -192,6 +198,70 @@ case $WHAT in
         echo "scram b -j 8"
         echo "source /afs/cern.ch/user/b/bendavid/work/cmspublic/pythonvenv/tensorflowfit_h5py/bin/activate"
         echo "" 
+        echo "Having that said I will now try to run with the following combine location $COMBINE"
+        echo "" 
+
+        anchors=(`ls ${outdir}/${githash}/datacards/em`)
+        signals=(`ls ${outdir}/${githash}/datacards/em/nom/*datacard.dat`)
+
+        echo "Preparing submission of create fit scripts"
+        condor_prep=fitprep${FITTYPE}_condor.sub
+        echo "executable  = ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/scripts/wrapLocalAnalysisRun.sh" > $condor_prep
+        echo "output      = ${condor_prep}.out" >> $condor_prep
+        echo "error       = ${condor_prep}.err" >> $condor_prep
+        echo "log         = ${condor_prep}.log" >> $condor_prep
+        echo "+JobFlavour = \"workday\"" >> $condor_prep        
+        for a in ${anchors[@]}; do
+            a=`basename ${a}`;
+
+            for s in ${signals[@]}; do                
+                out="${outdir}/${githash}/fits/${FITTYPE}/${a}"
+                tag=`basename $s | cut -f -1 -d "."`
+                
+                args=""
+                if [ "${FITTYPE}" == "em_inc" ]; then
+                    args="${outdir}/${githash}/datacards/em/${a}/${tag}.datacard.dat"
+                else
+                    echo "fit type=${FITTYPE} is not yet implemented... quitting"
+                    exit -1
+                fi
+
+                extraOpts=""
+                if [ "${a}" == "nom" ]; then
+                    extraOpts="-a -t 50"
+                fi
+
+                echo "arguments   = ${CMSSW_BASE} ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/top17010/createFit.py -o ${out} ${extraOpts} -c ${COMBINE} --tag ${tag} ${args}" >> $condor_prep
+                echo "queue 1" >> $condor_prep
+            done
+        done
+
+        echo "Preparing submission of fits"
+        condor_fit=fit${FITTYPE}_condor.sub
+        echo "executable  = ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/top17010/runFitWrapper.sh" > $condor_fit
+        echo "output      = ${condor_fit}.out" >> $condor_fit
+        echo "error       = ${condor_fit}.err" >> $condor_fit
+        echo "log         = ${condor_fit}.log" >> $condor_fit
+        echo "+JobFlavour = \"workday\"" >> $condor_fit        
+        for a in ${anchors[@]}; do
+            dir="${outdir}/${githash}/fits/${FITTYPE}/${a}"
+            echo "arguments   = ${dir}/runFit_\$(tag).sh" >> $condor_fit
+            echo "queue tag from (" >> $condor_fit
+            for s in ${signals[@]}; do
+                tag=`basename $s | cut -f -1 -d "."`
+                echo " ${tag}" >> $condor_fit
+            done
+            echo ")" >> $condor_fit
+        done        
+
+
+        echo "Submitting both jobs as a DAG"
+        condor_dag=fit${FITTYPE}_condor.dag
+        echo "JOB A ${condor_prep}" > $condor_dag
+        echo "JOB B ${condor_fit}" >> $condor_dag
+        echo "PARENT A CHILD B" >> $condor_dag
+        condor_submit_dag $condor_dag
+
         ;;
 
     WWW )

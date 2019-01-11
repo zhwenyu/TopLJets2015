@@ -28,6 +28,11 @@ def main():
                       help='run the asimov',
                       default=False,
                       action='store_true')
+    parser.add_option('--tag',
+                      dest='tag',
+                      help='use this to tag the fit script',
+                      default=None,
+                      type='string')
 
     (opt, args) = parser.parse_args()
 
@@ -36,7 +41,7 @@ def main():
         sys.exit(-1)
 
     os.system('mkdir -p %s'%opt.outdir)
-    script=open(os.path.join(opt.outdir,'runFit.sh'),'w')
+    script=open(os.path.join(opt.outdir,'runFit.sh' if not opt.tag else 'runFit_%s.sh'%opt.tag),'w')
     script.write('#!/bin/bash\n')
 
     script.write('\n')
@@ -58,11 +63,12 @@ def main():
     script.write('\n')
     script.write('#convert to HDF5 and run TF-based fits\n')
     script.write('text2hdf5.py datacard.dat\n')
-    script.write('combinetf.py datacard.dat.hdf5 -o fitresults.root\n')
+    fitresultsName=os.path.join(opt.outdir,'fitresults' if not opt.tag else 'fitresults_%s'%opt.tag)
+    script.write('combinetf.py datacard.dat.hdf5 -o %s.root\n'%fitresultsName)
     if opt.asimov:
-        script.write('combinetf.py datacard.dat.hdf5 -t -1 -o fitresults_asimov.root\n')
+        script.write('combinetf.py datacard.dat.hdf5 -t -1 -o %s_asimov.root\n'%fitresultsName)
     if opt.toys>0:
-        script.write('combinetf.py datacard.dat.hdf5 -t %d -o fitresults_toys.root\n'%opt.toys)
+        script.write('combinetf.py datacard.dat.hdf5 -t %d -o %s_toys.root\n'%(opt.toys,fitresultsName))
 
     script.close()
     
