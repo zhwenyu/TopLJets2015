@@ -59,7 +59,7 @@ def customizeData(binName,dataDef,bkgList,templDir,outDir):
     """ customizes data to use as observation """
     dataDef=dataDef.replace("\"","")
     dataType,dataF,dataHisto=dataDef.split(',')
-    print dataType,dataF,dataHisto
+    
     #get the data
     inF=ROOT.TFile.Open(dataF)
     dataH=inF.Get(dataHisto)

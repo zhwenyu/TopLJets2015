@@ -20,7 +20,7 @@ for dist in os.listdir(baseDir):
 
         anchor=base_anchor.format(a,a if a!='nom' else '')
         cmd=base_cmd.format(dist+'_mlb',anchor)
-        print 'Running for',dist,a
+        print 'Running prepareDataCard.py for',dist,a
         os.system(cmd)
 
         
