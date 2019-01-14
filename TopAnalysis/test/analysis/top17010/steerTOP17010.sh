@@ -223,6 +223,30 @@ case $WHAT in
                 args=""
                 if [ "${FITTYPE}" == "em_inc" ]; then
                     args="${outdir}/${githash}/datacards/em/${a}/${tag}.datacard.dat"
+                elif [ "${FITTYPE}" == "dil_inc" ]; then
+                    args="em=${outdir}/${githash}/datacards/em/${a}/${tag}.datacard.dat"
+                    args="${args} mm=${outdir}/${githash}/datacards/mm/${a}/${tag}.datacard.dat"
+                    args="${args} ee=${outdir}/${githash}/datacards/ee/${a}/${tag}.datacard.dat"
+                elif [ "${FITTYPE}" == "ptlb_inc" ]; then
+                    args="emhighpt=${outdir}/${githash}/datacards/emhighpt/${a}/${tag}.datacard.dat"
+                    args="${args} mmhighpt=${outdir}/${githash}/datacards/mmhighpt/${a}/${tag}.datacard.dat"
+                    args="${args} eehighpt=${outdir}/${githash}/datacards/eehighpt/${a}/${tag}.datacard.dat"
+                    args="${args} emlowpt=${outdir}/${githash}/datacards/emlowpt/${a}/${tag}.datacard.dat"
+                    args="${args} mmlowpt=${outdir}/${githash}/datacards/mmlowpt/${a}/${tag}.datacard.dat"
+                    args="${args} eelowpt=${outdir}/${githash}/datacards/eelowpt/${a}/${tag}.datacard.dat"
+                elif [ "${FITTYPE}" == "final" ]; then
+                    args="emhighpt2b=${outdir}/${githash}/datacards/emhighpt2b/${a}/${tag}.datacard.dat"
+                    args="${args} mmhighpt2b=${outdir}/${githash}/datacards/mmhighpt2b/${a}/${tag}.datacard.dat"
+                    args="${args} eehighpt2b=${outdir}/${githash}/datacards/eehighpt2b/${a}/${tag}.datacard.dat"
+                    args="${args} emhighpt1b=${outdir}/${githash}/datacards/emhighpt1b/${a}/${tag}.datacard.dat"
+                    args="${args} mmhighpt1b=${outdir}/${githash}/datacards/mmhighpt1b/${a}/${tag}.datacard.dat"
+                    args="${args} eehighpt1b=${outdir}/${githash}/datacards/eehighpt1b/${a}/${tag}.datacard.dat"
+                    args="${args} emlowpt2b=${outdir}/${githash}/datacards/emlowpt2b/${a}/${tag}.datacard.dat"
+                    args="${args} mmlowpt2b=${outdir}/${githash}/datacards/mmlowpt2b/${a}/${tag}.datacard.dat"
+                    args="${args} eelowpt2b=${outdir}/${githash}/datacards/eelowpt2b/${a}/${tag}.datacard.dat"
+                    args="${args} emlowpt1b=${outdir}/${githash}/datacards/emlowpt1b/${a}/${tag}.datacard.dat"
+                    args="${args} mmlowpt1b=${outdir}/${githash}/datacards/mmlowpt1b/${a}/${tag}.datacard.dat"
+                    args="${args} eelowpt1b=${outdir}/${githash}/datacards/eelowpt1b/${a}/${tag}.datacard.dat"
                 else
                     echo "fit type=${FITTYPE} is not yet implemented... quitting"
                     exit -1
@@ -256,13 +280,15 @@ case $WHAT in
             echo ")" >> $condor_fit
         done        
 
+        echo "Submit ${condor_prep}"
+        echo "Once done submit ${condor_fit}"
 
-        echo "Submitting both jobs as a simple DAG (A->B)"
-        condor_dag=fit${FITTYPE}_condor.dag
-        echo "JOB A ${condor_prep}" > $condor_dag
-        echo "JOB B ${condor_fit}" >> $condor_dag
-        echo "PARENT A CHILD B" >> $condor_dag
-        condor_submit_dag $condor_dag
+        #echo "Submitting both jobs as a simple DAG (A->B)"
+        #condor_dag=fit${FITTYPE}_condor.dag
+        #echo "JOB A ${condor_prep}" > $condor_dag
+        #echo "JOB B ${condor_fit}" >> $condor_dag
+        #echo "PARENT A CHILD B" >> $condor_dag
+        #condor_submit_dag $condor_dag
 
         ;;
 

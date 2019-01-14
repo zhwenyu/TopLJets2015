@@ -54,6 +54,12 @@ def main():
     script.write('\n')
     if len(args)>1:
         script.write('#combine cards\n')
+        for a in args:
+            tag,f=a.split('=')
+            if not os.path.isfile(f):
+                print 'No file found for',tag,':',f
+
+
         absPathArgs=[ '{0}={1}'.format(a.split('=')[0],os.path.abspath(a.split('=')[1])) for a in args ]
         script.write('combineCards.py --noDirPrefix %s > datacard.dat\n'%' '.join(absPathArgs))
     else:
