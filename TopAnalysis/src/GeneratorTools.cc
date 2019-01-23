@@ -77,7 +77,7 @@ std::vector< WeightSysts_t > getWeightSysts(TFile *f,TString sample){
           Int_t start=label.Index("PDF=  305")+6;
           TString id=label(start,6);
           start = std::atof(id) -305800 ;
-          id = Form("%d",start);
+          id = Form("%03d",start);
           systsOfInterest.push_back( WeightSysts_t("PDF"+id,xbin-1) );
         }
   }
