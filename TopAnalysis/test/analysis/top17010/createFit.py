@@ -69,12 +69,13 @@ def main():
     script.write('\n')
     script.write('#convert to HDF5 and run TF-based fits\n')
     script.write('text2hdf5.py datacard.dat\n')
-    fitresultsName=os.path.join(opt.outdir,'fitresults' if not opt.tag else 'fitresults_%s'%opt.tag)
+    fitresultsName='fitresults' if not opt.tag else 'fitresults_%s'%opt.tag
     script.write('combinetf.py datacard.dat.hdf5 -o %s.root\n'%fitresultsName)
     if opt.asimov:
         script.write('combinetf.py datacard.dat.hdf5 -t -1 -o %s_asimov.root\n'%fitresultsName)
     if opt.toys>0:
         script.write('combinetf.py datacard.dat.hdf5 -t %d -o %s_toys.root\n'%(opt.toys,fitresultsName))
+    script.write('cp -v fitresults*root %s\n'%opt.outdir)
 
     script.close()
     
