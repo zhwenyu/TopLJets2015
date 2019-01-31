@@ -214,6 +214,12 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev,Int_t njecUncs)
   t->Branch("fwdtrk_x_unc",  ev.fwdtrk_x_unc,  "fwdtrk_x_unc[nfwdtrk]/F");
   t->Branch("fwdtrk_y",      ev.fwdtrk_y,      "fwdtrk_y[nfwdtrk]/F");
   t->Branch("fwdtrk_y_unc",  ev.fwdtrk_y_unc,  "fwdtrk_y_unc[nfwdtrk]/F");
+
+
+  t->Branch("nrawmu", &ev.nrawmu, "nrawmu/I");
+  t->Branch("vtxHt", ev.vtxHt, "vtxHt[nvtx]/F");
+  t->Branch("vtxPt", ev.vtxPt, "vtxPt[nvtx]/F");
+  t->Branch("vtxMult", ev.vtxMult, "vtxMult[nvtx]/I");
 }
 
 //

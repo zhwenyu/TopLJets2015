@@ -135,6 +135,7 @@ void TOP17010::bookHistograms() {
   gscan->SetBinContent(4,targetGt_);  gscan->GetXaxis()->SetBinLabel(4,"#Gamma_{t}^{f}");
   ht_->addHist("genmass",  new TH1F("genmass",     ";Mass [GeV];Events",                         100,169,176));  
   ht_->addHist("nvtx",     new TH1F("nvtx",     ";Vertex multiplicity;Events",                100,-0.5,99.5));
+  ht_->addHist("rho",      new TH1F("rho",      ";#rho;Events",                               50,0,30));
   ht_->addHist("mll", 	   new TH1F("mll",      ";Dilepton invariant mass [GeV];Events",      50,0,550));  
   ht_->addHist("ptll", 	   new TH1F("ptll",     ";Dilepton p_{T}[GeV];Events",                50,0,550));  
   ht_->addHist("l1pt",     new TH1F("l1pt",     ";Lepton 1 transverse momentum [GeV];Events", 50,20,200));
@@ -624,6 +625,7 @@ void TOP17010::fillControlHistograms(TopWidthEvent &twe,float &wgt) {
   //plot weight
   std::vector<double> cplotwgts(1,wgt);
   ht_->fill("nvtx",    ev_.nvtx,        cplotwgts,twe.cat);        
+  ht_->fill("rho",     ev_.rho,         cplotwgts,twe.cat);        
   ht_->fill("mll",     twe.mll,         cplotwgts,twe.cat);
   ht_->fill("ptll",    twe.ptll,        cplotwgts,twe.cat);
   ht_->fill("l1pt",    twe.l1pt,        cplotwgts,twe.cat);
