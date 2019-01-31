@@ -11,7 +11,8 @@ def main():
     parser.add_option('-c', '--combine',
                       dest='combine',       
                       help='higgs combination tool location [%default]',
-                      default='/afs/cern.ch/user/p/psilva/work/CMSSW_10_3_0_pre4/src/HiggsAnalysis/CombinedLimit',
+#                      default='/afs/cern.ch/user/p/psilva/work/CMSSW_10_3_0_pre4/src/HiggsAnalysis/CombinedLimit',
+		      default='/afs/cern.ch/user/w/wenyu/afswork/work/topwidth/CMSSW_10_3_0_pre4/src/HiggsAnalysis/CombinedLimit',
                       type='string')
     parser.add_option('-o', '--outdir',          
                       dest='outdir',       
