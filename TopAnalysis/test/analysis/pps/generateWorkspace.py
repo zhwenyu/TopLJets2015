@@ -3,6 +3,25 @@ import os
 import sys
 import argparse
 
+def shushRooFit():
+
+    """stop all the messaging from RooFit"""
+    ROOT.RooMsgService.instance().setSilentMode(True)
+    ROOT.RooMsgService.instance().getStream(0).removeTopic(ROOT.RooFit.Minimization)
+    ROOT.RooMsgService.instance().getStream(1).removeTopic(ROOT.RooFit.Minimization)
+    ROOT.RooMsgService.instance().getStream(1).removeTopic(ROOT.RooFit.ObjectHandling)
+    ROOT.RooMsgService.instance().getStream(1).removeTopic(ROOT.RooFit.DataHandling)
+    ROOT.RooMsgService.instance().getStream(1).removeTopic(ROOT.RooFit.Fitting)
+    ROOT.RooMsgService.instance().getStream(1).removeTopic(ROOT.RooFit.Plotting)
+    ROOT.RooMsgService.instance().getStream(0).removeTopic(ROOT.RooFit.InputArguments)
+    ROOT.RooMsgService.instance().getStream(1).removeTopic(ROOT.RooFit.InputArguments)
+    ROOT.RooMsgService.instance().getStream(0).removeTopic(ROOT.RooFit.Eval)
+    ROOT.RooMsgService.instance().getStream(1).removeTopic(ROOT.RooFit.Eval)
+    ROOT.RooMsgService.instance().getStream(1).removeTopic(ROOT.RooFit.Integration)
+    ROOT.RooMsgService.instance().getStream(1).removeTopic(ROOT.RooFit.NumIntegration)
+    ROOT.RooMsgService.instance().getStream(1).removeTopic(ROOT.RooFit.NumIntegration)
+
+
 def addPDFwithParameterUncertainties(w,paramList,pdfName,newPDFName,addParamTag=None):
 
     """ adds a parametrization to affect parameters by their uncertainties and creates a new PDF using those """
@@ -31,8 +50,8 @@ def parametrizeSignal(w,args,url,cuts,debug):
     fIn.Close()
 
     #fit signal shape
-    w.factory("RooCBShape::sig_core(mmiss, sig_mean_core[500,2500],sig_sigma_core[20,200],  sig_alpha_core[0,10], sig_n_core[0,10])")
-    w.factory("RooCBShape:sig_turnon(mmiss,sig_mean_turnon[600,1000],sig_sigma_turnon[100,300], sig_alpha_turnon[1,4],  sig_n_turnon[4,6])")
+    w.factory("RooCBShape::sig_core(mmiss, sig_mean_core[900,2500],sig_sigma_core[20,200],  sig_alpha_core[0,10], sig_n_core[0,10])")
+    w.factory("RooCBShape:sig_turnon(mmiss,sig_mean_turnon[600,900],sig_sigma_turnon[100,300], sig_alpha_turnon[1,4],  sig_n_turnon[4,6])")
     w.factory("SUM::sig_base(sig_core_frac[0.6,1.0]*sig_core,sig_turnon)")
     w.pdf('sig_base').fitTo(ds)
 
@@ -54,7 +73,7 @@ def parametrizeSignal(w,args,url,cuts,debug):
     frame=w.var('mmiss').frame()
     ds.plotOn(frame)
     w.pdf('sig').plotOn(frame,ROOT.RooFit.LineColor(ROOT.kBlue))
-    w.pdf('sig').plotOn(frame,ROOT.RooFit.LineColor(ROOT.kGray),ROOT.RooFit.LineStyle(2),ROOT.RooFit.Components("sig_turnon"))
+    w.pdf('sig').plotOn(frame,ROOT.RooFit.LineColor(ROOT.kGray),ROOT.RooFit.LineStyle(2),ROOT.RooFit.Components("*turnon*"))
     frame.Draw()
     frame.GetXaxis().SetTitle('Missing mass [GeV]')
     tex=ROOT.TLatex()
@@ -107,9 +126,6 @@ def parametrizeBackground(w,args,url,cuts,debug):
                                          'bkg_base',
                                          'bkg%d'%xangle,
                                          '_%d'%xangle)
-
-        #add also a scaling variable to be used to multiply the background rate
-        w.factory('mu_bkg%d[1,0.5,2]'%xangle) 
 
         if not debug:  continue
 
@@ -168,8 +184,8 @@ def writeDataCard(w,outDir,sigExp,bkgExp):
             dc.write('%15s %15s %15s\n'%('rate','%3.2f'%sigExp, '%3.2f'%bkgExp[xangle]))
             dc.write('-'*50+'\n')
             
-            #FIXME: check syntax
-            #dc.write('mu_bkg%d rateParam %s %s:w\n'%(xangle,cat,wsURL))
+            #float the background normalization as well as the signal
+            dc.write('mu_bkg%d rateParam %s bkg 1\n'%(xangle,cat))
 
             args=w.allVars()
             it = args.createIterator()
@@ -219,7 +235,10 @@ def main(args):
     ROOT.gROOT.SetBatch(True)
     ROOT.gStyle.SetOptTitle(0)
     ROOT.gStyle.SetOptStat(0)
-                 
+    shushRooFit()
+
+    print '[generateWorkspace] with sig=%d and cuts: (%s)'%(opt.sig,opt.cuts)
+
     #start the workspace
     w=ROOT.RooWorkspace('w')
     w.factory('mmiss[500,2500]')

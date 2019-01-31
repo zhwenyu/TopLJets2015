@@ -90,7 +90,7 @@ case $WHAT in
     ANA )
         
         python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 1 --jobs 8 \
-            --json ${samples_json} --RPout ${RPout_json} -o plots/analysis --mix plots/analysis/Chunks/mixbank.pck --only Data;
+            --json ${samples_json} --RPout ${RPout_json} -o plots/analysis --mix plots/analysis/Chunks/mixbank.pck;
 
         ;;
 
@@ -124,8 +124,10 @@ case $WHAT in
         plots=mll_ee,mll_mm,mll_em,ptll_eeZ,ptll_mmZ,ptll_em
         plots=${plots},l1pt_eeZ,l1pt_mmZ,l1pt_em,l2pt_eeZ,l2pt_mmZ,l2pt_em
         plots=${plots},acopl_eeZ,acopl_mmZ,acopl_em,l1eta_eeZ,l1eta_mmZ,l1eta_em,l2eta_eeZ,l2eta_mmZ,l2eta_em
+        plots=${plots},acopl_eeZelpphighPur140,acopl_mmZelpphighPur140,ptll_eeZelpphighPur140,ptll_mmZelpphighPur140
+        plots=${plots},l1pt_eeZelpphighPur140,l1pt_mmZelpphighPur140,l2pt_eeZelpphighPur140,l2pt_mmZelpphighPur140
         plots=${plots},nvtx_eeZ,nvtx_mmZ,nvtx_em,xangle_eeZ,xangle_mmZ,xangle_em
-        #python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py ${commonOpts} --only ${plots} --strictOnly --signalJson ${plot_signal_json} --saveLog;
+        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py ${commonOpts} --only ${plots} --strictOnly --signalJson ${plot_signal_json} --saveLog;
 
         plots=ntk_eeZpos,ntk_eeZneg,ntk_mmZpos,ntk_mmZneg
         plots=${plots},ntk_eeZelpp120pos,ntk_eeZelpp130pos,ntk_eeZelpp140pos,ntk_eeZelpp150pos
@@ -144,7 +146,13 @@ case $WHAT in
         plots=${plots},mmass_eeZelpphighPur120,mmass_eeZelpphighPur130,mmass_eeZelpphighPur140,mmass_eeZelpphighPur150
         plots=${plots},mpp_mmZelpphighPur120,mpp_mmZelpphighPur130,mpp_mmZelpphighPur140,mpp_mmZelpphighPur150
         plots=${plots},mmass_mmZelpphighPur120,mmass_mmZelpphighPur130,mmass_mmZelpphighPur140,mmass_mmZelpphighPur150
-        #python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py ${commonOpts} --only ${plots} --strictOnly --signalJson ${signal_json} --saveLog;
+        plots=${plots},nch_mmZelpphighPur120,nch_mmZelpphighPur130,nch_mmZelpphighPur140,nch_mmZelpphighPur150
+        plots=${plots},njets_mmZelpphighPur120,njets_mmZelpphighPur130,njets_mmZelpphighPur140,nch_mmZelpphighPur150
+        plots=${plots},nvtx_mmZelpphighPur120,nvtx_mmZelpphighPur130,nvtx_mmZelpphighPur140,nvtx_mmZelpphighPur150
+        plots=${plots},nch_eeZelpphighPur120,nch_eeZelpphighPur130,nch_eeZelpphighPur140,nch_eeZelpphighPur150
+        plots=${plots},njets_eeZelpphighPur120,njets_eeZelpphighPur130,njets_eeZelpphighPur140,njets_eeZelpphighPur150
+        plots=${plots},nvtx_eeZelpphighPur120,nvtx_eeZelpphighPur130,nvtx_eeZelpphighPur140,nvtx_eeZelpphighPur150
+        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py ${commonOpts} --only ${plots} --strictOnly --signalJson ${signal_json} --saveLog;
         
         #python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/compareBackgroundEstimation.py plots/analysis/plots/plotter.root plots/analysis/plots;
         ;;

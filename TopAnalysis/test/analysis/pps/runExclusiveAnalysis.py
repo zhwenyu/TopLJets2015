@@ -13,6 +13,7 @@ import random
 import pickle
 import array
 import re
+from random import shuffle
 from collections import OrderedDict
 from TopLJets2015.TopAnalysis.HistoTool import *
 
@@ -109,6 +110,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
     #start histograms
     ht=HistoTool()
     ht.add(ROOT.TH1F('nvtx',';Vertex multiplicity;Events',50,0,100))
+    ht.add(ROOT.TH1F('njets',';Jet multiplicity;Events',5,0,5))
     ht.add(ROOT.TH1F('nch', ';Charged particle multiplicity;Events',50,0,50))
     ht.add(ROOT.TH1F('acopl',';A=1-|#Delta#phi|/#pi;Events',50,0,1))
     ht.add(ROOT.TH1F('l1eta',';Lepton pseudo-rapidiy;Events',50,0,2.5))
@@ -155,6 +157,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
         wgt=tree.evwgt
         nvtx=tree.nvtx
         nch=tree.nch
+        njets=0 if isSignal else tree.nj 
 
         #acoplanarity
         acopl=1.0-abs(ROOT.TVector2.Phi_mpi_pi(tree.l1phi-tree.l2phi))/ROOT.TMath.Pi()
@@ -212,7 +215,11 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
         else:
             if isSignal:
                 #embed pileup to signal
-                mixed_rptks=(mixed_rptks[0]+rptks[0],mixed_rptks[1]+rptks[1])
+                tksPos=mixed_rptks[0]+rptks[0]
+                shuffle(tksPos)
+                tksNeg=mixed_rptks[1]+rptks[1]
+                shuffle(tksNeg)
+                mixed_rptks=(tksPos,tksNeg)
                 mixed_beamXangle=beamXangle
                 mon_tasks.append( (rptks,beamXangle,'nopu') )
             mon_tasks.append( (mixed_rptks,mixed_beamXangle,'') )
@@ -234,7 +241,9 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
             mmass=0
             if pp:
                 isElasticLike=(13000.-boson.E()-pp.E()>0)
-                if isElasticLike: mmass=(boson-pp).M()
+                inPP=ROOT.TLorentzVector(0,0,0,13000.)
+                if isElasticLike: 
+                    mmass=(inPP-boson+pp).M()
 
 
             #categories to fill
@@ -269,6 +278,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
             for pwgt,pcats in finalPlots:
                 
                 ht.fill((nvtx,pwgt),                  'nvtx',   pcats,pfix)
+                ht.fill((njets,pwgt),               'njets',  pcats,pfix)
                 ht.fill((nch,pwgt),                   'nch',    pcats,pfix)
                 ht.fill((l1p4.Pt(),pwgt),             'l1pt',   pcats,pfix)
                 ht.fill((l2p4.Pt(),pwgt),             'l2pt',   pcats,pfix)
