@@ -29,8 +29,9 @@ void TOP17010::init(UInt_t scenario){
   isSignal_    = filename_.Contains("_TT");
   triggerList_ = (TH1F *)f_->Get("analysis/triggerList");
   if(isSignal_) {
-    weightSysts_ = getWeightSysts(f_,"TTJets2016");
-    origGt_=1.31;
+//    weightSysts_ = getWeightSysts(f_,"TTJets2016");
+   weightSysts_ = getWeightSysts(f_,filename_.Contains("2016") ? "TTJets2016" : "TTJets2017");   // 2017 weights  
+   origGt_=1.31;
     origMt_=172.5;
     if ( filename_.Contains("w0p5") ) {                origGt_*=0.5; }
     if ( filename_.Contains("w4p0") ) {                origGt_*=4.0; }
