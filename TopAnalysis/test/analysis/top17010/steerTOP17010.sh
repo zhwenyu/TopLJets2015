@@ -217,7 +217,7 @@ case $WHAT in
             a=`basename ${a}`;
 
             for s in ${signals[@]}; do                
-                out="${outdir}/${githash}/fits/${FITTYPE}/${a}"
+                out="/afs/cern.ch/user/w/wenyu/afswork/work/topwidth/CMSSW_9_4_10/src/TopLJets2015/TopAnalysis/test/analysis/top17010/${githash}/fits/${FITTYPE}/${a}"    # edit -wz
                 tag=`basename $s | cut -f -1 -d "."`
                 
                 args=""
@@ -270,7 +270,7 @@ case $WHAT in
         echo "log         = ${condor_fit}.log" >> $condor_fit
         echo "+JobFlavour = \"workday\"" >> $condor_fit        
         for a in ${anchors[@]}; do
-            dir="${outdir}/${githash}/fits/${FITTYPE}/${a}"
+            dir="/afs/cern.ch/user/w/wenyu/afswork/work/topwidth/CMSSW_9_4_10/src/TopLJets2015/TopAnalysis/test/analysis/top17010/${githash}/fits/${FITTYPE}/${a}"  # edit
             echo "arguments   = ${dir}/runFit_\$(tag).sh" >> $condor_fit
             echo "queue tag from (" >> $condor_fit
             for s in ${signals[@]}; do
