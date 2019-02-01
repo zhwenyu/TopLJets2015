@@ -590,8 +590,8 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
 
       //raw muon info
       ev_.rawmu_pt[ev_.nrawmu]=(Short_t)mu.pt();
-      ev_.rawmu_eta[ev_.nrawmu]=(Short_t)mu.eta();
-      ev_.rawmu_phi[ev_.nrawmu]=(Short_t)mu.phi();
+      ev_.rawmu_eta[ev_.nrawmu]=(Short_t)10*mu.eta();
+      ev_.rawmu_phi[ev_.nrawmu]=(Short_t)10*mu.phi();
       ev_.rawmu_pid[ev_.nrawmu]= mu.selectors();
       ev_.nrawmu++;
 
