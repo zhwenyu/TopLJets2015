@@ -583,10 +583,18 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
   //MUON SELECTION: cf. https://twiki.cern.ch/twiki/bin/viewauth/CMS/SWGuideMuonIdRun2
   edm::Handle<pat::MuonCollection> muons;
   iEvent.getByToken(muonToken_, muons);
-  ev_.nrawmu=muons->size();
+  ev_.nrawmu=0;
   std::vector<Double_t> muStatUncReplicas(100,0);
   for (const pat::Muon &mu : *muons) 
     { 
+
+      //raw muon info
+      ev_.rawmu_pt[ev_.nrawmu]=(Short_t)mu.pt();
+      ev_.rawmu_eta[ev_.nrawmu]=(Short_t)mu.eta();
+      ev_.rawmu_phi[ev_.nrawmu]=(Short_t)mu.phi();
+      ev_.rawmu_pid[ev_.nrawmu]= mu.selectors();
+      ev_.nrawmu++;
+
 
       //apply correction
       float pt  = mu.pt();
