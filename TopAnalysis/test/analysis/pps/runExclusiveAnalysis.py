@@ -243,7 +243,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
                 isElasticLike=(13000.-boson.E()-pp.E()>0)
                 inPP=ROOT.TLorentzVector(0,0,0,13000.)
                 if isElasticLike: 
-                    mmass=(inPP-boson+pp).M()
+                    mmass=(pp-boson).M()
 
 
             #categories to fill

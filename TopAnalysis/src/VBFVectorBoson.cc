@@ -534,7 +534,7 @@ void VBFVectorBoson::runAnalysis()
           reSelect=true;
           iBoson *= (1+(isUpVar?1:-1)*bosonScaleUnc); 
         }
-        if(sname.Contains("JEC") || sname.Contains("JER") )  {
+        if(sname.Contains("JEC") || sname.Contains("JER") ) {
           reSelect=true;
           int jecIdx=-1;
           if(sname.Contains("AbsoluteStat"))     jecIdx=0;
@@ -644,8 +644,26 @@ void VBFVectorBoson::runAnalysis()
         
         if( !icat.Contains("MJJ") ) continue;
 
+        //qg discriminator re-weighting uncertainty
+        //https://twiki.cern.ch/twiki/bin/view/CMS/QuarkGluonLikelihood#Systematics
+        float qgwgt(1.0);
+        if(sname=="gluonqg" || sname=="quarkqg") {
+          for(size_t ij=0; ij<min((size_t)2,ijets.size()); ij++) {
+            int idx=jets[ij].getJetIndex();
+            float xqg=ev_.j_qg[idx];
+            int jflav(abs(ev_.j_flav[idx]));
+            if(jflav==21) {
+              qgwgt *= -0.666978*pow(xqg,3) + 0.929524*pow(xqg,2) -0.255505*xqg + 0.981581;
+            }
+            else if(jflav!=0) {
+              qgwgt *= -55.7067*pow(xqg,7) + 113.218*pow(xqg,6) -21.1421*pow(xqg,5) -99.927*pow(xqg,4) + 92.8668*pow(xqg,3) -34.3663*pow(xqg,2) + 6.27*xqg + 0.612992;
+            }
+          }
+        }
+
         //fill with new values/weights
-        std::vector<double> eweights(1,iwgt);
+        std::vector<double> eweights(1,iwgt*qgwgt);
+
         ht_->fill2D("vbfmva_exp",       imva,                 is,eweights,icat);
         ht_->fill2D("centraleta_exp",   vbfVars_.centraleta,  is,eweights,icat);
         ht_->fill2D("forwardeta_exp",   vbfVars_.forwardeta,  is,eweights,icat);
@@ -813,6 +831,7 @@ void VBFVectorBoson::bookHistograms() {
   ht_->addHist("vbfmvaHighVPt",   new TH1F("vbfmvaHighVPt",         ";VBF MVA;Events",50,-1,1));  
 
   TString expSystNames[]={"puup","pudn","trigup","trigdn","selup","seldn","l1prefireup","l1prefiredn",
+                          "gluonqg","quarkqg",
                           "aesup","aesdn",
                           "mesup","mesdn",
                           "JERup","JERdn",

@@ -163,4 +163,10 @@ case $WHAT in
         cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}/ana
         ;;
 
+    OPTIMANA )
+        for i in 1000; do #1000 1200 1400; do
+            python test/analysis/pps/optimizeSR.py ${i}; 
+        done
+        ;;
+
 esac

@@ -67,13 +67,28 @@ case $WHAT in
         #--debug --mvatree \
         ;;
 
+
+    TESTSELTRIGEFF )
+               
+        json=data/era${ERA}/vbf_samples.json
+        tag=Data13TeV_${ERA}C_SingleMuon
+        input=${eosdir}/${tag}/Chunk_1_ext0.root
+        output=${tag}.root 
+
+	python scripts/runLocalAnalysis.py \
+            -i ${input} -o ${output} --tag ${tag} --only ${json} --mvatree\
+            --njobs 1 -q local --genWeights genweights_${githash}.root \
+            --era era${ERA} -m PhotonTrigEff::RunPhotonTrigEff --ch 0 --runSysts --debug;
+
+        ;;
+
     SEL )
 	##### NOTE: There are three options here:
         ### --mvatree: to store trees for BDT training in signal region
         ### --CR     : gives a control region to evaluate fake rates in the photon data samples
         ### --SRfake : gives the distributions of fakes, normalised based on fake rates
 
-        json=data/era${ERA}/vbf_samples.json  #,data/era2017/vbf_syst_samples.json
+        json=data/era${ERA}/vbf_samples.json,data/era${ERA}/vbf_syst_samples.json
 	if [[ -z ${EXTRA} ]]; then
 	    echo "Making trees ... "
 	    extraOpts=" --mvatree"
@@ -85,7 +100,17 @@ case $WHAT in
             -o ${outdir}/${githash}/${EXTRA} \
             --farmappendix ${githash} \
             -q ${queue} --genWeights genweights_${githash}.root \
-            --era era${ERA} -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts --only SingleMuon ${extraOpts};
+            --era era${ERA} -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts ${extraOpts};
+	;;
+
+    SELTRIGEFF )
+        json=data/era${ERA}/vbf_samples.json 
+	python scripts/runLocalAnalysis.py \
+	    -i ${eosdir} --only ${json}\
+            -o ${outdir}/trig/${githash}/${EXTRA} \
+            --farmappendix trig${githash} \
+            -q ${queue} --genWeights genweights_${githash}.root \
+            --era era${ERA} -m PhotonTrigEff::RunPhotonTrigEff --ch 0 --runSysts ${extraOpts};
 	;;
 
 
@@ -112,6 +137,10 @@ case $WHAT in
 
     MERGE )
 	./scripts/mergeOutputs.py ${outdir}/${githash}/${EXTRA};
+	;;
+
+    MERGETRIGEFF )
+	./scripts/mergeOutputs.py ${outdir}/trig/${githash}/${EXTRA};
 	;;
 
     PLOT )
@@ -142,8 +171,9 @@ case $WHAT in
 
     TRIGEFF )
         #trigger efficiencies
-	plotOutDir=${outdir}/${githash}/${EXTRA}/plots/
-        python test/analysis/computeVBFTriggerEff.py -p ${plotOutDir}/plotter.root -o ${plotOutDir};
+	inDir=${outdir}/trig/${githash}/${EXTRA}
+        python test/analysis/computeTriggerEff.py ${inDir} ${ERA};
+        #python test/analysis/computeVBFTriggerEff.py -p ${plotOutDir}/plotter.root -o ${plotOutDir};
         ;;
 
     BDTTRANSFORM )
