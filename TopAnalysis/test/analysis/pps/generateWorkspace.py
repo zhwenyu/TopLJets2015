@@ -37,7 +37,7 @@ def addPDFwithParameterUncertainties(w,paramList,pdfName,newPDFName,addParamTag=
     w.factory(cmd)
 
 
-def parametrizeSignal(w,args,url,mu,cuts,debug,outDir):
+def parametrizeSignal(w,args,url,mu,sigmass,cuts,debug,outDir):
 
     """paraterizes the signal and adds to the workspace"""    
 
@@ -49,7 +49,7 @@ def parametrizeSignal(w,args,url,mu,cuts,debug,outDir):
     fIn.Close()
 
     #fit signal shape
-    w.factory("RooCBShape::sig_core(mmiss, sig_mean_core[900,2500],sig_sigma_core[20,200],  sig_alpha_core[0,10], sig_n_core[0,10])")
+    w.factory("RooCBShape::sig_core(mmiss, sig_mean_core[%3.0f,%3.0f],sig_sigma_core[20,200],  sig_alpha_core[0,10], sig_n_core[0,10])"%(sigmass-100,sigmass+100))
     w.factory("RooCBShape:sig_turnon(mmiss,sig_mean_turnon[600,900],sig_sigma_turnon[100,300], sig_alpha_turnon[1,4],  sig_n_turnon[4,6])")
     w.factory("SUM::sig_base(sig_core_frac[0.7,1.0]*sig_core,sig_turnon)")
     w.pdf('sig_base').fitTo(ds)
@@ -267,6 +267,7 @@ def main(args):
                              varSet,
                              os.path.join(opt.input,'MC13TeV_2017_PPZX_140urad_%d.root'%opt.sig),
                              opt.mu,
+                             float(opt.sig),
                              opt.cuts,
                              opt.debug,                             
                              opt.output)

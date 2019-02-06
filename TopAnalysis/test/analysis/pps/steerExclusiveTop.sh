@@ -164,9 +164,11 @@ case $WHAT in
         ;;
 
     OPTIMANA )
-        for i in 1000; do #1000 1200 1400; do
+        for i in 1000 1200 1400; do
             python test/analysis/pps/optimizeSR.py ${i}; 
         done
+        python test/analysis/pps/plotLimits.py 1000=optimresults_1000.pck,1200=optimresults_1200.pck,1400=optimresults_1400.pck
+        python test//analysis/pps/compareOptimResults.py
         ;;
 
 esac
