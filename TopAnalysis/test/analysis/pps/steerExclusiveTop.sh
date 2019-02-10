@@ -15,9 +15,10 @@ fi
 
 #to run locally use local as queue + can add "--njobs 8" to use 8 parallel jobs
 queue=tomorrow
-githash=3129835
+#githash=3129835
+githash=6816e40
 eosdir=/store/cmst3/group/top/RunIIReReco/${githash}
-outdir=/store/cmst3/user/psilva/ExclusiveAna
+outdir=/store/cmst3/user/psilva/ExclusiveAna/${githash}
 signal_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/signal_samples.json
 plot_signal_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/plot_signal_samples.json
 samples_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/samples.json
@@ -29,9 +30,8 @@ inputfileTag=MC13TeV_2017_GGH2000toZZ2L2Nu
 inputfileTag=MC13TeV_2017_GGToEE_lpair
 inputfileTag=Data13TeV_2017F_MuonEG
 #inputfileTag=MC13TeV_2017_GJets_HT400to600
+inputfileTag=Data13TeV_2017B_DoubleMuon
 inputfileTESTSEL=${eosdir}/${inputfileTag}/Chunk_0_ext0.root
-#inputfileTag=Data13TeV_2017B_DoubleMuon
-#inputfileTESTSEL=/store/cmst3/group/top/RunIIReReco/f93b8d8/${inputfileTag}/Chunk_0_ext0.root
 lumi=41833
 ppsLumi=37500
 lumiUnc=0.025
@@ -55,7 +55,7 @@ case $WHAT in
         baseOpt="${baseOpt} -o ${outdir} -q ${queue} --era era2017 -m ExclusiveTop::RunExclusiveTop --ch 0 --runSysts"
         baseOpt="${baseOpt} --exactonly"        
 	python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py ${baseOpt} --only ${samples_json};
-	python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py ${baseOpt} --only ${zx_samples_json};	
+	#python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py ${baseOpt} --only ${zx_samples_json};	
 	;;
 
     MERGESEL )

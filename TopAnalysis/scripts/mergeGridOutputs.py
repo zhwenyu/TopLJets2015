@@ -129,7 +129,7 @@ def main():
             chunkList=getChunksInSizeOf(chunkSize=opt.chunkSize,directoryList=[dset],prepend='/eos/cms/')
             print pub,'will be hadded in',len(chunkList),'chunks of approx %fGb'%opt.chunkSize
             for ichunk in xrange(0,len(chunkList)):
-                outFile='/eos/cms/{0}/{1}/Chunk_{2}_0.root'.format(opt.outDir,pub,ichunk)
+                outFile='/eos/cms/{0}/{1}/Chunk_{2}_ext0.root'.format(opt.outDir,pub,ichunk)
                 condor.write('arguments = %s %s\n'%(outFile,' '.join(chunkList[ichunk])))
                 condor.write('queue 1\n')                
 
