@@ -104,8 +104,8 @@ void RunExclusiveTop(TString filename,
                    "llacopl", "llcosthetaCS", "llphistar", "llMR", "llR", 
                    "llcsip", "llcsipUnc", "llcsim", "llcsimUnc",
                    "nb", "nj", "nl","ng","ht", "htb", "htj",
-                   "jsumpospz","jsumnegpz",
-                   "jsumposhfpz","jsumneghfpz"};
+                   "jsumposen","jsumnegen",
+                   "jsumposhfen","jsumneghfen"};
   std::map<TString,Float_t> outVars;
   for(size_t i=0; i<sizeof(fvars)/sizeof(TString); i++){
     outVars[fvars[i]]=0.;
@@ -457,26 +457,28 @@ void RunExclusiveTop(TString filename,
       int njets(0);
       std::vector<Jet> bJets,lightJets,jets;
       float scalarht(0.),scalarhtb(0.),scalarhtj(0.),mindphijmet(99999.);
-      float jsumpospz(0.),jsumnegpz(0.),jsumposhfpz(0.),jsumneghfpz(0.);
+      float jsumposen(0.),jsumnegen(0.),jsumposhfen(0.),jsumneghfen(0.);
       for(size_t ij=0; ij<allJets.size(); ij++) 
         {
           int idx=allJets[ij].getJetIndex();
-          int jid=ev.j_id[idx];
-          bool passLoosePu((jid>>2)&0x1);
           bool passBtag(ev.j_btag[idx]>0);
+
+          //int jid=ev.j_id[idx];
+          //bool passLoosePu((jid>>2)&0x1);          
           // if(!passLoosePu) continue;
+
           if(passBtag) { bJets.push_back(allJets[ij]);     scalarhtb+=allJets[ij].pt();  }
           else         { lightJets.push_back(allJets[ij]); scalarhtj+= allJets[ij].pt(); }
           njets++;
 
-          bool isFwd(fabs(allJets[ij].eta())>3.0);
-          float jpz(allJets[ij].E()); //fabs(allJets[ij].Pz()));
+          bool isFwd(fabs(allJets[ij].eta())>2.5);
+          float jen(allJets[ij].E());
           if(allJets[ij].eta()<0) {
-            jsumnegpz+= jpz; 
-            if(isFwd) jsumneghfpz += jpz;
+            jsumnegen+= jen; 
+            if(isFwd) jsumneghfen += jen;
           } else {
-            jsumpospz+= jpz; 
-            if(isFwd) jsumposhfpz += jpz;
+            jsumposen+= jen; 
+            if(isFwd) jsumposhfen += jen;
           }
           
           jets.push_back(allJets[ij]);
@@ -624,10 +626,10 @@ void RunExclusiveTop(TString filename,
       outVars["ht"]=scalarht;
       outVars["htb"]=scalarhtb;
       outVars["htj"]=scalarhtj;
-      outVars["jsumnegpz"]=jsumnegpz;
-      outVars["jsumneghfpz"]=jsumneghfpz;
-      outVars["jsumpospz"]=jsumpospz;
-      outVars["jsumposhfpz"]=jsumposhfpz;
+      outVars["jsumnegen"]=jsumnegen;
+      outVars["jsumneghfen"]=jsumneghfen;
+      outVars["jsumposen"]=jsumposen;
+      outVars["jsumposhfen"]=jsumposhfen;
 
       //fill data with roman pot information
       nRPtk=0;

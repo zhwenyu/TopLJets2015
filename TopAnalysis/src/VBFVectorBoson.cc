@@ -414,7 +414,7 @@ void VBFVectorBoson::runAnalysis()
         vbfmva_ = readers[key]->EvaluateMVA(key);
 	vbfmvaHighVPt_ =readers["BDT_VBF0HighPt"]->EvaluateMVA("BDT_VBF0HighPt");
         //if(mvaCDFinv[key]) vbfmva_=max(0.,mvaCDFinv[key]->Eval(vbfmva_));        
-        if(doBlindAnalysis_ && ev_.isData && vbfmva_>0.8) vbfmva_=-1000;
+        if(doBlindAnalysis_ && ev_.isData && vbfmva_>0.2) vbfmva_=-1000;
 
       }
       
