@@ -408,14 +408,17 @@ void VBFVectorBoson::runAnalysis()
       //evaluate discriminator MVA for categories of interest
       //FIXME: this probably needs to be modified for the new training
       vbfmva_ = -1000;
+      flat_vbfmva_=-1000;
       vbfmvaHighVPt_ = -1000;
       if (cat[5] || cat[6]) {
         TString key(cat[3] ?"BDT_VBF0LowVPtHighMJJ":(cat[5] ? "BDT_VBF0HighVPtLowMJJ" : "BDT_VBF0HighVPtHighMJJ"));
         vbfmva_ = readers[key]->EvaluateMVA(key);
 	vbfmvaHighVPt_ =readers["BDT_VBF0HighPt"]->EvaluateMVA("BDT_VBF0HighPt");
-        //if(mvaCDFinv[key]) vbfmva_=max(0.,mvaCDFinv[key]->Eval(vbfmva_));        
-        if(doBlindAnalysis_ && ev_.isData && vbfmva_>0.2) vbfmva_=-1000;
-
+        if(mvaCDFinv[key]) flat_vbfmva_=max(0.,mvaCDFinv[key]->Eval(vbfmva_));        
+        if(doBlindAnalysis_ && ev_.isData && vbfmva_>0.2) {
+          vbfmva_=-1000;
+          flat_vbfmva_=-1000;
+        }
       }
       
       ////////////////////
@@ -504,6 +507,7 @@ void VBFVectorBoson::runAnalysis()
         //base values and kinematics
         TString icat(baseCategory);
         float imva=vbfmva_;
+        float flat_imva=-99;
         float iwgt=(ev_.g_nw>0 ? ev_.g_w[0] : 1.0);
         iwgt *= (normH_? normH_->GetBinContent(1) : 1.0);
         TLorentzVector iBoson(boson);
@@ -632,10 +636,10 @@ void VBFVectorBoson::runAnalysis()
 	  if (isLowMJJ || isHighMJJ) {
 	    TString key(isLowVPt ?"BDT_VBF0LowVPtHighMJJ":(isLowMJJ ? "BDT_VBF0HighVPtLowMJJ" : "BDT_VBF0HighVPtHighMJJ"));
 	    imva = readers[key]->EvaluateMVA(key);	    
-	    //if(mvaCDFinv[key]) imva=max(0.,mvaCDFinv[key]->Eval(imva));	    
+	    if(mvaCDFinv[key]) flat_imva=max(0.,mvaCDFinv[key]->Eval(imva));	    
 	  }
 
-          // TString key(isLowVPt ? "BDT_VBF0HighMJJ" : "BDT_VBF0LowMJJ");
+          //TString key(isLowVPt ? "BDT_VBF0HighMJJ" : "BDT_VBF0LowMJJ");
           // imva = readers[key]->EvaluateMVA(key);
           // if(mvaCDFinv[key]) imva=max(0.,mvaCDFinv[key]->Eval(imva));
         }
@@ -663,7 +667,7 @@ void VBFVectorBoson::runAnalysis()
         std::vector<double> eweights(1,iwgt*qgwgt);
 
         ht_->fill2D("vbfmva_exp",       imva,                 is,eweights,icat);
-        ht_->fill2D("atanhvbfmva_exp",  TMath::ATanH(imva),   is,eweights,icat);
+        ht_->fill2D("atanhvbfmva_exp",  flat_imva,   is,eweights,icat);
         ht_->fill2D("centraleta_exp",   vbfVars_.centraleta,  is,eweights,icat);
         ht_->fill2D("forwardeta_exp",   vbfVars_.forwardeta,  is,eweights,icat);
         ht_->fill2D("leadpt_exp",       vbfVars_.leadj_pt,    is,eweights,icat);
@@ -673,7 +677,7 @@ void VBFVectorBoson::runAnalysis()
         ht_->fill2D("mjj_exp", 	        vbfVars_.mjj,         is,eweights,icat);
         ht_->fill2D("vpt_exp", 	        iBoson.Pt(),          is,eweights,icat);
         ht_->fill2D("evcount_exp",      0,                    is,eweights,icat);
-        if(imva>0.9)
+        if(flat_imva>0.9)
           ht_->fill2D("evcount_exp",    1,                    is,eweights,icat);
       }
       selector_->setDebug(debug_);
@@ -827,7 +831,7 @@ void VBFVectorBoson::bookHistograms() {
   ht_->getPlots()["evcount"]->GetXaxis()->SetBinLabel(1,"Inclusive");
   ht_->getPlots()["evcount"]->GetXaxis()->SetBinLabel(2,"MVA>0.9");
   ht_->addHist("vbfmva",          new TH1F("vbfmva",         ";VBF MVA;Events",50,-1,1));  
-  ht_->addHist("atanhvbfmva",     new TH1F("atanhvbfmva",    ";tanH^{-1}(VBF MVA);Events",50,-1,1));  
+  ht_->addHist("acdfvbfmva",     new TH1F("acdfvbfmva",    ";CDF^{-1}(VBF MVA);Events",50,0,1));  
   ht_->addHist("vbfmvaHighVPt",   new TH1F("vbfmvaHighVPt",   ";VBF MVA;Events",50,-1,1));  
 
   TString expSystNames[]={"puup","pudn","trigup","trigdn","selup","seldn","l1prefireup","l1prefiredn",
@@ -839,7 +843,7 @@ void VBFVectorBoson::bookHistograms() {
                           "AbsoluteStatJECdn","AbsoluteScaleJECdn","AbsoluteMPFBiasJECdn","FragmentationJECdn","SinglePionECALJECdn","SinglePionHCALJECdn","FlavorPureGluonJECdn","FlavorPureQuarkJECdn","FlavorPureCharmJECdn","FlavorPureBottomJECdn","TimePtEtaJECdn","RelativeJEREC1JECdn","RelativeJEREC2JECdn","RelativeJERHFJECdn","RelativePtBBJECdn","RelativePtEC1JECdn","RelativePtEC2JECdn","RelativePtHFJECdn","RelativeBalJECdn","RelativeFSRJECdn","RelativeStatFSRJECdn","RelativeStatECJECdn","RelativeStatHFJECdn","PileUpDataMCJECdn","PileUpPtRefJECdn","PileUpPtBBJECdn","PileUpPtEC1JECdn","PileUpPtEC2JECdn","PileUpPtHFJECdn"};
   
   //instantiate 2D histograms for most relevant variables to trace with systs
-  TString hoi[]={"vbfmva","atanhvbfmva","evcount","mjj","detajj","dphijj","leadpt","subleadpt","forwardeta","centraleta","vpt"};
+  TString hoi[]={"vbfmva","acdfvbfmva","evcount","mjj","detajj","dphijj","leadpt","subleadpt","forwardeta","centraleta","vpt"};
   size_t nexpSysts=sizeof(expSystNames)/sizeof(TString);
   expSysts_=std::vector<TString>(expSystNames,expSystNames+nexpSysts);  
   for(size_t ih=0; ih<sizeof(hoi)/sizeof(TString); ih++)
@@ -1121,8 +1125,8 @@ void VBFVectorBoson::fillControlHistos(TLorentzVector boson, std::vector<Jet> je
   if(vbfmva_>-999)  {
     ht_->fill("vbfmvaHighVPt", vbfmvaHighVPt_, cplotwgts,c);
     ht_->fill("vbfmva", vbfmva_, cplotwgts,c);
-    ht_->fill("atanhvbfmva", TMath::ATanH(vbfmva_), cplotwgts,c);
-    if(vbfmva_>0.9)
+    ht_->fill("acdfvbfmva", flat_vbfmva_, cplotwgts,c);
+    if(flat_vbfmva_>0.9)
       ht_->fill("evcount",  1, cplotwgts, c);  
   }
 
@@ -1135,7 +1139,7 @@ void VBFVectorBoson::fillControlHistos(TLorentzVector boson, std::vector<Jet> je
       size_t idx=weightSysts_[is].second;
       sweights[0] *= (ev_.g_w[idx]/ev_.g_w[0])*(normH_->GetBinContent(idx+1)/normH_->GetBinContent(1));
       ht_->fill2D("vbfmva_th",       vbfmva_,               is,sweights,c);
-      ht_->fill2D("atanhvbfmva_th",  TMath::ATanH(vbfmva_), is,sweights,c);
+      ht_->fill2D("acdfvbfmva_th",   flat_vbfmva_, is,sweights,c);
       ht_->fill2D("centraleta_th",   vbfVars_.centraleta,   is,sweights,c);
       ht_->fill2D("forwardeta_th",   vbfVars_.forwardeta,   is,sweights,c);
       ht_->fill2D("leadpt_th",       vbfVars_.leadj_pt,     is,sweights,c);
