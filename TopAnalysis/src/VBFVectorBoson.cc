@@ -139,6 +139,7 @@ void VBFVectorBoson::runAnalysis()
     mvaCDFinv[key]=(TGraph *)fcdf->Get(key+"_cdfinv");
   }
 
+
   ///////////////////////
   // LOOP OVER EVENTS //
   /////////////////////
@@ -411,10 +412,12 @@ void VBFVectorBoson::runAnalysis()
       flat_vbfmva_=-1000;
       vbfmvaHighVPt_ = -1000;
       if (cat[5] || cat[6]) {
-        TString key(cat[3] ?"BDT_VBF0LowVPtHighMJJ":(cat[5] ? "BDT_VBF0HighVPtLowMJJ" : "BDT_VBF0HighVPtHighMJJ"));
+        TString key(cat[3] ?"BDT_VBF0LowVPtHighMJJ":(cat[5] ? "BDT_VBF0HighVPtLowMJJ" : "BDT_VBF0HighVPtHighMJJ"));        
         vbfmva_ = readers[key]->EvaluateMVA(key);
-	vbfmvaHighVPt_ =readers["BDT_VBF0HighPt"]->EvaluateMVA("BDT_VBF0HighPt");
-        if(mvaCDFinv[key]) flat_vbfmva_=max(0.,mvaCDFinv[key]->Eval(vbfmva_));        
+	vbfmvaHighVPt_ =readers["BDT_VBF0HighPt"]->EvaluateMVA("BDT_VBF0HighPt");        
+        if(mvaCDFinv[key]) {
+          flat_vbfmva_=max(0.,mvaCDFinv[key]->Eval(vbfmva_));
+        }        
         if(doBlindAnalysis_ && ev_.isData && vbfmva_>0.2) {
           vbfmva_=-1000;
           flat_vbfmva_=-1000;
@@ -636,8 +639,10 @@ void VBFVectorBoson::runAnalysis()
 	  if (isLowMJJ || isHighMJJ) {
 	    TString key(isLowVPt ?"BDT_VBF0LowVPtHighMJJ":(isLowMJJ ? "BDT_VBF0HighVPtLowMJJ" : "BDT_VBF0HighVPtHighMJJ"));
 	    imva = readers[key]->EvaluateMVA(key);	    
-	    if(mvaCDFinv[key]) flat_imva=max(0.,mvaCDFinv[key]->Eval(imva));	    
-	  }
+	    if(mvaCDFinv[key]) {
+              flat_imva=max(0.,mvaCDFinv[key]->Eval(imva));	    
+            }
+          }
 
           //TString key(isLowVPt ? "BDT_VBF0HighMJJ" : "BDT_VBF0LowMJJ");
           // imva = readers[key]->EvaluateMVA(key);
@@ -667,7 +672,7 @@ void VBFVectorBoson::runAnalysis()
         std::vector<double> eweights(1,iwgt*qgwgt);
 
         ht_->fill2D("vbfmva_exp",       imva,                 is,eweights,icat);
-        ht_->fill2D("atanhvbfmva_exp",  flat_imva,   is,eweights,icat);
+        ht_->fill2D("acdfvbfmva_exp",  flat_imva,   is,eweights,icat);
         ht_->fill2D("centraleta_exp",   vbfVars_.centraleta,  is,eweights,icat);
         ht_->fill2D("forwardeta_exp",   vbfVars_.forwardeta,  is,eweights,icat);
         ht_->fill2D("leadpt_exp",       vbfVars_.leadj_pt,    is,eweights,icat);

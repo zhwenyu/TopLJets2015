@@ -82,7 +82,8 @@ case $WHAT in
 	;;
 
     PREPAREANA )
-        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 0 --jobs 8\
+        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 0 --jobs 8 \
+            -i /eos/cms/${outdir}/Chunks \
             --json ${samples_json} --RPout ${RPout_json} -o plots/analysis;               
         python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/collectEventsForMixing.py plots/analysis/Chunks
         ;;
@@ -90,8 +91,9 @@ case $WHAT in
     ANA )
         
         python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 1 --jobs 8 \
+            -i /eos/cms/${outdir}/Chunks \
             --json ${samples_json} --RPout ${RPout_json} -o plots/analysis --mix plots/analysis/Chunks/mixbank.pck;
-
+        
         ;;
 
     ANASIG )

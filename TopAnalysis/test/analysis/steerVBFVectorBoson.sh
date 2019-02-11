@@ -57,7 +57,7 @@ case $WHAT in
         #    tag=MC13TeV_2016_TTJets
         #fi
         tag=MC13TeV_${ERA}_EWKAJJ
-        input=${eosdir}/${tag}/Chunk_0_ext0.root
+        input=${eosdir}/${tag}/Chunk_1_ext0.root
         output=${tag}.root 
 
 	python scripts/runLocalAnalysis.py \

@@ -15,7 +15,7 @@ origmva={}
 finalmva={}
 for d in dists:
 
-    m=d.split('_')[0][0:-1]
+    m='BDT_VBF0'+d.split('_')[0][0:-1]
     print 'Opening',url,'for dist=',d,'for m=',m
     
     origmva[d]={}

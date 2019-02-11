@@ -15,6 +15,7 @@ import re
 from random import shuffle
 from collections import OrderedDict
 from TopLJets2015.TopAnalysis.HistoTool import *
+from mixedEvent import *
 
 VALIDLHCXANGLES=[120,130,140,150]
 
@@ -37,7 +38,7 @@ def isValidRunLumi(run,lumi,runLumiList):
     #reached this far, nothing found in list
     return True
 
-def getTracksPerRomanPot(tree,mcTruth=False):
+def getTracksPerRomanPot(tree,mcTruth=False,usefarRP=True):
 
     """loops over the availabe tracks in the event and groups them by roman pot id"""
 
@@ -46,9 +47,12 @@ def getTracksPerRomanPot(tree,mcTruth=False):
     for itk in xrange(0,tree.nRPtk):
         rpid=tree.RPid[itk]
         try:
-            csi=tree.RPfarcsi[itk]
-        except:
-            csi=tree.RPfarx[itk] if not mcTruth else  tree.RPtruecsi[itk] 
+            csi=tree.RPfarcsi[itk] if usefarRP else tree.RPnearcsi[itk]
+        except:            
+            if notMCTruth:
+                csi=tree.RPfarx[itk] if useFarRP else tree.RPnearx[itk]
+            else:
+                csi=tree.RPtruecsi[itk] 
         if rpid==23  : tkPos.append(csi)
         if rpid==123 : tkNeg.append(csi)
         
@@ -119,14 +123,19 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
     ht.add(ROOT.TH1F('mll',';Dilepton invariant mass [GeV];Events',50,20,250))
     ht.add(ROOT.TH1F('yll',';Dilepton rapidity;Events',50,0,5))
     ht.add(ROOT.TH1F('ptll',';Dilepton transverse momentum [GeV];Events',50,0,250))
+    ht.add(ROOT.TH1F('minenfwd',';min(E_{+},E_{-}) [GeV];Events',20,0,300))
+    ht.add(ROOT.TH1F('maxenfwd',';max(E_{+},E_{-}) [GeV];Events',20,0,300))
+    ht.add(ROOT.TH1F('deltaenfwd',';|E_{+}-E_{-}| [GeV];Events',20,0,300))
+    ht.add(ROOT.TH1F('sgny',';y x sgn(LRG) ;Events',20,-3,3))
+    ht.add(ROOT.TH1F('nextramu',';Additional muons ;Events',10,0,10))
+    ht.add(ROOT.TH1F('extramupt',';Additional muon p_{T} [GeV] ;Events',10,0,25))
+    ht.add(ROOT.TH1F('extramueta',';Additional muon pseudo-rapidty ;Events',10,0,25))
     ht.add(ROOT.TH1F('xangle',';LHC crossing angle [#murad];Events',4,120,160))
     ht.add(ROOT.TH1F('mpp',';Di-proton invariant mass [GeV];Events',50,0,3000))
     ht.add(ROOT.TH1F('ypp',';Di-proton rapidity;Events',50,0,2))
     ht.add(ROOT.TH1F('mmass',';Missing mass [GeV];Events',50,0,3000))
     ht.add(ROOT.TH1F('ntk',';Track multiplicity;Events',5,0,5))
     ht.add(ROOT.TH1F('csi',';#xi;Events',50,0,0.3))
-
-
 
     #start analysis
     tree=ROOT.TChain('analysis/data' if isSignal else 'tree')
@@ -156,6 +165,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
         wgt=tree.evwgt
         nvtx=tree.nvtx
         nch=tree.nch
+        rho=tree.rho
         njets=0 if isSignal else tree.nj 
 
         #acoplanarity
@@ -174,15 +184,30 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
         isZ=tree.isZ
         isHighPt=(boson.Pt()>50)
 
+        #possible diffractive-sensitive variabes
+        en_posRG=tree.jsumposhfen
+        en_negRG=tree.jsumneghfen
+        extra_muons=[]
+        for im in range(tree.nrawmu):
+            mup4=ROOT.TLorentzVector(0,0,0,0)
+            mup4.SetPtEtaPhiM(tree.rawmu_pt[im],tree.rawmu_eta[im]/10.,tree.rawmu_phi[im]/10.,0.105)
+            if mup4.DeltaR(l1p4)<0.05 : continue
+            if mup4.DeltaR(l2p4)<0.05 : continue
+            extra_muons.append( ROOT.TLorentzVector(mup4) )
+            
         #proton tracks (standard and mixed)
-        rptks = None
+        rptks, near_rptks = None, None
         beamXangle       = tree.beamXangle
         if isSignal: 
             beamXangle=signalPt[0]
             rptks = getTracksPerRomanPot(tree)
+            far_rptks = getTracksPerRomanPot(tree,False,False)
             rptks = ( [x/0.0964 for x in rptks[0]], [x/0.06159 for x in rptks[1]] )
+            far_rptks = ( [x/0.0964 for x in far_rptks[0]], [x/0.06159 for x in far_rptks[1]] )
         if isData:
             rptks = getTracksPerRomanPot(tree) 
+            far_rptks = getTracksPerRomanPot(tree,False,False) 
+
         mixed_beamXangle = None
         mixed_rptks      = None
         mixed_1rptk      = None
@@ -192,10 +217,20 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
             evEra=era
             if not mixedRP:
                 if evcat=='em' and tree.bosonpt>50:
-                    rpData[era].append( (beamXangle,rptks) )
+                    rpData[era].append( MixedEvent(beamXangle,
+                                                   nvtx,
+                                                   rho,
+                                                   rptks,
+                                                   far_rptks,
+                                                   extra_muons,
+                                                   en_posRG,
+                                                   en_negRG
+                                                   ) )
                 continue
         try:
-            mixed_beamXangle, mixed_rptks = random.choice( mixedRP[evEra] )
+            mixedEv=random.choice( mixedRP[evEra] )
+            mixed_beamXangle=mixedEv.beamXangle
+            mixed_rptks=mixedEv.far_rptks
             if rptks and mixed_rptks:
                 if random.random()<0.5:
                     mixed_1rptk = (mixed_rptks[0],rptks[1])
@@ -234,6 +269,10 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
                 if protons[0][0]<0.05 or protons[0][0]>0.20 : highPur=False
                 if protons[1][0]<0.05 or protons[1][0]>0.20 : highPur=False
 
+            #the famous cut
+            noExtraMu = True
+            if len(extra_muons)>1: noExtraMu=False
+
             #check if Z and di-proton combination is consistent with elastic scattering
             pp=buildDiproton(protons)
             isElasticLike=False
@@ -243,7 +282,6 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
                 inPP=ROOT.TLorentzVector(0,0,0,13000.)
                 if isElasticLike: 
                     mmass=(pp-boson).M()
-
 
             #categories to fill
             cats=[]
@@ -257,7 +295,10 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
                     ppCats+=[c+'elpphighPur' for c in cats]
                 if isZ:
                     cats += ppCats + [c+'%d'%xangle for c in ppCats]
-                
+            if noExtraMu:
+                extrmucats=[c+'noextramu' for c in cats]
+                cats += extrmucats
+
             if len(pfix)!=0:
                 cats=[c for c in cats if 'elpp' in c]
                 
@@ -278,7 +319,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
                 
                 ht.fill((nvtx,pwgt),                  'nvtx',   pcats,pfix)
                 ht.fill((njets,pwgt),               'njets',  pcats,pfix)
-                ht.fill((nch,pwgt),                   'nch',    pcats,pfix)
+                ht.fill((nch,pwgt),                   'nch',    pcats,pfix)                                
                 ht.fill((l1p4.Pt(),pwgt),             'l1pt',   pcats,pfix)
                 ht.fill((l2p4.Pt(),pwgt),             'l2pt',   pcats,pfix)
                 ht.fill((abs(l1p4.Eta()),pwgt),       'l1eta',  pcats,pfix)
@@ -287,7 +328,17 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
                 ht.fill((boson.M(),pwgt),             'mll',    pcats,pfix)
                 ht.fill((abs(boson.Rapidity()),pwgt), 'yll',    pcats,pfix)
                 ht.fill((boson.Pt(),pwgt),            'ptll',   pcats,pfix)
-                ht.fill((xangle,pwgt),             'xangle',    pcats,pfix)
+                ht.fill((xangle,pwgt),                'xangle',    pcats,pfix)
+                ht.fill((min(en_posRG,en_negRG),pwgt),'minenfwd',    pcats,pfix)
+                ht.fill((max(en_posRG,en_negRG),pwgt),'maxenfwd',    pcats,pfix)                
+                ht.fill((abs(en_posRG-en_negRG),pwgt),'deltaenfwd',    pcats,pfix)                
+                sgnY=boson.Rapidity() if en_posRG<en_negRG else -boson.Rapidity()
+                ht.fill((sgnY,pwgt),   'sgny', pcats,pfix)
+                ht.fill((len(extra_muons),pwgt), 'nextramu', pcats, pfix)
+                for mp4 in extra_muons:
+                    ht.fill((mp4.Pt(),pwgt), 'extramupt', pcats,pfix)
+                    ht.fill((abs(mp4.Eta()),pwgt), 'extramueta', pcats,pfix)
+
                 for irp,rpside in [(0,'pos'),(1,'neg')]:
                     ht.fill((len(protons[irp]),pwgt), 'ntk',    pcats,rpside+pfix)
                 if not pp: continue        
@@ -398,7 +449,7 @@ def runAnalysisTasks(opt):
         for f in task_dict[x]:
             fOut='%s/Chunks/%s'%(opt.output,os.path.basename(f))
             task_list.append( (f,fOut,runLumiList,opt.mix) )
-            
+
     pool.map(runExclusiveAnalysisPacked,task_list)
 
 
