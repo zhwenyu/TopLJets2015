@@ -113,6 +113,9 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
     #start histograms
     ht=HistoTool()
     ht.add(ROOT.TH1F('nvtx',';Vertex multiplicity;Events',50,0,100))
+    ht.add(ROOT.TH1F('rho',';Fastjet #rho;Events',50,0,30))
+    ht.add(ROOT.TH1F('met',';Missing transverse energy [GeV];Events',50,0,200))
+    ht.add(ROOT.TH1F('metbits',';MET filters;Events',124,0,124))
     ht.add(ROOT.TH1F('njets',';Jet multiplicity;Events',5,0,5))
     ht.add(ROOT.TH1F('nch', ';Charged particle multiplicity;Events',50,0,50))
     ht.add(ROOT.TH1F('acopl',';A=1-|#Delta#phi|/#pi;Events',50,0,1))
@@ -128,8 +131,8 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
     ht.add(ROOT.TH1F('deltaenfwd',';|E_{+}-E_{-}| [GeV];Events',20,0,300))
     ht.add(ROOT.TH1F('sgny',';y x sgn(LRG) ;Events',20,-3,3))
     ht.add(ROOT.TH1F('nextramu',';Additional muons ;Events',10,0,10))
-    ht.add(ROOT.TH1F('extramupt',';Additional muon p_{T} [GeV] ;Events',10,0,25))
-    ht.add(ROOT.TH1F('extramueta',';Additional muon pseudo-rapidty ;Events',10,0,25))
+    ht.add(ROOT.TH1F('extramupt',';Additional muon p_{T} [GeV] ;Events',10,0,50))
+    ht.add(ROOT.TH1F('extramueta',';Additional muon pseudo-rapidty ;Events',10,0,2.5))
     ht.add(ROOT.TH1F('xangle',';LHC crossing angle [#murad];Events',4,120,160))
     ht.add(ROOT.TH1F('mpp',';Di-proton invariant mass [GeV];Events',50,0,3000))
     ht.add(ROOT.TH1F('ypp',';Di-proton rapidity;Events',50,0,2))
@@ -166,6 +169,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
         nvtx=tree.nvtx
         nch=tree.nch
         rho=tree.rho
+        met=tree.met_pt
         njets=0 if isSignal else tree.nj 
 
         #acoplanarity
@@ -298,6 +302,10 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
             if noExtraMu:
                 extrmucats=[c+'noextramu' for c in cats]
                 cats += extrmucats
+            if nvtx<2 and len(protons[0])+len(protons[1])==1:
+                if (en_negRG==0 and en_posRG>0) or (en_negRG>0 and en_posRG==0):
+                    diffCats=[c+'diff' for c in cats]
+                    cats += diffCats
 
             if len(pfix)!=0:
                 cats=[c for c in cats if 'elpp' in c]
@@ -318,7 +326,10 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
             for pwgt,pcats in finalPlots:
                 
                 ht.fill((nvtx,pwgt),                  'nvtx',   pcats,pfix)
-                ht.fill((njets,pwgt),               'njets',  pcats,pfix)
+                ht.fill((rho,pwgt),                   'rho',   pcats,pfix)
+                ht.fill((met,pwgt),                   'met',   pcats,pfix)
+                ht.fill((tree.metfilters,pwgt),       'metbits',   pcats,pfix)
+                ht.fill((njets,pwgt),                 'njets',  pcats,pfix)
                 ht.fill((nch,pwgt),                   'nch',    pcats,pfix)                                
                 ht.fill((l1p4.Pt(),pwgt),             'l1pt',   pcats,pfix)
                 ht.fill((l2p4.Pt(),pwgt),             'l2pt',   pcats,pfix)
