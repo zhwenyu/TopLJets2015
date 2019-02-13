@@ -49,6 +49,7 @@ void RunPhotonTrigEff(TString filename,
   ht.setNsyst(0);
   ht.addHist("apt",     new TH1F("apt",      ";Photon transverse momentum [GeV];Events",50,0,500));
   ht.addHist("mjj",     new TH1F("mjj",      ";Dijet invariant mass [GeV];Events",50,0,2000));
+  ht.addHist("gen_mjj", new TH1F("gen_mjj",  ";Generator-level dijet invariant mass [GeV];Events",50,0,2000));
   ht.addHist("detajj",  new TH1F("detajj",   ";Dijet rapidity span;Events",50,0,10));
   ht.addHist("j1pt",    new TH1F("j1pt",     ";Jet transverse momentum [GeV];Events",50,50,250));
   ht.addHist("j2pt",    new TH1F("j2pt",     ";Jet transverse momentum [GeV];Events",50,50,250));
@@ -117,6 +118,12 @@ void RunPhotonTrigEff(TString filename,
       float j1pt(allJets.size()>0 ? allJets[0].pt() : -1);
       float j2pt(allJets.size()>1 ? allJets[1].pt() : -1);
 
+      float gen_mjj(0.);
+      if(!ev.isData){
+           std::vector<Particle> genJets=selector.getGenPhotons(ev,30.,4.7);
+	    gen_mjj=(genJets.size()>1 ? (genJets[0]+genJets[1]).M() : 0.)	      
+      }
+	  
       std::vector<TString> cats(1,"offlinephoton");      
       if(selector.hasTriggerBit("HLT_Photon200_v",ev.triggerBits)) {
         cats.push_back("photon200");
@@ -137,6 +144,7 @@ void RunPhotonTrigEff(TString filename,
       plotwgts[0]=wgt;
       ht.fill("apt",    photons[0].pt(), plotwgts,cats);
       ht.fill("mjj",    mjj,             plotwgts,cats);
+      ht.fill("gen_mjj",    mjj,             plotwgts,cats);
       ht.fill("detajj", detajj,          plotwgts,cats);
       ht.fill("j1pt",   j1pt,            plotwgts,cats);
       ht.fill("j2pt",   j2pt,            plotwgts,cats);
