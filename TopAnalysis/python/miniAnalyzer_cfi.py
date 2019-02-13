@@ -151,4 +151,5 @@ analysis = cms.EDAnalyzer("MiniAnalyzer",
                           mets                   = cms.InputTag('slimmedMETsModifiedMET'),                          
                           pfCands                = cms.InputTag('packedPFCandidates'),
                           ctppsLocalTracks       = cms.InputTag('ctppsLocalTrackLiteProducer'),
+                          tagRecoProtons         = cms.InputTag('ctppsProtonReconstruction'),
                           )
