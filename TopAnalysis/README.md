@@ -14,6 +14,8 @@ cmsenv
 
 ##OPTIONAL (USE IF CREATING NTUPLES FROM SCRATCH)
 
+git cms-init
+
 #proton reconstruction
 #see https://twiki.cern.ch/twiki/bin/viewauth/CMS/CTPPSStandardProtonReconstruction
 git remote add ctpps git@github.com:CTPPS/cmssw.git
