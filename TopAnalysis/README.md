@@ -14,6 +14,13 @@ cmsenv
 
 ##OPTIONAL (USE IF CREATING NTUPLES FROM SCRATCH)
 
+#proton reconstruction
+#see https://twiki.cern.ch/twiki/bin/viewauth/CMS/CTPPSStandardProtonReconstruction
+git remote add ctpps git@github.com:CTPPS/cmssw.git
+git fetch ctpps
+git checkout -b test ctpps/ctpps_initial_proton_reconstruction_CMSSW_9_4_11
+git cms-addpkg CondFormats/CTPPSOpticsObjects DataFormats/ProtonReco IOMC/EventVertexGenerators IOMC/ParticleGuns RecoCTPPS/ProtonReconstruction RecoCTPPS/TotemRPLocal SimCTPPS/OpticsParameterisation Validation/CTPPS CondFormats/RunInfo CondFormats/DataRecord
+
 #MVA v2 ids
 git cms-merge-topic guitargeek:EgammaID_9_4_X
 #photon/electron id+scale and smearing fixes for MINIAOD 2017v2 (doesn't harm 2016v3)
@@ -22,14 +29,6 @@ git cms-merge-topic cms-egamma:EgammaPostRecoTools_940
 #re-do MET to mitigate EE noise
 git cms-merge-topic cms-met:METFixEE2017_949_v2
 scram b -j 8
-
-#proton reconstruction
-#see https://twiki.cern.ch/twiki/bin/viewauth/CMS/CTPPSStandardProtonReconstruction
-git remote add ctpps git@github.com:CTPPS/cmssw.git
-git fetch ctpps
-git checkout -b test ctpps/ctpps_initial_proton_reconstruction_CMSSW_9_4_11
-
-git cms-addpkg CondFormats/CTPPSOpticsObjects DataFormats/ProtonReco IOMC/EventVertexGenerators IOMC/ParticleGuns RecoCTPPS/ProtonReconstruction RecoCTPPS/TotemRPLocal SimCTPPS/OpticsParameterisation Validation/CTPPS CondFormats/RunInfo CondFormats/DataRecord
 
 ##END OPTIONAL
 
