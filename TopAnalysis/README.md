@@ -22,10 +22,11 @@ git checkout -b test ctpps/ctpps_initial_proton_reconstruction_CMSSW_9_4_11
 git cms-addpkg CondFormats/CTPPSOpticsObjects DataFormats/ProtonReco IOMC/EventVertexGenerators IOMC/ParticleGuns RecoCTPPS/ProtonReconstruction RecoCTPPS/TotemRPLocal SimCTPPS/OpticsParameterisation Validation/CTPPS CondFormats/RunInfo CondFormats/DataRecord
 
 #MVA v2 ids
-git cms-merge-topic guitargeek:EgammaID_9_4_X
 #photon/electron id+scale and smearing fixes for MINIAOD 2017v2 (doesn't harm 2016v3)
+git cms-merge-topic cms-egamma:EgammaID_949 #if you want the FallV2 IDs, otherwise skip
 #just adds in an extra file to have a setup function to make things easier
 git cms-merge-topic cms-egamma:EgammaPostRecoTools_940 
+
 #re-do MET to mitigate EE noise
 git cms-merge-topic cms-met:METFixEE2017_949_v2
 scram b -j 8
