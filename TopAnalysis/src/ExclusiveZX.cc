@@ -20,8 +20,7 @@
 #include "TMath.h"
 
 #include "TopLJets2015/CTPPSAnalysisTools/interface/LHCConditionsFactory.h"
-#include "TopLJets2015/CTPPSAnalysisTools/interface/AlignmentsFactory.h"
-#include "TopLJets2015/CTPPSAnalysisTools/interface/XiReconstructor.h"
+
 
 using namespace std;
 
@@ -41,13 +40,6 @@ void RunExclusiveZX(TString filename,
   // INITIALIZATION //
   ///////////////////
   const char* CMSSW_BASE = getenv("CMSSW_BASE");
-  // CTPPS reconstruction part
-  ctpps::XiReconstructor proton_reco;
-  proton_reco.feedDispersions(Form("%s/src/TopLJets2015/CTPPSAnalysisTools/data/2017/dispersions.txt", CMSSW_BASE));
-  proton_reco.interpolateCrossingAngle( 150., 0.046 );
-
-  ctpps::AlignmentsFactory ctpps_aligns;
-  ctpps_aligns.feedAlignments(Form("%s/src/TopLJets2015/CTPPSAnalysisTools/data/2017/alignments_21aug2018.txt", CMSSW_BASE));
 
   ctpps::LHCConditionsFactory lhc_conds;
   lhc_conds.feedConditions(Form("%s/src/TopLJets2015/CTPPSAnalysisTools/data/2017/xangle_tillTS2.csv", CMSSW_BASE));
@@ -648,8 +640,8 @@ void RunExclusiveZX(TString filename,
           beamXangle = lhc_cond.crossing_angle;
           ht.fill("beamXangle", beamXangle, plotwgts, selCat);
           
-          //only dispersions for these angles are available (@ CTPPSAnalysisTools/data/2017/dispersions.txt)
-          //150 is interpolated
+
+          //FIXME This is now probably wrong and neads understanding
           if(beamXangle==120 || beamXangle==130 || beamXangle==140 || beamXangle==150) {
             
             std::vector< std::pair<int,float> > nearCsis;
@@ -657,16 +649,10 @@ void RunExclusiveZX(TString filename,
             ntks[23]=0; ntks[123]=0;
             for (int ift=0; ift<ev.nfwdtrk; ift++) {
             
-              //only these roman pots are aligned CTPPSAnalysisTools/data/2017/alignments_21aug2018.txt 
-              const unsigned short pot_raw_id = 100*ev.fwdtrk_arm[ift]+10*ev.fwdtrk_station[ift]+ev.fwdtrk_pot[ift];
+              const unsigned short pot_raw_id = ev.fwdtrk_pot[ift];
               if (pot_raw_id!=3 && pot_raw_id!=23 && pot_raw_id!=103 && pot_raw_id!=123) continue;
-            
-              const ctpps::alignment_t align = ctpps_aligns.get( ev_id, pot_raw_id );
-              double xi, xi_error;
+              float xi=ev.fwdtrk_xi[ift];
               
-              proton_reco.reconstruct(beamXangle, pot_raw_id, ev.fwdtrk_x[ift]*100+align.x_align, xi, xi_error);
-              
-              //information is only saved for the far detectors (pixels)
               if (pot_raw_id==23 || pot_raw_id==123) {
                 RPid[nRPtk]=pot_raw_id;
                 RPfarcsi[nRPtk]=xi;
@@ -675,6 +661,7 @@ void RunExclusiveZX(TString filename,
                 
                 //monitor track multiplicity and csi values
                 if(ntks.find(pot_raw_id)==ntks.end()) ntks[pot_raw_id]=0;
+
                 ntks[pot_raw_id]++;
                 ht.fill("csirp",xi,plotwgts, Form("%s_%d",selCat.Data(),pot_raw_id));
                 

@@ -206,14 +206,16 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev,Int_t njecUncs)
   t->Branch("met_filterBits", &ev.met_filterBits, "met_filterBits/I");
 
   //CTPPS local tracks
-  t->Branch("nfwdtrk",      &ev.nfwdtrk,       "nfwdtrk/I");
-  t->Branch("fwdtrk_arm",    ev.fwdtrk_arm,    "fwdtrk_arm[nfwdtrk]/I");
-  t->Branch("fwdtrk_station",ev.fwdtrk_station,"fwdtrk_station[nfwdtrk]/I");
-  t->Branch("fwdtrk_pot",    ev.fwdtrk_pot,    "fwdtrk_pot[nfwdtrk]/I");
-  t->Branch("fwdtrk_x",      ev.fwdtrk_x,      "fwdtrk_x[nfwdtrk]/F");
-  t->Branch("fwdtrk_x_unc",  ev.fwdtrk_x_unc,  "fwdtrk_x_unc[nfwdtrk]/F");
-  t->Branch("fwdtrk_y",      ev.fwdtrk_y,      "fwdtrk_y[nfwdtrk]/F");
-  t->Branch("fwdtrk_y_unc",  ev.fwdtrk_y_unc,  "fwdtrk_y_unc[nfwdtrk]/F");
+  t->Branch("nfwdtrk",         &ev.nfwdtrk,          "nfwdtrk/S");
+  t->Branch("fwdtrk_pot",       ev.fwdtrk_pot,       "fwdtrk_pot[nfwdtrk]/S");
+  t->Branch("fwdtrk_method",    ev.fwdtrk_method,    "fwdtrk_method[nfwdtrk]/S");
+  t->Branch("fwdtrk_ex",        ev.fwdtrk_ex,        "fwdtrk_ex[nfwdtrk]/F");
+  t->Branch("fwdtrk_ey",        ev.fwdtrk_ey,        "fwdtrk_ey[nfwdtrk]/F");
+  t->Branch("fwdtrk_y",         ev.fwdtrk_y,         "fwdtrk_y[nfwdtrk]/F");
+  t->Branch("fwdtrk_chisqnorm", ev.fwdtrk_chisqnorm, "fwdtrk_chisqnorm[nfwdtrk]/F");
+  t->Branch("fwdtrk_xi",        ev.fwdtrk_xi,        "fwdtrk_xi[nfwdtrk]/F");
+  t->Branch("fwdtrk_t",         ev.fwdtrk_t,         "fwdtrk_t[nfwdtrk]/F");
+
 
 
   t->Branch("nrawmu", &ev.nrawmu, "nrawmu/I");
@@ -438,14 +440,17 @@ void attachToMiniEventTree(TTree *t,MiniEvent_t &ev,bool full)
   t->SetBranchAddress("met_filterBits", &ev.met_filterBits);
 
   //CTPPS local tracks
-  t->SetBranchAddress("nfwdtrk",       &ev.nfwdtrk);
-  t->SetBranchAddress("fwdtrk_arm",    ev.fwdtrk_arm);
-  t->SetBranchAddress("fwdtrk_station",ev.fwdtrk_station);
-  t->SetBranchAddress("fwdtrk_pot",    ev.fwdtrk_pot);
-  t->SetBranchAddress("fwdtrk_x",      ev.fwdtrk_x);
-  t->SetBranchAddress("fwdtrk_x_unc",  ev.fwdtrk_x_unc);
-  t->SetBranchAddress("fwdtrk_y",      ev.fwdtrk_y);
-  t->SetBranchAddress("fwdtrk_y_unc",  ev.fwdtrk_y_unc);
+  t->SetBranchAddress("nfwdtrk",         &ev.nfwdtrk);
+  t->SetBranchAddress("fwdtrk_pot",       ev.fwdtrk_pot);
+  t->SetBranchAddress("fwdtrk_method",    ev.fwdtrk_method);
+  t->SetBranchAddress("fwdtrk_ex",         ev.fwdtrk_ex);
+  t->SetBranchAddress("fwdtrk_ey",         ev.fwdtrk_ey);
+  t->SetBranchAddress("fwdtrk_y",         ev.fwdtrk_y);
+  t->SetBranchAddress("fwdtrk_chisqnorm", ev.fwdtrk_chisqnorm);
+  t->SetBranchAddress("fwdtrk_xi",        ev.fwdtrk_xi);
+  t->SetBranchAddress("fwdtrk_t",         ev.fwdtrk_t);
+
+  //
   t->SetBranchAddress("nrawmu",   &ev.nrawmu);
   t->SetBranchAddress("rawmu_pt",  ev.rawmu_pt);
   t->SetBranchAddress("rawmu_eta", ev.rawmu_eta);

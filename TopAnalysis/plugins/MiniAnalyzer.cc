@@ -560,20 +560,34 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
   ev_.nfwdtrk=0;
   if(iEvent.isRealData()) {
     try{
-      edm::Handle<std::vector<CTPPSLocalTrackLite> > ctppslocaltracks;
-      iEvent.getByToken(ctppsToken_, ctppslocaltracks);
-      for (const CTPPSLocalTrackLite& lt : *ctppslocaltracks) {
-        const CTPPSDetId detid(lt.getRPId());
-        ev_.fwdtrk_arm[ev_.nfwdtrk] = detid.arm(); // 0 = sector 4-5 ; 1 = sector 5-6
-        ev_.fwdtrk_station[ev_.nfwdtrk] = detid.station();
-        ev_.fwdtrk_pot[ev_.nfwdtrk] = detid.rp(); // 2 = near pot ; 3 = far pot
-        ev_.fwdtrk_x[ev_.nfwdtrk] = lt.getX()*1.e-3; // store in m
-        ev_.fwdtrk_x_unc[ev_.nfwdtrk] = lt.getXUnc()*1.e-3;
-        ev_.fwdtrk_y[ev_.nfwdtrk] = lt.getY()*1.e-3;
-        ev_.fwdtrk_y_unc[ev_.nfwdtrk] = lt.getYUnc()*1.e-3;
-        
-        ev_.nfwdtrk++;
-      }
+      edm::Handle<vector<reco::ProtonTrack>> recoProtons;
+      iEvent.getByToken(tokenRecoProtons_, recoProtons);
+      for (const auto & proton : *recoProtons)
+        {
+          if(!proton.valid()) continue;
+
+          CTPPSDetId detid(* proton.contributingRPIds.begin());
+          ev_.fwdtrk_pot[ev_.nfwdtrk]       = 100*detid.arm()+10*detid.station()+detid.rp();
+          ev_.fwdtrk_chisqnorm[ev_.nfwdtrk] = proton.fitChiSq;
+          ev_.fwdtrk_method[ev_.nfwdtrk]    = proton.method;
+          ev_.fwdtrk_ex[ev_.nfwdtrk]        = proton.direction().x();
+          ev_.fwdtrk_ey[ev_.nfwdtrk]        = proton.direction().y();
+          ev_.fwdtrk_y[ev_.nfwdtrk]         = proton.vertex().y();
+
+          float xi=proton.xi();
+          ev_.fwdtrk_xi[ev_.nfwdtrk]        = xi;
+
+          float th_x = proton.direction().x() / proton.direction().mag();
+          float th_y = proton.direction().y() / proton.direction().mag();
+          float mp = 0.938; // GeV
+          float Eb = 6500.; // GeV
+          float t0 = 2.*pow(mp,2) + 2.*pow(Eb,2)*(1.-xi) - 2.*sqrt( (pow(mp,2) + pow(Eb,2)) * (pow(mp,2) + pow(Eb,2)*pow(1.-xi,2)) );
+          float th = sqrt(th_x * th_x + th_y * th_y);
+          float S = sin(th/2.);
+          ev_.fwdtrk_t[ev_.nfwdtrk] = t0 - 4. * pow(Eb,2)* (1.-xi) * S*S;
+                  
+          ev_.nfwdtrk++;
+        }
     }
     catch(...){
     }

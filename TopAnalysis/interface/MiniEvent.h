@@ -79,11 +79,11 @@ struct MiniEvent_t
   Float_t pf_puppi_px,pf_puppi_py,pf_puppi_pz,pf_puppi_ht,pf_puppi_hz,pf_puppi_wgtSum;
   Float_t pf_closestDZnonAssoc;
 
-  //CTPPS leaves
-  Int_t nfwdtrk,fwdtrk_arm[50],fwdtrk_station[50],fwdtrk_pot[50];
-  Float_t fwdtrk_x[50],fwdtrk_x_unc[50];
-  Float_t fwdtrk_y[50],fwdtrk_y_unc[50];
+  //CTPPS protons
+  Short_t nfwdtrk,fwdtrk_pot[50],fwdtrk_method[50];
+  Float_t fwdtrk_ex[50],fwdtrk_ey[50],fwdtrk_y[50],fwdtrk_chisqnorm[50],fwdtrk_xi[50],fwdtrk_t[50];
 
+  //these are crazy variables for the cross check
   Int_t nrawmu;
   Short_t rawmu_pt[200],rawmu_eta[200],rawmu_phi[200];
   Int_t rawmu_pid[200];
