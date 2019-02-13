@@ -120,8 +120,8 @@ void RunPhotonTrigEff(TString filename,
 
       float gen_mjj(0.);
       if(!ev.isData){
-           std::vector<Particle> genJets=selector.getGenPhotons(ev,30.,4.7);
-	    gen_mjj=(genJets.size()>1 ? (genJets[0]+genJets[1]).M() : 0.)	      
+        std::vector<Particle> genJets=selector.getGenPhotons(ev,30.,4.7);
+        gen_mjj=(genJets.size()>1 ? (genJets[0]+genJets[1]).M() : 0.);
       }
 	  
       std::vector<TString> cats(1,"offlinephoton");      
@@ -144,7 +144,7 @@ void RunPhotonTrigEff(TString filename,
       plotwgts[0]=wgt;
       ht.fill("apt",    photons[0].pt(), plotwgts,cats);
       ht.fill("mjj",    mjj,             plotwgts,cats);
-      ht.fill("gen_mjj",    mjj,             plotwgts,cats);
+      ht.fill("gen_mjj",  gen_mjj,             plotwgts,cats);
       ht.fill("detajj", detajj,          plotwgts,cats);
       ht.fill("j1pt",   j1pt,            plotwgts,cats);
       ht.fill("j2pt",   j2pt,            plotwgts,cats);

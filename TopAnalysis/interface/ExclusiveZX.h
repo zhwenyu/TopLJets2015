@@ -1,11 +1,11 @@
-#ifndef _ExclusiveTop_h_
-#define _ExclusiveTop_h_
+#ifndef _ExclusiveZX_h_
+#define _ExclusiveZX_h_
 
 #include "TLorentzVector.h"
 #include "TopLJets2015/TopAnalysis/interface/ObjectTools.h"
 #include "TopLJets2015/TopAnalysis/interface/SelectionTools.h"
 
-void RunExclusiveTop(TString filename,
+void RunExclusiveZX(TString filename,
                      TString outname,
                      Int_t channelSelection, 
                      Int_t chargeSelection, 

@@ -2,7 +2,7 @@
 
 WHAT=$1; 
 if [ "$#" -ne 1 ]; then 
-    echo "steerExclusiveTop.sh <SEL/MERGE/PLOT/WWW>";
+    echo "steerExclusiveZX.sh <SEL/MERGE/PLOT/WWW>";
     echo "   SEL        - launches selection jobs to the batch, output will contain summary trees and control plots"; 
     echo "   MERGESEL   - merge output"
     echo "   PLOTSEL    - make plots"
@@ -47,12 +47,12 @@ case $WHAT in
             -i ${inputfileTESTSEL} --tag ${inputfileTag} \
             -o testsel.root --genWeights genweights_${githash}.root \
             --njobs 1 -q local --debug \
-            --era era2017 -m ExclusiveTop::RunExclusiveTop --ch 0 --runSysts;
+            --era era2017 -m ExclusiveZX::RunExclusiveZX --ch 0 --runSysts;
         ;;
 
     SEL )
         baseOpt="-i ${eosdir} --genWeights genweights_${githash}.root"
-        baseOpt="${baseOpt} -o ${outdir} -q ${queue} --era era2017 -m ExclusiveTop::RunExclusiveTop --ch 0 --runSysts"
+        baseOpt="${baseOpt} -o ${outdir} -q ${queue} --era era2017 -m ExclusiveZX::RunExclusiveZX --ch 0 --runSysts"
         baseOpt="${baseOpt} --exactonly"        
 	python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py ${baseOpt} --only ${samples_json};
 	#python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py ${baseOpt} --only ${zx_samples_json};	

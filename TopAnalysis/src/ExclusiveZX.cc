@@ -8,7 +8,7 @@
 #include <TGraphAsymmErrors.h>
 
 #include "TopLJets2015/TopAnalysis/interface/CommonTools.h"
-#include "TopLJets2015/TopAnalysis/interface/ExclusiveTop.h"
+#include "TopLJets2015/TopAnalysis/interface/ExclusiveZX.h"
 #include "TopQuarkAnalysis/TopTools/interface/MEzCalculator.h"
 
 #include <vector>
@@ -28,7 +28,7 @@ using namespace std;
 #define ADDVAR(x,name,t,tree) tree->Branch(name,x,TString(name)+TString(t))
 
 //
-void RunExclusiveTop(TString filename,
+void RunExclusiveZX(TString filename,
                      TString outname,
                      Int_t channelSelection, 
                      Int_t chargeSelection, 
