@@ -25,7 +25,7 @@ git cms-addpkg CondFormats/CTPPSOpticsObjects DataFormats/ProtonReco IOMC/EventV
 
 #MVA v2 ids
 #photon/electron id+scale and smearing fixes for MINIAOD 2017v2 (doesn't harm 2016v3)
-git cms-merge-topic cms-egamma:EgammaID_949 #if you want the FallV2 IDs, otherwise skip
+git cms-merge-topic cms-egamma:EgammaID_949 
 #just adds in an extra file to have a setup function to make things easier
 git cms-merge-topic cms-egamma:EgammaPostRecoTools_940 
 
