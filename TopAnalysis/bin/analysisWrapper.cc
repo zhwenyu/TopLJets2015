@@ -1,9 +1,10 @@
 #include <iostream>
 
 #include "TopLJets2015/TopAnalysis/interface/CommonTools.h"
-#include "TopLJets2015/TopAnalysis/interface/ExclusiveTop.h"
+#include "TopLJets2015/TopAnalysis/interface/ExclusiveZX.h"
 #include "TopLJets2015/TopAnalysis/interface/TOP-17-010.h"
 #include "TopLJets2015/TopAnalysis/interface/VBFVectorBoson.h"
+#include "TopLJets2015/TopAnalysis/interface/PhotonTrigEff.h"
 
 #include "TH1F.h"
 #include "TFile.h"
@@ -96,8 +97,11 @@ int main(int argc, char* argv[])
     }
 
   //check method to run
-  if(method=="ExclusiveTop::RunExclusiveTop") {
-    RunExclusiveTop(in,out,channel,charge,normH,puH,era,debug);
+  if(method=="ExclusiveZX::RunExclusiveZX") {
+    RunExclusiveZX(in,out,channel,charge,normH,puH,era,debug);
+  }
+  else if(method=="PhotonTrigEff::RunPhotonTrigEff") {
+    RunPhotonTrigEff(in,out,normH,puH,era,debug);
   }
   else if(method=="VBFVectorBoson::RunVBFVectorBoson") {
     VBFVectorBoson myVBF(in,out,normH,puH,era,xsec,debug,CR,QCDTemp,SRfake,skimtree,true);

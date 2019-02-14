@@ -85,6 +85,8 @@ struct MiniEvent_t
   Float_t fwdtrk_y[50],fwdtrk_y_unc[50];
 
   Int_t nrawmu;
+  Short_t rawmu_pt[200],rawmu_eta[200],rawmu_phi[200];
+  Int_t rawmu_pid[200];
   Float_t vtxHt[200],vtxPt[200];
   Int_t vtxMult[200];
 

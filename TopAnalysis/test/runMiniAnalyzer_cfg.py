@@ -119,7 +119,7 @@ if '2016' in options.era:
 
 if options.runOnData:
       if '2017' in options.era:
-            process.source.fileNames = cms.untracked.vstring('/store/data/Run2017F/SinglePhoton/MINIAOD/31Mar2018-v1/00000/0033B9DF-4338-E811-AB11-1CB72C1B6CC6.root')
+            process.source.fileNames = cms.untracked.vstring('/store/data/Run2017F/DoubleMuon/MINIAOD/31Mar2018-v1/00000/425B0470-2237-E811-A749-02163E01A0A2.root')
             if options.runL1PrefireAna:
                   print 'Adding secondary filenames to run L1 prefire analysis'
                   process.source.secondaryFileNames = cms.untracked.vstring(['/store/data/Run2017F/SinglePhoton/AOD/17Nov2017-v1/70000/BC8110F6-3CE0-E711-9210-02163E014564.root',
@@ -205,12 +205,28 @@ if process.fullPatMetSequenceModifiedMET:
 if not (options.runOnData or options.noParticleLevel):
       process.mctruth=cms.Path(process.mergedGenParticles*process.genParticles2HepMC*process.particleLevel)
       toSchedule.append( process.mctruth )
+if options.runOnData:
+      if 'era2017' in options.era:
+            process.load("RecoCTPPS.ProtonReconstruction.year_2017_OF.ctppsProtonReconstructionOF_cfi")
+            process.ppsReco=cms.Path(process.ctppsProtonReconstructionOFDB)
+      else:
+            process.load("RecoCTPPS.ProtonReconstruction.year_2016.ctppsProtonReconstruction_cfi")
+            process.ppsReco=cms.Path(process.ctppsProtonReconstruction)
+      toSchedule.append(process.ppsReco)
+
 process.ana=cms.Path(process.analysis)
 toSchedule.append( process.ana )
-if options.runOnData and options.runL1PrefireAna:
-      print 'Prefire analysis is scheduled to be executed'
-      from TopLJets2015.TopAnalysis.l1prefireAnalysis_cfi import *
-      defineL1PrefireAnalysis(process,options.era)
-      toSchedule.append(process.l1prefirePath)
+if options.runOnData:
+
+      if 'era2017' in options.era:
+            process.analysis.tagRecoProtons = cms.InputTag('ctppsProtonReconstructionOFDB')
+      else:
+            process.analysis.tagRecoProtons = cms.InputTag('ctppsProtonReconstruction')
+
+      if options.runL1PrefireAna:
+            print 'Prefire analysis is scheduled to be executed'
+            from TopLJets2015.TopAnalysis.l1prefireAnalysis_cfi import *
+            defineL1PrefireAnalysis(process,options.era)
+            toSchedule.append(process.l1prefirePath)
 
 process.schedule=cms.Schedule( (p for p in toSchedule) )
