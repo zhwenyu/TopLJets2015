@@ -183,9 +183,9 @@ def main():
 
     #plot the contour interpolating the available points
     os.system('mkdir -p %s'%opt.outdir)
-    #doContour(fitres,outdir=opt.outdir)
+    doContour(fitres,outdir=opt.outdir)
     profilePOI(fitres,outdir=opt.outdir,axis=0)
-    #profilePOI(fitres,outdir=opt.outdir,axis=1)
+    profilePOI(fitres,outdir=opt.outdir,axis=1)
 
 if __name__ == "__main__":
     sys.exit(main())
