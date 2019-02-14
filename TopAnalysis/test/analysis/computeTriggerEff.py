@@ -5,12 +5,11 @@ url=sys.argv[1]
 year=sys.argv[2]
 
 HISTOLIST={'2017':[('offlinephoton_apt',    'photon200_apt'),
-                   #('offlinephotonvbf_apt', 'photon75_vbf2017_apt'),
-                   #('offlinephotonvbf_mjj', 'photon75_vbf2017_mjj')
+                   ('offlinephotonvbf_apt', 'photon75_vbf2017_apt'),
                    ],
-           '2016':[('offlinephoton_apt',    'photon175_apt'),
+           '2016':[('offlinephoton_apt',    'photon175_apt'),        
                    ('offlinephotonvbf_apt', 'photon75_vbf2016_apt'),
-                   ('offlinephotonvbf_mjj', 'photon75_vbf2016_mjj')]
+                   ],
            }
 
 def getData2MC(data,mc):
@@ -47,53 +46,42 @@ def getEffGraph(name,total_pass,total,isData):
         gr.SetTitle('Data')
         gr.SetFillStyle(0)
         gr.SetMarkerStyle(20)
-        turnOn=ROOT.TF1('turnon',
-                        '[0]+[1]/(1.+TMath::Exp([2]*(x-[3])))',
-                        total.GetXaxis().GetXmin(),
-                        total.GetXaxis().GetXmax())
-        #turnOn.SetParLimits(0,0.,0.8)
-        #turnOn.SetParLimits(1,0.5,1.2)
-        #turnOn.SetParLimits(2,-2,2)
-        # turnOn.SetParLimits(3,total.GetXaxis().GetXmin(),total.GetXaxis().GetXmax())
-        gr.Fit(turnOn,'MR+')
-
     return gr
 
 
-def getEffPlots(plist,isData=True):
+def getEffPlots(url,year,isData=True):
+
+    fIn=ROOT.TFile.Open(url)
 
     histos={}
     for a,b in HISTOLIST[year]:
         histos[a]=None
         histos[b]=None
 
-    for p in plist:
-        fIn=ROOT.TFile(p)
-        for h in histos:
+    for h in histos:
+        tag=''
+        if not isData: tag='_EWK #gammajj'
+        try:
+            histos[h]=fIn.Get('{0}/{0}{1}'.format(h,tag))
+            histos[h].SetDirectory(0)
+            #if 'vbf' in h:
+            #    histos[h].Rebin(4)
+            #else:
+            #    histos[h].Rebin()
 
-            if isData and year=='2017':
-                if 'vbf' in h and not '2017F_SingleMuon' in p : continue
-                
-            h1=fIn.Get(h)
-            try:
-                h1.Integral()
-                if histos[h] is None:
-                    histos[h]=h1.Clone()
-                    histos[h].SetDirectory(0)
-                else:
-                    histos[h].Add(h1)
-            except:
-                pass
-        fIn.Close()
+        except Exception as e:
+            print e
+            pass
+        
+    fIn.Close()    
     
-    print histos
-    effGrs=[ getEffGraph(b,histos[a],histos[b],isData) for a,b in HISTOLIST[year] ]
+    effGrs=[ getEffGraph(b,histos[b],histos[a],isData) for a,b in HISTOLIST[year] ]
 
     return effGrs
 
 url=sys.argv[1]
-effGr=getEffPlots(plist=[os.path.join(url,f) for f in os.listdir(url) if 'SingleMuon' in f])
-mcEffGr=getEffPlots(plist=[os.path.join(url,'MC13TeV_'+year+'_EWKAJJ.root')],isData=False)
+effGr=getEffPlots(url,year)
+mcEffGr=getEffPlots(url,year,isData=False)
 
 
 ROOT.gStyle.SetOptStat(0)
@@ -136,13 +124,16 @@ for i in xrange(len(effGr)):
     mcEffGr[i].GetYaxis().SetTitleSize(0.08)
     mcEffGr[i].GetYaxis().SetLabelSize(0.08)
     mcEffGr[i].GetYaxis().SetTitleOffset(0.7)
-    mcEffGr[i].GetYaxis().SetRangeUser(0.05,1.)
+    mcEffGr[i].GetYaxis().SetRangeUser(0.0,1.)
 
-    leg1=p1.BuildLegend(0.15,0.88,0.6,0.66)
+    leg1=ROOT.TLegend(0.15,0.88,0.6,0.66)
     leg1.SetFillStyle(0)
     leg1.SetBorderSize(0)
     leg1.SetTextFont(42)
     leg1.SetTextSize(0.08)
+    leg1.AddEntry(effGr[i],'Data','p')
+    leg1.AddEntry(mcEffGr[i],'EWK #gammajj','l')
+    leg1.Draw()
 
     txt=ROOT.TLatex()
     txt.SetNDC(True)
@@ -159,7 +150,7 @@ for i in xrange(len(effGr)):
     frame.Reset('ICE')
     frame.Draw()
     frame.GetYaxis().SetNdivisions(5)
-    frame.GetYaxis().SetRangeUser(0.72,1.08)
+    frame.GetYaxis().SetRangeUser(0.72,1.28)
     frame.GetXaxis().SetTitleSize(0.08)
     frame.GetXaxis().SetLabelSize(0.08)
     frame.GetYaxis().SetTitleSize(0.08)
@@ -168,6 +159,10 @@ for i in xrange(len(effGr)):
     frame.GetYaxis().SetTitle('Data/MC')
     
     sfgr=getData2MC(effGr[i],mcEffGr[i])
+    minX=150
+    if 'vbf' in effGr[i].GetName(): minX=50
+    sff=ROOT.TF1('sff','([0]*pow(x-[3],2)+[1]*(x-[3])+[0])*exp([2]*(x-[3]))+[4]',minX,frame.GetYaxis().GetXmax())    
+    sfgr.Fit(sff,'M+')
     sfgr.Draw('p')
     p2.RedrawAxis()
 

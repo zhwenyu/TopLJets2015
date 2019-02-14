@@ -44,6 +44,9 @@ queue=workday
 outdir=${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBFVectorBoson
 wwwdir=~/www/VBFVectorBoson
 
+#k-factors for gamma+jets
+kFactors="--procSF MC13TeV_era${ERA}_QCDEM_15to20:1.26,MC13TeV_era${ERA}_QCDEM_20to30:1.26,MC13TeV_era${ERA}_QCDEM_30to50:1.26,MC13TeV_era${ERA}_QCDEM_50to80:1.26,MC13TeV_era${ERA}_QCDEM_80to120:1.26,MC13TeV_era${ERA}_QCDEM_120to170:1.26,MC13TeV_era${ERA}_QCDEM_170to300:1.26,MC13TeV_era${ERA}_QCDEM_300toInf:1.26,MC13TeV_era${ERA}_GJets_HT40to100:1.26,MC13TeV_era${ERA}_GJets_HT100to200:1.26,MC13TeV_era${ERA}_GJets_HT200to400:1.26,MC13TeV_era${ERA}_GJets_HT400to600:1.26,MC13TeV_era${ERA}_GJets_HT600toInf:1.26"
+
 
 RED='\e[31m'
 NC='\e[0m'
@@ -105,9 +108,8 @@ case $WHAT in
 	;;
 
     SELTRIGEFF )
-        json=data/era${ERA}/vbf_samples.json 
 	python scripts/runLocalAnalysis.py \
-	    -i ${eosdir} --only ${json}\
+	    -i ${eosdir} --only SingleMu,EWKAJJ\
             -o ${outdir}/trig/${githash}/${EXTRA} \
             --farmappendix trig${githash} \
             -q ${queue} --genWeights genweights_${githash}.root \
@@ -150,7 +152,6 @@ case $WHAT in
 	syst_json=data/era${ERA}/vbf_syst_samples.json;
         gjets_json=data/era${ERA}/gjets_samples.json;
 	plotOutDir=${outdir}/${githash}/${EXTRA}/plots/
-        kFactors="--procSF MC13TeV_era${ERA}_QCDEM_15to20:1.26,MC13TeV_era${ERA}_QCDEM_20to30:1.26,MC13TeV_era${ERA}_QCDEM_30to50:1.26,MC13TeV_era${ERA}_QCDEM_50to80:1.26,MC13TeV_era${ERA}_QCDEM_80to120:1.26,MC13TeV_era${ERA}_QCDEM_120to170:1.26,MC13TeV_era${ERA}_QCDEM_170to300:1.26,MC13TeV_era${ERA}_QCDEM_300toInf:1.26,MC13TeV_era${ERA}_GJets_HT40to100:1.26,MC13TeV_era${ERA}_GJets_HT100to200:1.26,MC13TeV_era${ERA}_GJets_HT200to400:1.26,MC13TeV_era${ERA}_GJets_HT400to600:1.26,MC13TeV_era${ERA}_GJets_HT600toInf:1.26"
 	commonOpts="-i ${outdir}/${githash}/${EXTRA} --puNormSF puwgtctr -l ${fulllumi} --saveLog --mcUnc ${lumiUnc} --lumiSpecs LowVPtLowMJJA:${vbflumi},LowVPtHighMJJA:${vbflumi}"
         #python scripts/plotter.py ${commonOpts} -j ${gjets_json} --noStack --only A_
 	python scripts/plotter.py ${commonOpts} -j ${json} --only HighMJJ,LowMJJ ${kFactors}
@@ -174,8 +175,14 @@ case $WHAT in
 
     TRIGEFF )
         #trigger efficiencies
+        json=data/era${ERA}/vbf_samples.json;
 	inDir=${outdir}/trig/${githash}/${EXTRA}
-        python test/analysis/computeTriggerEff.py ${inDir} ${ERA};
+	plotOutDir=${outdir}/trig/${githash}/${EXTRA}/plots/       
+	commonOpts="-i ${inDir} --puNormSF puwgtctr -l ${fulllumi} --saveLog --mcUnc ${lumiUnc} --lumiSpecs LowVPtLowMJJA:${vbflumi},LowVPtHighMJJA:${vbflumi}"
+	#python scripts/plotter.py ${commonOpts} -j ${json} ${kFactors} --silent
+
+        python test/analysis/computeTriggerEff.py ${inDir}/plots/plotter.root ${ERA};
+
         #python test/analysis/computeVBFTriggerEff.py -p ${plotOutDir}/plotter.root -o ${plotOutDir};
         ;;
 
