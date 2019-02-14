@@ -48,6 +48,7 @@ fi
 
 gtList=(0.7 0.75 0.8 0.85 0.9 0.95 1.0 1.05 1.1 1.15 1.2 1.25 1.3 1.35 1.4 1.45 1.5 1.55 1.6 1.65 1.7 1.75 1.85 1.9 1.95 2.0 2.2 2.4 2.6 2.8 3.0 4.0)
 mtList=(169.5 170 170.5 171 171.5 172 172.5 173 173.5 174 174.5 175 175.5)
+#dists=em_mlb    # edit 
 dists=em_mlb,ee_mlb,mm_mlb
 dists=${dists},emhighpt_mlb,emhighpt1b_mlb,emhighpt2b_mlb
 dists=${dists},emlowpt_mlb,emlowpt1b_mlb,emlowpt2b_mlb
@@ -198,6 +199,7 @@ case $WHAT in
             --templ ${outdir}/${githash}/templates \
             --nom MC13TeV_${ERA}_TTJets.root \
             -o ${outdir}/${githash}/datacards
+#            -o /afs/cern.ch/user/w/wenyu/afswork/work/topwidth/CMSSW_9_4_10/src/TopLJets2015/TopAnalysis/test/analysis/top17010/${githash}/datacards
         ;;
 
 
