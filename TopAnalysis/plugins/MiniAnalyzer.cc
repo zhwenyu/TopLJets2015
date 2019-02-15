@@ -390,56 +390,26 @@ void MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
   }
   
   //final state particles 
-  ev_.ngpf=0;
+  ev_.g_nchPV=0;
+  ev_.g_sumPVChPt=0; 
+  ev_.g_sumPVChPz=0; 
+  ev_.g_sumPVChHt=0; 
   edm::Handle<pat::PackedGenParticleCollection> genParticles;
   iEvent.getByToken(genParticlesToken_,genParticles);
-  LorentzVector chSum(0,0,0,0),incSum(0,0,0,0);
-  float ch_ht(0), inc_ht(0), ch_hz(0), inc_hz(0), chWgtSum(0), incWgtSum(0);
+  LorentzVector pvP4(0,0,0,0);
   if(genParticles.isValid()){
     for (size_t i = 0; i < genParticles->size(); ++i)
       {
         const pat::PackedGenParticle & genIt = (*genParticles)[i];
-
-        //this shouldn't be needed according to the workbook
-        //if(genIt.status()!=1) continue;
         if(genIt.pt()<0.5) continue;
-
-        incSum += genIt.p4();
-        inc_ht += genIt.pt();
-        inc_hz += fabs(genIt.pz());
-        incWgtSum += 1.0;
-        if(fabs(genIt.eta())>2.5) continue;
-        if(genIt.charge()!=0){
-          chSum += genIt.p4();
-          ch_ht += genIt.pt();
-          ch_hz += fabs(genIt.pz());
-          chWgtSum += 1.0;
-        }
-        
-        ev_.gpf_id[ev_.ngpf]     = genIt.pdgId();
-        ev_.gpf_c[ev_.ngpf]      = genIt.charge();
-        ev_.gpf_g[ev_.ngpf]=-1;
-        for(std::map<const reco::Candidate *,int>::iterator it=jetConstsMap.begin();
-            it!=jetConstsMap.end();
-            it++)
-          {
-            if(it->first->pdgId()!=genIt.pdgId()) continue;
-            if(deltaR( *(it->first), genIt)>0.01) continue; 
-            ev_.gpf_g[ev_.ngpf]=it->second;
-            break;
-          }
-        ev_.gpf_pt[ev_.ngpf]     = genIt.pt();
-        ev_.gpf_eta[ev_.ngpf]    = genIt.eta();
-        ev_.gpf_phi[ev_.ngpf]    = genIt.phi();
-        ev_.gpf_m[ev_.ngpf]      = genIt.mass();
-        ev_.ngpf++;    
+        if(genIt.charge()==0) continue;
+        ev_.g_nchPV++;
+        pvP4+=genIt.p4();
+        ev_.g_sumPVChPz+=fabs(genIt.pz()); 
+        ev_.g_sumPVChHt+=genIt.pt(); 
       }
-
-    ev_.gpf_chSum_px=chSum.px();  ev_.gpf_chSum_py=chSum.py();  ev_.gpf_chSum_pz=chSum.pz();
-    ev_.gpf_ch_ht=ch_ht;          ev_.gpf_ch_hz=ch_hz;          ev_.gpf_ch_wgtSum=chWgtSum;
-    ev_.gpf_inc_px=incSum.px();   ev_.gpf_inc_py=incSum.py();   ev_.gpf_inc_pz=incSum.pz();
-    ev_.gpf_inc_ht=inc_ht;        ev_.gpf_inc_hz=inc_hz;        ev_.gpf_inc_wgtSum=incWgtSum;
   }
+  ev_.g_sumPVChPt=pvP4.Pt();
 
   //Bhadrons and top quarks (lastCopy)
   edm::Handle<reco::GenParticleCollection> prunedGenParticles;
@@ -537,13 +507,17 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
   Service<service::TriggerNamesService> tns;
   tns->getTrigPaths(*h_trigRes,triggerList);
   ev_.triggerBits=0;
+  ev_.addTriggerBits=0;
   for (unsigned int i=0; i< h_trigRes->size(); i++) 
     {	
       if( !(*h_trigRes)[i].accept() ) continue;
       for(size_t itrig=0; itrig<triggersToUse_.size(); itrig++)
 	{
 	  if (triggerList[i].find(triggersToUse_[itrig])==string::npos) continue;
-	  ev_.triggerBits |= (1 << itrig);
+          if(itrig<32)
+            ev_.triggerBits |= (1 << itrig);
+          else
+            ev_.addTriggerBits |= (1 << (itrig-32));
 	  histContainer_["triggerList"]->Fill(itrig);
 	}
     }
@@ -572,6 +546,7 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
           ev_.fwdtrk_method[ev_.nfwdtrk]    = proton.method;
           ev_.fwdtrk_ex[ev_.nfwdtrk]        = proton.direction().x();
           ev_.fwdtrk_ey[ev_.nfwdtrk]        = proton.direction().y();
+          ev_.fwdtrk_ez[ev_.nfwdtrk]        = proton.direction().z();
           ev_.fwdtrk_y[ev_.nfwdtrk]         = proton.vertex().y();
 
           float xi=proton.xi();
@@ -1108,104 +1083,52 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
   }
 
   //PF candidates
-  ev_.npf=0;  
-  LorentzVector chSum(0,0,0,0),puppiSum(0,0,0,0);
-  float ch_ht(0), puppi_ht(0), chWgtSum(0), puppiWgtSum(0), ch_hz(0), puppi_hz(0);
-  float closestDZnonAssoc(99999.);
-  std::map<int,LorentzVector> vtxPts;
-  std::map<int,float> vtxHTs;
-  std::map<int,int> vtxCts;
+  LorentzVector vtxPt(0,0,0,0);
+  ev_.nchPV=0; ev_.sumPVChPt=0; ev_.sumPVChPz=0; ev_.sumPVChHt=0;  
+  for(int i=0; i<8; i++){
+    ev_.nPFCands[i]=0;
+    ev_.sumPFHt[i]=0;
+    ev_.sumPFEn[i]=0;
+    ev_.sumPFPz[i]=0;
+    ev_.nPFChCands[i]=0;
+    ev_.sumPFChHt[i]=0;
+    ev_.sumPFChEn[i]=0;
+    ev_.sumPFChPz[i]=0;
+  }
   for(auto pf = pfcands->begin();  pf != pfcands->end(); ++pf)
     {
-
-      if(pf->charge()!=0){
-        int vid=pf->vertexRef().key();
-        if(vtxPts.find(vid)==vtxPts.end()) {
-          vtxPts[vid]=LorentzVector(0,0,0,0);
-          vtxHTs[vid]=0;
-          vtxCts[vid]=0;
+      int ieta(-1);
+      if(pf->eta()>-4.7) ieta=0;
+      if(pf->eta()>-3)   ieta=1;
+      if(pf->eta()>-2.5) ieta=2;
+      if(pf->eta()>-1.5) ieta=3;
+      if(pf->eta()>0)    ieta=4;
+      if(pf->eta()>1.5)  ieta=5;
+      if(pf->eta()>2.5)  ieta=6;
+      if(pf->eta()>3.0)  ieta=7;
+      if(pf->eta()>4.7)  ieta=-1;
+      if(ieta<0) continue;
+      ev_.nPFCands[ieta]++;
+      ev_.sumPFHt[ieta] += pf->pt();
+      ev_.sumPFEn[ieta] += pf->energy();
+      ev_.sumPFPz[ieta] += fabs(pf->pz());
+      if(pf->charge()!=0){       
+        ev_.nPFChCands[ieta]++;
+        ev_.sumPFChHt[ieta] += pf->pt();
+        ev_.sumPFChEn[ieta] += pf->energy();
+        ev_.sumPFChPz[ieta] += fabs(pf->pz());
+        bool passChargeSel(pf->pt()>0.9 && fabs(pf->eta())<2.5);
+        const pat::PackedCandidate::PVAssoc pvassoc=pf->fromPV();
+        if(passChargeSel && pvassoc>=pat::PackedCandidate::PVTight){
+          vtxPt+=pf->p4();
+          ev_.nchPV++;
+          ev_.sumPVChPz+=fabs(pf->pz()); 
+          ev_.sumPVChHt+=pf->pt();
         }
-        vtxPts[vid]+=pf->p4();
-        vtxHTs[vid]+=pf->pt();
-        vtxCts[vid]++;
       }
-
-      bool passChargeSel(pf->charge()!=0 && pf->pt()>0.9 && fabs(pf->eta())<2.5);
-      const pat::PackedCandidate::PVAssoc pvassoc=pf->fromPV();
-
-      if(passChargeSel){
-        if(pvassoc>=pat::PackedCandidate::PVTight){
-          chWgtSum += 1.0;
-          chSum += pf->p4();
-          ch_ht += pf->pt();
-          ch_hz += fabs(pf->pz());
-        }
-        else{
-          if(pf->trackHighPurity() && fabs(pf->dz())<fabs(closestDZnonAssoc)) 
-            closestDZnonAssoc=pf->dz();
-        }
-      }
-      else if(pf->pt()>0.5){
-        float wgt=pf->puppiWeight();
-        puppiWgtSum += wgt;
-        puppiSum += wgt*pf->p4();
-        puppi_ht += wgt*pf->pt();
-        puppi_hz += wgt*fabs(pf->pz());
-      }
-
-      if(ev_.npf>=5000) continue;
-
-      ev_.pf_j[ev_.npf] = -1;
-      for(size_t i=0; i<clustCands.size(); i++)
-	{
-	  if(pf->pdgId()!=clustCands[i].first->pdgId()) continue;
-	  if(deltaR(*pf,*(clustCands[i].first))>0.01) continue;
-	  ev_.pf_j[ev_.npf]=clustCands[i].second;
-	  break;
-	}
-
-      //if particle is not associated to jet and is neutral, discard
-      if(pf->charge()==0 && ev_.pf_j[ev_.npf]==-1) continue;
-
-      //if particle is charged require association to prim vertex
-      if(passChargeSel && pvassoc>=pat::PackedCandidate::PVTight)
-	{
-	  ev_.pf_dxy[ev_.npf]      = pf->dxy();
-	  ev_.pf_dz[ev_.npf]       = pf->dz();
-	  //ev_.pf_dxyUnc[ev_.npf]   = pf->dxyError();
-	  //ev_.pf_dzUnc[ev_.npf]    = pf->dzError();
-	  //ev_.pf_vtxRef[ev_.npf]   = pf->vertexRef().key();
-	  //ev_.pf_pvAssoc[ev_.npf]  = pf->fromPV() + 10*(pf->pvAssociationQuality());
-	}
-      
-      ev_.pf_id[ev_.npf]       = pf->pdgId();
-      ev_.pf_c[ev_.npf]        = pf->charge();
-      ev_.pf_pt[ev_.npf]       = pf->pt();
-      ev_.pf_eta[ev_.npf]      = pf->eta();
-      ev_.pf_phi[ev_.npf]      = pf->phi();
-      ev_.pf_m[ev_.npf]        = pf->mass();
-      ev_.pf_puppiWgt[ev_.npf] = pf->puppiWeight();      
-      ev_.npf++;
     }
 
-  ev_.pf_closestDZnonAssoc=closestDZnonAssoc;
-  ev_.pf_chSum_px=chSum.px();     ev_.pf_chSum_py=chSum.py();     ev_.pf_chSum_pz=chSum.pz();
-  ev_.pf_ch_ht=ch_ht;             ev_.pf_ch_hz=ch_hz;             ev_.pf_ch_wgtSum=chWgtSum;
-  ev_.pf_puppi_px=puppiSum.px();  ev_.pf_puppi_py=puppiSum.py();  ev_.pf_puppi_pz=puppiSum.pz();
-  ev_.pf_puppi_ht=ch_ht;          ev_.pf_puppi_hz=ch_hz;          ev_.pf_puppi_wgtSum=puppiWgtSum;
-
-  for(int i=0; i<ev_.nvtx; i++){
-    if(vtxPts.find(i)!=vtxPts.end()) {
-      ev_.vtxPt[i]=vtxPts[i].pt();
-      ev_.vtxHt[i]=vtxHTs[i];
-      ev_.vtxMult[i]=vtxCts[i];
-    }else{
-      ev_.vtxPt[i]=0;
-      ev_.vtxHt[i]=0;
-      ev_.vtxMult[i]=0;
-    }
-  }
-
+  ev_.sumPVChPt=vtxPt.pt(); 
 }
 
 //cf. https://twiki.cern.ch/twiki/bin/viewauth/CMS/SWGuideMuonIdRun2#Soft_Muon
@@ -1255,7 +1178,6 @@ void MiniAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
   ev_.lumi    = iEvent.luminosityBlock();
   ev_.event   = iEvent.id().event(); 
   ev_.isData  = iEvent.isRealData();
-  if(!savePF_) { ev_.ngpf=0; ev_.npf=0; }
   tree_->Fill();
 }
 

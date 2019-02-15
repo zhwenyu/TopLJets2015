@@ -65,9 +65,6 @@ void RunExclusiveZX(TString filename,
   outT->Branch("rawmu_eta", ev.rawmu_eta, "rawmu_eta[nrawmu]/S");
   outT->Branch("rawmu_phi", ev.rawmu_phi, "rawmu_phi[nrawmu]/S");
   outT->Branch("rawmu_pid", ev.rawmu_pid, "rawmu_pid[nrawmu]/I");
-  outT->Branch("vtxHt", ev.vtxHt, "vtxHt[nvtx]/F");
-  outT->Branch("vtxPt", ev.vtxPt, "vtxPt[nvtx]/F");
-  outT->Branch("vtxMult", ev.vtxMult, "vtxMult[nvtx]/I");
 
   bool hasETrigger,hasMTrigger,hasMMTrigger,hasEETrigger,hasEMTrigger,hasATrigger;
   outT->Branch("hasETrigger",&hasETrigger,"hasETrigger/O");
@@ -84,8 +81,6 @@ void RunExclusiveZX(TString filename,
   outT->Branch("isA",&isA,"isA/O");
   
   ADDVAR(&ev.rho,"rho","F",outT);
-  ADDVAR(&ev.pf_closestDZnonAssoc,"closestDZnonAssoc","F",outT);
-  ADDVAR(&ev.pf_ch_wgtSum,"nch","F",outT);
   ADDVAR(&ev.met_pt,"met_pt","F",outT);
   ADDVAR(&ev.met_phi,"met_phi","F",outT);
   ADDVAR(&ev.met_sig,"met_sig","F",outT);
@@ -571,7 +566,6 @@ void RunExclusiveZX(TString filename,
         
       ht.fill("met",           met.Pt(),    plotwgts, cats);
       ht.fill("mindphijmet",   mindphijmet, plotwgts, cats);
-      ht.fill("nch",           ev.pf_ch_wgtSum,         plotwgts, cats);
       
       //fill tree with central detector information
       outVars["evwgt"]=plotwgts[0];
@@ -614,7 +608,6 @@ void RunExclusiveZX(TString filename,
       outVars["nj"]=lightJets.size();
       outVars["nl"]=leptons.size();
       outVars["ng"]=photons.size();
-      outVars["nch"]=float(ev.pf_ch_wgtSum);
       outVars["ht"]=scalarht;
       outVars["htb"]=scalarhtb;
       outVars["htj"]=scalarhtj;

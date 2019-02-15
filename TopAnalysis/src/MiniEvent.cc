@@ -32,18 +32,11 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev,Int_t njecUncs)
   t->Branch("g_eta",     ev.g_eta,    "g_eta[ng]/F");
   t->Branch("g_phi",     ev.g_phi,    "g_phi[ng]/F");
   t->Branch("g_m",       ev.g_m,      "g_m[ng]/F");
-  t->Branch("gpf_chSum_px",   &ev.gpf_chSum_px,   "gpf_chSum_px/F");
-  t->Branch("gpf_chSum_py",   &ev.gpf_chSum_py,   "gpf_chSum_py/F");
-  t->Branch("gpf_chSum_pz",   &ev.gpf_chSum_pz,   "gpf_chSum_pz/F");
-  t->Branch("gpf_ch_ht",      &ev.gpf_ch_ht,      "gpf_ch_ht/F");
-  t->Branch("gpf_ch_hz",      &ev.gpf_ch_hz,      "gpf_ch_hz/F");
-  t->Branch("gpf_ch_wgtSum",      &ev.gpf_ch_wgtSum,      "gpf_ch_wgtSum/F");
-  t->Branch("gpf_inc_px",     &ev.gpf_inc_px,     "gpf_inc_px/F");
-  t->Branch("gpf_inc_py",     &ev.gpf_inc_py,     "gpf_inc_py/F");
-  t->Branch("gpf_inc_pz",     &ev.gpf_inc_pz,     "gpf_inc_pz/F");
-  t->Branch("gpf_inc_ht",     &ev.gpf_inc_ht,     "gpf_inc_ht/F");
-  t->Branch("gpf_inc_hz",     &ev.gpf_inc_hz,     "gpf_inc_hz/F");
-  t->Branch("gpf_inc_wgtSum",     &ev.gpf_inc_wgtSum,     "gpf_inc_wgtSum/F");
+
+  t->Branch("g_nchPV",       &ev.g_nchPV,      "g_nchPV/I");
+  t->Branch("g_sumPVChPt",   &ev.g_sumPVChPt,  "g_sumPVChPt/F");
+  t->Branch("g_sumPVChPz",   &ev.g_sumPVChPz,  "g_sumPVChPz/F");
+  t->Branch("g_sumPVChHt",   &ev.g_sumPVChHt,  "g_sumPVChHt/F");
 
   //top (lastCopy and pseudo-top)
   t->Branch("ngtop",     &ev.ngtop,      "ngtop/I");
@@ -53,22 +46,12 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev,Int_t njecUncs)
   t->Branch("gtop_phi",   ev.gtop_phi,   "gtop_phi[ngtop]/F");
   t->Branch("gtop_m",     ev.gtop_m,     "gtop_m[ngtop]/F");
 
-  //final state particles
-  t->Branch("ngpf",       &ev.ngpf,       "ngpf/I");
-  t->Branch("gpf_id",      ev.gpf_id,     "gpf_id[ngpf]/I");
-  t->Branch("gpf_c",       ev.gpf_c,      "gpf_c[ngpf]/I");
-  t->Branch("gpf_g",       ev.gpf_g,      "gpf_g[ngpf]/I");
-  t->Branch("gpf_pt",      ev.gpf_pt,     "gpf_pt[ngpf]/F");
-  t->Branch("gpf_eta",     ev.gpf_eta,    "gpf_eta[ngpf]/F");
-  t->Branch("gpf_phi",     ev.gpf_phi,    "gpf_phi[ngpf]/F");
-  t->Branch("gpf_m",       ev.gpf_m,      "gpf_m[ngpf]/F");
-
   //reco level event
   t->Branch("nvtx",          &ev.nvtx,        "nvtx/I");
   t->Branch("rho",           &ev.rho,         "rho/F");
   t->Branch("triggerBits",   &ev.triggerBits, "triggerBits/I");
-  //FIXME: Use this for new ntuples t->Branch("triggerBits",   &ev.triggerBits, "triggerBits/l");
-
+  t->Branch("addTriggerBits",   &ev.addTriggerBits, "addTriggerBits/I");
+  
   //leptons
   t->Branch("nl", &ev.nl, "nl/I");
   t->Branch("l_isPromptFinalState",                         ev.l_isPromptFinalState,                       "l_isPromptFinalState[nl]/O");
@@ -167,35 +150,19 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev,Int_t njecUncs)
   t->Branch("j_hadflav",     ev.j_hadflav,    "j_hadflav[nj]/I");
   t->Branch("j_pid",         ev.j_pid,        "j_pid[nj]/I");
 
-  //pf candidates (only charged if outside jets)
-  t->Branch("npf",        &ev.npf,         "npf/I");
-  t->Branch("pf_j",        ev.pf_j,        "pf_j[npf]/I");
-  t->Branch("pf_id",       ev.pf_id,       "pf_id[npf]/I");
-  t->Branch("pf_c",        ev.pf_c,        "pf_c[npf]/I");
-  t->Branch("pf_pt",       ev.pf_pt,       "pf_pt[npf]/F");
-  t->Branch("pf_eta",      ev.pf_eta,      "pf_eta[npf]/F");
-  t->Branch("pf_phi",      ev.pf_phi,      "pf_phi[npf]/F");
-  t->Branch("pf_m",        ev.pf_m,        "pf_m[npf]/F");
-  t->Branch("pf_dxy",      ev.pf_dxy,      "pf_dxy[npf]/F");
-  t->Branch("pf_dz",       ev.pf_dz,       "pf_dz[npf]/F");
-  //t->Branch("pf_dxyUnc",   ev.pf_dxyUnc,   "pf_dxyUnc[npf]/F");
-  //t->Branch("pf_dzUnc",    ev.pf_dzUnc,    "pf_dzUnc[npf]/F");
-  //t->Branch("pf_vtxRef",   ev.pf_vtxRef,   "pf_vtxRef[npf]/I");
-  //t->Branch("pf_pvAssoc",  ev.pf_pvAssoc,  "pf_pvAssoc[npf]/I");
-  t->Branch("pf_puppiWgt", ev.pf_puppiWgt, "pf_puppiWgt[npf]/F");
-  t->Branch("pf_chSum_px",   &ev.pf_chSum_px,   "pf_chSum_px/F");
-  t->Branch("pf_chSum_py",   &ev.pf_chSum_py,   "pf_chSum_py/F");
-  t->Branch("pf_chSum_pz",   &ev.pf_chSum_pz,   "pf_chSum_pz/F");
-  t->Branch("pf_ch_ht",      &ev.pf_ch_ht,      "pf_ch_ht/F");
-  t->Branch("pf_ch_hz",      &ev.pf_ch_hz,      "pf_ch_hz/F");
-  t->Branch("pf_ch_wgtSum",      &ev.pf_ch_wgtSum,      "pf_ch_wgtSum/F");
-  t->Branch("pf_puppi_px",     &ev.pf_puppi_px,     "pf_puppi_px/F");
-  t->Branch("pf_puppi_py",     &ev.pf_puppi_py,     "pf_puppi_py/F");
-  t->Branch("pf_puppi_pz",     &ev.pf_puppi_pz,     "pf_puppi_pz/F");
-  t->Branch("pf_puppi_ht",     &ev.pf_puppi_ht,     "pf_puppi_ht/F");
-  t->Branch("pf_puppi_hz",     &ev.pf_puppi_hz,     "pf_puppi_hz/F");
-  t->Branch("pf_puppi_wgtSum",     &ev.pf_puppi_wgtSum,     "pf_puppi_wgtSum/F");
-  t->Branch("pf_closestDZnonAssoc",     &ev.pf_closestDZnonAssoc,     "pf_closestDZnonAssoc/F");
+  //pf sums
+  t->Branch("nchPV",        &ev.nchPV,         "nchPV/I");
+  t->Branch("sumPVChPt",    &ev.sumPVChPt,     "sumPVChPt/F");
+  t->Branch("sumPVChPz",    &ev.sumPVChPz,     "sumPVChPz/F");
+  t->Branch("sumPVChHt",    &ev.sumPVChHt,     "sumPVChHt/F");
+  t->Branch("nPFCands",     ev.nPFCands,       "nPFCands[8]/I");
+  t->Branch("sumPFEn",      ev.sumPFEn,       "sumPFEn[8]/F");
+  t->Branch("sumPFPz",      ev.sumPFPz,       "sumPFPz[8]/F");
+  t->Branch("sumPFHt",      ev.sumPFHt,       "sumPFHt[8]/F");
+  t->Branch("nPFChCands",   ev.nPFChCands,    "nPFChCands[8]/I");
+  t->Branch("sumPFChEn",    ev.sumPFChEn,     "sumPFChEn[8]/F");
+  t->Branch("sumPFChPz",    ev.sumPFChPz,     "sumPFChPz[8]/F");
+  t->Branch("sumPFChHt",    ev.sumPFChHt,     "sumPFChHt[8]/F");
 
   //MET
   t->Branch("met_pt",      &ev.met_pt,     "met_pt/F");
@@ -211,21 +178,17 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev,Int_t njecUncs)
   t->Branch("fwdtrk_method",    ev.fwdtrk_method,    "fwdtrk_method[nfwdtrk]/S");
   t->Branch("fwdtrk_ex",        ev.fwdtrk_ex,        "fwdtrk_ex[nfwdtrk]/F");
   t->Branch("fwdtrk_ey",        ev.fwdtrk_ey,        "fwdtrk_ey[nfwdtrk]/F");
+  t->Branch("fwdtrk_ez",        ev.fwdtrk_ez,        "fwdtrk_ez[nfwdtrk]/F");
   t->Branch("fwdtrk_y",         ev.fwdtrk_y,         "fwdtrk_y[nfwdtrk]/F");
   t->Branch("fwdtrk_chisqnorm", ev.fwdtrk_chisqnorm, "fwdtrk_chisqnorm[nfwdtrk]/F");
   t->Branch("fwdtrk_xi",        ev.fwdtrk_xi,        "fwdtrk_xi[nfwdtrk]/F");
   t->Branch("fwdtrk_t",         ev.fwdtrk_t,         "fwdtrk_t[nfwdtrk]/F");
-
-
 
   t->Branch("nrawmu", &ev.nrawmu, "nrawmu/I");
   t->Branch("rawmu_pt", ev.rawmu_pt, "rawmu_pt[nrawmu]/S");
   t->Branch("rawmu_eta", ev.rawmu_eta, "rawmu_eta[nrawmu]/S");
   t->Branch("rawmu_phi", ev.rawmu_phi, "rawmu_phi[nrawmu]/S");
   t->Branch("rawmu_pid", ev.rawmu_pid, "rawmu_pid[nrawmu]/I");
-  t->Branch("vtxHt", ev.vtxHt, "vtxHt[nvtx]/F");
-  t->Branch("vtxPt", ev.vtxPt, "vtxPt[nvtx]/F");
-  t->Branch("vtxMult", ev.vtxMult, "vtxMult[nvtx]/I");
 }
 
 //
@@ -261,6 +224,11 @@ void attachToMiniEventTree(TTree *t,MiniEvent_t &ev,bool full)
   t->SetBranchAddress("g_phi",     ev.g_phi);
   t->SetBranchAddress("g_m",       ev.g_m);
 
+  t->SetBranchAddress("g_nchPV",       &ev.g_nchPV);
+  t->SetBranchAddress("g_sumPVChPt",   &ev.g_sumPVChPt);
+  t->SetBranchAddress("g_sumPVChPz",   &ev.g_sumPVChPz);
+  t->SetBranchAddress("g_sumPVChHt",   &ev.g_sumPVChHt);
+
 
   //top (lastCopy and pseudo-top)
   t->SetBranchAddress("ngtop",     &ev.ngtop);
@@ -270,35 +238,11 @@ void attachToMiniEventTree(TTree *t,MiniEvent_t &ev,bool full)
   t->SetBranchAddress("gtop_phi",   ev.gtop_phi);
   t->SetBranchAddress("gtop_m",     ev.gtop_m);
 
-  //final state
-  if(full)
-    {
-      t->SetBranchAddress("ngpf",       &ev.ngpf);
-      t->SetBranchAddress("gpf_id",      ev.gpf_id);
-      t->SetBranchAddress("gpf_c",       ev.gpf_c);
-      t->SetBranchAddress("gpf_g",       ev.gpf_g); 
-      t->SetBranchAddress("gpf_pt",      ev.gpf_pt);
-      t->SetBranchAddress("gpf_eta",     ev.gpf_eta);
-      t->SetBranchAddress("gpf_phi",     ev.gpf_phi);
-      t->SetBranchAddress("gpf_m",       ev.gpf_m);
-      t->SetBranchAddress("gpf_chSum_px",   &ev.gpf_chSum_px);
-      t->SetBranchAddress("gpf_chSum_py",   &ev.gpf_chSum_py);
-      t->SetBranchAddress("gpf_chSum_pz",   &ev.gpf_chSum_pz);
-      t->SetBranchAddress("gpf_ch_ht",      &ev.gpf_ch_ht);
-      t->SetBranchAddress("gpf_ch_hz",      &ev.gpf_ch_hz);
-      t->SetBranchAddress("gpf_ch_wgtSum",      &ev.gpf_ch_wgtSum);
-      t->SetBranchAddress("gpf_inc_px",     &ev.gpf_inc_px);
-      t->SetBranchAddress("gpf_inc_py",     &ev.gpf_inc_py);
-      t->SetBranchAddress("gpf_inc_pz",     &ev.gpf_inc_pz);
-      t->SetBranchAddress("gpf_inc_ht",     &ev.gpf_inc_ht);
-      t->SetBranchAddress("gpf_inc_hz",     &ev.gpf_inc_hz);
-      t->SetBranchAddress("gpf_inc_wgtSum",     &ev.gpf_inc_wgtSum);
-    }
-
   //reco level event
   t->SetBranchAddress("nvtx",      &ev.nvtx);
   t->SetBranchAddress("rho",      &ev.rho);
   t->SetBranchAddress("triggerBits",        &ev.triggerBits);
+  t->SetBranchAddress("addTriggerBits",        &ev.addTriggerBits);
   
   //lepton info
   t->SetBranchAddress("nl", &ev.nl);
@@ -399,37 +343,19 @@ void attachToMiniEventTree(TTree *t,MiniEvent_t &ev,bool full)
   t->SetBranchAddress("j_hadflav",     ev.j_hadflav);
   t->SetBranchAddress("j_pid",         ev.j_pid);
 
-  //pf candidates (only charged if outside jets)
-  if(full)
-    {
-      t->SetBranchAddress("npf",        &ev.npf);
-      t->SetBranchAddress("pf_j",        ev.pf_j);
-      t->SetBranchAddress("pf_id",       ev.pf_id);
-      t->SetBranchAddress("pf_c",        ev.pf_c);
-      t->SetBranchAddress("pf_pt",       ev.pf_pt);
-      t->SetBranchAddress("pf_eta",      ev.pf_eta);
-      t->SetBranchAddress("pf_phi",      ev.pf_phi);
-      t->SetBranchAddress("pf_m",        ev.pf_m);
-      t->SetBranchAddress("pf_dxy",      ev.pf_dxy);
-      t->SetBranchAddress("pf_dz",       ev.pf_dz);
-      //t->SetBranchAddress("pf_dxyUnc",   ev.pf_dxyUnc);
-      //t->SetBranchAddress("pf_dzUnc",    ev.pf_dzUnc);
-      //t->SetBranchAddress("pf_pvAssoc",  ev.pf_pvAssoc);
-      t->SetBranchAddress("pf_puppiWgt", ev.pf_puppiWgt);
-      t->SetBranchAddress("pf_chSum_px",   &ev.pf_chSum_px);
-      t->SetBranchAddress("pf_chSum_py",   &ev.pf_chSum_py);
-      t->SetBranchAddress("pf_chSum_pz",   &ev.pf_chSum_pz);
-      t->SetBranchAddress("pf_ch_ht",      &ev.pf_ch_ht);
-      t->SetBranchAddress("pf_ch_hz",      &ev.pf_ch_hz);
-      t->SetBranchAddress("pf_ch_wgtSum",      &ev.pf_ch_wgtSum);
-      t->SetBranchAddress("pf_puppi_px",     &ev.pf_puppi_px);
-      t->SetBranchAddress("pf_puppi_py",     &ev.pf_puppi_py);
-      t->SetBranchAddress("pf_puppi_pz",     &ev.pf_puppi_pz);
-      t->SetBranchAddress("pf_puppi_ht",     &ev.pf_puppi_ht);
-      t->SetBranchAddress("pf_puppi_hz",     &ev.pf_puppi_hz);
-      t->SetBranchAddress("pf_puppi_wgtSum",     &ev.pf_puppi_wgtSum);
-      t->SetBranchAddress("pf_closestDZnonAssoc",     &ev.pf_closestDZnonAssoc);
-    }
+  //PF Sums
+  t->SetBranchAddress("nchPV",        &ev.nchPV);
+  t->SetBranchAddress("sumPVChPt",    &ev.sumPVChPt);
+  t->SetBranchAddress("sumPVChPz",    &ev.sumPVChPz);
+  t->SetBranchAddress("sumPVChHt",    &ev.sumPVChHt);
+  t->SetBranchAddress("nPFCands",     ev.nPFCands);
+  t->SetBranchAddress("sumPFEn",      ev.sumPFEn);
+  t->SetBranchAddress("sumPFPz",      ev.sumPFPz);
+  t->SetBranchAddress("sumPFHt",      ev.sumPFHt);
+  t->SetBranchAddress("nPFChCands",   ev.nPFChCands);
+  t->SetBranchAddress("sumPFChEn",    ev.sumPFChEn);
+  t->SetBranchAddress("sumPFChPz",    ev.sumPFChPz);
+  t->SetBranchAddress("sumPFChHt",    ev.sumPFChHt);
 
   //MET
   t->SetBranchAddress("met_pt",    &ev.met_pt);
@@ -443,8 +369,9 @@ void attachToMiniEventTree(TTree *t,MiniEvent_t &ev,bool full)
   t->SetBranchAddress("nfwdtrk",         &ev.nfwdtrk);
   t->SetBranchAddress("fwdtrk_pot",       ev.fwdtrk_pot);
   t->SetBranchAddress("fwdtrk_method",    ev.fwdtrk_method);
-  t->SetBranchAddress("fwdtrk_ex",         ev.fwdtrk_ex);
-  t->SetBranchAddress("fwdtrk_ey",         ev.fwdtrk_ey);
+  t->SetBranchAddress("fwdtrk_ex",        ev.fwdtrk_ex);
+  t->SetBranchAddress("fwdtrk_ey",        ev.fwdtrk_ey);
+  t->SetBranchAddress("fwdtrk_ez",        ev.fwdtrk_ez);
   t->SetBranchAddress("fwdtrk_y",         ev.fwdtrk_y);
   t->SetBranchAddress("fwdtrk_chisqnorm", ev.fwdtrk_chisqnorm);
   t->SetBranchAddress("fwdtrk_xi",        ev.fwdtrk_xi);
@@ -456,7 +383,4 @@ void attachToMiniEventTree(TTree *t,MiniEvent_t &ev,bool full)
   t->SetBranchAddress("rawmu_eta", ev.rawmu_eta);
   t->SetBranchAddress("rawmu_phi", ev.rawmu_phi);
   t->SetBranchAddress("rawmu_pid", ev.rawmu_pid);
-  t->SetBranchAddress("vtxHt",     ev.vtxHt);
-  t->SetBranchAddress("vtxPt",     ev.vtxPt);
-  t->SetBranchAddress("vtxMult",   ev.vtxMult);
 }

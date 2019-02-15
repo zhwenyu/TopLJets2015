@@ -462,16 +462,6 @@ std::vector<Jet> SelectionTool::getGoodJets(MiniEvent_t &ev, double minPt, doubl
     jet.setDeepCSV(ev.j_deepcsv[k]);
     jet.setPUMVA(ev.j_pumva[k]);
 
-    //fill jet constituents
-    for (int p = 0; p < ev.npf; p++) {
-      if (ev.pf_j[p] == k) {
-        TLorentzVector pp4;
-        pp4.SetPtEtaPhiM(ev.pf_pt[p],ev.pf_eta[p],ev.pf_phi[p],ev.pf_m[p]);
-        jet.addParticle(Particle(pp4, ev.pf_c[p], ev.pf_id[p], 0, p, ev.pf_puppiWgt[p]));
-        if (ev.pf_c[p] != 0) jet.addTrack(pp4, ev.pf_id[p]);
-      }
-    }
-
     //jes/jer uncertainty
     int jflav(abs(ev.j_flav[k]));
     float jecUp(0),jecDn(0);   
@@ -704,20 +694,7 @@ std::vector<Jet> SelectionTool::getGenJets(MiniEvent_t &ev, double minPt, double
 
     //flavor
     int flavor = ev.g_id[i];
-      
     Jet jet(jp4, flavor, i);
-      
-    //fill jet constituents
-    for (int p = 0; p < ev.ngpf; p++) {
-
-      if (ev.gpf_g[p] == i) {
-	TLorentzVector pp4;
-	pp4.SetPtEtaPhiM(ev.gpf_pt[p],ev.gpf_eta[p],ev.gpf_phi[p],ev.gpf_m[p]);
-	jet.addParticle(Particle(pp4, ev.gpf_c[p], ev.gpf_id[p], 0, p, 1.));
-	if (ev.gpf_c[p] != 0) jet.addTrack(pp4, ev.gpf_id[p]);
-      }
-    }
-
     jets.push_back(jet);
   }
   

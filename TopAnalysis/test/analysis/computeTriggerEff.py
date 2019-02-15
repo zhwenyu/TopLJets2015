@@ -4,13 +4,12 @@ import os,sys
 url=sys.argv[1]
 year=sys.argv[2]
 
-HISTOLIST={'2017':[('offlinephoton_apt',    'photon200_apt'),
-                   ('offlinephotonvbf_apt', 'photon75_vbf2017_apt'),
-                   ],
-           '2016':[('offlinephoton_apt',    'photon175_apt'),        
-                   ('offlinephotonvbf_apt', 'photon75_vbf2016_apt'),
-                   ],
-           }
+HISTOLIST=[('hptoff_apt','hpttrig_hptoff_apt'),
+           ('lptoff_apt','lpttrig_lptoff_apt'),
+           ('lpthmjjoff_apt','lpthmjjtrig_lpthmjjoff_apt'),
+           ('lpthmjjoff_mjj','lpthmjjtrig_lpthmjjoff_mjj'),
+           ]
+
 
 def getData2MC(data,mc):
 
@@ -48,13 +47,21 @@ def getEffGraph(name,total_pass,total,isData):
         gr.SetMarkerStyle(20)
     return gr
 
+def scaleGr(gr,sf):
+    x,y=ROOT.Double(0),ROOT.Double(0)
+    for ip in range(gr.GetN()):
+        gr.GetPoint(ip,x,y)
+        gr.SetPoint(ip,float(x),float(y*sf))
+        gr.SetPointEYhigh(ip,gr.GetErrorYhigh(ip)*sf)
+        gr.SetPointEYlow(ip,gr.GetErrorYlow(ip)*sf)
+        
 
 def getEffPlots(url,year,isData=True):
 
     fIn=ROOT.TFile.Open(url)
 
     histos={}
-    for a,b in HISTOLIST[year]:
+    for a,b in HISTOLIST:
         histos[a]=None
         histos[b]=None
 
@@ -64,18 +71,22 @@ def getEffPlots(url,year,isData=True):
         try:
             histos[h]=fIn.Get('{0}/{0}{1}'.format(h,tag))
             histos[h].SetDirectory(0)
-            #if 'vbf' in h:
-            #    histos[h].Rebin(4)
-            #else:
-            #    histos[h].Rebin()
-
         except Exception as e:
             print e
             pass
         
     fIn.Close()    
-    
-    effGrs=[ getEffGraph(b,histos[b],histos[a],isData) for a,b in HISTOLIST[year] ]
+
+    effGrs=[ getEffGraph(b,histos[b],histos[a],isData) for a,b in HISTOLIST ]
+    if isData:
+        for gr in effGrs:
+            grname=gr.GetName()
+            sf=1.
+            if year=='2016' and not 'hpt' in grname:
+                sf=2567./35879. if not 'hmjj' in grname else 28412./35879.
+            if year=='2017' and not 'hpt' in grname:
+                sf=1327./41367. if not 'hmjj' in grname else 7661./41367.
+            scaleGr(gr,1./sf)
 
     return effGrs
 
@@ -86,6 +97,7 @@ mcEffGr=getEffPlots(url,year,isData=False)
 
 ROOT.gStyle.SetOptStat(0)
 ROOT.gStyle.SetOptTitle(0)
+ROOT.gROOT.SetBatch(True)
 
 c=ROOT.TCanvas('c','c',500,500)
 c.SetBottomMargin(0)

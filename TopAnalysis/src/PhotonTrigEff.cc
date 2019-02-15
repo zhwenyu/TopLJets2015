@@ -49,7 +49,7 @@ void RunPhotonTrigEff(TString filename,
    //BOOK HISTOGRAMS
   HistTool ht;
   ht.setNsyst(0);
-  Float_t phoBins[]={50,70,80,90,100,110,120,140,180,250,500};
+  Float_t phoBins[]={50,70,80,90,100,110,120,140,160,180,200,220,240,260,300,500};
   Int_t nphoBins=sizeof(phoBins)/sizeof(Float_t);
   Float_t mjjBins[]={120,200,500,750,1000,2000,4000};
   Int_t nmjjBins=sizeof(mjjBins)/sizeof(Float_t);

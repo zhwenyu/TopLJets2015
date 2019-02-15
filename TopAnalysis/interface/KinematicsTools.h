@@ -8,13 +8,6 @@
 typedef std::pair<Float_t,Float_t> Value_t;
 typedef std::vector<Value_t> ValueCollection_t;
 
-struct JetPullInfo_t
-{
-  Int_t n,nch;
-  TVector2 pull,chPull;
-};
-JetPullInfo_t getPullVector( MiniEvent_t &ev, int ijet);
-
 Float_t computeMT(TLorentzVector &a, TLorentzVector &b);
 Float_t computeRecoilMT(TLorentzVector &a, TVector2 &h);
 Float_t computePhiStar(TLorentzVector &lm,TLorentzVector &lp);
