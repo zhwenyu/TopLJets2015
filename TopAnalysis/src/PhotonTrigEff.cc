@@ -73,24 +73,6 @@ void RunPhotonTrigEff(TString filename,
     {
       t->GetEntry(iev);
       if(iev%1000==0) { printf("\r [%3.0f%%] done", 100.*(float)iev/(float)nentries); fflush(stdout); }
-
-      //trigger fo data
-      if(ev.isData) {        
-        bool hasStdMTrigger(false);
-        if(is2016) {
-          hasStdMTrigger=(selector.hasTriggerBit("HLT_IsoMu24_v",ev.triggerBits) ||
-                          selector.hasTriggerBit("HLT_IsoTkMu24_v",ev.triggerBits) );            
-        }
-        else { 
-          hasStdMTrigger =(selector.hasTriggerBit("HLT_IsoMu24_v",     ev.triggerBits) ||
-                           selector.hasTriggerBit("HLT_IsoMu24_2p1_v", ev.triggerBits) ||
-                           selector.hasTriggerBit("HLT_IsoMu27_v",     ev.triggerBits) );     
-          if(filename.Contains("2017E") || filename.Contains("2017F")){
-            hasStdMTrigger=selector.hasTriggerBit("HLT_IsoMu27_v",ev.triggerBits);
-          }
-        }      
-        if(!hasStdMTrigger) continue;
-      }
         
       //start weights and pu weight control
       float wgt(1.0);
@@ -128,15 +110,24 @@ void RunPhotonTrigEff(TString filename,
       }
 	  
       //online categories
-      bool passHighPtTrig(false), passLowPtTrig(false), passLowPtHighMJJTrig(false);
+      bool passHighPtCtrlTrig(false), passHighPtTrig(false), passLowPtCtrlTrig(false), passLowPtHighMJJTrig(false);
       if(is2016) {
-        passHighPtTrig=selector.hasTriggerBit("HLT_Photon175_v",ev.triggerBits);
-        passLowPtTrig=selector.hasTriggerBit("HLT_Photon75_R9Id90_HE10_IsoM_v",ev.triggerBits);
-        passLowPtHighMJJTrig=selector.hasTriggerBit("HLT_Photon75_R9Id90_HE10_Iso40_EBOnly_VBF",ev.triggerBits);
+        passHighPtCtrlTrig   = selector.hasTriggerBit("HLT_Photon150_v",ev.triggerBits);        
+        passHighPtTrig       = selector.hasTriggerBit("HLT_Photon175_v",ev.triggerBits);
+        passLowPtCtrlTrig    = selector.hasTriggerBit("HLT_Photon75_R9Id90_HE10_IsoM_v",ev.triggerBits);
+        passLowPtHighMJJTrig = selector.hasTriggerBit("HLT_Photon75_R9Id90_HE10_Iso40_EBOnly_VBF",ev.triggerBits);
       }else{
-        passHighPtTrig=selector.hasTriggerBit("HLT_Photon200_v",ev.triggerBits);
-        passLowPtTrig=selector.hasTriggerBit("HLT_Photon75_R9Id90_HE10_IsoM_v",ev.triggerBits);
-        passLowPtHighMJJTrig=selector.hasTriggerBit("HLT_Photon75_R9Id90_HE10_IsoM_EBOnly_PFJetsMJJ300DEta3_v",ev.triggerBits);
+        passHighPtCtrlTrig   = selector.hasTriggerBit("HLT_Photon120_v",ev.triggerBits);
+        passHighPtTrig       = selector.hasTriggerBit("HLT_Photon200_v",ev.triggerBits);
+        passLowPtCtrlTrig    = selector.hasTriggerBit("HLT_Photon75_R9Id90_HE10_IsoM_v",ev.triggerBits);
+        passLowPtHighMJJTrig = selector.hasTriggerBit("HLT_Photon75_R9Id90_HE10_IsoM_EBOnly_PFJetsMJJ300DEta3_v",ev.triggerBits);
+      }
+      
+      //require control triggers in data
+      if(ev.isData) {
+        if(!passHighPtCtrlTrig && !passLowPtCtrlTrig) continue;
+        passHighPtTrig       &= passHighPtCtrlTrig;
+        passLowPtHighMJJTrig &= passLowPtCtrlTrig; 
       }
 
       //offline categories
@@ -146,14 +137,14 @@ void RunPhotonTrigEff(TString filename,
       if(passLowPtOff && mjj>120 && detajj>3) passLowPtHighMJJOff=true;
       
       std::vector<TString> cats;
-      if(passHighPtTrig)                  cats.push_back("hpttrig");
-      if(passHighPtOff)                   cats.push_back("hptoff");
-      if(passHighPtTrig && passHighPtOff) cats.push_back("hpttrig_hptoff");
-      if(passLowPtTrig)                   cats.push_back("lpttrig");
-      if(passLowPtOff)                    cats.push_back("lptoff");
-      if(passLowPtTrig && passLowPtOff)   cats.push_back("lpttrig_lptoff");
-      if(passLowPtHighMJJTrig)            cats.push_back("lpthmjjtrig");
-      if(passLowPtHighMJJOff)             cats.push_back("lpthmjjoff");
+      if(passHighPtTrig)                    cats.push_back("hpttrig");
+      if(passHighPtOff)                     cats.push_back("hptoff");
+      if(passHighPtTrig && passHighPtOff)   cats.push_back("hpttrig_hptoff");
+      if(passLowPtCtrlTrig)                 cats.push_back("lpttrig");
+      if(passLowPtOff)                      cats.push_back("lptoff");
+      if(passLowPtCtrlTrig && passLowPtOff) cats.push_back("lpttrig_lptoff");
+      if(passLowPtHighMJJTrig)              cats.push_back("lpthmjjtrig");
+      if(passLowPtHighMJJOff)               cats.push_back("lpthmjjoff");
       if(passLowPtHighMJJTrig && passLowPtHighMJJOff) cats.push_back("lpthmjjtrig_lpthmjjoff");
       
       plotwgts[0]=wgt;

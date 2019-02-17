@@ -109,7 +109,7 @@ case $WHAT in
 
     SELTRIGEFF )
 	python scripts/runLocalAnalysis.py \
-	    -i ${eosdir} --only SingleMu,EWKAJJ\
+	    -i ${eosdir} --only SinglePhoton,EWKAJJ\
             -o ${outdir}/trig/${githash}/${EXTRA} \
             --farmappendix trig${githash} \
             -q ${queue} --genWeights genweights_${githash}.root \

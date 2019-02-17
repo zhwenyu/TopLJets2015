@@ -15,8 +15,7 @@ fi
 
 #to run locally use local as queue + can add "--njobs 8" to use 8 parallel jobs
 queue=tomorrow
-#githash=3129835
-githash=6816e40
+githash=ab05162
 eosdir=/store/cmst3/group/top/RunIIReReco/${githash}
 outdir=/store/cmst3/user/psilva/ExclusiveAna/${githash}
 signal_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/signal_samples.json

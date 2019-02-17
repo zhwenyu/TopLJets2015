@@ -90,9 +90,18 @@ void RunExclusiveZX(TString filename,
                    "bosonpt", "bosonptunc","bosoneta", "bosonphi", "mboson", "bosonht", "mtboson", 
                    "llacopl", "llcosthetaCS", "llphistar", "llMR", "llR", 
                    "llcsip", "llcsipUnc", "llcsim", "llcsimUnc",
-                   "nb", "nj", "nl","ng","ht", "htb", "htj",
-                   "jsumposen","jsumnegen",
-                   "jsumposhfen","jsumneghfen"};
+                   "nb", "nj", 
+                   "vtxMult",    
+                   "PFEnSumEB",   "PFEnSumEE",    "PFEnSumHE",    "PFEnSumHF", 
+                   "PFHtSumEB",   "PFHtSumEE",    "PFHtSumHE",    "PFHtSumHF", 
+                   "PFChEnSumEB", "PFChEnSumEE",  "PFChEnSumHE",  "PFChEnSumHF", 
+                   "PFChHtSumEB", "PFChHtSumEE",  "PFChHtSumHE",  "PFChHtSumHF", 
+                   "PFEnDiffEB",  "PFEnDiffEE",   "PFEnDiffHE",   "PFEnDiffHF", 
+                   "PFHtDiffEB",  "PFHtDiffEE",   "PFHtDiffHE",   "PFHtDiffHF", 
+                   "PFChEnDiffEB","PFChEnDiffEE", "PFChEnDiffHE", "PFChEnDiffHF", 
+                   "PFChHtDiffEB","PFChHtDiffEE", "PFChHtDiffHE", "PFChHtDiffHF"
+  };
+
   std::map<TString,Float_t> outVars;
   for(size_t i=0; i<sizeof(fvars)/sizeof(TString); i++){
     outVars[fvars[i]]=0.;

@@ -71,7 +71,7 @@ private:
   void bookHistograms();
   void fillControlHistograms(TopWidthEvent &twe,float &wgt);
   void applyMC2MC(std::vector<Jet> &jetColl);
-  float getJERSFBreakdown(TString key,float abseta);
+  double getJERSFBreakdown(TString key,double abseta);
 
   //class variables
   TString filename_, outname_;

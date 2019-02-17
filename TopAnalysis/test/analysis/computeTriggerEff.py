@@ -78,15 +78,15 @@ def getEffPlots(url,year,isData=True):
     fIn.Close()    
 
     effGrs=[ getEffGraph(b,histos[b],histos[a],isData) for a,b in HISTOLIST ]
-    if isData:
-        for gr in effGrs:
-            grname=gr.GetName()
-            sf=1.
-            if year=='2016' and not 'hpt' in grname:
-                sf=2567./35879. if not 'hmjj' in grname else 28412./35879.
-            if year=='2017' and not 'hpt' in grname:
-                sf=1327./41367. if not 'hmjj' in grname else 7661./41367.
-            scaleGr(gr,1./sf)
+#    if isData:
+#        for gr in effGrs:
+#            grname=gr.GetName()
+#            sf=1.
+#            if year=='2016' and not 'hpt' in grname:
+#                sf=2567./35879. if not 'hmjj' in grname else 28412./35879.
+#            if year=='2017' and not 'hpt' in grname:
+#                sf=1327./41367. if not 'hmjj' in grname else 7661./41367.
+#            scaleGr(gr,1./sf)
 
     return effGrs
 
