@@ -44,6 +44,7 @@ def getScanPoint(inDir,fitTag):
         mask=int('0xffff',16)
         gt = (flag&mask)*0.01+0.7
         mt = (((flag>>16)&mask))*0.25+169        
+#        print "scenario, m, gamma = %s, %s, %s"%(tag, mt, gt)  # edit 
 
     #read nll from fit
     nll=None
@@ -71,16 +72,19 @@ def profilePOI(data,outdir,axis=0):
 
     ictr=0
     for xi in np.unique(x):
+#        print "xi = %s"%(xi)   # edit   
         rdata=data[data[:,axis]==xi]
         y=rdata[:,0 if axis==1 else 1]
         z=rdata[:,2]
+#	print "y = ", y  # edit
+#	print "z = ", z
         pcoeff=np.polyfit(y,z,4)
         p=np.poly1d(pcoeff)
 
 
         bounds = [min(y),max(y)]
         crit_points = [px for px in p.deriv().r if px.imag == 0 and bounds[0] < px.real < bounds[1]]
-        print xi,crit_points
+#        print xi,crit_points   # edit 
 
         plt.clf()
         fig, ax = plt.subplots()
@@ -176,7 +180,9 @@ def main():
     #build nll scan
     fitres=[]
     for f in os.listdir(opt.input):
+#	if ( f == 'scenario1179748' or f == 'scenario1703991' ) : continue   # remove not converging points
         scanRes=getScanPoint(inDir=os.path.join(opt.input,f),fitTag=opt.fitTag)
+#	print "scanRes = ", scanRes   # edit 
         if not scanRes[-1]: continue
         fitres.append( scanRes )
     fitres=np.array(fitres)
