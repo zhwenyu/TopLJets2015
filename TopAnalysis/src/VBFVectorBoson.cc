@@ -409,34 +409,16 @@ void VBFVectorBoson::runAnalysis()
       //evaluate discriminator MVA for categories of interest
       //FIXME: this probably needs to be modified for the new training
       vbfmva_ = -1000;
-<<<<<<< HEAD
-      vbfmvaOrig_ = -1000;
-=======
-      flat_vbfmva_=-1000;
-      vbfmvaHighVPt_ = -1000;
->>>>>>> 05ec176b8b53052787508580f91110d9a1c68fa8
+      flat_vbfmva_ = -1000;
       if (cat[5] || cat[6]) {
-        TString key(cat[3] ?"BDT_VBF0LowVPtHighMJJ":(cat[5] ? "BDT_VBF0HighVPtLowMJJ" : "BDT_VBF0HighVPtHighMJJ"));        
-        vbfmva_ = readers[key]->EvaluateMVA(key);
-<<<<<<< HEAD
-	//vbfmvaOrig_ =readers["BDT_VBF0HighPt"]->EvaluateMVA("BDT_VBF0HighPt");
-	vbfmvaOrig_ = readers[key]->EvaluateMVA(key);
-        if(mvaCDFinv[key]) vbfmva_=max(0.,mvaCDFinv[key]->Eval(vbfmva_));
-        if(doBlindAnalysis_ && ev_.isData && vbfmva_>0.8) vbfmva_=-1000;
-	if(doBlindAnalysis_ && ev_.isData && vbfmvaOrig_>0.8) vbfmvaOrig_=-1000;
+        TString key(cat[3] ?"BDT_VBF0LowVPtHighMJJ":(cat[5] ? "BDT_VBF0HighVPtLowMJJ" : "BDT_VBF0HighVPtHighMJJ"));
+        vbfmva_      = readers[key]->EvaluateMVA(key);
+	flat_vbfmva_ = readers[key]->EvaluateMVA(key);
+        if(mvaCDFinv[key]) flat_vbfmva_=max(0.,mvaCDFinv[key]->Eval(vbfmva_));
+        if(doBlindAnalysis_ && ev_.isData && flat_vbfmva_>0.8) flat_vbfmva_=-1000;
+	if(doBlindAnalysis_ && ev_.isData && vbfmva_>0.8) vbfmva_=-1000;
 
-=======
-	vbfmvaHighVPt_ =readers["BDT_VBF0HighPt"]->EvaluateMVA("BDT_VBF0HighPt");        
-        if(mvaCDFinv[key]) {
-          flat_vbfmva_=max(0.,mvaCDFinv[key]->Eval(vbfmva_));
-        }        
-        if(doBlindAnalysis_ && ev_.isData && vbfmva_>0.2) {
-          vbfmva_=-1000;
-          flat_vbfmva_=-1000;
-        }
->>>>>>> 05ec176b8b53052787508580f91110d9a1c68fa8
-      }
-      
+       }
       ////////////////////
       // EVENT WEIGHTS //
       //////////////////
@@ -523,11 +505,7 @@ void VBFVectorBoson::runAnalysis()
         //base values and kinematics
         TString icat(baseCategory);
         float imva=vbfmva_;
-<<<<<<< HEAD
-        float imvaOrig=vbfmvaOrig_;
-=======
-        float flat_imva=-99;
->>>>>>> 05ec176b8b53052787508580f91110d9a1c68fa8
+        float flat_imva=flat_vbfmva_;
         float iwgt=(ev_.g_nw>0 ? ev_.g_w[0] : 1.0);
         iwgt *= (normH_? normH_->GetBinContent(1) : 1.0);
         TLorentzVector iBoson(boson);
@@ -656,16 +634,10 @@ void VBFVectorBoson::runAnalysis()
 	  if (isLowMJJ || isHighMJJ) {
 	    TString key(isLowVPt ?"BDT_VBF0LowVPtHighMJJ":(isLowMJJ ? "BDT_VBF0HighVPtLowMJJ" : "BDT_VBF0HighVPtHighMJJ"));
 	    imva = readers[key]->EvaluateMVA(key);	    
-<<<<<<< HEAD
-	    imvaOrig = readers[key]->EvaluateMVA(key);
-	    if(mvaCDFinv[key]) imva=max(0.,mvaCDFinv[key]->Eval(imva));	    
-	  }
-=======
 	    if(mvaCDFinv[key]) {
               flat_imva=max(0.,mvaCDFinv[key]->Eval(imva));	    
             }
           }
->>>>>>> 05ec176b8b53052787508580f91110d9a1c68fa8
 
           //TString key(isLowVPt ? "BDT_VBF0HighMJJ" : "BDT_VBF0LowMJJ");
           // imva = readers[key]->EvaluateMVA(key);
@@ -695,11 +667,7 @@ void VBFVectorBoson::runAnalysis()
         std::vector<double> eweights(1,iwgt*qgwgt);
 
         ht_->fill2D("vbfmva_exp",       imva,                 is,eweights,icat);
-<<<<<<< HEAD
-        ht_->fill2D("vbfmvaOrig_exp",   imvaOrig,             is,eweights,icat);
-=======
         ht_->fill2D("acdfvbfmva_exp",  flat_imva,   is,eweights,icat);
->>>>>>> 05ec176b8b53052787508580f91110d9a1c68fa8
         ht_->fill2D("centraleta_exp",   vbfVars_.centraleta,  is,eweights,icat);
         ht_->fill2D("forwardeta_exp",   vbfVars_.forwardeta,  is,eweights,icat);
         ht_->fill2D("leadpt_exp",       vbfVars_.leadj_pt,    is,eweights,icat);
@@ -862,14 +830,9 @@ void VBFVectorBoson::bookHistograms() {
   ht_->addHist("evcount",         new TH1F("evcount",        ";Pass;Events",2,0,2));  
   ht_->getPlots()["evcount"]->GetXaxis()->SetBinLabel(1,"Inclusive");
   ht_->getPlots()["evcount"]->GetXaxis()->SetBinLabel(2,"MVA>0.9");
-<<<<<<< HEAD
-  ht_->addHist("vbfmva",          new TH1F("vbfmva",         ";VBF MVA;Events",20,0,1));  
-  ht_->addHist("vbfmvaOrig",   new TH1F("vbfmvaOrig",         ";VBF MVA;Events",20,-1,1));  
-=======
   ht_->addHist("vbfmva",          new TH1F("vbfmva",         ";VBF MVA;Events",50,-1,1));  
   ht_->addHist("acdfvbfmva",     new TH1F("acdfvbfmva",    ";CDF^{-1}(VBF MVA);Events",50,0,1));  
-  ht_->addHist("vbfmvaHighVPt",   new TH1F("vbfmvaHighVPt",   ";VBF MVA;Events",50,-1,1));  
->>>>>>> 05ec176b8b53052787508580f91110d9a1c68fa8
+
 
   TString expSystNames[]={"puup","pudn","trigup","trigdn","selup","seldn","l1prefireup","l1prefiredn",
                           "gluonqg","quarkqg",
@@ -880,11 +843,8 @@ void VBFVectorBoson::bookHistograms() {
                           "AbsoluteStatJECdn","AbsoluteScaleJECdn","AbsoluteMPFBiasJECdn","FragmentationJECdn","SinglePionECALJECdn","SinglePionHCALJECdn","FlavorPureGluonJECdn","FlavorPureQuarkJECdn","FlavorPureCharmJECdn","FlavorPureBottomJECdn","TimePtEtaJECdn","RelativeJEREC1JECdn","RelativeJEREC2JECdn","RelativeJERHFJECdn","RelativePtBBJECdn","RelativePtEC1JECdn","RelativePtEC2JECdn","RelativePtHFJECdn","RelativeBalJECdn","RelativeFSRJECdn","RelativeStatFSRJECdn","RelativeStatECJECdn","RelativeStatHFJECdn","PileUpDataMCJECdn","PileUpPtRefJECdn","PileUpPtBBJECdn","PileUpPtEC1JECdn","PileUpPtEC2JECdn","PileUpPtHFJECdn"};
   
   //instantiate 2D histograms for most relevant variables to trace with systs
-<<<<<<< HEAD
-  TString hoi[]={"vbfmva","evcount","mjj","detajj","dphijj","leadpt","subleadpt","forwardeta","centraleta","vpt","vbfmvaOrig"};
-=======
   TString hoi[]={"vbfmva","acdfvbfmva","evcount","mjj","detajj","dphijj","leadpt","subleadpt","forwardeta","centraleta","vpt"};
->>>>>>> 05ec176b8b53052787508580f91110d9a1c68fa8
+
   size_t nexpSysts=sizeof(expSystNames)/sizeof(TString);
   expSysts_=std::vector<TString>(expSystNames,expSystNames+nexpSysts);  
   for(size_t ih=0; ih<sizeof(hoi)/sizeof(TString); ih++)
@@ -1163,18 +1123,14 @@ void VBFVectorBoson::fillControlHistos(TLorentzVector boson, std::vector<Jet> je
 
   //final analysis histograms
   ht_->fill("evcount",  0, cplotwgts, c);
-<<<<<<< HEAD
-  ht_->fill("vbfmvaOrig", vbfmvaOrig_, cplotwgts,c);
-  if(vbfmva_>=0) {
-=======
+  ht_->fill("evcount",  0, cplotwgts, c);
   if(vbfmva_>-999)  {
-    ht_->fill("vbfmvaHighVPt", vbfmvaHighVPt_, cplotwgts,c);
->>>>>>> 05ec176b8b53052787508580f91110d9a1c68fa8
     ht_->fill("vbfmva", vbfmva_, cplotwgts,c);
     ht_->fill("acdfvbfmva", flat_vbfmva_, cplotwgts,c);
     if(flat_vbfmva_>0.9)
       ht_->fill("evcount",  1, cplotwgts, c);  
   }
+
 
   //theory uncertainties are filled only for MC
   if(runSysts_ && !ev_.isData && ev_.g_w[0]!=0 && normH_ && normH_->GetBinContent(1)>0 && c.Contains("MJJ")) {
@@ -1184,19 +1140,6 @@ void VBFVectorBoson::fillControlHistos(TLorentzVector boson, std::vector<Jet> je
       std::vector<double> sweights(1,cplotwgts[0]);
       size_t idx=weightSysts_[is].second;
       sweights[0] *= (ev_.g_w[idx]/ev_.g_w[0])*(normH_->GetBinContent(idx+1)/normH_->GetBinContent(1));
-<<<<<<< HEAD
-      ht_->fill2D("vbfmva_th",       vbfmva_,              is,sweights,c);
-      ht_->fill2D("vbfmvaOrig_th",   vbfmvaOrig_,          is,sweights,c);
-      ht_->fill2D("centraleta_th",   vbfVars_.centraleta,  is,sweights,c);
-      ht_->fill2D("forwardeta_th",   vbfVars_.forwardeta,  is,sweights,c);
-      ht_->fill2D("leadpt_th",       vbfVars_.leadj_pt,    is,sweights,c);
-      ht_->fill2D("subleadpt_th",    vbfVars_.subleadj_pt, is,sweights,c);
-      ht_->fill2D("detajj_th",       vbfVars_.detajj,      is,sweights,c);
-      ht_->fill2D("dphijj_th",       vbfVars_.dphijj,      is,sweights,c);
-      ht_->fill2D("mjj_th", 	     vbfVars_.mjj,         is,sweights,c);
-      ht_->fill2D("vpt_th", 	     boson.Pt(),           is,sweights,c);
-      ht_->fill2D("evcount_th",      0,                    is,sweights,c);
-=======
       ht_->fill2D("vbfmva_th",       vbfmva_,               is,sweights,c);
       ht_->fill2D("acdfvbfmva_th",   flat_vbfmva_, is,sweights,c);
       ht_->fill2D("centraleta_th",   vbfVars_.centraleta,   is,sweights,c);
@@ -1208,7 +1151,6 @@ void VBFVectorBoson::fillControlHistos(TLorentzVector boson, std::vector<Jet> je
       ht_->fill2D("mjj_th", 	     vbfVars_.mjj,          is,sweights,c);
       ht_->fill2D("vpt_th", 	     boson.Pt(),            is,sweights,c);
       ht_->fill2D("evcount_th",      0,                     is,sweights,c);
->>>>>>> 05ec176b8b53052787508580f91110d9a1c68fa8
       if(vbfmva_>0.9)
         ht_->fill2D("evcount_th",    1,                     is,sweights,c);
     }  
