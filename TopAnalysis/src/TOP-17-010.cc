@@ -2,6 +2,7 @@
 #include <TROOT.h>
 #include <TH1.h>
 #include <TH2.h>
+#include <TKey.h>
 #include <TSystem.h>
 #include <TGraph.h>
 #include <TLorentzVector.h>
@@ -28,8 +29,9 @@ void TOP17010::init(UInt_t scenario){
   isSignal_    = filename_.Contains("_TT");
   triggerList_ = (TH1F *)f_->Get("analysis/triggerList");
   if(isSignal_) {
-    weightSysts_ = getWeightSysts(f_,"TTJets2016");
-    origGt_=1.31;
+//    weightSysts_ = getWeightSysts(f_,"TTJets2016");
+   weightSysts_ = getWeightSysts(f_,filename_.Contains("2016") ? "TTJets2016" : "TTJets2017");   // 2017 weights  
+   origGt_=1.31;
     origMt_=172.5;
     if ( filename_.Contains("w0p5") ) {                origGt_*=0.5; }
     if ( filename_.Contains("w4p0") ) {                origGt_*=4.0; }
@@ -57,8 +59,13 @@ void TOP17010::init(UInt_t scenario){
     
     //MC 2 MC corrections
     TString mc2mcTag("");
-    if( filename_.Contains("TTJets_fsrdn") ) mc2mcTag="MC13TeV_2016_TTJets_fsrdn";
-    if( filename_.Contains("TTJets_fsrup") ) mc2mcTag="MC13TeV_2016_TTJets_fsrup";
+    if( filename_.Contains("TTJets_fsrdn") )   mc2mcTag="MC13TeV_2016_TTJets_fsrdn";
+    if( filename_.Contains("TTJets_fsrup") )   mc2mcTag="MC13TeV_2016_TTJets_fsrup";
+    if( filename_.Contains("TTJets_hdampup") ) mc2mcTag="MC13TeV_2016_TTJets_hdampup";
+    if( filename_.Contains("TTJets_hdampdn") ) mc2mcTag="MC13TeV_2016_TTJets_hdampdn";
+    if( filename_.Contains("TTJets_uedn") )    mc2mcTag="MC13TeV_2016_TTJets_uedn";
+    if( filename_.Contains("TTJets_ueup") )    mc2mcTag="MC13TeV_2016_TTJets_ueup";
+    if( filename_.Contains("TTJets_erdon") )   mc2mcTag="MC13TeV_2016_TTJets_erdon";
     if(mc2mcTag!=""){
       cout << "Reading MC2MC corrections for " << mc2mcTag << endl;
       TFile *mcCorF=TFile::Open("${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/top17010/mc2mc_corrections.root");
@@ -67,6 +74,18 @@ void TOP17010::init(UInt_t scenario){
         mc2mcCorr_[mc2mcCorNames[icor]]=(TGraphErrors *)mcCorF->Get(mc2mcTag+"/"+mc2mcCorNames[icor]);
       mcCorF->Close();
     }
+
+    //JER SF breakdown
+    TFile *jerSFF=TFile::Open("${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/top17010/jer_relunc.root");
+    TKey *key;
+    TIter next( jerSFF->GetListOfKeys());
+    while ((key = (TKey *) next())) {     
+      TString kname=key->GetName();
+      jerSFBreakdown_[kname]=(TH1 *)key->ReadObj();
+      jerSFBreakdown_[kname]->SetDirectory(0);
+    }
+    jerSFF->Close();
+      
   }
 
   t_ = (TTree*)f_->Get("analysis/data");
@@ -75,21 +94,18 @@ void TOP17010::init(UInt_t scenario){
   if (debug_) nentries_ = 10000; //restrict number of entries for testing
   t_->GetEntry(0);
 
-
   TString baseName=gSystem->BaseName(outname_); 
   TString dirName=gSystem->DirName(outname_);
-  if(scenario!=0) baseName=baseName.ReplaceAll("TTJets",Form("TTJets_scenario%d",scenario));
   fOut_=TFile::Open(dirName+"/"+baseName,"RECREATE");
 
   //corrections
   lumi_ = new LumiTools(era_,genPU_);
 
   std::map<TString,TString> cfgMap;
-  cfgMap["g_id"]     = "MVAWP80";
   cfgMap["m_id"]     = "TightID";
   cfgMap["m_iso"]    = "TightRelIso";
   cfgMap["m_id4iso"] = "TightIDandIPCut";
-  cfgMap["e_id"]     = "MVAWP80";
+  cfgMap["e_id"]     = "Tight";
   gammaEffWR_  = new EfficiencyScaleFactorsWrapper(filename_.Contains("Data13TeV"),era_,cfgMap);
   l1PrefireWR_ = new L1PrefireEfficiencyWrapper(filename_.Contains("Data13TeV"),era_);  
   btvSF_       = new BTagSFUtil(era_);
@@ -110,22 +126,30 @@ void TOP17010::init(UInt_t scenario){
 void TOP17010::bookHistograms() {
 
   ht_ = new HistTool(0);
-  ht_->addHist("puwgtctr", new TH1F("puwgtctr", ";Weight sums;Events",                        2,0,2));  
-  ht_->addHist("nvtx",     new TH1F("nvtx",     ";Vertex multiplicity;Events",                100,-0.5,99.5));
-  ht_->addHist("mll", 	   new TH1F("mll",      ";Dilepton invariant mass [GeV];Events",      50,0,550));  
-  ht_->addHist("ptll", 	   new TH1F("ptll",     ";Dilepton p_{T}[GeV];Events",                50,0,550));  
-  ht_->addHist("l1pt",     new TH1F("l1pt",     ";Lepton 1 transverse momentum [GeV];Events", 50,20,200));
-  ht_->addHist("l1eta",    new TH1F("l1eta",    ";Lepton 1 pseudo-rapidity;Events",           10,0,2.5));
-  ht_->addHist("l2pt",     new TH1F("l2pt",     ";Lepton 2 transverse momentum [GeV];Events", 50,20,200));
-  ht_->addHist("l2eta",    new TH1F("l2eta",    ";Lepton 2 pseudo-rapidity;Events",           10,0,2.5));
-  ht_->addHist("njets",    new TH1F("njets",    ";Jet multiplicity;Events",                 6,2,8)); 
-  ht_->addHist("nbjets",   new TH1F("nbjets",   ";b jet multiplicity;Events",               5,1,6));
-  ht_->addHist("j1pt",     new TH1F("j1pt",     ";Jet 1 transverse momentum [GeV];Events",  50,30,200));
-  ht_->addHist("j1eta",    new TH1F("j1eta",    ";Jet 1 pseudo-rapidity;Events",            10,0,2.5));
-  ht_->addHist("j2pt",     new TH1F("j2pt",     ";Jet 2 transverse momentum [GeV];Events",  50,30,200));
-  ht_->addHist("j2eta",    new TH1F("j2eta",    ";Jet 2 pseudo-rapidity;Events",            10,0,2.5));
-  ht_->addHist("evcount",  new TH1F("evcount",  ";Pass;Events", 1,0,1));  
-  ht_->addHist("drlb",     new TH1F("drlb",     ";#DeltaR(l,b);Events", 15,0,2*TMath::Pi()));  
+  ht_->addHist("puwgtctr", new TH1D("puwgtctr", ";Weight sums;Events",                        2,0,2));  
+  ht_->addHist("genscan",  new TH1D("gennscan", ";Parameter;Value",                           4,0,4));  
+  TH1 *gscan=ht_->getPlots()["genscan"];
+  gscan->SetBinContent(1,origMt_);    gscan->GetXaxis()->SetBinLabel(1,"m_{t}^{i}");
+  gscan->SetBinContent(2,origGt_);    gscan->GetXaxis()->SetBinLabel(2,"#Gamma_{t}^{i}");
+  gscan->SetBinContent(3,targetMt_);  gscan->GetXaxis()->SetBinLabel(3,"m_{t}^{f}");
+  gscan->SetBinContent(4,targetGt_);  gscan->GetXaxis()->SetBinLabel(4,"#Gamma_{t}^{f}");
+  ht_->addHist("genmass",  new TH1D("genmass",     ";Mass [GeV];Events",                         100,169,176));  
+  ht_->addHist("nvtx",     new TH1D("nvtx",     ";Vertex multiplicity;Events",                100,-0.5,99.5));
+  ht_->addHist("rho",      new TH1D("rho",      ";#rho;Events",                               50,0,30));
+  ht_->addHist("mll", 	   new TH1D("mll",      ";Dilepton invariant mass [GeV];Events",      50,0,550));  
+  ht_->addHist("ptll", 	   new TH1D("ptll",     ";Dilepton p_{T}[GeV];Events",                50,0,550));  
+  ht_->addHist("l1pt",     new TH1D("l1pt",     ";Lepton 1 transverse momentum [GeV];Events", 50,20,200));
+  ht_->addHist("l1eta",    new TH1D("l1eta",    ";Lepton 1 pseudo-rapidity;Events",           10,0,2.5));
+  ht_->addHist("l2pt",     new TH1D("l2pt",     ";Lepton 2 transverse momentum [GeV];Events", 50,20,200));
+  ht_->addHist("l2eta",    new TH1D("l2eta",    ";Lepton 2 pseudo-rapidity;Events",           10,0,2.5));
+  ht_->addHist("njets",    new TH1D("njets",    ";Jet multiplicity;Events",                 6,2,8)); 
+  ht_->addHist("nbjets",   new TH1D("nbjets",   ";b jet multiplicity;Events",               5,1,6));
+  ht_->addHist("j1pt",     new TH1D("j1pt",     ";Jet 1 transverse momentum [GeV];Events",  50,30,200));
+  ht_->addHist("j1eta",    new TH1D("j1eta",    ";Jet 1 pseudo-rapidity;Events",            10,0,2.5));
+  ht_->addHist("j2pt",     new TH1D("j2pt",     ";Jet 2 transverse momentum [GeV];Events",  50,30,200));
+  ht_->addHist("j2eta",    new TH1D("j2eta",    ";Jet 2 pseudo-rapidity;Events",            10,0,2.5));
+  ht_->addHist("evcount",  new TH1D("evcount",  ";Pass;Events", 1,0,1));  
+  ht_->addHist("drlb",     new TH1D("drlb",     ";#DeltaR(l,b);Events", 15,0,2*TMath::Pi()));  
   TFile *rIn=TFile::Open("$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/top17010/mlbresol.root");  
   std::vector<TString> templates={"mlb","ptlb"};
   for(auto t : templates) {
@@ -150,10 +174,11 @@ void TOP17010::bookHistograms() {
                           "btagup",  "btagdn",
                           "ltagup",  "ltagdn",
                           "JERup",       "JERdn",
+                          "JERstat","JERJEC", "JERPU", "JERPLI", "JERptCut", "JERtrunc", "JERpTdep", "JERSTmFE",
                           "topptup",     "topptdn",
                           "AbsoluteStatJECup","AbsoluteScaleJECup","AbsoluteMPFBiasJECup","FragmentationJECup","SinglePionECALJECup","SinglePionHCALJECup","FlavorPureGluonJECup","FlavorPureQuarkJECup","FlavorPureCharmJECup","FlavorPureBottomJECup","TimePtEtaJECup","RelativeJEREC1JECup","RelativeJEREC2JECup","RelativeJERHFJECup","RelativePtBBJECup","RelativePtEC1JECup","RelativePtEC2JECup","RelativePtHFJECup","RelativeBalJECup","RelativeFSRJECup","RelativeStatFSRJECup","RelativeStatECJECup","RelativeStatHFJECup","PileUpDataMCJECup","PileUpPtRefJECup","PileUpPtBBJECup","PileUpPtEC1JECup","PileUpPtEC2JECup","PileUpPtHFJECup",
                           "AbsoluteStatJECdn","AbsoluteScaleJECdn","AbsoluteMPFBiasJECdn","FragmentationJECdn","SinglePionECALJECdn","SinglePionHCALJECdn","FlavorPureGluonJECdn","FlavorPureQuarkJECdn","FlavorPureCharmJECdn","FlavorPureBottomJECdn","TimePtEtaJECdn","RelativeJEREC1JECdn","RelativeJEREC2JECdn","RelativeJERHFJECdn","RelativePtBBJECdn","RelativePtEC1JECdn","RelativePtEC2JECdn","RelativePtHFJECdn","RelativeBalJECdn","RelativeFSRJECdn","RelativeStatFSRJECdn","RelativeStatECJECdn","RelativeStatHFJECdn","PileUpDataMCJECdn","PileUpPtRefJECdn","PileUpPtBBJECdn","PileUpPtEC1JECdn","PileUpPtEC2JECdn","PileUpPtHFJECdn",
-                          "bfragup", "bfragdn"
+                          "bfragup", "bfragdn",
                           "slbrup",  "slbrdn"};
   
   //instantiate 2D histograms for most relevant variables to trace with systs
@@ -276,7 +301,7 @@ void TOP17010::runAnalysis()
       // RECO LEVEL SELECTION //
       /////////////////////////
       std::vector<Particle> flaggedleptons = selector_->flaggedLeptons(ev_);     
-      std::vector<Particle> leptons        = selector_->selLeptons(flaggedleptons,SelectionTool::MEDIUM,SelectionTool::MVA80,20,2.5);
+      std::vector<Particle> leptons        = selector_->selLeptons(flaggedleptons,SelectionTool::TIGHT,SelectionTool::TIGHT,20,2.5);
       std::vector<Jet> alljets             = selector_->getGoodJets(ev_,30.,2.4,leptons);
       applyMC2MC(alljets);
       TopWidthEvent twe(leptons,alljets);
@@ -320,7 +345,7 @@ void TOP17010::runAnalysis()
         if(era_.Contains("2016")) {
           if(gRandom->Uniform()>16551.4/35874.8) lperiod="GH";
         }
-        trigSF = gammaEffWR_->getTriggerCorrection(leptons,{},{}, lperiod);
+        trigSF = gammaEffWR_->getDileptonTriggerCorrection(leptons);
         l1SF   = gammaEffWR_->getOfflineCorrection(leptons[0].id(),leptons[0].pt(),leptons[0].eta(), lperiod);
         l2SF   = gammaEffWR_->getOfflineCorrection(leptons[1].id(),leptons[1].pt(),leptons[1].eta(), lperiod);
 
@@ -330,18 +355,25 @@ void TOP17010::runAnalysis()
           for(Int_t igen=0; igen<ev_.ngtop; igen++)
             {
               if(abs(ev_.gtop_id[igen])!=6) continue;
-              float topsf=TMath::Exp(0.156-0.00137*ev_.gtop_pt[igen]);
+              double topsf=TMath::Exp(0.156-0.00137*ev_.gtop_pt[igen]);
               topptWgts[0] *= topsf;
               topptWgts[1] *= 1./topsf;
               genmt.push_back(ev_.gtop_m[igen]);
             }
-
           if(genmt.size()==2 
              && rbwigner_ 
-             && targetGt_>0        && targetMt_>0 
-             && origMt_>0          && origGt_>0
-             && targetGt_!=origGt_ && targetMt_ != origMt_ )
-            widthWgt=weightBW(rbwigner_,genmt,targetGt_,targetMt_,origGt_,origMt_);
+             && targetGt_>0 && targetMt_>0 && origGt_>0  && origMt_>0
+             && (targetGt_!=origGt_ || targetMt_ != origMt_) ) {
+            widthWgt=weightBW(rbwigner_,genmt,targetGt_,targetMt_,origGt_,origMt_); 
+
+            //control the re-weighted BW
+            for(auto genm:genmt) {
+              std::vector<double> bwWgts(1,1.0);
+              ht_->fill("genmass",  genm, bwWgts);
+              bwWgts[0]=widthWgt;
+              ht_->fill("genmass",  genm, bwWgts,"rwgt");
+            }
+          }
         }
 
         //b-fragmentation and semi-leptonic branching fractions
@@ -359,7 +391,7 @@ void TOP17010::runAnalysis()
       fillControlHistograms(twe,wgt);
 
       //experimental systs cycle: better not to do anything else after this...
-      //final category selection is repeated ad nauseam with varied objects/weights and mva is re-evaluated several times
+      //final category selection is repeated ad nauseam with varied objects/weights 
       if(ev_.isData) continue;
 
       selector_->setDebug(false);
@@ -393,7 +425,7 @@ void TOP17010::runAnalysis()
         
         //base values and kinematics
         bool reSelect(false);        
-        float iwgt=(ev_.g_nw>0 ? ev_.g_w[0] : 1.0);
+        double iwgt=(ev_.g_nw>0 ? ev_.g_w[0] : 1.0);
         iwgt *= (normH_? normH_->GetBinContent(1) : 1.0);
         iwgt *= widthWgt;
 
@@ -403,19 +435,19 @@ void TOP17010::runAnalysis()
         else if( (sname.Contains("eetrig") && twe.dilcode==11*11) ||
                  (sname.Contains("emtrig") && twe.dilcode==11*13) ||
                  (sname.Contains("mmtrig") && twe.dilcode==13*13) ) {
-          float newTrigSF( max(float(0.),float(trigSF.first+(isUpVar ? +1 : -1)*trigSF.second)) );
+          double newTrigSF( max(double(0.),double(trigSF.first+(isUpVar ? +1 : -1)*trigSF.second)) );
           iwgt *= puWgts[0]*newTrigSF*selSF.first*l1trigprefireProb.first;
         }
         else if(sname.BeginsWith("esel") ) {
-          float newESF( max(float(0.),float(combinedESF.first+(isUpVar ? +1 : -1)*combinedESF.second)) );
+          double newESF( max(double(0.),double(combinedESF.first+(isUpVar ? +1 : -1)*combinedESF.second)) );
           iwgt *= puWgts[0]*trigSF.first*newESF*combinedMSF.first*l1trigprefireProb.first;
         }
         else if(sname.BeginsWith("msel") ) {
-          float newMSF( max(float(0.),float(combinedMSF.first+(isUpVar ? +1 : -1)*combinedMSF.second)) );
+          double newMSF( max(double(0.),double(combinedMSF.first+(isUpVar ? +1 : -1)*combinedMSF.second)) );
           iwgt *= puWgts[0]*trigSF.first*combinedESF.first*newMSF*l1trigprefireProb.first;
         }
         else if(sname.BeginsWith("l1prefire") ){
-          float newL1PrefireProb( max(float(0.),float(l1trigprefireProb.first+(isUpVar ? +1 : -1)*l1trigprefireProb.second)) );
+          double newL1PrefireProb( max(double(0.),double(l1trigprefireProb.first+(isUpVar ? +1 : -1)*l1trigprefireProb.second)) );
           iwgt *= puWgts[0]*trigSF.first*selSF.first*newL1PrefireProb;
         }
         else if(sname=="topptup")     iwgt = wgt*topptWgts[0];
@@ -434,7 +466,7 @@ void TOP17010::runAnalysis()
           for(size_t il=0; il<ileptons.size(); il++) {
             int id=abs(ileptons[il].id());
             int idx=ileptons[il].originalReference();
-            float eScale(0.0);
+            double eScale(0.0);
             if( (id==11 && sname.Contains("ees1")) || (id==13 && sname.Contains("mes1")) ) eScale=ev_.l_scaleUnc1[idx];
             if( (id==11 && sname.Contains("ees2")) || (id==13 && sname.Contains("mes2")) ) eScale=ev_.l_scaleUnc2[idx];
             if( (id==11 && sname.Contains("ees3")) || (id==13 && sname.Contains("mes3")) ) eScale=ev_.l_scaleUnc3[idx];
@@ -454,7 +486,7 @@ void TOP17010::runAnalysis()
             }
             ileptons[il] *= eScale;
           }
-          ileptons=selector_->selLeptons(ileptons,SelectionTool::MEDIUM,SelectionTool::MVA80,20,2.5);        
+          ileptons=selector_->selLeptons(ileptons,SelectionTool::TIGHT,SelectionTool::TIGHT,20,2.5);        
         }
         if(ileptons.size()<2) continue;
         
@@ -499,7 +531,7 @@ void TOP17010::runAnalysis()
           if(sname.Contains("PileUpPtEC1"))      jecIdx=26; 
           if(sname.Contains("PileUpPtEC2"))      jecIdx=27; 
           if(sname.Contains("PileUpPtHF"))       jecIdx=28;
-          
+        
           //re-scale and re-select jets
           std::vector<Jet> newJets = selector_->getGoodJets(ev_,20.,2.4,leptons);
           applyMC2MC(newJets);
@@ -510,9 +542,20 @@ void TOP17010::runAnalysis()
             int jflav(abs(ev_.j_flav[idx]));
 
             //shift jet energy
-            float scaleVar(1.0);
+            double scaleVar(1.0);
             if(jecIdx<0) {
-              scaleVar=isUpVar ? ev_.j_jerUp[idx] : ev_.j_jerDn[idx];
+              double jerUnc=1-(isUpVar ? ev_.j_jerUp[idx] : ev_.j_jerDn[idx]);
+              double jerUncSgn(jerUnc<0 ? -1 : 1);
+              jerUnc=fabs(jerUnc);
+              if(sname=="JERstat")   jerUnc *= getJERSFBreakdown("stat", fabs(j.eta()));
+              if(sname=="JERJEC")    jerUnc *= max(getJERSFBreakdown("JECup", fabs(j.eta())), getJERSFBreakdown("JECdown", fabs(j.eta())));
+              if(sname=="JERPU")     jerUnc *= max(getJERSFBreakdown("PUup",  fabs(j.eta())), getJERSFBreakdown("PUudown", fabs(j.eta())));
+              if(sname=="JERPLI")    jerUnc *= max(getJERSFBreakdown("PLIup", fabs(j.eta())), getJERSFBreakdown("PLIdown", fabs(j.eta())));
+              if(sname=="JERptCut")  jerUnc *= getJERSFBreakdown("ptCut", fabs(j.eta()));
+              if(sname=="JERtrunc")  jerUnc *= getJERSFBreakdown("trunc", fabs(j.eta()));
+              if(sname=="JERpTdep")  jerUnc *= getJERSFBreakdown("pTdep", fabs(j.eta()));
+              if(sname=="JERSTmFE")  jerUnc *= getJERSFBreakdown("STmFE", fabs(j.eta()));
+              scaleVar*=(1+jerUncSgn*jerUnc);
             } 
             else {
               bool flavorMatches(true);
@@ -582,6 +625,7 @@ void TOP17010::fillControlHistograms(TopWidthEvent &twe,float &wgt) {
   //plot weight
   std::vector<double> cplotwgts(1,wgt);
   ht_->fill("nvtx",    ev_.nvtx,        cplotwgts,twe.cat);        
+  ht_->fill("rho",     ev_.rho,         cplotwgts,twe.cat);        
   ht_->fill("mll",     twe.mll,         cplotwgts,twe.cat);
   ht_->fill("ptll",    twe.ptll,        cplotwgts,twe.cat);
   ht_->fill("l1pt",    twe.l1pt,        cplotwgts,twe.cat);
@@ -647,8 +691,15 @@ void TOP17010::applyMC2MC(std::vector<Jet> &jetColl) {
  
     //as mc2mc=var MC / nom MC bring back JES to nom MC response
     //do not do it if it exceeds 10% corrections...
-    float mc2mcVal=mc2mcCorr_[mcTag]->Eval(jetColl[i].Pt());
+    double mc2mcVal=mc2mcCorr_[mcTag]->Eval(jetColl[i].Pt());
     if(mc2mcVal>0.9 && mc2mcVal<1.1) jetColl[i] *= 1./mc2mcVal;
   }
 
+}
+
+//
+double TOP17010::getJERSFBreakdown(TString key,double abseta){
+  if(jerSFBreakdown_.find(key)==jerSFBreakdown_.end()) return 1.0;
+  int xbin=jerSFBreakdown_[key]->GetXaxis()->FindBin(abseta);
+  return jerSFBreakdown_[key]->GetBinContent(xbin);
 }

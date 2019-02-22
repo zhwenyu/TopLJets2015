@@ -5,20 +5,32 @@
 These installation instructions correspond to the 2017 data/MC production.
 To install execute the following in your work area.
 Notice: if you are not creating the ntuples, you can skip the part of the instructions 
-marked with the `##OPTIONAL/##END OPTIONAL` markers
+marked with the `##OPTIONAL/##END OPTIONAL` markers.
+If compilation fails for some reason repeat the scram b...
 
 ```
-cmsrel CMSSW_9_4_10
-cd CMSSW_9_4_10/src
+cmsrel CMSSW_9_4_11
+cd CMSSW_9_4_11/src
 cmsenv
 
-##OPTIONAL (USE IF CREATING NTUPLES FROM SCRATCH)
+##OPTIONAL (TAKES TOO LONG/MUCH SPACE, USE ONLY IF CREATING NTUPLES FROM SCRATCH)
+
+git cms-init
+
+#proton reconstruction
+#see https://twiki.cern.ch/twiki/bin/viewauth/CMS/CTPPSStandardProtonReconstruction
+git remote add ctpps git@github.com:CTPPS/cmssw.git
+git fetch ctpps
+git checkout -b test ctpps/ctpps_initial_proton_reconstruction_CMSSW_9_4_11
+git cms-addpkg CondFormats/CTPPSOpticsObjects DataFormats/ProtonReco IOMC/EventVertexGenerators IOMC/ParticleGuns RecoCTPPS/ProtonReconstruction RecoCTPPS/TotemRPLocal SimCTPPS/OpticsParameterisation Validation/CTPPS CondFormats/RunInfo CondFormats/DataRecord
+scram b -j 8
 
 #MVA v2 ids
-git cms-merge-topic guitargeek:EgammaID_9_4_X
 #photon/electron id+scale and smearing fixes for MINIAOD 2017v2 (doesn't harm 2016v3)
+git cms-merge-topic cms-egamma:EgammaID_949 
 #just adds in an extra file to have a setup function to make things easier
 git cms-merge-topic cms-egamma:EgammaPostRecoTools_940 
+
 #re-do MET to mitigate EE noise
 git cms-merge-topic cms-met:METFixEE2017_949_v2
 scram b -j 8
@@ -30,14 +42,14 @@ git clone https://github.com/cms-analysis/HiggsAnalysis-CombinedLimit.git HiggsA
 cd HiggsAnalysis/CombinedLimit
 git fetch origin
 git checkout v7.0.10
-scramv1 b clean; scramv1 b
+scram b -j 8
 cd -
 
 #additional tools
 mkdir TopQuarkAnalysis 
 cd TopQuarkAnalysis
 git clone -b 94x https://gitlab.cern.ch/psilva/BFragmentationAnalyzer.git
-scram b
+scram b -j 8
 cd -
 
 #this package
@@ -80,7 +92,7 @@ python scripts/submitToGrid.py -j data/era2016/samples.json -c ${CMSSW_BASE}/src
 As soon as ntuple production starts to finish, to move from crab output directories to a simpler directory structure which can be easily parsed by the local analysis runThe merging can be run locally if needed by using the checkProductionIntegrity.py script
 
 ```
-python scripts/mergeGridOutputs.py -i /store/cmst3/group/top/psilva/3129835/ -o /store/cmst3/group/top/RunIIReReco/3129835/
+python scripts/mergeGridOutputs.py -i /store/cmst3/group/top/psilva/ab05162/ -o /store/cmst3/group/top/RunIIReReco/ab05162/
 python scripts/mergeGridOutputs.py -i /store/cmst3/group/top/grid_2016/113427a -o /store/cmst3/group/top/RunIIReReco/113427a_2016
 ```
 
@@ -125,12 +137,12 @@ python scripts/runPileupEstimation.py --out data/era2016/pileupWgts.root \
 ```
 * B-tagging. To apply corrections to the simulation one needs the expected efficiencies stored somwewhere. The script below will project the jet pT spectrum from the TTbar sample before and after applying b-tagging, to compute the expecte efficiencies. The result will be stored in data/expTageff.root
 ```
-python scripts/saveExpectedBtagEff.py -i /store/cmst3/group/top/RunIIReReco/3129835/MC13TeV_2017_TTJets      -o data/era2017/expectedBtagEff.root;
+python scripts/saveExpectedBtagEff.py -i /store/cmst3/group/top/RunIIReReco/ab05162/MC13TeV_2017_TTJets      -o data/era2017/expectedBtagEff.root;
 python scripts/saveExpectedBtagEff.py -i /store/cmst3/group/top/RunIIReReco/2016/0c522df/MC13TeV_2016_TTJets -o data/era2016/expectedBtagEff.root;
 ```
 * MC normalization. This will loop over all the samples available in EOS and produce a normalization cache (weights to normalize MC). The file will be available in data/genweights.pck
 ```
-python scripts/produceNormalizationCache.py -i /store/cmst3/group/top/RunIIReReco/3129835      -o data/era2017/genweights_3129835.root
+python scripts/produceNormalizationCache.py -i /store/cmst3/group/top/RunIIReReco/ab05162      -o data/era2017/genweights_ab05162.root
 python scripts/produceNormalizationCache.py -i /store/cmst3/group/top/RunIIReReco/2016/0c522df -o data/era2016/genweights_0c522df.root
 ```
 The lepton/photon trigger/id/iso efficiencies should also be placed under data/era2017. 

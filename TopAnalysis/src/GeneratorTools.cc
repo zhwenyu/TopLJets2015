@@ -51,7 +51,6 @@ std::vector< WeightSysts_t > getWeightSysts(TFile *f,TString sample){
     }
     
     if(sample=="TTJets2016") {
-      cout <<"It is TTJets!"<<endl;
       if(label.Contains("muR=0.5 muF=1")   && label.Contains("hdamp=mt"))   systsOfInterest.push_back( WeightSysts_t("muRdn",    xbin-1) );
       if(label.Contains("muR=2 muF=1")     && label.Contains("hdamp=mt"))   systsOfInterest.push_back( WeightSysts_t("muRup",    xbin-1) );
       if(label.Contains("muR=1 muF=0.5")   && label.Contains("hdamp=mt"))   systsOfInterest.push_back( WeightSysts_t("muFdn",    xbin-1) );
@@ -66,8 +65,24 @@ std::vector< WeightSysts_t > getWeightSysts(TFile *f,TString sample){
       if(label.Contains("PDF set = 265000")) systsOfInterest.push_back( WeightSysts_t("PDF101",xbin-1) );
       if(label.Contains("PDF set = 266000")) systsOfInterest.push_back( WeightSysts_t("PDF102",xbin-1) );
     }
+
+   if(sample=="TTJets2017") {
+      if(label.Contains("muR=0.50000E+00 muF=0.10000E+01") )   systsOfInterest.push_back( WeightSysts_t("muRdn",    xbin-1) );
+      if(label.Contains("muR=0.20000E+01 muF=0.10000E+01") )   systsOfInterest.push_back( WeightSysts_t("muRup",    xbin-1) );
+      if(label.Contains("muR=0.10000E+01 muF=0.50000E+00") )   systsOfInterest.push_back( WeightSysts_t("muFdn",    xbin-1) );
+      if(label.Contains("muR=0.10000E+01 muF=0.20000E+01") )   systsOfInterest.push_back( WeightSysts_t("muFup",    xbin-1) );
+      if(label.Contains("muR=0.50000E+00 muF=0.50000E+00") )   systsOfInterest.push_back( WeightSysts_t("muRmuFdn", xbin-1) );
+      if(label.Contains("muR=0.20000E+01 muF=0.20000E+01") )   systsOfInterest.push_back( WeightSysts_t("muRmuFup", xbin-1) );
+      if(label.Contains("NNPDF31_nlo_hessian_pdfas")) {
+          Int_t start=label.Index("PDF=  305")+6;
+          TString id=label(start,6);
+          start = std::atof(id) -305800 ;
+          id = Form("%03d",start);
+          systsOfInterest.push_back( WeightSysts_t("PDF"+id,xbin-1) );
+        }
   }
   
+ }
   return systsOfInterest;
 }
 
@@ -162,14 +177,14 @@ float weightBW(TF1 *bwigner,std::vector<float> &obsm,float g,float m,float gini,
   float n=bwigner->Integral(max(m-50*g,float(0.)),m+50*g);
 
   float wgt(1.0);
-  for(auto m : obsm){
+  for(auto obsm_i : obsm){
     bwigner->FixParameter(1,mini);
     bwigner->FixParameter(2,gini);
-    float vini=bwigner->Eval(m);
+    float vini=bwigner->Eval(obsm_i);
 
     bwigner->FixParameter(1,m);
     bwigner->FixParameter(2,g);
-    float v=bwigner->Eval(m);
+    float v=bwigner->Eval(obsm_i);
 
     wgt *= (v/n) / (vini/nini);
   }

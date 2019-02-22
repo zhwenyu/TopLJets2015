@@ -139,6 +139,7 @@ void VBFVectorBoson::runAnalysis()
     mvaCDFinv[key]=(TGraph *)fcdf->Get(key+"_cdfinv");
   }
 
+
   ///////////////////////
   // LOOP OVER EVENTS //
   /////////////////////
@@ -408,16 +409,32 @@ void VBFVectorBoson::runAnalysis()
       //evaluate discriminator MVA for categories of interest
       //FIXME: this probably needs to be modified for the new training
       vbfmva_ = -1000;
+<<<<<<< HEAD
       vbfmvaOrig_ = -1000;
+=======
+      flat_vbfmva_=-1000;
+      vbfmvaHighVPt_ = -1000;
+>>>>>>> 05ec176b8b53052787508580f91110d9a1c68fa8
       if (cat[5] || cat[6]) {
-        TString key(cat[3] ?"BDT_VBF0LowVPtHighMJJ":(cat[5] ? "BDT_VBF0HighVPtLowMJJ" : "BDT_VBF0HighVPtHighMJJ"));
+        TString key(cat[3] ?"BDT_VBF0LowVPtHighMJJ":(cat[5] ? "BDT_VBF0HighVPtLowMJJ" : "BDT_VBF0HighVPtHighMJJ"));        
         vbfmva_ = readers[key]->EvaluateMVA(key);
+<<<<<<< HEAD
 	//vbfmvaOrig_ =readers["BDT_VBF0HighPt"]->EvaluateMVA("BDT_VBF0HighPt");
 	vbfmvaOrig_ = readers[key]->EvaluateMVA(key);
         if(mvaCDFinv[key]) vbfmva_=max(0.,mvaCDFinv[key]->Eval(vbfmva_));
         if(doBlindAnalysis_ && ev_.isData && vbfmva_>0.8) vbfmva_=-1000;
 	if(doBlindAnalysis_ && ev_.isData && vbfmvaOrig_>0.8) vbfmvaOrig_=-1000;
 
+=======
+	vbfmvaHighVPt_ =readers["BDT_VBF0HighPt"]->EvaluateMVA("BDT_VBF0HighPt");        
+        if(mvaCDFinv[key]) {
+          flat_vbfmva_=max(0.,mvaCDFinv[key]->Eval(vbfmva_));
+        }        
+        if(doBlindAnalysis_ && ev_.isData && vbfmva_>0.2) {
+          vbfmva_=-1000;
+          flat_vbfmva_=-1000;
+        }
+>>>>>>> 05ec176b8b53052787508580f91110d9a1c68fa8
       }
       
       ////////////////////
@@ -506,7 +523,11 @@ void VBFVectorBoson::runAnalysis()
         //base values and kinematics
         TString icat(baseCategory);
         float imva=vbfmva_;
+<<<<<<< HEAD
         float imvaOrig=vbfmvaOrig_;
+=======
+        float flat_imva=-99;
+>>>>>>> 05ec176b8b53052787508580f91110d9a1c68fa8
         float iwgt=(ev_.g_nw>0 ? ev_.g_w[0] : 1.0);
         iwgt *= (normH_? normH_->GetBinContent(1) : 1.0);
         TLorentzVector iBoson(boson);
@@ -537,7 +558,7 @@ void VBFVectorBoson::runAnalysis()
           reSelect=true;
           iBoson *= (1+(isUpVar?1:-1)*bosonScaleUnc); 
         }
-        if(sname.Contains("JEC") || sname.Contains("JER") )  {
+        if(sname.Contains("JEC") || sname.Contains("JER") ) {
           reSelect=true;
           int jecIdx=-1;
           if(sname.Contains("AbsoluteStat"))     jecIdx=0;
@@ -632,26 +653,53 @@ void VBFVectorBoson::runAnalysis()
           else if(isHighVPt && isHighMJJ) icat="HighVPtHighMJJ"+chTag;
           
           //re-evaluate MVA         
-          //FIXME: this needs probably to be changed for the next version of the training
-
 	  if (isLowMJJ || isHighMJJ) {
 	    TString key(isLowVPt ?"BDT_VBF0LowVPtHighMJJ":(isLowMJJ ? "BDT_VBF0HighVPtLowMJJ" : "BDT_VBF0HighVPtHighMJJ"));
 	    imva = readers[key]->EvaluateMVA(key);	    
+<<<<<<< HEAD
 	    imvaOrig = readers[key]->EvaluateMVA(key);
 	    if(mvaCDFinv[key]) imva=max(0.,mvaCDFinv[key]->Eval(imva));	    
 	  }
+=======
+	    if(mvaCDFinv[key]) {
+              flat_imva=max(0.,mvaCDFinv[key]->Eval(imva));	    
+            }
+          }
+>>>>>>> 05ec176b8b53052787508580f91110d9a1c68fa8
 
-          // TString key(isLowVPt ? "BDT_VBF0HighMJJ" : "BDT_VBF0LowMJJ");
+          //TString key(isLowVPt ? "BDT_VBF0HighMJJ" : "BDT_VBF0LowMJJ");
           // imva = readers[key]->EvaluateMVA(key);
           // if(mvaCDFinv[key]) imva=max(0.,mvaCDFinv[key]->Eval(imva));
         }
         
         if( !icat.Contains("MJJ") ) continue;
 
+        //qg discriminator re-weighting uncertainty
+        //https://twiki.cern.ch/twiki/bin/view/CMS/QuarkGluonLikelihood#Systematics
+        float qgwgt(1.0);
+        if(sname=="gluonqg" || sname=="quarkqg") {
+          for(size_t ij=0; ij<min((size_t)2,ijets.size()); ij++) {
+            int idx=jets[ij].getJetIndex();
+            float xqg=ev_.j_qg[idx];
+            int jflav(abs(ev_.j_flav[idx]));
+            if(jflav==21) {
+              qgwgt *= -0.666978*pow(xqg,3) + 0.929524*pow(xqg,2) -0.255505*xqg + 0.981581;
+            }
+            else if(jflav!=0) {
+              qgwgt *= -55.7067*pow(xqg,7) + 113.218*pow(xqg,6) -21.1421*pow(xqg,5) -99.927*pow(xqg,4) + 92.8668*pow(xqg,3) -34.3663*pow(xqg,2) + 6.27*xqg + 0.612992;
+            }
+          }
+        }
+
         //fill with new values/weights
-        std::vector<double> eweights(1,iwgt);
+        std::vector<double> eweights(1,iwgt*qgwgt);
+
         ht_->fill2D("vbfmva_exp",       imva,                 is,eweights,icat);
+<<<<<<< HEAD
         ht_->fill2D("vbfmvaOrig_exp",   imvaOrig,             is,eweights,icat);
+=======
+        ht_->fill2D("acdfvbfmva_exp",  flat_imva,   is,eweights,icat);
+>>>>>>> 05ec176b8b53052787508580f91110d9a1c68fa8
         ht_->fill2D("centraleta_exp",   vbfVars_.centraleta,  is,eweights,icat);
         ht_->fill2D("forwardeta_exp",   vbfVars_.forwardeta,  is,eweights,icat);
         ht_->fill2D("leadpt_exp",       vbfVars_.leadj_pt,    is,eweights,icat);
@@ -661,7 +709,7 @@ void VBFVectorBoson::runAnalysis()
         ht_->fill2D("mjj_exp", 	        vbfVars_.mjj,         is,eweights,icat);
         ht_->fill2D("vpt_exp", 	        iBoson.Pt(),          is,eweights,icat);
         ht_->fill2D("evcount_exp",      0,                    is,eweights,icat);
-        if(imva>0.9)
+        if(flat_imva>0.9)
           ht_->fill2D("evcount_exp",    1,                    is,eweights,icat);
       }
       selector_->setDebug(debug_);
@@ -793,20 +841,38 @@ void VBFVectorBoson::bookHistograms() {
   ht_->addHist("circularity",   new TH1F("circularity",      ";Circularity;;Events",               20,0,1.0));
   //additional variables from https://link.springer.com/content/pdf/10.1140/epjc/s10052-017-5315-6.pdf
   ht_->addHist("jjetas",        new TH1F("jjetas",           ";#eta_{j1}#eta_{j2};Events",50,-25,15));  
-  ht_->addHist("centjy",	new TH1F("centjy",           ";Central jet rapidity;Jets",25,0,3));  
-  ht_->addHist("ncentj",        new TH1F("ncentjj",          ";Number of central jets;Events",10,-0.5,9.5));  
-  ht_->addHist("dphivj0",       new TH1F("dphivj0",          ";#Delta#phi(V,j0);Jets",20,0,TMath::Pi()));  
-  ht_->addHist("dphivj1",       new TH1F("dphivj1",          ";#Delta#phi(V,j1);Jets",20,0,TMath::Pi()));  
-  ht_->addHist("dphivj2",       new TH1F("dphivj2",          ";#Delta#phi(V,j2);Jets",20,0,TMath::Pi()));  
-  ht_->addHist("dphivj3",       new TH1F("dphivj3",          ";#Delta#phi(V,j3);Jets",20,0,TMath::Pi()));
+  ht_->addHist("centjy",	new TH1F("centjy",           ";Central jet rapidity;Jets",25,0,5));  
+  ht_->addHist("ncentj",        new TH1F("ncentjj",          ";Number of central jets;Events",5,0,5));
+  ht_->addHist("dphivj0",       new TH1F("dphivj0",          ";#Delta#phi(V,lead jet);Jets",20,0,TMath::Pi()));  
+  ht_->addHist("dphivj1",       new TH1F("dphivj1",          ";#Delta#phi(V,sublead jet);Jets",20,0,TMath::Pi()));  
+  ht_->addHist("dphivj2",       new TH1F("dphivj2",          ";#Delta#phi(V,extra jet);Jets",20,0,TMath::Pi()));  
+  ht_->addHist("dphivj3",       new TH1F("dphivj3",          ";#Delta#phi(V,next extra jet);Jets",20,0,TMath::Pi()));
+
+
+  ht_->addHist("cosqj1",       new TH1F("cosqj1",          ";|cos#theta^{*}(V,lead jet)|;Events",20,0,1) );
+  ht_->addHist("cosqjj",       new TH1F("cosqjj",          ";|cos#theta^{*}(V,dijet)|;Events",20,0,1) );
+  ht_->addHist("betavj2",      new TH1F("betavj2",         ";#beta(V,sublead jet) [rad];Events",20,0,TMath::Pi()) );
+  ht_->addHist("betaj1j2",     new TH1F("betaj1j2",        ";#beta(lead jet,sublead jet) [rad];Events",20,0,TMath::Pi()) );
+  ht_->addHist("betavj3",      new TH1F("betavj3",         ";#beta(V,extra jet) [rad];Events",20,0,TMath::Pi()) );
+  ht_->addHist("betaclosejj3", new TH1F("betaclosejj3",    ";#beta(closest tag jet,extra jet) [rad];Events",20,0,TMath::Pi()) );
+
+
+
   //final analyses distributions
   ht_->addHist("evcount",         new TH1F("evcount",        ";Pass;Events",2,0,2));  
   ht_->getPlots()["evcount"]->GetXaxis()->SetBinLabel(1,"Inclusive");
   ht_->getPlots()["evcount"]->GetXaxis()->SetBinLabel(2,"MVA>0.9");
+<<<<<<< HEAD
   ht_->addHist("vbfmva",          new TH1F("vbfmva",         ";VBF MVA;Events",20,0,1));  
   ht_->addHist("vbfmvaOrig",   new TH1F("vbfmvaOrig",         ";VBF MVA;Events",20,-1,1));  
+=======
+  ht_->addHist("vbfmva",          new TH1F("vbfmva",         ";VBF MVA;Events",50,-1,1));  
+  ht_->addHist("acdfvbfmva",     new TH1F("acdfvbfmva",    ";CDF^{-1}(VBF MVA);Events",50,0,1));  
+  ht_->addHist("vbfmvaHighVPt",   new TH1F("vbfmvaHighVPt",   ";VBF MVA;Events",50,-1,1));  
+>>>>>>> 05ec176b8b53052787508580f91110d9a1c68fa8
 
   TString expSystNames[]={"puup","pudn","trigup","trigdn","selup","seldn","l1prefireup","l1prefiredn",
+                          "gluonqg","quarkqg",
                           "aesup","aesdn",
                           "mesup","mesdn",
                           "JERup","JERdn",
@@ -814,7 +880,11 @@ void VBFVectorBoson::bookHistograms() {
                           "AbsoluteStatJECdn","AbsoluteScaleJECdn","AbsoluteMPFBiasJECdn","FragmentationJECdn","SinglePionECALJECdn","SinglePionHCALJECdn","FlavorPureGluonJECdn","FlavorPureQuarkJECdn","FlavorPureCharmJECdn","FlavorPureBottomJECdn","TimePtEtaJECdn","RelativeJEREC1JECdn","RelativeJEREC2JECdn","RelativeJERHFJECdn","RelativePtBBJECdn","RelativePtEC1JECdn","RelativePtEC2JECdn","RelativePtHFJECdn","RelativeBalJECdn","RelativeFSRJECdn","RelativeStatFSRJECdn","RelativeStatECJECdn","RelativeStatHFJECdn","PileUpDataMCJECdn","PileUpPtRefJECdn","PileUpPtBBJECdn","PileUpPtEC1JECdn","PileUpPtEC2JECdn","PileUpPtHFJECdn"};
   
   //instantiate 2D histograms for most relevant variables to trace with systs
+<<<<<<< HEAD
   TString hoi[]={"vbfmva","evcount","mjj","detajj","dphijj","leadpt","subleadpt","forwardeta","centraleta","vpt","vbfmvaOrig"};
+=======
+  TString hoi[]={"vbfmva","acdfvbfmva","evcount","mjj","detajj","dphijj","leadpt","subleadpt","forwardeta","centraleta","vpt"};
+>>>>>>> 05ec176b8b53052787508580f91110d9a1c68fa8
   size_t nexpSysts=sizeof(expSystNames)/sizeof(TString);
   expSysts_=std::vector<TString>(expSystNames,expSystNames+nexpSysts);  
   for(size_t ih=0; ih<sizeof(hoi)/sizeof(TString); ih++)
@@ -1064,11 +1134,21 @@ void VBFVectorBoson::fillControlHistos(TLorentzVector boson, std::vector<Jet> je
   //central jet activity
   ht_->fill("ncentj", vbfVars_.ncentj, cplotwgts, c);
   if(vbfVars_.ncentj>0){
-    ht_->fill("dphivj2", vbfVars_.dphivcentj[0] ,  cplotwgts,c);
+    ht_->fill("dphivj2", fabs(vbfVars_.dphivcentj[0]) ,  cplotwgts,c);
     if(vbfVars_.ncentj>1) 
-      ht_->fill("dphivj3", vbfVars_.dphivcentj[1] ,  cplotwgts,c);    
+      ht_->fill("dphivj3", fabs(vbfVars_.dphivcentj[1]) ,  cplotwgts,c);    
   }
-	
+
+  //additional colour flow and production
+  ht_->fill("cosqj1",   fabs(vbfVars_.cosqj1),     cplotwgts, c);
+  ht_->fill("cosqjj",   fabs(vbfVars_.cosqjj),     cplotwgts, c);
+  ht_->fill("betavj2",  fabs(vbfVars_.beta_v_j2),  cplotwgts, c);
+  ht_->fill("betaj1j2", fabs(vbfVars_.beta_j1_j2), cplotwgts, c);
+  if(vbfVars_.ncentj>0){
+    ht_->fill("betavj3",      fabs(vbfVars_.beta_v_j3),      cplotwgts, c);
+    ht_->fill("betaclosejj3", fabs(vbfVars_.beta_closej_j3), cplotwgts, c);
+  }
+
   //visible system histos
   ht_->fill("relbpt",       vbfVars_.relbpt,      cplotwgts,c);
   ht_->fill("dphibjj",      vbfVars_.dphibjj,     cplotwgts,c);
@@ -1083,10 +1163,16 @@ void VBFVectorBoson::fillControlHistos(TLorentzVector boson, std::vector<Jet> je
 
   //final analysis histograms
   ht_->fill("evcount",  0, cplotwgts, c);
+<<<<<<< HEAD
   ht_->fill("vbfmvaOrig", vbfmvaOrig_, cplotwgts,c);
   if(vbfmva_>=0) {
+=======
+  if(vbfmva_>-999)  {
+    ht_->fill("vbfmvaHighVPt", vbfmvaHighVPt_, cplotwgts,c);
+>>>>>>> 05ec176b8b53052787508580f91110d9a1c68fa8
     ht_->fill("vbfmva", vbfmva_, cplotwgts,c);
-    if(vbfmva_>0.9)
+    ht_->fill("acdfvbfmva", flat_vbfmva_, cplotwgts,c);
+    if(flat_vbfmva_>0.9)
       ht_->fill("evcount",  1, cplotwgts, c);  
   }
 
@@ -1098,6 +1184,7 @@ void VBFVectorBoson::fillControlHistos(TLorentzVector boson, std::vector<Jet> je
       std::vector<double> sweights(1,cplotwgts[0]);
       size_t idx=weightSysts_[is].second;
       sweights[0] *= (ev_.g_w[idx]/ev_.g_w[0])*(normH_->GetBinContent(idx+1)/normH_->GetBinContent(1));
+<<<<<<< HEAD
       ht_->fill2D("vbfmva_th",       vbfmva_,              is,sweights,c);
       ht_->fill2D("vbfmvaOrig_th",   vbfmvaOrig_,          is,sweights,c);
       ht_->fill2D("centraleta_th",   vbfVars_.centraleta,  is,sweights,c);
@@ -1109,8 +1196,21 @@ void VBFVectorBoson::fillControlHistos(TLorentzVector boson, std::vector<Jet> je
       ht_->fill2D("mjj_th", 	     vbfVars_.mjj,         is,sweights,c);
       ht_->fill2D("vpt_th", 	     boson.Pt(),           is,sweights,c);
       ht_->fill2D("evcount_th",      0,                    is,sweights,c);
+=======
+      ht_->fill2D("vbfmva_th",       vbfmva_,               is,sweights,c);
+      ht_->fill2D("acdfvbfmva_th",   flat_vbfmva_, is,sweights,c);
+      ht_->fill2D("centraleta_th",   vbfVars_.centraleta,   is,sweights,c);
+      ht_->fill2D("forwardeta_th",   vbfVars_.forwardeta,   is,sweights,c);
+      ht_->fill2D("leadpt_th",       vbfVars_.leadj_pt,     is,sweights,c);
+      ht_->fill2D("subleadpt_th",    vbfVars_.subleadj_pt,  is,sweights,c);
+      ht_->fill2D("detajj_th",       vbfVars_.detajj,       is,sweights,c);
+      ht_->fill2D("dphijj_th",       vbfVars_.dphijj,       is,sweights,c);
+      ht_->fill2D("mjj_th", 	     vbfVars_.mjj,          is,sweights,c);
+      ht_->fill2D("vpt_th", 	     boson.Pt(),            is,sweights,c);
+      ht_->fill2D("evcount_th",      0,                     is,sweights,c);
+>>>>>>> 05ec176b8b53052787508580f91110d9a1c68fa8
       if(vbfmva_>0.9)
-        ht_->fill2D("evcount_th",    1,                    is,sweights,c);
+        ht_->fill2D("evcount_th",    1,                     is,sweights,c);
     }  
   }
 }
