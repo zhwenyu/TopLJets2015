@@ -10,6 +10,7 @@
 #include "TopLJets2015/TopAnalysis/interface/CommonTools.h"
 #include "TopLJets2015/TopAnalysis/interface/ExclusiveZX.h"
 #include "TopQuarkAnalysis/TopTools/interface/MEzCalculator.h"
+#include "TopLJets2015/TopAnalysis/interface/L1PrefireEfficiencyWrapper.h"
 
 #include <vector>
 #include <set>
@@ -57,6 +58,10 @@ void RunExclusiveZX(TString filename,
   outT->Branch("event",&ev.event,"event/l");
   outT->Branch("lumi",&ev.lumi,"lumi/i");
   outT->Branch("nvtx",&ev.nvtx,"nvtx/I");
+  outT->Branch("nchPV",&ev.nchPV,"nchPV/I");
+  outT->Branch("sumPVChPt",&ev.sumPVChPt,"sumPVChPt/F");
+  outT->Branch("sumPVChPz",&ev.sumPVChPz,"sumPVChPz/F");
+  outT->Branch("sumPVChHt",&ev.sumPVChHt,"sumPVChHt/F");
   outT->Branch("metfilters",&ev.met_filterBits,"metfilters/I");  
 
   //variables of doom
@@ -85,20 +90,25 @@ void RunExclusiveZX(TString filename,
   ADDVAR(&ev.met_phi,"met_phi","F",outT);
   ADDVAR(&ev.met_sig,"met_sig","F",outT);
   TString fvars[]={"evwgt", "evcat", 
-                   "l1pt", "l1eta", "l1phi", "ml1", "l1id", "mt1",
-                   "l2pt", "l2eta", "l2phi", "ml2", "l2id", "mt2",
-                   "bosonpt", "bosonptunc","bosoneta", "bosonphi", "mboson", "bosonht", "mtboson", 
+                   "l1pt", "l1eta", "l1phi", "ml1", "l1id", 
+                   "l2pt", "l2eta", "l2phi", "ml2", "l2id", 
+                   "bosonpt","bosoneta", "bosonphi", "mboson", 
                    "llacopl", "llcosthetaCS", "llphistar", "llMR", "llR", 
-                   "llcsip", "llcsipUnc", "llcsim", "llcsimUnc",
-                   "nb", "nj", 
-                   "vtxMult",    
-                   "PFEnSumEB",   "PFEnSumEE",    "PFEnSumHE",    "PFEnSumHF", 
+                   "llcsip", "llcsim",
+                   "j1pt","j1eta","j1phi","j1m",
+                   "j2pt","j2eta","j2phi","j2m",
+                   "nb", "nj", "htb","htj",
+                   "PFMultSumEB",    "PFMultSumEE",    "PFMultSumHE",    "PFMultSumHF", 
+                   "PFMultDiffEB",   "PFMultDiffEE",   "PFMultDiffHE",   "PFMultDiffHF", 
+                   "PFChMultSumEB",  "PFChMultSumEE",  "PFChMultSumHE",  "PFChMultSumHF", 
+                   "PFChMultDiffEB", "PFChMultDiffEE", "PFChMultDiffHE", "PFChMultDiffHF", 
+                   "PFPzSumEB",   "PFPzSumEE",    "PFPzSumHE",    "PFPzSumHF", 
+                   "PFPzDiffEB",  "PFPzDiffEE",   "PFPzDiffHE",   "PFPzDiffHF", 
+                   "PFChPzSumEB", "PFChPzSumEE",  "PFChPzSumHE",  "PFChPzSumHF", 
+                   "PFChPzDiffEB","PFChPzDiffEE", "PFChPzDiffHE", "PFChPzDiffHF", 
                    "PFHtSumEB",   "PFHtSumEE",    "PFHtSumHE",    "PFHtSumHF", 
-                   "PFChEnSumEB", "PFChEnSumEE",  "PFChEnSumHE",  "PFChEnSumHF", 
-                   "PFChHtSumEB", "PFChHtSumEE",  "PFChHtSumHE",  "PFChHtSumHF", 
-                   "PFEnDiffEB",  "PFEnDiffEE",   "PFEnDiffHE",   "PFEnDiffHF", 
                    "PFHtDiffEB",  "PFHtDiffEE",   "PFHtDiffHE",   "PFHtDiffHF", 
-                   "PFChEnDiffEB","PFChEnDiffEE", "PFChEnDiffHE", "PFChEnDiffHF", 
+                   "PFChHtSumEB", "PFChHtSumEE",  "PFChHtSumHE",  "PFChHtSumHF", 
                    "PFChHtDiffEB","PFChHtDiffEE", "PFChHtDiffHE", "PFChHtDiffHF"
   };
 
@@ -142,6 +152,9 @@ void RunExclusiveZX(TString filename,
   cfgMap["m_id4iso"]="TightIDandIPCut";
   cfgMap["e_id"]="MVA90";
   EfficiencyScaleFactorsWrapper lepEffH(filename.Contains("Data13TeV"),era,cfgMap);
+
+  //L1-prefire 
+  L1PrefireEfficiencyWrapper l1PrefireWR(filename.Contains("Data13TeV"),era);
 
   //B-TAG CALIBRATION
   BTagSFUtil btvSF(era,BTagEntry::OperatingPoint::OP_MEDIUM,"",0);
@@ -311,11 +324,12 @@ void RunExclusiveZX(TString filename,
       int l1idx(0),l2idx(1);
       std::vector<Particle> leptons = selector.flaggedLeptons(ev);     
       leptons = selector.selLeptons(leptons,SelectionTool::LOOSE,SelectionTool::MVA90,20,2.5);
-      std::vector<Particle> photons=selector.flaggedPhotons(ev);
-      photons=selector.selPhotons(photons,SelectionTool::MVA90,leptons,200.,2.4);
+      std::vector<Particle> allPhotons=selector.flaggedPhotons(ev);
+      allPhotons=selector.selPhotons(allPhotons,SelectionTool::MVA90,{},50,3);
+      std::vector<Particle> photons=selector.selPhotons(allPhotons,SelectionTool::MVA90,leptons,200.,2.4);
 
       //jets
-      std::vector<Jet> allJets = selector.getGoodJets(ev,15.,4.7,leptons,photons);
+      std::vector<Jet> allJets = selector.getGoodJets(ev,30.,4.7,leptons,photons);
 
       //met
       TLorentzVector met(0,0,0,0);
@@ -362,10 +376,9 @@ void RunExclusiveZX(TString filename,
       //set kinematics
       TLorentzVector boson(0,0,0,0);
       TLorentzVector lm(0,0,0,0),lp(0,0,0,0);
-      float lmScaleUnc(0),lpScaleUnc(0),bosonScaleUnc(0);
       float mass(0);
       ValueCollection_t llcsi;
-      float llacopl(0),llphistar(0),llcosthetaCS(0),llMR(0),llR(0),mtm(0),mtp(0),drll(0),bosonht(0),mtboson(0);
+      float llacopl(0),llphistar(0),llcosthetaCS(0),llMR(0),llR(0),drll(0);
       if(leptons.size()>1){
         selCode=leptons[l1idx].id()*leptons[l2idx].id();
         isSF=( leptons[l1idx].id()==leptons[l2idx].id() );
@@ -375,40 +388,29 @@ void RunExclusiveZX(TString filename,
         if(selCode==13*13) selCat="mm";
 
         lm=TLorentzVector(leptons[l1idx].charge()>0 ? leptons[l1idx] : leptons[l2idx]);
-        lmScaleUnc=(leptons[l1idx].charge()>0 ? leptons[l1idx].scaleUnc() : leptons[l2idx].scaleUnc());
         lp=TLorentzVector (leptons[l1idx].charge()>0 ? leptons[l2idx] : leptons[l1idx]);
-        lpScaleUnc=(leptons[l1idx].charge()>0 ? leptons[l2idx].scaleUnc() : leptons[l1idx].scaleUnc());
         if(isSS)  { 
           lm=leptons[l1idx]; 
-          lmScaleUnc=leptons[l1idx].scaleUnc();
           lp=leptons[l2idx];
-          lpScaleUnc=leptons[l2idx].scaleUnc();
         }
         boson=lm+lp;
-        bosonScaleUnc=TMath::Sqrt( pow(lm.Pt()*lmScaleUnc,2)+pow(lp.Pt()*lpScaleUnc,2) )/boson.Pt();
-        bosonht=lm.Pt()+lp.Pt();
 
         //dilepton specific
         mass=boson.M();
-        llcsi=calcCsi(lm,lmScaleUnc,lp,lpScaleUnc);
+        llcsi=calcCsi(lm,lp);
         llacopl = computeAcoplanarity(lm,lp);
         drll=leptons[l1idx].DeltaR(leptons[l2idx]);
         llphistar=computePhiStar(lm,lp);
         llcosthetaCS=computeCosThetaStar(lm,lp);
         llMR=computeMR(lm,lp);
-        llR=computeRsq(lm,lp,met);
-        mtm=computeMT(lm,met);
-        mtp=computeMT(lp,met);        
+        llR=computeRsq(lm,lp,met);       
       }else if(photons.size()>0l) {
         selCode=22;
         isSF=false;
         isSS=false;
         selCat="a";
         boson=photons[0];
-        bosonScaleUnc=photons[0].scaleUnc();
-        bosonht=boson.Pt();
       }
-      mtboson=computeMT(boson,met);
     
       //further selection for dileptons
       if(selCode!=22 && mass<20) continue;
@@ -452,33 +454,22 @@ void RunExclusiveZX(TString filename,
       //jets (require PU jet id)
       int njets(0);
       std::vector<Jet> bJets,lightJets,jets;
-      float scalarht(0.),scalarhtb(0.),scalarhtj(0.),mindphijmet(99999.);
-      float jsumposen(0.),jsumnegen(0.),jsumposhfen(0.),jsumneghfen(0.);
+      float scalarht(0.),scalarhtb(0.),scalarhtj(0.),mindphijmet(99999.);     
       for(size_t ij=0; ij<allJets.size(); ij++) 
         {
           int idx=allJets[ij].getJetIndex();
           bool passBtag(ev.j_btag[idx]>0);
 
-          //int jid=ev.j_id[idx];
-          //bool passLoosePu((jid>>2)&0x1);          
-          // if(!passLoosePu) continue;
-
-          if(passBtag) { bJets.push_back(allJets[ij]);     scalarhtb+=allJets[ij].pt();  }
-          else         { lightJets.push_back(allJets[ij]); scalarhtj+= allJets[ij].pt(); }
+          int jid=ev.j_id[idx];
+          bool passLoosePu((jid>>2)&0x1);          
+          if(!passLoosePu) continue;
+          jets.push_back(allJets[ij]);
           njets++;
 
-          bool isFwd(fabs(allJets[ij].eta())>2.5);
-          float jen(allJets[ij].E());
-          if(allJets[ij].eta()<0) {
-            jsumnegen+= jen; 
-            if(isFwd) jsumneghfen += jen;
-          } else {
-            jsumposen+= jen; 
-            if(isFwd) jsumposhfen += jen;
-          }
-          
-          jets.push_back(allJets[ij]);
           scalarht += jets[ij].pt();          
+          if(passBtag) { bJets.push_back(allJets[ij]);     scalarhtb+=allJets[ij].pt();  }
+          else         { lightJets.push_back(allJets[ij]); scalarhtj+= allJets[ij].pt(); }
+
           float dphij2met=fabs(allJets[ij].DeltaPhi(met));
           if(dphij2met>mindphijmet) continue;
           mindphijmet=dphij2met;
@@ -486,7 +477,6 @@ void RunExclusiveZX(TString filename,
       
       //baseline categories and additional stuff produced with the dilepton
       std::vector<TString> cats(1,selCat);
-      if(boson.Pt()>50) cats.push_back(selCat+"highpt");
         
       //selection efficiency                   
       for(auto gen_cat : gen_cats) {
@@ -520,7 +510,10 @@ void RunExclusiveZX(TString filename,
           sel1SF = lepEffH.getOfflineCorrection(photons[0], period);
         }
 
-        wgt *= puWgt*trigSF.first*sel1SF.first*sel2SF.first;
+        //L1 pre-fire
+        EffCorrection_t l1prefireProb=l1PrefireWR.getCorrection(allJets,allPhotons);
+
+        wgt *= puWgt*trigSF.first*sel1SF.first*sel2SF.first*l1prefireProb.first;
         
         // generator level weights
         wgt *= (ev.g_nw>0 ? ev.g_w[0] : 1.0);
@@ -585,22 +578,17 @@ void RunExclusiveZX(TString filename,
       outVars["l1phi"]=lm.Phi(); 
       outVars["ml1"]=lm.M();
       outVars["l1id"]=leptons.size()>1 ? leptons[l1idx].id() : 0.;
-      outVars["mt1"]=mtm;
       
       outVars["l2pt"]=lp.Pt();
       outVars["l2eta"]=lp.Eta();
       outVars["l2phi"]=lp.Phi();
       outVars["ml2"]=lp.M();
       outVars["l2id"]=leptons.size()>1 ? leptons[l2idx].id() : 0.;
-      outVars["mt2"]=mtp;
       
       outVars["bosonpt"]=boson.Pt();
-      outVars["bosonptunc"]=bosonScaleUnc;
       outVars["bosoneta"]=boson.Eta();
       outVars["bosonphi"]=boson.Phi();
       outVars["mboson"]=boson.M();
-      outVars["mtboson"]=mtboson;
-      outVars["bosonht"]=bosonht;      
 
       //dilepton specific
       outVars["llacopl"]=llacopl;
@@ -609,21 +597,114 @@ void RunExclusiveZX(TString filename,
       outVars["llMR"]=llMR;
       outVars["llR"]=llR;      
       outVars["llcsip"]    = llcsi.size()>0 ? llcsi[0].first  : 0;
-      outVars["llcsipUnc"] = llcsi.size()>0 ? llcsi[0].second : 0;
       outVars["llcsim"]    = llcsi.size()>1 ? llcsi[1].first  : 1;
-      outVars["llcsimUnc"] = llcsi.size()>1 ? llcsi[1].second : 1;
       
       outVars["nb"]=bJets.size();
       outVars["nj"]=lightJets.size();
       outVars["nl"]=leptons.size();
       outVars["ng"]=photons.size();
+
       outVars["ht"]=scalarht;
       outVars["htb"]=scalarhtb;
       outVars["htj"]=scalarhtj;
-      outVars["jsumnegen"]=jsumnegen;
-      outVars["jsumneghfen"]=jsumneghfen;
-      outVars["jsumposen"]=jsumposen;
-      outVars["jsumposhfen"]=jsumposhfen;
+      outVars["j1pt"]=jets.size()>0 ? jets[0].Pt() : 0.;
+      outVars["j1eta"]=jets.size()>0 ? jets[0].Eta() : 0.;
+      outVars["j1phi"]=jets.size()>0 ? jets[0].Phi() : 0.;
+      outVars["j1m"]=jets.size()>0 ? jets[0].M() : 0.;
+      outVars["j2pt"]=jets.size()>1 ? jets[1].Pt() : 0.;
+      outVars["j2eta"]=jets.size()>1 ? jets[1].Eta() : 0.;
+      outVars["j2phi"]=jets.size()>1 ? jets[1].Phi() : 0.;
+      outVars["j2m"]=jets.size()>1 ? jets[1].M() : 0.;
+      
+      //flux variables
+      if(!isA) {
+        ev.nchPV -=2;
+        ev.sumPVChHt=max(ev.sumPVChPt-lp.Pt() - lm.Pt(),0.);
+        ev.sumPVChPz=max(ev.sumPVChPz- fabs(lp.Pz()) - fabs(lm.Pz()),0.);
+        for(size_t i=0; i<2; i++){ 
+          TLorentzVector lp4(i==0 ? lp : lm);
+          size_t etaidx(0);
+          if(lp4.Eta()>-3)   etaidx=1;
+          if(lp4.Eta()>-2.5) etaidx=2;
+          if(lp4.Eta()>-1.5) etaidx=3;
+          if(lp4.Eta()>0)    etaidx=4;
+          if(lp4.Eta()>1.5)  etaidx=5;
+          if(lp4.Eta()>2.5)  etaidx=6;
+          if(lp4.Eta()>3.0)  etaidx=7;
+          ev.nPFCands[etaidx]--;
+          ev.sumPFHt[etaidx]=max(ev.sumPFHt[etaidx]-lp4.Pt(),0.);
+          ev.sumPFEn[etaidx]=max(ev.sumPFEn[etaidx]-lp4.E(),0.);
+          ev.sumPFPz[etaidx]=max(ev.sumPFPz[etaidx]-fabs(lp4.Pz()),0.);
+          ev.nPFChCands[etaidx]--;
+          ev.sumPFChHt[etaidx]=max(ev.sumPFChHt[etaidx]-lp4.Pt(),0.);
+          ev.sumPFChEn[etaidx]=max(ev.sumPFChEn[etaidx]-lp4.E(),0.);
+          ev.sumPFChPz[etaidx]=max(ev.sumPFChPz[etaidx]-fabs(lp4.Pz()),0.);
+        }        
+      }else {
+        TLorentzVector ap4(photons[0]);
+        size_t etaidx(0);
+        if(ap4.Eta()>-3)   etaidx=1;
+        if(ap4.Eta()>-2.5) etaidx=2;
+        if(ap4.Eta()>-1.5) etaidx=3;
+        if(ap4.Eta()>0)    etaidx=4;
+        if(ap4.Eta()>1.5)  etaidx=5;
+        if(ap4.Eta()>2.5)  etaidx=6;
+        if(ap4.Eta()>3.0)  etaidx=7;
+        ev.nPFCands[etaidx]--;
+        ev.sumPFHt[etaidx]=max(ev.sumPFHt[etaidx]-ap4.Pt(),0.);
+        ev.sumPFEn[etaidx]=max(ev.sumPFEn[etaidx]-ap4.E(),0.);
+        ev.sumPFPz[etaidx]=max(ev.sumPFPz[etaidx]-fabs(ap4.Pz()),0.);
+      }
+
+      outVars["PFMultSumEB"]    = ev.nPFCands[3]+ev.nPFCands[4];
+      outVars["PFMultSumEE"]    = ev.nPFCands[2]+ev.nPFCands[5];   
+      outVars["PFMultSumHE"]    = ev.nPFCands[1]+ev.nPFCands[6];    
+      outVars["PFMultSumHF"]    = ev.nPFCands[0]+ev.nPFCands[7]; 
+      outVars["PFMultDiffEB"]   = fabs(ev.nPFCands[3]-ev.nPFCands[4]);
+      outVars["PFMultDiffEE"]   = fabs(ev.nPFCands[2]-ev.nPFCands[5]);   
+      outVars["PFMultDiffHE"]   = fabs(ev.nPFCands[1]-ev.nPFCands[6]);    
+      outVars["PFMultDiffHF"]   = fabs(ev.nPFCands[0]-ev.nPFCands[7]); 
+      outVars["PFChMultSumEB"]  = ev.nPFChCands[3]+ev.nPFChCands[4];
+      outVars["PFChMultSumEE"]  = ev.nPFChCands[2]+ev.nPFChCands[5];   
+      outVars["PFChMultSumHE"]  = ev.nPFChCands[1]+ev.nPFChCands[6];    
+      outVars["PFChMultSumHF"]  = ev.nPFChCands[0]+ev.nPFChCands[7]; 
+      outVars["PFChMultDiffEB"] = fabs(ev.nPFChCands[3]-ev.nPFChCands[4]);
+      outVars["PFChMultDiffEE"] = fabs(ev.nPFChCands[2]-ev.nPFChCands[5]);   
+      outVars["PFChMultDiffHE"] = fabs(ev.nPFChCands[1]-ev.nPFChCands[6]);    
+      outVars["PFChMultDiffHF"] = fabs(ev.nPFChCands[0]-ev.nPFChCands[7]); 
+      outVars["PFPzSumEB"]      = ev.sumPFPz[3]+ev.sumPFPz[4];
+      outVars["PFPzSumEE"]      = ev.sumPFPz[2]+ev.sumPFPz[5];   
+      outVars["PFPzSumHE"]      = ev.sumPFPz[1]+ev.sumPFPz[6];    
+      outVars["PFPzSumHF"]      = ev.sumPFPz[0]+ev.sumPFPz[7]; 
+      outVars["PFPzDiffEB"]     = fabs(ev.sumPFPz[3]-ev.sumPFPz[4]);
+      outVars["PFPzDiffEE"]     = fabs(ev.sumPFPz[2]-ev.sumPFPz[5]);   
+      outVars["PFPzDiffHE"]     = fabs(ev.sumPFPz[1]-ev.sumPFPz[6]);    
+      outVars["PFPzDiffHF"]     = fabs(ev.sumPFPz[0]-ev.sumPFPz[7]); 
+      outVars["PFHtSumEB"]      = ev.sumPFHt[3]+ev.sumPFHt[4];
+      outVars["PFHtSumEE"]      = ev.sumPFHt[2]+ev.sumPFHt[5];   
+      outVars["PFHtSumHE"]      = ev.sumPFHt[1]+ev.sumPFHt[6];    
+      outVars["PFHtSumHF"]      = ev.sumPFHt[0]+ev.sumPFHt[7]; 
+      outVars["PFHtDiffEB"]     = fabs(ev.sumPFHt[3]-ev.sumPFHt[4]);
+      outVars["PFHtDiffEE"]     = fabs(ev.sumPFHt[2]-ev.sumPFHt[5]);   
+      outVars["PFHtDiffHE"]     = fabs(ev.sumPFHt[1]-ev.sumPFHt[6]);    
+      outVars["PFHtDiffHF"]     = fabs(ev.sumPFHt[0]-ev.sumPFHt[7]); 
+      outVars["PFChPzSumEB"]    = ev.sumPFChPz[3]+ev.sumPFChPz[4];
+      outVars["PFChPzSumEE"]    = ev.sumPFChPz[2]+ev.sumPFChPz[5];   
+      outVars["PFChPzSumHE"]    = ev.sumPFChPz[1]+ev.sumPFChPz[6];    
+      outVars["PFChPzSumHF"]    = ev.sumPFChPz[0]+ev.sumPFChPz[7]; 
+      outVars["PFChPzDiffEB"]   = fabs(ev.sumPFChPz[3]-ev.sumPFChPz[4]);
+      outVars["PFChPzDiffEE"]   = fabs(ev.sumPFChPz[2]-ev.sumPFChPz[5]);   
+      outVars["PFChPzDiffHE"]   = fabs(ev.sumPFChPz[1]-ev.sumPFChPz[6]);    
+      outVars["PFChPzDiffHF"]   = fabs(ev.sumPFChPz[0]-ev.sumPFChPz[7]); 
+      outVars["PFChHtSumEB"]    = ev.sumPFChHt[3]+ev.sumPFChHt[4];
+      outVars["PFChHtSumEE"]    = ev.sumPFChHt[2]+ev.sumPFChHt[5];   
+      outVars["PFChHtSumHE"]    = ev.sumPFChHt[1]+ev.sumPFChHt[6];    
+      outVars["PFChHtSumHF"]    = ev.sumPFChHt[0]+ev.sumPFChHt[7]; 
+      outVars["PFChHtDiffEB"]   = fabs(ev.sumPFChHt[3]-ev.sumPFChHt[4]);
+      outVars["PFChHtDiffEE"]   = fabs(ev.sumPFChHt[2]-ev.sumPFChHt[5]);   
+      outVars["PFChHtDiffHE"]   = fabs(ev.sumPFChHt[1]-ev.sumPFChHt[6]);    
+      outVars["PFChHtDiffHF"]   = fabs(ev.sumPFChHt[0]-ev.sumPFChHt[7]); 
+
 
       //fill data with roman pot information
       nRPtk=0;
@@ -642,19 +723,17 @@ void RunExclusiveZX(TString filename,
           beamXangle = lhc_cond.crossing_angle;
           ht.fill("beamXangle", beamXangle, plotwgts, selCat);
           
-
-          //FIXME This is now probably wrong and neads understanding
           if(beamXangle==120 || beamXangle==130 || beamXangle==140 || beamXangle==150) {
             
             std::vector< std::pair<int,float> > nearCsis;
             std::map<int,int> ntks;
             ntks[23]=0; ntks[123]=0;
             for (int ift=0; ift<ev.nfwdtrk; ift++) {
+              if(ev.fwdtrk_method[ift]!=0) continue;
             
               const unsigned short pot_raw_id = ev.fwdtrk_pot[ift];
-              if (pot_raw_id!=3 && pot_raw_id!=23 && pot_raw_id!=103 && pot_raw_id!=123) continue;
               float xi=ev.fwdtrk_xi[ift];
-              
+              if (pot_raw_id!=3 && pot_raw_id!=23 && pot_raw_id!=103 && pot_raw_id!=123) continue;              
               if (pot_raw_id==23 || pot_raw_id==123) {
                 RPid[nRPtk]=pot_raw_id;
                 RPfarcsi[nRPtk]=xi;

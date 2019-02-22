@@ -16,6 +16,6 @@ Float_t computeRsq(TLorentzVector &a,TLorentzVector &b,TLorentzVector &met);
 Float_t computeCosThetaStar(TLorentzVector &lm,TLorentzVector &lp);
 Float_t computeAcoplanarity(TLorentzVector &lm,TLorentzVector &lp);
 Float_t computePhiStar(TLorentzVector &lm,TLorentzVector &lp);
-ValueCollection_t calcCsi(TLorentzVector &a, Float_t &aUnc, TLorentzVector &b, Float_t &bUnc, Float_t bEtaUnc=0, Float_t sqrts=13000.);
+ValueCollection_t calcCsi(TLorentzVector &a, TLorentzVector &b, Float_t sqrts=13000.);
 
 #endif

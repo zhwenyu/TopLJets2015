@@ -92,7 +92,7 @@ python scripts/submitToGrid.py -j data/era2016/samples.json -c ${CMSSW_BASE}/src
 As soon as ntuple production starts to finish, to move from crab output directories to a simpler directory structure which can be easily parsed by the local analysis runThe merging can be run locally if needed by using the checkProductionIntegrity.py script
 
 ```
-python scripts/mergeGridOutputs.py -i /store/cmst3/group/top/psilva/3129835/ -o /store/cmst3/group/top/RunIIReReco/3129835/
+python scripts/mergeGridOutputs.py -i /store/cmst3/group/top/psilva/ab05162/ -o /store/cmst3/group/top/RunIIReReco/ab05162/
 python scripts/mergeGridOutputs.py -i /store/cmst3/group/top/grid_2016/113427a -o /store/cmst3/group/top/RunIIReReco/113427a_2016
 ```
 
@@ -137,12 +137,12 @@ python scripts/runPileupEstimation.py --out data/era2016/pileupWgts.root \
 ```
 * B-tagging. To apply corrections to the simulation one needs the expected efficiencies stored somwewhere. The script below will project the jet pT spectrum from the TTbar sample before and after applying b-tagging, to compute the expecte efficiencies. The result will be stored in data/expTageff.root
 ```
-python scripts/saveExpectedBtagEff.py -i /store/cmst3/group/top/RunIIReReco/3129835/MC13TeV_2017_TTJets      -o data/era2017/expectedBtagEff.root;
+python scripts/saveExpectedBtagEff.py -i /store/cmst3/group/top/RunIIReReco/ab05162/MC13TeV_2017_TTJets      -o data/era2017/expectedBtagEff.root;
 python scripts/saveExpectedBtagEff.py -i /store/cmst3/group/top/RunIIReReco/2016/0c522df/MC13TeV_2016_TTJets -o data/era2016/expectedBtagEff.root;
 ```
 * MC normalization. This will loop over all the samples available in EOS and produce a normalization cache (weights to normalize MC). The file will be available in data/genweights.pck
 ```
-python scripts/produceNormalizationCache.py -i /store/cmst3/group/top/RunIIReReco/3129835      -o data/era2017/genweights_3129835.root
+python scripts/produceNormalizationCache.py -i /store/cmst3/group/top/RunIIReReco/ab05162      -o data/era2017/genweights_ab05162.root
 python scripts/produceNormalizationCache.py -i /store/cmst3/group/top/RunIIReReco/2016/0c522df -o data/era2016/genweights_0c522df.root
 ```
 The lepton/photon trigger/id/iso efficiencies should also be placed under data/era2017. 
