@@ -171,7 +171,7 @@ private:
 
   //Variables to be added to the MVA Tree and additional variables
   vbf::DiscriminatorInputs vbfVars_;
-  float vbfmva_, vbfmvaHighVPt_;
+  float vbfmva_, vbfmvaOrig_;
   float evtWeight_;
   float sihih_,chiso_,r9_,hoe_,mindrl_,mindrj_;
   int training_;

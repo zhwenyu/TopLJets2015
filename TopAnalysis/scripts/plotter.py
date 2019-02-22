@@ -175,6 +175,11 @@ def main():
                             histos[-1].SetTitle(sp[1])
 
                         for hist in histos:
+                            if "vbfmvaOrig" in hist.GetName() and isData:
+                                tmpBin = hist.GetXaxis().FindBin(0.2)
+                                for iBin in range(tmpBin,hist.GetXaxis().GetNbins()):
+                                    hist.SetBinContent(iBin, 0.0000001)
+                                
                             if not isData and not '(data)' in sp[1]: 
 
                                 #check if a special scale factor needs to be applied
