@@ -175,8 +175,8 @@ python scripts/plotter.py -i analysis/   -j data/era2017/samples.json  -l 12870
 
 # Preparation of the data cards and workspaces
 
-This part currently works only for the VBF analysis. It assumes that there are root files in the working directory which includes the plots created in the previous section. For the example below, the root file is called plotter_LowMJJ.root. Running the script below will make two data cards and a single corresponding workspace for signal region (here gamma+jets) and control region (here Z+jets) of the "LowMJJ" the category:
+This part currently works only for the VBF analysis. It assumes that there are root files in the working directory which includes the plots created in the previous section. For the example below, the root file is called plotter_LowVPtHighMJJ2016.root. Running the script below will make two data cards and a single corresponding workspace for signal region (here gamma+jets) and control region (here Z+jets) of the "LowVPtHighMJJ" the category:
 ```
-python scripts/makeWorkspace.py --Chan LowMJJ --nBin 5 --doSignalPH
+python scripts/makeWorkspace.py --Chan LowVPtHighMJJ --Hist vbfmva --nBin 20 --year 2016 --shapeOnly --doSignalPH
 ```
-The input histogram will be rebinned to have five bins. If you remove "--doSignalPH", the signal process in the signal and control region will NOT be connected via the transfer function.
+The input histogram will be rebinned to have five bins. If you remove "--doSignalPH", the signal process in the signal and control region will NOT be connected via the transfer function (TF). Note that the TF part is not developed fully since it is statistics limited. "--shapeOnly" is to disentangle the shape and rate systematics for non-TF version.
