@@ -11,6 +11,7 @@ import sys
 import pickle
 from matplotlib import pyplot as plt
 
+
 def plotFeatureImportance(clf,features,plt):
     
     """ plots the feature importance """
@@ -116,6 +117,7 @@ def runTrainJob(url,features,spectators,categs,onlyThis,opt):
         else:
             if not 'DoubleMuon' in f and not 'SingleMuon' in f: 
                 continue
+        if not '2017B_DoubleMuon' in f : continue
         t.AddFile(os.path.join(url,f))
     print 'Data chain has {0} events'.format(t.GetEntries())
 
@@ -136,7 +138,34 @@ def runTrainJob(url,features,spectators,categs,onlyThis,opt):
     #preprocess features
     data['X']=preprocessing.scale(data['X'])
 
-    print 'Converted to numpy array'
+    #filter out runs in which the RP were out
+    nRemove=len(data['y'])
+    with open(opt.RPout,'r') as cache:
+
+        #read RP out json file
+        runLumi=json.load(cache,  encoding='utf-8', object_pairs_hook=OrderedDict).items()
+        runLumiList={int(x[0]):x[1] for x in runLumi}
+
+        #build a filter
+        filt=[]
+        for i in range(len(data['s'])):
+            run,lumi=int(data['s'][i][1]),int(data['s'][i][2])
+            print run,lumi
+            rpOutFlag=True
+            if not run in runLumiList: 
+                rpOutFlag=True
+            for lran in runLumiList[run]:
+                if lumi>=lran[0] and lumi<=lran[1]:
+                    rpOutFlag=True
+                    break
+            filt.append(rpOutFlag)
+
+        #apply filter
+        filt=np.array(filt)
+        for key in data: data[key]=data[key][filt]
+    nRemove-=len(data['y'])
+
+    print 'Converted to numpy array (%d events removed as RP were out of the run)'%nRemove
 
     if opt.model is None:
         out_url=os.path.join(opt.output,'train_data.pck')
@@ -168,6 +197,11 @@ def main():
                       dest='input',   
                       default='/eos/cms/store/cmst3/user/psilva/ExclusiveAna/ab05162/Chunks/',
                       help='input directory with the files [default: %default]')
+    parser.add_option('--RPout',
+                      dest='RPout', 
+                      default='test/analysis/pps/golden_noRP.json',
+                      type='string',
+                      help='json with the runs/lumi sections in which RP are out')
     parser.add_option('--trainFrac',
                       dest='trainFrac',
                       default=0.5,
@@ -195,7 +229,8 @@ def main():
                 continue
             for o in ['Sum','Diff']:
                 features.append(v+o+r)
-    spectators=['beamXangle','nrawmu-2']  #keep beamXangle in the first position...
+    #keep order for beamXangle,run,lumi in the first position as it will be used to filter events...
+    spectators=['beamXangle','run','lumi','nrawmu-2']  
     categs='nRPtk>0? 0. : 1.'
 
     #fit directly the data if pickle file is available
