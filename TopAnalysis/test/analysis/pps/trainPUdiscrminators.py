@@ -9,6 +9,8 @@ import optparse
 import os
 import sys
 import pickle
+import json
+from collections import OrderedDict
 from matplotlib import pyplot as plt
 
 
@@ -42,9 +44,12 @@ def fitModels(data,features,opt):
     from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
     from sklearn.ensemble import RandomForestClassifier,GradientBoostingClassifier
     from sklearn.model_selection import GridSearchCV
-    import pickle
+    from keras.models import Sequential
+    from keras.layers.core import Dense, Dropout
+    from keras.optimizers import Adam
+    from keras.callbacks import EarlyStopping,ModelCheckpoint
 
-    best_models={'lin':{},'rfc':{},'gbc':{},'dnn':{}}
+    best_models={'lda':{}, 'rfc':{}, 'rfc10':{}, 'dnn':{}}
     
     xangle_list=data['s'][:,0]
     for xangle in [120.,130.,140.,150.]:
@@ -60,35 +65,59 @@ def fitModels(data,features,opt):
         df['class']=y.tolist()
         train=df.sample(frac=opt.trainFrac,random_state=200)
         test=df.drop(train.index)
-        print train
-        continue
 
         #optimize a random forest classifier
         rfc = RandomForestClassifier()
         rfc_params = {
             'bootstrap': [True],
-            'n_estimators': [50,100], #,150,200],
-            'max_depth': [2,5,], #10,15],
+            'n_estimators': [50,100,150,200],
+            'max_depth': [2,5,10,15],
             'max_features':['sqrt'] #,'log2']
             }
         rfc_optim = GridSearchCV(estimator = rfc, param_grid = rfc_params, cv = 3, n_jobs = -1, verbose = 2)
         rfc_optim.fit(train[features], train['class'])
-        print rfc_optim.best_estimator_.feature_importances_
-        #bestFeatures=sorted(rfc_optim.best_estimator_.feature_importances_, key=lambda x: x[1])        
-        best_models['rfc'][xangle]=(rfc_optim.best_estimator_,rfc_optim.best_params_,features)
+        rankedFeatures=sorted(zip(features,rfc_optim.best_estimator_.feature_importances_), key=lambda x:x[1],reverse=True)
+        best_models['rfc'][xangle]=(rfc_optim.best_estimator_,rfc_optim.best_params_,rankedFeatures)
 
-        #optimize a gradient boost classifier
-        gbc = GradientBoostingClassifier()
-        gbc_params = {
-            'loss' : ['deviance'],
-            'learning_rate':[0.1], #0.01],
-            'n_estimators':[50], #,100,200],
-            'max_depth': [2], #,3,5],
-            'max_features':['sqrt'], #,'log2']
+        #re-train using only best 10 features
+        best10=[rankedFeatures[ix][0] for ix in range(10)]
+        rfc10=RandomForestClassifier()
+        rfc10.set_params(**rfc_optim.best_params_)
+        rfc10.fit(train[best10],train['class'])
+        ranked10Features=sorted(zip(best10,rfc10.feature_importances_), key=lambda x:x[1],reverse=True)
+        best_models['rfc10'][xangle]=(rfc10,rfc_optim.best_params_,ranked10Features)
+        
+        #train a linear discriminant using the two best ranked variables
+        best2=[ranked10Features[ix][0] for ix in range(2)]
+        lda=LinearDiscriminantAnalysis()
+        lda_params={
+            'solver':['lsqr','eigen'],
+            'shrinkage':['auto',0,1],
             }
-        gbc_optim = GridSearchCV(estimator = gbc, param_grid = gbc_params, cv = 3, n_jobs = -1, verbose = 2)
-        gbc_optim.fit(train[branches], train['class'])
-        best_models['gbc'][xangle]=(gbc_optim.best_estimator_,gbc_optim.best_params_)
+        lda_optim = GridSearchCV(estimator = lda, param_grid = lda_params, cv = 3, n_jobs = -1, verbose = 2)
+        lda_optim.fit(train[best2], train['class'])        
+        best_models['lda'][xangle]=(lda_optim.best_estimator_,lda_optim.best_params_,[(x,1) for x in best2])
+
+        #train a DNN
+        dnn = Sequential()
+        dnn.add(Dense(256, input_dim=len(features), activation='relu'))
+        dnn.add(Dropout(0.1))
+        dnn.add(Dense(64, activation='relu'))
+        dnn.add(Dropout(0.1))
+        dnn.add(Dense(16, activation='relu'))
+        dnn.add(Dropout(0.1))
+        dnn.add(Dense(1, activation='sigmoid'))
+        dnn.compile(loss='binary_crossentropy',optimizer=Adam(lr=0.001),metrics=['accuracy'])
+        es = EarlyStopping(monitor='val_loss', mode='auto', verbose=1, patience=5)
+        best_url=os.path.join(opt.output,'bestdnn_%d.hd5'%xangle)
+        mc = ModelCheckpoint(best_url, monitor='val_loss', verbose=1, save_best_only=True)
+        history = dnn.fit(train[features], train['class'], 
+                          validation_data=(test[features], test['class']),
+                          callbacks=[es,mc], 
+                          epochs=100,
+                          batch_size=128
+                          )
+        best_models['dnn'][xangle]=(best_url,history,[(x,1) for x in features])
 
     #save results  to pickle file
     out_url=os.path.join(opt.output,'pu_models.pck')
@@ -117,7 +146,6 @@ def runTrainJob(url,features,spectators,categs,onlyThis,opt):
         else:
             if not 'DoubleMuon' in f and not 'SingleMuon' in f: 
                 continue
-        if not '2017B_DoubleMuon' in f : continue
         t.AddFile(os.path.join(url,f))
     print 'Data chain has {0} events'.format(t.GetEntries())
 
@@ -139,7 +167,7 @@ def runTrainJob(url,features,spectators,categs,onlyThis,opt):
     data['X']=preprocessing.scale(data['X'])
 
     #filter out runs in which the RP were out
-    nRemove=len(data['y'])
+    fracRemove=1./len(data['y'])
     with open(opt.RPout,'r') as cache:
 
         #read RP out json file
@@ -150,22 +178,20 @@ def runTrainJob(url,features,spectators,categs,onlyThis,opt):
         filt=[]
         for i in range(len(data['s'])):
             run,lumi=int(data['s'][i][1]),int(data['s'][i][2])
-            print run,lumi
-            rpOutFlag=True
-            if not run in runLumiList: 
-                rpOutFlag=True
-            for lran in runLumiList[run]:
-                if lumi>=lran[0] and lumi<=lran[1]:
-                    rpOutFlag=True
-                    break
-            filt.append(rpOutFlag)
+            rpInFlag=True
+            if run in runLumiList:                 
+                for lran in runLumiList[run]:
+                    if lumi>=lran[0] and lumi<=lran[1]:
+                        rpInFlag=False
+                        break
+            filt.append(rpInFlag)
 
         #apply filter
         filt=np.array(filt)
         for key in data: data[key]=data[key][filt]
-    nRemove-=len(data['y'])
+    fracRemove*=100.*len(data['y'])
 
-    print 'Converted to numpy array (%d events removed as RP were out of the run)'%nRemove
+    print 'Converted to numpy array (%3.2f%% events removed as RP were out of the run)'%fracRemove
 
     if opt.model is None:
         out_url=os.path.join(opt.output,'train_data.pck')
@@ -213,7 +239,7 @@ def main():
                       help='output directory [default: %default]')
     parser.add_option('-s', '--selection',
                       dest='selection',   
-                      default='isZ && bosonpt<10 && (nRPtk==0 || nRPtk==2)',
+                      default='isZ && bosonpt<10 && trainCat>=0',
                       help='selection [default: %default]')
     parser.add_option('-m', '--model',
                       dest='model',   
@@ -221,7 +247,7 @@ def main():
                       help='pickle file with trained models [default: %default]')
     (opt, args) = parser.parse_args()
 
-    #build the feature,spectator, category and selection
+    #build the feature,spectator, category
     features=['nvtx','rho']
     for v in ['PFMult','PFPz','PFHt','PFChMult','PFChPz','PFChHt']:
         for r in ['EB','EE','HE','HF']:
@@ -231,15 +257,14 @@ def main():
                 features.append(v+o+r)
     #keep order for beamXangle,run,lumi in the first position as it will be used to filter events...
     spectators=['beamXangle','run','lumi','nrawmu-2']  
-    categs='nRPtk>0? 0. : 1.'
+    categs='trainCat'
 
     #fit directly the data if pickle file is available
     if '.pck' in opt.input:
         with open(opt.input,'r') as cache:
             data=pickle.load(cache)
-            print data['y']
         fitModels(data,features,opt)
-
+        return 
 
     #build the tasks
     task_list=[]
@@ -322,26 +347,6 @@ plt.show()
 # In[23]:
 
 
-from keras.models import Sequential
-from keras.layers.core import Dense, Dropout
-from keras.optimizers import Adam
-
-mlp = Sequential()
-mlp.add(Dense(256, input_dim=len(branches), activation='relu'))
-mlp.add(Dropout(0.1))
-mlp.add(Dense(64, activation='relu'))
-mlp.add(Dropout(0.1))
-mlp.add(Dense(16, activation='relu'))
-mlp.add(Dropout(0.1))
-mlp.add(Dense(1, activation='sigmoid'))
-
-mlp.compile(loss='binary_crossentropy',
-              optimizer='rmsprop',
-              metrics=['accuracy'])
-
-mlp.fit(train[branches], train['class'],
-          epochs=100,
-          batch_size=128)
 
 
 # In[7]:
