@@ -109,7 +109,8 @@ void RunExclusiveZX(TString filename,
                    "PFHtSumEB",   "PFHtSumEE",    "PFHtSumHE",    "PFHtSumHF", 
                    "PFHtDiffEB",  "PFHtDiffEE",   "PFHtDiffHE",   "PFHtDiffHF", 
                    "PFChHtSumEB", "PFChHtSumEE",  "PFChHtSumHE",  "PFChHtSumHF", 
-                   "PFChHtDiffEB","PFChHtDiffEE", "PFChHtDiffHE", "PFChHtDiffHF"
+                   "PFChHtDiffEB","PFChHtDiffEE", "PFChHtDiffHE", "PFChHtDiffHF",
+                   "trainCat"
   };
 
   std::map<TString,Float_t> outVars;
@@ -572,7 +573,7 @@ void RunExclusiveZX(TString filename,
       //fill tree with central detector information
       outVars["evwgt"]=plotwgts[0];
       outVars["evcat"]=float(selCode);
-      
+
       outVars["l1pt"]=lm.Pt();
       outVars["l1eta"]=lm.Eta();
       outVars["l1phi"]=lm.Phi(); 
@@ -705,7 +706,6 @@ void RunExclusiveZX(TString filename,
       outVars["PFChHtDiffHE"]   = fabs(ev.sumPFChHt[1]-ev.sumPFChHt[6]);    
       outVars["PFChHtDiffHF"]   = fabs(ev.sumPFChHt[0]-ev.sumPFChHt[7]); 
 
-
       //fill data with roman pot information
       nRPtk=0;
       if (ev.isData) {
@@ -783,6 +783,12 @@ void RunExclusiveZX(TString filename,
         }catch(...){
         }
       }
+
+      //training category
+      float trainCatVal=-1;
+      if(nRPtk==0) trainCatVal=0;
+      if(nRPtk==2 && RPid[0]*RPid[1]==23*123) trainCatVal=1;
+      outVars["trainCat"]=trainCatVal;
       
       outT->Fill();
     }
