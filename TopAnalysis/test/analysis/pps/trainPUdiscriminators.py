@@ -146,6 +146,7 @@ def runTrainJob(url,features,spectators,categs,onlyThis,opt):
         else:
             if not 'DoubleMuon' in f and not 'SingleMuon' in f: 
                 continue
+        if not '2017B' in f : continue
         t.AddFile(os.path.join(url,f))
     print 'Data chain has {0} events'.format(t.GetEntries())
 
@@ -181,9 +182,10 @@ def runTrainJob(url,features,spectators,categs,onlyThis,opt):
             rpInFlag=True
             if run in runLumiList:                 
                 for lran in runLumiList[run]:
-                    if lumi>=lran[0] and lumi<=lran[1]:
-                        rpInFlag=False
-                        break
+                    if lumi<lran[0]: continue
+                    if lumi>lran[1]: continue
+                    rpInFlag=False
+                    break
             filt.append(rpInFlag)
 
         #apply filter
