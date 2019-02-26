@@ -93,6 +93,8 @@ def main():
                     print "Could not open json file",t
                 jsonFile = open(t,'r')
                 samplesList = json.load(jsonFile, encoding='utf-8', object_pairs_hook=OrderedDict).items()
+                print "--------------------->>>>."
+                print samplesList
                 for s,desc in samplesList: 
                     onlyList.append(s)
                     onlyListXsec[s]=desc[0]
@@ -100,6 +102,7 @@ def main():
             else:
                 onlyList.append(t)
         print onlyListXsec
+        print onlyList
     except:
         pass
     skipList=[]

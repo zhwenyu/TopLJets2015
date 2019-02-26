@@ -322,7 +322,7 @@ class WorkspaceProvider{
     myfile << "rate\t"<<SR->hSig->Integral()<<"\t"<<SR->hBkgCorr->Integral()<< endl;
 
     myfile << "------------" << endl;
-    myfile << "BkgTheoryRate\tlnN\t-\t1.3"<<endl;
+    myfile << "BkgTheoryRate\tlnN\t-\t0.7/1.3"<<endl;
     for (auto& x : YieldErrors) {
       if(x.second.first == x.second.second )
 	myfile << x.first << "\tlnN\t" << x.second.first << "\t"<<x.second.first << endl;
@@ -342,6 +342,31 @@ class WorkspaceProvider{
 	  line <<"-\t";
       } else line << s.second.first << "/" << s.second.second <<"\t" ;
       for (auto& b : SR->Exp->yieldSystBkg) {
+	if(s.first != b.first) {	  
+	  continue;
+	}
+	if(b.second.first == b.second.second ) {
+	  if( b.second.second != 1)
+	    line << b.second.first << "\t";
+	  else
+	    line <<"-\t";
+	} else line << b.second.first << "/" << b.second.second;
+      }
+      std::string tmpStr = line.str();
+      if(count(tmpStr.begin(),tmpStr.end(),'-') < 2)
+	myfile << line.str() << endl;
+    }
+
+    for (auto& s : SR->Theo->yieldSystSig) {
+      line.str("");
+      line << s.first << "\tlnN\t";
+      if(s.second.first == s.second.second ) {
+	if( s.second.second != 1)
+	  line << s.second.first << "\t";
+	else
+	  line <<"-\t";
+      } else line << s.second.first << "/" << s.second.second <<"\t" ;
+      for (auto& b : SR->Theo->yieldSystBkg) {
 	if(s.first != b.first) continue;
 	if(b.second.first == b.second.second ) {
 	  if( b.second.second != 1)
@@ -350,7 +375,9 @@ class WorkspaceProvider{
 	    line <<"-\t";
 	} else line << b.second.first << "/" << b.second.second;
       }
-      myfile << line.str() << endl;
+      std::string tmpStr = line.str();
+      if(count(tmpStr.begin(),tmpStr.end(),'-') < 2)
+	myfile << line.str() << endl;
     }
     for (auto& s : SR->Exp->shapeSystMap) {
       myfile << s.first << "\tshape";
@@ -360,6 +387,7 @@ class WorkspaceProvider{
       myfile << tmp << endl;
     }
     for (auto& s : SR->Theo->shapeSystMap) {
+      if(s.first.Contains("PDF")) continue;
       myfile << s.first << "\tshape";
       TString tmp(s.second.first == 1 ? "\t1" : "\t-");
       myfile << tmp;
@@ -494,7 +522,7 @@ class WorkspaceProvider{
 	hists[iSyst]->SetLineColor(kRed);
 	hists[iSyst]->SetFillColor(0);
 	hists[iSyst]->SetMarkerColor(kRed);
-	hists[iSyst]->SetMarkerStyle(20);
+	hists[iSyst]->SetMarkerStyle(24);
 	hists[iSyst]->SetStats(0);
 	hists[iSyst]->SetTitle(systName+" up");
 	hists[iSyst]->Draw("sames");
@@ -502,7 +530,7 @@ class WorkspaceProvider{
 	hists[iSyst2]->SetFillColor(0);
 	hists[iSyst2]->SetStats(0);
 	hists[iSyst2]->SetMarkerColor(kBlue);
-	hists[iSyst2]->SetMarkerStyle(20);
+	hists[iSyst2]->SetMarkerStyle(25);
 	hists[iSyst2]->SetTitle(systName + " down");
 	hists[iSyst2]->Draw("sames");
 	pad1->BuildLegend();

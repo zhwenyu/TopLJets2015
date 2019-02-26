@@ -55,12 +55,11 @@ case $WHAT in
     TESTSEL )
                
         json=data/era${ERA}/vbf_samples.json
-        #tag=Data13TeV_2017C_SingleMuon
-        #if [[ ${ERA} == "2016" ]]; then
-        #    tag=MC13TeV_2016_TTJets
-        #fi
-        tag=MC13TeV_${ERA}_EWKAJJ
-        input=${eosdir}/${tag}/Chunk_1_ext0.root
+        tag=MC13TeV_2017_EWKAJJ
+        if [[ ${ERA} == "2016" ]]; then
+            tag=MC13TeV_2016_TTJets
+        fi
+        input=${eosdir}/${tag}/Chunk_0_ext0.root
         output=${tag}.root 
 
 	python scripts/runLocalAnalysis.py \
@@ -93,18 +92,20 @@ case $WHAT in
         ### --SRfake : gives the distributions of fakes, normalised based on fake rates
 
         json=data/era${ERA}/vbf_samples.json,data/era${ERA}/vbf_syst_samples.json
+
 	if [[ -z ${EXTRA} ]]; then
 	    echo "Making trees ... "
 	    extraOpts=" --mvatree"
 	    json=data/era${ERA}/vbf_trees.json
 	    EXTRA="MVATrees"
         fi
+	echo ${json}
 	python scripts/runLocalAnalysis.py \
 	    -i ${eosdir} --only ${json} \
             -o ${outdir}/${githash}/${EXTRA} \
             --farmappendix ${githash} \
             -q ${queue} --genWeights genweights_${githash}.root \
-            --era era${ERA} -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts ${extraOpts};
+            --era era${ERA} -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts --skipexisting ${extraOpts};
 	;;
 
     SELTRIGEFF )
@@ -155,8 +156,8 @@ case $WHAT in
 	commonOpts="-i ${outdir}/${githash}/${EXTRA} --puNormSF puwgtctr -l ${fulllumi} --saveLog --mcUnc ${lumiUnc} --lumiSpecs LowVPtLowMJJA:${vbflumi},LowVPtHighMJJA:${vbflumi}"
         #python scripts/plotter.py ${commonOpts} -j ${gjets_json} --noStack --only A_
 	python scripts/plotter.py ${commonOpts} -j ${json} --only HighMJJ,LowMJJ ${kFactors}
-        #python scripts/plotter.py ${commonOpts} -j ${json} --only evcount ${kFactors} --saveTeX -o evcout_plotter.root
-	#python scripts/plotter.py ${commonOpts} -j ${syst_json} ${kFactors} --only HighMJJ,LowMJJ --silent -o syst_plotter.root
+#	python scripts/plotter.py ${commonOpts} -j ${json} --only evcount ${kFactors} --saveTeX -o evcout_plotter.root
+#	python scripts/plotter.py ${commonOpts} -j ${syst_json} ${kFactors} --only HighMJJ,LowMJJ --silent -o syst_plotter.root
         ;;
     
     NLOTFACTORS )
@@ -166,11 +167,14 @@ case $WHAT in
         python test/analysis/computeTransferFactor.py ${commonOpts} --var leadpt     --binList 50,100,150,200,250,300,400,500
         python test/analysis/computeTransferFactor.py ${commonOpts} --var centraleta --binList 0,0.4,0.8,1.2,2,3,5
         python test/analysis/computeTransferFactor.py ${commonOpts} --var forwardeta --binList 0,0.8,1.2,2,3,5
-        python test/analysis/computeTransferFactor.py ${commonOpts} --var detajj     --binList 0,0.8,1.6,2.4,3.2,4,5,8
+#        python test/analysis/computeTransferFactor.py ${commonOpts} --var detajj     --binList 0,0.8,1.6,2.4,3.2,4,5,8
         python test/analysis/computeTransferFactor.py ${commonOpts} --var dphijj     --rebin 2
         python test/analysis/computeTransferFactor.py ${commonOpts} --var mjj        --binList 500,600,700,800,900,1000,1250,1500,2000,3000,4000
         python test/analysis/computeTransferFactor.py ${commonOpts} --var vpt        --binList 75,100,150,200,250,300,350,400,550
-        python test/analysis/computeTransferFactor.py ${commonOpts} --var vbfmva     --rebin 5
+        python test/analysis/computeTransferFactor.py ${commonOpts} --var vbfmva     --rebin 2
+        python test/analysis/computeTransferFactor.py ${commonOpts} --var ystar      
+        python test/analysis/computeTransferFactor.py ${commonOpts} --var ht     
+        python test/analysis/computeTransferFactor.py ${commonOpts} --var balance    --rebin 2
         ;;
 
     TRIGEFF )
