@@ -49,9 +49,9 @@ void RunPhotonTrigEff(TString filename,
    //BOOK HISTOGRAMS
   HistTool ht;
   ht.setNsyst(0);
-  Float_t phoBins[]={50,70,80,90,100,110,120,140,160,180,200,220,240,260,300,500};
+  Float_t phoBins[]={25,50,60,70,80,90,100,110,120,140,160,180,200,220,240,260,300,500};
   Int_t nphoBins=sizeof(phoBins)/sizeof(Float_t);
-  Float_t mjjBins[]={120,200,500,750,1000,2000,4000};
+  Float_t mjjBins[]={120,200,400,600,800,1000,1500,2000,5000};
   Int_t nmjjBins=sizeof(mjjBins)/sizeof(Float_t);
   ht.addHist("apt",      new TH1F("apt",      ";Photon transverse momentum [GeV];Events",nphoBins-1,phoBins));
   ht.addHist("mjj",      new TH1F("mjj",      ";Dijet invariant mass [GeV];Events",nmjjBins-1,mjjBins));
@@ -110,41 +110,44 @@ void RunPhotonTrigEff(TString filename,
       }
 	  
       //online categories
-      bool passHighPtCtrlTrig(false), passHighPtTrig(false), passLowPtCtrlTrig(false), passLowPtHighMJJTrig(false);
+      bool passHighPtCtrlTrig(false), passLowPtCtrlTrig(false), passLowPtHighMJJCtrlTrig(false);      
+      bool passHighPtTrig(false),     passLowPtHighMJJTrig(false);
       if(is2016) {
-        passHighPtCtrlTrig   = selector.hasTriggerBit("HLT_Photon150_v",ev.triggerBits);        
-        passHighPtTrig       = selector.hasTriggerBit("HLT_Photon175_v",ev.triggerBits);
-        passLowPtCtrlTrig    = selector.hasTriggerBit("HLT_Photon75_R9Id90_HE10_IsoM_v",ev.triggerBits);
-        passLowPtHighMJJTrig = selector.hasTriggerBit("HLT_Photon75_R9Id90_HE10_Iso40_EBOnly_VBF",ev.triggerBits);
+        passHighPtCtrlTrig       = selector.hasTriggerBit("HLT_Photon90_v",ev.triggerBits);                
+        passLowPtCtrlTrig        = selector.hasTriggerBit("HLT_Photon50_R9Id90_HE10_IsoM_v",ev.triggerBits);
+        passLowPtHighMJJCtrlTrig = selector.hasTriggerBit("HLT_Photon75_R9Id90_HE10_IsoM_v",ev.triggerBits);
+        passHighPtTrig           = selector.hasTriggerBit("HLT_Photon175_v",ev.triggerBits);
+        passLowPtHighMJJTrig     = selector.hasTriggerBit("HLT_Photon75_R9Id90_HE10_Iso40_EBOnly_VBF",ev.triggerBits);
       }else{
-        passHighPtCtrlTrig   = selector.hasTriggerBit("HLT_Photon120_v",ev.triggerBits);
+        passHighPtCtrlTrig       = selector.hasTriggerBit("HLT_Photon150_v",ev.triggerBits);
+        passLowPtCtrlTrig        = selector.hasTriggerBit("HLT_Photon50_R9Id90_HE10_IsoM_v",ev.triggerBits);
+        passLowPtHighMJJCtrlTrig = selector.hasTriggerBit("HLT_Photon75_R9Id90_HE10_IsoM_v",ev.triggerBits);
         passHighPtTrig       = selector.hasTriggerBit("HLT_Photon200_v",ev.triggerBits);
-        passLowPtCtrlTrig    = selector.hasTriggerBit("HLT_Photon75_R9Id90_HE10_IsoM_v",ev.triggerBits);
         passLowPtHighMJJTrig = selector.hasTriggerBit("HLT_Photon75_R9Id90_HE10_IsoM_EBOnly_PFJetsMJJ300DEta3_v",ev.triggerBits);
       }
       
       //require control triggers in data
       if(ev.isData) {
-        if(!passHighPtCtrlTrig && !passLowPtCtrlTrig) continue;
+        if(!passHighPtCtrlTrig && !passLowPtCtrlTrig && !passLowPtHighMJJCtrlTrig) continue;
         passHighPtTrig       &= passHighPtCtrlTrig;
-        passLowPtHighMJJTrig &= passLowPtCtrlTrig; 
+        passLowPtHighMJJTrig &= passLowPtHighMJJCtrlTrig; 
       }
 
       //offline categories
       bool passHighPtOff(false), passLowPtOff(false), passLowPtHighMJJOff(false);
-      if(photons[0].Pt()>75)                  passHighPtOff=true;
-      if(fabs(photons[0].Eta())<1.442)        passLowPtOff=true;
-      if(passLowPtOff && mjj>120 && detajj>3) passLowPtHighMJJOff=true;
+      if(photons[0].Pt()>200 && fabs(photons[0].Eta())<2.4)    passHighPtOff=true;
+      if(photons[0].Pt()>75  && fabs(photons[0].Eta())<1.442)  passLowPtOff=true;
+      if(passLowPtOff && mjj>300 && detajj>3)                  passLowPtHighMJJOff=true;
       
       std::vector<TString> cats;
-      if(passHighPtTrig)                    cats.push_back("hpttrig");
-      if(passHighPtOff)                     cats.push_back("hptoff");
-      if(passHighPtTrig && passHighPtOff)   cats.push_back("hpttrig_hptoff");
-      if(passLowPtCtrlTrig)                 cats.push_back("lpttrig");
-      if(passLowPtOff)                      cats.push_back("lptoff");
-      if(passLowPtCtrlTrig && passLowPtOff) cats.push_back("lpttrig_lptoff");
-      if(passLowPtHighMJJTrig)              cats.push_back("lpthmjjtrig");
-      if(passLowPtHighMJJOff)               cats.push_back("lpthmjjoff");
+      if(passHighPtTrig)                              cats.push_back("hpttrig");
+      if(passHighPtOff)                               cats.push_back("hptoff");
+      if(passHighPtTrig && passHighPtOff)             cats.push_back("hpttrig_hptoff");
+      if(passLowPtCtrlTrig)                           cats.push_back("lpttrig");
+      if(passLowPtOff)                                cats.push_back("lptoff");
+      if(passLowPtCtrlTrig && passLowPtOff)           cats.push_back("lpttrig_lptoff");
+      if(passLowPtHighMJJTrig)                        cats.push_back("lpthmjjtrig");
+      if(passLowPtHighMJJOff)                         cats.push_back("lpthmjjoff");
       if(passLowPtHighMJJTrig && passLowPtHighMJJOff) cats.push_back("lpthmjjtrig_lpthmjjoff");
       
       plotwgts[0]=wgt;
