@@ -93,6 +93,7 @@ private:
   EfficiencyScaleFactorsWrapper * gammaEffWR_;
   L1PrefireEfficiencyWrapper *l1PrefireWR_;
   BTagSFUtil *btvSF_;
+  float deepCSV_wp_;
   std::map<TString, TGraph*> fragWeights_;
   std::map<TString, std::map<int, float> > semilepBRwgts_;
   std::map<TString, TGraphErrors *> mc2mcCorr_;

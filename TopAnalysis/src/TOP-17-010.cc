@@ -109,6 +109,7 @@ void TOP17010::init(UInt_t scenario){
   gammaEffWR_  = new EfficiencyScaleFactorsWrapper(filename_.Contains("Data13TeV"),era_,cfgMap);
   l1PrefireWR_ = new L1PrefireEfficiencyWrapper(filename_.Contains("Data13TeV"),era_);  
   btvSF_       = new BTagSFUtil(era_);
+  deepCSV_wp_=(era_.Contains("2017") ? 0.4941 : 0.6321);
   if(mc2mcCorr_.find("eb")!=mc2mcCorr_.end())    btvSF_->setMC2MCCorrection(BTagEntry::FLAV_B,mc2mcCorr_["eb"]);
   if(mc2mcCorr_.find("ec")!=mc2mcCorr_.end())    btvSF_->setMC2MCCorrection(BTagEntry::FLAV_C,mc2mcCorr_["eb"]);
   if(mc2mcCorr_.find("eudsg")!=mc2mcCorr_.end()) btvSF_->setMC2MCCorrection(BTagEntry::FLAV_UDSG,mc2mcCorr_["eb"]);
@@ -230,7 +231,7 @@ void TOP17010::runAnalysis()
       // CORRECTIONS  //
       //////////////////
       TString period = lumi_->assignRunPeriod();
-      btvSF_->addBTagDecisions(ev_);
+      btvSF_->addBTagDecisions(ev_,deepCSV_wp_);
       if(!ev_.isData) btvSF_->updateBTagDecisions(ev_);      
       
       //TRIGGER
@@ -494,7 +495,7 @@ void TOP17010::runAnalysis()
         std::vector<Jet> ijets(alljets);
         if(sname.Contains("JEC") || sname.Contains("JER") || sname.BeginsWith("btag") || sname.BeginsWith("ltag") )  {
           reSelect=true;
-          btvSF_->addBTagDecisions(ev_);
+          btvSF_->addBTagDecisions(ev_,deepCSV_wp_);
 
           if(sname=="btagup") btvSF_->updateBTagDecisions(ev_, "up",      "central"); 
           if(sname=="btagdn") btvSF_->updateBTagDecisions(ev_, "down",    "central"); 
@@ -544,7 +545,7 @@ void TOP17010::runAnalysis()
             //shift jet energy
             double scaleVar(1.0);
             if(jecIdx<0) {
-              double jerUnc=1-(isUpVar ? ev_.j_jerUp[idx] : ev_.j_jerDn[idx]);
+              double jerUnc=fabs(1-(isUpVar ? ev_.j_jerUp[idx] : ev_.j_jerDn[idx]));
               double jerUncSgn(jerUnc<0 ? -1 : 1);
               jerUnc=fabs(jerUnc);
               if(sname=="JERstat")   jerUnc *= getJERSFBreakdown("stat", fabs(j.eta()));

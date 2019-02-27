@@ -1,8 +1,4 @@
 #!/usr/bin/env python
-"""
-    launch a task separately per crossing angle
-    add #raw muons to the ROC curves
-"""
 
 import numpy as np
 import optparse
@@ -11,30 +7,6 @@ import sys
 import pickle
 import json
 from collections import OrderedDict
-from matplotlib import pyplot as plt
-
-
-def plotFeatureImportance(clf,features,plt):
-    
-    """ plots the feature importance """
-    
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    y_pos=np.arange(len(features))
-    ax.barh(y_pos,clf.feature_importances_,align='center',alpha=0.5)
-    plt.yticks(y_pos,features)
-
-    plt.xlabel('Feature importance')
-    fig.text(0.12, 0.9, r'CMS', fontweight='bold')
-    fig.text(0.18, 0.9, r'Preliminary')
-    plt.show()
-
-def showConfusionMatrix(clf,features,data,truth='class'):
-    
-    """displays the confusion matrix"""
-    
-    preds = clf.predict(data[features])
-    pd.crosstab(data[truth], preds, rownames=['Observed'], colnames=['Predicted'])
 
 def fitModels(data,features,opt):
 
@@ -57,8 +29,8 @@ def fitModels(data,features,opt):
         filt=(xangle_list==xangle)
         X=data['X'][filt]
         y=data['y'][filt]
-        print '[fitModels] @ crossing angle={0} murad has {1} events'.format(xangle,len(y))
-        
+        print '[fitModels] @ crossing angle={0} murad has {1} events ({2} signal events)'.format(xangle,len(y),len(y[y==1]))
+
         #prepare the train (and test) dataset    
         df=pd.DataFrame(X)
         df.columns=features
@@ -71,13 +43,13 @@ def fitModels(data,features,opt):
         rfc_params = {
             'bootstrap': [True],
             'n_estimators': [50,100,150,200],
-            'max_depth': [2,5,10,15],
-            'max_features':['sqrt'] #,'log2']
+            'max_depth': [2,5,10], #20,50],
+            'max_features':['sqrt'], #'log2']
             }
         rfc_optim = GridSearchCV(estimator = rfc, param_grid = rfc_params, cv = 3, n_jobs = -1, verbose = 2)
         rfc_optim.fit(train[features], train['class'])
         rankedFeatures=sorted(zip(features,rfc_optim.best_estimator_.feature_importances_), key=lambda x:x[1],reverse=True)
-        best_models['rfc'][xangle]=(rfc_optim.best_estimator_,rfc_optim.best_params_,rankedFeatures)
+        best_models['rfc'][xangle]=(rfc_optim.best_estimator_,rfc_optim.best_params_,rankedFeatures,features)
 
         #re-train using only best 10 features
         best10=[rankedFeatures[ix][0] for ix in range(10)]
@@ -85,18 +57,18 @@ def fitModels(data,features,opt):
         rfc10.set_params(**rfc_optim.best_params_)
         rfc10.fit(train[best10],train['class'])
         ranked10Features=sorted(zip(best10,rfc10.feature_importances_), key=lambda x:x[1],reverse=True)
-        best_models['rfc10'][xangle]=(rfc10,rfc_optim.best_params_,ranked10Features)
+        best_models['rfc10'][xangle]=(rfc10,rfc_optim.best_params_,ranked10Features,best10)
         
         #train a linear discriminant using the two best ranked variables
         best2=[ranked10Features[ix][0] for ix in range(2)]
         lda=LinearDiscriminantAnalysis()
         lda_params={
             'solver':['lsqr','eigen'],
-            'shrinkage':['auto',0,1],
+            'shrinkage':['auto',0,0.5,1],
             }
         lda_optim = GridSearchCV(estimator = lda, param_grid = lda_params, cv = 3, n_jobs = -1, verbose = 2)
         lda_optim.fit(train[best2], train['class'])        
-        best_models['lda'][xangle]=(lda_optim.best_estimator_,lda_optim.best_params_,[(x,1) for x in best2])
+        best_models['lda'][xangle]=(lda_optim.best_estimator_,lda_optim.best_params_,None,best2)
 
         #train a DNN
         dnn = Sequential()
@@ -117,7 +89,7 @@ def fitModels(data,features,opt):
                           epochs=100,
                           batch_size=128
                           )
-        best_models['dnn'][xangle]=(best_url,history,[(x,1) for x in features])
+        best_models['dnn'][xangle]=(best_url,history.history,None,features)
 
     #save results  to pickle file
     out_url=os.path.join(opt.output,'pu_models.pck')
@@ -146,7 +118,7 @@ def runTrainJob(url,features,spectators,categs,onlyThis,opt):
         else:
             if not 'DoubleMuon' in f and not 'SingleMuon' in f: 
                 continue
-        if not '2017B' in f : continue
+        if not '2017B' in f and not '2017C' in f : continue
         t.AddFile(os.path.join(url,f))
     print 'Data chain has {0} events'.format(t.GetEntries())
 
@@ -198,7 +170,12 @@ def runTrainJob(url,features,spectators,categs,onlyThis,opt):
     if opt.model is None:
         out_url=os.path.join(opt.output,'train_data.pck')
         with open(out_url,'w') as cache:    
-            pickle.dump(data, cache, pickle.HIGHEST_PROTOCOL)
+            pickle.dump(data,          cache, pickle.HIGHEST_PROTOCOL)
+            pickle.dump(features,      cache, pickle.HIGHEST_PROTOCOL)
+            pickle.dump(spectators,    cache, pickle.HIGHEST_PROTOCOL)
+            pickle.dump(categs,        cache, pickle.HIGHEST_PROTOCOL)
+            pickle.dump(opt.selection, cache, pickle.HIGHEST_PROTOCOL)
+
         print 'A dump of the data in numpy format is saved @',out_url
         fitModels(data,features,opt)
         
@@ -369,33 +346,6 @@ for key in train_results:
 # In[30]:
 
 
-#final summary
-from sklearn.metrics import auc, roc_curve
-
-fig=plt.figure(111)
-plt.plot([0,1], [1,0], 'k--', color='orange')
-
-for key in train_results:
-    clf=train_results[key][0]
-    y_prob=clf.predict_proba(test[branches])[:,0]
-    fpr, tpr, thresholds = roc_curve(test['class'],y_prob, pos_label=0)
-    aucVal = auc(fpr, tpr)
-    plt.plot(1-fpr, tpr, label='{0} auc = {1:.3f}'.format(key,aucVal))
-
-
-for v in ['nvtx','rho']:
-    fpr,tpr,thresholds=roc_curve(test['class'],test[v],pos_label=0)
-    aucVal=auc(fpr,tpr)
-    plt.plot(1-fpr, tpr, label='{0} auc = {1:.3f}'.format(v,aucVal))
-    
-
-plt.xlabel('Signal efficiency')
-plt.ylabel('Background rejection')
-plt.legend(loc='lower left')
-plt.grid()
-fig.text(0.12, 0.9, r'CMS', fontweight='bold')
-fig.text(0.18, 0.9, r'Preliminary')
-plt.show()
 
 
 # In[ ]:

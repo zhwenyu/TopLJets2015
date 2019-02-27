@@ -467,7 +467,9 @@ std::vector<Jet> SelectionTool::getGoodJets(MiniEvent_t &ev, double minPt, doubl
     float jecUp(0),jecDn(0);   
     jecUp=pow(1-ev.j_jerUp[k],2);
     jecDn=pow(1-ev.j_jerDn[k],2);
-    for(int iunc=0; iunc<30; iunc++){
+    cout << k << endl;
+    cout << ev.j_jerUp[k] << " " << ev.j_jerUp[k] << endl;
+    for(int iunc=0; iunc<29; iunc++){
            
       //see python/miniAnalyzer_cfi.py for these
       if(iunc==6 && jflav!=21) continue; //FlavorPureGluon
@@ -477,6 +479,8 @@ std::vector<Jet> SelectionTool::getGoodJets(MiniEvent_t &ev, double minPt, doubl
       
       if(ev.j_jecUp[iunc][k]!=0) jecUp += pow(1-ev.j_jecUp[iunc][k],2);
       if(ev.j_jecDn[iunc][k]!=0) jecDn += pow(1-ev.j_jecDn[iunc][k],2);
+
+      cout << iunc << " " << ev.j_jecUp[iunc][k] << " " << ev.j_jecDn[iunc][k] << endl;
     }
     
     jecUp=TMath::Sqrt(jecUp);
