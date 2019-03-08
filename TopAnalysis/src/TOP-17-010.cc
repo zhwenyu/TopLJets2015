@@ -11,6 +11,7 @@
 #include "TopLJets2015/TopAnalysis/interface/MiniEvent.h"
 #include "TopLJets2015/TopAnalysis/interface/CommonTools.h"
 #include "TopLJets2015/TopAnalysis/interface/TOP-17-010.h"
+#include "TopLJets2015/TopAnalysis/interface/JECTools.h"
 #include "TopLJets2015/TopAnalysis/interface/EfficiencyScaleFactorsWrapper.h"
 
 #include <vector>
@@ -172,10 +173,17 @@ void TOP17010::bookHistograms() {
                           "l1prefireup", "l1prefiredn",
                           "ees1up", "ees1dn", "ees2up", "ees2dn", "ees3up", "ees3dn", "ees4up", "ees4dn",  "ees5up", "ees5dn",  "ees6up", "ees6dn",  "ees7up", "ees7dn",
                           "mes1up", "mes1dn", "mes2up", "mes2dn", "mes3up", "mes3dn", "mes4up", "mes4dn",
-                          "btagup",  "btagdn",
-                          "ltagup",  "ltagdn",
+                          "btagup",      "btagdn",
+                          "ltagup",      "ltagdn",
                           "JERup",       "JERdn",
-                          "JERstat","JERJEC", "JERPU", "JERPLI", "JERptCut", "JERtrunc", "JERpTdep", "JERSTmFE",
+                          "JERstatup",   "JERstatdn",
+                          "JERJECup",    "JERJECdn", 
+                          "JERPUup",     "JERPUdn", 
+                          "JERPLIup",    "JERPLIdn", 
+                          "JERptCutup",  "JERptCutdn", 
+                          "JERtruncup",  "JERtruncdn",
+                          "JERpTdepup",  "JERpTdepdn",
+                          "JERSTmFEup",  "JERSTmFEdn",
                           "topptup",     "topptdn",
                           "AbsoluteStatJECup","AbsoluteScaleJECup","AbsoluteMPFBiasJECup","FragmentationJECup","SinglePionECALJECup","SinglePionHCALJECup","FlavorPureGluonJECup","FlavorPureQuarkJECup","FlavorPureCharmJECup","FlavorPureBottomJECup","TimePtEtaJECup","RelativeJEREC1JECup","RelativeJEREC2JECup","RelativeJERHFJECup","RelativePtBBJECup","RelativePtEC1JECup","RelativePtEC2JECup","RelativePtHFJECup","RelativeBalJECup","RelativeFSRJECup","RelativeStatFSRJECup","RelativeStatECJECup","RelativeStatHFJECup","PileUpDataMCJECup","PileUpPtRefJECup","PileUpPtBBJECup","PileUpPtEC1JECup","PileUpPtEC2JECup","PileUpPtHFJECup",
                           "AbsoluteStatJECdn","AbsoluteScaleJECdn","AbsoluteMPFBiasJECdn","FragmentationJECdn","SinglePionECALJECdn","SinglePionHCALJECdn","FlavorPureGluonJECdn","FlavorPureQuarkJECdn","FlavorPureCharmJECdn","FlavorPureBottomJECdn","TimePtEtaJECdn","RelativeJEREC1JECdn","RelativeJEREC2JECdn","RelativeJERHFJECdn","RelativePtBBJECdn","RelativePtEC1JECdn","RelativePtEC2JECdn","RelativePtHFJECdn","RelativeBalJECdn","RelativeFSRJECdn","RelativeStatFSRJECdn","RelativeStatECJECdn","RelativeStatHFJECdn","PileUpDataMCJECdn","PileUpPtRefJECdn","PileUpPtBBJECdn","PileUpPtEC1JECdn","PileUpPtEC2JECdn","PileUpPtHFJECdn",
@@ -545,18 +553,19 @@ void TOP17010::runAnalysis()
             //shift jet energy
             double scaleVar(1.0);
             if(jecIdx<0) {
-              double jerUnc=fabs(1-(isUpVar ? ev_.j_jerUp[idx] : ev_.j_jerDn[idx]));
-              double jerUncSgn(jerUnc<0 ? -1 : 1);
-              jerUnc=fabs(jerUnc);
-              if(sname=="JERstat")   jerUnc *= getJERSFBreakdown("stat", fabs(j.eta()));
-              if(sname=="JERJEC")    jerUnc *= max(getJERSFBreakdown("JECup", fabs(j.eta())), getJERSFBreakdown("JECdown", fabs(j.eta())));
-              if(sname=="JERPU")     jerUnc *= max(getJERSFBreakdown("PUup",  fabs(j.eta())), getJERSFBreakdown("PUudown", fabs(j.eta())));
-              if(sname=="JERPLI")    jerUnc *= max(getJERSFBreakdown("PLIup", fabs(j.eta())), getJERSFBreakdown("PLIdown", fabs(j.eta())));
-              if(sname=="JERptCut")  jerUnc *= getJERSFBreakdown("ptCut", fabs(j.eta()));
-              if(sname=="JERtrunc")  jerUnc *= getJERSFBreakdown("trunc", fabs(j.eta()));
-              if(sname=="JERpTdep")  jerUnc *= getJERSFBreakdown("pTdep", fabs(j.eta()));
-              if(sname=="JERSTmFE")  jerUnc *= getJERSFBreakdown("STmFE", fabs(j.eta()));
-              scaleVar*=(1+jerUncSgn*jerUnc);
+              float jerVarPartial(0.0);
+              if(sname.BeginsWith("JERstat"))   jerVarPartial = getJERSFBreakdown("stat", fabs(j.eta()));
+              if(sname.BeginsWith("JERJEC"))    jerVarPartial = 0.5*(getJERSFBreakdown("JECup", fabs(j.eta()))+getJERSFBreakdown("JECdown", fabs(j.eta())));
+              if(sname.BeginsWith("JERPU"))     jerVarPartial = 0.5*(getJERSFBreakdown("PUup",  fabs(j.eta()))+getJERSFBreakdown("PUudown", fabs(j.eta())));
+              if(sname.BeginsWith("JERPLI"))    jerVarPartial = 0.5*(getJERSFBreakdown("PLIup", fabs(j.eta()))+getJERSFBreakdown("PLIdown", fabs(j.eta())));
+              if(sname.BeginsWith("JERptCut"))  jerVarPartial = getJERSFBreakdown("ptCut", fabs(j.eta()));
+              if(sname.BeginsWith("JERtrunc"))  jerVarPartial = getJERSFBreakdown("trunc", fabs(j.eta()));
+              if(sname.BeginsWith("JERpTdep"))  jerVarPartial = getJERSFBreakdown("pTdep", fabs(j.eta()));
+              if(sname.BeginsWith("JERSTmFE"))  jerVarPartial = getJERSFBreakdown("STmFE", fabs(j.eta()));
+              float genJet_pt(ev_.j_g[idx]>-1 ? ev_.g_pt[ ev_.j_g[idx] ] : 0);
+              cout << sname << " " << endl;
+              TLorentzVector smearP4=jerTool_.getSmearedJet(j,genJet_pt,ev_.rho,isUpVar ? Variation::UP : Variation::DOWN,jerVarPartial);
+              scaleVar=smearP4.Pt()/j.Pt();
             } 
             else {
               bool flavorMatches(true);
@@ -700,7 +709,8 @@ void TOP17010::applyMC2MC(std::vector<Jet> &jetColl) {
 
 //
 double TOP17010::getJERSFBreakdown(TString key,double abseta){
-  if(jerSFBreakdown_.find(key)==jerSFBreakdown_.end()) return 1.0;
+  if(jerSFBreakdown_.find(key)==jerSFBreakdown_.end()) return 0.0;
+  abseta=min(fabs(abseta),5.);
   int xbin=jerSFBreakdown_[key]->GetXaxis()->FindBin(abseta);
   return jerSFBreakdown_[key]->GetBinContent(xbin);
 }

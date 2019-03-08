@@ -52,6 +52,11 @@ options.register('savePF', False,
                  VarParsing.varType.bool,
                  'save PF candidates'
                  )
+options.register('applyFilt', True,
+                 VarParsing.multiplicity.singleton,
+                 VarParsing.varType.bool,
+                 'save PF candidates'
+                 )
 options.parseArguments()
 
 #start process
@@ -119,7 +124,8 @@ if '2016' in options.era:
 
 if options.runOnData:
       if '2017' in options.era:
-            process.source.fileNames = cms.untracked.vstring('/store/data/Run2017B/SingleMuon/MINIAOD/31Mar2018-v1/90000/46CE7E24-EA37-E811-95CB-0025905A6132.root')
+            process.source.fileNames = cms.untracked.vstring('/store/data/Run2017F/ZeroBias/MINIAOD/31Mar2018-v1/30000/8604984F-DF37-E811-ACFE-008CFA197B74.root')
+            #process.source.fileNames = cms.untracked.vstring('/store/data/Run2017B/SingleMuon/MINIAOD/31Mar2018-v1/90000/46CE7E24-EA37-E811-95CB-0025905A6132.root')
             if options.runL1PrefireAna:
                   print 'Adding secondary filenames to run L1 prefire analysis'
                   process.source.secondaryFileNames = cms.untracked.vstring(['/store/data/Run2017B/SingleMuon/AOD/17Nov2017-v1/70003/C4FDB602-77D8-E711-B975-02163E011E63.root',
@@ -184,8 +190,9 @@ process.TFileService = cms.Service("TFileService",
 from TopLJets2015.TopAnalysis.miniAnalyzer_cfi import  ANALYSISJETIDS,ANALYSISTRIGGERLISTS
 process.load('TopLJets2015.TopAnalysis.miniAnalyzer_cfi')
 print 'MiniAnalyzer configuration is as follows:'
-process.analysis.saveTree=cms.bool(options.saveTree)
-process.analysis.savePF=cms.bool(options.savePF)
+process.analysis.saveTree  = cms.bool(options.saveTree)
+process.analysis.savePF    = cms.bool(options.savePF)
+process.analysis.applyFilt = cms.bool(options.applyFilt)
 print '\t save tree=',options.saveTree,' save PF=',options.savePF
 if 'era2017' in options.era:
       process.analysis.jetIdToUse=ANALYSISJETIDS[2017]

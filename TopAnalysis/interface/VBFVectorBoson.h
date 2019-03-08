@@ -14,6 +14,7 @@
 
 #include "TopLJets2015/TopAnalysis/interface/MiniEvent.h"
 #include "TopLJets2015/TopAnalysis/interface/CommonTools.h"
+#include "TopLJets2015/TopAnalysis/interface/JECTools.h"
 #include "TopLJets2015/TopAnalysis/interface/VBFVectorBoson.h"
 #include "TopLJets2015/TopAnalysis/interface/EfficiencyScaleFactorsWrapper.h"
 #include "TopLJets2015/TopAnalysis/interface/L1PrefireEfficiencyWrapper.h"
@@ -50,7 +51,8 @@ class VBFVectorBoson{
    : filename_(filename), outname_(outname), normH_(normH), genPU_(genPU), era_(era), 
     debug_(debug), CR_(CR), QCDTemp_(QCDTemp), SRfake_(SRfake), skimtree_(skimtree), 
     runSysts_(runSysts), doBlindAnalysis_(blind),
-    xsec_(xsec)
+    xsec_(xsec),
+    jerTool_(era)
   {
     fMVATree_ = NULL;
     newTree_ = NULL;
@@ -194,6 +196,7 @@ private:
   //categorizer and tree reader
   vbf::Category category_;  
   SelectionTool *selector_;
+  JECTools jerTool_;
 };
 
 #endif

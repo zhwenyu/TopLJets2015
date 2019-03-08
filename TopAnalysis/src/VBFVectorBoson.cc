@@ -577,10 +577,12 @@ void VBFVectorBoson::runAnalysis()
             int idx=j.getJetIndex();
             if(cleanEENoise_ && fabs(j.Eta())>2.7 && fabs(j.Eta())<3 && ev_.j_emf[idx]>0.55) continue;
 
-            //shift jet energy
+            //shift jet energy/resolution
             float scaleVar(1.0);
             if(jecIdx<0) {
-              scaleVar=isUpVar ? ev_.j_jerUp[idx] : ev_.j_jerDn[idx];
+              float genJet_pt(ev_.j_g[idx]>-1 ? ev_.g_pt[ ev_.j_g[idx] ] : 0);
+              TLorentzVector smearP4=jerTool_.getSmearedJet(j,genJet_pt,ev_.rho,isUpVar ? Variation::UP : Variation::DOWN);
+              scaleVar=smearP4.Pt()/j.Pt();
             } 
             else {
               int jflav(abs(ev_.j_flav[idx]));
@@ -590,7 +592,7 @@ void VBFVectorBoson::runAnalysis()
               if(jecIdx==8 && jflav!=4)  flavorMatches=false; //FlavorPureCharm
               if(jecIdx==9 && jflav!=5)  flavorMatches=false; //FlavorPureGluon
               if(flavorMatches)
-                scaleVar=isUpVar ? ev_.j_jecUp[jecIdx][idx] : ev_.j_jecDn[jecIdx][idx];
+                scaleVar=isUpVar ? ev_.j_jecUp[jecIdx][idx] : 2-ev_.j_jecDn[jecIdx][idx];
             }
             j*=scaleVar;
             if(j.Pt()<30.) continue;
@@ -649,22 +651,36 @@ void VBFVectorBoson::runAnalysis()
         //qg discriminator re-weighting uncertainty
         //https://twiki.cern.ch/twiki/bin/view/CMS/QuarkGluonLikelihood#Systematics
         float qgwgt(1.0);
-        if(sname=="gluonqg" || sname=="quarkqg") {
-          for(size_t ij=0; ij<min((size_t)2,ijets.size()); ij++) {
-            int idx=jets[ij].getJetIndex();
+        std::vector<float> tagJetResol;        
+        for(size_t ij=0; ij<min((size_t)2,ijets.size()); ij++) {
+          int idx=ijets[ij].getJetIndex();
+
+          if(ev_.j_g[idx]>-1){
+            float genJet_pt(ev_.g_pt[ ev_.j_g[idx] ]);
+            if(genJet_pt>0)
+              tagJetResol.push_back( ijets[ij].Pt()/genJet_pt-1 );
+          }
+
+          if(sname=="gluonqg" || sname=="quarkqg") {
             float xqg=ev_.j_qg[idx];
             int jflav(abs(ev_.j_flav[idx]));
             if(jflav==21) {
-              qgwgt *= -0.666978*pow(xqg,3) + 0.929524*pow(xqg,2) -0.255505*xqg + 0.981581;
+              double qgsf=-0.666978*pow(xqg,3) + 0.929524*pow(xqg,2) -0.255505*xqg + 0.981581;
+              qgwgt *= min(max(0.5,qgsf),2.);
             }
             else if(jflav!=0) {
-              qgwgt *= -55.7067*pow(xqg,7) + 113.218*pow(xqg,6) -21.1421*pow(xqg,5) -99.927*pow(xqg,4) + 92.8668*pow(xqg,3) -34.3663*pow(xqg,2) + 6.27*xqg + 0.612992;
+              double qgsf=-55.7067*pow(xqg,7) + 113.218*pow(xqg,6) -21.1421*pow(xqg,5) -99.927*pow(xqg,4) + 92.8668*pow(xqg,3) -34.3663*pow(xqg,2) + 6.27*xqg + 0.612992;
+              qgwgt *= min(max(0.5,qgsf),2.);
             }
           }
         }
 
         //fill with new values/weights
         std::vector<double> eweights(1,iwgt*qgwgt);
+
+        for(auto jr : tagJetResol) {
+          ht_->fill2D("tagjetresol_exp",  jr, is,eweights,icat);
+        }
 
         ht_->fill2D("vbfmva_exp",       imva,                 is,eweights,icat);
         ht_->fill2D("acdfvbfmva_exp",  flat_imva,   is,eweights,icat);
@@ -720,7 +736,7 @@ void VBFVectorBoson::readTree()
   t_           = (TTree*)f_->Get("analysis/data");
   attachToMiniEventTree(t_,ev_,true);
   nentries_   = t_->GetEntriesFast();
-  if (debug_) nentries_ = 10000; //restrict number of entries for testing
+  if (debug_) nentries_ = min(50000,nentries_); //restrict number of entries for testing
   t_->GetEntry(0);
 }
 
@@ -832,7 +848,7 @@ void VBFVectorBoson::bookHistograms() {
   ht_->getPlots()["evcount"]->GetXaxis()->SetBinLabel(2,"MVA>0.9");
   ht_->addHist("vbfmva",          new TH1F("vbfmva",         ";VBF MVA;Events",50,-1,1));  
   ht_->addHist("acdfvbfmva",     new TH1F("acdfvbfmva",    ";CDF^{-1}(VBF MVA);Events",50,0,1));  
-
+  ht_->addHist("tagjetresol", new TH1F("tagjetresol",";#Delta p_{T}/p_{T};Jets",50,-0.5,0.5));
 
   TString expSystNames[]={"puup","pudn","trigup","trigdn","selup","seldn","l1prefireup","l1prefiredn",
                           "gluonqg","quarkqg",
@@ -843,7 +859,7 @@ void VBFVectorBoson::bookHistograms() {
                           "AbsoluteStatJECdn","AbsoluteScaleJECdn","AbsoluteMPFBiasJECdn","FragmentationJECdn","SinglePionECALJECdn","SinglePionHCALJECdn","FlavorPureGluonJECdn","FlavorPureQuarkJECdn","FlavorPureCharmJECdn","FlavorPureBottomJECdn","TimePtEtaJECdn","RelativeJEREC1JECdn","RelativeJEREC2JECdn","RelativeJERHFJECdn","RelativePtBBJECdn","RelativePtEC1JECdn","RelativePtEC2JECdn","RelativePtHFJECdn","RelativeBalJECdn","RelativeFSRJECdn","RelativeStatFSRJECdn","RelativeStatECJECdn","RelativeStatHFJECdn","PileUpDataMCJECdn","PileUpPtRefJECdn","PileUpPtBBJECdn","PileUpPtEC1JECdn","PileUpPtEC2JECdn","PileUpPtHFJECdn"};
   
   //instantiate 2D histograms for most relevant variables to trace with systs
-  TString hoi[]={"vbfmva","acdfvbfmva","evcount","mjj","detajj","dphijj","leadpt","subleadpt","forwardeta","centraleta","vpt"};
+  TString hoi[]={"vbfmva","acdfvbfmva","evcount","mjj","detajj","dphijj","leadpt","subleadpt","forwardeta","centraleta","vpt","tagjetresol"};
 
   size_t nexpSysts=sizeof(expSystNames)/sizeof(TString);
   expSysts_=std::vector<TString>(expSystNames,expSystNames+nexpSysts);  
@@ -1040,6 +1056,19 @@ void VBFVectorBoson::fillControlHistos(TLorentzVector boson, std::vector<Jet> je
   ht_->fill("njets",        jets.size(), cplotwgts,c);
   ht_->fill("ht",           vbfVars_.scalarht,    cplotwgts,c);
   ht_->fill("mht",          vbfVars_.mht,         cplotwgts,c);
+
+  std::vector<float> tagJetResol;        
+  for(size_t ij=0; ij<min((size_t)2,jets.size()); ij++) {
+    int idx=jets[ij].getJetIndex();
+    if(ev_.j_g[idx]>-1){
+      float genJet_pt(ev_.g_pt[ ev_.j_g[idx] ]);
+      if(genJet_pt>0)
+        tagJetResol.push_back( jets[ij].Pt()/genJet_pt-1 );
+    }
+  }
+  for(auto jr : tagJetResol) {
+    ht_->fill("tagjetresol",  jr,cplotwgts,c);
+  }
 
   for(size_t ij=0; ij<min(size_t(2),jets.size());ij++) {
     TString jtype(ij==0?"lead":"sublead");

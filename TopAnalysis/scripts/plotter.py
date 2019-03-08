@@ -89,11 +89,18 @@ def main():
         procList=opt.procSF.split(',')
         for newProc in procList:
             proc,cacheUrl=newProc.split(':')
-            if not os.path.isfile(cacheUrl) : continue
-            cache=open(cacheUrl,'r')
-            procSF[proc]=pickle.load(cache)
-            cache.close()
-            print 'Scale factors added for',proc
+            if os.path.isfile(cacheUrl) : 
+                cache=open(cacheUrl,'r')
+                procSF[proc]=pickle.load(cache)
+                cache.close()
+                print 'Scale factors added for',proc
+            else:
+                try:
+                    procSF[proc]={'':(float(cacheUrl),0)}
+                    print 'Scale factors added for',proc
+                except:
+                    pass
+
 
     onlyList=opt.only.split(',')
 
@@ -186,7 +193,7 @@ def main():
                             if not isData and not '(data)' in sp[1]: 
 
                                 #check if a special scale factor needs to be applied
-                                sfVal=1.0                            
+                                sfVal=1.0                                                 
                                 for procToScale in procSF:
                                     if sp[1]==procToScale:
                                         for pcat in procSF[procToScale]:                                    

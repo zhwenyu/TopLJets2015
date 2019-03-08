@@ -18,6 +18,7 @@ def main():
     table={'data':[],'mc':[]}
     for tag,sample in samples:
         xsec,isData,dset=sample[0:3]
+        if len(dset)==0 : continue
         table['data' if isData==1 else 'mc'].append((tag,xsec,dset.split('/')[1]))
         
     for tag in table:

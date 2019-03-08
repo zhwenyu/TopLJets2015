@@ -18,6 +18,7 @@
 #include "TopLJets2015/TopAnalysis/interface/L1PrefireEfficiencyWrapper.h"
 #include "TopLJets2015/TopAnalysis/interface/GeneratorTools.h"
 #include "TopLJets2015/TopAnalysis/interface/TopWidthEvent.h"
+#include "TopLJets2015/TopAnalysis/interface/JECTools.h"
 
 #include <vector>
 #include <set>
@@ -39,7 +40,8 @@ class TOP17010 {
   */
  TOP17010(TString filename, TString outname, TH1F *normH,  TH1F *genPU, TString era, UInt_t scenario=0, Bool_t debug=false)        
    : filename_(filename), outname_(outname), normH_(normH), genPU_(genPU), era_(era), debug_(debug),
-    targetGt_(-1), targetMt_(-1)
+    targetGt_(-1), targetMt_(-1),
+    jerTool_(era_)
   {
     init(scenario);
     bookHistograms();
@@ -105,6 +107,7 @@ private:
   TF1 *rbwigner_;
 
   SelectionTool *selector_;
+  JECTools jerTool_;
 };
 
 #endif

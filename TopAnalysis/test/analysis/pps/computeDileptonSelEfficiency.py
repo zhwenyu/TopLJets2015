@@ -192,21 +192,17 @@ def runSelectionEfficiencyFor(ch,d):
     zxROOT=ROOT.TFile.Open('plots/zx_sel/plotter.root')
 
     procList  =[('DY','#000000',1001,20,bkgROOT),
+                ("EWK Zjj",'#f0027f',0,26,zxROOT),
                 ("ZH#rightarrowllbb",'#666666',0,20,zxROOT),
                 ("qqH(900)#rightarrowZZ#rightarrow2l2#nu",'#8c510a',0,21,zxROOT),
-                #("ggH(900)#rightarrowZZ#rightarrow2l2#nu",'#8c510a',0,25,zxROOT),
-                #("qqH(1500)#rightarrowZZ#rightarrow2l2#nu",'#f0027f',0,22,zxROOT),
-                #("ggH(1500)#rightarrowZZ#rightarrow2l2#nu",'#f0027f',0,26,zxROOT),
                 ("qqH(2000)#rightarrowZZ#rightarrow2l2#nu",'#358CEF',0,23,zxROOT),
-                #("ggH(2000)#rightarrowZZ#rightarrow2l2#nu",'#358CEF',0,27,zxROOT),
                 ]
+    
+    if 'a' in ch:
+        procList  =[('#gamma+jets','#000000',1001,20,bkgROOT),
+                    ("EWK #gammajj",'#f0027f',0,26,zxROOT)
+                    ]
 
-
-    #procList  =[('DY','#000000',1001,20,bkgROOT),
-    #            ("H^{#pm}(1000)#rightarrowWZ",'#666666',0,20,zxROOT),
-    #            ("H^{#pm}(2000)#rightarrowWZ",'#fdc086',0,21,zxROOT),
-    #            ("G_{bulk}(2000)#rightarrowZZ#rightarrow2l2#nu",'#358CEF',0,27,zxROOT)
-    #            ]
     
     tagsList=['singletrig','trig','rec','2trec']
 
@@ -276,9 +272,10 @@ ROOT.gStyle.SetOptTitle(0)
 ROOT.gROOT.SetBatch(True)
 
 for d in ['ptboson','mll','drll']:
-    for ch in ['ee','mm','eez','mmz']:
-        if ch=='a' and not 'boson' in d: continue
-        runSelectionEfficiencyFor(ch,d)
-
+    for ch in ['ee','mm','eez','mmz','lpta','hpta']:
+        try:
+            runSelectionEfficiencyFor(ch,d)
+        except:
+            pass
 
 

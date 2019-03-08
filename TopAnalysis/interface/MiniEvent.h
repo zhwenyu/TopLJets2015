@@ -33,6 +33,7 @@ struct MiniEvent_t
   //reco level event
   Int_t nvtx;
   Int_t triggerBits,addTriggerBits;
+  Int_t zeroBiasPS;
   Float_t rho;
 
   //leptons

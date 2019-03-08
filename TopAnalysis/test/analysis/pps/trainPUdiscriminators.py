@@ -7,22 +7,36 @@ import sys
 import pickle
 import json
 from collections import OrderedDict
+from keras.models import load_model
+import pandas as pd
+import root_pandas as rp
 
-def fitModels(data,features,opt):
+def fitModels(data,features,opt,alwaysOptim=False,doGBC=False,doDNN=False):
 
     """ fits different models to the data """
-
-    import pandas as pd
+    
+    from sklearn import preprocessing
+    #from sklearn.decomposition import PCA
     from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
-    from sklearn.ensemble import RandomForestClassifier,GradientBoostingClassifier
+    from sklearn.ensemble import RandomForestClassifier
+    from xgboost import XGBClassifier 
     from sklearn.model_selection import GridSearchCV
     from keras.models import Sequential
     from keras.layers.core import Dense, Dropout
+    from keras.layers import BatchNormalization
+    from keras.layers.advanced_activations import LeakyReLU
     from keras.optimizers import Adam
-    from keras.callbacks import EarlyStopping,ModelCheckpoint
+    from keras.callbacks import EarlyStopping,ModelCheckpoint, ReduceLROnPlateau
 
-    best_models={'lda':{}, 'rfc':{}, 'rfc10':{}, 'dnn':{}}
+    #best_models={'lda':{}, 'rfc':{}, 'rfc10':{}, 'dnn':{}, 'gbc':{}, 'gbc10':{}}
+    best_models={'lda':{}, 'rfc':{}, 'rfc10':{}}
     
+    #preprocess by scaling to a zero mean/unit variance distribution hypothesis
+    scaler = preprocessing.StandardScaler()
+    data['X']=scaler.fit_transform(data['X'])
+    #pca=PCA()
+    #data['X']=pca.fit_transform(data['X'])
+
     xangle_list=data['s'][:,0]
     for xangle in [120.,130.,140.,150.]:
 
@@ -37,19 +51,28 @@ def fitModels(data,features,opt):
         df['class']=y.tolist()
         train=df.sample(frac=opt.trainFrac,random_state=200)
         test=df.drop(train.index)
-
+        
         #optimize a random forest classifier
         rfc = RandomForestClassifier()
-        rfc_params = {
-            'bootstrap': [True],
-            'n_estimators': [50,100,150,200],
-            'max_depth': [2,5,10], #20,50],
-            'max_features':['sqrt'], #'log2']
-            }
-        rfc_optim = GridSearchCV(estimator = rfc, param_grid = rfc_params, cv = 3, n_jobs = -1, verbose = 2)
-        rfc_optim.fit(train[features], train['class'])
-        rankedFeatures=sorted(zip(features,rfc_optim.best_estimator_.feature_importances_), key=lambda x:x[1],reverse=True)
-        best_models['rfc'][xangle]=(rfc_optim.best_estimator_,rfc_optim.best_params_,rankedFeatures,features)
+        if alwaysOptim or xangle==120:
+            rfc_params = {
+                'bootstrap': [True],
+                'n_estimators': [100,200,300],
+                'max_depth': [5,10,15,20],
+                #'min_samples_split':[0.25,0.5],
+                #'min_samples_leaf':[0.25,0.5],
+                'max_features':['sqrt'],
+                }
+            rfc_optim = GridSearchCV(estimator = rfc, param_grid = rfc_params, cv = 3, n_jobs = -1, verbose = 2)
+            rfc_optim.fit(train[features], train['class'])
+            rankedFeatures=sorted(zip(features,rfc_optim.best_estimator_.feature_importances_), key=lambda x:x[1],reverse=True)
+            best_models['rfc'][xangle]=(rfc_optim.best_estimator_,rfc_optim.best_params_,rankedFeatures,features)
+        else:
+            print 'Re-using best parameters found for 120murad'
+            rfc.set_params( **(best_models['rfc'][120][1]) )
+            rfc.fit(train[features], train['class'])
+            rankedFeatures=sorted(zip(features,rfc.feature_importances_), key=lambda x:x[1],reverse=True)
+            best_models['rfc'][xangle]=(rfc,best_models['rfc'][120][1],rankedFeatures,features)
 
         #re-train using only best 10 features
         best10=[rankedFeatures[ix][0] for ix in range(10)]
@@ -58,44 +81,112 @@ def fitModels(data,features,opt):
         rfc10.fit(train[best10],train['class'])
         ranked10Features=sorted(zip(best10,rfc10.feature_importances_), key=lambda x:x[1],reverse=True)
         best_models['rfc10'][xangle]=(rfc10,rfc_optim.best_params_,ranked10Features,best10)
-        
+    
         #train a linear discriminant using the two best ranked variables
         best2=[ranked10Features[ix][0] for ix in range(2)]
         lda=LinearDiscriminantAnalysis()
         lda_params={
-            'solver':['lsqr','eigen'],
-            'shrinkage':['auto',0,0.5,1],
+            'solver':['lsqr'],
+            'shrinkage':np.arange(0,1,0.1),
             }
         lda_optim = GridSearchCV(estimator = lda, param_grid = lda_params, cv = 3, n_jobs = -1, verbose = 2)
         lda_optim.fit(train[best2], train['class'])        
         best_models['lda'][xangle]=(lda_optim.best_estimator_,lda_optim.best_params_,None,best2)
 
+
+        #optimize a gradient boost classifier
+        if doGBC:
+            gbc = XGBClassifier()
+            gbc_params = {
+                'learning_rate':[0.05,0.15],
+                'n_estimators': [10,50,100,200],
+                'max_depth': [2,5,10,15], #20,50],
+                #'min_samples_split':[0.25,0.5],
+                #'min_samples_leaf':[0.25,0.5],
+                }
+            gbc_optim = GridSearchCV(estimator = gbc, param_grid = gbc_params, cv = 3, n_jobs = -1, verbose = 2)
+            gbc_optim.fit(train[features], train['class'])
+            rankedFeatures=sorted(zip(features,gbc_optim.best_estimator_.feature_importances_), key=lambda x:x[1],reverse=True)
+            best_models['gbc'][xangle]=(gbc_optim.best_estimator_,gbc_optim.best_params_,rankedFeatures,features)
+        
+            #re-train using only best 10 features
+            best10=[rankedFeatures[ix][0] for ix in range(10)]
+            gbc10 = XGBClassifier()
+            gbc10.set_params(**gbc_optim.best_params_)
+            gbc10.fit(train[best10],train['class'])
+            ranked10Features=sorted(zip(best10,gbc10.feature_importances_), key=lambda x:x[1],reverse=True)
+            best_models['gbc10'][xangle]=(gbc10,gbc_optim.best_params_,ranked10Features,best10)
+            
+        
         #train a DNN
-        dnn = Sequential()
-        dnn.add(Dense(256, input_dim=len(features), activation='relu'))
-        dnn.add(Dropout(0.1))
-        dnn.add(Dense(64, activation='relu'))
-        dnn.add(Dropout(0.1))
-        dnn.add(Dense(16, activation='relu'))
-        dnn.add(Dropout(0.1))
-        dnn.add(Dense(1, activation='sigmoid'))
-        dnn.compile(loss='binary_crossentropy',optimizer=Adam(lr=0.001),metrics=['accuracy'])
-        es = EarlyStopping(monitor='val_loss', mode='auto', verbose=1, patience=5)
-        best_url=os.path.join(opt.output,'bestdnn_%d.hd5'%xangle)
-        mc = ModelCheckpoint(best_url, monitor='val_loss', verbose=1, save_best_only=True)
-        history = dnn.fit(train[features], train['class'], 
-                          validation_data=(test[features], test['class']),
-                          callbacks=[es,mc], 
-                          epochs=100,
-                          batch_size=128
-                          )
-        best_models['dnn'][xangle]=(best_url,history.history,None,features)
+        if doDNN:
+            dnn = Sequential()
+
+            def addCommonStructureBetweenDense(dnn):
+                dnn.add(BatchNormalization())
+                dnn.add(Dropout(0.1))
+                dnn.add(LeakyReLU(0.2))
+
+            dnn.add(Dense(512, kernel_initializer='glorot_normal',  bias_initializer='glorot_uniform', input_dim=len(features)))
+            addCommonStructureBetweenDense(dnn)
+            for i in [512,256,128]:
+                dnn.add(Dense(i, kernel_initializer='glorot_normal',  bias_initializer='glorot_uniform'))
+                addCommonStructureBetweenDense(dnn)
+            dnn.add(Dense(1, kernel_initializer='glorot_normal',  bias_initializer='glorot_uniform', activation='sigmoid'))
+        
+            dnn.compile(loss='binary_crossentropy',optimizer=Adam(lr=0.01),metrics=['accuracy'])
+            reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=3, min_lr=0.0001, cooldown=3, verbose=1)
+            es = EarlyStopping(monitor='val_loss', mode='auto', verbose=1, patience=6)
+            best_url=os.path.join(opt.output,'bestdnn_%d.hd5'%xangle)
+            mc = ModelCheckpoint(best_url, monitor='val_loss', verbose=1, save_best_only=True)
+            history = dnn.fit(train[features], train['class'], 
+                              validation_data=(test[features], test['class']),
+                              callbacks=[reduce_lr,es,mc], 
+                              epochs=100,
+                              batch_size=128
+                              )
+            best_models['dnn'][xangle]=(best_url,history.history,None,features)
 
     #save results  to pickle file
     out_url=os.path.join(opt.output,'pu_models.pck')
     with open(out_url,'w') as cache:    
         pickle.dump(best_models, cache, pickle.HIGHEST_PROTOCOL)
-    print 'Best fit models have been stored in',out_url
+        pickle.dump(scaler,      cache, pickle.HIGHEST_PROTOCOL)
+        #pickle.dump(pca,         cache, pickle.HIGHEST_PROTOCOL)
+    print 'Best fit models and preprocessing scaler have been stored in',out_url
+
+def predict(data,features,baseName,opt):
+
+    """ runs the prediction for the trained models and dumps a tree """
+    
+    print '[predict] with',baseName,'with',len(data),'events'
+
+    #load models and standard scaler
+    with open(opt.model,'r') as cache:
+        best_models=pickle.load(cache)
+        scaler=pickle.load(cache)
+
+    #scale data and switch to pandas DataFrame
+    df=pd.DataFrame(scaler.transform(data))
+    df.columns=features
+
+    #run all predictions
+    pred=pd.DataFrame()
+    for key in best_models:
+        if key!='rfc': continue
+        for xangle in best_models[key]:
+            tag='%s_%d'%(key,xangle)
+            clf=best_models[key][xangle][0]
+            features=best_models[key][xangle][-1]
+            y_prob=clf.predict_proba(df[features])[:,0]
+            pred[tag]=y_prob
+
+    #write to output
+    rp.to_root(pred, baseName, key='pudiscr',store_index=False)
+    if opt.output:        
+        os.system('xrdcp -f {0} root://eoscms//{1}/{0}'.format(baseName,opt.output.replace('/eos/cms/','')))
+        os.system('rm {0}'.format(baseName))
+
 
 def runTrainJob(url,features,spectators,categs,onlyThis,opt):
 
@@ -116,58 +207,70 @@ def runTrainJob(url,features,spectators,categs,onlyThis,opt):
         if onlyThis:
             if f!=onlyThis: continue
         else:
-            if not 'DoubleMuon' in f and not 'SingleMuon' in f: 
+            if not 'DoubleMuon' in f: # and not 'SingleMuon' in f: 
                 continue
-        if not '2017B' in f and not '2017C' in f : continue
+            #if not '2017B' in f:
+            #    continue
         t.AddFile(os.path.join(url,f))
     print 'Data chain has {0} events'.format(t.GetEntries())
 
     #convert to numpy arrays
-    from sklearn import preprocessing
     from root_numpy import tree2array
 
     data={}
-    data['X']=tree2array(t, branches=features,   selection=opt.selection)
-    data['s']=tree2array(t, branches=spectators, selection=opt.selection)
-    data['y']=tree2array(t, branches=categs,     selection=opt.selection)
+    cut=opt.selection if opt.selection else ''
+    print cut
+    data['X']=tree2array(t, branches=features,   selection=cut)
+    data['s']=tree2array(t, branches=spectators, selection=cut)
+    data['y']=tree2array(t, branches=categs,     selection=cut)
 
     #convert features and spectators to array of floats
     for tag,branches in [('X',features),('s',spectators)]:
         data[tag]=data[tag].astype([(b,'<f4') for b in branches])
         data[tag]=data[tag].view(np.float32).reshape(data[tag].shape + (-1,))
 
-    #preprocess features
-    data['X']=preprocessing.scale(data['X'])
-
     #filter out runs in which the RP were out
-    fracRemove=1./len(data['y'])
-    with open(opt.RPout,'r') as cache:
+    nEntries=len(data['s'])
+    if opt.RPout:
+        with open(opt.RPout,'r') as cache:
 
-        #read RP out json file
-        runLumi=json.load(cache,  encoding='utf-8', object_pairs_hook=OrderedDict).items()
-        runLumiList={int(x[0]):x[1] for x in runLumi}
+            #read RP out json file
+            runLumi=json.load(cache,  encoding='utf-8', object_pairs_hook=OrderedDict).items()
+            runLumiList={int(x[0]):x[1] for x in runLumi}
 
-        #build a filter
-        filt=[]
-        for i in range(len(data['s'])):
-            run,lumi=int(data['s'][i][1]),int(data['s'][i][2])
-            rpInFlag=True
-            if run in runLumiList:                 
-                for lran in runLumiList[run]:
-                    if lumi<lran[0]: continue
-                    if lumi>lran[1]: continue
-                    rpInFlag=False
-                    break
-            filt.append(rpInFlag)
+            #build a filter
+            filt=[]
+            nFilt=0
+            print 'Filtering out runs in which the RP were out'
+            for i in range(nEntries):
 
-        #apply filter
-        filt=np.array(filt)
-        for key in data: data[key]=data[key][filt]
-    fracRemove*=100.*len(data['y'])
+                if i%10000==0 : 
+                    fracDone=int(float(100.*i)/float(nEntries))
+                    fracFilt=int(float(100.*nFilt)/float(nEntries))
+                    sys.stdout.write('\r [ %d/100 ] done [ %d/100 ] to be filtered' %(fracDone,fracFilt))
 
-    print 'Converted to numpy array (%3.2f%% events removed as RP were out of the run)'%fracRemove
+                run,lumi=int(data['s'][i][1]),int(data['s'][i][2])
+                rpInFlag=True
+                if run in runLumiList:                 
+                    for lran in runLumiList[run]:
+                        if lumi<lran[0]: continue
+                        if lumi>lran[1]: continue
+                        rpInFlag=False
+                        nFilt+=1
+                        break
+            
+                filt.append(rpInFlag)
+
+            #apply filter
+            filt=np.array(filt)
+            for key in data: data[key]=data[key][filt]
+
+            print '%d%% events removed as RP were out of the run'%fracFilt
+
+    print 'Converted to numpy array' 
 
     if opt.model is None:
+
         out_url=os.path.join(opt.output,'train_data.pck')
         with open(out_url,'w') as cache:    
             pickle.dump(data,          cache, pickle.HIGHEST_PROTOCOL)
@@ -175,10 +278,12 @@ def runTrainJob(url,features,spectators,categs,onlyThis,opt):
             pickle.dump(spectators,    cache, pickle.HIGHEST_PROTOCOL)
             pickle.dump(categs,        cache, pickle.HIGHEST_PROTOCOL)
             pickle.dump(opt.selection, cache, pickle.HIGHEST_PROTOCOL)
-
         print 'A dump of the data in numpy format is saved @',out_url
+
         fitModels(data,features,opt)
         
+    else:
+        predict(data['X'],features,onlyThis,opt)
 
 
 def runTrainJobPacked(args):
@@ -204,7 +309,7 @@ def main():
                       help='input directory with the files [default: %default]')
     parser.add_option('--RPout',
                       dest='RPout', 
-                      default='test/analysis/pps/golden_noRP.json',
+                      default=None,
                       type='string',
                       help='json with the runs/lumi sections in which RP are out')
     parser.add_option('--trainFrac',
@@ -214,17 +319,24 @@ def main():
                       help='fraction to use for training [default: %default]')
     parser.add_option('-o', '--output',
                       dest='output',
-                      default='test/analysis/pps/',
+                      default=None,
                       help='output directory [default: %default]')
+    parser.add_option('--onlyMissing',
+                      dest='onlyMissing',
+                      default=False,
+                      action='store_true',
+                      help='run on only missing [default: %default]')
     parser.add_option('-s', '--selection',
                       dest='selection',   
-                      default='isZ && bosonpt<10 && trainCat>=0',
+                      default=None,
                       help='selection [default: %default]')
     parser.add_option('-m', '--model',
                       dest='model',   
                       default=None,
                       help='pickle file with trained models [default: %default]')
     (opt, args) = parser.parse_args()
+
+    if opt.output: os.system('mkdir -p %s'%opt.output)
 
     #build the feature,spectator, category
     features=['nvtx','rho']
@@ -249,9 +361,17 @@ def main():
     task_list=[]
     buildTrainData=True
     if opt.model is None:
-        task_list.append( (opt.input, features, spectators, categs, None, opt) )
+        task_list.append( (opt.input, features, spectators, categs, None, opt) )    
     else:
-        task_list=[ (opt.input, features, spectators, categs, f, opt) for f in os.listdir(opt.input) ]
+        if os.path.isfile(opt.input): 
+            task_list.append( (os.path.dirname(opt.input), features, spectators, categs, os.path.basename(opt.input), opt) )
+        else:
+            for f in os.listdir(opt.input):
+                if not os.path.isfile(os.path.join(opt.input,f)) : continue
+                outLoc=os.path.join(opt.output,f)
+                if not '/eos/cms' in outLoc : outLoc='/eos/cms/'+outLoc
+                if opt.onlyMissing and os.path.isfile(outLoc): continue
+                task_list.append( (os.path.dirname(f), features, spectators, categs, os.path.basename(f), opt) )
 
     #run it
     import multiprocessing as MP
@@ -260,97 +380,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-
-
-"""
-# In[2]:
-
-
-#import tree from file
-
-
-print 'Preselection for training is',selection
-
-inF = ROOT.TFile('/eos/user/p/psilva/Data13TeV_2017F_DoubleMuon.root','READ')
-tree = inF.Get('tree')
-
-#convert to all floats, apply standard scaling, and reshape as image
-X=rnp.tree2array(tree,
-                 branches=branches,
-                 selection=selection)
-X=X.astype([(b,'<f4') for b in branches])
-X=X.view(np.float32).reshape(X.shape + (-1,))
-X=preprocessing.scale(X)
-
-#categories
-y=rnp.tree2array(tree,
-                 branches="nRPtk==0? 1. : 0.",
-                 selection=selection)
-
-print len(X),'events read'
-print len(y[y>0]),'signal-like',len(y[y==0]),'background-like'
-
-#all done
-inF.Close()
-
-
-# In[3]:
-
-
-# In[36]:
-
-
-#show correlation
-corr_bkg=df.loc[df['class']==0].corr(method='pearson')
-corr_sig=df.loc[df['class']==1].corr(method='pearson')
-corr_ratio=corr_bkg/corr_sig
-
-fig = plt.figure()
-ax = fig.add_subplot(111)
-cax = ax.matshow(corr_ratio,cmap=plt.cm.jet,vmin=-2,vmax=2)
-ax.xaxis.tick_bottom()
-clb=fig.colorbar(cax)
-clb.set_label(r'$\rho$(B) / $\rho$(S)',rotation=270.,labelpad=15)
-plt.xlabel('Variable index')
-plt.ylabel('Variable index')
-fig.text(0.23, 0.9, r'CMS', fontweight='bold')
-fig.text(0.29, 0.9, r'Preliminary')
-plt.show()
-
-
-# In[6]:
-
-
-
-
-# In[23]:
-
-
-
-
-# In[7]:
-
-
-    
-    
-with open('bdt_optim.pck','r') as cache:
-    train_results=pickle.load(cache)
-
-for key in train_results:
-    print key,'summary'
-    print train_results[key][1]
-    plotFeatureImportance(clf=train_results[key][0],features=branches,plt=plt)
-    showConfusionMatrix(clf=train_results[key][0],features=branches,data=test)
-
-
-# In[30]:
-
-
-
-
-# In[ ]:
-
-
-
-
-"""

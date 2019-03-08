@@ -51,7 +51,8 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev,Int_t njecUncs)
   t->Branch("rho",           &ev.rho,         "rho/F");
   t->Branch("triggerBits",   &ev.triggerBits, "triggerBits/I");
   t->Branch("addTriggerBits",   &ev.addTriggerBits, "addTriggerBits/I");
-  
+  t->Branch("zeroBiasPS",   &ev.zeroBiasPS, "zeroBiasPS/I");
+
   //leptons
   t->Branch("nl", &ev.nl, "nl/I");
   t->Branch("l_isPromptFinalState",                         ev.l_isPromptFinalState,                       "l_isPromptFinalState[nl]/O");
@@ -243,7 +244,8 @@ void attachToMiniEventTree(TTree *t,MiniEvent_t &ev,bool full)
   t->SetBranchAddress("rho",      &ev.rho);
   t->SetBranchAddress("triggerBits",        &ev.triggerBits);
   t->SetBranchAddress("addTriggerBits",        &ev.addTriggerBits);
-  
+  t->SetBranchAddress("zeroBiasPS",   &ev.zeroBiasPS);
+
   //lepton info
   t->SetBranchAddress("nl", &ev.nl);
   t->SetBranchAddress("l_isPromptFinalState",                         ev.l_isPromptFinalState);

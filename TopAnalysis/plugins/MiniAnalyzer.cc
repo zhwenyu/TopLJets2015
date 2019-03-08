@@ -16,6 +16,7 @@
 //         Created:  Sun, 13 Jul 2014 06:22:18 GMT
 //
 //
+#include "DataFormats/PatCandidates/interface/PackedTriggerPrescales.h"
 #include "SimDataFormats/GeneratorProducts/interface/LHERunInfoProduct.h"
 #include "SimDataFormats/PileupSummaryInfo/interface/PileupSummaryInfo.h"
 #include "FWCore/Framework/interface/Frameworkfwd.h"
@@ -134,7 +135,7 @@ private:
   edm::EDGetTokenT<reco::GenParticleCollection> particleLevelToken_;
 
   edm::EDGetTokenT<edm::TriggerResults> triggerBits_,metFilterBits_;
-  edm::EDGetTokenT<pat::PackedTriggerPrescales> triggerPrescales_;
+  edm::EDGetTokenT<pat::PackedTriggerPrescales> triggerPrescales_,l1triggerPrescales_;
   edm::EDGetTokenT<reco::VertexCollection> vtxToken_;
   edm::EDGetTokenT<double> rhoToken_;
   edm::EDGetTokenT<pat::MuonCollection> muonToken_;
@@ -169,6 +170,9 @@ private:
   //counters
   int nrecleptons_,nrecphotons_,ngleptons_,ngphotons_;
 
+  //apply filter to save tree
+  bool applyFilt_;
+
 };
 
 //
@@ -199,6 +203,7 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig) :
   triggerBits_(consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("triggerBits"))),
   metFilterBits_(consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("metFilterBits"))),
   triggerPrescales_(consumes<pat::PackedTriggerPrescales>(iConfig.getParameter<edm::InputTag>("prescales"))),
+  l1triggerPrescales_(consumes<pat::PackedTriggerPrescales>(iConfig.getParameter<edm::InputTag>("l1prescales"))),
   vtxToken_(consumes<reco::VertexCollection>(iConfig.getParameter<edm::InputTag>("vertices"))),
   rhoToken_(consumes<double>(iConfig.getParameter<edm::InputTag>("rho"))),
   muonToken_(consumes<pat::MuonCollection>(iConfig.getParameter<edm::InputTag>("muons"))),
@@ -210,7 +215,8 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig) :
   BadChCandFilterToken_(consumes<bool>(iConfig.getParameter<edm::InputTag>("badChCandFilter"))),
   BadPFMuonFilterToken_(consumes<bool>(iConfig.getParameter<edm::InputTag>("badPFMuonFilter"))),
   saveTree_( iConfig.getParameter<bool>("saveTree") ),
-  savePF_( iConfig.getParameter<bool>("savePF") )
+  savePF_( iConfig.getParameter<bool>("savePF") ),
+  applyFilt_( iConfig.getParameter<bool>("applyFilt") )
 {
   //now do what ever initialization is needed
   electronToken_      = mayConsume<edm::View<pat::Electron> >(iConfig.getParameter<edm::InputTag>("electrons"));
@@ -230,6 +236,7 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig) :
   //muonRC_->init(edm::FileInPath(iConfig.getParameter<std::string>("RoccoR")).fullPath());
 
   histContainer_["triggerList"] = fs->make<TH1F>("triggerList", ";Trigger bits;",triggersToUse_.size(),0,triggersToUse_.size());
+  histContainer_["triggerPrescale"] = fs->make<TH1D>("triggerPrescale", ";Trigger prescale sum;",triggersToUse_.size(),0,triggersToUse_.size());
   for(size_t i=0; i<triggersToUse_.size(); i++) histContainer_["triggerList"] ->GetXaxis()->SetBinLabel(i+1,triggersToUse_[i].c_str());
   histContainer_["counter"]    = fs->make<TH1F>("counter", ";Counter;Events",2,0,2);
   histContainer_["fidcounter"] = (TH1 *)fs->make<TH2F>("fidcounter",    ";Variation;Events", 1500, 0., 1500.,11,0,11); 
@@ -506,6 +513,10 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
   std::vector<string> triggerList;
   Service<service::TriggerNamesService> tns;
   tns->getTrigPaths(*h_trigRes,triggerList);
+  edm::Handle<pat::PackedTriggerPrescales> h_trigPrescale;
+  iEvent.getByToken(triggerPrescales_, h_trigPrescale);
+  edm::Handle<pat::PackedTriggerPrescales> h_l1trigPrescale;
+  iEvent.getByToken(l1triggerPrescales_, h_l1trigPrescale);
   ev_.triggerBits=0;
   ev_.addTriggerBits=0;
   for (unsigned int i=0; i< h_trigRes->size(); i++) 
@@ -513,12 +524,18 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
       if( !(*h_trigRes)[i].accept() ) continue;
       for(size_t itrig=0; itrig<triggersToUse_.size(); itrig++)
 	{
-	  if (triggerList[i].find(triggersToUse_[itrig])==string::npos) continue;
+	  if (triggerList[i].find(triggersToUse_[itrig])==string::npos) continue;          
+          int prescale=h_trigPrescale->getPrescaleForIndex(i); 
+          int l1prescale=h_l1trigPrescale->getPrescaleForIndex(i); 
           if(itrig<32)
             ev_.triggerBits |= (1 << itrig);
           else
             ev_.addTriggerBits |= (1 << (itrig-32));
 	  histContainer_["triggerList"]->Fill(itrig);
+          histContainer_["triggerPrescale"]->Fill(itrig,prescale);
+          bool isZeroBias(triggerList[i].find("ZeroBias")!=string::npos);
+          if(!isZeroBias) continue;
+          ev_.zeroBiasPS=prescale*l1prescale;
 	}
     }
   bool passTrigger(ev_.isData ? ev_.triggerBits!=0 : true);
@@ -1167,13 +1184,16 @@ void MiniAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 
   ngleptons_=0;   ngphotons_=0;
   nrecleptons_=0; nrecphotons_=0;
-
+  ev_.g_nw=0; ev_.ng=0; ev_.ngtop=0;
+  ev_.nl=0; ev_.ngamma=0; ev_.nj=0; ev_.nfwdtrk=0; ev_.nrawmu=0;
+  
   //analyze the event
   if(!iEvent.isRealData()) genAnalysis(iEvent,iSetup);
   recAnalysis(iEvent,iSetup);
   
   //save event if at least one object at gen or reco level
-  if((ngleptons_==0 && ngphotons_==0 && nrecleptons_==0 && nrecphotons_==0) || !saveTree_) return;  
+  if(applyFilt_)
+    if((ngleptons_==0 && ngphotons_==0 && nrecleptons_==0 && nrecphotons_==0) || !saveTree_) return;  
   ev_.run     = iEvent.id().run();
   ev_.lumi    = iEvent.luminosityBlock();
   ev_.event   = iEvent.id().event(); 

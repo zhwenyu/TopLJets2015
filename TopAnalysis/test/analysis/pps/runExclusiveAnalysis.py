@@ -84,14 +84,33 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
     
     """event loop"""
 
+    isData=True if 'Data' in inFile else False
+    isSignal=True if 'MC13TeV_2017_PPZX_' in inFile else False
+
+    #bind main tree with pileup discrimination tree, if failed return
+    tree=ROOT.TChain('analysis/data' if isSignal else 'tree')
+    tree.AddFile(inFile)
+    try:
+        pudiscr_tree=ROOT.TChain('pudiscr')
+        baseName=os.path.basename(inFile)
+        baseDir=os.path.dirname(inFile)
+        pudiscr_file=os.path.join(baseDir,'pudiscr',baseName)
+        if not os.path.isfile(pudiscr_file):
+            raise ValueError(pudiscr_file+' does not exist')
+        pudiscr_tree.AddFile(pudiscr_file)
+        tree.AddFriend(pudiscr_tree)
+        print 'Added pu tree for',inFile
+    except:
+        #print 'Failed to add pu discrimination tree as friend for',inFile
+        return
+
+
     #identify data-taking era
     era=None
-    isData=True if 'Data' in inFile else False
     if isData:
         era=os.path.basename(inFile).split('_')[1]
     
-    #check if it is signal and load 
-    isSignal=True if 'MC13TeV_2017_PPZX_' in inFile else False
+    #check if it is signal and load     
     signalPt=[]
     mcEff={}
     if isSignal: 
@@ -108,31 +127,19 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
             mixedRP=pickle.load(cachefile)
     except:
         pass
-
     
     #start histograms
-    ht=HistoTool()
-    ht.add(ROOT.TH1F('nvtx',';Vertex multiplicity;Events',50,0,100))
-    ht.add(ROOT.TH1F('rho',';Fastjet #rho;Events',50,0,30))
-    ht.add(ROOT.TH1F('met',';Missing transverse energy [GeV];Events',50,0,200))
-    ht.add(ROOT.TH1F('metbits',';MET filters;Events',124,0,124))
-    ht.add(ROOT.TH1F('njets',';Jet multiplicity;Events',5,0,5))
-    ht.add(ROOT.TH1F('nch', ';Charged particle multiplicity;Events',50,0,50))
-    ht.add(ROOT.TH1F('acopl',';A=1-|#Delta#phi|/#pi;Events',50,0,1))
+    ht=HistoTool()   
+
+    #main analysis histograms
+    ht.add(ROOT.TH1F('mll',';Dilepton invariant mass [GeV];Events',50,20,250))
+    ht.add(ROOT.TH1F('yll',';Dilepton rapidity;Events',50,0,5))
+    ht.add(ROOT.TH1F('ptll',';Dilepton transverse momentum [GeV];Events',50,0,250))
     ht.add(ROOT.TH1F('l1eta',';Lepton pseudo-rapidiy;Events',50,0,2.5))
     ht.add(ROOT.TH1F('l1pt',';Lepton transverse momentum [GeV];Events',50,0,250))
     ht.add(ROOT.TH1F('l2eta',';Lepton pseudo-rapidiy;Events',50,0,2.5))
     ht.add(ROOT.TH1F('l2pt',';Lepton transverse momentum [GeV];Events',50,0,250))
-    ht.add(ROOT.TH1F('mll',';Dilepton invariant mass [GeV];Events',50,20,250))
-    ht.add(ROOT.TH1F('yll',';Dilepton rapidity;Events',50,0,5))
-    ht.add(ROOT.TH1F('ptll',';Dilepton transverse momentum [GeV];Events',50,0,250))
-    ht.add(ROOT.TH1F('minenfwd',';min(E_{+},E_{-}) [GeV];Events',20,0,300))
-    ht.add(ROOT.TH1F('maxenfwd',';max(E_{+},E_{-}) [GeV];Events',20,0,300))
-    ht.add(ROOT.TH1F('deltaenfwd',';|E_{+}-E_{-}| [GeV];Events',20,0,300))
-    ht.add(ROOT.TH1F('sgny',';y x sgn(LRG) ;Events',20,-3,3))
-    ht.add(ROOT.TH1F('nextramu',';Additional muons ;Events',10,0,10))
-    ht.add(ROOT.TH1F('extramupt',';Additional muon p_{T} [GeV] ;Events',10,0,50))
-    ht.add(ROOT.TH1F('extramueta',';Additional muon pseudo-rapidty ;Events',10,0,2.5))
+    ht.add(ROOT.TH1F('acopl',';A=1-|#Delta#phi|/#pi;Events',50,0,1))
     ht.add(ROOT.TH1F('xangle',';LHC crossing angle [#murad];Events',4,120,160))
     ht.add(ROOT.TH1F('mpp',';Di-proton invariant mass [GeV];Events',50,0,3000))
     ht.add(ROOT.TH1F('ypp',';Di-proton rapidity;Events',50,0,2))
@@ -140,15 +147,38 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
     ht.add(ROOT.TH1F('ntk',';Track multiplicity;Events',5,0,5))
     ht.add(ROOT.TH1F('csi',';#xi;Events',50,0,0.3))
 
-    #start analysis
-    tree=ROOT.TChain('analysis/data' if isSignal else 'tree')
-    tree.AddFile(inFile)
+    #pileup control
+    ht.add(ROOT.TH1F('nvtx',';Vertex multiplicity;Events',50,0,100))
+    ht.add(ROOT.TH1F('rho',';Fastjet #rho;Events',50,0,30))
+    puVarRanges={'min':-4,'max':4,'delta':1,'nbins':16}
+    for puVar,puVarTitle in [('pfmult','PF multiplicity sum'), ('pfht','PF H_{T} sum'), ('pfpz','PF P_{z} sum'),
+                             ('chpfmult','Charged PF multiplicity sum'), ('chpfht','Charged PF H_{T} sum'), ('chpfpz','Charged PF P_{z} sum'),
+                             ('pfdiffmult','PF multiplicity diff'), ('pfdiffht','PF H_{T} diff'), ('pfdiffpz','PF P_{z} diff'),
+                             ('chpfdiffmult','Charged PF multiplicity diff'), ('chpfdiffht','Charged PF H_{T} diff'), ('chpfdiffpz','Charged PF P_{z} diff')]:
+
+        a=puVarRanges['min']
+        b=puVarRanges['min']+4*puVarRanges['delta']+5*(puVarRanges['max']-puVarRanges['min'])
+        ht.add(ROOT.TH1F(puVar,';Rapidity bin;log_{10}(%s)'%puVarTitle,int(2*(b-a)),a,b))
+        for i in range(0,4):
+            a=puVarRanges['min']+i*puVarRanges['delta']+i*(puVarRanges['max']-puVarRanges['min'])
+            b=a+(puVarRanges['max']-puVarRanges['min'])
+            ht.get(puVar).GetXaxis().SetBinLabel(ht.get(puVar).GetXaxis().FindBin(a),'%3.1f'%puVarRanges['min'])
+            ht.get(puVar).GetXaxis().SetBinLabel(ht.get(puVar).GetXaxis().FindBin(0.5*(a+b)),'%3.1f'%(0.5*(puVarRanges['max']+puVarRanges['min'])))
+            ht.get(puVar).GetXaxis().SetBinLabel(ht.get(puVar).GetXaxis().FindBin(b),'%3.1f'%puVarRanges['max'])
+    ht.add(ROOT.TH1F('met',';Missing transverse energy [GeV];Events',50,0,200))
+    ht.add(ROOT.TH1F('metbits',';MET filters;Events',124,0,124))
+    ht.add(ROOT.TH1F('njets',';Jet multiplicity;Events',5,0,5))
+    ht.add(ROOT.TH1F('nch', ';Charged particle multiplicity;Events',50,0,50))
+    ht.add(ROOT.TH1F('nextramu',';Additional muons ;Events',10,0,10))
+    ht.add(ROOT.TH1F('extramupt',';Additional muon p_{T} [GeV] ;Events',10,0,50))
+    ht.add(ROOT.TH1F('extramueta',';Additional muon pseudo-rapidty ;Events',10,0,2.5))
+        
     nEntries=tree.GetEntries()          
     print '....analysing',nEntries,'in',inFile,', with output @',outFileName
     if mixedRP : print '    events mixed with',mixFile
 
     #loop over events
-    rpData={era:[]}
+    rpData={}
     selEvents=[]
     summaryVars='cat:wgt:nvtx:nch:xangle:l1pt:l1eta:l2pt:l2eta:acopl:bosonpt:mpp:mmiss:mpp2:mmiss2'.split(':')
     for i in xrange(0,nEntries):
@@ -161,36 +191,38 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
         if tree.evcat==11*11   : evcat='ee'
         elif tree.evcat==11*13 : evcat='em'
         elif tree.evcat==13*13 : evcat='mm'
+        elif tree.evcat==22 and tree.hasLowPtATrigger : evcat="lpta"
+        elif tree.evcat==22 and tree.hasHighPtATrigger : evcat="hpta"
         else : continue
         if tree.isSS : continue        
         if isData and not isValidRunLumi(tree.run,tree.lumi,runLumiList): continue
 
         wgt=tree.evwgt
         nvtx=tree.nvtx
-        nch=tree.nch
+        nch=tree.nchPV
         rho=tree.rho
         met=tree.met_pt
         njets=0 if isSignal else tree.nj 
 
-        #acoplanarity
-        acopl=1.0-abs(ROOT.TVector2.Phi_mpi_pi(tree.l1phi-tree.l2phi))/ROOT.TMath.Pi()
-
+        #lepton specific
         l1p4=ROOT.TLorentzVector(0,0,0,0)
-        l1p4.SetPtEtaPhiM(tree.l1pt,tree.l1eta,tree.l1phi,tree.ml1)
-        l2p4=ROOT.TLorentzVector(0,0,0,0)
-        l2p4.SetPtEtaPhiM(tree.l2pt,tree.l2eta,tree.l2phi,tree.ml2)
-        if l1p4.Pt()<l2p4.Pt(): l1p4,l2p4=l2p4,l1p4
-        if abs(l1p4.Eta())>2.1 : continue
+        l2p4=ROOT.TLorentzVector(0,0,0,0)        
+        acopl=0
+        if tree.evcat!=22:
+            acopl=1.0-abs(ROOT.TVector2.Phi_mpi_pi(tree.l1phi-tree.l2phi))/ROOT.TMath.Pi()
+            l1p4.SetPtEtaPhiM(tree.l1pt,tree.l1eta,tree.l1phi,tree.ml1)
+            l2p4.SetPtEtaPhiM(tree.l2pt,tree.l2eta,tree.l2phi,tree.ml2)
+            if l1p4.Pt()<l2p4.Pt(): l1p4,l2p4=l2p4,l1p4
+            if abs(l1p4.Eta())>2.1 : continue
 
         #boson kinematics
         boson=ROOT.TLorentzVector(0,0,0,0)
         boson.SetPtEtaPhiM(tree.bosonpt,tree.bosoneta,tree.bosonphi,tree.mboson)
         isZ=tree.isZ
+        isA=tree.isA
         isHighPt=(boson.Pt()>50)
 
-        #possible diffractive-sensitive variabes
-        en_posRG=tree.jsumposhfen
-        en_negRG=tree.jsumneghfen
+        #Nicola's initial discriminator
         extra_muons=[]
         for im in range(tree.nrawmu):
             mup4=ROOT.TLorentzVector(0,0,0,0)
@@ -201,45 +233,39 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
             
         #proton tracks (standard and mixed)
         rptks, near_rptks = None, None
-        beamXangle       = tree.beamXangle
-        if isSignal: 
-            beamXangle=signalPt[0]
-            rptks = getTracksPerRomanPot(tree)
-            far_rptks = getTracksPerRomanPot(tree,False,False)
-            rptks = ( [x/0.0964 for x in rptks[0]], [x/0.06159 for x in rptks[1]] )
-            far_rptks = ( [x/0.0964 for x in far_rptks[0]], [x/0.06159 for x in far_rptks[1]] )
-        if isData:
-            rptks = getTracksPerRomanPot(tree) 
-            far_rptks = getTracksPerRomanPot(tree,False,False) 
+        beamXangle     = tree.beamXangle
+        if isSignal or isData: 
+            far_rptks  = getTracksPerRomanPot(tree)
+            near_rptks = getTracksPerRomanPot(tree,False,False)
 
         mixed_beamXangle = None
-        mixed_rptks      = None
-        mixed_1rptk      = None
+        mixed_far_rptks      = None
+        mixed_far_1rptk      = None
         if not isData:
             evEra=getRandomEra()
+            #if not isSignal: beamXangle=getBeamXangle()
         else:
             evEra=era
             if not mixedRP:
-                if evcat=='em' and tree.bosonpt>50:
-                    rpData[era].append( MixedEvent(beamXangle,
-                                                   nvtx,
-                                                   rho,
-                                                   rptks,
-                                                   far_rptks,
-                                                   extra_muons,
-                                                   en_posRG,
-                                                   en_negRG
-                                                   ) )
+                if isZ and tree.evcat==13*13 and tree.bosonpt<10:
+                    rfc=getattr(tree,'rfc_%d'%beamXangle) if beamXangle in VALIDLHCXANGLES else -1
+                    rpDataKey=(era,int(beamXangle))
+                    if not rpDataKey in rpData: rpData[rpDataKey]=[]
+                    rpData[rpDataKey].append( MixedEvent(beamXangle,
+                                                         [len(extra_muons),nvtx,rho,rfc],
+                                                         far_rptks,
+                                                         near_rptks
+                                                         ) )
                 continue
+
         try:
-            mixedEv=random.choice( mixedRP[evEra] )
-            mixed_beamXangle=mixedEv.beamXangle
-            mixed_rptks=mixedEv.far_rptks
-            if rptks and mixed_rptks:
+            mixedEv=random.choice( mixedRP[(evEra,beamXangle)] )
+            mixed_far_rptks=mixedEv.far_rptks
+            if far_rptks and mixed_far_rptks:
                 if random.random()<0.5:
-                    mixed_1rptk = (mixed_rptks[0],rptks[1])
+                    mixed_far_1rptk = (mixed_far_rptks[0],far_rptks[1])
                 else:
-                    mixed_1rptk = (rptks[0],mixed_rptks[1])
+                    mixed_far_1rptk = (far_rptks[0],mixed_far_rptks[1])
         except :
             pass
 
@@ -386,12 +412,15 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
             
 
     #dump events for the mixing
-    nSelRPData=len(rpData[era])
-    if nSelRPData:
-        rpDataOut=outFileName.replace('.root','.pck')
+    nSelRPData=sum([len(rpData[x]) for x in rpData])
+    if nSelRPData>0:
+        rpDataOut=outFileName.replace('.root','.pck')        
         print 'Saving',nSelRPData,'events for mixing in',rpDataOut
         with open(rpDataOut,'w') as cachefile:
             pickle.dump(rpData,cachefile, pickle.HIGHEST_PROTOCOL)        
+
+        #at this point no need to save anything else
+        return
 
     #save results
     ht.writeToFile(outFileName)
@@ -429,11 +458,13 @@ def runAnalysisTasks(opt):
     with open(opt.json,'r') as cachefile:
         samples=json.load(cachefile,  encoding='utf-8', object_pairs_hook=OrderedDict).items()
         for x in samples:
-            if opt.only and not opt.only in x[0]: continue
             task_dict[x[0]]=[]
 
     #group chunks matching the same name
     for file_path in os.listdir(opt.input):
+        
+        if opt.only and file_path!=os.path.basename(opt.only): continue
+
         file_name,ext=os.path.splitext(file_path)
         if ext != '.root' : continue
 
@@ -485,7 +516,7 @@ def main():
                       dest='only', 
                       default=None,
                       type='string',
-                      help='only this process')
+                      help='only this file')
     parser.add_option('--RPout',
                       dest='RPout', 
                       default='golden_noRP.json',

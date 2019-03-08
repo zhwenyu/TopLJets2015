@@ -59,15 +59,18 @@ case $WHAT in
         if [[ ${ERA} == "2016" ]]; then
             tag=MC13TeV_2016_TTJets
         fi
-        input=${eosdir}/${tag}/Chunk_0_ext0.root
-        output=${tag}.root 
+        #input=${eosdir}/${tag}/Chunk_0_ext0.root        
+        #output=${tag}.root 
+        input=${eosdir}
+        output=testsel
 
 	python scripts/runLocalAnalysis.py \
-            -i ${input} -o ${output} --tag ${tag} --only ${json} --mvatree\
-            --njobs 1 -q local --genWeights genweights_${githash}.root \
+            -i ${input} -o ${output} --tag ${tag} --only ${tag} --mvatree\
+            --njobs 8 -q local --genWeights genweights_${githash}.root \
             --era era${ERA} -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts --debug;
 
         #--debug --mvatree \
+        ./scripts/mergeOutputs.py ${output};
         ;;
 
 
