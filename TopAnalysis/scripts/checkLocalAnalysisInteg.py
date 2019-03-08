@@ -2,6 +2,10 @@ import ROOT
 import sys
 import os
 
+def modification_date(f):
+    t = os.path.getmtime(f)
+    return datetime.datetime.fromtimestamp(t)
+
 def checkIntegrity(f,tname):
 
     if f.find('/store/cms')==0: 
@@ -29,11 +33,17 @@ def checkIntegrity(f,tname):
             nentries=t.GetEntriesFast()
         except: 
             errorCode=3
-            
+
     #close file
     inF.Close()
     
-    return (errorCode,nentries)
+    tstamp=None
+    try:
+        tsamp=modification_date(f.replace('root://eoscms//','/eos/cms'))
+    except:
+        pass
+
+    return (errorCode,nentries,tstamp)
 
 
 
