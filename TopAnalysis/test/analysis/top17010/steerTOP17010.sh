@@ -109,6 +109,9 @@ case $WHAT in
             --era era${ERA} -m  TOP17010::TOP17010 --ch 0 --runSysts;
 	;;
 
+    CHECKSELINTEG )
+        python scripts/checkLocalAnalysisInteg.py ../../../FARM${githash}${githash}/ analysis/data
+        ;;
 
     SELSCAN )
         
