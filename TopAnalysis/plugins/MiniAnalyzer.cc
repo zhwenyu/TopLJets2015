@@ -16,6 +16,7 @@
 //         Created:  Sun, 13 Jul 2014 06:22:18 GMT
 //
 //
+#include "DataFormats/PatCandidates/interface/PackedTriggerPrescales.h"
 #include "SimDataFormats/GeneratorProducts/interface/LHERunInfoProduct.h"
 #include "SimDataFormats/PileupSummaryInfo/interface/PileupSummaryInfo.h"
 #include "FWCore/Framework/interface/Frameworkfwd.h"
@@ -134,7 +135,7 @@ private:
   edm::EDGetTokenT<reco::GenParticleCollection> particleLevelToken_;
 
   edm::EDGetTokenT<edm::TriggerResults> triggerBits_,metFilterBits_;
-  edm::EDGetTokenT<pat::PackedTriggerPrescales> triggerPrescales_;
+  edm::EDGetTokenT<pat::PackedTriggerPrescales> triggerPrescales_,l1triggerPrescales_;
   edm::EDGetTokenT<reco::VertexCollection> vtxToken_;
   edm::EDGetTokenT<double> rhoToken_;
   edm::EDGetTokenT<pat::MuonCollection> muonToken_;
@@ -169,6 +170,9 @@ private:
   //counters
   int nrecleptons_,nrecphotons_,ngleptons_,ngphotons_;
 
+  //apply filter to save tree
+  bool applyFilt_;
+
 };
 
 //
@@ -199,6 +203,7 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig) :
   triggerBits_(consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("triggerBits"))),
   metFilterBits_(consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("metFilterBits"))),
   triggerPrescales_(consumes<pat::PackedTriggerPrescales>(iConfig.getParameter<edm::InputTag>("prescales"))),
+  l1triggerPrescales_(consumes<pat::PackedTriggerPrescales>(iConfig.getParameter<edm::InputTag>("l1prescales"))),
   vtxToken_(consumes<reco::VertexCollection>(iConfig.getParameter<edm::InputTag>("vertices"))),
   rhoToken_(consumes<double>(iConfig.getParameter<edm::InputTag>("rho"))),
   muonToken_(consumes<pat::MuonCollection>(iConfig.getParameter<edm::InputTag>("muons"))),
@@ -210,7 +215,8 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig) :
   BadChCandFilterToken_(consumes<bool>(iConfig.getParameter<edm::InputTag>("badChCandFilter"))),
   BadPFMuonFilterToken_(consumes<bool>(iConfig.getParameter<edm::InputTag>("badPFMuonFilter"))),
   saveTree_( iConfig.getParameter<bool>("saveTree") ),
-  savePF_( iConfig.getParameter<bool>("savePF") )
+  savePF_( iConfig.getParameter<bool>("savePF") ),
+  applyFilt_( iConfig.getParameter<bool>("applyFilt") )
 {
   //now do what ever initialization is needed
   electronToken_      = mayConsume<edm::View<pat::Electron> >(iConfig.getParameter<edm::InputTag>("electrons"));
@@ -230,6 +236,7 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig) :
   //muonRC_->init(edm::FileInPath(iConfig.getParameter<std::string>("RoccoR")).fullPath());
 
   histContainer_["triggerList"] = fs->make<TH1F>("triggerList", ";Trigger bits;",triggersToUse_.size(),0,triggersToUse_.size());
+  histContainer_["triggerPrescale"] = fs->make<TH1D>("triggerPrescale", ";Trigger prescale sum;",triggersToUse_.size(),0,triggersToUse_.size());
   for(size_t i=0; i<triggersToUse_.size(); i++) histContainer_["triggerList"] ->GetXaxis()->SetBinLabel(i+1,triggersToUse_[i].c_str());
   histContainer_["counter"]    = fs->make<TH1F>("counter", ";Counter;Events",2,0,2);
   histContainer_["fidcounter"] = (TH1 *)fs->make<TH2F>("fidcounter",    ";Variation;Events", 1500, 0., 1500.,11,0,11); 
@@ -390,56 +397,26 @@ void MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
   }
   
   //final state particles 
-  ev_.ngpf=0;
+  ev_.g_nchPV=0;
+  ev_.g_sumPVChPt=0; 
+  ev_.g_sumPVChPz=0; 
+  ev_.g_sumPVChHt=0; 
   edm::Handle<pat::PackedGenParticleCollection> genParticles;
   iEvent.getByToken(genParticlesToken_,genParticles);
-  LorentzVector chSum(0,0,0,0),incSum(0,0,0,0);
-  float ch_ht(0), inc_ht(0), ch_hz(0), inc_hz(0), chWgtSum(0), incWgtSum(0);
+  LorentzVector pvP4(0,0,0,0);
   if(genParticles.isValid()){
     for (size_t i = 0; i < genParticles->size(); ++i)
       {
         const pat::PackedGenParticle & genIt = (*genParticles)[i];
-
-        //this shouldn't be needed according to the workbook
-        //if(genIt.status()!=1) continue;
         if(genIt.pt()<0.5) continue;
-
-        incSum += genIt.p4();
-        inc_ht += genIt.pt();
-        inc_hz += fabs(genIt.pz());
-        incWgtSum += 1.0;
-        if(fabs(genIt.eta())>2.5) continue;
-        if(genIt.charge()!=0){
-          chSum += genIt.p4();
-          ch_ht += genIt.pt();
-          ch_hz += fabs(genIt.pz());
-          chWgtSum += 1.0;
-        }
-        
-        ev_.gpf_id[ev_.ngpf]     = genIt.pdgId();
-        ev_.gpf_c[ev_.ngpf]      = genIt.charge();
-        ev_.gpf_g[ev_.ngpf]=-1;
-        for(std::map<const reco::Candidate *,int>::iterator it=jetConstsMap.begin();
-            it!=jetConstsMap.end();
-            it++)
-          {
-            if(it->first->pdgId()!=genIt.pdgId()) continue;
-            if(deltaR( *(it->first), genIt)>0.01) continue; 
-            ev_.gpf_g[ev_.ngpf]=it->second;
-            break;
-          }
-        ev_.gpf_pt[ev_.ngpf]     = genIt.pt();
-        ev_.gpf_eta[ev_.ngpf]    = genIt.eta();
-        ev_.gpf_phi[ev_.ngpf]    = genIt.phi();
-        ev_.gpf_m[ev_.ngpf]      = genIt.mass();
-        ev_.ngpf++;    
+        if(genIt.charge()==0) continue;
+        ev_.g_nchPV++;
+        pvP4+=genIt.p4();
+        ev_.g_sumPVChPz+=fabs(genIt.pz()); 
+        ev_.g_sumPVChHt+=genIt.pt(); 
       }
-
-    ev_.gpf_chSum_px=chSum.px();  ev_.gpf_chSum_py=chSum.py();  ev_.gpf_chSum_pz=chSum.pz();
-    ev_.gpf_ch_ht=ch_ht;          ev_.gpf_ch_hz=ch_hz;          ev_.gpf_ch_wgtSum=chWgtSum;
-    ev_.gpf_inc_px=incSum.px();   ev_.gpf_inc_py=incSum.py();   ev_.gpf_inc_pz=incSum.pz();
-    ev_.gpf_inc_ht=inc_ht;        ev_.gpf_inc_hz=inc_hz;        ev_.gpf_inc_wgtSum=incWgtSum;
   }
+  ev_.g_sumPVChPt=pvP4.Pt();
 
   //Bhadrons and top quarks (lastCopy)
   edm::Handle<reco::GenParticleCollection> prunedGenParticles;
@@ -536,15 +513,29 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
   std::vector<string> triggerList;
   Service<service::TriggerNamesService> tns;
   tns->getTrigPaths(*h_trigRes,triggerList);
+  edm::Handle<pat::PackedTriggerPrescales> h_trigPrescale;
+  iEvent.getByToken(triggerPrescales_, h_trigPrescale);
+  edm::Handle<pat::PackedTriggerPrescales> h_l1trigPrescale;
+  iEvent.getByToken(l1triggerPrescales_, h_l1trigPrescale);
   ev_.triggerBits=0;
+  ev_.addTriggerBits=0;
   for (unsigned int i=0; i< h_trigRes->size(); i++) 
     {	
       if( !(*h_trigRes)[i].accept() ) continue;
       for(size_t itrig=0; itrig<triggersToUse_.size(); itrig++)
 	{
-	  if (triggerList[i].find(triggersToUse_[itrig])==string::npos) continue;
-	  ev_.triggerBits |= (1 << itrig);
+	  if (triggerList[i].find(triggersToUse_[itrig])==string::npos) continue;          
+          int prescale=h_trigPrescale->getPrescaleForIndex(i); 
+          int l1prescale=h_l1trigPrescale->getPrescaleForIndex(i); 
+          if(itrig<32)
+            ev_.triggerBits |= (1 << itrig);
+          else
+            ev_.addTriggerBits |= (1 << (itrig-32));
 	  histContainer_["triggerList"]->Fill(itrig);
+          histContainer_["triggerPrescale"]->Fill(itrig,prescale);
+          bool isZeroBias(triggerList[i].find("ZeroBias")!=string::npos);
+          if(!isZeroBias) continue;
+          ev_.zeroBiasPS=prescale*l1prescale;
 	}
     }
   bool passTrigger(ev_.isData ? ev_.triggerBits!=0 : true);
@@ -560,20 +551,35 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
   ev_.nfwdtrk=0;
   if(iEvent.isRealData()) {
     try{
-      edm::Handle<std::vector<CTPPSLocalTrackLite> > ctppslocaltracks;
-      iEvent.getByToken(ctppsToken_, ctppslocaltracks);
-      for (const CTPPSLocalTrackLite& lt : *ctppslocaltracks) {
-        const CTPPSDetId detid(lt.getRPId());
-        ev_.fwdtrk_arm[ev_.nfwdtrk] = detid.arm(); // 0 = sector 4-5 ; 1 = sector 5-6
-        ev_.fwdtrk_station[ev_.nfwdtrk] = detid.station();
-        ev_.fwdtrk_pot[ev_.nfwdtrk] = detid.rp(); // 2 = near pot ; 3 = far pot
-        ev_.fwdtrk_x[ev_.nfwdtrk] = lt.getX()*1.e-3; // store in m
-        ev_.fwdtrk_x_unc[ev_.nfwdtrk] = lt.getXUnc()*1.e-3;
-        ev_.fwdtrk_y[ev_.nfwdtrk] = lt.getY()*1.e-3;
-        ev_.fwdtrk_y_unc[ev_.nfwdtrk] = lt.getYUnc()*1.e-3;
-        
-        ev_.nfwdtrk++;
-      }
+      edm::Handle<vector<reco::ProtonTrack>> recoProtons;
+      iEvent.getByToken(tokenRecoProtons_, recoProtons);
+      for (const auto & proton : *recoProtons)
+        {
+          if(!proton.valid()) continue;
+
+          CTPPSDetId detid(* proton.contributingRPIds.begin());
+          ev_.fwdtrk_pot[ev_.nfwdtrk]       = 100*detid.arm()+10*detid.station()+detid.rp();
+          ev_.fwdtrk_chisqnorm[ev_.nfwdtrk] = proton.fitChiSq;
+          ev_.fwdtrk_method[ev_.nfwdtrk]    = proton.method;
+          ev_.fwdtrk_ex[ev_.nfwdtrk]        = proton.direction().x();
+          ev_.fwdtrk_ey[ev_.nfwdtrk]        = proton.direction().y();
+          ev_.fwdtrk_ez[ev_.nfwdtrk]        = proton.direction().z();
+          ev_.fwdtrk_y[ev_.nfwdtrk]         = proton.vertex().y();
+
+          float xi=proton.xi();
+          ev_.fwdtrk_xi[ev_.nfwdtrk]        = xi;
+
+          float th_x = proton.direction().x() / proton.direction().mag();
+          float th_y = proton.direction().y() / proton.direction().mag();
+          float mp = 0.938; // GeV
+          float Eb = 6500.; // GeV
+          float t0 = 2.*pow(mp,2) + 2.*pow(Eb,2)*(1.-xi) - 2.*sqrt( (pow(mp,2) + pow(Eb,2)) * (pow(mp,2) + pow(Eb,2)*pow(1.-xi,2)) );
+          float th = sqrt(th_x * th_x + th_y * th_y);
+          float S = sin(th/2.);
+          ev_.fwdtrk_t[ev_.nfwdtrk] = t0 - 4. * pow(Eb,2)* (1.-xi) * S*S;
+                  
+          ev_.nfwdtrk++;
+        }
     }
     catch(...){
     }
@@ -1094,104 +1100,52 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
   }
 
   //PF candidates
-  ev_.npf=0;  
-  LorentzVector chSum(0,0,0,0),puppiSum(0,0,0,0);
-  float ch_ht(0), puppi_ht(0), chWgtSum(0), puppiWgtSum(0), ch_hz(0), puppi_hz(0);
-  float closestDZnonAssoc(99999.);
-  std::map<int,LorentzVector> vtxPts;
-  std::map<int,float> vtxHTs;
-  std::map<int,int> vtxCts;
+  LorentzVector vtxPt(0,0,0,0);
+  ev_.nchPV=0; ev_.sumPVChPt=0; ev_.sumPVChPz=0; ev_.sumPVChHt=0;  
+  for(int i=0; i<8; i++){
+    ev_.nPFCands[i]=0;
+    ev_.sumPFHt[i]=0;
+    ev_.sumPFEn[i]=0;
+    ev_.sumPFPz[i]=0;
+    ev_.nPFChCands[i]=0;
+    ev_.sumPFChHt[i]=0;
+    ev_.sumPFChEn[i]=0;
+    ev_.sumPFChPz[i]=0;
+  }
   for(auto pf = pfcands->begin();  pf != pfcands->end(); ++pf)
     {
-
-      if(pf->charge()!=0){
-        int vid=pf->vertexRef().key();
-        if(vtxPts.find(vid)==vtxPts.end()) {
-          vtxPts[vid]=LorentzVector(0,0,0,0);
-          vtxHTs[vid]=0;
-          vtxCts[vid]=0;
+      int ieta(-1);
+      if(pf->eta()>-4.7) ieta=0;
+      if(pf->eta()>-3)   ieta=1;
+      if(pf->eta()>-2.5) ieta=2;
+      if(pf->eta()>-1.5) ieta=3;
+      if(pf->eta()>0)    ieta=4;
+      if(pf->eta()>1.5)  ieta=5;
+      if(pf->eta()>2.5)  ieta=6;
+      if(pf->eta()>3.0)  ieta=7;
+      if(pf->eta()>4.7)  ieta=-1;
+      if(ieta<0) continue;
+      ev_.nPFCands[ieta]++;
+      ev_.sumPFHt[ieta] += pf->pt();
+      ev_.sumPFEn[ieta] += pf->energy();
+      ev_.sumPFPz[ieta] += fabs(pf->pz());
+      if(pf->charge()!=0){       
+        ev_.nPFChCands[ieta]++;
+        ev_.sumPFChHt[ieta] += pf->pt();
+        ev_.sumPFChEn[ieta] += pf->energy();
+        ev_.sumPFChPz[ieta] += fabs(pf->pz());
+        bool passChargeSel(pf->pt()>0.9 && fabs(pf->eta())<2.5);
+        const pat::PackedCandidate::PVAssoc pvassoc=pf->fromPV();
+        if(passChargeSel && pvassoc>=pat::PackedCandidate::PVTight){
+          vtxPt+=pf->p4();
+          ev_.nchPV++;
+          ev_.sumPVChPz+=fabs(pf->pz()); 
+          ev_.sumPVChHt+=pf->pt();
         }
-        vtxPts[vid]+=pf->p4();
-        vtxHTs[vid]+=pf->pt();
-        vtxCts[vid]++;
       }
-
-      bool passChargeSel(pf->charge()!=0 && pf->pt()>0.9 && fabs(pf->eta())<2.5);
-      const pat::PackedCandidate::PVAssoc pvassoc=pf->fromPV();
-
-      if(passChargeSel){
-        if(pvassoc>=pat::PackedCandidate::PVTight){
-          chWgtSum += 1.0;
-          chSum += pf->p4();
-          ch_ht += pf->pt();
-          ch_hz += fabs(pf->pz());
-        }
-        else{
-          if(pf->trackHighPurity() && fabs(pf->dz())<fabs(closestDZnonAssoc)) 
-            closestDZnonAssoc=pf->dz();
-        }
-      }
-      else if(pf->pt()>0.5){
-        float wgt=pf->puppiWeight();
-        puppiWgtSum += wgt;
-        puppiSum += wgt*pf->p4();
-        puppi_ht += wgt*pf->pt();
-        puppi_hz += wgt*fabs(pf->pz());
-      }
-
-      if(ev_.npf>=5000) continue;
-
-      ev_.pf_j[ev_.npf] = -1;
-      for(size_t i=0; i<clustCands.size(); i++)
-	{
-	  if(pf->pdgId()!=clustCands[i].first->pdgId()) continue;
-	  if(deltaR(*pf,*(clustCands[i].first))>0.01) continue;
-	  ev_.pf_j[ev_.npf]=clustCands[i].second;
-	  break;
-	}
-
-      //if particle is not associated to jet and is neutral, discard
-      if(pf->charge()==0 && ev_.pf_j[ev_.npf]==-1) continue;
-
-      //if particle is charged require association to prim vertex
-      if(passChargeSel && pvassoc>=pat::PackedCandidate::PVTight)
-	{
-	  ev_.pf_dxy[ev_.npf]      = pf->dxy();
-	  ev_.pf_dz[ev_.npf]       = pf->dz();
-	  //ev_.pf_dxyUnc[ev_.npf]   = pf->dxyError();
-	  //ev_.pf_dzUnc[ev_.npf]    = pf->dzError();
-	  //ev_.pf_vtxRef[ev_.npf]   = pf->vertexRef().key();
-	  //ev_.pf_pvAssoc[ev_.npf]  = pf->fromPV() + 10*(pf->pvAssociationQuality());
-	}
-      
-      ev_.pf_id[ev_.npf]       = pf->pdgId();
-      ev_.pf_c[ev_.npf]        = pf->charge();
-      ev_.pf_pt[ev_.npf]       = pf->pt();
-      ev_.pf_eta[ev_.npf]      = pf->eta();
-      ev_.pf_phi[ev_.npf]      = pf->phi();
-      ev_.pf_m[ev_.npf]        = pf->mass();
-      ev_.pf_puppiWgt[ev_.npf] = pf->puppiWeight();      
-      ev_.npf++;
     }
 
-  ev_.pf_closestDZnonAssoc=closestDZnonAssoc;
-  ev_.pf_chSum_px=chSum.px();     ev_.pf_chSum_py=chSum.py();     ev_.pf_chSum_pz=chSum.pz();
-  ev_.pf_ch_ht=ch_ht;             ev_.pf_ch_hz=ch_hz;             ev_.pf_ch_wgtSum=chWgtSum;
-  ev_.pf_puppi_px=puppiSum.px();  ev_.pf_puppi_py=puppiSum.py();  ev_.pf_puppi_pz=puppiSum.pz();
-  ev_.pf_puppi_ht=ch_ht;          ev_.pf_puppi_hz=ch_hz;          ev_.pf_puppi_wgtSum=puppiWgtSum;
-
-  for(int i=0; i<ev_.nvtx; i++){
-    if(vtxPts.find(i)!=vtxPts.end()) {
-      ev_.vtxPt[i]=vtxPts[i].pt();
-      ev_.vtxHt[i]=vtxHTs[i];
-      ev_.vtxMult[i]=vtxCts[i];
-    }else{
-      ev_.vtxPt[i]=0;
-      ev_.vtxHt[i]=0;
-      ev_.vtxMult[i]=0;
-    }
-  }
-
+  ev_.sumPVChPt=vtxPt.pt(); 
 }
 
 //cf. https://twiki.cern.ch/twiki/bin/viewauth/CMS/SWGuideMuonIdRun2#Soft_Muon
@@ -1230,18 +1184,20 @@ void MiniAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 
   ngleptons_=0;   ngphotons_=0;
   nrecleptons_=0; nrecphotons_=0;
-
+  ev_.g_nw=0; ev_.ng=0; ev_.ngtop=0;
+  ev_.nl=0; ev_.ngamma=0; ev_.nj=0; ev_.nfwdtrk=0; ev_.nrawmu=0;
+  
   //analyze the event
   if(!iEvent.isRealData()) genAnalysis(iEvent,iSetup);
   recAnalysis(iEvent,iSetup);
   
   //save event if at least one object at gen or reco level
-  if((ngleptons_==0 && ngphotons_==0 && nrecleptons_==0 && nrecphotons_==0) || !saveTree_) return;  
+  if(applyFilt_)
+    if((ngleptons_==0 && ngphotons_==0 && nrecleptons_==0 && nrecphotons_==0) || !saveTree_) return;  
   ev_.run     = iEvent.id().run();
   ev_.lumi    = iEvent.luminosityBlock();
   ev_.event   = iEvent.id().event(); 
   ev_.isData  = iEvent.isRealData();
-  if(!savePF_) { ev_.ngpf=0; ev_.npf=0; }
   tree_->Fill();
 }
 

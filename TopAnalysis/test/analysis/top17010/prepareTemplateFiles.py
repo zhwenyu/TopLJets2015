@@ -530,7 +530,7 @@ def main():
     #loop over processes
     for proc,proc_systs in syst_dict:
         prepareTemplateFile(opt,proc,proc_systs)
-
+#        break # edit
 
 
 if __name__ == "__main__":

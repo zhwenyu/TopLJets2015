@@ -26,7 +26,7 @@ class JECTools
 
   //JER smearing and uncertainty
   void smearJetEnergies(MiniEvent_t &ev, Variation option=Variation::NOMINAL);
-  TLorentzVector getSmearedJet(TLorentzVector &jp4, float genJet_pt,float rho,Variation option=Variation::NOMINAL);
+  TLorentzVector getSmearedJet(TLorentzVector &jp4, float genJet_pt,float rho,Variation option=Variation::NOMINAL,float jerVarPartial=1.0);
 
   //b fragmentation, see https://gitlab.cern.ch/CMS-TOPPAG/BFragmentationAnalyzer
   float computeBFragmentationWeight(MiniEvent_t &ev, TString wgtName);

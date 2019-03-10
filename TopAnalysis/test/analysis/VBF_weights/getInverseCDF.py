@@ -25,10 +25,10 @@ for f,t,m in methodList:
     origmva[m]={}
     finalmva[m]={}
     for c in 'SB':
-        origmva[m][c]=ROOT.TH1F('origmva_%s_%s'%(m,c),';MVA;Events',50,-1,1)
+        origmva[m][c]=ROOT.TH1F('origmva_%s_%s'%(m,c),';MVA;Events',20,-1,1)
         origmva[m][c].SetDirectory(0)
         origmva[m][c].Sumw2()
-        finalmva[m][c]=ROOT.TH1F('finalmva_%s_%s'%(m,c),';MVA;Events',50,0,1)
+        finalmva[m][c]=ROOT.TH1F('finalmva_%s_%s'%(m,c),';MVA;Events',20,0,1)
         finalmva[m][c].SetDirectory(0)
         finalmva[m][c].Sumw2()
 
@@ -47,14 +47,14 @@ for f,t,m in methodList:
 
     #compute quantiles
 #    p=np.percentile(mva, range(1,99) )
-	qArray = np.arange(5, 100, 5)
-    p=np.percentile(mva, qArray )
+    pArray = np.arange(5, 100, 5)
+    p=np.percentile(mva, pArray )
+
     cdfInv.append(ROOT.TGraph())
     cdfInv[-1].SetName(m+'_cdfinv')
     cdfInv[-1].SetMarkerStyle(20)
     cdfInv[-1].SetPoint(0,-1,0)
     for i in xrange(0,len(p)):
-#        cdfInv[-1].SetPoint(i+1,p[i],(i+1.)/100.)
         cdfInv[-1].SetPoint(i+1,p[i],(i+1.)/len(p))
     cdfInv[-1].SetPoint(len(p)+1,1,1)
 

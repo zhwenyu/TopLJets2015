@@ -23,7 +23,7 @@ for dist in os.listdir(baseDir):  # dist = em, mm, ...
         for f in toCheck:
             if ( os.path.isfile(os.path.join(distDir,a,f)) and os.path.getsize(os.path.join(distDir,a,f)) >0 ): continue  # check exist and size
             allFound=False
-	    print os.path.join(distDir,a,f)
+#	    print os.path.join(distDir,a,f)
             break
         if allFound: continue
 
@@ -31,8 +31,8 @@ for dist in os.listdir(baseDir):  # dist = em, mm, ...
         cmd_list.append( (dist+a,base_cmd.format(dist+'_mlb',anchor)) )
 
 print 'Print  i have found %d directories which need to re-run'%len(cmd_list)
-#print cmd_list
-exit(0)
+print cmd_list
+#exit(0)
 
 from multiprocessing import Pool
 pool = Pool(8)

@@ -11,9 +11,14 @@ JECTools::JECTools(TString era) :
   jetCorr_(0),
   rand_(new TRandom3(0))
 {
-  TString url(era_+"/Summer16_25nsV1_MC.txt");
+  TString url(era_+"/Summer16_25nsV1_MC_EtaResolution_AK4PFchs.txt");
+  if(era_.Contains("2017")) url=era_+"/Fall17_V3_MC_EtaResolution_AK4PFchs.txt";
   gSystem->ExpandPathName(url);
   jer_ = new JME::JetResolution(url.Data());
+
+  url=era_+"/Summer16_25nsV1_MC_SF_AK4PFchs.txt";
+  if(era_.Contains("2017")) url=era_+"/Fall17_V3_MC_SF_AK4PFchs.txt";
+  gSystem->ExpandPathName(url);
   jerSF_=new JME::JetResolutionScaleFactor(url.Data());
 }
 
@@ -63,13 +68,21 @@ void JECTools::smearJetEnergies(MiniEvent_t &ev, Variation option) {
 }
 
 //apply jet energy resolutions (hybrid method)
-TLorentzVector JECTools::getSmearedJet(TLorentzVector &jp4, float genJet_pt,float rho,Variation option) {
+TLorentzVector JECTools::getSmearedJet(TLorentzVector &jp4, float genJet_pt,float rho,Variation option,float jerVarPartial) {
 
   TLorentzVector smearedJet(jp4);
   float jerSmear(1.0);
-  float jet_resolution = jer_->getResolution({{JME::Binning::JetPt, jp4.Pt()}, {JME::Binning::JetEta, jp4.Eta()}, {JME::Binning::Rho, rho}});
-  float jer_sf = jerSF_->getScaleFactor({{JME::Binning::JetEta, jp4.Eta()}}, option);
-
+  JME::JetParameters jparam={ {JME::Binning::JetPt, jp4.Pt()}, 
+                              {JME::Binning::JetEta, jp4.Eta()}, 
+                              {JME::Binning::Rho, rho} };
+  float jet_resolution = jer_->getResolution(jparam);
+  float jer_sf = jerSF_->getScaleFactor(jparam, option);
+  if(jerVarPartial>=0 && jerVarPartial<=1.0) {
+    float jer_nom_sf = jerSF_->getScaleFactor(jparam, Variation::NOMINAL);
+    float delta_sf=(jer_sf-jer_nom_sf)*jerVarPartial;    
+    jer_sf=jer_nom_sf+delta_sf;
+  }
+  
   //use stochasting smearing for unmatched jets
   if(genJet_pt<=0)
     {

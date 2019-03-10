@@ -11,8 +11,9 @@ def submitProduction(tag,lfnDirBase,dataset,isData,cfg,workDir,lumiMask,era='era
     from TopLJets2015.TopAnalysis.EraConfig import getEraConfiguration
     globalTag, jecTag, jecDB, jerTag, jerDB = getEraConfiguration(era=era,isData=bool(isData))
 
-    #cmssw=os.environ['CMSSW_BASE']+'/src'
+    isZeroBias=True if 'ZeroBias' in dataset else False
 
+    #cmssw=os.environ['CMSSW_BASE']+'/src'
     os.system("rm -rvf %s/*%s* "%(workDir,tag))
     crabConfigFile=workDir+'/'+tag+'_cfg.py'
     config_file=open(crabConfigFile,'w')
@@ -30,7 +31,12 @@ def submitProduction(tag,lfnDirBase,dataset,isData,cfg,workDir,lumiMask,era='era
     config_file.write('config.JobType.pluginName = "Analysis"\n')
     config_file.write('config.JobType.psetName = "'+cfg+'"\n')
     config_file.write('config.JobType.disableAutomaticOutputCollection = False\n')
-    config_file.write('config.JobType.pyCfgParams = [\'runOnData=%s\',\'era=%s\']\n' % (bool(isData),era))
+    if isZeroBias:
+        print 'This is a ZeroBias sample will save everything...'
+        config_file.write('config.JobType.pyCfgParams = [\'applyFilt=False\', \'runOnData=%s\',\'era=%s\']\n' % (bool(isData),era))
+    else:
+        config_file.write('config.JobType.pyCfgParams = [\'runOnData=%s\',\'era=%s\']\n' % (bool(isData),era))
+
     #config_file.write('config.JobType.inputFiles = [\'{0}/{1}\',\'{0}/{2}\',\'{0}/muoncorr_db.txt\',\'{0}/jecUncSources.txt\']\n'.format(cmssw,jecDB,jerDB))
     config_file.write('config.JobType.inputFiles = [\'{0}\',\'{1}\',\'muoncorr_db.txt\',\'jecUncSources.txt\',\'qg_db.db\']\n'.format(jecDB,jerDB))
     config_file.write('\n')

@@ -52,6 +52,11 @@ options.register('savePF', False,
                  VarParsing.varType.bool,
                  'save PF candidates'
                  )
+options.register('applyFilt', True,
+                 VarParsing.multiplicity.singleton,
+                 VarParsing.varType.bool,
+                 'save PF candidates'
+                 )
 options.parseArguments()
 
 #start process
@@ -119,18 +124,27 @@ if '2016' in options.era:
 
 if options.runOnData:
       if '2017' in options.era:
-            process.source.fileNames = cms.untracked.vstring('/store/data/Run2017F/DoubleMuon/MINIAOD/31Mar2018-v1/00000/425B0470-2237-E811-A749-02163E01A0A2.root')
+            process.source.fileNames = cms.untracked.vstring('/store/data/Run2017F/ZeroBias/MINIAOD/31Mar2018-v1/30000/8604984F-DF37-E811-ACFE-008CFA197B74.root')
+            #process.source.fileNames = cms.untracked.vstring('/store/data/Run2017B/SingleMuon/MINIAOD/31Mar2018-v1/90000/46CE7E24-EA37-E811-95CB-0025905A6132.root')
             if options.runL1PrefireAna:
                   print 'Adding secondary filenames to run L1 prefire analysis'
-                  process.source.secondaryFileNames = cms.untracked.vstring(['/store/data/Run2017F/SinglePhoton/AOD/17Nov2017-v1/70000/BC8110F6-3CE0-E711-9210-02163E014564.root',
-                                                                             '/store/data/Run2017F/SinglePhoton/AOD/17Nov2017-v1/70000/F68021F2-3CE0-E711-85E6-02163E014702.root',
-                                                                             '/store/data/Run2017F/SinglePhoton/AOD/17Nov2017-v1/60000/90EE7B12-BCDE-E711-8C47-A4BF0112BC06.root',
-                                                                             '/store/data/Run2017F/SinglePhoton/AOD/17Nov2017-v1/60000/F8CD978A-17DF-E711-A05F-A0369F836334.root',
-                                                                             '/store/data/Run2017F/SinglePhoton/AOD/17Nov2017-v1/60000/3E1B045C-28DF-E711-8B81-002590A37114.root',
-                                                                             '/store/data/Run2017F/SinglePhoton/AOD/17Nov2017-v1/60000/506AF751-29DF-E711-9E1F-001E67397F2B.root',
-                                                                             '/store/data/Run2017F/SinglePhoton/AOD/17Nov2017-v1/60000/1CDC7A53-20DF-E711-A272-1CC1DE1CDD20.root',
-                                                                             '/store/data/Run2017F/SinglePhoton/AOD/17Nov2017-v1/60000/28249C05-0DDF-E711-BA56-008CFA0527CC.root',
-                                                                             '/store/data/Run2017F/SinglePhoton/AOD/17Nov2017-v1/60000/142F6B6F-28DF-E711-9D48-A4BF0112BDF8.root'])
+                  process.source.secondaryFileNames = cms.untracked.vstring(['/store/data/Run2017B/SingleMuon/AOD/17Nov2017-v1/70003/C4FDB602-77D8-E711-B975-02163E011E63.root',
+                                                                             '/store/data/Run2017B/SingleMuon/AOD/17Nov2017-v1/70003/089281B2-74D8-E711-96D9-02163E019CF1.root',
+                                                                             '/store/data/Run2017B/SingleMuon/AOD/17Nov2017-v1/40001/74593CEA-11D9-E711-A49E-FA163E62ECD8.root',
+                                                                             '/store/data/Run2017B/SingleMuon/AOD/17Nov2017-v1/40001/4CC8D127-EED8-E711-91CC-02163E016CCF.root',
+                                                                             '/store/data/Run2017B/SingleMuon/AOD/17Nov2017-v1/40001/3AFF8583-F0D8-E711-ADB8-FA163EA84AFA.root',
+                                                                             '/store/data/Run2017B/SingleMuon/AOD/17Nov2017-v1/40001/24A6AA06-21D9-E711-B5AD-FA163E3BC51E.root',
+                                                                             '/store/data/Run2017B/SingleMuon/AOD/17Nov2017-v1/40001/1A02BCE9-FDD8-E711-BB87-FA163E408AED.root',
+                                                                             '/store/data/Run2017B/SingleMuon/AOD/17Nov2017-v1/40001/0A90781C-EBD8-E711-9198-FA163E9875C8.root',
+                                                                             '/store/data/Run2017B/SingleMuon/AOD/17Nov2017-v1/40001/0481E927-F2D8-E711-A11A-FA163EFB3309.root',
+                                                                             '/store/data/Run2017B/SingleMuon/AOD/17Nov2017-v1/40000/FC54E9BB-D8D8-E711-8076-FA163EC00925.root',
+                                                                             '/store/data/Run2017B/SingleMuon/AOD/17Nov2017-v1/40000/DA1366B2-D2D8-E711-ACEE-FA163E24EC20.root',
+                                                                             '/store/data/Run2017B/SingleMuon/AOD/17Nov2017-v1/40000/8CCE5537-D3D8-E711-B316-FA163E653C95.root',
+                                                                             '/store/data/Run2017B/SingleMuon/AOD/17Nov2017-v1/40000/8492E4C5-C2D8-E711-9631-FA163EA53599.root',
+                                                                             '/store/data/Run2017B/SingleMuon/AOD/17Nov2017-v1/40000/82906F7E-C4D8-E711-8A90-FA163EDC0DF0.root',
+                                                                             '/store/data/Run2017B/SingleMuon/AOD/17Nov2017-v1/40000/38AFFEDF-C7D8-E711-85A5-FA163EE5AC62.root',
+                                                                             '/store/data/Run2017B/SingleMuon/AOD/17Nov2017-v1/40000/16C2CF2F-CAD8-E711-8630-FA163E9C5649.root'
+                                                                             ])
       else:
             process.source.fileNames = cms.untracked.vstring('/store/data/Run2016B/SingleMuon/MINIAOD/17Jul2018_ver2-v1/00000/0219DD4A-7D8C-E811-B7EB-001E67248A43.root')
             if options.runL1PrefireAna:
@@ -176,8 +190,9 @@ process.TFileService = cms.Service("TFileService",
 from TopLJets2015.TopAnalysis.miniAnalyzer_cfi import  ANALYSISJETIDS,ANALYSISTRIGGERLISTS
 process.load('TopLJets2015.TopAnalysis.miniAnalyzer_cfi')
 print 'MiniAnalyzer configuration is as follows:'
-process.analysis.saveTree=cms.bool(options.saveTree)
-process.analysis.savePF=cms.bool(options.savePF)
+process.analysis.saveTree  = cms.bool(options.saveTree)
+process.analysis.savePF    = cms.bool(options.savePF)
+process.analysis.applyFilt = cms.bool(options.applyFilt)
 print '\t save tree=',options.saveTree,' save PF=',options.savePF
 if 'era2017' in options.era:
       process.analysis.jetIdToUse=ANALYSISJETIDS[2017]

@@ -245,6 +245,7 @@ class SelectionTool {
     return ret;
   }
 
+  bool isZeroBiasPD(){ return isZeroBiasPD_; }
   bool isSingleElectronPD(){ return isSingleElectronPD_; }
   bool isSingleMuonPD(){ return isSingleMuonPD_; }
   bool isDoubleEGPD(){ return isDoubleEGPD_; }
@@ -257,7 +258,7 @@ class SelectionTool {
   TString dataset;
   bool debug_;
   AnalysisType anType_;
-  bool isSingleElectronPD_,isSingleMuonPD_,isDoubleEGPD_,isDoubleMuonPD_,isMuonEGPD_,isPhotonPD_,isJetHTPD_;
+  bool isZeroBiasPD_,isSingleElectronPD_,isSingleMuonPD_,isDoubleEGPD_,isDoubleMuonPD_,isMuonEGPD_,isPhotonPD_,isJetHTPD_;
   std::map<TString,unsigned int> triggerBits_;
   std::vector<TString> photonTriggers_;
   int offlinePhoton_;

@@ -5,7 +5,6 @@
 #include "TopLJets2015/TopAnalysis/interface/ObjectTools.h"
 #include "TopLJets2015/TopAnalysis/interface/SelectionTools.h"
 #include "TopLJets2015/TopAnalysis/interface/EfficiencyScaleFactorsWrapper.h"
-#include "TopLJets2015/TopAnalysis/interface/TrackingEfficiencyTools.h"
 #include "TopLJets2015/TopAnalysis/interface/JECTools.h"
 #include "TopLJets2015/TopAnalysis/interface/BtagUncertaintyComputer.h"
 #include "TopLJets2015/TopAnalysis/interface/LumiTools.h"

@@ -19,7 +19,7 @@ tag_list = [
 # 'tbartuedn'
 ]
 
-job = 'fitdil_inc_condor3.sub'
+job = 'fitptlb_inc_condor2.sub'
 script=open('/afs/cern.ch/user/w/wenyu/afswork/work/topwidth/CMSSW_9_4_10/src/TopLJets2015/TopAnalysis/%s'%(job), 'w+')
 script.write('executable  = /afs/cern.ch/work/w/wenyu/work/topwidth/CMSSW_9_4_10/src/TopLJets2015/TopAnalysis/test/analysis/top17010/runFitWrapper.sh \n')
 script.write('output      = %s.out \n'%(job))
@@ -28,7 +28,7 @@ script.write('log         = %s.log \n'%(job))
 script.write('+JobFlavour = "workday" \n')
 
 num = 0
-baseDir=sys.argv[1]
+baseDir=sys.argv[1]  # 0c522df/fits/ptlb_inc/
 for dist in os.listdir(baseDir): # scenarios dir
     if '.pdf' in dist: continue
     elif '.png' in dist: continue

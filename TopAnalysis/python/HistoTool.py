@@ -12,6 +12,12 @@ class HistoTool:
         self.histos[h.GetName()]={'inc':h}
         h.Sumw2()
         h.SetDirectory(0)
+
+    def get(self,k,cat='inc'):
+
+        """ returns an histogram """
+
+        return self.histos[k][cat] if k in self.histos and cat in self.histos[k] else None
         
     def fill(self,val,key,cats,pfix=None):
 

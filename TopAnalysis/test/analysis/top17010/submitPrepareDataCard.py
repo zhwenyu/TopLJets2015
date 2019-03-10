@@ -11,6 +11,7 @@ def getScanAnchors(opt):
 
     #list all alternatives (convention is they are found in the scenario* sub-directories)
     scenarioDir=os.path.dirname(opt.templ)
+#    print scenarioDir
     for sd in os.listdir(scenarioDir):
         if opt.nom and sd==opt.nom:
             scanAnchors.append(('nom',os.path.join(scenarioDir,opt.nom)))
@@ -28,7 +29,7 @@ def getSignals(opt):
 
     signals=[]
     plotDir=os.path.join(os.path.dirname(opt.templ),'plots')
-    plotters=['plotter.root'] #,'syst_plotter.root']
+    plotters=['plotter.root' ] #,'syst_plotter.root']   # edit
     for i in range(len(plotters)): 
         f=plotters[i]
         f=os.path.join(plotDir,f)
@@ -121,7 +122,7 @@ def main():
     njobs=generateJobs(scanAnchors,signals,opt)
     print '%d jobs will be submitted to create the likelihood scan datacards - see datacard_condor.sub'%njobs
 
-    os.system('condor_submit datacard_condor.sub')
+#    os.system('condor_submit datacard_condor.sub')
 
 if __name__ == "__main__":
     sys.exit(main())

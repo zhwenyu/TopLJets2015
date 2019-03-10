@@ -3,34 +3,38 @@
 WHAT=$1; 
 if [ "$#" -ne 1 ]; then 
     echo "steerExclusiveZX.sh <SEL/MERGE/PLOT/WWW>";
-    echo "   SEL        - launches selection jobs to the batch, output will contain summary trees and control plots"; 
-    echo "   MERGESEL   - merge output"
-    echo "   PLOTSEL    - make plots"
-    echo "   WWWSEL     - move plots to web-based are"
-    echo "   PREPAREANA - prepare bank of events for event mixing from the summary trees"
-    echo "   ANA        - run analysis on the summary trees"
-    echo "   PLOTANA    - plot analysis results"
+    echo "   SEL          - launches selection jobs to the batch, output will contain summary trees and control plots"; 
+    echo "   MERGESEL     - merge output"
+    echo "   PLOTSEL      - make plots"
+    echo "   WWWSEL       - move plots to web-based are"
+    echo "   TRAINPUDISCR - train pileup discriminator"
+    echo "   RUNPRED      - run pileup discriminator prediction"
+    echo "   PREPAREANA   - prepare bank of events for event mixing from the summary trees"
+    echo "   COLLECTMIX   - collects all the mixing events found in PREPAREANA"
+    echo "   ANA          - run analysis on the summary trees"
+    echo "   PLOTANA      - plot analysis results"
     exit 1; 
 fi
 
 #to run locally use local as queue + can add "--njobs 8" to use 8 parallel jobs
 queue=tomorrow
-#githash=3129835
-githash=6816e40
+githash=ab05162
 eosdir=/store/cmst3/group/top/RunIIReReco/${githash}
-outdir=/store/cmst3/user/psilva/ExclusiveAna/${githash}
+outdir=/store/cmst3/user/psilva/ExclusiveAna/final/${githash}
 signal_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/signal_samples.json
 plot_signal_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/plot_signal_samples.json
 samples_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/samples.json
 jetht_samples_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/jetht_samples.json
 zx_samples_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/zx_samples.json
+zbias_samples_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/zbias_samples.json
 RPout_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/golden_noRP.json
 wwwdir=~/www/ExclusiveAna
 inputfileTag=MC13TeV_2017_GGH2000toZZ2L2Nu
 inputfileTag=MC13TeV_2017_GGToEE_lpair
 inputfileTag=Data13TeV_2017F_MuonEG
-#inputfileTag=MC13TeV_2017_GJets_HT400to600
-inputfileTag=Data13TeV_2017B_DoubleMuon
+inputfileTag=MC13TeV_2017_GJets_HT400to600
+#inputfileTag=Data13TeV_2017B_DoubleMuon
+inputfileTag=Data13TeV_2017B_ZeroBias
 inputfileTESTSEL=${eosdir}/${inputfileTag}/Chunk_0_ext0.root
 lumi=41833
 ppsLumi=37500
@@ -41,8 +45,17 @@ RED='\e[31m'
 NC='\e[0m'
 case $WHAT in
 
-    TESTSEL )
+    TESTSYNCH )
         
+        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py \
+            -i /store/cmst3/user/psilva/ExclusiveAna/synch/Data13TeV_2017_DoubleMuon_synch.root \
+            -o testsynch.root --genWeights genweights_${githash}.root \
+            --njobs 1 -q local --debug \
+            --era era2017 -m ExclusiveZX::RunExclusiveZX --ch 0 --runSysts;
+
+        ;;
+
+    TESTSEL )
         python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py \
             -i ${inputfileTESTSEL} --tag ${inputfileTag} \
             -o testsel.root --genWeights genweights_${githash}.root \
@@ -53,9 +66,10 @@ case $WHAT in
     SEL )
         baseOpt="-i ${eosdir} --genWeights genweights_${githash}.root"
         baseOpt="${baseOpt} -o ${outdir} -q ${queue} --era era2017 -m ExclusiveZX::RunExclusiveZX --ch 0 --runSysts"
-        baseOpt="${baseOpt} --exactonly"        
-	python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py ${baseOpt} --only ${samples_json};
-	#python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py ${baseOpt} --only ${zx_samples_json};	
+        #baseOpt="${baseOpt} --exactonly"        
+	python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py ${baseOpt} \
+            --only ZeroBias;
+        #--only ${samples_json},${zx_samples_json},${zbias_samples_json};
 	;;
 
     MERGESEL )
@@ -63,9 +77,9 @@ case $WHAT in
 	;;
 
     PLOTSEL )
-        kFactors="--procSF MC13TeV_2017_QCDEM_15to20:1.26,MC13TeV_2017_QCDEM_20to30:1.26,MC13TeV_2017_QCDEM_30to50:1.26,MC13TeV_2017_QCDEM_50to80:1.26,MC13TeV_2017_QCDEM_80to120:1.26,MC13TeV_2017_QCDEM_120to170:1.26,MC13TeV_2017_QCDEM_170to300:1.26,MC13TeV_2017_QCDEM_300toInf:1.26,MC13TeV_2017_GJets_HT40to100:1.26,MC13TeV_2017_GJets_HT100to200:1.26,MC13TeV_2017_GJets_HT200to400:1.26,MC13TeV_2017_GJets_HT600toInf:1.26"
-
-	commonOpts="-i /eos/cms/${outdir} --puNormSF puwgtctr -l ${lumi} --mcUnc ${lumiUnc} ${kFactors}"
+        lumiSpecs="--lumiSpecs lpta:2642"
+        kFactorList="--procSF #gamma+jets:1.60"
+	commonOpts="-i /eos/cms/${outdir} --puNormSF puwgtctr -l ${lumi} --mcUnc ${lumiUnc} ${kFactorList} ${lumiSpecs}"
 	python scripts/plotter.py ${commonOpts} -j ${samples_json}    -O plots/sel --only mboson,mtboson,pt,eta,met,jets,nvtx,ratevsrun --saveLog; 
         python scripts/plotter.py ${commonOpts} -j ${samples_json}    --rawYields --silent --only gen -O plots/zx_sel -o bkg_plotter.root ; 
 	python scripts/plotter.py ${commonOpts} -j ${zx_samples_json} --rawYields --silent --only gen -O plots/zx_sel;
@@ -81,15 +95,50 @@ case $WHAT in
 	cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}/presel
 	;;
 
-    PREPAREANA )
-        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 0 --jobs 8 \
-            -i /eos/cms/${outdir}/Chunks \
-            --json ${samples_json} --RPout ${RPout_json} -o plots/analysis;               
-        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/collectEventsForMixing.py plots/analysis/Chunks
+    TRAINPUDISCR )
+        echo "Please remember to use a >10_3_X release for this step"
+        #-i test/analysis/pps/train_data.pck \
+        python test/analysis/pps/trainPUdiscriminators.py \
+            -s "isZ && bosonpt<10 && trainCat>=0" \
+            --RPout "test/analysis/pps/golden_noRP.json" \
+            --trainFrac 0.4 \
+            -i test/analysis/pps/train_data.pck \
+            -o test/analysis/pps
+        ;;
+
+    RUNPRED )
+        predin=/eos/cms/${outdir}/Chunks
+        predout=/eos/cms/${outdir}/Chunks/pudiscr 
+        condor_prep=runpred_condor.sub
+        echo "executable  = ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/pps/wrapPUDiscrTrain.sh" > $condor_prep
+        echo "output      = ${condor_prep}.out" >> $condor_prep
+        echo "error       = ${condor_prep}.err" >> $condor_prep
+        echo "log         = ${condor_prep}.log" >> $condor_prep
+        echo "arguments   = ${predout} \$(chunk)" >> $condor_prep
+        echo "queue chunk matching (${predin}/*.root)" >> $condor_prep
+        condor_submit $condor_prep
+        ;;
+
+    PREPAREANA )       
+        step=0
+        predin=/eos/cms/${outdir}/Chunks
+        predout=/eos/cms/${outdir}/analysis
+        condor_prep=runana_condor.sub
+        echo "executable  = ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/pps/wrapAnalysis.sh" > $condor_prep
+        echo "output      = ${condor_prep}.out" >> $condor_prep
+        echo "error       = ${condor_prep}.err" >> $condor_prep
+        echo "log         = ${condor_prep}.log" >> $condor_prep
+        echo "arguments   = ${step} ${predout} ${predin} \$(chunk)" >> $condor_prep
+        echo "queue chunk matching (${predin}/*Muon*.root)" >> $condor_prep
+        condor_submit $condor_prep
+        ;;
+
+    COLLECTMIX )
+        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/collectEventsForMixing.py /eos/cms/${outdir}/analysis/Chunks
         ;;
 
     ANA )
-        
+        #change wrapAnalysis.sh to include the mixbank from the predout in PREPAREANA
         python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 1 --jobs 8 \
             -i /eos/cms/${outdir}/Chunks \
             --json ${samples_json} --RPout ${RPout_json} -o plots/analysis --mix plots/analysis/Chunks/mixbank.pck;

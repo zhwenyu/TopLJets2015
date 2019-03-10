@@ -18,6 +18,7 @@
 #include "TopLJets2015/TopAnalysis/interface/L1PrefireEfficiencyWrapper.h"
 #include "TopLJets2015/TopAnalysis/interface/GeneratorTools.h"
 #include "TopLJets2015/TopAnalysis/interface/TopWidthEvent.h"
+#include "TopLJets2015/TopAnalysis/interface/JECTools.h"
 
 #include <vector>
 #include <set>
@@ -39,7 +40,8 @@ class TOP17010 {
   */
  TOP17010(TString filename, TString outname, TH1F *normH,  TH1F *genPU, TString era, UInt_t scenario=0, Bool_t debug=false)        
    : filename_(filename), outname_(outname), normH_(normH), genPU_(genPU), era_(era), debug_(debug),
-    targetGt_(-1), targetMt_(-1)
+    targetGt_(-1), targetMt_(-1),
+    jerTool_(era_)
   {
     init(scenario);
     bookHistograms();
@@ -71,7 +73,7 @@ private:
   void bookHistograms();
   void fillControlHistograms(TopWidthEvent &twe,float &wgt);
   void applyMC2MC(std::vector<Jet> &jetColl);
-  float getJERSFBreakdown(TString key,float abseta);
+  double getJERSFBreakdown(TString key,double abseta);
 
   //class variables
   TString filename_, outname_;
@@ -93,6 +95,7 @@ private:
   EfficiencyScaleFactorsWrapper * gammaEffWR_;
   L1PrefireEfficiencyWrapper *l1PrefireWR_;
   BTagSFUtil *btvSF_;
+  float deepCSV_wp_;
   std::map<TString, TGraph*> fragWeights_;
   std::map<TString, std::map<int, float> > semilepBRwgts_;
   std::map<TString, TGraphErrors *> mc2mcCorr_;
@@ -104,6 +107,7 @@ private:
   TF1 *rbwigner_;
 
   SelectionTool *selector_;
+  JECTools jerTool_;
 };
 
 #endif
