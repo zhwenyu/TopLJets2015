@@ -48,6 +48,7 @@ def getScanPoint(inDir,fitTag):
 
     #read nll from fit
     nll=None
+    edm = None
     try:
         url=os.path.join(inDir,'fitresults%s.root'%fitTag)
         if os.path.isfile(url):
@@ -55,10 +56,41 @@ def getScanPoint(inDir,fitTag):
             tree=inF.Get('fitresults')
             tree.GetEntry(0)
             nll=tree.nllvalfull
+            edm = tree.edmval   # edit -check converge
     except Exception as e:
         print e
 
-    return mt,gt,nll
+    return mt,gt,nll,edm
+
+
+def profileedm(data,outdir,axis=0):
+
+    #raw values
+    x=data[:,axis]
+    xtit='$m_{t}$ [GeV]' if axis==1 else '$\Gamma_{t}$ [GeV]'
+    ytit='$m_{t}$ [GeV]' if axis==0 else '$\Gamma_{t}$ [GeV]'
+
+    ictr=0
+    for xi in np.unique(x):
+        print "xi = ", xi  
+        rdata=data[data[:,axis]==xi]
+        y=rdata[:,0 if axis==1 else 1]
+        z=rdata[:,2]
+        print "y = ", y  # edit
+        print "z = ", z
+
+
+        plt.clf()
+        fig, ax = plt.subplots()
+        plt.plot(y, z, '.',label='edmval')
+        plt.xlabel(xtit)
+        #plt.ylim(0.,20.0)
+        ax.text(0,1.02,'CMS preliminary', transform=ax.transAxes, fontsize=16)
+        ax.text(1.0,1.02,r'%s=%3.2f 34.5 fb$^{-1}$ (13 TeV)'%(ytit,xi), transform=ax.transAxes,horizontalalignment='right',fontsize=14)
+        ax.legend(framealpha=0.0, fontsize=14, loc='upper left', numpoints=1)
+#        plt.savefig(os.path.join(outdir,'edmprofile_%d_%d.png'%(axis,ictr)))
+        ictr+=1
+
         
 
 def profilePOI(data,outdir,axis=0):
@@ -179,19 +211,28 @@ def main():
 
     #build nll scan
     fitres=[]
+    edmres=[]
     for f in os.listdir(opt.input):
 #	if ( f == 'scenario1179748' or f == 'scenario1703991' ) : continue   # remove not converging points
-        scanRes=getScanPoint(inDir=os.path.join(opt.input,f),fitTag=opt.fitTag)
+        scanRes=getScanPoint(inDir=os.path.join(opt.input,f),fitTag=opt.fitTag)    # (mt,gt,nll,edm)
 #	print "scanRes = ", scanRes   # edit 
-        if not scanRes[-1]: continue
+        if not scanRes[-2]:  # 172.5, 1.31 case, nll returns None 
+#          print scanRes   # edit 
+          continue 
         fitres.append( scanRes )
+
+    edmres= [ [c1, c2, c4] for c1, c2, c3, c4 in fitres ]
+    fitres= [ [c1, c2, c3] for c1, c2, c3, c4 in fitres ]
+    edmres=np.array(edmres)
     fitres=np.array(fitres)
 
     #plot the contour interpolating the available points
-    os.system('mkdir -p %s'%opt.outdir)
-    doContour(fitres,outdir=opt.outdir)
-    profilePOI(fitres,outdir=opt.outdir,axis=0)
-    profilePOI(fitres,outdir=opt.outdir,axis=1)
+#    os.system('mkdir -p %s'%opt.outdir)
+#    doContour(fitres,outdir=opt.outdir)
+#    profilePOI(fitres,outdir=opt.outdir,axis=0)
+#    profilePOI(fitres,outdir=opt.outdir,axis=1)
+    profileedm(edmres,outdir=opt.outdir,axis=0)
+#    profileedm(edmres,outdir=opt.outdir,axis=1)
 
 if __name__ == "__main__":
     sys.exit(main())
