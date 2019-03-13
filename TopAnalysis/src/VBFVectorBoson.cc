@@ -474,8 +474,8 @@ void VBFVectorBoson::runAnalysis()
       genMjj_=0;
       genAPt_=0;
       if(!ev_.isData){
-        std::vector<Particle> genPhotons=selector_->getGenPhotons(ev,50.,2.5);
-        std::vector<Jet> allGenJets=selector_->getGenJets(ev,30.,4.7);
+        std::vector<Particle> genPhotons=selector_->getGenPhotons(ev_,50.,2.5);
+        std::vector<Jet> allGenJets=selector_->getGenJets(ev_,30.,4.7);
         std::vector<Jet> genJets;
         if(genPhotons.size()){
           genAPt_=genPhotons[0].Pt();
