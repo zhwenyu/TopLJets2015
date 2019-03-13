@@ -29,19 +29,21 @@ using namespace std;
 #define ADDVAR(x,name,t,tree) tree->Branch(name,x,TString(name)+TString(t))
 
 //
-void RunExclusiveZX(TString filename,
-                     TString outname,
-                     Int_t channelSelection, 
-                     Int_t chargeSelection, 
-                     TH1F *normH, 
-                     TH1F *genPU, 
-                     TString era,
-                     Bool_t debug)
+void RunExclusiveZX(const TString in_fname,
+                    TString outname,
+                    Int_t channelSelection, 
+                    Int_t chargeSelection, 
+                    TH1F *normH, 
+                    TH1F *genPU, 
+                    TString era,
+                    Bool_t debug)
 {
   /////////////////////
   // INITIALIZATION //
   ///////////////////
   const char* CMSSW_BASE = getenv("CMSSW_BASE");
+  const TString filename(in_fname);
+  bool vetoPromptPhotons = filename.Contains("_QCDEM_") || filename.Contains("_TTJets");
 
   ctpps::LHCConditionsFactory lhc_conds;
   lhc_conds.feedConditions(Form("%s/src/TopLJets2015/CTPPSAnalysisTools/data/2017/xangle_tillTS2.csv", CMSSW_BASE));
@@ -132,18 +134,6 @@ void RunExclusiveZX(TString filename,
     outT->Branch("RPnearcsi",RPnearcsi,"RPnearcsi[nRPtk]/F");
   }
   outT->SetDirectory(fOut);
-
-  //READ TREE FROM FILE
-  TFile *f = TFile::Open(filename);  
-  TH1 *triggerList=(TH1 *)f->Get("analysis/triggerList");
-  TTree *t = (TTree*)f->Get("analysis/data");
-  attachToMiniEventTree(t,ev,true);
-  Int_t nentries(t->GetEntriesFast());
-  if (debug) nentries = min(100000,nentries); //restrict number of entries for testing
-  t->GetEntry(0);
-  bool vetoPromptPhotons = filename.Contains("_QCDEM_") || filename.Contains("_TTJets");
-
-  cout << "...producing " << outname << " from " << nentries << " events" << endl;
   
   //LUMINOSITY+PILEUP
   LumiTools lumi(era,genPU);
@@ -218,6 +208,17 @@ void RunExclusiveZX(TString filename,
   ///////////////////////
   // LOOP OVER EVENTS //
   /////////////////////
+
+  //READ TREE FROM FILE
+  TFile *f = TFile::Open(filename);  
+  TH1 *triggerList=(TH1 *)f->Get("analysis/triggerList");
+  TTree *t = (TTree*)f->Get("analysis/data");
+  attachToMiniEventTree(t,ev,true);
+  Int_t nentries(t->GetEntriesFast());
+  if (debug) nentries = min(100000,nentries); //restrict number of entries for testing
+  t->GetEntry(0);
+  cout << "...producing " << outname << " from " << nentries << " events" << endl;
+
   
   //EVENT SELECTION WRAPPER
   SelectionTool selector(filename, false, triggerList);

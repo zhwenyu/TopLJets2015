@@ -470,6 +470,22 @@ void VBFVectorBoson::runAnalysis()
         plotwgts[0]*=fr_->getWeight(FRcat, vbfVars_.mjj, photons_[0].Eta());
       }
 
+      //gen level
+      genMjj_=0;
+      genAPt_=0;
+      if(!ev_.isData){
+        std::vector<Particle> genPhotons=selector_->getGenPhotons(ev,50.,2.5);
+        std::vector<Jet> allGenJets=selector_->getGenJets(ev,30.,4.7);
+        std::vector<Jet> genJets;
+        if(genPhotons.size()){
+          genAPt_=genPhotons[0].Pt();
+          for(auto gj : allGenJets) {
+            if(gj.DeltaR(genPhotons[0])>0.4) continue;
+            genJets.push_back(gj);
+          }          
+        }
+        genMjj_=(genJets.size()>1 ? (genJets[0]+genJets[1]).M() : 0.);        
+      }
       
       //fill control histograms
       for( auto c : chTags)
@@ -805,6 +821,8 @@ void VBFVectorBoson::bookHistograms() {
   ht_->addHist("jet_gawidth",   new TH1F("jet_gawidth",      ";Jet width;Jets",                     50,0,1));
 
   ht_->addHist("mjj", 	        new TH1F("mjj",              ";Dijet invariant mass [GeV];Events", 40,0,4000));  
+  ht_->addHist("genapt", 	new TH1F("genapt",           ";Generator level photon p_{T} [GeV];Events", 40,0,4000));  
+  ht_->addHist("genmjj", 	new TH1F("genmjj",           ";Generator level dijet invariant mass [GeV];Events", 50,50,550));  
   ht_->addHist("detajj",        new TH1F("detajj" ,          ";#Delta#eta(J,J);Events",            20,0,8));  
   ht_->addHist("dphijj",        new TH1F("dphijj" ,          ";#Delta#phi(J,J) [rad];Events",      20,-3.15,3.15));  
   ht_->addHist("dijetpt",       new TH1F("dijetpt",          ";Dijet p_{T} [GeV];Events",          20,0,1000));  
@@ -1111,14 +1129,16 @@ void VBFVectorBoson::fillControlHistos(TLorentzVector boson, std::vector<Jet> je
   ht_->fill("dijetpt",      vbfVars_.jjpt,        cplotwgts,c);
   ht_->fill("detajj",       vbfVars_.detajj,      cplotwgts,c);
   ht_->fill("dphijj",       vbfVars_.dphijj,      cplotwgts,c);
-  ht_->fill("mjj", 	   vbfVars_.mjj,         cplotwgts,c);   
-  ht_->fill("jjetas",       vbfVars_.jjetas,   cplotwgts,c);
-  ht_->fill("dphivj0",      vbfVars_.dphivj0 ,  cplotwgts,c);
-  ht_->fill("dphivj1",      vbfVars_.dphivj1 ,  cplotwgts,c);
-  ht_->fill("leadeta"     ,leadeta        ,cplotwgts,c);
-  ht_->fill("subleadeta"     ,subleadeta        ,cplotwgts,c);
-  ht_->fill("leadpt"     ,  leadPt        ,cplotwgts,c);
-  ht_->fill("subleadpt"     , subleadPt       ,cplotwgts,c);
+  ht_->fill("mjj", 	    vbfVars_.mjj,         cplotwgts,c);   
+  ht_->fill("genmjj", 	    genMjj_,              cplotwgts,c);   
+  ht_->fill("genapt", 	    genAPt_,              cplotwgts,c);   
+  ht_->fill("jjetas",       vbfVars_.jjetas,      cplotwgts,c);
+  ht_->fill("dphivj0",      vbfVars_.dphivj0 ,    cplotwgts,c);
+  ht_->fill("dphivj1",      vbfVars_.dphivj1 ,    cplotwgts,c);
+  ht_->fill("leadeta",      leadeta,              cplotwgts,c);
+  ht_->fill("subleadeta",   subleadeta,           cplotwgts,c);
+  ht_->fill("leadpt",       leadPt,               cplotwgts,c);
+  ht_->fill("subleadpt",    subleadPt,            cplotwgts,c);
  
   //central jet activity
   ht_->fill("ncentj", vbfVars_.ncentj, cplotwgts, c);

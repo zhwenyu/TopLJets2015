@@ -176,6 +176,7 @@ def predict(data,features,baseName,opt):
         if key!='rfc': continue
         for xangle in best_models[key]:
             tag='%s_%d'%(key,xangle)
+            print tag,'for',baseName
             clf=best_models[key][xangle][0]
             features=best_models[key][xangle][-1]
             y_prob=clf.predict_proba(df[features])[:,0]
@@ -219,7 +220,7 @@ def runTrainJob(url,features,spectators,categs,onlyThis,opt):
 
     data={}
     cut=opt.selection if opt.selection else ''
-    print cut
+    if len(cut) : print cut
     data['X']=tree2array(t, branches=features,   selection=cut)
     data['s']=tree2array(t, branches=spectators, selection=cut)
     data['y']=tree2array(t, branches=categs,     selection=cut)
@@ -283,6 +284,12 @@ def runTrainJob(url,features,spectators,categs,onlyThis,opt):
         fitModels(data,features,opt)
         
     else:
+
+        #using imputer to fill NaN with the median
+        print 'Checking/substituting for NaN in features with the Imputer'
+        from sklearn.preprocessing import Imputer
+        imputer = Imputer(strategy="median",verbose=1)
+        data['X']=imputer.fit_transform(data['X'])
         predict(data['X'],features,onlyThis,opt)
 
 
