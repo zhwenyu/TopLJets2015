@@ -16,7 +16,7 @@ namespace vbf{
     float centraleta,forwardeta;
     float mjj,detajj,dphijj,jjpt,jjetas,ystar,balance,relbpt,dphibjj,dphivj0,dphivj1,dphivj2,dphivj3;
     float isotropy,circularity,sphericity,aplanarity,C,D;
-    float scalarht,mht;
+    float scalarht,mht,dijetht,syspt;
     float ncentj;
 
     //addition production and colour flow
@@ -31,7 +31,7 @@ namespace vbf{
       subleadj_pt(0),subleadj_gawidth(-99),subleadj_c2_02(-99),subleadj_qg(-99),
       centraleta(-99),forwardeta(-99),
       mjj(0),detajj(-99),dphijj(-99),jjpt(0),jjetas(-99),ystar(-99),balance(-99),relbpt(-99),dphibjj(-99),dphivj0(-99),dphivj1(-99),dphivj2(-99),dphivj3(-99),
-      isotropy(-99),circularity(-99),sphericity(-99),aplanarity(-99),C(-99),D(-99),scalarht(0),mht(0),
+      isotropy(-99),circularity(-99),sphericity(-99),aplanarity(-99),C(-99),D(-99),scalarht(0),mht(0),dijetht(0),syspt(0),
       ncentj(0),
       cosqj1(-99),  cosqjj(-99),
       beta_v_j2(-99),  beta_j1_j2(-99), beta_v_j3(-99), beta_closej_j3(-99),
@@ -46,7 +46,7 @@ namespace vbf{
       centraleta(o.centraleta),forwardeta(o.forwardeta),
       mjj(o.mjj),detajj(o.detajj),dphijj(o.dphijj),jjpt(o.jjpt),jjetas(o.jjetas),ystar(o.ystar),balance(o.balance),relbpt(o.relbpt),dphibjj(o.dphibjj),dphivj0(o.dphivj0),dphivj1(o.dphivj1),dphivj2(o.dphivj2),dphivj3(o.dphivj3),
       isotropy(o.isotropy),circularity(o.circularity),sphericity(o.sphericity),aplanarity(o.aplanarity),C(o.C),D(o.D),
-      scalarht(o.scalarht), mht(o.mht),
+      scalarht(o.scalarht), mht(o.mht),dijetht(o.dijetht),syspt(o.syspt),
       ncentj(o.ncentj),
       cosqj1(o.cosqj1),  cosqjj(o.cosqjj), 
       beta_v_j2(o.beta_v_j2),  beta_j1_j2(o.beta_j1_j2), beta_v_j3(o.beta_v_j3), beta_closej_j3(o.beta_closej_j3)      
@@ -93,6 +93,8 @@ namespace vbf{
         D                = o.D;
         scalarht         = o.scalarht; 
         mht              = o.mht;
+	dijetht          = o.dijetht;
+	syspt            = o.syspt;
         ncentj           = o.ncentj;
         cosqj1           = o.cosqj1;
         cosqjj           = o.cosqjj;        
@@ -129,7 +131,8 @@ namespace vbf{
 	if (jets.size()>3) dphivj3 = fabs(jets[3].DeltaPhi(boson));
         centraleta       = min(fabs(jets[0].Eta()),fabs(jets[1].Eta()));
         forwardeta       = max(fabs(jets[0].Eta()),fabs(jets[1].Eta()));
-
+	dijetht  = jets[0].Pt()+jets[1].Pt();
+	syspt    = dijetht+boson.Pt();
         TLorentzVector jj(jets[0]+jets[1]);
         mjj     = jj.M();
         detajj  = fabs(jets[0].Eta()-jets[1].Eta());
