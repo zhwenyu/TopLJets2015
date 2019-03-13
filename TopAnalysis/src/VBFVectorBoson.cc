@@ -59,18 +59,16 @@ void VBFVectorBoson::runAnalysis()
   TString weightFile("${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBF_weights/LowVPtHighMJJ_BDT_VBF0LowVPtHighMJJ.weights.xml");
   gSystem->ExpandPathName(weightFile);
   readers[method]=new TMVA::Reader( "!Color:!Silent" );
-  readers[method]->AddVariable("forwardeta",    &vbfVars_.forwardeta);
-  readers[method]->AddVariable("mjj",           &vbfVars_.mjj);
-  readers[method]->AddVariable("jjpt",          &vbfVars_.jjpt);
-  readers[method]->AddVariable("dphijj",        &vbfVars_.dphijj);
-  readers[method]->AddVariable("ystar",         &vbfVars_.ystar);
-  readers[method]->AddVariable("dphibjj",       &vbfVars_.dphibjj);
-  readers[method]->AddVariable("balance",       &vbfVars_.balance);
-  readers[method]->AddVariable("j_qg[0]",       &vbfVars_.leadj_qg);
-  readers[method]->AddVariable("j_qg[1]",       &vbfVars_.subleadj_qg);
-  readers[method]->AddVariable("dphivj0",       &vbfVars_.dphivj0);
-  readers[method]->AddVariable("ht",            &vbfVars_.scalarht);
-  readers[method]->AddVariable("C",             &vbfVars_.C);
+  readers[method]->AddVariable("ystar",                                &vbfVars_.ystar);
+  readers[method]->AddVariable("mjj",                                  &vbfVars_.mjj);
+  readers[method]->AddVariable("dphijj",                               &vbfVars_.dphijj);
+  readers[method]->AddVariable("j_qg[0]",                              &vbfVars_.leadj_qg);
+  readers[method]->AddVariable("dphibjj",                              &vbfVars_.dphibjj);
+  readers[method]->AddVariable("dphivj0",                              &vbfVars_.dphivj0);
+  readers[method]->AddVariable("j_qg[1]",                              &vbfVars_.subleadj_qg);
+  readers[method]->AddVariable("C",                                    &vbfVars_.C);
+  readers[method]->AddVariable("jjpt",                                 &vbfVars_.jjpt);
+  readers[method]->AddVariable("j_pt[0]+j_pt[1]+gamma_pt[0]",          &vbfVars_.syspt);
   readers[method]->BookMVA(method,weightFile);
 
   method="BDT_VBF0HighPt";
@@ -103,14 +101,15 @@ void VBFVectorBoson::runAnalysis()
   gSystem->ExpandPathName(weightFile);
   readers[method]=new TMVA::Reader( "!Color:!Silent" );
 
-  readers[method]->AddVariable("j_pt[0]",       &vbfVars_.leadj_pt);
-  readers[method]->AddVariable("ystar",         &vbfVars_.ystar);
   readers[method]->AddVariable("mjj",           &vbfVars_.mjj);
-  readers[method]->AddVariable("j_qg[1]",       &vbfVars_.subleadj_qg);
-  readers[method]->AddVariable("balance",       &vbfVars_.balance);
-  readers[method]->AddVariable("C",             &vbfVars_.C);
-  readers[method]->AddVariable("dphivj0",       &vbfVars_.dphivj0);
   readers[method]->AddVariable("j_qg[0]",       &vbfVars_.leadj_qg);
+  readers[method]->AddVariable("ystar",         &vbfVars_.ystar);
+  readers[method]->AddVariable("j_qg[1]",       &vbfVars_.subleadj_qg);
+  readers[method]->AddVariable("j_pt[0]",       &vbfVars_.leadj_pt);
+  readers[method]->AddVariable("dphivj0",       &vbfVars_.dphivj0);
+  readers[method]->AddVariable("C",             &vbfVars_.C);
+
+
   readers[method]->BookMVA(method,weightFile);
 
   method="BDT_VBF0HighVPtHighMJJ";
@@ -120,13 +119,13 @@ void VBFVectorBoson::runAnalysis()
   readers[method]->AddVariable("ystar",         &vbfVars_.ystar);
   readers[method]->AddVariable("mjj",           &vbfVars_.mjj);
   readers[method]->AddVariable("j_qg[0]",       &vbfVars_.leadj_qg);
-  readers[method]->AddVariable("balance",       &vbfVars_.balance);
   readers[method]->AddVariable("circularity",   &vbfVars_.circularity);
-  readers[method]->AddVariable("ht",            &vbfVars_.scalarht);
-  readers[method]->AddVariable("jjpt",          &vbfVars_.jjpt);
   readers[method]->AddVariable("sphericity",    &vbfVars_.sphericity);
-  readers[method]->AddVariable("dphijj",        &vbfVars_.dphijj);
   readers[method]->AddVariable("j_qg[1]",       &vbfVars_.subleadj_qg);
+  readers[method]->AddVariable("jjpt",          &vbfVars_.jjpt);
+  readers[method]->AddVariable("dphijj",        &vbfVars_.dphijj);
+  readers[method]->AddVariable("j_pt[0]+j_pt[1]+gamma_pt[0]",          &vbfVars_.syspt);
+
   readers[method]->BookMVA(method,weightFile);
 
 
@@ -828,6 +827,8 @@ void VBFVectorBoson::bookHistograms() {
   ht_->addHist("dijetpt",       new TH1F("dijetpt",          ";Dijet p_{T} [GeV];Events",          20,0,1000));  
   ht_->addHist("ht",            new TH1F("ht",               ";H_{T} [GeV];Events",                20,0,4000));  
   ht_->addHist("mht",           new TH1F("mht",              ";Missing H_{T} [GeV];Events",        20,0,500));  
+  ht_->addHist("dijetht",       new TH1F("dijetht",          ";Dijet H_{T} [GeV];Events",          20,0,4000));  
+  ht_->addHist("syspt",         new TH1F("syspt",            ";System p_{T} [GeV];Events",         20,0,1000));  
 
   ht_->addHist("drj1b",         new TH1F("drj1b",            ";#DeltaR(j_{1},boson);Events",       25,0,8));  
   ht_->addHist("drj2b",         new TH1F("drj2b"   ,         ";#DeltaR(j_{2},boson);Events",       25,0,8));  
@@ -982,6 +983,8 @@ void VBFVectorBoson::addMVAvars(){
   newTree_->Branch("dphivj3",          &vbfVars_.dphivcentj[0]);
   newTree_->Branch("mht",              &vbfVars_.mht);
   newTree_->Branch("ht",               &vbfVars_.scalarht);
+  newTree_->Branch("dijetht",          &vbfVars_.dijetht);
+  newTree_->Branch("syspt",            &vbfVars_.syspt);
   newTree_->Branch("isotropy",         &vbfVars_.isotropy);
   newTree_->Branch("circularity",      &vbfVars_.circularity);
   newTree_->Branch("sphericity",       &vbfVars_.sphericity);
@@ -1074,6 +1077,8 @@ void VBFVectorBoson::fillControlHistos(TLorentzVector boson, std::vector<Jet> je
   ht_->fill("njets",        jets.size(), cplotwgts,c);
   ht_->fill("ht",           vbfVars_.scalarht,    cplotwgts,c);
   ht_->fill("mht",          vbfVars_.mht,         cplotwgts,c);
+  ht_->fill("dijetht",      vbfVars_.dijetht,     cplotwgts,c);
+  ht_->fill("syspt",        vbfVars_.syspt,       cplotwgts,c);
 
   std::vector<float> tagJetResol;        
   for(size_t ij=0; ij<min((size_t)2,jets.size()); ij++) {

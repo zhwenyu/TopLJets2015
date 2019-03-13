@@ -63,6 +63,8 @@ int TMVAClassification( TString myMethodList , TString extention, BDTOptimizer* 
    
    TFile *inputS = TFile::Open(sigName ); // To be fixed
    TTree *signalTree     = (TTree*)inputS->Get("data"); // To be fixed
+   
+
    Double_t signalWeight     = 1.0;
    TString default_w_str = "evtWeight";
    
