@@ -94,7 +94,8 @@ case $WHAT in
         ### --CR     : gives a control region to evaluate fake rates in the photon data samples
         ### --SRfake : gives the distributions of fakes, normalised based on fake rates
 
-        json=data/era${ERA}/vbf_samples.json,data/era${ERA}/vbf_syst_samples.json
+        #json=data/era${ERA}/vbf_samples.json,data/era${ERA}/vbf_syst_samples.json
+	json=data/era${ERA}/vbf_syst_samples.json
 
 	if [[ -z ${EXTRA} ]]; then
 	    echo "Making trees ... "
@@ -104,7 +105,7 @@ case $WHAT in
         fi
 	echo ${json}
 	python scripts/runLocalAnalysis.py \
-	    -i ${eosdir} --only ${json} \
+	    -i ${eosdir} --only EWKAJJ \ #${json} \
             -o ${outdir}/${githash}/${EXTRA} \
             --farmappendix ${githash} \
             -q ${queue} --genWeights genweights_${githash}.root \

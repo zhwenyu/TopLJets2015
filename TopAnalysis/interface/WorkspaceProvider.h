@@ -322,7 +322,7 @@ class WorkspaceProvider{
     myfile << "rate\t"<<SR->hSig->Integral()<<"\t"<<SR->hBkgCorr->Integral()<< endl;
 
     myfile << "------------" << endl;
-    myfile << "BkgTheoryRate\tlnN\t-\t0.7/1.3"<<endl;
+    myfile << "backgroundNorm rateParam * Bkg 1.0 [0,10]"<<endl;
     for (auto& x : YieldErrors) {
       if(x.second.first == x.second.second )
 	myfile << x.first << "\tlnN\t" << x.second.first << "\t"<<x.second.first << endl;
@@ -359,6 +359,7 @@ class WorkspaceProvider{
 
     for (auto& s : SR->Theo->yieldSystSig) {
       line.str("");
+      if (s.first == "ratemuR" || s.first == "ratemuF") continue;
       line << s.first << "\tlnN\t";
       if(s.second.first == s.second.second ) {
 	if( s.second.second != 1)
@@ -387,6 +388,13 @@ class WorkspaceProvider{
       myfile << tmp << endl;
     }
     for (auto& s : SR->Theo->shapeSystMap) {
+      /////////////////////////////
+      // Decorrelate EWK and QCD //
+      /////////////////////////////
+      if (s.first == "muR" || s.first == "muF" || s.first == "muRmuF") continue;
+      /////////////////////////////
+      // Not include PDF for now //
+      /////////////////////////////
       if(s.first.Contains("PDF")) continue;
       myfile << s.first << "\tshape";
       TString tmp(s.second.first == 1 ? "\t1" : "\t-");
