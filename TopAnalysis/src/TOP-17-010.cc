@@ -6,6 +6,7 @@
 #include <TSystem.h>
 #include <TGraph.h>
 #include <TLorentzVector.h>
+#include <TVector3.h> // added
 #include <TGraphAsymmErrors.h>
 
 #include "TopLJets2015/TopAnalysis/interface/MiniEvent.h"
@@ -384,6 +385,40 @@ void TOP17010::runAnalysis()
             }
           }
         }
+
+       // costhetastar gen
+       std::vector<Particle> genleptons        = selector_->getGenLeptons(ev_, 30, 2.4);
+       std::vector<Particle> genphotons        = selector_->getGenPhotons(ev_, 30, 2.4); // TO EDIT pt, eta? 
+       std::vector<Jet> genjets        = selector_->getGenJets(ev_, 30., 2.4, genleptons, genphotons);
+       
+       std::vector<float> costhetastar;
+       for(Int_t igen=0; igen<ev_.ngtop; igen++) {
+         
+         if(abs(ev_.gtop_id[igen])!=6) continue;
+         TLorentzVector gentop;
+         gentop.SetPtEtaPhiM( ev_.gtop_pt[igen], ev_.gtop_eta[igen], ev_.gtop_phi[igen], ev_.gtop_m[igen] );
+         
+           for (auto& genj : genjets) {
+            for (auto& genl : genleptons) {
+
+             if (genj.flavor() == 5)  {
+                TLorentzVector l_wrf= genl.p4();
+                TLorentzVector b_trf= genj.p4();
+                TLorentzVector Wboson(gentop - b_trf );
+                TVector3 wrf_boost=Wboson.BoostVector()*(-1);      
+                l_wrf.Boost(wrf_boost);
+               
+                TVector3 trf_boost=gentop.BoostVector()*(-1);
+                b_trf.Boost(trf_boost);
+            
+               float costhstar = l_wrf.Vect().Dot(b_trf.Vect()) / (l_wrf.Vect().Mag()*b_trf.Vect().Mag());
+               cout << " getonecosthstar---- ";
+               costhetastar.push_back(costhstar);
+               }
+            }
+         }
+
+       } 
 
         //b-fragmentation and semi-leptonic branching fractions
         bfragWgts[0] = computeBFragmentationWeight(ev_,fragWeights_["downFrag"]);
