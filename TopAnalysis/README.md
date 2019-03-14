@@ -172,6 +172,13 @@ To plot the output of the local analysis you can run the following:
 ```
 python scripts/plotter.py -i analysis/   -j data/era2017/samples.json  -l 12870
 ```
+# BDT training
+This part currently works only for the VBF analysis. The signal and background trees must have been produced in the previous session by enabling "--mvatree" with "SEL" option.
+The training is done per category with the following command:
+```
+python scripts/trainVbfBDT --vbf nt=50:mns=5:md=3:abb=0.6:nc=1 --ext LowVPtHighMJJ --sig signal.root --bkg backgrounds.root --cat A:VBF --card LowVPtHighMJJCard
+```
+The example above is for "LowVPtHighMJJ" category.
 
 # Preparation of the data cards and workspaces
 
@@ -180,3 +187,5 @@ This part currently works only for the VBF analysis. It assumes that there are r
 python scripts/makeWorkspace.py --Chan LowVPtHighMJJ --Hist vbfmva --nBin 20 --year 2016 --shapeOnly --doSignalPH
 ```
 The input histogram will be rebinned to have five bins. If you remove "--doSignalPH", the signal process in the signal and control region will NOT be connected via the transfer function (TF). Note that the TF part is not developed fully since it is statistics limited. "--shapeOnly" is to disentangle the shape and rate systematics for non-TF version.
+
+
