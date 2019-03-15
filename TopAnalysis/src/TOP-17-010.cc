@@ -93,7 +93,7 @@ void TOP17010::init(UInt_t scenario){
   t_ = (TTree*)f_->Get("analysis/data");
   attachToMiniEventTree(t_,ev_,true);
   nentries_ = t_->GetEntriesFast();
-  if (debug_) nentries_ = 10000; //restrict number of entries for testing
+  if (debug_) nentries_ = 1000; //restrict number of entries for testing EDIT 10000
   t_->GetEntry(0);
 
   TString baseName=gSystem->BaseName(outname_); 
@@ -387,9 +387,9 @@ void TOP17010::runAnalysis()
         }
 
        // costhetastar gen
-       std::vector<Particle> genleptons        = selector_->getGenLeptons(ev_, 30, 2.4);
-       std::vector<Particle> genphotons        = selector_->getGenPhotons(ev_, 30, 2.4); // TO EDIT pt, eta? 
-       std::vector<Jet> genjets        = selector_->getGenJets(ev_, 30., 2.4, genleptons, genphotons);
+       std::vector<Particle> genleptons        = selector_->getGenLeptons(ev_, 15, 2.5);
+  //     std::vector<Particle> genphotons        = selector_->getGenPhotons(ev_, 30, 2.4); //  
+       std::vector<Jet> genjets        = selector_->getGenJets(ev_, 20., 2.5, genleptons );
        
        std::vector<float> costhetastar;
        for(Int_t igen=0; igen<ev_.ngtop; igen++) {
@@ -398,10 +398,21 @@ void TOP17010::runAnalysis()
          TLorentzVector gentop;
          gentop.SetPtEtaPhiM( ev_.gtop_pt[igen], ev_.gtop_eta[igen], ev_.gtop_phi[igen], ev_.gtop_m[igen] );
          
-           for (auto& genj : genjets) {
+           int genj_count = 0 ;
+           for ( auto& genj : genjets) {
+            if ( genj_count > 1 ) break;
+            genj_count ++;
+           // cout << " genjet pt " << genj.pt() ;
+          
             for (auto& genl : genleptons) {
 
              if (genj.flavor() == 5)  {
+                // check charge oppo.
+                int genj_id = genj.getJetIndex();
+                int b_id = ev_.g_bid[genj_id];
+                int genl_id = genl.id();
+                if ( b_id*genl_id > 0) continue;
+
                 TLorentzVector l_wrf= genl.p4();
                 TLorentzVector b_trf= genj.p4();
                 TLorentzVector Wboson(gentop - b_trf );
@@ -412,7 +423,7 @@ void TOP17010::runAnalysis()
                 b_trf.Boost(trf_boost);
             
                float costhstar = l_wrf.Vect().Dot(b_trf.Vect()) / (l_wrf.Vect().Mag()*b_trf.Vect().Mag());
-               cout << " getonecosthstar---- ";
+            //   cout << " getonecosthstar---- ";
                costhetastar.push_back(costhstar);
                }
             }
