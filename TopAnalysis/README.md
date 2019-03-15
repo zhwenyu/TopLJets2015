@@ -178,7 +178,20 @@ The training is done per category with the following command:
 ```
 python scripts/trainVbfBDT --vbf nt=50:mns=5:md=3:abb=0.6:nc=1 --ext LowVPtHighMJJ --sig signal.root --bkg backgrounds.root --cat A:VBF --card LowVPtHighMJJCard
 ```
-The example above is for "LowVPtHighMJJ" category.
+The example above is for "LowVPtHighMJJ" category. Once happy with the training, 
+```
+cp vbf/weights/LowVPtHighMJJ_BDT_VBF0LowVPtHighMJJ* test/analysis/VBF_weights
+```
+Update src/VBFVectorBoson.cc accordingly and compile.
+
+## Transformed BDT
+To make the background BDT distribution flat, following steps must be followed:
+   * Produce plots with the compiled version of the code including new BDT weights (see Local analysis) and
+     ```
+     cd test/analysis/VBF_weights
+     python getInverseCDFFromPlotter.py PATH_TO_plotter.root
+     ```
+   * Reproduce the plots to have the proper flat BDT distribution of background
 
 # Preparation of the data cards and workspaces
 
