@@ -21,7 +21,7 @@ def runPredPacked(args):
     os.system('sh test/analysis/pps/wrapPUDiscrTrain.sh {0}/pudiscr {1}'.format(url,tag))
 
 runLocally=True #False
-dontrun=True #False
+dontrun=False
 url=sys.argv[1]
 
 toCheck=[]

@@ -9,9 +9,13 @@ scanDir=sys.argv[1]
 for f in os.listdir(scanDir):
     if not '.pck' in f: continue
     if not 'Data' in f: continue
-    with open(os.path.join(scanDir,f),'r') as cache:
-        a=pickle.load(cache)
+    try:
+        with open(os.path.join(scanDir,f),'r') as cache:
+            a=pickle.load(cache)
         for key in a: rpData[key] += a[key]
+    except Exception as e:
+        print e
+        print 'Check',f
 
 print 'Total number of events for mixing'
 for key in rpData:

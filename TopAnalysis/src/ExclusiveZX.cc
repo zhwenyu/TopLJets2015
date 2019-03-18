@@ -7,6 +7,7 @@
 #include <TLorentzVector.h>
 #include <TGraphAsymmErrors.h>
 
+//#include "TopLJets2015/TopAnalysis/interface/JSONWrapper.h"
 #include "TopLJets2015/TopAnalysis/interface/CommonTools.h"
 #include "TopLJets2015/TopAnalysis/interface/ExclusiveZX.h"
 #include "TopQuarkAnalysis/TopTools/interface/MEzCalculator.h"
@@ -44,6 +45,20 @@ void RunExclusiveZX(const TString in_fname,
   const char* CMSSW_BASE = getenv("CMSSW_BASE");
   const TString filename(in_fname);
   bool vetoPromptPhotons = filename.Contains("_QCDEM_") || filename.Contains("_TTJets");
+  
+  //RP in json
+  /*
+  std::string RPoutFile(Form("%s/src/TopLJets2015/TopAnalysis/test/analysis/pps/golden_noRP.json", CMSSW_BASE));
+  JSONWrapper::Object json(RPoutFile,true);
+  for(auto k : json.key){
+    cout << k << endl;
+    std::vector<JSONWrapper::Object> lumis=json.getObject(k).daughters();
+    for(auto ll : lumis) {
+      for(auto kk : ll["obj"].obj)
+        cout << "\t" << kk.val << endl;
+    }
+  }
+  */
 
   ctpps::LHCConditionsFactory lhc_conds;
   lhc_conds.feedConditions(Form("%s/src/TopLJets2015/CTPPSAnalysisTools/data/2017/xangle_tillTS2.csv", CMSSW_BASE));
@@ -60,6 +75,8 @@ void RunExclusiveZX(const TString in_fname,
   outT->Branch("run",&ev.run,"run/i");
   outT->Branch("event",&ev.event,"event/l");
   outT->Branch("lumi",&ev.lumi,"lumi/i");
+  Int_t beamXangle;
+  outT->Branch("beamXangle",&beamXangle,"beamXangle/I");
   outT->Branch("nvtx",&ev.nvtx,"nvtx/I");
   outT->Branch("nchPV",&ev.nchPV,"nchPV/I");
   outT->Branch("sumPVChPt",&ev.sumPVChPt,"sumPVChPt/F");
@@ -107,14 +124,14 @@ void RunExclusiveZX(const TString in_fname,
                    "PFMultDiffEB",   "PFMultDiffEE",   "PFMultDiffHE",   "PFMultDiffHF", 
                    "PFChMultSumEB",  "PFChMultSumEE",  "PFChMultSumHE",  "PFChMultSumHF", 
                    "PFChMultDiffEB", "PFChMultDiffEE", "PFChMultDiffHE", "PFChMultDiffHF", 
-                   "PFPzSumEB",   "PFPzSumEE",    "PFPzSumHE",    "PFPzSumHF", 
-                   "PFPzDiffEB",  "PFPzDiffEE",   "PFPzDiffHE",   "PFPzDiffHF", 
-                   "PFChPzSumEB", "PFChPzSumEE",  "PFChPzSumHE",  "PFChPzSumHF", 
-                   "PFChPzDiffEB","PFChPzDiffEE", "PFChPzDiffHE", "PFChPzDiffHF", 
-                   "PFHtSumEB",   "PFHtSumEE",    "PFHtSumHE",    "PFHtSumHF", 
-                   "PFHtDiffEB",  "PFHtDiffEE",   "PFHtDiffHE",   "PFHtDiffHF", 
-                   "PFChHtSumEB", "PFChHtSumEE",  "PFChHtSumHE",  "PFChHtSumHF", 
-                   "PFChHtDiffEB","PFChHtDiffEE", "PFChHtDiffHE", "PFChHtDiffHF",
+                   "PFPzSumEB",      "PFPzSumEE",      "PFPzSumHE",      "PFPzSumHF", 
+                   "PFPzDiffEB",     "PFPzDiffEE",     "PFPzDiffHE",     "PFPzDiffHF", 
+                   "PFChPzSumEB",    "PFChPzSumEE",    "PFChPzSumHE",    "PFChPzSumHF", 
+                   "PFChPzDiffEB",   "PFChPzDiffEE",   "PFChPzDiffHE",   "PFChPzDiffHF", 
+                   "PFHtSumEB",      "PFHtSumEE",      "PFHtSumHE",      "PFHtSumHF", 
+                   "PFHtDiffEB",     "PFHtDiffEE",     "PFHtDiffHE",     "PFHtDiffHF", 
+                   "PFChHtSumEB",    "PFChHtSumEE",    "PFChHtSumHE",    "PFChHtSumHF", 
+                   "PFChHtDiffEB",   "PFChHtDiffEE",   "PFChHtDiffHE",   "PFChHtDiffHF",
                    "trainCat"
   };
 
@@ -123,8 +140,6 @@ void RunExclusiveZX(const TString in_fname,
     outVars[fvars[i]]=0.;
     ADDVAR(&(outVars[fvars[i]]),fvars[i],"F",outT);
   }
-  float beamXangle(0);
-  outT->Branch("beamXangle",&beamXangle,"beamXangle/F");
   int nRPtk(0),RPid[50];
   float RPfarcsi[50],RPnearcsi[50];
   if(filename.Contains("Data13TeV")){
@@ -443,6 +458,7 @@ void RunExclusiveZX(const TString in_fname,
       }
       else {
         if(!hasZBTrigger) continue;
+        selCat="zbias";
       }
 
       //check again origin of the boson in data to max. efficiency and avoid double counting
@@ -759,7 +775,7 @@ void RunExclusiveZX(const TString in_fname,
         try{
           const edm::EventID ev_id( ev.run, ev.lumi, ev.event );        
           const ctpps::conditions_t lhc_cond = lhc_conds.get( ev_id );
-          beamXangle = lhc_cond.crossing_angle;
+          beamXangle = std::round(lhc_cond.crossing_angle);
           ht.fill("beamXangle", beamXangle, plotwgts, selCat);
           
           if(beamXangle==120 || beamXangle==130 || beamXangle==140 || beamXangle==150) {

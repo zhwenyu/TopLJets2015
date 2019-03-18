@@ -38,7 +38,7 @@ def fitModels(data,features,opt,alwaysOptim=False,doGBC=False,doDNN=False):
     #data['X']=pca.fit_transform(data['X'])
 
     xangle_list=data['s'][:,0]
-    for xangle in [120.,130.,140.,150.]:
+    for xangle in [120,130,140,150]:
 
         filt=(xangle_list==xangle)
         X=data['X'][filt]
@@ -148,7 +148,8 @@ def fitModels(data,features,opt,alwaysOptim=False,doGBC=False,doDNN=False):
             best_models['dnn'][xangle]=(best_url,history.history,None,features)
 
     #save results  to pickle file
-    out_url=os.path.join(opt.output,'pu_models.pck')
+    pfix='ZeroBias' if opt.zeroBiasTrain else  'Zmm'
+    out_url=os.path.join(opt.output,'pu_models_%s.pck'%pfix)
     with open(out_url,'w') as cache:    
         pickle.dump(best_models, cache, pickle.HIGHEST_PROTOCOL)
         pickle.dump(scaler,      cache, pickle.HIGHEST_PROTOCOL)
@@ -208,10 +209,12 @@ def runTrainJob(url,features,spectators,categs,onlyThis,opt):
         if onlyThis:
             if f!=onlyThis: continue
         else:
-            if not 'DoubleMuon' in f: # and not 'SingleMuon' in f: 
-                continue
-            #if not '2017B' in f:
-            #    continue
+            if opt.zeroBiasTrain:
+                if not 'ZeroBias' in f: 
+                    continue
+            else:
+                if not 'DoubleMuon' in f:
+                    continue           
         t.AddFile(os.path.join(url,f))
     print 'Data chain has {0} events'.format(t.GetEntries())
 
@@ -221,9 +224,10 @@ def runTrainJob(url,features,spectators,categs,onlyThis,opt):
     data={}
     cut=opt.selection if opt.selection else ''
     if len(cut) : print cut
-    data['X']=tree2array(t, branches=features,   selection=cut)
-    data['s']=tree2array(t, branches=spectators, selection=cut)
-    data['y']=tree2array(t, branches=categs,     selection=cut)
+    step=100 if opt.zeroBiasTrain else None
+    data['X']=tree2array(t, branches=features,   selection=cut, step=step)
+    data['s']=tree2array(t, branches=spectators, selection=cut, step=step)
+    data['y']=tree2array(t, branches=categs,     selection=cut, step=step)
 
     #convert features and spectators to array of floats
     for tag,branches in [('X',features),('s',spectators)]:
@@ -232,6 +236,7 @@ def runTrainJob(url,features,spectators,categs,onlyThis,opt):
 
     #filter out runs in which the RP were out
     nEntries=len(data['s'])
+    print nEntries,'events available at start'
     if opt.RPout:
         with open(opt.RPout,'r') as cache:
 
@@ -270,9 +275,16 @@ def runTrainJob(url,features,spectators,categs,onlyThis,opt):
 
     print 'Converted to numpy array' 
 
+    #using imputer to fill NaN with the median
+    print 'Checking/substituting for NaN in features with the Imputer'
+    from sklearn.preprocessing import Imputer
+    imputer = Imputer(strategy="median",verbose=1)
+    data['X'].imputer.fit_transform(data['X'])
+
     if opt.model is None:
 
-        out_url=os.path.join(opt.output,'train_data.pck')
+        pfix='ZeroBias' if opt.zeroBiasTrain else  'Zmm'
+        out_url=os.path.join(opt.output,'train_data_%s.pck'%pfix)
         with open(out_url,'w') as cache:    
             pickle.dump(data,          cache, pickle.HIGHEST_PROTOCOL)
             pickle.dump(features,      cache, pickle.HIGHEST_PROTOCOL)
@@ -285,11 +297,6 @@ def runTrainJob(url,features,spectators,categs,onlyThis,opt):
         
     else:
 
-        #using imputer to fill NaN with the median
-        print 'Checking/substituting for NaN in features with the Imputer'
-        from sklearn.preprocessing import Imputer
-        imputer = Imputer(strategy="median",verbose=1)
-        data['X']=imputer.fit_transform(data['X'])
         predict(data['X'],features,onlyThis,opt)
 
 
@@ -333,6 +340,11 @@ def main():
                       default=False,
                       action='store_true',
                       help='run on only missing [default: %default]')
+    parser.add_option('--zeroBiasTrain',
+                      dest='zeroBiasTrain',
+                      default=False,
+                      action='store_true',
+                      help='use zero bias events for the training [default: %default]')
     parser.add_option('-s', '--selection',
                       dest='selection',   
                       default=None,

@@ -20,7 +20,7 @@ fi
 queue=tomorrow
 githash=ab05162
 eosdir=/store/cmst3/group/top/RunIIReReco/${githash}
-outdir=/store/cmst3/user/psilva/ExclusiveAna/final/${githash}
+outdir=/store/cmst3/user/psilva/ExclusiveAna/${githash}
 signal_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/signal_samples.json
 plot_signal_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/plot_signal_samples.json
 samples_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/samples.json
@@ -68,8 +68,7 @@ case $WHAT in
         baseOpt="${baseOpt} -o ${outdir} -q ${queue} --era era2017 -m ExclusiveZX::RunExclusiveZX --ch 0 --runSysts"
         #baseOpt="${baseOpt} --exactonly"        
 	python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py ${baseOpt} \
-            --only ZeroBias;
-        #--only ${samples_json},${zx_samples_json},${zbias_samples_json};
+            --only ${samples_json},${zx_samples_json},${zbias_samples_json};
 	;;
 
     MERGESEL )
@@ -97,13 +96,11 @@ case $WHAT in
 
     TRAINPUDISCR )
         echo "Please remember to use a >10_3_X release for this step"
-        #-i test/analysis/pps/train_data.pck \
-        python test/analysis/pps/trainPUdiscriminators.py \
-            -s "isZ && bosonpt<10 && trainCat>=0" \
-            --RPout "test/analysis/pps/golden_noRP.json" \
-            --trainFrac 0.4 \
-            -i test/analysis/pps/train_data.pck \
-            -o test/analysis/pps
+
+        commonOpts="--trainFrac 0.4  --RPout test/analysis/pps/golden_noRP.json -o /eos/cms/${outdir}/train_results"
+        #python test/analysis/pps/trainPUdiscriminators.py ${commonOpts} -s "isZ && bosonpt<10 && trainCat>=0" 
+        python test/analysis/pps/trainPUdiscriminators.py ${commonOpts} -s "hasZBTrigger && trainCat>=0" --zeroBiasTrain
+
         ;;
 
     RUNPRED )
@@ -139,9 +136,9 @@ case $WHAT in
 
     ANA )
         #change wrapAnalysis.sh to include the mixbank from the predout in PREPAREANA
-        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 1 --jobs 8 \
-            -i /eos/cms/${outdir}/Chunks \
-            --json ${samples_json} --RPout ${RPout_json} -o plots/analysis --mix plots/analysis/Chunks/mixbank.pck;
+        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 1 --jobs 1 \
+            -i /eos/cms/${outdir}/Chunks --mix /eos/cms/${outdir}/analysis/Chunks/mixbank.pck \
+            --json ${samples_json} --RPout ${RPout_json} -o plots/analysis;
         
         ;;
 

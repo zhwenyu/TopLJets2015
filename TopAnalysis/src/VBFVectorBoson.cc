@@ -474,16 +474,10 @@ void VBFVectorBoson::runAnalysis()
       genAPt_=0;
       if(!ev_.isData){
         std::vector<Particle> genPhotons=selector_->getGenPhotons(ev_,50.,2.5);
-        std::vector<Jet> allGenJets=selector_->getGenJets(ev_,30.,4.7);
-        std::vector<Jet> genJets;
-        if(genPhotons.size()){
-          genAPt_=genPhotons[0].Pt();
-          for(auto gj : allGenJets) {
-            if(gj.DeltaR(genPhotons[0])>0.4) continue;
-            genJets.push_back(gj);
-          }          
-        }
-        genMjj_=(genJets.size()>1 ? (genJets[0]+genJets[1]).M() : 0.);        
+        std::vector<Particle> genLeptons=selector_->getGenPhotons(ev_,20.,2.5);
+        std::vector<Jet> genJets=selector_->getGenJets(ev_,30.,4.7,genLeptons,genPhotons);
+        genAPt_ = (genPhotons.size() ? genPhotons[0].Pt() : 0.);
+        genMjj_ = (genJets.size()>1 ? (genJets[0]+genJets[1]).M() : 0.);        
       }
       
       //fill control histograms
@@ -751,7 +745,7 @@ void VBFVectorBoson::readTree()
   t_           = (TTree*)f_->Get("analysis/data");
   attachToMiniEventTree(t_,ev_,true);
   nentries_   = t_->GetEntriesFast();
-  if (debug_) nentries_ = min(50000,nentries_); //restrict number of entries for testing
+  if (debug_) nentries_ = min(500000,nentries_); //restrict number of entries for testing
   t_->GetEntry(0);
 }
 
@@ -820,8 +814,15 @@ void VBFVectorBoson::bookHistograms() {
   ht_->addHist("jet_gawidth",   new TH1F("jet_gawidth",      ";Jet width;Jets",                     50,0,1));
 
   ht_->addHist("mjj", 	        new TH1F("mjj",              ";Dijet invariant mass [GeV];Events", 40,0,4000));  
-  ht_->addHist("genapt", 	new TH1F("genapt",           ";Generator level photon p_{T} [GeV];Events", 40,0,4000));  
-  ht_->addHist("genmjj", 	new TH1F("genmjj",           ";Generator level dijet invariant mass [GeV];Events", 50,50,550));  
+  ht_->addHist("genapt", 	new TH1F("genapt",           ";Generator level photon p_{T} [GeV];Events", 50,50,550));  
+  ht_->addHist("genmjj", 	new TH1F("genmjj",           ";Generator level dijet invariant mass [GeV];Events", 40,0,4000));  
+  ht_->addHist("matchedjpt", 	new TH1F("matchedjetpt",     ";Transverse momentum [GeV];Jets", 50,0,200));  
+  ht_->addHist("unmatchedjpt", 	new TH1F("unmatchedjetpt",   ";Transverse momentum [GeV];Jets", 50,0,200));  
+  ht_->addHist("matchedjeta", 	new TH1F("matchedjeteta",    ";Pseudo-rapidity;Jets", 50,0,5.));  
+  ht_->addHist("unmatchedjeta", new TH1F("unmatchedjeteta",  ";Pseudo-rapidity;Jets", 50,0,5.));  
+  ht_->addHist("njnmatched",    new TH1F("njnmatched",       ";Matched jets;Jets", 5,0,5.));  
+  ht_->addHist("njnmatchedsoft",new TH1F("njnmatchedsoft",   ";Matched jets;Jets", 5,0,5.));  
+
   ht_->addHist("detajj",        new TH1F("detajj" ,          ";#Delta#eta(J,J);Events",            20,0,8));  
   ht_->addHist("dphijj",        new TH1F("dphijj" ,          ";#Delta#phi(J,J) [rad];Events",      20,-3.15,3.15));  
   ht_->addHist("dijetpt",       new TH1F("dijetpt",          ";Dijet p_{T} [GeV];Events",          20,0,1000));  
@@ -1135,8 +1136,26 @@ void VBFVectorBoson::fillControlHistos(TLorentzVector boson, std::vector<Jet> je
   ht_->fill("detajj",       vbfVars_.detajj,      cplotwgts,c);
   ht_->fill("dphijj",       vbfVars_.dphijj,      cplotwgts,c);
   ht_->fill("mjj", 	    vbfVars_.mjj,         cplotwgts,c);   
-  ht_->fill("genmjj", 	    genMjj_,              cplotwgts,c);   
+  ht_->fill("genmjj", 	    genMjj_,              cplotwgts,c);
   ht_->fill("genapt", 	    genAPt_,              cplotwgts,c);   
+  if(genAPt_>0 && genMjj_<120){
+    int nmatched(0),nmatchedsoft(0);
+    for(size_t i=0; i<jets.size(); i++) {
+      int idx=jets[i].getJetIndex();
+      float genJet_pt(ev_.j_g[idx]>-1 ? ev_.g_pt[ ev_.j_g[idx] ] : 0);
+      if(genJet_pt>0) {
+        if(i<=1) nmatched++;
+        else     nmatchedsoft++;
+      }
+      if(i>1) continue;
+      TString pf(genJet_pt>0 ? "matched" : "unmatched");
+      ht_->fill(pf+"jpt",  jets[i].Pt(),        cplotwgts,c);
+      ht_->fill(pf+"jeta",  fabs(jets[i].Eta()), cplotwgts,c);   
+    }
+    ht_->fill("njnmatched",     nmatched,     cplotwgts,c);
+    ht_->fill("njmatchedsoft",  nmatchedsoft, cplotwgts,c);   
+  }
+
   ht_->fill("jjetas",       vbfVars_.jjetas,      cplotwgts,c);
   ht_->fill("dphivj0",      vbfVars_.dphivj0 ,    cplotwgts,c);
   ht_->fill("dphivj1",      vbfVars_.dphivj1 ,    cplotwgts,c);
