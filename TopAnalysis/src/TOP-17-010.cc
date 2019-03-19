@@ -387,48 +387,52 @@ void TOP17010::runAnalysis()
         }
 
        // costhetastar gen
-       std::vector<Particle> genleptons        = selector_->getGenLeptons(ev_, 15, 2.5);
-  //     std::vector<Particle> genphotons        = selector_->getGenPhotons(ev_, 30, 2.4); //  
-       std::vector<Jet> genjets        = selector_->getGenJets(ev_, 20., 2.5, genleptons );
+       std::vector<Particle> genleptons        = selector_->getPartonLeptons(ev_, 15, 2.5);
+       std::vector<Particle> genwbosons        = selector_->getPartonWbosons(ev_, 20, 2.5); 
+       std::vector<Particle> genbs             = selector_->getPartonBs(ev_, 20., 2.5 );
        
        std::vector<float> costhetastar;
        for(Int_t igen=0; igen<ev_.ngtop; igen++) {
-         
          if(abs(ev_.gtop_id[igen])!=6) continue;
+          cout << " one gen top, id " << ev_.gtop_id[igen] << ", pt " << ev_.gtop_pt[igen] << "\n";
          TLorentzVector gentop;
          gentop.SetPtEtaPhiM( ev_.gtop_pt[igen], ev_.gtop_eta[igen], ev_.gtop_phi[igen], ev_.gtop_m[igen] );
          
-           int genj_count = 0 ;
-           for ( auto& genj : genjets) {
-            if ( genj_count > 1 ) break;
-            genj_count ++;
-           // cout << " genjet pt " << genj.pt() ;
-          
-            for (auto& genl : genleptons) {
+           int genb_count = 0 ;
+           for ( auto& genb : genbs) {
+            if ( genb_count > 1 ) break;
+            genb_count ++;
+            for ( auto& genw : genwbosons ) {
 
-             if (genj.flavor() == 5)  {
-                // check charge oppo.
-                int genj_id = genj.getJetIndex();
-                int b_id = ev_.g_bid[genj_id];
+              for (auto& genl : genleptons) {
+                
+                // check t-l-b pair
+                int genb_id = genb.id();
                 int genl_id = genl.id();
-                if ( b_id*genl_id > 0) continue;
-
+                int genw_id = genw.id();
+                if ( ev_.gtop_id[igen]*genb_id <0 ) continue;
+                if ( genw_id*genl_id > 0) continue; 
+                if ( genb_id*genl_id > 0) continue;
+                cout << "genb_id " << genb_id << " genlep_id "<< genl_id ; 
                 TLorentzVector l_wrf= genl.p4();
-                TLorentzVector b_trf= genj.p4();
-                TLorentzVector Wboson(gentop - b_trf );
-                TVector3 wrf_boost=Wboson.BoostVector()*(-1);      
+                TLorentzVector b_trf= genb.p4();
+
+                TLorentzVector lepb = l_wrf+ b_trf;
+                float mlb_gen = lepb.M() ;
+                cout << " mlb_gen " << mlb_gen << "\n";
+
+                TVector3 wrf_boost=genw.BoostVector()*(-1);      
                 l_wrf.Boost(wrf_boost);
-               
                 TVector3 trf_boost=gentop.BoostVector()*(-1);
                 b_trf.Boost(trf_boost);
             
-               float costhstar = l_wrf.Vect().Dot(b_trf.Vect()) / (l_wrf.Vect().Mag()*b_trf.Vect().Mag());
-            //   cout << " getonecosthstar---- ";
+                float costhstar = l_wrf.Vect().Dot(b_trf.Vect()) / (l_wrf.Vect().Mag()*b_trf.Vect().Mag());
+              cout << " getonecosthstar---- " << costhstar << "\n";
                costhetastar.push_back(costhstar);
-               }
+              }
             }
-         }
-
+           }
+        
        } 
 
         //b-fragmentation and semi-leptonic branching fractions

@@ -71,6 +71,14 @@ class SelectionTool {
   std::vector<Jet>      getGenJets(MiniEvent_t &ev, double minPt = 30., double maxEta = 2.4, std::vector<Particle> leptons = {}, std::vector<Particle> photons = {});
   std::vector<Jet>      &getGenJets()     { return genJets_; }
 
+  std::vector<Particle> parLeptons_, parWbosons_, parbs_ ;
+  std::vector<Particle> getPartonLeptons(MiniEvent_t &ev, double minPt = 20., double maxEta = 2.5);
+  std::vector<Particle> &getPartonLeptons()  { return parLeptons_; }
+  std::vector<Particle> getPartonWbosons(MiniEvent_t &ev, double minPt = 20., double maxEta = 2.5);
+  std::vector<Particle> &getPartonWbosons()  { return parWbosons_; }
+  std::vector<Particle> getPartonBs(MiniEvent_t &ev, double minPt = 20., double maxEta = 2.5);
+  std::vector<Particle> &getPartonBs()  { return parbs_; }
+
   void setDebug(bool flag) { debug_=flag; }
 
   void setPhotonSelection(std::vector<TString> photonTrigs={"HLT_Photon75_R9Id90_HE10_IsoM_EBOnly_PFJetsMJJ300DEta3_v","HLT_Photon200_v"},

@@ -633,6 +633,9 @@ TString SelectionTool::flagGenFinalState(MiniEvent_t &ev, std::vector<Particle> 
   return chTag;
 }
 
+// costhetaStar - calculated from gen top, gen b
+
+
 //
 std::vector<Particle> SelectionTool::getGenLeptons(MiniEvent_t &ev, double minPt, double maxEta){
   std::vector<Particle> leptons;
@@ -722,5 +725,56 @@ std::vector<Jet> SelectionTool::getGenJets(MiniEvent_t &ev, double minPt, double
   return jets;
 }
 
+// parton level lepton, W and b
+std::vector<Particle> SelectionTool::getPartonLeptons(MiniEvent_t &ev, double minPt, double maxEta){
+  std::vector<Particle> parleptons;
+  
+    for (int i = 0; i < ev.ngtop; i++) {
+        int absid(abs(ev.gtop_id[i]));
+            if(absid!=11 && absid!=13) continue;
+  
+            bool passKin(ev.gtop_pt[i]>minPt && fabs(ev.gtop_eta[i])<maxEta);
+            if(!passKin) continue;
+  
+            TLorentzVector lp4;
+            lp4.SetPtEtaPhiM(ev.gtop_pt[i],ev.gtop_eta[i],ev.gtop_phi[i],ev.gtop_m[i]);
+            parleptons.push_back( Particle(lp4, -ev.gtop_id[i]/abs(ev.gtop_id[i]), ev.gtop_id[i], 0, 1));
+      }
+                                    
+     return parleptons;
+}
 
+std::vector<Particle> SelectionTool::getPartonWbosons(MiniEvent_t &ev, double minPt, double maxEta){
+  std::vector<Particle> parwbosons;
+
+    for (int i = 0; i < ev.ngtop; i++) {
+        int absid(abs(ev.gtop_id[i]));
+            if( absid!=24 ) continue;
+            bool passKin(ev.gtop_pt[i]>minPt && fabs(ev.gtop_eta[i])<maxEta);
+            if(!passKin) continue;
+
+            TLorentzVector lp4;
+            lp4.SetPtEtaPhiM(ev.gtop_pt[i],ev.gtop_eta[i],ev.gtop_phi[i],ev.gtop_m[i]);
+            parwbosons.push_back( Particle(lp4, -ev.gtop_id[i]/abs(ev.gtop_id[i]), ev.gtop_id[i], 0, 1));
+      }
+
+     return parwbosons;
+}
+
+std::vector<Particle> SelectionTool::getPartonBs(MiniEvent_t &ev, double minPt, double maxEta){
+  std::vector<Particle> parbs;
+
+    for (int i = 0; i < ev.ngtop; i++) {
+        int absid(abs(ev.gtop_id[i]));
+            if(absid!=5 ) continue;
+            bool passKin(ev.gtop_pt[i]>minPt && fabs(ev.gtop_eta[i])<maxEta);
+            if(!passKin) continue;
+
+            TLorentzVector lp4;
+            lp4.SetPtEtaPhiM(ev.gtop_pt[i],ev.gtop_eta[i],ev.gtop_phi[i],ev.gtop_m[i]);
+            parbs.push_back( Particle(lp4, -ev.gtop_id[i]/abs(ev.gtop_id[i]), ev.gtop_id[i], 0, 1));
+      }
+
+     return parbs;
+}
 
