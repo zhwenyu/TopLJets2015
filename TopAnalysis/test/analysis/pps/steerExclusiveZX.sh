@@ -126,7 +126,7 @@ case $WHAT in
         echo "error       = ${condor_prep}.err" >> $condor_prep
         echo "log         = ${condor_prep}.log" >> $condor_prep
         echo "arguments   = ${step} ${predout} ${predin} \$(chunk)" >> $condor_prep
-        echo "queue chunk matching (${predin}/*Muon*.root)" >> $condor_prep
+        echo "queue chunk matching (${predin}/Data*.root)" >> $condor_prep
         condor_submit $condor_prep
         ;;
 
@@ -135,10 +135,18 @@ case $WHAT in
         ;;
 
     ANA )
-        #change wrapAnalysis.sh to include the mixbank from the predout in PREPAREANA
-        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 1 --jobs 1 \
-            -i /eos/cms/${outdir}/Chunks --mix /eos/cms/${outdir}/analysis/Chunks/mixbank.pck \
-            --json ${samples_json} --RPout ${RPout_json} -o plots/analysis;
+        step=1
+        predin=/eos/cms/${outdir}/Chunks
+        predout=/eos/cms/${outdir}/analysis
+        condor_prep=runana_condor.sub
+        mix_file=/eos/cms/${outdir}/analysis/Chunks/mixbank.pck
+        echo "executable  = ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/pps/wrapAnalysis.sh" > $condor_prep
+        echo "output      = ${condor_prep}.out" >> $condor_prep
+        echo "error       = ${condor_prep}.err" >> $condor_prep
+        echo "log         = ${condor_prep}.log" >> $condor_prep
+        echo "arguments   = ${step} ${predout} ${predin} \$(chunk)" ${mix_file} >> $condor_prep
+        echo "queue chunk matching (${predin}/*.root)" >> $condor_prep
+        condor_submit $condor_prep
         
         ;;
 

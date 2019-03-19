@@ -7,5 +7,10 @@ RPout_json=${PPS}/golden_noRP.json
 cd ${CMSSW}/src
 eval `scram r -sh`
 cd ${HOME}
-python $PPS/runExclusiveAnalysis.py --step $1 --json ${samples_json} --RPout ${RPout_json} -o $2 -i $3 --only $4
+if [ ! -z ${5} ]; then
+    extraOpts="--mix ${5}";
+fi
+
+echo "python $PPS/runExclusiveAnalysis.py --step $1 --json ${samples_json} --RPout ${RPout_json} -o $2 -i $3 --only $4 ${extraOpts}"
+python $PPS/runExclusiveAnalysis.py --step $1 --json ${samples_json} --RPout ${RPout_json} -o $2 -i $3 --only $4 ${extraOpts}
 

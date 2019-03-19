@@ -90,19 +90,19 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
     #bind main tree with pileup discrimination tree, if failed return
     tree=ROOT.TChain('analysis/data' if isSignal else 'tree')
     tree.AddFile(inFile)
-    try:
-        pudiscr_tree=ROOT.TChain('pudiscr')
-        baseName=os.path.basename(inFile)
-        baseDir=os.path.dirname(inFile)
-        pudiscr_file=os.path.join(baseDir,'pudiscr',baseName)
-        if not os.path.isfile(pudiscr_file):
-            raise ValueError(pudiscr_file+' does not exist')
-        pudiscr_tree.AddFile(pudiscr_file)
-        tree.AddFriend(pudiscr_tree)
-        print 'Added pu tree for',inFile
-    except:
-        #print 'Failed to add pu discrimination tree as friend for',inFile
-        return
+    #try:
+    #    pudiscr_tree=ROOT.TChain('pudiscr')
+    #    baseName=os.path.basename(inFile)
+    #    baseDir=os.path.dirname(inFile)
+    #    pudiscr_file=os.path.join(baseDir,'pudiscr',baseName)
+    #    if not os.path.isfile(pudiscr_file):
+    #        raise ValueError(pudiscr_file+' does not exist')
+    #    pudiscr_tree.AddFile(pudiscr_file)
+    #    tree.AddFriend(pudiscr_tree)
+    #    print 'Added pu tree for',inFile
+    #except:
+    #    #print 'Failed to add pu discrimination tree as friend for',inFile
+    #    return
 
 
     #identify data-taking era
@@ -124,24 +124,24 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
     mixedRP=None
     xangleRelFracs={}
     try:
+        print 'Analysing mixfile',mixFile
         with open(mixFile,'r') as cachefile:
             mixedRP=pickle.load(cachefile)        
 
         #build the list of probabilities for the crossing angles in each era
         for key in mixedRP:
             era,xangle=key
+            if not xangle in VALIDLHCXANGLES: continue
             n=len(mixedRP[key])
             if not era in xangleRelFracs:
-                xangleRelFracs[era]=[0,0,0,0]
-            xangleRelFracs[era][(xangle-120)/10]=n
+                xangleRelFracs[era]=ROOT.TH1F('xanglefrac_%s'%era,'',len(VALIDLHCXANGLES),0,len(VALIDLHCXANGLES))
+            xbin=(xangle-120)/10+1
+            xangleRelFracs[era].SetBinContent(xbin,n)
         for era in xangleRelFracs:
-            nera=sum(xangleRelFracs[era])
-            xangleRelFracs[era]=[x/nera for x in xangleRelFracs[era]]
-
-        print xangleRelFracs
-
+            xangleRelFracs[era].Scale(1./xangleRelFracs[era].Integral())
+       
     except Exception as e:
-        print e
+        if mixFile : print e
         pass
     
     #start histograms
@@ -166,10 +166,11 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
     #pileup control
     ht.add(ROOT.TH1F('nvtx',';Vertex multiplicity;Events',50,0,100))
     ht.add(ROOT.TH1F('rho',';Fastjet #rho;Events',50,0,30))
-    ht.add(ROOT.TH1F('rfc',';Random forest classifier probability;Events',50,0,1))
-    ht.add(ROOT.TH1F('HFPFMult',';PF multiplcity (HF);Events',50,0,1000))
-    ht.add(ROOT.TH1F('HFPFHt',';PF HT (HF) [GeV];Events',50,0,1000))
-    ht.add(ROOT.TH1F('HFPFHt',';PF P_{z} (HF) [TeV];Events',50,0,40))
+    #ht.add(ROOT.TH1F('rfc',';Random forest classifier probability;Events',50,0,1))
+    for d in ['HF','HE','EE','EB']:
+        ht.add(ROOT.TH1F(d+'PFMult',';PF multiplicity (%s);Events'%d,50,0,1000))
+        ht.add(ROOT.TH1F(d+'PFHt',';PF HT (%s) [GeV];Events'%d,50,0,1000))
+        ht.add(ROOT.TH1F(d+'PFHt',';PF P_{z} (%s) [TeV];Events'%d,50,0,40))
     ht.add(ROOT.TH1F('met',';Missing transverse energy [GeV];Events',50,0,200))
     ht.add(ROOT.TH1F('metbits',';MET filters;Events',124,0,124))
     ht.add(ROOT.TH1F('njets',';Jet multiplicity;Events',5,0,5))
@@ -185,7 +186,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
     #loop over events
     rpData={}
     selEvents=[]
-    summaryVars='cat:wgt:nvtx:nch:xangle:l1pt:l1eta:l2pt:l2eta:acopl:bosonpt:mpp:mmiss:mpp2:mmiss2'.split(':')
+    summaryVars='cat:wgt:nvtx:rho:PFMultSumHF:PFHtSumHF:PFPFPzSumHF:nch:xangle:l1pt:l1eta:l2pt:l2eta:acopl:bosonpt:mpp:mmiss:mpp2:mmiss2'.split(':')
     for i in xrange(0,nEntries):
 
         tree.GetEntry(i)
@@ -196,7 +197,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
         if tree.evcat==11*11   : evcat='ee'
         elif tree.evcat==11*13 : evcat='em'
         elif tree.evcat==13*13 : evcat='mm'
-        elif tree.evcat==22 and tree.hasLowPtATrigger : evcat="lpta"
+        elif tree.evcat==22 and tree.hasLowPtATrigger  : evcat="lpta"
         elif tree.evcat==22 and tree.hasHighPtATrigger : evcat="hpta"
         else : continue
         if tree.isSS : continue        
@@ -238,11 +239,12 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
             extra_muons.append( ROOT.TLorentzVector(mup4) )
             
         #proton tracks (standard and mixed)
-        rptks, near_rptks = None, None
+        far_rptks, near_rptks = None, None
         beamXangle     = int(tree.beamXangle)
         if isSignal or isData: 
             far_rptks  = getTracksPerRomanPot(tree)
             near_rptks = getTracksPerRomanPot(tree,False,False)
+            if not beamXangle in VALIDLHCXANGLES : continue
 
         mixed_beamXangle = None
         mixed_far_rptks  = None
@@ -250,12 +252,14 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
         if not isData:
             evEra=getRandomEra()
             if not isSignal: 
-                beamXangle=numpy.random.choice(VALIDLHCXANGLES, 1, p=xangleRelFracs[evEra])[0]
+                xbin=ROOT.TMath.FloorNint(xangleRelFracs[era].GetRandom())
+                beamXangle=VALIDLHCXANGLES[xbin]
         else:
             evEra=era
             if not mixedRP:
-                if isZ and tree.evcat==13*13 and tree.bosonpt<10 and beamXangle in VALIDLHCXANGLES:
-                    rfc=getattr(tree,'rfc_%d'%beamXangle)
+                #if isZ and tree.evcat==13*13 and tree.bosonpt<10 and beamXangle in VALIDLHCXANGLES:
+                if evcat=='em':
+                    rfc=0 #getattr(tree,'rfc_%d'%beamXangle)
                     rpDataKey=(era,beamXangle)
                     if not rpDataKey in rpData: rpData[rpDataKey]=[]
                     rpData[rpDataKey].append( MixedEvent(beamXangle,
@@ -273,27 +277,28 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
                     mixed_far_1rptk = (mixed_far_rptks[0],far_rptks[1])
                 else:
                     mixed_far_1rptk = (far_rptks[0],mixed_far_rptks[1])
-        except :
+        except Exception as e:
+            print e
             pass
 
         #fill histograms
         goldenSel=None
         mon_tasks=[]
         if isData:
-            mon_tasks.append( (rptks,beamXangle,'') )
-            mon_tasks.append( (mixed_1rptk,mixed_beamXangle,'_mix1') )
-            mon_tasks.append( (mixed_rptks,mixed_beamXangle,'_mix2') )
+            mon_tasks.append( (far_rptks,beamXangle,'') )
+            mon_tasks.append( (mixed_far_1rptk,mixed_beamXangle,'_mix1') )
+            mon_tasks.append( (mixed_far_rptks,mixed_beamXangle,'_mix2') )
         else:
             if isSignal:
                 #embed pileup to signal
-                tksPos=mixed_rptks[0]+rptks[0]
+                tksPos=mixed_far_rptks[0]+far_rptks[0]
                 shuffle(tksPos)
-                tksNeg=mixed_rptks[1]+rptks[1]
+                tksNeg=mixed_far_rptks[1]+far_rptks[1]
                 shuffle(tksNeg)
-                mixed_rptks=(tksPos,tksNeg)
+                mixed_far_rptks=(tksPos,tksNeg)
                 mixed_beamXangle=beamXangle
-                mon_tasks.append( (rptks,beamXangle,'nopu') )
-            mon_tasks.append( (mixed_rptks,mixed_beamXangle,'') )
+                mon_tasks.append( (far_rptks,beamXangle,'nopu') )
+            mon_tasks.append( (mixed_far_rptks,mixed_beamXangle,'') )
 
         for protons, xangle, pfix in mon_tasks:
 
@@ -334,11 +339,13 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
             cats += beamAngleCats
                 
             if (isData and 'mix' in pfix) or (isSignal and pfix==''):
-                if isZ and isElasticLike and highPur:
+                if (isZ or isA) and isElasticLike and highPur:
                     if goldenSel:
                         goldenSel += [pp.M(),mmass]
                     else:
-                        goldenSel=[tree.evcat,wgt,nvtx,nch,xangle,l1p4.Pt(),l1p4.Eta(),l2p4.Pt(),l2p4.Eta(),acopl,boson.Pt(),pp.M(),mmass]
+                        goldenSel=[tree.evcat,wgt,
+                                   nvtx,tree.rho,tree.PFMultSumHF,tree.PFHtSumHF,tree.PFPFPzSumHF,0,
+                                   nch,xangle,l1p4.Pt(),l1p4.Eta(),l2p4.Pt(),l2p4.Eta(),acopl,boson.Pt(),pp.M(),mmass]
 
             #final plots (for signal correct wgt by efficiency curve and duplicate for mm channel)
             finalPlots=[[wgt,cats]]
@@ -348,7 +355,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
 
             for pwgt,pcats in finalPlots:
                 
-                ht.fill((nvtx,pwgt),                  'nvtx',   pcats,pfix)
+                ht.fill((nvtx,pwgt),                  'nvtx',  pcats,pfix)
                 ht.fill((rho,pwgt),                   'rho',   pcats,pfix)
                 ht.fill((met,pwgt),                   'met',   pcats,pfix)
                 ht.fill((tree.metfilters,pwgt),       'metbits',   pcats,pfix)
@@ -362,11 +369,12 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
                 ht.fill((boson.M(),pwgt),             'mll',    pcats,pfix)
                 ht.fill((abs(boson.Rapidity()),pwgt), 'yll',    pcats,pfix)
                 ht.fill((boson.Pt(),pwgt),            'ptll',   pcats,pfix)
-                ht.fill((xangle,pwgt),                'xangle',    pcats,pfix)
-                ht.fill((getattr(tree,'rfc_%d'%xangle),pwgt), 'rfc',         pcats,pfix)
-                ht.fill((tree.PFMultSumHF,pwgt),              'HFPFMult',    pcats,pfix)
-                ht.fill((tree.PFHtSumHF,pwgt),                'HFPFHt',      pcats,pfix)
-                ht.fill((tree.PFPzSumHF/1.e3,pwgt),           'HFPFPZ',      pcats,pfix)
+                ht.fill((xangle,pwgt),                'xangle', pcats,pfix)
+                #ht.fill((getattr(tree,'rfc_%d'%xangle),pwgt), 'rfc',         pcats,pfix)
+                for sd in ['HF','HE','EE','EB']:
+                    ht.fill((getattr(tree,'PFMultSum'+sd),pwgt),     sd+'PFMult',    pcats,pfix)
+                    ht.fill((getattr(tree,'PFHtSum'+sd),pwgt),       sd+'PFHt',      pcats,pfix)
+                    ht.fill((getattr(tree,'PFPzSum'+sd)/1.e3,pwgt),  sd+'PFPZ',      pcats,pfix)
                 
                 ht.fill((len(extra_muons),pwgt), 'nextramu', pcats, pfix)
                 for mp4 in extra_muons:

@@ -106,18 +106,7 @@ ANALYSISTRIGGERLISTS={2017:['HLT_Ele32_WPTight_Gsf_v',
                             'HLT_PFJet320_v',
                             'HLT_PFJet400_v',
                             'HLT_PFJet450_v',
-                            'HLT_PFJet500_v',
-                            'HLT_PFJet550_v',
-                            'HLT_PFJetFwd40_v',
-                            'HLT_PFJetFwd60_v',
-                            'HLT_PFJetFwd80_v',
-                            'HLT_PFJetFwd140_v',
-                            'HLT_PFJetFwd200_v',
-                            'HLT_PFJetFwd260_v',
-                            'HLT_PFJetFwd320_v',
-                            'HLT_PFJetFwd400_v',
-                            'HLT_PFJetFwd450_v',
-                            'HLT_PFJetFwd500_v'
+                            'HLT_PFJet500_v'
                             ]
                       }
 
