@@ -85,7 +85,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
     """event loop"""
 
     isData=True if 'Data' in inFile else False
-    isSignal=True if 'MC13TeV_2017_ppxz_' in inFile else False
+    isSignal=True if 'MC13TeV_ppxz_' in inFile else False
 
     #bind main tree with pileup discrimination tree, if failed return
     tree=ROOT.TChain('analysis/data' if isSignal else 'tree')
@@ -115,10 +115,12 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
     mcEff={}
     if isSignal: 
         signalPt=[float(x) for x in re.findall(r'\d+', os.path.basename(inFile) )[2:]]
-        for ch in ['ee','mm']:
-            effIn=ROOT.TFile.Open('$CMSSW_BASE/src/TopLJets2015/TopAnalysis/plots/effsummary_%sz_ptboson.root'%ch)
-            mcEff[ch]=effIn.Get('gen%sz2trec_ptboson_ZH#rightarrowllbb_eff'%ch)
-            effIn.Close()
+        for ch in ['eez','mmz','lpta']:
+            effIn=ROOT.TFile.Open('$CMSSW_BASE/src/TopLJets2015/TopAnalysis/plots/effsummary_%s_ptboson.root'%ch)
+            pname='gen%s2trec_ptboson_ZH#rightarrowllbb_eff'%ch
+            if ch=='lpta': pname='genlpta2trec_ptboson_EWK #gammajj_eff'
+            mcEff[ch]=effIn.Get(pname)
+            effIn.Close()        
 
     #filter events to mix according to tag if needed
     mixedRP=None
@@ -190,36 +192,51 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
     #loop over events
     rpData={}
     selEvents=[]
-    summaryVars='cat:wgt:nvtx:rho:PFMultSumHF:PFHtSumHF:PFPFPzSumHF:nch:xangle:l1pt:l1eta:l2pt:l2eta:acopl:bosonpt:csi1:csi2:mpp:mmiss:mixcsi1:mixcsi2:mixmpp:mixmmiss'.split(':')
+    summaryVars='cat:wgt:nvtx:rho:PFMultSumHF:PFHtSumHF:PFPFPzSumHF:rfc:nch:xangle:l1pt:l1eta:l2pt:l2eta:acopl:bosonpt:csi1:csi2:mpp:mmiss:mixcsi1:mixcsi2:mixmpp:mixmmiss'.split(':')
     for i in xrange(0,nEntries):
 
         tree.GetEntry(i)
-        
+
+        #init "golden selected events for final statistcal analysis"
+        goldenSel=None
+
         if i%1000==0 : sys.stdout.write('\r [ %d/100 ] done' %(int(float(100.*i)/float(nEntries))))
     
         #base event selection
-        if tree.evcat==11*11   : evcat='ee'
-        elif tree.evcat==11*13 : evcat='em'
-        elif tree.evcat==13*13 : evcat='mm'
-        elif tree.evcat==22 and tree.hasLowPtATrigger  and tree.bosonpt<200  : evcat="lpta"
-        elif tree.evcat==22 and tree.hasHighPtATrigger and tree.bosonpt>=200 : evcat="hpta"
+        if tree.evcat==11*11 and not tree.isSS : evcat='ee'
+        elif tree.evcat==11*13 and not tree.isSS : evcat='em'
+        elif tree.evcat==13*13 and not tree.isSS : evcat='mm'
+        elif tree.evcat==22 :
+            if isSignal:
+                evcat="lpta" if tree.bosonpt<200 else "hpta"
+            else:
+                if tree.hasLowPtATrigger  and tree.bosonpt<200  : evcat="lpta"
+                elif tree.hasHighPtATrigger and tree.bosonpt>=200 : evcat="hpta"
         elif tree.evcat==0  and tree.hasZBTrigger : evcat=='zbias'
         else : continue
+        
+        #assign data-taking era and crossing angle
+        evEra = era
+        beamXangle = tree.beamXangle
+        if not isData:
+            evEra=getRandomEra()
+            if not isSignal: 
+                xbin=ROOT.TMath.FloorNint(xangleRelFracs[evEra].GetRandom())
+                beamXangle=VALIDLHCXANGLES[xbin]
 
-        #filter same-sign events
-        if tree.evcat!=22 and tree.evcat!=0 and tree.isSS : continue        
+        #data specific filters
+        if isData:
 
-        #check RPs are in
-        if isData and not isValidRunLumi(tree.run,tree.lumi,runLumiList): continue
+            #reject invalid beam crossing angles
+            if not beamXangle in VALIDLHCXANGLES : continue
 
-        wgt=tree.evwgt
-        nvtx=tree.nvtx
-        nch=tree.nchPV
-        rho=tree.rho
-        met=tree.met_pt
-        njets=0 if isSignal else tree.nj 
+            #check RPs are in
+            if not isValidRunLumi(tree.run,tree.lumi,runLumiList): continue
 
-        #lepton specific
+
+
+
+        #lepton kinematics
         l1p4=ROOT.TLorentzVector(0,0,0,0)
         l2p4=ROOT.TLorentzVector(0,0,0,0)        
         acopl=0
@@ -228,55 +245,60 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
             l1p4.SetPtEtaPhiM(tree.l1pt,tree.l1eta,tree.l1phi,tree.ml1)
             l2p4.SetPtEtaPhiM(tree.l2pt,tree.l2eta,tree.l2phi,tree.ml2)
             if l1p4.Pt()<l2p4.Pt(): l1p4,l2p4=l2p4,l1p4
-            if abs(l1p4.Eta())>2.1 : continue
+            #if abs(l1p4.Eta())>2.1 : continue
 
         #boson kinematics
         boson=ROOT.TLorentzVector(0,0,0,0)
         boson.SetPtEtaPhiM(tree.bosonpt,tree.bosoneta,tree.bosonphi,tree.mboson)
         isZ=tree.isZ
         isA=tree.isA
-        isHighPt=(boson.Pt()>50)
-        isLowPt=(boson.Pt()<10)
+        isHighPtZ=(boson.Pt()>50)
+        isLowPtZ=(boson.Pt()<10)
 
-        #Nicola's initial discriminator
+        #PU-related variables
+        #for signal most of these will be overriden by mixing       
+        n_extra_mu,nvtx,nch,rho,met,njets,PFMultSumHF,PFHtSumHF,PFPzSumHF,rfc=0,0,0,0,0,0,0,0,0,0
         extra_muons=[]
-        for im in range(tree.nrawmu):
-            mup4=ROOT.TLorentzVector(0,0,0,0)
-            mup4.SetPtEtaPhiM(tree.rawmu_pt[im],tree.rawmu_eta[im]/10.,tree.rawmu_phi[im]/10.,0.105)
-            if mup4.DeltaR(l1p4)<0.05 : continue
-            if mup4.DeltaR(l2p4)<0.05 : continue
-            extra_muons.append( ROOT.TLorentzVector(mup4) )
+        if not isSignal:
+            nvtx=tree.nvtx
+            nch=tree.nchPV
+            rho=tree.rho
+            met=tree.met_pt
+            njets=tree.nj 
+            PFMultSumHF=tree.PFMultSumHF
+            PFHtSumHF=tree.PFHtSumHF
+            PFPzSumHF=tree.PFPzSumHF
+            #rfc=getattr(tree,'rfc_%d'%beamXangle)
+            for im in range(tree.nrawmu):
+                mup4=ROOT.TLorentzVector(0,0,0,0)
+                mup4.SetPtEtaPhiM(tree.rawmu_pt[im],tree.rawmu_eta[im]/10.,tree.rawmu_phi[im]/10.,0.105)
+                if mup4.DeltaR(l1p4)<0.05 : continue
+                if mup4.DeltaR(l2p4)<0.05 : continue
+                extra_muons.append( ROOT.TLorentzVector(mup4) )
+            n_extra_mu=len(extra_muons)
             
         #proton tracks (standard and mixed)
         far_rptks, near_rptks = None, None
-        beamXangle     = int(tree.beamXangle)
         if isSignal or isData: 
             far_rptks  = getTracksPerRomanPot(tree)
-            near_rptks = getTracksPerRomanPot(tree,False,False)
-            if not beamXangle in VALIDLHCXANGLES : continue
+            near_rptks = getTracksPerRomanPot(tree,False,False)            
 
-        mixed_far_rptks  = None
-        mixed_far_1rptk  = None
-        if not isData:
-            evEra=getRandomEra()
-            if not isSignal: 
-                xbin=ROOT.TMath.FloorNint(xangleRelFracs[era].GetRandom())
-                beamXangle=VALIDLHCXANGLES[xbin]
-        else:
-            evEra=era
-            if not mixedRP:
-                #if isZ and tree.evcat==13*13 and tree.bosonpt<10 and beamXangle in VALIDLHCXANGLES:
-                if evcat=='em':
-                    rfc=0 #getattr(tree,'rfc_%d'%beamXangle)
-                    rpDataKey=(era,beamXangle)
-                    if not rpDataKey in rpData: rpData[rpDataKey]=[]
-                    rpData[rpDataKey].append( MixedEvent(beamXangle,
-                                                         [len(extra_muons),nvtx,rho,rfc],
-                                                         far_rptks,
-                                                         near_rptks
-                                                         ) )
-                continue
 
+        #if data and there is nothing to mix store the main characteristics of the event and continue
+        if isData and not mixedRP:
+            #if isZ and tree.evcat==13*13 and isLowPt:
+            if evcat=='em':                    
+                rpDataKey=(era,beamXangle)
+                if not rpDataKey in rpData: rpData[rpDataKey]=[]
+                rpData[rpDataKey].append( MixedEvent(beamXangle,
+                                                     [len(extra_muons),nvtx,rho,PFMultSumHF,PFHtSumHF,PFPzSumHF,rfc],
+                                                     far_rptks,
+                                                     near_rptks
+                                                     ) )
+            continue
+
+        #do the mixing
+        mixed_far_rptks,mixed_far_1rptk = None, None
         try:
             mixedEv=random.choice( mixedRP[(evEra,beamXangle)] )
             mixed_far_rptks=mixedEv.far_rptks
@@ -285,28 +307,33 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
                     mixed_far_1rptk = (mixed_far_rptks[0],far_rptks[1])
                 else:
                     mixed_far_1rptk = (far_rptks[0],mixed_far_rptks[1])
+
+            #assign pileup characteristics for the signal (Central detector and protons)
+            if isSignal:
+                n_extra_mu,nvtx,rho,PFMultSumHF,PFHtSumHF,PFPzSumHF,rfc=mixedEv.puDiscr
+                tksPos=mixed_far_rptks[0]+far_rptks[0]
+                shuffle(tksPos)
+                tksNeg=mixed_far_rptks[1]+far_rptks[1]
+                shuffle(tksNeg)
+                mixed_far_rptks=(tksPos,tksNeg)
+
         except Exception as e:
             print e
             pass
 
-        #build combinations of histograms
-        goldenSel=None
+        #prepare the combinations of protons with central detector to fill histograms for
         mon_tasks=[]
         if isData:
             mon_tasks.append( (far_rptks,near_rptks,'') )
             mon_tasks.append( (mixed_far_1rptk,None,'_mix1') )
             mon_tasks.append( (mixed_far_rptks,None,'_mix2') )
         else:
+            mon_tasks.append( (mixed_far_rptks,None,'') )            
             if isSignal:
-                #embed pileup to signal
-                tksPos=mixed_far_rptks[0]+far_rptks[0]
-                shuffle(tksPos)
-                tksNeg=mixed_far_rptks[1]+far_rptks[1]
-                shuffle(tksNeg)
-                mixed_far_rptks=(tksPos,tksNeg)                
                 mon_tasks.append( (far_rptks,near_rptks,'nopu') )
-            mon_tasks.append( (mixed_far_rptks,None,'') )
-
+            
+        #fill the histograms
+        wgt=tree.evwgt
         for protons,near_protons, pfix in mon_tasks:
 
             #no calibration, not worth it...
@@ -315,8 +342,8 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
             #high purity selection for proton tracks
             highPur = True if protons and len(protons[0])==1 and len(protons[1])==1 else False  
             if highPur:
-                if protons[0][0]<0.015 or protons[0][0]>0.20 : highPur=False
-                if protons[1][0]<0.015 or protons[1][0]>0.20 : highPur=False
+                if protons[0][0]<0.02 or protons[0][0]>0.18 : highPur=False
+                if protons[1][0]<0.02 or protons[1][0]>0.18 : highPur=False
 
             #check if Z and di-proton combination is consistent with elastic scattering
             pp=buildDiproton(protons)
@@ -334,8 +361,8 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
             cats.append(evcat)
             if isZ : 
                 cats.append(evcat+'Z')
-                if isHighPt : cats.append(evcat+'hptZ')
-                if isLowPt  : cats.append(evcat+'lptZ')
+                if isHighPtZ : cats.append(evcat+'hptZ')
+                if isLowPtZ  : cats.append(evcat+'lptZ')
             if isElasticLike and highPur :
                 ppCats=[c+'hpur' for c in cats]
                 cats += ppCats
@@ -348,7 +375,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
                         goldenSel += [protons[0][0],protons[1][0],pp.M(),mmass]
                     else:
                         goldenSel=[tree.evcat,wgt,
-                                   nvtx,tree.rho,tree.PFMultSumHF,tree.PFHtSumHF,tree.PFPzSumHF,0,
+                                   nvtx,rho,PFMultSumHF,PFHtSumHF,PFPzSumHF,rfc,
                                    nch,beamXangle,l1p4.Pt(),l1p4.Eta(),l2p4.Pt(),l2p4.Eta(),acopl,boson.Pt(),
                                    protons[0][0],protons[1][0],pp.M(),mmass]
 
@@ -357,17 +384,15 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
             if isSignal:
                 #signal has been pre-selected in the fiducial phase space so nEntries is 
                 #the effective number of events (or sum of weights) generated
-                finalPlots=[ [wgt*mcEff['ee'].Eval(boson.Pt())/nEntries, cats],
-                             [wgt*mcEff['mm'].Eval(boson.Pt())/nEntries, [c.replace(evcat,'mm') for c in cats if c[0:2]=='ee']] ]
+                if isZ:
+                    finalPlots=[ [wgt*mcEff['eez'].Eval(boson.Pt())/nEntries, cats],
+                                 [wgt*mcEff['mmz'].Eval(boson.Pt())/nEntries, [c.replace(evcat,'mm') for c in cats if c[0:2]=='ee']] ]
+                else:
+                    finalPlots=[ [wgt*mcEff['lpta'].Eval(boson.Pt())/nEntries, cats] ]
 
-            for pwgt,pcats in finalPlots:
-                
-                ht.fill((nvtx,pwgt),                  'nvtx',  pcats,pfix)
-                ht.fill((rho,pwgt),                   'rho',   pcats,pfix)
-                ht.fill((met,pwgt),                   'met',   pcats,pfix)
-                ht.fill((tree.metfilters,pwgt),       'metbits',   pcats,pfix)
-                ht.fill((njets,pwgt),                 'njets',  pcats,pfix)
-                ht.fill((nch,pwgt),                   'nch',    pcats,pfix)                                
+            for pwgt,pcats in finalPlots:   
+
+                #boson kinematics
                 ht.fill((l1p4.Pt(),pwgt),             'l1pt',   pcats,pfix)
                 ht.fill((l2p4.Pt(),pwgt),             'l2pt',   pcats,pfix)
                 ht.fill((abs(l1p4.Eta()),pwgt),       'l1eta',  pcats,pfix)
@@ -376,71 +401,87 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
                 ht.fill((boson.M(),pwgt),             'mll',    pcats,pfix)
                 ht.fill((abs(boson.Rapidity()),pwgt), 'yll',    pcats,pfix)
                 ht.fill((boson.Pt(),pwgt),            'ptll',   pcats,pfix)
-                ht.fill((beamXangle,pwgt),                'xangle', pcats,pfix)
+                
+                #pileup related
+                ht.fill((beamXangle,pwgt),            'xangle', pcats,pfix)
+                ht.fill((nvtx,pwgt),                  'nvtx',   pcats,pfix)
+                ht.fill((rho,pwgt),                   'rho',    pcats,pfix)
+                ht.fill((met,pwgt),                   'met',    pcats,pfix)
+                ht.fill((njets,pwgt),                 'njets',  pcats,pfix)
+                ht.fill((nch,pwgt),                   'nch',    pcats,pfix) 
                 #ht.fill((getattr(tree,'rfc_%d'%beamXangle),pwgt), 'rfc',         pcats,pfix)
-                for sd in ['HF','HE','EE','EB']:
-                    ht.fill((getattr(tree,'PFMultSum'+sd),pwgt),     'PFMult'+sd,    pcats,pfix)
-                    ht.fill((getattr(tree,'PFHtSum'+sd),pwgt),       'PFHt'+sd,      pcats,pfix)
-                    ht.fill((getattr(tree,'PFPzSum'+sd)/1.e3,pwgt),  'PFPZ'+sd,      pcats,pfix)
-                
-                ht.fill((len(extra_muons),pwgt), 'nextramu', pcats, pfix)
-                for mp4 in extra_muons:
-                    ht.fill((mp4.Pt(),pwgt), 'extramupt', pcats,pfix)
-                    ht.fill((abs(mp4.Eta()),pwgt), 'extramueta', pcats,pfix)
+                ht.fill((PFMultSumHF,pwgt),     'PFMultHF',    pcats,pfix)
+                ht.fill((PFHtSumHF,pwgt),       'PFHtHF',      pcats,pfix)
+                ht.fill((PFPzSumHF/1.e3,pwgt),  'PFPZHF',      pcats,pfix)
+                ht.fill((n_extra_mu,pwgt), 'nextramu', pcats, pfix)
+                if not isSignal:
+                    ht.fill((tree.metfilters,pwgt), 'metbits', pcats,pfix)
+                    for sd in ['HE','EE','EB']:
+                        ht.fill((getattr(tree,'PFMultSum'+sd),pwgt),    'PFMult'+sd, pcats, pfix)
+                        ht.fill((getattr(tree,'PFHtSum'+sd),pwgt),      'PFHt'+sd,   pcats, pfix)
+                        ht.fill((getattr(tree,'PFPzSum'+sd)/1.e3,pwgt), 'PFPZ'+sd,   pcats, pfix)
+                    for mp4 in extra_muons:
+                        ht.fill((mp4.Pt(),pwgt), 'extramupt', pcats,pfix)
+                        ht.fill((abs(mp4.Eta()),pwgt), 'extramueta', pcats,pfix)
 
+                #proton counting and kinematics
                 for irp,rpside in [(0,'pos'),(1,'neg')]:
                     ht.fill((len(protons[irp]),pwgt), 'ntk',    pcats,rpside+pfix)
-
-                ht.fill((0,pwgt), 'ppcount', pcats,pfix)
-                if not pp: continue        
-
-                ht.fill((1,pwgt), 'ppcount', pcats,pfix)
-                ht.fill((pp.M(),pwgt),             'mpp',       pcats,pfix)
-                ht.fill((abs(pp.Rapidity()),pwgt), 'ypp',       pcats,pfix)
-                
-                if near_pp:
-                    ht.fill((2,pwgt), 'ppcount', pcats,pfix)
-                    ht.fill((pp.M(),near_pp.M(),pwgt),                         'mpp2d',  pcats,pfix)
-                    ht.fill((abs(pp.Rapidity()),abs(near_pp.Rapidity()),pwgt), 'ypp2d',  pcats,pfix)
-
-                ht.fill((mmass,pwgt),              'mmass',     pcats,pfix)
-                for irp,rpside in [(0,'pos'),(1,'neg')]:
-
-                    ht.fill((len(protons[irp]),pwgt), 'ntk',    pcats,rpside+pfix)
-
                     for csi in protons[irp]:
-                        ht.fill((csi,pwgt), 'csi',             pcats,rpside+pfix)
-                        
+                        ht.fill((csi,pwgt), 'csi', pcats,rpside+pfix)                        
                         if not near_protons : continue
                         if len(near_protons[irp])==0 : continue
                         csi_near=near_protons[irp][0]
                         ht.fill((csi,csi_near,pwgt), 'csi2d', pcats,rpside+pfix)
-                    
 
+                #diproton kinematics
+                if not pp: 
+                    ht.fill((0,pwgt), 'ppcount', pcats,pfix)
+                    continue        
+                ht.fill((1,pwgt),                  'ppcount',   pcats, pfix)
+                ht.fill((pp.M(),pwgt),             'mpp',       pcats, pfix)
+                ht.fill((abs(pp.Rapidity()),pwgt), 'ypp',       pcats, pfix)                
+                if near_pp:
+                    ht.fill((2,pwgt),                                          'ppcount', pcats, pfix)
+                    ht.fill((pp.M(),near_pp.M(),pwgt),                         'mpp2d',   pcats, pfix)
+                    ht.fill((abs(pp.Rapidity()),abs(near_pp.Rapidity()),pwgt), 'ypp2d',   pcats, pfix)
 
+                #the final variable
+                ht.fill((mmass,pwgt),              'mmass',     pcats,pfix)                    
 
         #select events
-        if goldenSel:
-            nVarsMissed=len(summaryVars)-len(goldenSel)
-            if nVarsMissed>0: goldenSel += [0.]*nVarsMissed
+        if not goldenSel: continue
 
-            if isSignal:
-                                
+        #fill missing variables with 0.'s (signal)
+        nVarsMissed=len(summaryVars)-len(goldenSel)
+        if nVarsMissed>0: goldenSel += [0.]*nVarsMissed
+
+        if isSignal:
+                
+            if isZ:
                 #add a copy for ee
                 eeGoldenSel=copy.copy(goldenSel)
                 eeGoldenSel[0]=11*11
-                eeGoldenSel[1]=goldenSel[1]*mcEff['ee'].Eval(boson.Pt())/nEntries
+                eeGoldenSel[1]=goldenSel[1]*mcEff['eez'].Eval(boson.Pt())/nEntries
                 selEvents.append(eeGoldenSel)
                 
                 #add a copy for mm
                 mmGoldenSel=copy.copy(goldenSel)
                 mmGoldenSel[0]=13*13
-                mmGoldenSel[1]=goldenSel[1]*mcEff['mm'].Eval(boson.Pt())/nEntries
+                mmGoldenSel[1]=goldenSel[1]*mcEff['mmz'].Eval(boson.Pt())/nEntries
                 selEvents.append(mmGoldenSel)
-
-            else:
-
-                selEvents.append(goldenSel)
+                
+            if isA:
+                
+                #add a copy for the photon
+                aGoldenSel=copy.copy(goldenSel)
+                aGoldenSel[0]=22
+                aGoldenSel[1]=goldenSel[1]*mcEff['lpta'].Eval(boson.Pt())/nEntries
+                selEvents.append(aGoldenSel)
+                    
+        else:
+            
+            selEvents.append(goldenSel)
             
 
     #dump events for the mixing

@@ -6,7 +6,6 @@ def getPassGenDistributions(pName,gName,plotter,ci,fill=0,marker=20):
     """reads the distributions from the plotter"""
 
     passH=plotter.Get(pName)
-
     fixExtremities(passH)
     passH.SetDirectory(0)
     passH.SetFillStyle(fill)
@@ -274,10 +273,11 @@ ROOT.gStyle.SetOptTitle(0)
 ROOT.gROOT.SetBatch(True)
 
 for d in ['ptboson','mll','drll']:
-    for ch in ['ee','mm','eez','mmz','lpta','hpta']:
+    for ch in ['ee','mm','eez','mmz','lpta']:
         try:
             runSelectionEfficiencyFor(ch,d)
         except Exception as e:
+            print e
             pass
 
 
