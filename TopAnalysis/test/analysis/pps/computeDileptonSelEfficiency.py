@@ -256,6 +256,8 @@ def runSelectionEfficiencyFor(ch,d):
                                                 ]:
 
         if not tag in effSummary: continue
+        if 'pta' in ch and tag=='trig':
+            yran=(0,1)
         showEfficiencyPlot(grColl=effSummary[tag],
                            xtit=xtit,
                            ytit=ytit,
@@ -275,7 +277,7 @@ for d in ['ptboson','mll','drll']:
     for ch in ['ee','mm','eez','mmz','lpta','hpta']:
         try:
             runSelectionEfficiencyFor(ch,d)
-        except:
+        except Exception as e:
             pass
 
 
