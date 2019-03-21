@@ -11,14 +11,15 @@ def getEntries(url,tname):
     f=ROOT.TFile.Open(url)
     if f.IsZombie():
         raise RuntimeError('Zombie file for %s'%tname)
-    n=f.Get(tname).GetEntriesFast()
+    n=0
+    #n=f.Get(tname).GetEntriesFast()
     f.Close()
 
     return n
 
 def runAnaPacked(args):
     url,tag=args
-    os.system('sh test/analysis/pps/wrapAnalysis.sh 1 {0}/analysis {0}/Chunks {1} {0}/analysis/Chunks/mixbank.pck'.format(url,tag))
+    os.system('sh test/analysis/pps/wrapAnalysis.sh 1 {0}/analysis {0}/Chunks {1} {0}/analysis/mixbank.pck'.format(url,tag))
 
 dontrun=False
 url=sys.argv[1]
@@ -35,8 +36,8 @@ for f in os.listdir(url+'/Chunks'):
     else:
         try:
             nentries=getEntries(fullf,'data')                    
-        except:
-            print 'Corrupted or empty file for',f
+        except Exception as e:
+            print 'Corrupted or empty file for',f,e
             toCheck.append(f)
 
 if dontrun:

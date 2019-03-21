@@ -18,6 +18,8 @@ from TopLJets2015.TopAnalysis.HistoTool import *
 from mixedEvent import *
 
 VALIDLHCXANGLES=[120,130,140,150]
+DIMUONS=13*13
+EMU=11*13
 
 def isValidRunLumi(run,lumi,runLumiList):
 
@@ -132,16 +134,16 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
 
         #build the list of probabilities for the crossing angles in each era
         for key in mixedRP:
-            era,xangle=key
-            if not xangle in VALIDLHCXANGLES: continue
+            mix_era,mix_xangle,mix_evcat=key
+            if not mix_xangle in VALIDLHCXANGLES: continue
             n=len(mixedRP[key])
-            if not era in xangleRelFracs:
-                xangleRelFracs[era]=ROOT.TH1F('xanglefrac_%s'%era,'',len(VALIDLHCXANGLES),0,len(VALIDLHCXANGLES))
-            xbin=(xangle-120)/10+1
-            xangleRelFracs[era].SetBinContent(xbin,n)
-        for era in xangleRelFracs:
-            xangleRelFracs[era].Scale(1./xangleRelFracs[era].Integral())
-       
+            xangleKey=(mix_era,mix_evcat)
+            if not xangleKey in xangleRelFracs:
+                xangleRelFracs[xangleKey]=ROOT.TH1F('xanglefrac_%s_%d'%xangleKey,'',len(VALIDLHCXANGLES),0,len(VALIDLHCXANGLES))
+            xbin=(mix_xangle-120)/10+1
+            xangleRelFracs[xangleKey].SetBinContent(xbin,n)
+        for xangleKey in xangleRelFracs:
+            xangleRelFracs[xangleKey].Scale(1./xangleRelFracs[xangleKey].Integral())
     except Exception as e:
         if mixFile : print e
         pass
@@ -174,9 +176,9 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
     ht.add(ROOT.TH1F('rho',';Fastjet #rho;Events',50,0,30))
     #ht.add(ROOT.TH1F('rfc',';Random forest classifier probability;Events',50,0,1))
     for d in ['HF','HE','EE','EB']:
-        ht.add(ROOT.TH1F(d+'PFMult',';PF multiplicity (%s);Events'%d,50,0,1000))
-        ht.add(ROOT.TH1F(d+'PFHt',';PF HT (%s) [GeV];Events'%d,50,0,1000))
-        ht.add(ROOT.TH1F(d+'PFHt',';PF P_{z} (%s) [TeV];Events'%d,50,0,40))
+        ht.add(ROOT.TH1F('PFMult'+d,';PF multiplicity (%s);Events'%d,50,0,1000))
+        ht.add(ROOT.TH1F('PFHt'+d,';PF HT (%s) [GeV];Events'%d,50,0,1000))
+        ht.add(ROOT.TH1F('PFHt'+d,';PF P_{z} (%s) [TeV];Events'%d,50,0,40))
     ht.add(ROOT.TH1F('met',';Missing transverse energy [GeV];Events',50,0,200))
     ht.add(ROOT.TH1F('metbits',';MET filters;Events',124,0,124))
     ht.add(ROOT.TH1F('njets',';Jet multiplicity;Events',5,0,5))
@@ -192,7 +194,13 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
     #loop over events
     rpData={}
     selEvents=[]
-    summaryVars='cat:wgt:nvtx:rho:PFMultSumHF:PFHtSumHF:PFPFPzSumHF:rfc:nch:xangle:l1pt:l1eta:l2pt:l2eta:acopl:bosonpt:csi1:csi2:mpp:mmiss:mixcsi1:mixcsi2:mixmpp:mixmmiss'.split(':')
+    summaryVars='cat:wgt:xangle:'
+    summaryVars+='l1pt:l1eta:l2pt:l2eta:acopl:bosonpt:'
+    summaryVars+='nch:nvtx:rho:PFMultSumHF:PFHtSumHF:PFPzSumHF:rfc:'
+    summaryVars+='csi1:csi2:mpp:mmiss:'
+    summaryVars+='mixcsi1:mixcsi2:mixmpp:mixmmiss:'
+    summaryVars+='mixemcsi1:mixemcsi2:mixemmpp:mixemmmiss'
+    summaryVars=summaryVars.split(':')
     for i in xrange(0,nEntries):
 
         tree.GetEntry(i)
@@ -204,8 +212,8 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
     
         #base event selection
         if tree.evcat==11*11 and not tree.isSS : evcat='ee'
-        elif tree.evcat==11*13 and not tree.isSS : evcat='em'
-        elif tree.evcat==13*13 and not tree.isSS : evcat='mm'
+        elif tree.evcat==EMU and not tree.isSS : evcat='em'
+        elif tree.evcat==DIMUONS and not tree.isSS : evcat='mm'
         elif tree.evcat==22 :
             if isSignal:
                 evcat="lpta" if tree.bosonpt<200 else "hpta"
@@ -221,7 +229,8 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
         if not isData:
             evEra=getRandomEra()
             if not isSignal: 
-                xbin=ROOT.TMath.FloorNint(xangleRelFracs[evEra].GetRandom())
+                xangleKey=(evEra,DIMUONS)
+                xbin=ROOT.TMath.FloorNint(xangleRelFracs[xangleKey].GetRandom())
                 beamXangle=VALIDLHCXANGLES[xbin]
 
         #data specific filters
@@ -286,9 +295,11 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
 
         #if data and there is nothing to mix store the main characteristics of the event and continue
         if isData and not mixedRP:
-            #if isZ and tree.evcat==13*13 and isLowPt:
-            if evcat=='em':                    
-                rpDataKey=(era,beamXangle)
+
+            #for Z->mm use only 10% otherwise we have way too many events to do this efficiently
+            if (isZ and tree.evcat==DIMUONS and isLowPtZ and random.random()<0.1) or evcat=='em':
+
+                rpDataKey=(era,beamXangle,int(tree.evcat))
                 if not rpDataKey in rpData: rpData[rpDataKey]=[]
                 rpData[rpDataKey].append( MixedEvent(beamXangle,
                                                      [len(extra_muons),nvtx,rho,PFMultSumHF,PFHtSumHF,PFPzSumHF,rfc],
@@ -298,42 +309,55 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
             continue
 
         #do the mixing
-        mixed_far_rptks,mixed_far_1rptk = None, None
+        mixed_far_rptks,mixed_far_1rptk = {}, {}
         try:
-            mixedEv=random.choice( mixedRP[(evEra,beamXangle)] )
-            mixed_far_rptks=mixedEv.far_rptks
-            if far_rptks and mixed_far_rptks:
-                if random.random()<0.5:
-                    mixed_far_1rptk = (mixed_far_rptks[0],far_rptks[1])
-                else:
-                    mixed_far_1rptk = (far_rptks[0],mixed_far_rptks[1])
+            for mixEvCat in [DIMUONS,EMU]:
+                mixedEvKey=(evEra,beamXangle,mixEvCat)
+                mixedEv=random.choice( mixedRP[mixedEvKey] )
+                mixed_far_rptks[mixEvCat]=mixedEv.far_rptks
+                if far_rptks and mixed_far_rptks[mixEvCat]:
+                    if random.random()<0.5:
+                        mixed_far_1rptk[mixEvCat] = (mixed_far_rptks[mixEvCat][0],far_rptks[1])
+                    else:
+                        mixed_far_1rptk[mixEvCat] = (far_rptks[0],mixed_far_rptks[mixEvCat][1])
 
-            #assign pileup characteristics for the signal (Central detector and protons)
-            if isSignal:
-                n_extra_mu,nvtx,rho,PFMultSumHF,PFHtSumHF,PFPzSumHF,rfc=mixedEv.puDiscr
-                tksPos=mixed_far_rptks[0]+far_rptks[0]
-                shuffle(tksPos)
-                tksNeg=mixed_far_rptks[1]+far_rptks[1]
-                shuffle(tksNeg)
-                mixed_far_rptks=(tksPos,tksNeg)
+                #for signal add the tracks to the simulated ones
+                #assign pileup characteristics from the Z->mm low pT events
+                if isSignal:
+                    if mixEvCat==DIMUONS:
+                        n_extra_mu,nvtx,rho,PFMultSumHF,PFHtSumHF,PFPzSumHF,rfc=mixedEv.puDiscr
+                    tksPos=mixed_far_rptks[mixEvCat][0]+far_rptks[0]
+                    shuffle(tksPos)
+                    tksNeg=mixed_far_rptks[mixEvCat][1]+far_rptks[1]
+                    shuffle(tksNeg)
+                    mixed_far_rptks[mixEvCat]=(tksPos,tksNeg)
 
         except Exception as e:
-            print e
+            print e  
+            print evEra,beamXangle,mixEvCat,'->',mixedEvKey
             pass
 
         #prepare the combinations of protons with central detector to fill histograms for
         mon_tasks=[]
         if isData:
             mon_tasks.append( (far_rptks,near_rptks,'') )
-            mon_tasks.append( (mixed_far_1rptk,None,'_mix1') )
-            mon_tasks.append( (mixed_far_rptks,None,'_mix2') )
+            if DIMUONS in mixed_far_1rptk:
+                mon_tasks.append( (mixed_far_1rptk[DIMUONS],None,'_mix1') )
+                mon_tasks.append( (mixed_far_rptks[DIMUONS],None,'_mix2') )
+            if EMU in mixed_far_1rptk:
+                mon_tasks.append( (mixed_far_1rptk[EMU],None,'_mixem1') )
+                mon_tasks.append( (mixed_far_rptks[EMU],None,'_mixem2') )
         else:
-            mon_tasks.append( (mixed_far_rptks,None,'') )            
+            if DIMUONS in mixed_far_rptks:
+                mon_tasks.append( (mixed_far_rptks[DIMUONS],None,'') )            
+            if EMU in mixed_far_rptks:
+                mon_tasks.append( (mixed_far_rptks[EMU],None,'_mixem2') )            
             if isSignal:
                 mon_tasks.append( (far_rptks,near_rptks,'nopu') )
             
         #fill the histograms
         wgt=tree.evwgt
+        hasAHighPurSelection=False
         for protons,near_protons, pfix in mon_tasks:
 
             #no calibration, not worth it...
@@ -369,15 +393,26 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
             beamAngleCats=[c+'%d'%beamXangle for c in cats]
             cats += beamAngleCats
                 
-            if (isData and 'mix' in pfix) or (isSignal and pfix==''):
-                if (isZ or isA) and isElasticLike and highPur:
-                    if goldenSel:
-                        goldenSel += [protons[0][0],protons[1][0],pp.M(),mmass]
-                    else:
-                        goldenSel=[tree.evcat,wgt,
-                                   nvtx,rho,PFMultSumHF,PFHtSumHF,PFPzSumHF,rfc,
-                                   nch,beamXangle,l1p4.Pt(),l1p4.Eta(),l2p4.Pt(),l2p4.Eta(),acopl,boson.Pt(),
-                                   protons[0][0],protons[1][0],pp.M(),mmass]
+
+            #save he basic info on golden events
+            saveGoldenSel=False
+            if isSignal and pfix in ['','_mixem2']:
+                saveGoldenSel==True
+            if isData and (isZ or isA):
+                if pfix in ['','_mix2','_mixem2']:
+                    saveGoldenSel=True                
+
+            if saveGoldenSel:                    
+                if not goldenSel:
+                    goldenSel=[tree.evcat,wgt,beamXangle,
+                               l1p4.Pt(),l1p4.Eta(),l2p4.Pt(),l2p4.Eta(),acopl,boson.Pt(),
+                               nch,nvtx,rho,PFMultSumHF,PFHtSumHF,PFPzSumHF,rfc]
+                task_protonInfo=[0,0,0,0]
+                if isElasticLike and highPur:
+                    hasAHighPurSelection=True
+                    task_protonInfo=[protons[0][0],protons[1][0],pp.M(),mmass]
+                goldenSel += task_protonInfo
+
 
             #final plots (for signal correct wgt by efficiency curve and duplicate for mm channel)
             finalPlots=[[wgt,cats]]
@@ -450,6 +485,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
                 ht.fill((mmass,pwgt),              'mmass',     pcats,pfix)                    
 
         #select events
+        if not hasAHighPurSelection: continue
         if not goldenSel: continue
 
         #fill missing variables with 0.'s (signal)
@@ -467,7 +503,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
                 
                 #add a copy for mm
                 mmGoldenSel=copy.copy(goldenSel)
-                mmGoldenSel[0]=13*13
+                mmGoldenSel[0]=DIMUONS
                 mmGoldenSel[1]=goldenSel[1]*mcEff['mmz'].Eval(boson.Pt())/nEntries
                 selEvents.append(mmGoldenSel)
                 
@@ -492,8 +528,8 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
         with open(rpDataOut,'w') as cachefile:
             pickle.dump(rpData,cachefile, pickle.HIGHEST_PROTOCOL)        
 
-        #at this point no need to save anything else
-        return
+    #if there was no mixing don't do anything else
+    if not mixFile: return 
 
     #save results
     ht.writeToFile(outFileName)
