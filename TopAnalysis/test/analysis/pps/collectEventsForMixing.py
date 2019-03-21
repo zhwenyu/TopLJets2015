@@ -5,21 +5,41 @@ from random import shuffle
 from collections import defaultdict
 
 rpData = defaultdict(list)
-scanDir=sys.argv[1]
-for f in os.listdir(scanDir):
-    if not '.pck' in f: continue
-    if not 'Data' in f: continue
+
+baseDir=sys.argv[1]
+fList=[f.replace('.root','.pck') for f in os.listdir(baseDir+'/Chunks') if 'Data' in f]
+
+toCheck=[]
+for f in fList:
+
+    if 'ZeroBias' in f : continue
+    if 'DoubleEG' in f : continue
+    if 'DoubleMuon' in f : continue
+    if 'Photon' in f : continue
+
+    fullf=os.path.join(baseDir+'/analysis/Chunks',f)
+
+    #check if file was produced
+    if not os.path.isfile(fullf):
+        toCheck.append(f)
+        continue
+
     try:
-        with open(os.path.join(scanDir,f),'r') as cache:
+        with open(fullf,'r') as cache:
             a=pickle.load(cache)
         for key in a: rpData[key] += a[key]
     except Exception as e:
-        print e
-        print 'Check',f
+        toCheck.append(f)
 
 print 'Total number of events for mixing'
 for key in rpData:
     print key,len(rpData[key])
 
-with open(os.path.join(scanDir,'mixbank.pck'),'w') as cache:
+with open('mixbank.pck','w') as cache:
     pickle.dump(rpData,cache)
+os.system('mv -v mixbank.pck %s/analysis/mixbank.pck'%baseDir)
+
+if len(toCheck)>0:
+    print 'Re-running locally',len(toCheck),'jobs'
+    for f in toCheck:
+        os.system('sh test/analysis/pps/wrapAnalysis.sh 0 {0}/analysis {0}/Chunks {1}'.format(baseDir,f.replace('.pck','.root')))

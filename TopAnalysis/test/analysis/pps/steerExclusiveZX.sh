@@ -131,7 +131,7 @@ case $WHAT in
         ;;
 
     COLLECTMIX )
-        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/collectEventsForMixing.py /eos/cms/${outdir}/analysis/Chunks
+        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/collectEventsForMixing.py /eos/cms/${outdir}
         ;;
 
     ANA )
@@ -139,25 +139,25 @@ case $WHAT in
         predin=/eos/cms/${outdir}/Chunks
         predout=/eos/cms/${outdir}/analysis
         condor_prep=runana_condor.sub
-        mix_file=/eos/cms/${outdir}/analysis/Chunks/mixbank.pck
+        mix_file=/eos/cms/${outdir}/analysis/mixbank.pck
         echo "executable  = ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/pps/wrapAnalysis.sh" > $condor_prep
         echo "output      = ${condor_prep}.out" >> $condor_prep
         echo "error       = ${condor_prep}.err" >> $condor_prep
         echo "log         = ${condor_prep}.log" >> $condor_prep
         echo "arguments   = ${step} ${predout} ${predin} \$(chunk)" ${mix_file} >> $condor_prep
         echo "queue chunk matching (${predin}/*.root)" >> $condor_prep
-        condor_submit $condor_prep
+        #condor_submit $condor_prep
 
         #run locally
-        #python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 1 --jobs 8 \
-        #    --json ${samples_json} --RPout ${RPout_json} -o ${predout} --mix ${mix_file} -i ${predin};
+        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 1 --jobs 8 \
+            --json ${samples_json} --RPout ${RPout_json} -o ${predout} --mix ${mix_file} -i ${predin};
         
         ;;
 
     ANASIG )
         
         python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 1 --jobs 8 \
-            --json ${signal_json} --RPout ${RPout_json} --mix /eos/cms/${outdir}/analysis/Chunks/mixbank.pck \
+            --json ${signal_json} --RPout ${RPout_json} --mix /eos/cms/${outdir}/analysis/mixbank.pck \
             -i /eos/cms/${outdir}/Chunks -o /eos/cms/${outdir}/analysis
 
         ;;
