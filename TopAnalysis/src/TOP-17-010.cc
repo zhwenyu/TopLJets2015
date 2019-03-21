@@ -93,7 +93,7 @@ void TOP17010::init(UInt_t scenario){
   t_ = (TTree*)f_->Get("analysis/data");
   attachToMiniEventTree(t_,ev_,true);
   nentries_ = t_->GetEntriesFast();
-  if (debug_) nentries_ = 1000; //restrict number of entries for testing EDIT 10000
+  if (debug_) nentries_ = 10000; //restrict number of entries for testing EDIT 10000
   t_->GetEntry(0);
 
   TString baseName=gSystem->BaseName(outname_); 
@@ -387,14 +387,17 @@ void TOP17010::runAnalysis()
         }
 
        // costhetastar gen
-       std::vector<Particle> genleptons        = selector_->getPartonLeptons(ev_, 15, 2.5);
-       std::vector<Particle> genwbosons        = selector_->getPartonWbosons(ev_, 20, 2.5); 
-       std::vector<Particle> genbs             = selector_->getPartonBs(ev_, 20., 2.5 );
-       
+       std::vector<Particle> genleptons        = selector_->getPartonLeptons(ev_, -1, 15);
+       std::vector<Particle> genwbosons        = selector_->getPartonWbosons(ev_, -1,  15.); 
+       std::vector<Particle> genbs             = selector_->getPartonBs(ev_, -1, 15 );
+      
+       if ( genleptons.size() <2 )  continue;
+       if ( genbs.size() <2 )  continue;
        std::vector<float> costhetastar;
+
        for(Int_t igen=0; igen<ev_.ngtop; igen++) {
          if(abs(ev_.gtop_id[igen])!=6) continue;
-          cout << " one gen top, id " << ev_.gtop_id[igen] << ", pt " << ev_.gtop_pt[igen] << "\n";
+//          cout << " one gen top, id " << ev_.gtop_id[igen] << ", pt " << ev_.gtop_pt[igen] << "\n";
          TLorentzVector gentop;
          gentop.SetPtEtaPhiM( ev_.gtop_pt[igen], ev_.gtop_eta[igen], ev_.gtop_phi[igen], ev_.gtop_m[igen] );
          
@@ -412,14 +415,14 @@ void TOP17010::runAnalysis()
                 int genw_id = genw.id();
                 if ( ev_.gtop_id[igen]*genb_id <0 ) continue;
                 if ( genw_id*genl_id > 0) continue; 
-                if ( genb_id*genl_id > 0) continue;
-                cout << "genb_id " << genb_id << " genlep_id "<< genl_id ; 
+                if ( genb_id*genl_id > 0) continue;  // lep and b oppo.
+ //               cout << "genb_id " << genb_id << " genlep_id "<< genl_id << "\n" ; 
                 TLorentzVector l_wrf= genl.p4();
                 TLorentzVector b_trf= genb.p4();
 
-                TLorentzVector lepb = l_wrf+ b_trf;
-                float mlb_gen = lepb.M() ;
-                cout << " mlb_gen " << mlb_gen << "\n";
+  //              TLorentzVector lepb = l_wrf+ b_trf;
+  //              float mlb_gen = lepb.M() ;
+  //              cout << " mlb_gen " << mlb_gen << "\n";
 
                 TVector3 wrf_boost=genw.BoostVector()*(-1);      
                 l_wrf.Boost(wrf_boost);
@@ -427,7 +430,7 @@ void TOP17010::runAnalysis()
                 b_trf.Boost(trf_boost);
             
                 float costhstar = l_wrf.Vect().Dot(b_trf.Vect()) / (l_wrf.Vect().Mag()*b_trf.Vect().Mag());
-              cout << " getonecosthstar---- " << costhstar << "\n";
+             cout << " getonecosthstar---- " << costhstar << "\n";
                costhetastar.push_back(costhstar);
               }
             }

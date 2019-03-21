@@ -98,8 +98,8 @@ bool BTagSFUtil::applySF(bool& isBTagged, float Btag_SF, float Btag_eff){
 void BTagSFUtil::startBTVcalibrationReaders(TString era,BTagEntry::OperatingPoint btagOP)
 {
   //start the btag calibration
-  TString btagUncUrl( era+"/DeepCSV_94XSF_V3_B_F.csv");
-  if(era.Contains("2016")) btagUncUrl=era+"/DeepCSV_2016LegacySF_V1.csv";
+  TString btagUncUrl( era+"/DeepCSV_94XSF_V3_B_F.csv"); 
+  if(era.Contains("2016")) btagUncUrl=era+"/DeepCSV_2016LegacySF_V1.csv"; 
   gSystem->ExpandPathName(btagUncUrl);
   BTagCalibration btvcalib("DeepCSV",btagUncUrl.Data());
 
