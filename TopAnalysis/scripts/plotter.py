@@ -203,12 +203,13 @@ def main():
 
                                 #scale by lumi
                                 lumi=opt.lumi
-                                for tag in lumiSpecs:
-                                    if not tag+'_' in key: continue
+                                for tag in lumiSpecs:                                    
+                                    if not tag in key.split('_'): continue
                                     lumi=lumiSpecs[tag]
                                     break
                                 if not opt.rawYields:
-                                    hist.Scale(xsec*lumi*puNormSF*sfVal)                    
+                                    hist.Scale(xsec*lumi*puNormSF*sfVal)       
+             
                             #rebin if needed
                             if opt.rebin>1:  hist.Rebin(opt.rebin)
 
@@ -246,7 +247,7 @@ def main():
         if opt.silent : skipPlot=True
         lumi=opt.lumi
         for tag in lumiSpecs:
-            if not tag+'_' in p: continue
+            if not tag in p.split('_'): continue
             lumi=lumiSpecs[tag]
             break
 

@@ -6,6 +6,8 @@
 
 #include <iostream>
 
+using namespace std;
+
 //
 LumiTools::LumiTools(TString era,TH1 *genPU):
   countH_(0),

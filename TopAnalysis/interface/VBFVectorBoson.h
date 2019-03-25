@@ -193,6 +193,9 @@ private:
   std::vector<TString> lowVPtPhotonTrigs_, highVPtPhotonTrigs_;
   bool applyTrigSafePhoton_;
   
+  //gen level information
+  float genMjj_,genAPt_;
+
   //categorizer and tree reader
   vbf::Category category_;  
   SelectionTool *selector_;

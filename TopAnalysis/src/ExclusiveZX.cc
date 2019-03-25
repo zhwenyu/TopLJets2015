@@ -7,6 +7,7 @@
 #include <TLorentzVector.h>
 #include <TGraphAsymmErrors.h>
 
+//#include "TopLJets2015/TopAnalysis/interface/JSONWrapper.h"
 #include "TopLJets2015/TopAnalysis/interface/CommonTools.h"
 #include "TopLJets2015/TopAnalysis/interface/ExclusiveZX.h"
 #include "TopQuarkAnalysis/TopTools/interface/MEzCalculator.h"
@@ -29,19 +30,35 @@ using namespace std;
 #define ADDVAR(x,name,t,tree) tree->Branch(name,x,TString(name)+TString(t))
 
 //
-void RunExclusiveZX(TString filename,
-                     TString outname,
-                     Int_t channelSelection, 
-                     Int_t chargeSelection, 
-                     TH1F *normH, 
-                     TH1F *genPU, 
-                     TString era,
-                     Bool_t debug)
+void RunExclusiveZX(const TString in_fname,
+                    TString outname,
+                    Int_t channelSelection, 
+                    Int_t chargeSelection, 
+                    TH1F *normH, 
+                    TH1F *genPU, 
+                    TString era,
+                    Bool_t debug)
 {
   /////////////////////
   // INITIALIZATION //
   ///////////////////
   const char* CMSSW_BASE = getenv("CMSSW_BASE");
+  const TString filename(in_fname);
+  bool vetoPromptPhotons = filename.Contains("_QCDEM_") || filename.Contains("_TTJets");
+  
+  //RP in json
+  /*
+  std::string RPoutFile(Form("%s/src/TopLJets2015/TopAnalysis/test/analysis/pps/golden_noRP.json", CMSSW_BASE));
+  JSONWrapper::Object json(RPoutFile,true);
+  for(auto k : json.key){
+    cout << k << endl;
+    std::vector<JSONWrapper::Object> lumis=json.getObject(k).daughters();
+    for(auto ll : lumis) {
+      for(auto kk : ll["obj"].obj)
+        cout << "\t" << kk.val << endl;
+    }
+  }
+  */
 
   ctpps::LHCConditionsFactory lhc_conds;
   lhc_conds.feedConditions(Form("%s/src/TopLJets2015/CTPPSAnalysisTools/data/2017/xangle_tillTS2.csv", CMSSW_BASE));
@@ -58,6 +75,8 @@ void RunExclusiveZX(TString filename,
   outT->Branch("run",&ev.run,"run/i");
   outT->Branch("event",&ev.event,"event/l");
   outT->Branch("lumi",&ev.lumi,"lumi/i");
+  Int_t beamXangle;
+  outT->Branch("beamXangle",&beamXangle,"beamXangle/I");
   outT->Branch("nvtx",&ev.nvtx,"nvtx/I");
   outT->Branch("nchPV",&ev.nchPV,"nchPV/I");
   outT->Branch("sumPVChPt",&ev.sumPVChPt,"sumPVChPt/F");
@@ -105,14 +124,14 @@ void RunExclusiveZX(TString filename,
                    "PFMultDiffEB",   "PFMultDiffEE",   "PFMultDiffHE",   "PFMultDiffHF", 
                    "PFChMultSumEB",  "PFChMultSumEE",  "PFChMultSumHE",  "PFChMultSumHF", 
                    "PFChMultDiffEB", "PFChMultDiffEE", "PFChMultDiffHE", "PFChMultDiffHF", 
-                   "PFPzSumEB",   "PFPzSumEE",    "PFPzSumHE",    "PFPzSumHF", 
-                   "PFPzDiffEB",  "PFPzDiffEE",   "PFPzDiffHE",   "PFPzDiffHF", 
-                   "PFChPzSumEB", "PFChPzSumEE",  "PFChPzSumHE",  "PFChPzSumHF", 
-                   "PFChPzDiffEB","PFChPzDiffEE", "PFChPzDiffHE", "PFChPzDiffHF", 
-                   "PFHtSumEB",   "PFHtSumEE",    "PFHtSumHE",    "PFHtSumHF", 
-                   "PFHtDiffEB",  "PFHtDiffEE",   "PFHtDiffHE",   "PFHtDiffHF", 
-                   "PFChHtSumEB", "PFChHtSumEE",  "PFChHtSumHE",  "PFChHtSumHF", 
-                   "PFChHtDiffEB","PFChHtDiffEE", "PFChHtDiffHE", "PFChHtDiffHF",
+                   "PFPzSumEB",      "PFPzSumEE",      "PFPzSumHE",      "PFPzSumHF", 
+                   "PFPzDiffEB",     "PFPzDiffEE",     "PFPzDiffHE",     "PFPzDiffHF", 
+                   "PFChPzSumEB",    "PFChPzSumEE",    "PFChPzSumHE",    "PFChPzSumHF", 
+                   "PFChPzDiffEB",   "PFChPzDiffEE",   "PFChPzDiffHE",   "PFChPzDiffHF", 
+                   "PFHtSumEB",      "PFHtSumEE",      "PFHtSumHE",      "PFHtSumHF", 
+                   "PFHtDiffEB",     "PFHtDiffEE",     "PFHtDiffHE",     "PFHtDiffHF", 
+                   "PFChHtSumEB",    "PFChHtSumEE",    "PFChHtSumHE",    "PFChHtSumHF", 
+                   "PFChHtDiffEB",   "PFChHtDiffEE",   "PFChHtDiffHE",   "PFChHtDiffHF",
                    "trainCat"
   };
 
@@ -121,8 +140,6 @@ void RunExclusiveZX(TString filename,
     outVars[fvars[i]]=0.;
     ADDVAR(&(outVars[fvars[i]]),fvars[i],"F",outT);
   }
-  float beamXangle(0);
-  outT->Branch("beamXangle",&beamXangle,"beamXangle/F");
   int nRPtk(0),RPid[50];
   float RPfarcsi[50],RPnearcsi[50];
   if(filename.Contains("Data13TeV")){
@@ -132,18 +149,6 @@ void RunExclusiveZX(TString filename,
     outT->Branch("RPnearcsi",RPnearcsi,"RPnearcsi[nRPtk]/F");
   }
   outT->SetDirectory(fOut);
-
-  //READ TREE FROM FILE
-  TFile *f = TFile::Open(filename);  
-  TH1 *triggerList=(TH1 *)f->Get("analysis/triggerList");
-  TTree *t = (TTree*)f->Get("analysis/data");
-  attachToMiniEventTree(t,ev,true);
-  Int_t nentries(t->GetEntriesFast());
-  if (debug) nentries = min(100000,nentries); //restrict number of entries for testing
-  t->GetEntry(0);
-  bool vetoPromptPhotons = filename.Contains("_QCDEM_") || filename.Contains("_TTJets");
-
-  cout << "...producing " << outname << " from " << nentries << " events" << endl;
   
   //LUMINOSITY+PILEUP
   LumiTools lumi(era,genPU);
@@ -218,6 +223,17 @@ void RunExclusiveZX(TString filename,
   ///////////////////////
   // LOOP OVER EVENTS //
   /////////////////////
+
+  //READ TREE FROM FILE
+  TFile *f = TFile::Open(filename);  
+  TH1 *triggerList=(TH1 *)f->Get("analysis/triggerList");
+  TTree *t = (TTree*)f->Get("analysis/data");
+  attachToMiniEventTree(t,ev,true);
+  Int_t nentries(t->GetEntriesFast());
+  if (debug) nentries = min(100000,nentries); //restrict number of entries for testing
+  t->GetEntry(0);
+  cout << "...producing " << outname << " from " << nentries << " events" << endl;
+
   
   //EVENT SELECTION WRAPPER
   SelectionTool selector(filename, false, triggerList);
@@ -442,6 +458,7 @@ void RunExclusiveZX(TString filename,
       }
       else {
         if(!hasZBTrigger) continue;
+        selCat="zbias";
       }
 
       //check again origin of the boson in data to max. efficiency and avoid double counting
@@ -758,7 +775,7 @@ void RunExclusiveZX(TString filename,
         try{
           const edm::EventID ev_id( ev.run, ev.lumi, ev.event );        
           const ctpps::conditions_t lhc_cond = lhc_conds.get( ev_id );
-          beamXangle = lhc_cond.crossing_angle;
+          beamXangle = std::round(lhc_cond.crossing_angle);
           ht.fill("beamXangle", beamXangle, plotwgts, selCat);
           
           if(beamXangle==120 || beamXangle==130 || beamXangle==140 || beamXangle==150) {
