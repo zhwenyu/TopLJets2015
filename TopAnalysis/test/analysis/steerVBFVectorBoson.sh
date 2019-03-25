@@ -105,11 +105,11 @@ case $WHAT in
         fi
 	echo ${json}
 	python scripts/runLocalAnalysis.py \
-	    -i ${eosdir} --only ${json} \
+	    -i ${eosdir} --only SinglePhoton \ #${json} \
             -o ${outdir}/${githash}/${EXTRA} \
             --farmappendix ${githash} \
             -q ${queue} --genWeights genweights_${githash}.root \
-            --era era${ERA} -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts --skipexisting ${extraOpts};
+            --era era${ERA} -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts --CR --skipexisting ${extraOpts};
 	;;
 
     SELTRIGEFF )
@@ -144,7 +144,7 @@ case $WHAT in
 
 
     MERGE )
-	./scripts/mergeOutputs.py ${outdir}/${githash}/${EXTRA};
+	./scripts/mergeOutputs.py ${outdir}/${githash}/${EXTRA}${QCD};
 	;;
 
     MERGETRIGEFF )

@@ -259,8 +259,8 @@ void VBFVectorBoson::runAnalysis()
         
         //select photons
         photons_              = selector_->selPhotons(allPhotons, SelectionTool::TIGHT, leptons);   
-        relaxedTightPhotons_  = selector_->selPhotons(allPhotons,SelectionTool::QCDTEMP, leptons);
-        tmpPhotons_           = selector_->selPhotons(allPhotons,SelectionTool::RELAXEDTIGHT, leptons);     
+        relaxedTightPhotons_  = selector_->selPhotons(allPhotons,SelectionTool::RELAXEDTIGHT, leptons);
+        tmpPhotons_           = selector_->selPhotons(allPhotons,SelectionTool::QCDTEMP, leptons);     
 	inclusivePhotons_     = selector_->selPhotons(allPhotons,SelectionTool::CONTROL, leptons);
 	for(auto a : inclusivePhotons_) {
 	  int idx = a.originalReference();
@@ -280,7 +280,7 @@ void VBFVectorBoson::runAnalysis()
 	    if(fakePhotons_.size()>=1){
 	      chTag="A";
 	      photons_.clear();
-	      photons_   =fakePhotons_;
+	      photons_   = fakePhotons_;
 	    }
 	  }
 	} else {
@@ -290,7 +290,7 @@ void VBFVectorBoson::runAnalysis()
 	    chTag="A";
 	    photons_.clear();
 	    if(!QCDTemp_)      photons_   =inclusivePhotons_;
-	    else                photons_   =tmpPhotons_;
+	    else               photons_   =tmpPhotons_;
 	  }
 	}
 
@@ -315,18 +315,17 @@ void VBFVectorBoson::runAnalysis()
         }
         
         //MC truth for the selected photons
-        for(auto a : photons_) {
-          int idx=a.originalReference();
-          bool isPrompt(ev_.gamma_isPromptFinalState[idx]);
-          if (selector_->isFakePhoton(ev_,idx)) {
-            fakeACR.push_back(a);
-            mults[isPrompt ? "looseprompt" : "loosefake"]++;	 
-          } else if (a.hasQualityFlag(SelectionTool::TIGHT)){
-            tightACR.push_back(a);
-            mults[isPrompt ? "tightprompt" : "tightfake"]++;
-          }
-        }
-
+	for(auto a : photons_) {
+	  int idx=a.originalReference();
+	  bool isPrompt(ev_.gamma_isPromptFinalState[idx]);
+	  if (selector_->isFakePhoton(ev_,idx)){
+	    fakeACR.push_back(a);
+	    mults[isPrompt ? "looseprompt" : "loosefake"]++;
+	  } else if (selector_->isTight(ev_,idx)){
+	    tightACR.push_back(a);
+	    mults[isPrompt ? "tightprompt" : "tightfake"]++;
+	  }
+	}
       }
 
       //no interesting channel has been found
@@ -463,9 +462,11 @@ void VBFVectorBoson::runAnalysis()
       }
       
       //fake rate
-      if(ev_.isData && chTag=="A" && SRfake_ && (cat[4]||cat[5])) {
+      bool FRmeasured((cat[3] && cat[6]) || cat[4]);
+      if(ev_.isData && chTag=="A" && SRfake_ && FRmeasured) {
+	TString FRcat( baseCategory);
+	FRcat.Remove(FRcat.First(chTag),1);
         cout << "Fake Rate will be applied! " <<endl;
-        TString FRcat(cat[5] ? "LowMJJ" : "HighMJJ");
         plotwgts[0]*=fr_->getWeight(FRcat, vbfVars_.mjj, photons_[0].Eta());
       }
 
