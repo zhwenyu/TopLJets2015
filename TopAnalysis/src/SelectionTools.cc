@@ -731,7 +731,7 @@ std::vector<Particle> SelectionTool::getPartonLeptons(MiniEvent_t &ev, double mi
   
     for (int i = 0; i < ev.ngtop; i++) {
         int absid(abs(ev.gtop_id[i]));
-            if(absid!=11 && absid!=13) continue;
+            if(absid!=11 && absid!=13 && absid!=15 ) continue;
   
             bool passKin(ev.gtop_pt[i]>minPt && fabs(ev.gtop_eta[i])<maxEta);
             if(!passKin) continue;
