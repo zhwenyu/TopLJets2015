@@ -462,11 +462,11 @@ void VBFVectorBoson::runAnalysis()
       }
       
       //fake rate
-      bool FRmeasured((cat[3] && cat[6]) || cat[4]);
+      bool FRmeasured(chTags.size() > 1);
       if(ev_.isData && chTag=="A" && SRfake_ && FRmeasured) {
 	TString FRcat( baseCategory);
 	FRcat.Remove(FRcat.First(chTag),1);
-        cout << "Fake Rate will be applied! " <<endl;
+        cout << "Fake Rate will be applied in "<<baseCategory<<" with FRcat of "<<FRcat <<endl;
         plotwgts[0]*=fr_->getWeight(FRcat, vbfVars_.mjj, photons_[0].Eta());
       }
 

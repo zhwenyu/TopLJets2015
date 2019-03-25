@@ -55,7 +55,7 @@ case $WHAT in
     TESTSEL )
                
         json=data/era${ERA}/vbf_samples.json
-        tag=MC13TeV_2017_EWKAJJ
+        tag=Data13TeV_2017F_SinglePhoton
         if [[ ${ERA} == "2016" ]]; then
             tag=MC13TeV_2016_TTJets
         fi
@@ -67,7 +67,7 @@ case $WHAT in
 	python scripts/runLocalAnalysis.py \
             -i ${input} -o ${output} --tag ${tag} --only ${tag} --mvatree\
             --njobs 8 -q local --genWeights genweights_${githash}.root \
-            --era era${ERA} -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts --debug;
+            --era era${ERA} -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts --debug --SRfake ;
 
         #--debug --mvatree \
         ./scripts/mergeOutputs.py ${output};
