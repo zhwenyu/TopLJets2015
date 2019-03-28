@@ -3,16 +3,18 @@
 WHAT=$1; 
 if [ "$#" -ne 1 ]; then 
     echo "steerExclusiveZX.sh <SEL/MERGE/PLOT/WWW>";
-    echo "   SEL          - launches selection jobs to the batch, output will contain summary trees and control plots"; 
-    echo "   MERGESEL     - merge output"
-    echo "   PLOTSEL      - make plots"
-    echo "   WWWSEL       - move plots to web-based are"
-    echo "   TRAINPUDISCR - train pileup discriminator"
-    echo "   RUNPRED      - run pileup discriminator prediction"
-    echo "   PREPAREANA   - prepare bank of events for event mixing from the summary trees"
-    echo "   COLLECTMIX   - collects all the mixing events found in PREPAREANA"
-    echo "   ANA          - run analysis on the summary trees"
-    echo "   PLOTANA      - plot analysis results"
+    echo "   SEL           - launches selection jobs to the batch, output will contain summary trees and control plots"; 
+    echo "   MERGESEL      - merge output"
+    echo "   PLOTSEL        - make plots"
+    echo "   WWWSEL        - move plots to web-based are"
+    echo "   TRAINPUDISCR  - train pileup discriminator"
+    echo "   RUNPRED       - run pileup discriminator prediction"
+    echo "   PREPAREANA    - prepare bank of events for event mixing from the summary trees"
+    echo "   COLLECTMIX    - collects all the mixing events found in PREPAREANA"
+    echo "   ANA           - run analysis on the summary trees"
+    echo "   PLOTANA       - plot analysis results"
+    echo "   OPTIMSTATANA  - optimize the statistical analysis"
+    echo "   DEFINESTATANA - define the final datacards based on the results of the optimization"
     exit 1; 
 fi
 
@@ -161,8 +163,10 @@ case $WHAT in
     ANASIG )
         
         python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 1 --jobs 8 \
-            --json ${signal_json} --RPout ${RPout_json} --mix /eos/cms/${outdir}/analysis/mixbank.pck \
-            -i /eos/cms/${outdir}/Chunks -o /eos/cms/${outdir}/analysis
+            --json ${signal_json} --RPout ${RPout_json} --mix /eos/cms/${outdir}/mixing/mixbank.pck \
+            -i /eos/cms/${outdir}/Chunks -o anasig/;
+
+         cp -v anasig/Chunks/*.root /eos/cms/${outdir}/analysis/
 
         ;;
 
@@ -197,17 +201,22 @@ case $WHAT in
 
 
         plots=""
-        for c in eeZhpur mmZhpur emhpur lptahpur hptahpur; do
+        for c in eeZ mmZ em lpta hpta eeZhpur mmZhpur emhpur lptahpur hptahpur; do
             for d in xangle ntk; do
                 for s in pos neg; do
                     plots="${plots},${d}_${c}${x}${s}"
                 done
-            done
+            done            
             for x in 120 130 140 150; do
-                for d in rho mpp ypp mpp2d ypp2d mmass nextramu ptll yll; do
+                for d in rho csi mpp ypp mmass nextramu ptll yll; do
                     plots="${plots},${d}_${c}${x}"
                 done
-                for d in csi csi2d; do
+                for r in HF HE EB EE; do
+                    for d in PFMult PFHt PFPz; do
+                        plots="${plots},${d}${r}_${c}${x}"
+                    done
+                done
+                for d in csi csi2d mpp2d ypp2d; do
                     for s in pos neg; do
                         plots="${plots},${d}_${c}${x}${s}"
                     done
@@ -227,12 +236,33 @@ case $WHAT in
         cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}/ana
         ;;
 
-    OPTIMANA )
-        for i in 1000 1200 1400; do
-            python test/analysis/pps/optimizeSR.py ${i}; 
+    OPTIMSTATANA )
+
+        #run combine on condor
+        for m in 800 1000 1200 1400 1600; do
+
+            echo "Will first prepare the datacards/shapes files for m=${m}"
+            python test/analysis/pps/prepareOptimScanCards.py ${m}
+
+            echo "Will launch combine runs to condor for m=${m}"
+            condor_prep="condor_optim_m${m}.sub"
+            echo "executable  = ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/pps/wrapOptim.sh" > $condor_prep
+            echo "output      = ${condor_prep}.out" >> $condor_prep
+            echo "error       = ${condor_prep}.err" >> $condor_prep
+            echo "log         = ${condor_prep}.log" >> $condor_prep
+            echo "+JobFlavour =\"workday\""> $condor_prep
+            for x in 120 130 140 150; do
+                echo "arguments   = ${m} ${x} ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/analysis/stat_m${m}" >> $condor_prep
+                echo "queue 1" >> $condor_prep
+            done
+            condor_submit $condor_prep
         done
-        python test/analysis/pps/plotLimits.py 1000=optimresults_1000.pck,1200=optimresults_1200.pck,1400=optimresults_1400.pck
-        python test//analysis/pps/compareOptimResults.py
+        ;;
+
+    DEFINESTATANA)
+        python test/analysis/pps/compareOptimResults.py analysis/
+        #python test/analysis/pps/plotLimits.py 1000=optimresults_1000.pck,1200=optimresults_1200.pck,1400=optimresults_1400.pck
+        #python test//analysis/pps/compareOptimResults.py
         ;;
 
 esac

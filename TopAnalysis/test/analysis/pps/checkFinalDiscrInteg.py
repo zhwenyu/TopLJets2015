@@ -57,7 +57,7 @@ else:
             c.write("output      = runpred_condor.out\n")
             c.write("error       = runpred_condor.err\n")
             c.write("log         = runpred_condor.log\n")
-            c.write("arguments   = {0}/pudiscr $(chunk)\n".format(url))
+            c.write("arguments   = {0}/pudiscr {0}/$(chunk)\n".format(url))
             for x in toCheck: 
                 c.write("chunk={0}\n".format(x[0]))
                 c.write("queue 1\n")

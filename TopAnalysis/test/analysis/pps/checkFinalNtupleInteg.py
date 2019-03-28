@@ -19,7 +19,7 @@ def getEntries(url,tname):
 
 def runAnaPacked(args):
     url,tag=args
-    os.system('sh test/analysis/pps/wrapAnalysis.sh 1 {0}/analysis {0}/Chunks {1} {0}/analysis/mixbank.pck'.format(url,tag))
+    os.system('sh test/analysis/pps/wrapAnalysis.sh 1 {0}/analysis {0}/Chunks {1} {0}/mixing/mixbank.pck'.format(url,tag))
 
 dontrun=False
 url=sys.argv[1]
@@ -27,7 +27,7 @@ url=sys.argv[1]
 toCheck=[]
 nTot=0
 for f in os.listdir(url+'/Chunks'):
-    if not 'MC13TeV' in f : continue
+    #if 'MC13TeV' in f : continue
     nTot+=1
     fullf=os.path.join(url+'/analysis/Chunks',f)
     if not os.path.isfile(fullf) : 

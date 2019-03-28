@@ -279,7 +279,7 @@ def runTrainJob(url,features,spectators,categs,onlyThis,opt):
     print 'Checking/substituting for NaN in features with the Imputer'
     from sklearn.preprocessing import Imputer
     imputer = Imputer(strategy="median",verbose=1)
-    data['X'].imputer.fit_transform(data['X'])
+    data['X']=imputer.fit_transform(data['X'])
 
     if opt.model is None:
 

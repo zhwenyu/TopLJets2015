@@ -178,7 +178,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
     for d in ['HF','HE','EE','EB']:
         ht.add(ROOT.TH1F('PFMult'+d,';PF multiplicity (%s);Events'%d,50,0,1000))
         ht.add(ROOT.TH1F('PFHt'+d,';PF HT (%s) [GeV];Events'%d,50,0,1000))
-        ht.add(ROOT.TH1F('PFHt'+d,';PF P_{z} (%s) [TeV];Events'%d,50,0,40))
+        ht.add(ROOT.TH1F('PFPz'+d,';PF P_{z} (%s) [TeV];Events'%d,50,0,40))
     ht.add(ROOT.TH1F('met',';Missing transverse energy [GeV];Events',50,0,200))
     ht.add(ROOT.TH1F('metbits',';MET filters;Events',124,0,124))
     ht.add(ROOT.TH1F('njets',';Jet multiplicity;Events',5,0,5))
@@ -397,7 +397,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
             #save he basic info on golden events
             saveGoldenSel=False
             if isSignal and pfix in ['','_mixem2']:
-                saveGoldenSel==True
+                saveGoldenSel=True
             if isData and (isZ or isA):
                 if pfix in ['','_mix2','_mixem2']:
                     saveGoldenSel=True                
@@ -411,6 +411,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile):
                 if isElasticLike and highPur:
                     hasAHighPurSelection=True
                     task_protonInfo=[protons[0][0],protons[1][0],pp.M(),mmass]
+                        
                 goldenSel += task_protonInfo
 
 
