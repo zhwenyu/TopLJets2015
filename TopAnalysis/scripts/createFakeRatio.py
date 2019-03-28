@@ -15,12 +15,14 @@ Wrapper to be used when run in parallel
 """
 def RunMethodPacked(args):
 
-
-    fGammaData, fJetData, fJetQCD, fGammaMC=args
+    gData,jData,jQCD,gMC,cats=args
     print args
-
+    print 'Running with photon data ',gData,' and photon MC ',gMC 
+    print 'The JetData is ', jData, ' and ', jQCD, ' has teh QCD template'
+    print 'Fake rates will be provided for these categories', cats
     try:
-        cmd='runFRcalculation --fGdata %s --fJdata %s --fJQCD %s --fGMC %s' %(fGammaData,fJetData,fJetQCD,fGammaMC)
+        cmd='runFRcalculation --fGdata %s --fJdata %s --fJQCD %s --fGMC %s --cats %s' %(gData,jData,jQCD,gMC,cats)        
+        print '>>>>>>'
         print(cmd)
         os.system(cmd)
     except :
@@ -37,10 +39,11 @@ def main():
     #configuration
     usage = 'usage: %prog [options]'
     parser = optparse.OptionParser(usage)
-    parser.add_option('', '--fGdata',      dest='fGammaData',        help='Photon data from CR [%default]',                                         default='Data13TeV_SinglePhoton_2017.root',                    type='string')
-    parser.add_option('', '--fJdata',      dest='fJetData',     help='Jet data from CR [%default]',                                    default='Data13TeV_JetHT_2017.root',                           type='string')
-    parser.add_option('', '--fJQCD',       dest='fJetQCD',       help='Data for QCD photon template  [%default]',                                         default='Data13TeV_JetHTQCD_2017.root',                            type='string')
-    parser.add_option('', '--fGMC',        dest='fGammaMC',         help='MC for prompt photon template  [%default]',             default='MC13TeV_GJets.root',       type='string')
+    parser.add_option(''  , '--fGdata',     dest='gData',        help='Photon data in signal region [%default]',      default='Data13TeV_SinglePhoton_2017.root',          type='string')
+    parser.add_option(''  , '--fJdata',     dest='jData',        help='Jet data from control region [%default]',      default='Data13TeV_JetHT_2017.root',                 type='string')
+    parser.add_option(''  , '--fJQCD',      dest='jQCD',         help='Jet data for QCD templates [%default]',        default='Data13TeV_JetHTQCD_2017.root',              type='string')
+    parser.add_option(''  , '--fGMC',       dest='gMC',          help='Photon MC in signal region [%default]',        default='MC13TeV_GJets.root',                        type='string')
+    parser.add_option(''  , '--cats',       dest='cats',         help='selection categories [%default]',              default='HighVPtA',                                  type='string')
 
 
 
@@ -48,7 +51,7 @@ def main():
     print opt
     print args
 
-    args = [opt.fGammaData,opt.fJetData,opt.fJetQCD,opt.fGammaMC]
+    args = [opt.gData,opt.jData,opt.jQCD,opt.gMC,opt.cats]
     RunMethodPacked(args)
     
 """

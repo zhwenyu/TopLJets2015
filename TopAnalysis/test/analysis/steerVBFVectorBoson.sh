@@ -67,7 +67,7 @@ case $WHAT in
 	python scripts/runLocalAnalysis.py \
             -i ${input} -o ${output} --tag ${tag} --only ${tag} --mvatree\
             --njobs 8 -q local --genWeights genweights_${githash}.root \
-            --era era${ERA} -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts --debug;
+            --era era${ERA} -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts --debug --SRfake ;
 
         #--debug --mvatree \
         ./scripts/mergeOutputs.py ${output};
@@ -105,11 +105,11 @@ case $WHAT in
         fi
 	echo ${json}
 	python scripts/runLocalAnalysis.py \
-	    -i ${eosdir}  \ #${json} \
+      	    -i ${eosdir}  \ #${json} \
             -o ${outdir}/${githash}/${EXTRA} \
             --farmappendix ${githash} \
             -q ${queue} --genWeights genweights_${githash}.root \
-            --era era${ERA} -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts --skipexisting ${extraOpts};
+            --era era${ERA} -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts --CR --skipexisting ${extraOpts};
 	;;
 
     SELTRIGEFF )
@@ -144,7 +144,7 @@ case $WHAT in
 
 
     MERGE )
-	./scripts/mergeOutputs.py ${outdir}/${githash}/${EXTRA};
+	./scripts/mergeOutputs.py ${outdir}/${githash}/${EXTRA}${QCD};
 	;;
 
     MERGETRIGEFF )

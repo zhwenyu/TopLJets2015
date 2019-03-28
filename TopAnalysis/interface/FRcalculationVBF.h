@@ -15,13 +15,22 @@
 #include <vector>
 #include <iostream>
 #include <sstream>
-
-
+#include <string>
 
 using namespace RooFit;
 using namespace std;
+
+TString corrCat(TString dataset, TString cat){
+  if(dataset.Contains("JetHT") && cat.Contains("HighVPt")){
+    cat = "HighVPtHighMJJA";
+  }
+  return cat;
+}
+
 void fixZeroBins(TH1D * h){
+  cout<<h->GetName()<<endl;
   for(int i = 0; i < h->GetXaxis()->GetNbins(); i++){
+    cout<<h->GetBinContent(i+1) <<endl;
     if(h->GetBinContent(i+1) == 0) h->SetBinContent(i+1, 0.1);
   }
 }
@@ -41,8 +50,17 @@ TH1D* mergeBin(TH1D * h){
 
 TH1D*  rawFRMaker(TH1D& Num1, TH1D& Den1, TString fname = "Data13TeV_SinglePhoton_2017.root", TString catName = "LowMJJA", TString det = "EB"){
   TFile * f = TFile::Open(fname);
-  TH2D * Num = (TH2D*)f->Get(catName+"_tightMjj"+det);
-  TH2D * Den = (TH2D*)f->Get(catName+"_looseMjj"+det);
+  TString tmpCat = corrCat(fname,catName);
+  TH2D * Num = (TH2D*)f->Get(tmpCat+"_tightMjj"+det);
+  TH2D * Den = (TH2D*)f->Get(tmpCat+"_looseMjj"+det);
+  if(tmpCat == catName && catName == "HighVPtA"){
+    Num = (TH2D*)f->Get("HighVPtHighMJJA_tightMjj"+det);
+    Den = (TH2D*)f->Get("HighVPtHighMJJA_looseMjj"+det);
+    TH2D * tmpNum = (TH2D*)f->Get("HighVPtLowMJJA_tightMjj"+det);
+    TH2D * tmpDen = (TH2D*)f->Get("HighVPtLowMJJA_looseMjj"+det);
+    Num->Add(tmpNum);
+    Den->Add(tmpDen);
+  }
 
   Num1 = *((TH1D*)Num->ProjectionY("rawNum"));
   Den1 = *((TH1D*)Den->ProjectionY("Den"));
@@ -52,20 +70,25 @@ TH1D*  rawFRMaker(TH1D& Num1, TH1D& Den1, TString fname = "Data13TeV_SinglePhoto
 }
 
 void makeFile(){
-  TFile * f1 = TFile::Open("LowMJJA_FR_EE.root");
-  TFile * f2 = TFile::Open("LowMJJA_FR_EB.root");
-  TFile * f3 = TFile::Open("HighMJJA_FR_EB.root");
-  TH1D * h1 = (TH1D*)f1->Get("fracRatio_Merged");
-  h1->SetName("LowMJJ_EE");
-  TH1D * h2 = (TH1D*)f2->Get("fracRatio_Merged");
-  h2->SetName("LowMJJ_EB");
-  TH1D * h3 = (TH1D*)f3->Get("fracRatio");
-  h3->SetName("HigMJJ_EB");
+  const int nCat = 4;
+  TString cats[nCat] = {"LowVPtHighMJJ","HighVPtHighMJJ","HighVPtLowMJJ","HighVPt"};
+  TString det[2] = {"EB","EE"};
+  std::vector<TH1D*> hists;
+  for(int iCat = 0; iCat < nCat; iCat++){
+    for(int iDet = 0; iDet < 2; iDet++){
+      TFile * f = TFile::Open(cats[iCat]+"A_FR_"+det[iDet]+".root");
+      if(f){
+	TH1D * h = (TH1D*) f->Get("fracRatio_Merged");
+	h->SetName(cats[iCat]+"_"+det[iDet]);
+	hists.push_back(h);
+      }
+    }
+  }
+
   TFile * f = new TFile("fakeRatios.root","recreate");
   f->cd();
-  h1->Write();
-  h2->Write();
-  h3->Write();
+  for(unsigned int iHist = 0; iHist < hists.size(); iHist++)
+    hists[iHist]->Write();
   f->Close();
 }
 
@@ -74,7 +97,21 @@ void promptEstimator(TString dataname = "Data13TeV_SinglePhoton_2017.root", TStr
   if (det == "EE")
     pHigh = 0.0271;
   TFile * fD = TFile::Open(dataname);
-  TH2D * data = (TH2D*)fD->Get(catName+"_relaxedTightMjj"+det);
+  TString tmpCat = corrCat(dataname,catName);
+  TH2D * data = 0;
+  TString gDataHist("relaxedTightMjj"),qcdDataHist("tmpQCDMjj"),gMCHist("tightMjj");
+  //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  // tmpQCD <--> relaxedTight
+  //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  if(tmpCat == catName && catName == "HighVPtA"){
+    data = (TH2D*)fD->Get("HighVPtHighMJJA_"+gDataHist+det);   
+    TH2D * tmpdata = (TH2D*)fD->Get("HighVPtLowMJJA_"+gDataHist+det);      
+    data->Add(tmpdata);
+  } else data = (TH2D*)fD->Get(tmpCat+"_"+gDataHist+det);
+  if(!data) {   
+    cout << "Wrong category name "<< catName<<endl;
+    return;
+  }
   std::vector<TH1D*> dataSihih;
   std::vector<double> trueNData;
   for(int i = 0; i<4; i++){
@@ -86,7 +123,12 @@ void promptEstimator(TString dataname = "Data13TeV_SinglePhoton_2017.root", TStr
   TH1D * tmpMJJ = (TH1D*)data->ProjectionY("DataMJJ");
   RooRealVar sihih("sihih","sihih",0,0.1);
   TFile * fP = TFile::Open(pname);
-  TH2D * prompt2 = (TH2D*)fP->Get(catName+"_tightMjj"+det);
+  TH2D * prompt2 = (TH2D*)fP->Get(catName+"_"+gMCHist+det);
+  if(catName == "HighVPtA"){
+    prompt2 = (TH2D*)fP->Get("HighVPtHighMJJA_"+gMCHist+det);
+    TH2D * tmpPrompt2 = (TH2D*)fP->Get("HighVPtLowMJJA_"+gMCHist+det);
+    prompt2->Add(tmpPrompt2);
+  }
   TH1D * prompt = (TH1D*)prompt2->ProjectionX("Prompt");  
   prompt->Scale(1/prompt->Integral());
   double pFrac = prompt->Integral(1,prompt->GetXaxis()->FindBin(pHigh)); 
@@ -95,8 +137,11 @@ void promptEstimator(TString dataname = "Data13TeV_SinglePhoton_2017.root", TStr
   RooDataHist dP("dP","dP",sihih,Import(*prompt));
   RooHistPdf promptPdf("promptPdf","promptPdf",sihih,dP,0) ;
   TFile * fQ = TFile::Open(qcd);
-  TH2D * QCD2 = (TH2D*)fQ->Get(catName+"_allMjj"+det);
-  //TH2D * QCD2 = (TH2D*)fD->Get(catName+"_tmpQCDMjj"+det);
+  tmpCat = corrCat(qcd,catName);
+  TH2D * QCD2 = (TH2D*)fQ->Get(tmpCat+"_"+qcdDataHist+det);
+
+  //  TH2D * QCD2 = (TH2D*)fD->Get(tmpCat+"_tmpQCDMjj"+det);
+
   TH1D * QCD = (TH1D*)QCD2->ProjectionX("QCD");
   QCD->Scale(1/QCD->Integral());
   double fFrac = QCD->Integral(1,QCD->GetXaxis()->FindBin(pHigh)); 
@@ -109,6 +154,7 @@ void promptEstimator(TString dataname = "Data13TeV_SinglePhoton_2017.root", TStr
   TH1D* nPrompt        = (TH1D*)tmpMJJ->Clone("nPrompt");
   TH1D* nFake          = (TH1D*)tmpMJJ->Clone("nFake");
   TH1D* fakeFraction   = (TH1D*)tmpMJJ->Clone("fakeFraction");
+
   for(unsigned int i =0; i<dataSihih.size();i++){
     cout <<"Number of entries: "<<dataSihih[i]->GetEntries()<<endl;
     dataSihih[i]->Rebin(4);
