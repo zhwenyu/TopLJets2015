@@ -26,6 +26,45 @@ void BTagSFUtil::addBTagDecisions(MiniEvent_t &ev,float wp,float wpl) {
   }
 }
 
+ // method 1a -weight ev
+double BTagSFUtil::updateBTagDecisions1a(MiniEvent_t &ev ) {
+  double csvWgtHF = 1., csvWgtLF = 1., csvWgtC = 1.;
+  double csvWgtTotal = 1.;
+
+  for (int k = 0; k < ev.nj; k++) {
+    TLorentzVector jp4;
+    jp4.SetPtEtaPhiM(ev.j_pt[k],ev.j_eta[k],ev.j_phi[k],ev.j_mass[k]);
+
+    if(!ev.isData) {
+
+      float jptForBtag(jp4.Pt()>1000. ? 999. : jp4.Pt()), jetaForBtag(fabs(jp4.Eta()));
+      float csv = ev.j_csv[k];
+      int flavor = ev.j_flav[k];
+
+      BTagEntry::JetFlavor hadFlav=BTagEntry::FLAV_UDSG;
+      if(abs(ev.j_hadflav[k])==4) { hadFlav=BTagEntry::FLAV_C; }
+      if(abs(ev.j_hadflav[k])==5) { hadFlav=BTagEntry::FLAV_B; }
+
+     if (abs(flavor) == 5 ){    //HF             
+          double iCSVWgtHF = btvCalibReaders_[hadFlav].eval(BTagEntry::FLAV_B, jetaForBtag, jptForBtag, csv);      
+          if( iCSVWgtHF!=0 ) csvWgtHF *= iCSVWgtHF;                
+                        }
+     else if( abs(flavor) == 4 ){  //C
+	  double iCSVWgtC = btvCalibReaders_[hadFlav].eval(BTagEntry::FLAV_C, jetaForBtag, jptForBtag, csv);
+	  if( iCSVWgtC!=0 ) csvWgtC *= iCSVWgtC;	   
+			}
+     else { //LF
+	   double iCSVWgtLF = btvCalibReaders_[hadFlav].eval(BTagEntry::FLAV_UDSG, jetaForBtag, jptForBtag, csv);
+	   if( iCSVWgtLF!=0 ) csvWgtLF *= iCSVWgtLF;
+           } 
+      }
+
+  csvWgtTotal = csvWgtHF * csvWgtC * csvWgtLF;
+     }
+
+return csvWgtTotal;
+}     
+
 //
 void BTagSFUtil::updateBTagDecisions(MiniEvent_t &ev,std::string optionbc, std::string optionlight) {
   for (int k = 0; k < ev.nj; k++) {
