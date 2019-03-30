@@ -562,8 +562,7 @@ void TOP17010::runAnalysis()
               if(sname.BeginsWith("JERtrunc"))  jerVarPartial = getJERSFBreakdown("trunc", fabs(j.eta()));
               if(sname.BeginsWith("JERpTdep"))  jerVarPartial = getJERSFBreakdown("pTdep", fabs(j.eta()));
               if(sname.BeginsWith("JERSTmFE"))  jerVarPartial = getJERSFBreakdown("STmFE", fabs(j.eta()));
-              float genJet_pt(ev_.j_g[idx]>-1 ? ev_.g_pt[ ev_.j_g[idx] ] : 0);
-              cout << sname << " " << endl;
+              float genJet_pt(ev_.j_g[idx]>-1 ? ev_.g_pt[ ev_.j_g[idx] ] : 0);              
               TLorentzVector smearP4=jerTool_.getSmearedJet(j,genJet_pt,ev_.rho,isUpVar ? Variation::UP : Variation::DOWN,jerVarPartial);
               scaleVar=smearP4.Pt()/j.Pt();
             } 
