@@ -30,15 +30,14 @@ def generateDataCards(baseDir,l1pt,l2pt,bosonpt,categs,runGen):
                                                   ])
             dataCards[m]['Z'].append( jobDir )
                 
-
-
         #photon case
         jobDir='%s/m%d/cat22'%(baseDir,m)
         if runGen:
             for xangle in generateBinnedWorkspace.VALIDLHCXANGLES:
                 generateBinnedWorkspace.main(['--xangle', '%d'%xangle,
+                                              '--lumi',   '2642',
                                               '--sig',    'MC13TeV_ppxz_gamma_m{0}_x{1}.root'.format(m,xangle),
-                                              '--presel', 'cat==22 && bosonpt>{0}'.format(bosonpt),
+                                              '--presel', 'cat==22 && bosonpt>{0} && bosonpt<200'.format(bosonpt),
                                               '--categs', categs,
                                               '-o',       jobDir
                                               ])

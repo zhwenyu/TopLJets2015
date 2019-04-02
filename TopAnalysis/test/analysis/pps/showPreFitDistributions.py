@@ -2,6 +2,14 @@ import ROOT
 import sys
 
 fIn=ROOT.TFile.Open(sys.argv[1])
+tag=sys.argv[2]
+title='Z#rightarrow#mu#mu'
+if '22' in tag : title='#gamma'
+if '121' in tag: title='Z#rightarrowee'
+if '120' in tag: title+= ', 120 #murad'
+if '130' in tag: title+= ', 130 #murad'
+if '140' in tag: title+= ', 140 #murad'
+if '150' in tag: title+= ', 150 #murad'
 
 frame=None
 histos={}
@@ -34,6 +42,7 @@ for key in fIn.GetListOfKeys():
 
 ROOT.gStyle.SetOptStat(0)
 ROOT.gStyle.SetOptTitle(0)
+ROOT.gROOT.SetBatch(True)
 c=ROOT.TCanvas('c','c',500,500)
 c.SetTopMargin(0.05)
 c.SetBottomMargin(0.1)
@@ -66,13 +75,13 @@ for cat in histos:
     tex.DrawLatex(0.15,0.96,'#bf{CMS} #it{preliminary}')
     tex.SetTextAlign(31)
     tex.DrawLatex(0.97,0.96,'13 TeV')  
+    tex.DrawLatex(0.95,0.9,title)
 
-    raw_input()
     c.Modified()
     c.Update()
     c.RedrawAxis()
     for ext in ['png','pdf']:
-        c.SaveAs('shapescat%d.%s'%(cat,ext))
+        c.SaveAs('shapescat%d_%s.%s'%(cat,tag,ext))
 
 
 fIn.Close()

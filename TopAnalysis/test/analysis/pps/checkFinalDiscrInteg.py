@@ -43,6 +43,8 @@ if dontrun:
 
 else:
 
+    print 'I have found',len(toCheck),'jobs to rerun...'
+
     if runLocally:
         import multiprocessing as MP
         pool = MP.Pool(8)

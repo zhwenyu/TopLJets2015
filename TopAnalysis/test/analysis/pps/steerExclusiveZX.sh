@@ -79,7 +79,7 @@ case $WHAT in
 
     PLOTSEL )
         lumiSpecs="--lumiSpecs lpta:2642"
-        kFactorList="--procSF #gamma+jets:1.4"
+        kFactorList="--procSF #gamma+jets:1.33"
 	commonOpts="-i /eos/cms/${outdir} --puNormSF puwgtctr -l ${lumi} --mcUnc ${lumiUnc} ${kFactorList} ${lumiSpecs}"
 	python scripts/plotter.py ${commonOpts} -j ${samples_json}    -O plots/sel --only mboson,mtboson,pt,eta,met,jets,nvtx,ratevsrun --saveLog; 
         python scripts/plotter.py ${commonOpts} -j ${samples_json}    --rawYields --silent --only gen -O plots/zx_sel -o bkg_plotter.root ; 
@@ -177,38 +177,35 @@ case $WHAT in
     PLOTANA )
 
         lptalumi=2642
-        lumiSpecs="lpta:${lptalumi},lptahpur:${lptalumi},lptahpur120:${lptalumi},lptahpur130:${lptalumi},lptahpur140:${lptalumi},lptahpur150:${lptalumi}"
+        lumiSpecs="lpta:${lptalumi},lptaneg:${lptalumi},lptapos:${lptalumi},lptahpur:${lptalumi},lptahpur120:${lptalumi},lptahpur130:${lptalumi},lptahpur140:${lptalumi},lptahpur150:${lptalumi}"
+        lumiSpecs="${lumiSpecs},lpta120neg:${lptalumi},lpta130neg:${lptalumi},lpta140neg:${lptalumi},lpta150neg:${lptalumi},lpta120pos:${lptalumi},lpta130pos:${lptalumi},lpta140pos:${lptalumi},lpta150pos:${lptalumi}"
         lumiSpecs="${lumiSpecs},lptahpur120neg:${lptalumi},lptahpur130neg:${lptalumi},lptahpur140neg:${lptalumi},lptahpur150neg:${lptalumi},lptahpur120pos:${lptalumi},lptahpur130pos:${lptalumi},lptahpur140pos:${lptalumi},lptahpur150pos:${lptalumi}"
-
-	baseOpts="-i /eos/cms/${outdir}/analysis --lumiSpecs ${lumiSpecs} --procSF #gamma+jets:1.4 -l ${ppsLumi} --mcUnc ${lumiUnc} ${lumiSpecs} ${kFactorList}"
+	baseOpts="-i /eos/cms/${outdir}/analysis --lumiSpecs ${lumiSpecs} --procSF #gamma+jets:1.33 -l ${ppsLumi} --mcUnc ${lumiUnc} ${lumiSpecs} ${kFactorList}"
         
-        plots=xangle_ee,xangle_mm,xangle_eeZ,xangle_mmZ,xangle_eehptZ,xangle_mmhptZ
-        commonOpts="${baseOpts} -j ${zx_samples_json} -O plots/analysis/zx_yields" 
-        #python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py ${commonOpts} --only ${plots} --strictOnly --saveTeX --rebin 4;
-
-        
-        plots=xangle_eeZ,xangle_mmZ,xangle_eehptZ,xangle_mmhptZ,xangle_eehptZelpphighPur,xangle_mmhptZelpphighPur
-        commonOpts="${baseOpts} -j ${samples_json}" # --normToData"
-        #python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py ${commonOpts} --only ${plots} --strictOnly --saveTeX --rebin 4;
-                
-        plots=mll_ee,mll_mm,mll_em,ptll_eeZ,ptll_mmZ,ptll_em,ptll_lpta,ptll_hpta
-        plots=${plots},l1pt_eeZ,l1pt_mmZ,l1pt_em,l2pt_eeZ,l2pt_mmZ,l2pt_em
-        plots=${plots},acopl_eeZ,acopl_mmZ,acopl_em,l1eta_eeZ,l1eta_mmZ,l1eta_em,l2eta_eeZ,l2eta_mmZ,l2eta_em
-        plots=${plots},acopl_eeZelpphighPur140,acopl_mmZelpphighPur140,ptll_eeZelpphighPur140,ptll_mmZelpphighPur140
-        plots=${plots},l1pt_eeZelpphighPur140,l1pt_mmZelpphighPur140,l2pt_eeZelpphighPur140,l2pt_mmZelpphighPur140
-        plots=${plots},nvtx_eeZ,nvtx_mmZ,nvtx_em,xangle_eeZ,xangle_mmZ,xangle_em,nvtx_lpta,nvtx_hpta,xangle_lpta,xangle_lpta
-        #python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py ${commonOpts} --only ${plots} --strictOnly --signalJson ${plot_signal_json} --saveLog --normToData;
-
+        plots=xangle_eeZhpur,xangle_mmZhpur,xangle_emhpur,xangle_lptahpur
+        commonOpts="${baseOpts} -j ${samples_json} --signalJson ${plot_signal_json} -O plots/analysis/zx_yields" 
+        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py ${commonOpts} --only ${plots} --strictOnly --saveTeX --rebin 4;
 
         plots=""
-        for c in eeZ mmZ em lpta hpta eeZhpur mmZhpur emhpur lptahpur hptahpur; do
-            for d in xangle ntk; do
-                for s in pos neg; do
-                    plots="${plots},${d}_${c}${x}${s}"
-                done
+        for c in eeZ mmZ em lpta hpta eeZhpur mmZhpur emhpur lptahpur hptahpur; do         
+            for d in acopl ptll yll l1pt l2pt l1eta l2eta; do
+                plots="${plots},${d}_${c}"                
             done            
+            for d in xangle ntk; do
+                for s in pos neg; do                    
+                    plots="${plots},${d}_${c}${s}"
+                done
+            done
+            for d in csi; do            
+                for x in 120 130 140 150; do
+                    for s in pos neg; do
+                        plots="${plots},${d}_${c}${x}${s}"
+                    done
+                done        
+            done
+            
             for x in 120 130 140 150; do
-                for d in rho csi mpp ypp mmass nextramu ptll yll; do
+                for d in rho mpp ypp mmass nextramu ptll yll; do
                     plots="${plots},${d}_${c}${x}"
                 done
                 for r in HF HE EB EE; do
@@ -223,11 +220,7 @@ case $WHAT in
                 done
             done
         done
-        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py ${commonOpts} --only ${plots} --strictOnly --signalJson ${plot_signal_json} --saveLog; # --normToData;
-        
-#python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py ${commonOpts} --only ${plots} --strictOnly --signalJson ${signal_json} --saveLog;
-        
-        #python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/compareBackgroundEstimation.py plots/analysis/plots/plotter.root plots/analysis/plots;
+        #python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py ${commonOpts} --only ${plots} --strictOnly --signalJson ${plot_signal_json} --saveLog; # --normToData;
         ;;
 
     WWWANA )
