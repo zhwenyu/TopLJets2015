@@ -145,7 +145,7 @@ case $WHAT in
             for m in ${mtList[@]}; do
                 midx=`python -c "print int(($m-169)/0.25)"`
                 flag=`python -c "print (($midx<<16)|($gidx))"`
-                python scripts/checkLocalAnalysisInteg.py ../../../FARMscenario${flag}${gitash}SCAN${flag}/ analysis/data
+                python scripts/checkLocalAnalysisInteg.py ../../../FARMscenario${flag}${githash}SCAN${flag}/ analysis/data
             done
         done
 	;;

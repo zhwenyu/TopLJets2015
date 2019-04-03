@@ -78,10 +78,10 @@ def runFits(inputDirs):
     
 
 runGen=False
-baseDir='analysis/finalfit'
+baseDir='analysis/nicolafit'
 l1pt=30
 l2pt=20
-bosonpt=40
+bosonpt=50
 categs='nvtx<20,nvtx>=20'
 dataCards=generateDataCards(baseDir,l1pt,l2pt,bosonpt,categs,runGen)
 results=[]

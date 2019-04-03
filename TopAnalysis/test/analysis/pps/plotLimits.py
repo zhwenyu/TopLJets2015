@@ -90,7 +90,7 @@ c.Modified()
 c.Update()   
 c.RedrawAxis()
 for ext in ['png','pdf']:
-    c.SaveAs('limits_%d_hpur.%s'%(id,ext))
+    c.SaveAs('limits_%d.%s'%(id,ext))
 
 c.Clear()
 frame.Draw()
@@ -110,4 +110,4 @@ c.Modified()
 c.Update()   
 c.RedrawAxis()
 for ext in ['png','pdf']:
-    c.SaveAs('significance_%d_hpur.%s'%(id,ext))
+    c.SaveAs('significance_%d.%s'%(id,ext))

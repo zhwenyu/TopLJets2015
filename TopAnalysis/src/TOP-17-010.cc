@@ -155,7 +155,7 @@ void TOP17010::bookHistograms() {
   TFile *rIn=TFile::Open("$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/top17010/mlbresol.root");  
   std::vector<TString> templates={"mlb","ptlb"};
   for(auto t : templates) {
-    TH1 *th=(TH1 *)rIn->Get(t); 
+    TH1D *th=(TH1D *)rIn->Get(t); 
     th->GetYaxis()->SetTitle("Events");
     th->SetTitle("");
     th->SetDirectory(0);
@@ -200,7 +200,7 @@ void TOP17010::bookHistograms() {
       
       //experimental systs
       ht_->addHist(hoi[ih]+"_exp",      
-                  new TH2F(hoi[ih]+"_exp", 
+                  new TH2D(hoi[ih]+"_exp", 
                            Form(";%s;Experimental systematic variation;Events",histo->GetName()),
                            histo->GetNbinsX(),histo->GetXaxis()->GetXbins()->GetArray(),
                            nexpSysts,0,nexpSysts));
@@ -211,7 +211,7 @@ void TOP17010::bookHistograms() {
       size_t nthSysts(weightSysts_.size()); 
       if(nthSysts>0){
         ht_->addHist(hoi[ih]+"_th",      
-                    new TH2F(hoi[ih]+"_th", 
+                    new TH2D(hoi[ih]+"_th", 
                              Form(";%s;Theory systematic variation;Events",histo->GetName()),
                              histo->GetNbinsX(),histo->GetXaxis()->GetXbins()->GetArray(),
                              nthSysts,0,nthSysts));
