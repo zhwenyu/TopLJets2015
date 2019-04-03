@@ -46,15 +46,15 @@ double BTagSFUtil::updateBTagDecisions1a(MiniEvent_t &ev ) {
       if(abs(ev.j_hadflav[k])==5) { hadFlav=BTagEntry::FLAV_B; }
 
      if (abs(flavor) == 5 ){    //HF             
-          double iCSVWgtHF = btvCalibReaders_[hadFlav].eval(BTagEntry::FLAV_B, jetaForBtag, jptForBtag, csv);      
+          double iCSVWgtHF = btvCalibReaders_[hadFlav]->eval(BTagEntry::FLAV_B, jetaForBtag, jptForBtag, csv);      
           if( iCSVWgtHF!=0 ) csvWgtHF *= iCSVWgtHF;                
                         }
      else if( abs(flavor) == 4 ){  //C
-	  double iCSVWgtC = btvCalibReaders_[hadFlav].eval(BTagEntry::FLAV_C, jetaForBtag, jptForBtag, csv);
+	  double iCSVWgtC = btvCalibReaders_[hadFlav]->eval(BTagEntry::FLAV_C, jetaForBtag, jptForBtag, csv);
 	  if( iCSVWgtC!=0 ) csvWgtC *= iCSVWgtC;	   
 			}
      else { //LF
-	   double iCSVWgtLF = btvCalibReaders_[hadFlav].eval(BTagEntry::FLAV_UDSG, jetaForBtag, jptForBtag, csv);
+	   double iCSVWgtLF = btvCalibReaders_[hadFlav]->eval(BTagEntry::FLAV_UDSG, jetaForBtag, jptForBtag, csv);
 	   if( iCSVWgtLF!=0 ) csvWgtLF *= iCSVWgtLF;
            } 
       }

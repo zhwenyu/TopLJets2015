@@ -93,7 +93,7 @@ void TOP17010::init(UInt_t scenario){
   t_ = (TTree*)f_->Get("analysis/data");
   attachToMiniEventTree(t_,ev_,true);
   nentries_ = t_->GetEntriesFast();
-  if (debug_) nentries_ = 10000; //restrict number of entries for testing EDIT 10000
+  if (debug_) nentries_ = (nentries_ > 10000? 10000: nentries_) ; //restrict number of entries for testing EDIT 10000
   t_->GetEntry(0);
 
   TString baseName=gSystem->BaseName(outname_); 
@@ -131,6 +131,7 @@ void TOP17010::bookHistograms() {
   ht_ = new HistTool(0);
   ht_->addHist("puwgtctr", new TH1D("puwgtctr", ";Weight sums;Events",                        2,0,2));  
   ht_->addHist("genscan",  new TH1D("gennscan", ";Parameter;Value",                           4,0,4));  
+  ht_->addHist("nbjets_raw",   new TH1D("nbjets_raw",   ";b jet multiplicity;Events",               5,1,6)); // for btag test - debugging
   TH1 *gscan=ht_->getPlots()["genscan"];
   gscan->SetBinContent(1,origMt_);    gscan->GetXaxis()->SetBinLabel(1,"m_{t}^{i}");
   gscan->SetBinContent(2,origGt_);    gscan->GetXaxis()->SetBinLabel(2,"#Gamma_{t}^{i}");
@@ -233,15 +234,18 @@ void TOP17010::runAnalysis()
   for (Int_t iev=0;iev<nentries_;iev++)
     {
       t_->GetEntry(iev);
-      if(debug_) cout << "Event number: "<<iev<<endl;
+      // if(debug_)   // edit for debug -wz 
+      cout << "Event number: "<<iev<<endl;
       if(iev%10000==0) printf ("\r [%3.0f%%] done", 100.*(float)iev/(float)nentries_);
       
       //////////////////
       // CORRECTIONS  //
       //////////////////
       TString period = lumi_->assignRunPeriod();
-      btvSF_->addBTagDecisions(ev_,deepCSV_wp_);
-      if(!ev_.isData) btvSF_->updateBTagDecisions(ev_);      
+      double csvWgt = 1;  // btag method 1a
+      if(!ev_.isData) csvWgt = btvSF_->updateBTagDecisions1a(ev_);
+ //     btvSF_->addBTagDecisions(ev_,deepCSV_wp_);
+ //     if(!ev_.isData) btvSF_->updateBTagDecisions(ev_);      
       
       //TRIGGER
       bool hasETrigger(  selector_->hasTriggerBit("HLT_Ele32_eta2p1_WPTight_Gsf_v",                       ev_.triggerBits) );
@@ -313,24 +317,34 @@ void TOP17010::runAnalysis()
       std::vector<Particle> flaggedleptons = selector_->flaggedLeptons(ev_);     
       std::vector<Particle> leptons        = selector_->selLeptons(flaggedleptons,SelectionTool::TIGHT,SelectionTool::TIGHT,20,2.5);
       std::vector<Jet> alljets             = selector_->getGoodJets(ev_,30.,2.4,leptons);
+      if ( leptons.size() >1 ) {
+      float nbjets_raw = selector_->getGoodJets1(ev_,30.,2.4,leptons); // compare btag -wz
+      ht_->fill("nbjets_raw",  nbjets_raw, csvWgt); // compare btagging -wz
+      }  
       applyMC2MC(alljets);
       TopWidthEvent twe(leptons,alljets);
+     // cout << " Pass RECOLEVEL sel 1 \n" ; // for debugging -wz
       if(twe.dilcode==0) {
+      //  cout << " twe.dilcode==0 \n" ;
         continue;
       }
       else if(twe.dilcode==11*11) {
+      //  cout << " twe.dilcode==11*11 \n" ; // for debugging -wz
         if(!(hasEETrigger || hasETrigger)) continue;
         if(selector_->isSingleElectronPD() && hasEETrigger) continue;
       }
       else if(twe.dilcode==13*13) {
+      //  cout << " twe.dilcode==13*13 \n" ; // for debugging -wz
         if(!(hasMMTrigger || hasMTrigger)) continue;
         if(selector_->isSingleMuonPD() && hasMMTrigger) continue;
       }
       else if(twe.dilcode==11*13) {
+      //  cout << " twe.dilcode==11*13 \n" ; // for debugging -wz
         if(!(hasEMTrigger || hasETrigger || hasMTrigger)) continue;
         if(selector_->isSingleMuonPD()     && hasEMTrigger) continue;
         if(selector_->isSingleElectronPD() && (hasEMTrigger || hasMTrigger)) continue;
       }
+     // cout << " Pass RECOLEVEL sel \n" ; // for debugging -wz
 
       ////////////////////
       // EVENT WEIGHTS //
@@ -391,11 +405,12 @@ void TOP17010::runAnalysis()
        std::vector<Particle> genwbosons        = selector_->getPartonWbosons(ev_, -1,  15.); 
        std::vector<Particle> genbs             = selector_->getPartonBs(ev_, -1, 15 );
       
-       if ( genleptons.size() <2 )  continue;
-       if ( genbs.size() <2 )  continue;
+     //  if ( genleptons.size() <2 )  continue;
+     //  if ( genbs.size() <2 )  continue;
        std::vector<float> costhetastar;
 
        for(Int_t igen=0; igen<ev_.ngtop; igen++) {
+        // if ( genleptons.size() <2 ) cout << " special_event gtop_id " << ev_.gtop_id[igen] ;
          if(abs(ev_.gtop_id[igen])!=6) continue;
 //          cout << " one gen top, id " << ev_.gtop_id[igen] << ", pt " << ev_.gtop_pt[igen] << "\n";
          TLorentzVector gentop;
@@ -435,7 +450,6 @@ void TOP17010::runAnalysis()
               }
             }
            }
-        
        } 
 
         //b-fragmentation and semi-leptonic branching fractions
@@ -450,6 +464,7 @@ void TOP17010::runAnalysis()
         wgt *= widthWgt;
         wgt *= puWgts[0]*l1trigprefireProb.first*trigSF.first*l1SF.first*l2SF.first;
       }
+
       fillControlHistograms(twe,wgt);
 
       //experimental systs cycle: better not to do anything else after this...
@@ -616,7 +631,7 @@ void TOP17010::runAnalysis()
               if(sname.BeginsWith("JERpTdep"))  jerVarPartial = getJERSFBreakdown("pTdep", fabs(j.eta()));
               if(sname.BeginsWith("JERSTmFE"))  jerVarPartial = getJERSFBreakdown("STmFE", fabs(j.eta()));
               float genJet_pt(ev_.j_g[idx]>-1 ? ev_.g_pt[ ev_.j_g[idx] ] : 0);
-              cout << sname << " " << endl;
+            //  cout << sname << " " << endl; // UNcomment in formal use -wz
               TLorentzVector smearP4=jerTool_.getSmearedJet(j,genJet_pt,ev_.rho,isUpVar ? Variation::UP : Variation::DOWN,jerVarPartial);
               scaleVar=smearP4.Pt()/j.Pt();
             } 
@@ -662,6 +677,7 @@ void TOP17010::runAnalysis()
       }
 
       selector_->setDebug(debug_);
+      cout << " EndOfEvent " << iev << endl;  // for debugging -wz 
     }
   
   //close input file

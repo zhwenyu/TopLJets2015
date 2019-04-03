@@ -515,6 +515,31 @@ std::vector<Jet> SelectionTool::getGoodJets(MiniEvent_t &ev, double minPt, doubl
   return jets;
 }
 
+// function for testing btag -temp -wz
+float SelectionTool::getGoodJets1(MiniEvent_t &ev, double minPt, double maxEta, std::vector<Particle> leptons,std::vector<Particle> photons) {
+  std::vector<Jet> jets;
+
+  float nbjets = 0;
+  for (int k=0; k<ev.nj; k++) {
+    TLorentzVector jp4;
+    jp4.SetPtEtaPhiM(ev.j_pt[k],ev.j_eta[k],ev.j_phi[k],ev.j_mass[k]);
+
+        bool overlapsWithPhysicsObject(false);
+            for (auto& lepton : leptons) {
+                  if(jp4.DeltaR(lepton.p4())<0.4) overlapsWithPhysicsObject=true;
+                      }
+            for (auto& photon : photons) {
+                  if(jp4.DeltaR(photon.p4())<0.4) overlapsWithPhysicsObject=true;
+                      }
+                          if(overlapsWithPhysicsObject) continue;
+    
+        //flavor based on b tagging
+            if (ev.j_btag[k]) nbjets= nbjets +1;
+    }
+  return nbjets;
+
+}
+ 
 /*void SelectionTool::getGoodJets(MiniEvent_t &ev, double minPt, double maxEta, std::vector<Particle> leptons,std::vector<Particle> photons) {
   jets_.clear();
   pujets_.clear();
