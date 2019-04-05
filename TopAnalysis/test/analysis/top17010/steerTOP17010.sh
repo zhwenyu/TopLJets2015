@@ -102,7 +102,7 @@ case $WHAT in
 
     SEL )
 	python scripts/runLocalAnalysis.py \
-	    -i ${eosdir} --flag 0 --only ${json},${syst_json} --flag 0 \
+	    -i ${eosdir} --flag 0 --only ${json},${syst_json} \
             -o ${outdir}/${githash} \
             --farmappendix ${githash} \
             -q ${queue} --genWeights genweights_${githash}.root \

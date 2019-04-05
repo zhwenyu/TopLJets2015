@@ -342,9 +342,11 @@ def getDirectUncertainties(opt,fIn,d,proc_systs,hnom):
 
                 if not h: continue
                 h.GetName()
-                if smooth: applySmoothing(varUp)
+                if smooth: applySmoothing(h)
                 varH.append(h)
-        except:
+        except Exception as e:
+            print s_i
+            print e
             pass
         if len(varH)==0 : continue
 
