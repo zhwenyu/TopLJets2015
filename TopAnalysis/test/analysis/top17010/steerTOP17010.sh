@@ -24,13 +24,17 @@ if [ -z "$WHAT" ]; then
     echo "        PREPARE      - prepare analysis: resolution study + MC2MC corrections"
     echo "        TESTSEL      - test selection locally"
     echo "        SEL          - launches selection jobs to the batch, output will contain summary trees and control plots"; 
-    echo "        SELSCAN      - launches signal selection jobs to the batch for the mass vs width scan";
+    echo "        CHECKSELINTEG - runs locally jobs that failed"
     echo "        MERGE        - merge output"
-    echo "        MERGESCAN    - merge output for the mass/width scan and plot local sensitivity"
     echo "        PLOT         - make plots (if given \"extra\" is appended to the directory)"
-    echo "        BKG          - performs an estiation of the DY bacgrkound from data"
+    echo "        BKG          - performs an estimation of the DY bacgrkound from data"
+    echo "        SELSCAN      - launches signal selection jobs to the batch for the mass vs width scan";
+    echo "        CHECKSELSCANINTEG - runs locally jobs that failed"
+    echo "        MERGESCAN    - merge output for the mass/width scan and plot local sensitivity"
     echo "        TEMPL        - prepares the ROOT files with the template histograms"
+    echo "        TESTFIT      - tests the fit procedure for em_mlb"
     echo "        DATACARD     - prepares the datacards for combine"
+    echo "        CHECKDATACARD - runs locally the datacard creation for condor jobs that failed"
     echo "        FIT          - this submits the fits to condor (additional instructions are printed"
     echo "        WWW          - move plots to web-based (if given \"extra\" is appended to the directory)"
     exit 1; 
@@ -197,13 +201,13 @@ case $WHAT in
             -t ${outdir}/${githash}/templates \
             dataDef=sig,${outdir}/${githash}/plots/plotter.root,${testDist}/${testDist}_t#bar{t} \
             -s nom,${outdir}/${githash}/MC13TeV_${ERA}_TTJets.root \
-            -o ${outdir}/${githash}/datacards_jerinc \
-            --systs test/analysis/top17010/systs_dict_incjer.json
+            -o ${outdir}/${githash}/datacards \
+            --systs test/analysis/top17010/systs_dict.json
         
-        args="${outdir}/${githash}/datacards_jerinc/${testCat}/nom/tbart.datacard.dat"
-        python test/analysis/top17010/createFit.py -o ${outdir}/${githash}/fits_jerinc/${testCat}/nom -a -t 50 -c ${COMBINE} --tag tbart ${args}
+        args="${outdir}/${githash}/datacards/${testCat}/nom/tbart.datacard.dat"
+        python test/analysis/top17010/createFit.py -o ${outdir}/${githash}/fits/${testCat}/nom -a -t 50 -c ${COMBINE} --tag tbart ${args}
 
-        sh ${outdir}/${githash}/fits_jerinc/${testCat}/nom/runFit_tbart.sh 
+        sh ${outdir}/${githash}/fits/${testCat}/nom/runFit_tbart.sh 
 
         ;;
 
@@ -217,6 +221,11 @@ case $WHAT in
             -o ${outdir}/${githash}/datacards
         ;;
 
+    CHECKDATACARD )
+
+        python test/analysis/top17010/checkDataCards.py ${outdir}/${githash}/datacards
+
+        ;;
 
     FIT )
         

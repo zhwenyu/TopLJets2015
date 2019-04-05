@@ -57,6 +57,7 @@ def generateJobs(scanAnchors,signals,opt):
     condor.write('output      = datacard_condor.out\n')
     condor.write('error       = datacard_condor.err\n')
     condor.write('log         = datacard_condor.log\n')
+    condor.write('requirements = (OpSysAndVer =?= "SLCern6")\n') #SLC6
     condor.write('+JobFlavour = "workday"\n')
 
     dataStr=''
