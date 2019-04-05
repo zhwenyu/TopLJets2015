@@ -257,6 +257,7 @@ case $WHAT in
         echo "output      = ${condor_prep}.out" >> $condor_prep
         echo "error       = ${condor_prep}.err" >> $condor_prep
         echo "log         = ${condor_prep}.log" >> $condor_prep
+        echo "requirements = (OpSysAndVer =?= \"SLCern6\")" >> $condor_prep
         echo "+JobFlavour = \"workday\"" >> $condor_prep        
         for a in ${anchors[@]}; do
             a=`basename ${a}`;
@@ -313,6 +314,7 @@ case $WHAT in
         echo "output      = ${condor_fit}.out" >> $condor_fit
         echo "error       = ${condor_fit}.err" >> $condor_fit
         echo "log         = ${condor_fit}.log" >> $condor_fit
+        echo "requirements = (OpSysAndVer =?= \"SLCern6\")" >> $condor_fit
         echo "+JobFlavour = \"workday\"" >> $condor_fit        
         for a in ${anchors[@]}; do
             dir="${outdir}/${githash}/fits/${FITTYPE}/${a}"
