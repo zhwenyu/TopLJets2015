@@ -195,7 +195,7 @@ def main():
                                 #check if a special scale factor needs to be applied
                                 sfVal=1.0                                                 
                                 for procToScale in procSF:
-                                    if sp[1]==procToScale:
+                                    if sp[1]==procToScale:                                        
                                         for pcat in procSF[procToScale]:                                    
                                             if pcat not in key: continue
                                             sfVal=procSF[procToScale][pcat][0]

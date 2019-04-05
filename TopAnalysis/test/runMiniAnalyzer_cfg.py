@@ -256,6 +256,8 @@ if options.runProtonFastSim:
       toSchedule.append(process.pps_simulation_step)
       toSchedule.append(process.pps_reco_step)
 
+      process.analysis.tagRecoProtons = cms.InputTag('ctppsProtonReconstructionOFDB')
+
 
 process.ana=cms.Path(process.analysis)
 toSchedule.append( process.ana )
@@ -271,6 +273,7 @@ if options.runOnData:
             from TopLJets2015.TopAnalysis.l1prefireAnalysis_cfi import *
             defineL1PrefireAnalysis(process,options.era)
             toSchedule.append(process.l1prefirePath)
-
+print process.analysis.tagRecoProtons
                       
 process.schedule=cms.Schedule( (p for p in toSchedule) )
+print process.schedule

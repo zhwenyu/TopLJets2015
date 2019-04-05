@@ -102,7 +102,7 @@ case $WHAT in
 
     SEL )
 	python scripts/runLocalAnalysis.py \
-	    -i ${eosdir} --only nohad --flag 0 \ #--only ${json},${syst_json} --flag 0 \
+	    -i ${eosdir} --flag 0 --only ${json},${syst_json} --flag 0 \
             -o ${outdir}/${githash} \
             --farmappendix ${githash} \
             -q ${queue} --genWeights genweights_${githash}.root \
@@ -167,6 +167,7 @@ case $WHAT in
 
     PLOT )
 	commonOpts="-i ${outdir}/${githash} --puNormSF puwgtctr -l ${fulllumi} --saveLog --mcUnc ${lumiUnc}"
+        commonOpts="${commonOpts} --procSF DY:0.83"
 	python scripts/plotter.py ${commonOpts} -j ${json};
         python scripts/plotter.py ${commonOpts} -j ${json}      --only evcount  --saveTeX -o evcount_plotter.root;
         python scripts/plotter.py ${commonOpts} -j ${json}      --only mlb,ptlb --binWid  -o lb_plotter.root;
