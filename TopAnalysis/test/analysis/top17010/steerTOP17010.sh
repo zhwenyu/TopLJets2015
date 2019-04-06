@@ -36,7 +36,7 @@ if [ -z "$WHAT" ]; then
     echo "        DATACARD     - prepares the datacards for combine"
     echo "        CHECKDATACARD - runs locally the datacard creation for condor jobs that failed"
     echo "        FIT          - this submits the fits to condor (additional instructions are printed"
-    echo "        WWW          - move plots to web-based (if given \"extra\" is appended to the directory)"
+    echo "        WWW          - move plots to web-based area"
     exit 1; 
 fi
 

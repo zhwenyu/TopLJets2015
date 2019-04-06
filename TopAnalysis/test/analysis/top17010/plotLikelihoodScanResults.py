@@ -30,8 +30,6 @@ def getTheoryPrediction(x=np.arange(169,176,0.1)):
     
 
 
-
-
 def getScanPoint(inDir,fitTag):
 
     """read the fit result and return the likelihood value together with the corresponding mtop,width values"""
@@ -49,11 +47,12 @@ def getScanPoint(inDir,fitTag):
     nll=None
     try:
         url=os.path.join(inDir,'fitresults%s.root'%fitTag)
-        if os.path.isfile(url):
-            inF=ROOT.TFile.Open(url)
-            tree=inF.Get('fitresults')
-            tree.GetEntry(0)
-            nll=tree.nllvalfull
+        if not os.path.isfile(url):
+            raise ValueError('%s is missing'%url)
+        inF=ROOT.TFile.Open(url)
+        tree=inF.Get('fitresults')
+        tree.GetEntry(0)
+        nll=tree.nllvalfull
     except Exception as e:
         print e
 
