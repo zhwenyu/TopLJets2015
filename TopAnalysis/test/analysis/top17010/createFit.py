@@ -79,8 +79,10 @@ def main():
         script.write('combinetf.py datacard.dat.hdf5 -t -1 -o %s_asimov.root --doImpacts\n'%fitresultsName)
     if opt.toys>0:
         script.write('combinetf.py datacard.dat.hdf5 -t %d -o %s_toys.root\n'%(opt.toys,fitresultsName))
+    script.write('cp -v fitresults*root %s\n'%opt.outdir)
     script.write('python %s datacard.dat\n'%opt.nuisScan)
-    script.write('cp -v fitresults*.{root,pck} %s\n'%opt.outdir)
+    script.write('cp -v fitresults_fixedgroups.pck %s/%s_fixedgroups.pck\n'%(opt.outdir,fitresultsName))
+
     script.close()
 
     #mv script to output
