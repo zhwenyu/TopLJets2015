@@ -93,7 +93,10 @@ void TOP17010::init(UInt_t scenario){
   t_ = (TTree*)f_->Get("analysis/data");
   attachToMiniEventTree(t_,ev_,true);
   nentries_ = t_->GetEntriesFast();
-  if (debug_) nentries_ = (nentries_ > 10000? 10000: nentries_) ; //restrict number of entries for testing EDIT 10000
+  if (debug_) 
+     {
+     nentries_ = (nentries_ > 10000? 4000: nentries_) ; //restrict number of entries for testing EDIT 10000
+     }  
   t_->GetEntry(0);
 
   TString baseName=gSystem->BaseName(outname_); 
@@ -243,9 +246,10 @@ void TOP17010::runAnalysis()
       //////////////////
       TString period = lumi_->assignRunPeriod();
       double csvWgt = 1;  // btag method 1a
-      if(!ev_.isData) csvWgt = btvSF_->updateBTagDecisions1a(ev_);
- //     btvSF_->addBTagDecisions(ev_,deepCSV_wp_);
- //     if(!ev_.isData) btvSF_->updateBTagDecisions(ev_);      
+//      if(!ev_.isData) csvWgt = btvSF_->updateBTagDecisions1a(ev_);
+ //     cout << " csvWgt = " << csvWgt; 
+      btvSF_->addBTagDecisions(ev_,deepCSV_wp_);
+      if(!ev_.isData) btvSF_->updateBTagDecisions(ev_);      
       
       //TRIGGER
       bool hasETrigger(  selector_->hasTriggerBit("HLT_Ele32_eta2p1_WPTight_Gsf_v",                       ev_.triggerBits) );

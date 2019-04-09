@@ -89,7 +89,7 @@ case $WHAT in
         tag=MC13TeV_${ERA}_TTJets
 #        input=${eosdir}/${tag}/Chunk_0_ext0.root
         output=${tag}.root 
-        input=/store/cmst3/user/psilva/MC13TeV_TTJets.root
+        input=/store/cmst3/group/top/RunIIReReco/2016/375837b/MC13TeV_2016_TTJets/Chunk_0_ext0.root
 
         gidx=`python -c "print int((2-0.7)/0.01)"`
         midx=`python -c "print int((172.5-169)/0.25)"`
@@ -98,7 +98,7 @@ case $WHAT in
 	python scripts/runLocalAnalysis.py \
             -i ${input} -o ${output} --tag ${tag} --only ${json} --flag ${flag}\
             --njobs 1 -q local --genWeights genweights_${githash}.root \
-            --era era${ERA} -m TOP17010::TOP17010 --ch 0 --runSysts --debug;
+            --era era${ERA} -m TOP17010::TOP17010 --ch 0 --runSysts #  --debug;
         ;;
 
     SEL )
