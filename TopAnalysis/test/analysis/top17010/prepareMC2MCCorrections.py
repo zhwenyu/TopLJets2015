@@ -32,7 +32,7 @@ def getRatio(num,den,name):
 PROCLIST=['MC13TeV_2016_TTJets',
           'MC13TeV_2016_TTJets_fsrdn',   'MC13TeV_2016_TTJets_fsrup',
           'MC13TeV_2016_TTJets_hdampup', 'MC13TeV_2016_TTJets_hdampdn',
-          'MC13TeV_2016_TTJets_uedn',  
+          'MC13TeV_2016_TTJets_uedn',    'MC13TeV_2016_TTJets_ueup',  
           'MC13TeV_2016_TTJets_erdon', 
           'MC13TeV_2016_TTJets_qcdbased',
           'MC13TeV_2016_TTJets_gluonmove'

@@ -1,66 +1,66 @@
 import ROOT
 import os
-import generateWorkspace
-import numpy as np
+import generateBinnedWorkspace
 import sys
 import pickle
 
-sig=sys.argv[1]
-workingpoints={}
+m=int(sys.argv[1])
+xangle=int(sys.argv[2])
+baseDir=sys.argv[3]
 
-task_list=[]
-for l1pt in [30,40,50]:
-    for l2pt in np.arange(20,l1pt,10):
-        for bosonpt in [20,40,50,60,70,80]:
-            task_list.append((l1pt,l2pt,bosonpt))
+#check which points are available
+with open('%s/scanpoints.pck'%baseDir,'r') as cache:
+    task_list=pickle.load(cache)
 
-print '%d working points being scanned for %s'%(len(task_list),sig)
+#scan results
+hr95=ROOT.TH1F('optim_r95',';Scan point;95% CL limit on #sigma/#sigma_{th}',len(task_list),0,len(task_list))
+hsig=hr95.Clone('optim_sig')
+hsig.GetYaxis().SetTitle('Expected significance (asymptotic)')
+scanResults=[]
 
-h=ROOT.TH1F('optim',';[p_{T}(l_{1}),p_{T}(l_{2}),p_{T}(Z)];95% CL limit on #sigma/#sigma_{th}',len(task_list),0,len(task_list))
-hsig={1:h.Clone('optim_sig1'),10:h.Clone('optim_sig10')}
-for xbin in range(len(task_list)):
-    l1pt,l2pt,bosonpt=task_list[xbin]
-    anaCuts='[%d,%d,%d]'%(l1pt,l2pt,bosonpt)
-    iwp=[]
+#run combine at each point
+nTasks=len(task_list)
+for task in task_list:
+
+    itask=task[0]
+    print 'Starting',itask,'/',nTasks
+    taskDir=baseDir+'/optim_task%d'%itask
+    iwpResults=[]
+
+    try:
+
+        #run combine
+        dc=[os.path.join(taskDir,f) for f in os.listdir(taskDir) if 'dat' in f and 'a%d'%xangle in f]
+        combStr=' '.join( ['cat%d=%s'%(i,dc[i]) for i in range(len(dc))] )    
+        os.system('combineCards.py {0} > combined_card.dat\n'.format(combStr))
+        os.system('text2workspace.py combined_card.dat -o workspace.root\n')    
     
-    #generate new workspace
-    generateWorkspace.main(['-d','--sig',sig,'-c',"(cat==121||cat==169) && l1pt>{0} && l2pt>{1} && bosonpt>{2}".format(l1pt,l2pt,bosonpt)])
+        #run limits and read 50% quantile
+        os.system('combine workspace.root -M AsymptoticLimits -t -1\n')
+        fIn=ROOT.TFile.Open('higgsCombineTest.AsymptoticLimits.mH120.root')
+        limit=fIn.Get('limit')
+        for ientry in range(5):
+            limit.GetEntry(ientry)
+            iwpResults.append(limit.limit)
+        r95=iwpResults[2]
+        hr95.SetBinContent(itask,r95)
+        fIn.Close()
 
-    allDC=' '.join(['alpha{0}=analysis/shapes-parametric-{0}murad.datacard.dat'.format(xangle) for xangle in [120,130,140,150]])
-    combDC='analysis/shapes-parametric.datacard.dat'
-    os.system('combineCards.py {0} > {1}'.format(allDC,combDC))
-    os.system('text2workspace.py {0}'.format(combDC))
-
-    #run limits and read 50% quantile
-    os.system('combine {0}.root -M AsymptoticLimits -t -1'.format(combDC))
-    fIn=ROOT.TFile.Open('higgsCombineTest.AsymptoticLimits.mH120.root')
-    limit=fIn.Get('limit')
-    for i in [0,1,2,3,4]:
-        limit.GetEntry(i)
-        iwp.append(limit.limit)
-    r95=iwp[2]
-    h.GetXaxis().SetBinLabel(xbin+1,anaCuts)
-    h.SetBinContent(xbin+1,r95)
-    fIn.Close()
-
-    #run significance
-    for exp in hsig:
-        os.system('combine {0}.root -M Significance -t -1 --expectSignal={1}'.format(combDC,exp))
+        #run significance
+        os.system('combine workspace.root -M Significance -t -1 --expectSignal=1\n')
         fIn=ROOT.TFile.Open('higgsCombineTest.Significance.mH120.root')
         limit=fIn.Get('limit')
         limit.GetEntry(0)
-        iwp.append(limit.limit)
+        exp_sig=limit.limit
+        iwpResults.append(exp_sig)
+        hsig.SetBinContent(itask,exp_sig)
         fIn.Close()
-        hsig[exp].GetXaxis().SetBinLabel(xbin+1,anaCuts)
-        hsig[exp].SetBinContent(xbin+1,iwp[-1])
 
+        scanResults.append( [x for x in task]+[r95,exp_sig] )
+    except:
+        print 'Failed to analyse results for',task    
 
-    workingpoints[(l1pt,l2pt,bosonpt)]=iwp
-
-fOut=ROOT.TFile.Open('optimresults_%s.root'%sig,'RECREATE')
-h.Write()
-for exp in hsig: hsig[exp].Write()
-fOut.Close()
-
-with open('optimresults_%s.pck'%sig,'w') as cache:
-    pickle.dump(workingpoints,cache,pickle.HIGHEST_PROTOCOL) 
+with open('{0}/optim_results_m{1}_a{2}.pck'.format(baseDir,m,xangle),'w') as cache:
+    pickle.dump(scanResults,cache,pickle.HIGHEST_PROTOCOL) 
+    pickle.dump(hr95,cache,pickle.HIGHEST_PROTOCOL) 
+    pickle.dump(hsig,cache,pickle.HIGHEST_PROTOCOL) 

@@ -1,6 +1,7 @@
 import ROOT
 import sys
 import os
+from subprocess import check_output
 
 def modification_date(f):
     t = os.path.getmtime(f)
@@ -49,7 +50,8 @@ def checkIntegrity(f,tname):
 
 
 #read files
-f=open(os.path.join(sys.argv[1],'checkIntegList.dat'))
+FARMDIR=sys.argv[1]
+f=open(os.path.join(FARMDIR,'checkIntegList.dat'))
 files = [line.rstrip('\n').split() for line in f]
 f.close()
 print len(files),'files to check'
@@ -64,6 +66,11 @@ with open('localanalysis_integ_report.dat','w') as r:
         msg='IS OK' if ires[0] is None and ores[0] is None else 'NOTOK'
         ijob='/'.join(i.split('/')[-2:])
         r.write('[{0:6s}] job with input {1} input={2} output={3}\n'.format(msg,ijob,ires,ores))
-
+        
+        if msg=='NOTOK':
+            print 'Running locally the job with input',ijob
+            shScript=check_output(["grep -ir {0} {1}/*.sh".format(ijob,FARMDIR)],shell=True).split(':')[0]
+            os.system('sh {0}'.format(shScript))
+                      
 print 'Report in localanalysis_integ_report.dat'
 

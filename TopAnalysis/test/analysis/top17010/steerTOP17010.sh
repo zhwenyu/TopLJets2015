@@ -24,15 +24,19 @@ if [ -z "$WHAT" ]; then
     echo "        PREPARE      - prepare analysis: resolution study + MC2MC corrections"
     echo "        TESTSEL      - test selection locally"
     echo "        SEL          - launches selection jobs to the batch, output will contain summary trees and control plots"; 
-    echo "        SELSCAN      - launches signal selection jobs to the batch for the mass vs width scan";
+    echo "        CHECKSELINTEG - runs locally jobs that failed"
     echo "        MERGE        - merge output"
-    echo "        MERGESCAN    - merge output for the mass/width scan and plot local sensitivity"
     echo "        PLOT         - make plots (if given \"extra\" is appended to the directory)"
-    echo "        BKG          - performs an estiation of the DY bacgrkound from data"
+    echo "        BKG          - performs an estimation of the DY bacgrkound from data"
+    echo "        SELSCAN      - launches signal selection jobs to the batch for the mass vs width scan";
+    echo "        CHECKSELSCANINTEG - runs locally jobs that failed"
+    echo "        MERGESCAN    - merge output for the mass/width scan and plot local sensitivity"
     echo "        TEMPL        - prepares the ROOT files with the template histograms"
+    echo "        TESTFIT      - tests the fit procedure for em_mlb"
     echo "        DATACARD     - prepares the datacards for combine"
+    echo "        CHECKDATACARD - runs locally the datacard creation for condor jobs that failed"
     echo "        FIT          - this submits the fits to condor (additional instructions are printed"
-    echo "        WWW          - move plots to web-based (if given \"extra\" is appended to the directory)"
+    echo "        WWW          - move plots to web-based area"
     exit 1; 
 fi
 
@@ -46,8 +50,8 @@ if [[ ${ERA} = "2017" ]]; then
     fulllumi=41367
 fi
 
-gtList=(0.7 0.75 0.8 0.85 0.9 0.95 1.0 1.05 1.1 1.15 1.2 1.25 1.28 1.3 1.32 1.34 1.36 1.38 1.4 1.45 1.5 1.55 1.6 1.65 1.7 1.75 1.85 1.9 1.95 2.0 2.1 2.2 2.3 2.4 2.5 2.6 2.8 3.0 3.5 4.0)
-mtList=(169.5 170 170.5 171 171.25 171.5 171.75 172 172.25 172.5 172.75 173 173.25 173.5 174 174.5 175 175.5)
+gtList=(0.7 0.8 0.9 1.0 1.05 1.1 1.15 1.2 1.25 1.28 1.3 1.32 1.34 1.36 1.38 1.4 1.45 1.5 1.55 1.6 1.65 1.7 1.75 1.85 1.9 1.95 2.0 2.2 2.4 2.6 2.8 3.0 3.5 4.0)
+mtList=(169.5 170.5 171 171.5 171.75 172 172.25 172.5 172.75 173 173.5 174.5 175.5)
 dists=em_mlb,ee_mlb,mm_mlb
 dists=${dists},emhighpt_mlb,emhighpt1b_mlb,emhighpt2b_mlb
 dists=${dists},emlowpt_mlb,emlowpt1b_mlb,emlowpt2b_mlb
@@ -103,7 +107,7 @@ case $WHAT in
 
     SEL )
 	python scripts/runLocalAnalysis.py \
-	    -i ${eosdir} --only ${json},${syst_json} --flag 0 \
+	    -i ${eosdir} --flag 0 --only ${json},${syst_json} \
             -o ${outdir}/${githash} \
             --farmappendix ${githash} \
             -q ${queue} --genWeights genweights_${githash}.root \
@@ -114,6 +118,10 @@ case $WHAT in
         python scripts/checkLocalAnalysisInteg.py ../../../FARM${githash}${githash}/ analysis/data
         ;;
 
+    MERGE )
+	./scripts/mergeOutputs.py ${outdir}/${githash};
+	;;
+    
     SELSCAN )
         
         for g in ${gtList[@]}; do
@@ -134,10 +142,17 @@ case $WHAT in
             sleep 15
         done
 	;;
-
-
-    MERGE )
-	./scripts/mergeOutputs.py ${outdir}/${githash};
+    
+    CHECKSELSCANINTEG )
+        
+        for g in ${gtList[@]}; do
+            gidx=`python -c "print int(($g-0.7)/0.01)"`
+            for m in ${mtList[@]}; do
+                midx=`python -c "print int(($m-169)/0.25)"`
+                flag=`python -c "print (($midx<<16)|($gidx))"`
+                python scripts/checkLocalAnalysisInteg.py ../../../FARMscenario${flag}${githash}SCAN${flag}/ analysis/data
+            done
+        done
 	;;
 
 
@@ -157,6 +172,7 @@ case $WHAT in
 
     PLOT )
 	commonOpts="-i ${outdir}/${githash} --puNormSF puwgtctr -l ${fulllumi} --saveLog --mcUnc ${lumiUnc}"
+        commonOpts="${commonOpts} --procSF DY:0.83"
 	python scripts/plotter.py ${commonOpts} -j ${json};
         python scripts/plotter.py ${commonOpts} -j ${json}      --only evcount  --saveTeX -o evcount_plotter.root;
         python scripts/plotter.py ${commonOpts} -j ${json}      --only mlb,ptlb --binWid  -o lb_plotter.root;
@@ -186,13 +202,13 @@ case $WHAT in
             -t ${outdir}/${githash}/templates \
             dataDef=sig,${outdir}/${githash}/plots/plotter.root,${testDist}/${testDist}_t#bar{t} \
             -s nom,${outdir}/${githash}/MC13TeV_${ERA}_TTJets.root \
-            -o ${outdir}/${githash}/datacards_jerinc \
-            --systs test/analysis/top17010/systs_dict_incjer.json
+            -o ${outdir}/${githash}/datacards \
+            --systs test/analysis/top17010/systs_dict.json
         
-        args="${outdir}/${githash}/datacards_jerinc/${testCat}/nom/tbart.datacard.dat"
-        python test/analysis/top17010/createFit.py -o ${outdir}/${githash}/fits_jerinc/${testCat}/nom -a -t 50 -c ${COMBINE} --tag tbart ${args}
+        args="${outdir}/${githash}/datacards/${testCat}/nom/tbart.datacard.dat"
+        python test/analysis/top17010/createFit.py -o ${outdir}/${githash}/fits/${testCat}/nom -a -t 50 -c ${COMBINE} --tag tbart ${args}
 
-        sh ${outdir}/${githash}/fits_jerinc/${testCat}/nom/runFit_tbart.sh 
+        sh ${outdir}/${githash}/fits/${testCat}/nom/runFit_tbart.sh 
 
         ;;
 
@@ -207,6 +223,11 @@ case $WHAT in
 #            -o /afs/cern.ch/user/w/wenyu/afswork/work/topwidth/CMSSW_9_4_10/src/TopLJets2015/TopAnalysis/test/analysis/top17010/${githash}/datacards
         ;;
 
+    CHECKDATACARD )
+
+        python test/analysis/top17010/checkDataCards.py ${outdir}/${githash}/datacards
+
+        ;;
 
     FIT )
         
@@ -238,6 +259,7 @@ case $WHAT in
         echo "output      = ${condor_prep}.out" >> $condor_prep
         echo "error       = ${condor_prep}.err" >> $condor_prep
         echo "log         = ${condor_prep}.log" >> $condor_prep
+        echo "requirements = (OpSysAndVer =?= \"SLCern6\")" >> $condor_prep
         echo "+JobFlavour = \"workday\"" >> $condor_prep        
         for a in ${anchors[@]}; do
             a=`basename ${a}`;
@@ -294,6 +316,7 @@ case $WHAT in
         echo "output      = ${condor_fit}.out" >> $condor_fit
         echo "error       = ${condor_fit}.err" >> $condor_fit
         echo "log         = ${condor_fit}.log" >> $condor_fit
+        echo "requirements = (OpSysAndVer =?= \"SLCern6\")" >> $condor_fit
         echo "+JobFlavour = \"workday\"" >> $condor_fit        
         for a in ${anchors[@]}; do
             dir="/afs/cern.ch/user/w/wenyu/afswork/work/topwidth/CMSSW_9_4_10/src/TopLJets2015/TopAnalysis/test/analysis/top17010/${githash}/fits/${FITTYPE}/${a}"  # edit

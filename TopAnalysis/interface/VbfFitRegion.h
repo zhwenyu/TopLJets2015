@@ -159,9 +159,35 @@ class systematics{
   
   void setYieldSystematicsB(double nominal, TString year = ""){ 
     yieldSystBkg = this->getYieldSystematics(nominal,this->bkg, year);
+    for (auto& s : yieldSystBkg) {
+      if (s.first == "ratemuF"){
+	yieldSystBkg["ratemuFQCD"] = make_pair(yieldSystBkg["ratemuF"].first,yieldSystBkg["ratemuF"].second);
+	yieldSystBkg["ratemuFEWK"] = make_pair(1.0,1.0);
+      } else if (s.first == "ratemuR"){
+	yieldSystBkg["ratemuRQCD"] = make_pair(yieldSystBkg["ratemuR"].first,yieldSystBkg["ratemuR"].second);
+	yieldSystBkg["ratemuREWK"] = make_pair(1.0,1.0);
+      }
+    }
+    /* cout <<"================>>> Background" <<endl; */
+    /* for (auto& s : yieldSystBkg) { */
+    /*   cout << s.first <<"\t"<<s.second.first <<"\t"<<s.second.second<<endl; */
+    /* } */
   }  
   void setYieldSystematicsS(double nominal, TString year = ""){ 
     yieldSystSig =  this->getYieldSystematics(nominal,this->sig, year);
+    for (auto& s : yieldSystSig) {
+      if (s.first == "ratemuF"){
+	yieldSystSig["ratemuFEWK"] = make_pair(yieldSystSig["ratemuF"].first,yieldSystSig["ratemuF"].second);
+	yieldSystSig["ratemuFQCD"] = make_pair(1.0,1.0);
+      } else if (s.first == "ratemuR"){
+	yieldSystSig["ratemuREWK"] = make_pair(yieldSystSig["ratemuR"].first,yieldSystSig["ratemuR"].second);
+	yieldSystSig["ratemuRQCD"] = make_pair(1.0,1.0);
+      }
+    }
+    /* cout <<"================>>> Signal" <<endl; */
+    /* for (auto& s : yieldSystSig) { */
+    /*   cout << s.first <<"\t"<<s.second.first <<"\t"<<s.second.second<<endl; */
+    /* } */
   }  
 
   std::vector<TH1F*> getShapeSystematics(TH2F * h, double nominal, TString year =""){
@@ -184,6 +210,14 @@ class systematics{
 	} else syst = syst+year;
       }
       TString postfix(label.EndsWith("dn")? "Down" : "Up");
+      ////////////////////////////////////////////////////////////
+      // Decorrelating the Scale Unc. between QCD and EWK gjets //
+      ////////////////////////////////////////////////////////////
+      TString EwkQcdScale = "";
+      if (syst.Contains("mu")) EwkQcdScale = ((process == "Signal") ? "EWK": "QCD");
+      /////////////////////////////////////
+      // Replicating PDF for Up and Down //
+      /////////////////////////////////////
       if(syst.Contains("PDF")) {
 	postfix = "Up" ;
 	iPDF++;
@@ -195,18 +229,23 @@ class systematics{
       if(shapeOnly) {
 	tmpH->Scale(nominal/tmpH->Integral());
 	ret.push_back(tmpH);
+	if (syst.Contains("mu")) ret.push_back((TH1F*)tmpH->Clone(process+"_"+syst+EwkQcdScale+postfix));
       } else {
 	if(name.Contains("exp") && !label.Contains("JEC") && !label.Contains("JER") && !label.Contains("prefire") && !label.Contains("aes")){
 	  if(process == "Signal") rateSystSig.push_back(tmpH);
 	  if(process == "Bkg")    rateSystBkg.push_back(tmpH);
 	  continue;
-	} else ret.push_back(tmpH);
+	} else {
+	  ret.push_back(tmpH);
+	  if (syst.Contains("mu")) ret.push_back((TH1F*)tmpH->Clone(process+"_"+syst+EwkQcdScale+postfix));
+	}
       }
       if(syst.Contains("PDF")){
 	postfix = "Down";
 	ret.push_back((TH1F*)tmpH->Clone(process+"_"+syst+postfix));
       }
       shapeSystMap[syst] = hasSyst;
+      if (syst.Contains("mu")) shapeSystMap[syst+EwkQcdScale] = hasSyst;
     }
     return ret;
   }

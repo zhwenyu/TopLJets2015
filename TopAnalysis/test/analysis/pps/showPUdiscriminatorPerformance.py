@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import sys
 import pickle
 import numpy as np
 import matplotlib as mpl
@@ -7,6 +8,7 @@ mpl.use('Agg')
 import pandas as pd
 from keras.models import load_model
 from matplotlib import pyplot as plt
+from importanceViaColumnPermutation import *
 
 def plotFeatureImportance(models,outName):
     
@@ -150,12 +152,12 @@ def showROCs(clfList,data,truth,outfile):
 
     return bestThr,data
 
-with open('test/analysis/pps/pu_models.pck','r') as cache:
+with open(sys.argv[1],'r') as cache:
     best_models=pickle.load(cache)
     scaler=pickle.load(cache)
     #pca=pickle.load(cache)
 
-with open('test/analysis/pps/train_data.pck','r') as cache:
+with open(sys.argv[2],'r') as cache:
     data=pickle.load(cache)
     features=pickle.load(cache)
     spectators=pickle.load(cache)
@@ -175,6 +177,10 @@ for xangle in [120,130,140,150]:
 
     #feature importance (for random forest classifier only)
     plotFeatureImportance(rfcList,'featimportance_%d'%xangle)
+
+    oob = oob_classifier_accuracy(rfcList[0][1], data['X'], data['y'])
+    imp = permutation_importances(rfcList[0][1], data['X'], data['y'], oob_classifier_accuracy)
+
     
     #filter the data for this crossing angle
     filt=(xangle_list==xangle)

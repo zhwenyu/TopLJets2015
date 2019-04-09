@@ -55,7 +55,7 @@ case $WHAT in
     TESTSEL )
                
         json=data/era${ERA}/vbf_samples.json
-        tag=MC13TeV_2017_EWKAJJ
+        tag=MC13TeV_2017_EWKZJJ
         if [[ ${ERA} == "2016" ]]; then
             tag=MC13TeV_2016_TTJets
         fi
@@ -67,7 +67,7 @@ case $WHAT in
 	python scripts/runLocalAnalysis.py \
             -i ${input} -o ${output} --tag ${tag} --only ${tag} --mvatree\
             --njobs 8 -q local --genWeights genweights_${githash}.root \
-            --era era${ERA} -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts --debug;
+            --era era${ERA} -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts --debug --SRfake ;
 
         #--debug --mvatree \
         ./scripts/mergeOutputs.py ${output};
@@ -95,6 +95,7 @@ case $WHAT in
         ### --SRfake : gives the distributions of fakes, normalised based on fake rates
 
         json=data/era${ERA}/vbf_samples.json,data/era${ERA}/vbf_syst_samples.json
+	#json=data/era${ERA}/vbf_syst_samples.json
 
 	if [[ -z ${EXTRA} ]]; then
 	    echo "Making trees ... "
@@ -104,11 +105,11 @@ case $WHAT in
         fi
 	echo ${json}
 	python scripts/runLocalAnalysis.py \
-	    -i ${eosdir} --only ${json} \
+      	    -i ${eosdir}  \ #${json} \
             -o ${outdir}/${githash}/${EXTRA} \
             --farmappendix ${githash} \
             -q ${queue} --genWeights genweights_${githash}.root \
-            --era era${ERA} -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts --skipexisting ${extraOpts};
+            --era era${ERA} -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts --CR --skipexisting ${extraOpts};
 	;;
 
     SELTRIGEFF )
@@ -143,7 +144,7 @@ case $WHAT in
 
 
     MERGE )
-	./scripts/mergeOutputs.py ${outdir}/${githash}/${EXTRA};
+	./scripts/mergeOutputs.py ${outdir}/${githash}/${EXTRA}${QCD};
 	;;
 
     MERGETRIGEFF )
@@ -157,8 +158,9 @@ case $WHAT in
         gjets_json=data/era${ERA}/gjets_samples.json;
 	plotOutDir=${outdir}/${githash}/${EXTRA}/plots/
 	commonOpts="-i ${outdir}/${githash}/${EXTRA} --puNormSF puwgtctr -l ${fulllumi} --saveLog --mcUnc ${lumiUnc} --lumiSpecs LowVPtLowMJJA:${vbflumi},LowVPtHighMJJA:${vbflumi}"
+        python scripts/plotter.py ${commonOpts} -j ${gjets_json} --silent --only A_gen
         #python scripts/plotter.py ${commonOpts} -j ${gjets_json} --noStack --only A_
-	python scripts/plotter.py ${commonOpts} -j ${json} --only HighMJJ,LowMJJ ${kFactors}
+	#python scripts/plotter.py ${commonOpts} -j ${json} --only HighMJJ,LowMJJ ${kFactors}
 #	python scripts/plotter.py ${commonOpts} -j ${json} --only evcount ${kFactors} --saveTeX -o evcout_plotter.root
 #	python scripts/plotter.py ${commonOpts} -j ${syst_json} ${kFactors} --only HighMJJ,LowMJJ --silent -o syst_plotter.root
         ;;

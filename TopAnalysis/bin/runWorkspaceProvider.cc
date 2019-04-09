@@ -55,14 +55,14 @@ int main( int argc, char** argv )
     }
   }
 
-
+  if(false) cout << doSignalPH << "\t"<<sigEff << "\t" <<bkgEff<<endl;
   VbfFitRegion * SR = new VbfFitRegion(channel, TString("A"), histname, year, nBin, true, shapeOnly);
   VbfFitRegion * CR = new VbfFitRegion(channel, TString("MM"), histname, year,nBin, false, shapeOnly);
   
   WorkspaceProvider wsp(histname,SR, CR);
-  wsp.import(doSignalPH);
-  wsp.makeCard(YE, TString("A"), doSignalPH, sigEff, bkgEff);
-  //  wsp.makeCard(YE, TString("MM"), doSignalPH, sigEff, bkgEff);
+  // wsp.import(doSignalPH);
+  // wsp.makeCard(YE, TString("A"), doSignalPH, sigEff, bkgEff);
+  // wsp.makeCard(YE, TString("MM"), doSignalPH, sigEff, bkgEff);
   wsp.makeCardNLO(YE, TString("A"));
   //wsp.plotSystSig();
   return 0;

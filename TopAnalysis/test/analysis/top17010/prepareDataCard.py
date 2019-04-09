@@ -246,6 +246,26 @@ def printRateSysts(dc,binName,procList):
         dc.write(sline+'\n')
             
 
+def printNuisanceGroups(dc):
+
+    """ useful to fix nuisances a posteriori """
+
+    nuisGroups={#'trigsel'  : ['eetrig','emtrig','mmtrig','esel','msel','l1prefire'],
+                #'lepen'    : ["messtat","meszpt","mesewk","mesdm","eesstat","eesgain","eessyst","eessigma","eessphi","eessrho","eesscalet"],
+                'btag'     : ["beff","leff"],
+                'jer'      : ['JER',"JERstat","JERJEC","JERPU","JERPLI","JERptCut","JERtrunc","JERpTdep","JERSTmFE"],
+                'bfrag'    : ["bfrag","slepbr"],
+                'toppt'    : ['toppt'],
+                'jes'      : ['pileup',"AbsoluteStatJEC","AbsoluteScaleJEC","AbsoluteMPFBiasJEC","FragmentationJEC","SinglePionECALJEC","SinglePionHCALJEC","FlavorPureGluonJEC","FlavorPureQuarkJEC","FlavorPureCharmJEC","FlavorPureBottomJEC","TimePtEtaJEC","RelativeJEREC1JEC","RelativeJEREC2JEC","RelativeJERHFJEC","RelativePtBBJEC","RelativePtEC1JEC","RelativePtEC2JEC","RelativePtHFJEC","RelativeBalJEC","RelativeFSRJEC","RelativeStatFSRJEC","RelativeStatECJEC","RelativeStatHFJEC","PileUpDataMCJEC","PileUpPtRefJEC","PileUpPtBBJEC","PileUpPtEC1JEC","PileUpPtEC2JEC","PileUpPtHFJEC"],
+                'qcdscale' : ["muR","muF","combMuRmuF"],
+                'pdf'      : ["PDFenv"], #"PDFaS",
+                'isrfsr'   : ['ISR','FSR'],
+                'hdamp'    : ['hdamp'],
+                'softqcd'  : ['UE','CRerd','CRqcd','CRgmove'],
+                'tw'       : ['mtoptw','drdstw']}
+    for key in nuisGroups:
+        dc.write('{0} group = {1}\n'.format(key,' '.join(nuisGroups[key])))
+    
 
 def main():
 
@@ -259,7 +279,7 @@ def main():
     parser.add_option('-t', '--templ',          
                       dest='templ',
                       help='template directory [%default]',  
-                      default='/eos/cms/store/cmst3/group/top/TOP17010/0c522df/templates',
+                      default='/eos/cms/store/cmst3/group/top/TOP17010/final/0c522df/templates',
                       type='string')
     parser.add_option('-s', '--sig',
                       dest='signal',
@@ -329,6 +349,7 @@ def main():
         printRateSysts(dc=dc,
                        binName=cat,
                        procList=procList)
+        printNuisanceGroups(dc=dc)
 
     #customize for the different data
     for dataURL in dataFiles: 

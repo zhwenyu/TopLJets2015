@@ -99,26 +99,20 @@ TString SelectionTool::flagFinalState(MiniEvent_t &ev, std::vector<Particle> pre
 	  if( ch==13*13 && fabs(mll-91)<15 && (tightLeptons[0].pt()>30 || tightLeptons[1].pt()>30)) chTag="MM";          
 	  leptons_=tightLeptons;
 	} else {
-	  if (!isSRfake) {
-	    if( tightPhotons.size()>=1){
-	      chTag="A";
-	      leptons_   =tightLeptons;
-	      photons_   =tightPhotons;
-	    }
-	  } else {
-	    if(fakePhotons.size()>=1){
-	      chTag="A";
-	      leptons_   =tightLeptons;
-	      photons_   =tightPhotons;
-	    }
+	  bool passPhoton = (!isSRfake && tightPhotons.size()>=1) || (isSRfake && fakePhotons.size()>=1);
+	  if(passPhoton){
+	    chTag="A";
+	    leptons_   =tightLeptons;
 	  }
+	  if(isSRfake) photons_   = fakePhotons;
+	  else         photons_   = tightPhotons;
 	}
       } else {
 	if(isSRfake) return "";
-	bool passPhoton = (!isSRfake && !isQCDTemp && inclusivePhotons.size()>=1) || (!isSRfake && isQCDTemp && tmpPhotons.size()>=1);
+	bool passPhoton = (!isQCDTemp && inclusivePhotons.size()>=1) || (isQCDTemp && tmpPhotons.size()>=1);
 	if(passPhoton) {
 	  chTag="A";
-	  if(!isQCDTemp) photons_   =inclusivePhotons;
+	  if(!isQCDTemp)      photons_   =inclusivePhotons;
 	  else                photons_   =tmpPhotons;
 	  //cout<< "Number of very loose photons: "<<photons_.size()<<endl;
 	  leptons_   =tightLeptons;

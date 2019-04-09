@@ -7,6 +7,11 @@ options.register('runOnData', False,
                  VarParsing.varType.bool,
                  "Run this on real data"
                  )
+options.register('runProtonFastSim', None,
+                 VarParsing.multiplicity.singleton,
+                 VarParsing.varType.int,
+                 "Run proton fastsim for this angle"
+                 )
 options.register('runL1PrefireAna', False,
                  VarParsing.multiplicity.singleton,
                  VarParsing.varType.bool,
@@ -37,6 +42,11 @@ options.register('inputFile', None,
                  VarParsing.varType.string,
                  "input file to process"
                  )
+options.register('secInputFile', None,
+                 VarParsing.multiplicity.singleton,
+                 VarParsing.varType.string,
+                 "secondary input file to process"
+                 )
 options.register('lumiJson', None,
                  VarParsing.multiplicity.singleton,
                  VarParsing.varType.string,
@@ -60,7 +70,11 @@ options.register('applyFilt', True,
 options.parseArguments()
 
 #start process
-process = cms.Process("MiniAnalysis")
+if options.runProtonFastSim:
+      from Configuration.StandardSequences.Eras import eras
+      process = cms.Process("MiniAnalysis", eras.ctpps_2016)      
+else:
+      process = cms.Process("MiniAnalysis")
 
 #get the configuration to apply
 from TopLJets2015.TopAnalysis.EraConfig import getEraConfiguration
@@ -164,13 +178,19 @@ if options.runOnData:
 
 if options.inputFile:
       fileList=[]
+      secFileList=[]
       if '.root' in options.inputFile :
             fileList=[options.inputFile]
+            if options.secInputFile and '.root' in options.secInputFile:
+                  secFileList=[options.secInputFile]
+                  print 'Will run also on',secFileList
       else:
             import os
             inDir=options.inputFile
             fileList = ['file:'+os.path.join(inDir,f) for f in os.listdir(inDir)]
-      process.source.fileNames = cms.untracked.vstring(fileList)
+      process.source.fileNames = cms.untracked.vstring(fileList)     
+      process.source.secondaryFileNames = cms.untracked.vstring(secFileList)
+      
 print  "Processing",process.source.fileNames
 
 #apply lumi json, if passed in command line
@@ -229,6 +249,16 @@ if options.runOnData:
             process.ppsReco=cms.Path(process.ctppsProtonReconstruction)
       toSchedule.append(process.ppsReco)
 
+if options.runProtonFastSim:
+      from TopLJets2015.TopAnalysis.protonReco_cfg import setupProtonReco
+      setupProtonReco(process,options.runProtonFastSim)
+      toSchedule.append(process.pps_fastsim)
+      toSchedule.append(process.pps_simulation_step)
+      toSchedule.append(process.pps_reco_step)
+
+      process.analysis.tagRecoProtons = cms.InputTag('ctppsProtonReconstructionOFDB')
+
+
 process.ana=cms.Path(process.analysis)
 toSchedule.append( process.ana )
 if options.runOnData:
@@ -243,5 +273,7 @@ if options.runOnData:
             from TopLJets2015.TopAnalysis.l1prefireAnalysis_cfi import *
             defineL1PrefireAnalysis(process,options.era)
             toSchedule.append(process.l1prefirePath)
-
+print process.analysis.tagRecoProtons
+                      
 process.schedule=cms.Schedule( (p for p in toSchedule) )
+print process.schedule

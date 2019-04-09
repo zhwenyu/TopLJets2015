@@ -8,22 +8,36 @@ using namespace std;
 TopWidthEvent::TopWidthEvent(std::vector<Particle> &leptons,std::vector<Jet> &jets) : cat(""), dilcode(0) {
 
   initSelectionCuts();
-
-  if(leptons.size()<2 || jets.size()<2) return;
-  
+//  cout << " jets.size() = " << jets.size() ;
+  if(leptons.size()<2 || jets.size()<2) 
+     { // cout << " leptons.size()<2 || jets.size()<2 ";   // debugging -wz
+       return;
+     }
   //lepton selection
-  if(leptons[0].Pt()<leadLeptonPt_    || fabs(leptons[0].Eta())>maxLeptonEta_) return;
-  if(leptons[1].Pt()<subLeadLeptonPt_ || fabs(leptons[1].Eta())>maxLeptonEta_) return;
+  if(leptons[0].Pt()<leadLeptonPt_    || fabs(leptons[0].Eta())>maxLeptonEta_) 
+   {// cout << "leptons[0].Pt()<leadLeptonPt_    || fabs(leptons[0].Eta())>maxLeptonEta_ " ;
+     return;
+   } 
+  if(leptons[1].Pt()<subLeadLeptonPt_ || fabs(leptons[1].Eta())>maxLeptonEta_) 
+    { // cout << " leptons[1].Pt()<subLeadLeptonPt_ || fabs(leptons[1].Eta())>maxLeptonEta_ " ;
+    return;
+    }
   l1pt  = leptons[0].Pt();
   l1eta = leptons[0].Eta();
   l2pt  = leptons[1].Pt();
   l2eta = leptons[1].Eta();
   
   //dilepton selection
-  if(leptons[0].charge()*leptons[1].charge()>0) return;
+  if(leptons[0].charge()*leptons[1].charge()>0) 
+  { // cout << " leptons[0].charge()*leptons[1].charge()>0 " ; 
+   return;
+  }
   mll   = ( (leptons[0]+leptons[1]).M() );
   ptll  = ( (leptons[0]+leptons[1]).Pt() );
-  if(mll<20) return;
+  if(mll<20) 
+   { // cout << " mll<20 ";   
+return;
+   }
   bool isZ( fabs(mll-91)<15 );
   
   //jet selection
@@ -37,8 +51,16 @@ TopWidthEvent::TopWidthEvent(std::vector<Particle> &leptons,std::vector<Jet> &je
   }
   nbjets=bJets.size();
   njets=nbjets+lJets.size();
-  if(njets<2) return;
-  if(nbjets<1) return;
+ // cout << "nbjets = " << nbjets << " nljets = " << lJets.size() ; // debugging 
+
+  if(njets<2)
+   {// cout << " njets<2 ";
+   return;
+   }
+  if(nbjets<1) 
+  { // cout << " nbjets<1 ";
+   return;
+   }
 
   j1pt  = bJets[0].Pt();
   j1eta = bJets[0].Eta();

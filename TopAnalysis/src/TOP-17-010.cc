@@ -160,7 +160,7 @@ void TOP17010::bookHistograms() {
   TFile *rIn=TFile::Open("$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/top17010/mlbresol.root");  
   std::vector<TString> templates={"mlb","ptlb"};
   for(auto t : templates) {
-    TH1 *th=(TH1 *)rIn->Get(t); 
+    TH1D *th=(TH1D *)rIn->Get(t); 
     th->GetYaxis()->SetTitle("Events");
     th->SetTitle("");
     th->SetDirectory(0);
@@ -205,7 +205,7 @@ void TOP17010::bookHistograms() {
       
       //experimental systs
       ht_->addHist(hoi[ih]+"_exp",      
-                  new TH2F(hoi[ih]+"_exp", 
+                  new TH2D(hoi[ih]+"_exp", 
                            Form(";%s;Experimental systematic variation;Events",histo->GetName()),
                            histo->GetNbinsX(),histo->GetXaxis()->GetXbins()->GetArray(),
                            nexpSysts,0,nexpSysts));
@@ -216,7 +216,7 @@ void TOP17010::bookHistograms() {
       size_t nthSysts(weightSysts_.size()); 
       if(nthSysts>0){
         ht_->addHist(hoi[ih]+"_th",      
-                    new TH2F(hoi[ih]+"_th", 
+                    new TH2D(hoi[ih]+"_th", 
                              Form(";%s;Theory systematic variation;Events",histo->GetName()),
                              histo->GetNbinsX(),histo->GetXaxis()->GetXbins()->GetArray(),
                              nthSysts,0,nthSysts));
@@ -634,8 +634,7 @@ void TOP17010::runAnalysis()
               if(sname.BeginsWith("JERtrunc"))  jerVarPartial = getJERSFBreakdown("trunc", fabs(j.eta()));
               if(sname.BeginsWith("JERpTdep"))  jerVarPartial = getJERSFBreakdown("pTdep", fabs(j.eta()));
               if(sname.BeginsWith("JERSTmFE"))  jerVarPartial = getJERSFBreakdown("STmFE", fabs(j.eta()));
-              float genJet_pt(ev_.j_g[idx]>-1 ? ev_.g_pt[ ev_.j_g[idx] ] : 0);
-            //  cout << sname << " " << endl; // UNcomment in formal use -wz
+              float genJet_pt(ev_.j_g[idx]>-1 ? ev_.g_pt[ ev_.j_g[idx] ] : 0);              
               TLorentzVector smearP4=jerTool_.getSmearedJet(j,genJet_pt,ev_.rho,isUpVar ? Variation::UP : Variation::DOWN,jerVarPartial);
               scaleVar=smearP4.Pt()/j.Pt();
             } 

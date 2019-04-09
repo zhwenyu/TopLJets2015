@@ -42,9 +42,11 @@ def getSignals(opt):
         for key in fIn.Get('em_mlb').GetListOfKeys():
             keyname=key.GetName()
             pos=keyname.find('t#bar{t}')
-            if pos<0: continue
-            keyname=keyname[pos:]
-            signals.append( 'sig,%s,$(dist)/$(dist)_%s'%(f,keyname) )
+            if pos<0: continue            
+            #use only FSR, mass and width variations
+            if 't#bar{t}fsr' in keyname or 't#bar{t}1' in keyname or 't#bar{t}0.5w' in keyname or 't#bar{t}4w' in keyname:
+                keyname=keyname[pos:]
+                signals.append( 'sig,%s,$(dist)/$(dist)_%s'%(f,keyname) )
     return signals
     
 def generateJobs(scanAnchors,signals,opt):
@@ -58,6 +60,7 @@ def generateJobs(scanAnchors,signals,opt):
     condor.write('output      = datacard_condor.out\n')
     condor.write('error       = datacard_condor.err\n')
     condor.write('log         = datacard_condor.log\n')
+    condor.write('requirements = (OpSysAndVer =?= "SLCern6")\n') #SLC6
     condor.write('+JobFlavour = "workday"\n')
 
     dataStr=''

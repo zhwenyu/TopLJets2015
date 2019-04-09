@@ -429,6 +429,7 @@ void MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
         int absid=abs(genIt.pdgId());
         bool outGoingProton( absid==2212 && genIt.status()==1 && fabs(genIt.eta())>4.7 );
         bool topLastCopy(absid==6 && genIt.isLastCopy());
+        bool wLastCopy(absid==24 && genIt.isLastCopy());
         if(outGoingProton || topLastCopy)
           {
             ev_.gtop_id[ ev_.ngtop ]  = genIt.pdgId();
@@ -438,6 +439,20 @@ void MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
             ev_.gtop_m[ ev_.ngtop ]   = genIt.mass();
             ev_.ngtop++;
           }
+
+        //save top daughters
+        if(topLastCopy || wLastCopy) {
+          size_t ndau=genIt.numberOfDaughters();
+          for(size_t idau=0; idau<ndau; idau++){
+            const reco::Candidate *d=genIt.daughter(idau);
+            ev_.gtop_id[ ev_.ngtop ]  = d->pdgId();
+            ev_.gtop_pt[ ev_.ngtop ]  = d->pt();
+            ev_.gtop_eta[ ev_.ngtop ] = d->eta();
+            ev_.gtop_phi[ ev_.ngtop ] = d->phi();
+            ev_.gtop_m[ ev_.ngtop ]   = d->mass();
+            ev_.ngtop++;
+          }                
+        }
       }
   }
   
@@ -549,10 +564,10 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
   //CTPPS local tracks (only present in data)
   //
   ev_.nfwdtrk=0;
-  if(iEvent.isRealData()) {
+  edm::Handle<vector<reco::ProtonTrack>> recoProtons;
+  iEvent.getByToken(tokenRecoProtons_, recoProtons);
+  if(recoProtons.isValid()){
     try{
-      edm::Handle<vector<reco::ProtonTrack>> recoProtons;
-      iEvent.getByToken(tokenRecoProtons_, recoProtons);
       for (const auto & proton : *recoProtons)
         {
           if(!proton.valid()) continue;

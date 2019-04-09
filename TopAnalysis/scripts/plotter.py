@@ -195,7 +195,7 @@ def main():
                                 #check if a special scale factor needs to be applied
                                 sfVal=1.0                                                 
                                 for procToScale in procSF:
-                                    if sp[1]==procToScale:
+                                    if sp[1]==procToScale:                                        
                                         for pcat in procSF[procToScale]:                                    
                                             if pcat not in key: continue
                                             sfVal=procSF[procToScale][pcat][0]
@@ -203,12 +203,13 @@ def main():
 
                                 #scale by lumi
                                 lumi=opt.lumi
-                                for tag in lumiSpecs:
-                                    if not tag+'_' in key: continue
+                                for tag in lumiSpecs:                                    
+                                    if not tag in key.split('_'): continue
                                     lumi=lumiSpecs[tag]
                                     break
                                 if not opt.rawYields:
-                                    hist.Scale(xsec*lumi*puNormSF*sfVal)                    
+                                    hist.Scale(xsec*lumi*puNormSF*sfVal)       
+             
                             #rebin if needed
                             if opt.rebin>1:  hist.Rebin(opt.rebin)
 
@@ -246,7 +247,7 @@ def main():
         if opt.silent : skipPlot=True
         lumi=opt.lumi
         for tag in lumiSpecs:
-            if not tag+'_' in p: continue
+            if not tag in p.split('_'): continue
             lumi=lumiSpecs[tag]
             break
 

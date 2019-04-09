@@ -51,6 +51,7 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev,Int_t njecUncs)
   t->Branch("rho",           &ev.rho,         "rho/F");
   t->Branch("triggerBits",   &ev.triggerBits, "triggerBits/I");
   t->Branch("addTriggerBits",   &ev.addTriggerBits, "addTriggerBits/I");
+
   t->Branch("zeroBiasPS",   &ev.zeroBiasPS, "zeroBiasPS/I");
 
   //leptons
@@ -244,7 +245,8 @@ void attachToMiniEventTree(TTree *t,MiniEvent_t &ev,bool full)
   t->SetBranchAddress("rho",      &ev.rho);
   t->SetBranchAddress("triggerBits",        &ev.triggerBits);
   t->SetBranchAddress("addTriggerBits",        &ev.addTriggerBits);
-  t->SetBranchAddress("zeroBiasPS",   &ev.zeroBiasPS);
+  if(t->FindBranch("zeroBiasPS"))
+    t->SetBranchAddress("zeroBiasPS",   &ev.zeroBiasPS);
 
   //lepton info
   t->SetBranchAddress("nl", &ev.nl);
@@ -333,7 +335,7 @@ void attachToMiniEventTree(TTree *t,MiniEvent_t &ev,bool full)
   t->SetBranchAddress("j_gathrust", ev.j_gathrust);
   t->SetBranchAddress("j_tau32",    ev.j_tau32);
   t->SetBranchAddress("j_tau21",    ev.j_tau21);
-  t->SetBranchAddress("j_deepcsv",     ev.j_deepcsv);  
+  t->SetBranchAddress("j_deepcsv",  ev.j_deepcsv);  
   t->SetBranchAddress("j_vtxpx",    ev.j_vtxpx);
   t->SetBranchAddress("j_vtxpy",    ev.j_vtxpy);
   t->SetBranchAddress("j_vtxpz",    ev.j_vtxpz);
