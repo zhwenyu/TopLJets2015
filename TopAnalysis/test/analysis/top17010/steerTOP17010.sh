@@ -179,6 +179,27 @@ case $WHAT in
 
         ;;
 
+    COMBPLOT )
+        #combined plots
+
+        script=test/analysis/top17010/combinePlotsForAllCategories.py
+
+        python ${script} mlb:mlbinc
+        python ${script} evcount:evcountinc ee,em,mm
+        python ${script} ptlb:ptlbinc ee,em,mm
+        python ${script} drlb:drlbinc ee,em,mm
+
+        for d in ee em mm; do
+            for c in lowpt highpt; do
+                for b in 1b 2b; do
+                    cat=${d}${c}${b}
+                    python ${script} mlb:mlb_${cat} ${cat};
+                done
+            done
+        done
+
+        ;;
+
     BKG )
         python test/analysis/top17010/estimateDY.py -i ${outdir}/${githash}/plots/plotter.root -o ${outdir}/${githash}/plots/;
         ;;

@@ -33,7 +33,7 @@ def getTheoryPrediction(x=np.arange(169,176,0.1)):
     
 
 
-def getScanPoint(inDir,fitTag):
+def getScanPoint(inDir,fitTag,recover):
 
     """read the fit result and return the likelihood value together with the corresponding mtop,width values"""
 
@@ -58,11 +58,22 @@ def getScanPoint(inDir,fitTag):
         nll=tree.nllvalfull
     except Exception as e:
         print e
+        if recover:
+            try:
+                print 'Attempting recovery of',url
+                shScript=url.replace('/fitresults','/runFit')
+                shScript=shScript.replace('.root','.sh')
+                os.system('sh %s'%shScript)
+                os.system('rm fitresults*root')
+                os.system('rm fitresults*pck')
+                mt,gt,nll=getScanPoint(inDir,fitTag,False)
+            except:
+                print 'Recovery failed'
 
     return mt,gt,nll
         
 
-def profilePOI(data,outdir,axis=0):
+def profilePOI(data,outdir,axis=0,sigma=5):
 
     """ profiles in x and y the POI """
 
@@ -95,7 +106,7 @@ def profilePOI(data,outdir,axis=0):
         y_unif = np.arange(bounds[0],bounds[1],0.001*(bounds[1]-bounds[0]))
         z_spline = interp1d(y,z,kind='cubic',fill_value='extrapolate')
         z_spline_val=z_spline(y_unif)
-        z_filt = filters.gaussian_filter1d(z_spline_val,sigma=5)
+        z_filt = filters.gaussian_filter1d(z_spline_val,sigma=sigma)
 
         min_idx=np.argmin(z_filt)
         xvals.append(xi)
@@ -256,13 +267,23 @@ def main():
                       help='fit tag [%default]',  
                       default='_tbart',
                       type='string')
+    parser.add_option('--sigma',          
+                      dest='filterSigma',
+                      help='fiter sigma [%default]',  
+                      default=5,
+                      type=int)
+    parser.add_option('-r', '--recover',
+                      dest='recover',
+                      help='recover [%default]',  
+                      default=False,
+                      action='store_true')
     (opt, args) = parser.parse_args()
 
 
     #build nll scan
     fitres=[]
     for f in os.listdir(opt.input):
-        scanRes=getScanPoint(inDir=os.path.join(opt.input,f),fitTag=opt.fitTag)
+        scanRes=getScanPoint(inDir=os.path.join(opt.input,f),fitTag=opt.fitTag,recover=opt.recover)
         if not scanRes[-1]: continue
         fitres.append( scanRes )
     fitres=np.array(fitres)
@@ -270,8 +291,8 @@ def main():
     #plot the contour interpolating the available points
     os.system('mkdir -p %s'%opt.outdir)
     doContour(fitres,outdir=opt.outdir)
-    profilePOI(fitres,outdir=opt.outdir,axis=0)
-    profilePOI(fitres,outdir=opt.outdir,axis=1)
+    profilePOI(fitres,outdir=opt.outdir,axis=0,sigma=opt.filterSigma)
+    profilePOI(fitres,outdir=opt.outdir,axis=1,sigma=opt.filterSigma)
 
 if __name__ == "__main__":
     sys.exit(main())
