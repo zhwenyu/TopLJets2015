@@ -407,6 +407,17 @@ class Plot(object):
                 if (len(self.mcsyst)>0):
                     totalMCUnc.Draw('e2 same')
                     totalMCUncShape.Draw('e2 same')
+                else:
+                    uncBand=totalMC.Clone('totalmcuncband')
+                    self._garbageList.append(uncBand)
+                    uncBand.SetFillStyle(3254)
+                    ci=ROOT.TColor.GetColor('#99d8c9')
+                    uncBand.SetMarkerColor(ci)
+                    uncBand.SetFillColor(ci)
+                    uncBand.Draw('e2 same')
+                    #uncBand.SetTitle('Syst. unc.')
+                    #leg.AddEntry(uncBand,uncBand.GetTitle(),'f')
+                    nlegCols += 1
 
         for m in self.spimpose:
             if self.spimposeWithErrors:
@@ -443,7 +454,9 @@ class Plot(object):
         try:
             extraCtr=1
             for extra in extraText.split('\\'):
-                txt.DrawLatex(0.95,iniy-0.05*extraCtr,'#scale[0.8]{#it{%s}}'%extra)
+                if inix>0.5:
+                    txt.SetTextAlign(ROOT.kHAlignLeft+ROOT.kVAlignCenter)
+                txt.DrawLatex(0.93 if inix<0.5 else 0.16,iniy-0.05*extraCtr,'#scale[0.9]{%s}'%extra)
                 extraCtr+=1
         except:
             pass

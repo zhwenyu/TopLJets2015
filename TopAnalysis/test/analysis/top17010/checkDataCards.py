@@ -17,9 +17,11 @@ def runPacked(args):
 cmd_list=[]
 baseDir=sys.argv[1]  # /eos/cms/store/cmst3/group/top/TOP17010/0c522df/datacards
 motherDir=os.path.dirname(baseDir)
-toCheck=['tbart.datacard.dat','pseudodata.tbart.shapes.root']
+tagList=['','0p5w','4w','169p5','175p5','fsrup','fsrdn']
+toCheck=['tbart%s.datacard.dat'%tag for tag in tagList]
+toCheck+=[ 'pseudodata.tbart%s.shapes.root'%tag for tag in tagList]
 base_anchor='{0},%s/{1}/MC13TeV_2016_TTJets.root'%motherDir
-base_cmd='test/analysis/top17010/prepareDataCard.py -d {0} -t %s/templates dataDef=sig,%s/plots/plotter.root,{0}/{0}_t#bar{{t}} dataDef=data,%s/plots/plotter.root,{0}/{0}  -s {1} -o %s/datacards --systs test/analysis/top17010/systs_dict.json'%(motherDir,motherDir,motherDir,motherDir)
+base_cmd='test/analysis/top17010/prepareDataCard.py -d {0} -t %s/templates dataDef=sig,%s/plots/syst_plotter.root,{0}/{0}_t#bar{{t}}4w dataDef=sig,%s/plots/syst_plotter.root,{0}/{0}_t#bar{{t}}0.5w dataDef=sig,%s/plots/syst_plotter.root,{0}/{0}_t#bar{{t}}175.5 dataDef=sig,%s/plots/syst_plotter.root,{0}/{0}_t#bar{{t}}169.5 dataDef=sig,%s/plots/syst_plotter.root,{0}/{0}_t#bar{{t}}fsrup dataDef=sig,%s/plots/syst_plotter.root,{0}/{0}_t#bar{{t}}fsrdn dataDef=data,%s/plots/plotter.root,{0}/{0} -s {1} -o %s/datacards --systs test/analysis/top17010/systs_dict.json'%(motherDir,motherDir,motherDir,motherDir,motherDir,motherDir,motherDir,motherDir,motherDir)
 
 anchors=[]
 for dist in os.listdir(baseDir):
