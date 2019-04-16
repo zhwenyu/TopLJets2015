@@ -119,7 +119,9 @@ void RunExclusiveZX(const TString in_fname,
                    "llcsip", "llcsim",
                    "j1pt","j1eta","j1phi","j1m",
                    "j2pt","j2eta","j2phi","j2m",
+                   "j3pt","j3eta","j3phi","j3m",
                    "nb", "nj", "htb","htj",
+                   "lumiDeliv","lumiReco",
                    "PFMultSumEB",    "PFMultSumEE",    "PFMultSumHE",    "PFMultSumHF", 
                    "PFMultDiffEB",   "PFMultDiffEE",   "PFMultDiffHE",   "PFMultDiffHF", 
                    "PFChMultSumEB",  "PFChMultSumEE",  "PFChMultSumHE",  "PFChMultSumHF", 
@@ -304,8 +306,8 @@ void RunExclusiveZX(const TString in_fname,
       hasHighPtATrigger=selector.hasTriggerBit("HLT_Photon200_v", ev.triggerBits);
       hasETrigger=(selector.hasTriggerBit("HLT_Ele35_WPTight_Gsf_v", ev.triggerBits));
       bool hasHighPtMTrigger=(selector.hasTriggerBit("HLT_Mu50_v",     ev.triggerBits));
-      bool hasStdMTrigger=(selector.hasTriggerBit("HLT_IsoMu24_v",     ev.triggerBits) ||
-                           selector.hasTriggerBit("HLT_IsoMu24_2p1_v", ev.triggerBits) ||
+      bool hasStdMTrigger=(//selector.hasTriggerBit("HLT_IsoMu24_v",     ev.triggerBits) ||
+                           //selector.hasTriggerBit("HLT_IsoMu24_2p1_v", ev.triggerBits) ||
                            selector.hasTriggerBit("HLT_IsoMu27_v",     ev.triggerBits) );     
       hasMMTrigger=(selector.hasTriggerBit("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ",                  ev.triggerBits) ||
                     selector.hasTriggerBit("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8_v",          ev.triggerBits) ||
@@ -321,9 +323,9 @@ void RunExclusiveZX(const TString in_fname,
 
       if (ev.isData) { 
         //use only these unprescaled triggers for these eras
-        if(filename.Contains("2017E") || filename.Contains("2017F")){
-          hasStdMTrigger=selector.hasTriggerBit("HLT_IsoMu27_v",ev.triggerBits);
-        }
+        //if(filename.Contains("2017E") || filename.Contains("2017F")){
+        //  hasStdMTrigger=selector.hasTriggerBit("HLT_IsoMu27_v",ev.triggerBits);
+        // }
         if(!(filename.Contains("2017A") || filename.Contains("2017B"))){
           hasMMTrigger=(selector.hasTriggerBit("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8_v",   ev.triggerBits) ||
                         selector.hasTriggerBit("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8_v", ev.triggerBits) );
@@ -671,6 +673,10 @@ void RunExclusiveZX(const TString in_fname,
       outVars["j2eta"]=jets.size()>1 ? jets[1].Eta() : 0.;
       outVars["j2phi"]=jets.size()>1 ? jets[1].Phi() : 0.;
       outVars["j2m"]=jets.size()>1 ? jets[1].M() : 0.;
+      outVars["j3pt"]=jets.size()>2 ? jets[2].Pt() : 0.;
+      outVars["j3eta"]=jets.size()>2 ? jets[2].Eta() : 0.;
+      outVars["j3phi"]=jets.size()>2 ? jets[2].Phi() : 0.;
+      outVars["j3m"]=jets.size()>2 ? jets[2].M() : 0.;
       
       //flux variables
       if(!isA) {
@@ -776,6 +782,8 @@ void RunExclusiveZX(const TString in_fname,
           const edm::EventID ev_id( ev.run, ev.lumi, ev.event );        
           const ctpps::conditions_t lhc_cond = lhc_conds.get( ev_id );
           beamXangle = std::round(lhc_cond.crossing_angle);
+          outVars["lumiDeliv"] = lhc_cond.luminosity.delivered;
+          outVars["lumiReco"]  = lhc_cond.luminosity.recorded;
           ht.fill("beamXangle", beamXangle, plotwgts, selCat);
           
           if(beamXangle==120 || beamXangle==130 || beamXangle==140 || beamXangle==150) {

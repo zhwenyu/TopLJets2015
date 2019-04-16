@@ -26,6 +26,45 @@ void BTagSFUtil::addBTagDecisions(MiniEvent_t &ev,float wp,float wpl) {
   }
 }
 
+ // method 1a -weight ev
+double BTagSFUtil::updateBTagDecisions1a(MiniEvent_t &ev ) {
+  double csvWgtHF = 1., csvWgtLF = 1., csvWgtC = 1.;
+  double csvWgtTotal = 1.;
+
+  for (int k = 0; k < ev.nj; k++) {
+    TLorentzVector jp4;
+    jp4.SetPtEtaPhiM(ev.j_pt[k],ev.j_eta[k],ev.j_phi[k],ev.j_mass[k]);
+
+    if(!ev.isData) {
+
+      float jptForBtag(jp4.Pt()>1000. ? 999. : jp4.Pt()), jetaForBtag(fabs(jp4.Eta()));
+      float csv = ev.j_csv[k];
+      int flavor = ev.j_flav[k];
+
+      BTagEntry::JetFlavor hadFlav=BTagEntry::FLAV_UDSG;
+      if(abs(ev.j_hadflav[k])==4) { hadFlav=BTagEntry::FLAV_C; }
+      if(abs(ev.j_hadflav[k])==5) { hadFlav=BTagEntry::FLAV_B; }
+
+      if (abs(flavor) == 5 ){    //HF             
+        double iCSVWgtHF = btvCSVCalibReaders_[hadFlav]->eval(BTagEntry::FLAV_B, jetaForBtag, jptForBtag, csv);      
+        if( iCSVWgtHF!=0 ) csvWgtHF *= iCSVWgtHF;                
+      }
+      else if( abs(flavor) == 4 ){  //C
+        double iCSVWgtC = btvCSVCalibReaders_[hadFlav]->eval(BTagEntry::FLAV_C, jetaForBtag, jptForBtag, csv);
+        if( iCSVWgtC!=0 ) csvWgtC *= iCSVWgtC;	   
+      }
+      else { //LF
+        double iCSVWgtLF = btvCSVCalibReaders_[hadFlav]->eval(BTagEntry::FLAV_UDSG, jetaForBtag, jptForBtag, csv);
+        if( iCSVWgtLF!=0 ) csvWgtLF *= iCSVWgtLF;
+      } 
+    }
+
+    csvWgtTotal = csvWgtHF * csvWgtC * csvWgtLF;
+  }
+  
+  return csvWgtTotal;
+}     
+
 //
 void BTagSFUtil::updateBTagDecisions(MiniEvent_t &ev,std::string optionbc, std::string optionlight) {
   for (int k = 0; k < ev.nj; k++) {
@@ -98,8 +137,8 @@ bool BTagSFUtil::applySF(bool& isBTagged, float Btag_SF, float Btag_eff){
 void BTagSFUtil::startBTVcalibrationReaders(TString era,BTagEntry::OperatingPoint btagOP)
 {
   //start the btag calibration
-  TString btagUncUrl( era+"/DeepCSV_94XSF_V3_B_F.csv");
-  if(era.Contains("2016")) btagUncUrl=era+"/DeepCSV_2016LegacySF_V1.csv";
+  TString btagUncUrl( era+"/DeepCSV_94XSF_V3_B_F.csv"); 
+  if(era.Contains("2016")) btagUncUrl=era+"/DeepCSV_2016LegacySF_V1.csv"; 
   gSystem->ExpandPathName(btagUncUrl);
   BTagCalibration btvcalib("DeepCSV",btagUncUrl.Data());
 
@@ -110,6 +149,15 @@ void BTagSFUtil::startBTVcalibrationReaders(TString era,BTagEntry::OperatingPoin
   btvCalibReaders_[BTagEntry::FLAV_C]->load(btvcalib,BTagEntry::FLAV_C,"mujets");
   btvCalibReaders_[BTagEntry::FLAV_UDSG]=new BTagCalibrationReader(btagOP, "central", {"up", "down"});
   btvCalibReaders_[BTagEntry::FLAV_UDSG]->load(btvcalib,BTagEntry::FLAV_UDSG,"incl");
+
+  //start calibration readers by CSV re-weighting
+  btvCSVCalibReaders_[BTagEntry::FLAV_B]=new BTagCalibrationReader(BTagEntry::OP_RESHAPING, "central");
+  btvCSVCalibReaders_[BTagEntry::FLAV_B]->load(btvcalib,BTagEntry::FLAV_B,"iterativefit");
+  btvCSVCalibReaders_[BTagEntry::FLAV_C]=new BTagCalibrationReader(BTagEntry::OP_RESHAPING, "central");
+  btvCSVCalibReaders_[BTagEntry::FLAV_C]->load(btvcalib,BTagEntry::FLAV_C,"iterativefit");
+  btvCSVCalibReaders_[BTagEntry::FLAV_UDSG]=new BTagCalibrationReader(BTagEntry::OP_RESHAPING, "central");
+  btvCSVCalibReaders_[BTagEntry::FLAV_UDSG]->load(btvcalib,BTagEntry::FLAV_UDSG,"iterativefit");
+  
 }
 
 //

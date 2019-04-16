@@ -22,7 +22,7 @@ fi
 queue=tomorrow
 githash=ab05162
 eosdir=/store/cmst3/group/top/RunIIReReco/${githash}
-outdir=/store/cmst3/user/psilva/ExclusiveAna/${githash}
+outdir=/store/cmst3/user/psilva/ExclusiveAna/final/${githash}
 signal_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/signal_samples.json
 plot_signal_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/plot_signal_samples.json
 samples_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/samples.json
@@ -70,7 +70,7 @@ case $WHAT in
         baseOpt="${baseOpt} -o ${outdir} -q ${queue} --era era2017 -m ExclusiveZX::RunExclusiveZX --ch 0 --runSysts"
         #baseOpt="${baseOpt} --exactonly"        
 	python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py ${baseOpt} \
-            --only ${samples_json},${zx_samples_json},${zbias_samples_json};
+            --only ${samples_json},${zx_samples_json}; #,${zbias_samples_json};
 	;;
 
     MERGESEL )
