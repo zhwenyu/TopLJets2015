@@ -90,13 +90,14 @@ case $WHAT in
         ;;
 
     TESTSEL )               
-        tag=MC13TeV_${ERA}_TTJets
-        input=${eosdir}/${tag}/Chunk_0_ext0.root
+        tag=MC13TeV_${ERA}_TTJets_fsrup
+        input=${eosdir}/${tag}/Chunk_0_ext1.root
         output=${tag}.root 
 
         gidx=`python -c "print int((2-0.7)/0.01)"`
         midx=`python -c "print int((172.5-169)/0.25)"`
         flag=`python -c "print (($midx<<16)|($gidx))"`
+        flag=0
 
 	python scripts/runLocalAnalysis.py \
             -i ${input} -o ${output} --tag ${tag} --only ${json} --flag ${flag}\

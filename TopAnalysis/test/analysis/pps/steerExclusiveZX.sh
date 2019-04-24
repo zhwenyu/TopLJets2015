@@ -73,6 +73,11 @@ case $WHAT in
             --only ${samples_json},${zx_samples_json}; #,${zbias_samples_json};
 	;;
 
+    CHECKSELINTEG )
+        python scripts/checkLocalAnalysisInteg.py ../../../FARM${githash}/ analysis/data tree
+        ;;
+
+
     MERGESEL )
 	mergeOutputs.py /eos/cms/${outdir} True;
 	;;

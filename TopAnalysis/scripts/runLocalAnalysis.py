@@ -69,6 +69,7 @@ def main():
     parser.add_option(      '--tag',         dest='tag',         help='normalize from this tag  [%default]',                    default=None,       type='string')
     parser.add_option('-q', '--queue',       dest='queue',       help='if not local send to batch with condor. queues are now called flavours, see http://batchdocs.web.cern.ch/batchdocs/local/submit.html#job-flavours   [%default]',     default='local',    type='string')    
     parser.add_option('-n', '--njobs',       dest='njobs',       help='# jobs to run in parallel  [%default]',                  default=0,    type='int')
+    parser.add_option(      '--dryRun',      dest='dryRun',      help='create jobs, do not submit them  [%default]',       default=False,      action='store_true')
     parser.add_option(      '--skipexisting',dest='skipexisting',help='skip jobs with existing output files  [%default]',       default=False,      action='store_true')
     parser.add_option(      '--exactonly',   dest='exactonly',   help='match only exact sample tags to process  [%default]',    default=False,      action='store_true')
     parser.add_option(      '--outputonly',  dest='outputonly',  help='filter job submission for a csv list of output files  [%default]',             default=None,       type='string')
@@ -266,7 +267,8 @@ def main():
                 os.system('chmod u+x %s/%s.sh'%(FarmDirectory,cfgFile))
 
         print 'Submitting jobs to condor, flavour "%s"'%(opt.queue)
-        os.system('condor_submit %s/condor.sub'%FarmDirectory)
+        if not opt.dryRun:
+            os.system('condor_submit %s/condor.sub'%FarmDirectory)
         
         with open('%s/checkIntegList.dat'%FarmDirectory,'w') as f:
             for i,o in allCfgs: 
