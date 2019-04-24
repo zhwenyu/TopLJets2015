@@ -220,6 +220,12 @@ def main():
         
         print 'Preparing %d tasks to submit to the batch'%len(task_list)
         print 'Executables and condor wrapper are stored in %s'%FarmDirectory
+        
+        OpSysAndVer = str(os.system('cat /etc/redhat-release'))
+        if 'SLC' in OpSysAndVer:
+            OpSysAndVer = "SLCern6"
+        else:
+            OpSysAndVer = "CentOS7"
 
         allCfgs=[]
         with open ('%s/condor.sub'%FarmDirectory,'w') as condor:
@@ -228,7 +234,7 @@ def main():
             condor.write('output     = {0}/output_common.out\n'.format(FarmDirectory))
             condor.write('error      = {0}/output_common.err\n'.format(FarmDirectory))
             condor.write('log        = {0}/output_common.log\n'.format(FarmDirectory))
-            condor.write('requirements = (OpSysAndVer =?= "SLCern6")\n') #SLC6
+            condor.write('requirements = (OpSysAndVer =?= "{0}")\n'.format(OpSysAndVer)) 
             condor.write('+JobFlavour = "{0}"\n'.format(opt.queue))
 
             jobNb=0
