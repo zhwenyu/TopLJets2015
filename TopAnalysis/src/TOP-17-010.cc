@@ -322,6 +322,8 @@ void TOP17010::runAnalysis()
       std::vector<Jet> alljets             = selector_->getGoodJets(ev_,30.,2.4,leptons);
       applyMC2MC(alljets);
       TopWidthEvent twe(leptons,alljets);
+      std::vector<Jet> tweSelJets;
+      for(size_t ij=0; ij<min(size_t(2),twe.selJetsIdx.size()); ij++) tweSelJets.push_back( alljets[ twe.selJetsIdx[ij] ] );
       if(twe.dilcode==0) {
         continue;
       }
@@ -367,7 +369,7 @@ void TOP17010::runAnalysis()
         l2SF   = gammaEffWR_->getOfflineCorrection(leptons[1].id(),leptons[1].pt(),leptons[1].eta(), lperiod);
         
         //b-tagging scale factor
-        btagWgt= btvSF_->getBtagWeightMethod1a(ev_,"central");
+        btagWgt= btvSF_->getBtagWeightMethod1a(tweSelJets,ev_,"central");
 
         //for signal top pt weights        
         if(isSignal_) {
@@ -480,7 +482,7 @@ void TOP17010::runAnalysis()
           TString btagSys(sname.ReplaceAll("btag",""));
           if(btagSys.EndsWith("dn")) { btagSys=btagSys.ReplaceAll("dn",""); btagSys="down_"+btagSys;  }
           if(btagSys.EndsWith("up")) { btagSys=btagSys.ReplaceAll("up",""); btagSys="up_"+btagSys;    }
-          double newBtagWgt=btvSF_->getBtagWeightMethod1a(ev_,btagSys);
+          double newBtagWgt=btvSF_->getBtagWeightMethod1a(tweSelJets,ev_,btagSys);
           iwgt=wgt*newBtagWgt/btagWgt;
         }
         else {

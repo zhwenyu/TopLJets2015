@@ -27,39 +27,33 @@ void BTagSFUtil::addBTagDecisions(MiniEvent_t &ev,float wp,float wpl) {
 }
 
 // method 1a -weight ev
-double BTagSFUtil::getBtagWeightMethod1a(MiniEvent_t &ev, TString sys) {
+double BTagSFUtil::getBtagWeightMethod1a(std::vector<Jet> &jetColl, MiniEvent_t &ev,TString sys) {
 
   double csvWgtHF = 1., csvWgtLF = 1., csvWgtC = 1.;
-  double csvWgtTotal = 1.;
-  for (int k = 0; k < ev.nj; k++) {
+  for(auto j : jetColl) {
 
-    TLorentzVector jp4;
-    jp4.SetPtEtaPhiM(ev.j_pt[k],ev.j_eta[k],ev.j_phi[k],ev.j_mass[k]);
+    float jptForBtag(j.Pt()>1000. ? 999. : j.Pt()), jetaForBtag(fabs(j.Eta()));
+    int k=j.getJetIndex();
+    float csv=ev.j_deepcsv[k];
 
-    if(!ev.isData) {
-
-      float jptForBtag(jp4.Pt()>1000. ? 999. : jp4.Pt()), jetaForBtag(fabs(jp4.Eta()));
-      float csv = ev.j_deepcsv[k];
-
-      if (abs(ev.j_hadflav[k])==5) {
-        std::string sysHF(sys.Contains("cferr") ? "central" : sys);
-        double iCSVWgtHF = btvCSVCalibReaders_[BTagEntry::FLAV_B]->eval_auto_bounds(sysHF,BTagEntry::FLAV_B, jetaForBtag, jptForBtag, csv);      
-        if( iCSVWgtHF!=0 ) csvWgtHF *= iCSVWgtHF;                
-      }
-      else if(abs(ev.j_hadflav[k])==4) {
-        std::string sysC(sys.Contains("cferr") ? sys : "central");
-        double iCSVWgtC = btvCSVCalibReaders_[BTagEntry::FLAV_C]->eval_auto_bounds(sysC, BTagEntry::FLAV_C, jetaForBtag, jptForBtag, csv);
-        if( iCSVWgtC!=0 ) csvWgtC *= iCSVWgtC;	   
-      }
-      else { //LF
-        std::string sysLF(sys.Contains("cferr") ? "central" : sys);       
-        double iCSVWgtLF = btvCSVCalibReaders_[BTagEntry::FLAV_UDSG]->eval_auto_bounds(sysLF,BTagEntry::FLAV_UDSG, jetaForBtag, jptForBtag, csv);
-        if( iCSVWgtLF!=0 ) csvWgtLF *= iCSVWgtLF;
-      } 
+    if (abs(ev.j_hadflav[k])==5) {
+      std::string sysHF(sys.Contains("cferr") ? "central" : sys);
+      double iCSVWgtHF = btvCSVCalibReaders_[BTagEntry::FLAV_B]->eval_auto_bounds(sysHF,BTagEntry::FLAV_B, jetaForBtag, jptForBtag, csv);      
+      if( iCSVWgtHF!=0 ) csvWgtHF *= iCSVWgtHF;                
     }
-
-    csvWgtTotal = csvWgtHF * csvWgtC * csvWgtLF;
+    else if(abs(ev.j_hadflav[k])==4) {
+      std::string sysC(sys.Contains("cferr") ? sys : "central");
+      double iCSVWgtC = btvCSVCalibReaders_[BTagEntry::FLAV_C]->eval_auto_bounds(sysC, BTagEntry::FLAV_C, jetaForBtag, jptForBtag, csv);
+      if( iCSVWgtC!=0 ) csvWgtC *= iCSVWgtC;	   
+    }
+    else { //LF
+      std::string sysLF(sys.Contains("cferr") ? "central" : sys);       
+      double iCSVWgtLF = btvCSVCalibReaders_[BTagEntry::FLAV_UDSG]->eval_auto_bounds(sysLF,BTagEntry::FLAV_UDSG, jetaForBtag, jptForBtag, csv);
+      if( iCSVWgtLF!=0 ) csvWgtLF *= iCSVWgtLF;
+    } 
   }
+  
+  double csvWgtTotal = csvWgtHF * csvWgtC * csvWgtLF;
   
   return csvWgtTotal;
 }     
