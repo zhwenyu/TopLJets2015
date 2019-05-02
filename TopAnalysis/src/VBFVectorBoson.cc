@@ -427,7 +427,7 @@ void VBFVectorBoson::runAnalysis()
 
         // norm weight
         wgt  = (normH_? normH_->GetBinContent(1) : 1.0);
-            
+
         // pu weight
         ht_->fill("puwgtctr",0,plotwgts);
         puWgts=lumi_->pileupWeight(ev_.g_pu,period);
@@ -773,8 +773,8 @@ void VBFVectorBoson::bookHistograms() {
   ht_->addHist("vpt", 	       new TH1F("vectorbosonPt",    ";Boson p_{T}[GeV];Events",           25,50,550));  
   ht_->addHist("vy", 	       new TH1F("vectorbosony",     ";Boson rapidity;Events",             25,-3,3));  
   ht_->addHist("mindrl",        new TH1F("mindrl",           ";min #Delta R(boson,lepton);Events", 25,0,6));  
-  ht_->addHist("mindrj",        new TH1F("mindrj",           ";min #Delta R(boson,jet);Events",    25,0,6));  
-  ht_->addHist("sihih", 	       new TH1F("sihih",            ";#sigma(i#eta,i#eta);Events",        50,0,0.1));  
+  ht_->addHist("mindrj",       new TH1F("mindrj",           ";min #Delta R(boson,jet);Events",    25,0,6));  
+  ht_->addHist("sihih",        new TH1F("sihih",            ";#sigma(i#eta,i#eta);Events",        50,0,0.1));  
   ht_->addHist("hoe", 	       new TH1F("hoe",              ";h/e;Events",                        25,0,0.05));  
   ht_->addHist("r9", 	       new TH1F("r9",               ";r9;Events",                         25,0.9,1.0));  
   ht_->addHist("chiso", 	       new TH1F("chiso",            ";Charged isolation [GeV];Events",    50,0,10));  
@@ -868,6 +868,7 @@ void VBFVectorBoson::bookHistograms() {
   ht_->getPlots()["evcount"]->GetXaxis()->SetBinLabel(1,"Inclusive");
   ht_->getPlots()["evcount"]->GetXaxis()->SetBinLabel(2,"MVA>0.9");
   ht_->addHist("vbfmva",          new TH1F("vbfmva",         ";VBF MVA;Events",50,-1,1));  
+  ht_->addHist("vbfmvaAcc",       new TH1F("vbfmvaAcc",      ";VBF MVA;Events",50,-1,1));  
   ht_->addHist("acdfvbfmva",     new TH1F("acdfvbfmva",    ";CDF^{-1}(VBF MVA);Events",50,0,1));  
   ht_->addHist("tagjetresol", new TH1F("tagjetresol",";#Delta p_{T}/p_{T};Jets",50,-0.5,0.5));
 
@@ -880,7 +881,7 @@ void VBFVectorBoson::bookHistograms() {
                           "AbsoluteStatJECdn","AbsoluteScaleJECdn","AbsoluteMPFBiasJECdn","FragmentationJECdn","SinglePionECALJECdn","SinglePionHCALJECdn","FlavorPureGluonJECdn","FlavorPureQuarkJECdn","FlavorPureCharmJECdn","FlavorPureBottomJECdn","TimePtEtaJECdn","RelativeJEREC1JECdn","RelativeJEREC2JECdn","RelativeJERHFJECdn","RelativePtBBJECdn","RelativePtEC1JECdn","RelativePtEC2JECdn","RelativePtHFJECdn","RelativeBalJECdn","RelativeFSRJECdn","RelativeStatFSRJECdn","RelativeStatECJECdn","RelativeStatHFJECdn","PileUpDataMCJECdn","PileUpPtRefJECdn","PileUpPtBBJECdn","PileUpPtEC1JECdn","PileUpPtEC2JECdn","PileUpPtHFJECdn"};
   
   //instantiate 2D histograms for most relevant variables to trace with systs
-  TString hoi[]={"vbfmva","acdfvbfmva","evcount","mjj","detajj","dphijj","leadpt","subleadpt","forwardeta","centraleta","vpt","tagjetresol"};
+  TString hoi[]={"vbfmva","acdfvbfmva","evcount","mjj","detajj","dphijj","leadpt","subleadpt","forwardeta","centraleta","vpt","tagjetresol","vbfmvaAcc"};
 
   size_t nexpSysts=sizeof(expSystNames)/sizeof(TString);
   expSysts_=std::vector<TString>(expSystNames,expSystNames+nexpSysts);  
@@ -940,6 +941,18 @@ void VBFVectorBoson::bookHistograms() {
   ht_->addHist("looseMjjEE",         new TH2F("looseMjjEE",";Loose #sigma_{i#etai#eta}; m_{jj} (GeV)",100,0,0.05,4,bins));
   ht_->addHist("allMjjEE",           new TH2F("allMjjEE",";All #sigma_{i#etai#eta}; m_{jj} (GeV)",100,0,0.05,4,bins));
   ht_->addHist("tmpQCDMjjEE",        new TH2F("tmpQCDMjjEE",";All #sigma_{i#etai#eta}; m_{jj} (GeV)",100,0,0.05,4,bins));
+
+  double binsPt[]={75,100,150,200,250,300,400,600,1000};
+  //2D's for Pt-binned FR
+  ht_->addHist("relaxedTightPtEB",  new TH2F("relaxedTightPtEB",";Relaxed tight #sigma_{i#etai#eta}; p_{T,#gamma} (GeV)",100,0,0.05,8,binsPt)); //80,0,4000
+  ht_->addHist("tightPtEB",         new TH2F("tightPtEB",";Tight #sigma_{i#etai#eta}; p_{T,#gamma} (GeV)",100,0,0.05,8,binsPt));
+  ht_->addHist("loosePtEB",         new TH2F("loosePtEB",";Loose #sigma_{i#etai#eta}; p_{T,#gamma} (GeV)",100,0,0.05,8,binsPt));
+  ht_->addHist("tmpQCDPtEB",        new TH2F("tmpQCDPtEB",";All #sigma_{i#etai#eta}; p_{T,#gamma} (GeV)",100,0,0.05,8,binsPt));
+  ht_->addHist("relaxedTightPtEE",  new TH2F("relaxedTightPtEE",";Relaxed tight #sigma_{i#etai#eta}; p_{T,#gamma} (GeV)",100,0,0.05,8,binsPt)); //80,0,4000
+  ht_->addHist("tightPtEE",         new TH2F("tightPtEE",";Tight #sigma_{i#etai#eta}; p_{T,#gamma} (GeV)",100,0,0.05,8,binsPt));
+  ht_->addHist("loosePtEE",         new TH2F("loosePtEE",";Loose #sigma_{i#etai#eta}; p_{T,#gamma} (GeV)",100,0,0.05,8,binsPt));
+  ht_->addHist("allPtEE",           new TH2F("allPtEE",";All #sigma_{i#etai#eta}; p_{T,#gamma} (GeV)",100,0,0.05,8,binsPt));
+  ht_->addHist("tmpQCDPtEE",        new TH2F("tmpQCDPtEE",";All #sigma_{i#etai#eta}; p_{T,#gamma} (GeV)",100,0,0.05,8,binsPt));
 }
 
 
@@ -1023,25 +1036,34 @@ void VBFVectorBoson::fillControlHistos(TLorentzVector boson, std::vector<Jet> je
       for(auto a : photons_) {
         int idx = a.originalReference();
         ht_->fill("allsihih",   ev_.gamma_sieie[idx]             ,cplotwgts,c);
-        if (fabs(ev_.gamma_eta[idx]) < 1.442)
+        if (fabs(ev_.gamma_eta[idx]) < 1.442){
           ht_->fill2D("allMjjEB"  ,   ev_.gamma_sieie[idx], vbfVars_.mjj        ,cplotwgts,c); 
-        else
+	  ht_->fill2D("allPtEB"  ,    ev_.gamma_sieie[idx], a.Pt()              ,cplotwgts,c); 
+	} else {
           ht_->fill2D("allMjjEE"  ,   ev_.gamma_sieie[idx], vbfVars_.mjj        ,cplotwgts,c); 
+	  ht_->fill2D("allPtEE"  ,    ev_.gamma_sieie[idx], a.Pt()              ,cplotwgts,c); 
+	}
       }
       for(auto a : relaxedTightPhotons_) {
         int idx = a.originalReference();
         ht_->fill("relaxedTightsihih",   ev_.gamma_sieie[idx]             ,cplotwgts,c);
-        if (fabs(ev_.gamma_eta[idx]) < 1.442)
+        if (fabs(ev_.gamma_eta[idx]) < 1.442){
           ht_->fill2D("relaxedTightMjjEB"  ,   ev_.gamma_sieie[idx], vbfVars_.mjj        ,cplotwgts,c); 
-        else
+	  ht_->fill2D("relaxedTightPtEB"  ,    ev_.gamma_sieie[idx], a.Pt()              ,cplotwgts,c); 
+	} else {
           ht_->fill2D("relaxedTightMjjEE"  ,   ev_.gamma_sieie[idx], vbfVars_.mjj        ,cplotwgts,c); 
+	  ht_->fill2D("relaxedTightPtEE"  ,    ev_.gamma_sieie[idx], a.Pt()              ,cplotwgts,c); 
+	}
       }
       for(auto a : tmpPhotons_) {
         int idx = a.originalReference();
-        if (fabs(ev_.gamma_eta[idx]) < 1.442)
+        if (fabs(ev_.gamma_eta[idx]) < 1.442){
           ht_->fill2D("tmpQCDMjjEB"  ,   ev_.gamma_sieie[idx], vbfVars_.mjj        ,cplotwgts,c); 
-        else
+	  ht_->fill2D("tmpQCDPtEB"  ,    ev_.gamma_sieie[idx], a.Pt()              ,cplotwgts,c); 
+	} else {
           ht_->fill2D("tmpQCDMjjEE"  ,   ev_.gamma_sieie[idx], vbfVars_.mjj        ,cplotwgts,c); 
+	  ht_->fill2D("tmpQCDPtEE"  ,    ev_.gamma_sieie[idx], a.Pt()              ,cplotwgts,c); 
+	}
       }
       //bosons in CR and fakes
       for(auto a : fakeACR) {
@@ -1050,10 +1072,13 @@ void VBFVectorBoson::fillControlHistos(TLorentzVector boson, std::vector<Jet> je
         ht_->fill("fakechiso",   ev_.gamma_chargedHadronIso[idx]  ,cplotwgts,c);
         ht_->fill("fakeneutiso", ev_.gamma_neutralHadronIso[idx]  ,cplotwgts,c);
         ht_->fill("fakeaiso",    ev_.gamma_photonIso[idx]         ,cplotwgts,c);
-        if (fabs(ev_.gamma_eta[idx]) < 1.442)
+        if (fabs(ev_.gamma_eta[idx]) < 1.442){
           ht_->fill2D("looseMjjEB"  ,  ev_.gamma_sieie[idx], vbfVars_.mjj        ,cplotwgts,c);
-        else
+	  ht_->fill2D("loosePtEB"   ,  ev_.gamma_sieie[idx], a.Pt()              ,cplotwgts,c);
+        } else {
           ht_->fill2D("looseMjjEE"  ,  ev_.gamma_sieie[idx], vbfVars_.mjj        ,cplotwgts,c);
+	  ht_->fill2D("loosePtEE"   ,  ev_.gamma_sieie[idx], a.Pt()              ,cplotwgts,c);
+	}
       }
       for(auto a : tightACR) { 
         int idx = a.originalReference();
@@ -1061,10 +1086,13 @@ void VBFVectorBoson::fillControlHistos(TLorentzVector boson, std::vector<Jet> je
         ht_->fill("tightchiso",   ev_.gamma_chargedHadronIso[idx]  ,cplotwgts,c);
         ht_->fill("tightneutiso", ev_.gamma_neutralHadronIso[idx]  ,cplotwgts,c);
         ht_->fill("tightaiso",    ev_.gamma_photonIso[idx]         ,cplotwgts,c);
-        if (fabs(ev_.gamma_eta[idx]) < 1.442)
+        if (fabs(ev_.gamma_eta[idx]) < 1.442){
           ht_->fill2D("tightMjjEB"  ,   ev_.gamma_sieie[idx], vbfVars_.mjj        ,cplotwgts,c);
-        else
+	  ht_->fill2D("tightPtEB"   ,   ev_.gamma_sieie[idx], a.Pt()              ,cplotwgts,c);
+        } else {
           ht_->fill2D("tightMjjEE"  ,   ev_.gamma_sieie[idx], vbfVars_.mjj        ,cplotwgts,c);
+	  ht_->fill2D("tightPtEE"   ,   ev_.gamma_sieie[idx], a.Pt()              ,cplotwgts,c);
+	}
       }
       ht_->fill("nloose",        fakeACR.size(),       cplotwgts,c);
       ht_->fill("ntight",        tightACR.size(),      cplotwgts,c);
@@ -1201,6 +1229,9 @@ void VBFVectorBoson::fillControlHistos(TLorentzVector boson, std::vector<Jet> je
   if(vbfmva_>-999)  {
     ht_->fill("vbfmva", vbfmva_, cplotwgts,c);
     ht_->fill("acdfvbfmva", flat_vbfmva_, cplotwgts,c);
+    std::vector<double> AccWeights(1,1);
+    AccWeights[0]*=(ev_.g_nw>0 ? ev_.g_w[0] : 1.0);
+    ht_->fill("vbfmvaAcc", vbfmva_, AccWeights,c);
     if(flat_vbfmva_>0.9)
       ht_->fill("evcount",  1, cplotwgts, c);  
   }
@@ -1212,10 +1243,16 @@ void VBFVectorBoson::fillControlHistos(TLorentzVector boson, std::vector<Jet> je
     //replicas for theory systs
     for(size_t is=0; is<weightSysts_.size(); is++){
       std::vector<double> sweights(1,cplotwgts[0]);
+      std::vector<double> sgenweights(1,1);
       size_t idx=weightSysts_[is].second;
-      sweights[0] *= (ev_.g_w[idx]/ev_.g_w[0])*(normH_->GetBinContent(idx+1)/normH_->GetBinContent(1));
-      ht_->fill2D("vbfmva_th",       vbfmva_,               is,sweights,c);
-      ht_->fill2D("acdfvbfmva_th",   flat_vbfmva_, is,sweights,c);
+      sweights[0]    *= (ev_.g_w[idx]/ev_.g_w[0])*(normH_->GetBinContent(idx+1)/normH_->GetBinContent(1));
+      sgenweights[0] *= ev_.g_w[idx];
+      if(vbfmva_>-999){
+	ht_->fill2D("vbfmva_th",       vbfmva_,               is,sweights,c);
+	ht_->fill2D("vbfmvaAcc_th",    vbfmva_,               is,sgenweights,c);
+      }
+      if(flat_vbfmva_>0.9)
+	ht_->fill2D("acdfvbfmva_th",   flat_vbfmva_, is,sweights,c);
       ht_->fill2D("centraleta_th",   vbfVars_.centraleta,   is,sweights,c);
       ht_->fill2D("forwardeta_th",   vbfVars_.forwardeta,   is,sweights,c);
       ht_->fill2D("leadpt_th",       vbfVars_.leadj_pt,     is,sweights,c);
