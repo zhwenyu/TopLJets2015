@@ -54,7 +54,7 @@ def customizeSignalShapes(binName,sigName,sigF,baseSigF,outDir):
     tfH.Delete()
     fIn.Close()
 
-def customizeData(binName,dataDef,bkgList,templDir,outDir):
+def customizeData(binName,dataDef,bkgList,templDir,outDir, outNum): # add outNum - check fit err
 
     """ customizes data to use as observation """
     dataDef=dataDef.replace("\"","")
@@ -65,6 +65,14 @@ def customizeData(binName,dataDef,bkgList,templDir,outDir):
     dataH=inF.Get(dataHisto)
     dataH.SetDirectory(0)
     inF.Close()
+
+    # add gaus Error  - edit 
+    rand=ROOT.TRandom2(0)
+    for xbin in range(dataH.GetNbinsX()) :
+       curVal=dataH.GetBinContent(xbin+1)
+       statUnc=dataH.GetBinError(xbin+1)
+       newVal=rand.Gaus(curVal,statUnc)
+       dataH.SetBinContent(xbin+1,newVal)
     
     #specific for pseudo-data
     #sum up signal to background expectations when dataType is 'sig' type
@@ -83,7 +91,7 @@ def customizeData(binName,dataDef,bkgList,templDir,outDir):
         for tkn in [' ','#','_','^','{','}',',',':','+','-']:
             dataType=dataType.replace(tkn,'')
         dataType=dataType.replace('.','p')
-        dataType='pseudodata.%s'%dataType
+        dataType='pseudodata_%s.%s'%(outNum, dataType)  # edit
 
     #save to file
     dataShapesURL=os.path.join(outDir,'%s.shapes.root'%dataType)
@@ -323,11 +331,13 @@ def main():
                           outDir=opt.outDir)
 
     #customize data
-    dataFiles=[customizeData(binName=cat,
+    for i in range(1000):  # edit 
+      dataFiles=[customizeData(binName=cat,
                              dataDef=dataDef.split("=")[1],
                              bkgList=procList[1:],
                              templDir=opt.templ,
-                             outDir=opt.outDir)
+                             outDir=opt.outDir,
+                             outNum=i)
                for dataDef in args]
         
     #dump the template datacard
