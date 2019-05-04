@@ -41,7 +41,8 @@ if [ -z "$WHAT" ]; then
 fi
 
 githash=0c522df
-eosdir=/store/cmst3/group/top/RunIIReReco/2016/${githash}
+#eosdir=/store/cmst3/group/top/RunIIReReco/2016/${githash}
+eosdir=/store/cmst3/group/top/RunIIReReco/2016/375837b  # testing -wz
 fulllumi=35882
 lumiUnc=0.025
 if [[ ${ERA} = "2017" ]]; then
@@ -92,7 +93,7 @@ case $WHAT in
     TESTSEL )               
         tag=MC13TeV_${ERA}_TTJets
 #        input=${eosdir}/${tag}/Chunk_0_ext0.root
-        output=${tag}.root 
+        output=${tag}_1a.root 
         input=/store/cmst3/group/top/RunIIReReco/2016/375837b/MC13TeV_2016_TTJets/Chunk_0_ext0.root
 
         gidx=`python -c "print int((2-0.7)/0.01)"`
@@ -236,6 +237,7 @@ case $WHAT in
 
     DATACARD )
 
+#        dists=em_mlb
         python test/analysis/top17010/submitPrepareDataCard.py --dists ${dists} \
             --systs ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/top17010/systs_dict.json \
             --templ ${outdir}/${githash}/templates \

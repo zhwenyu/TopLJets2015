@@ -29,7 +29,7 @@ def getSignals(opt):
 
     signals=[]
     plotDir=os.path.join(os.path.dirname(opt.templ),'plots')
-    plotters=['plotter.root' ] #,'syst_plotter.root']   # edit
+    plotters=['plotter.root'  ,'syst_plotter.root']   # edit
     for i in range(len(plotters)): 
         f=plotters[i]
         f=os.path.join(plotDir,f)
