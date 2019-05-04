@@ -171,9 +171,9 @@ def getBinByBinUncertaintiesForSysts(h,hvars,method=2):
             ival = ihvar.GetBinContent(xbin+1)
             if ival==0: continue
             relUnc = ihvar.GetBinError(xbin+1)/ival
-            if method=0:
+            if method==0:
                 unc = max(unc,relUnc)
-            elif method=1:
+            elif method==1:
                 unc += relUnc**2
             else:
                 unc += relUnc
