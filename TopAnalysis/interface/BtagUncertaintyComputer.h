@@ -7,6 +7,7 @@
 #include "TGraphAsymmErrors.h"
 #include "TGraphErrors.h"
 #include "TopLJets2015/TopAnalysis/interface/MiniEvent.h"
+#include "TopLJets2015/TopAnalysis/interface/ObjectTools.h"
 #include "CondFormats/BTauObjects/interface/BTagCalibration.h"
 #include "CondTools/BTau/interface/BTagCalibrationReader.h"
 
