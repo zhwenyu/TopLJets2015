@@ -6,7 +6,6 @@
 #include <TSystem.h>
 #include <TGraph.h>
 #include <TLorentzVector.h>
-#include <TVector3.h> // added
 #include <TGraphAsymmErrors.h>
 
 #include "TopLJets2015/TopAnalysis/interface/MiniEvent.h"
@@ -32,17 +31,18 @@ void TOP17010::init(UInt_t scenario){
   triggerList_ = (TH1F *)f_->Get("analysis/triggerList");
   if(isSignal_) {
 //    weightSysts_ = getWeightSysts(f_,"TTJets2016");
-   weightSysts_ = getWeightSysts(f_,filename_.Contains("2016") ? "TTJets2016" : "TTJets2017");   // 2017 weights  
-   origGt_=1.31;
+    weightSysts_ = getWeightSysts(f_,filename_.Contains("2016") ? "TTJets2016" : "TTJets2017");   // 2017 weights  
+  
+    origGt_=1.31;
     origMt_=172.5;
-    if ( filename_.Contains("w0p5") ) {                origGt_*=0.5; }
-    if ( filename_.Contains("w4p0") ) {                origGt_*=4.0; }
-    if ( filename_.Contains("166v5") ){ origMt_=166.5; origGt_=1.16; }
-    if ( filename_.Contains("169v5") ){ origMt_=169.5; origGt_=1.23; }
-    if ( filename_.Contains("171v5") ){ origMt_=171.5; origGt_=1.28; }
-    if ( filename_.Contains("173v5") ){ origMt_=173.5; origGt_=1.34; }
-    if ( filename_.Contains("175v5") ){ origMt_=175.5; origGt_=1.39; }
-    if ( filename_.Contains("178v5") ){ origMt_=178.5; origGt_=1.48; }
+    if ( filename_.Contains("w0p5") ) {                origGt_*=0.5;                    targetGt_=origGt_;}
+    if ( filename_.Contains("w4p0") ) {                origGt_*=4.0;                    targetGt_=origGt_;}
+    if ( filename_.Contains("166v5") ){ origMt_=166.5; origGt_=1.16; targetMt_=origMt_; targetGt_=origGt_;}
+    if ( filename_.Contains("169v5") ){ origMt_=169.5; origGt_=1.23; targetMt_=origMt_; targetGt_=origGt_;}
+    if ( filename_.Contains("171v5") ){ origMt_=171.5; origGt_=1.28; targetMt_=origMt_; targetGt_=origGt_;}
+    if ( filename_.Contains("173v5") ){ origMt_=173.5; origGt_=1.34; targetMt_=origMt_; targetGt_=origGt_;}
+    if ( filename_.Contains("175v5") ){ origMt_=175.5; origGt_=1.39; targetMt_=origMt_; targetGt_=origGt_;}
+    if ( filename_.Contains("178v5") ){ origMt_=178.5; origGt_=1.48; targetMt_=origMt_; targetGt_=origGt_;}
     rbwigner_=getRBW(origMt_,origGt_);
     
     if(scenario!=0){
@@ -93,10 +93,7 @@ void TOP17010::init(UInt_t scenario){
   t_ = (TTree*)f_->Get("analysis/data");
   attachToMiniEventTree(t_,ev_,true);
   nentries_ = t_->GetEntriesFast();
-  if (debug_) 
-     {
-     nentries_ = (nentries_ > 10000? 4000: nentries_) ; //restrict number of entries for testing EDIT 10000
-     }  
+  if (debug_) nentries_ = 10000; //restrict number of entries for testing
   t_->GetEntry(0);
 
   TString baseName=gSystem->BaseName(outname_); 
@@ -134,7 +131,6 @@ void TOP17010::bookHistograms() {
   ht_ = new HistTool(0);
   ht_->addHist("puwgtctr", new TH1D("puwgtctr", ";Weight sums;Events",                        2,0,2));  
   ht_->addHist("genscan",  new TH1D("gennscan", ";Parameter;Value",                           4,0,4));  
-  ht_->addHist("nbjets_raw",   new TH1D("nbjets_raw",   ";b jet multiplicity;Events",               5,1,6)); // for btag test - debugging
   TH1 *gscan=ht_->getPlots()["genscan"];
   gscan->SetBinContent(1,origMt_);    gscan->GetXaxis()->SetBinLabel(1,"m_{t}^{i}");
   gscan->SetBinContent(2,origGt_);    gscan->GetXaxis()->SetBinLabel(2,"#Gamma_{t}^{i}");
@@ -178,8 +174,15 @@ void TOP17010::bookHistograms() {
                           "l1prefireup", "l1prefiredn",
                           "ees1up", "ees1dn", "ees2up", "ees2dn", "ees3up", "ees3dn", "ees4up", "ees4dn",  "ees5up", "ees5dn",  "ees6up", "ees6dn",  "ees7up", "ees7dn",
                           "mes1up", "mes1dn", "mes2up", "mes2dn", "mes3up", "mes3dn", "mes4up", "mes4dn",
-                          "btagup",      "btagdn",
-                          "ltagup",      "ltagdn",
+                          "btagjesup",        "btagjesdn",
+                          "btaglfup",         "btaglfdn",
+                          "btaghfup",         "btaghfdn",
+                          "btaghfstats1up",   "btaghfstats1dn",
+                          "btaghfstats2up",   "btaghfstats2dn",
+                          "btaglfstats1up",   "btaglfstats1dn",
+                          "btaglfstats2up",   "btaglfstats2dn",
+                          "btagcferr1up",     "btagcferr1dn",
+                          "btagcferr2up",     "btagcferr2dn",
                           "JERup",       "JERdn",
                           "JERstatup",   "JERstatdn",
                           "JERJECup",    "JERJECdn", 
@@ -237,19 +240,15 @@ void TOP17010::runAnalysis()
   for (Int_t iev=0;iev<nentries_;iev++)
     {
       t_->GetEntry(iev);
-      // if(debug_)   // edit for debug -wz 
-      cout << "Event number: "<<iev<<endl;
+      if(debug_) cout << "Event number: "<<iev<<endl;
       if(iev%10000==0) printf ("\r [%3.0f%%] done", 100.*(float)iev/(float)nentries_);
       
       //////////////////
       // CORRECTIONS  //
       //////////////////
       TString period = lumi_->assignRunPeriod();
-      double csvWgt = 1;  // btag method 1a
-//      if(!ev_.isData) csvWgt = btvSF_->updateBTagDecisions1a(ev_);
- //     cout << " csvWgt = " << csvWgt; 
       btvSF_->addBTagDecisions(ev_,deepCSV_wp_);
-      if(!ev_.isData) btvSF_->updateBTagDecisions(ev_);      
+      //if(!ev_.isData) btvSF_->updateBTagDecisions(ev_);      
       
       //TRIGGER
       bool hasETrigger(  selector_->hasTriggerBit("HLT_Ele32_eta2p1_WPTight_Gsf_v",                       ev_.triggerBits) );
@@ -321,39 +320,31 @@ void TOP17010::runAnalysis()
       std::vector<Particle> flaggedleptons = selector_->flaggedLeptons(ev_);     
       std::vector<Particle> leptons        = selector_->selLeptons(flaggedleptons,SelectionTool::TIGHT,SelectionTool::TIGHT,20,2.5);
       std::vector<Jet> alljets             = selector_->getGoodJets(ev_,30.,2.4,leptons);
-      if ( leptons.size() >1 ) {
-      float nbjets_raw = selector_->getGoodJets1(ev_,30.,2.4,leptons); // compare btag -wz
-      ht_->fill("nbjets_raw",  nbjets_raw, csvWgt); // compare btagging -wz
-      }  
       applyMC2MC(alljets);
       TopWidthEvent twe(leptons,alljets);
-     // cout << " Pass RECOLEVEL sel 1 \n" ; // for debugging -wz
+      std::vector<Jet> tweSelJets;
+      for(size_t ij=0; ij<min(size_t(2),twe.selJetsIdx.size()); ij++) tweSelJets.push_back( alljets[ twe.selJetsIdx[ij] ] );
       if(twe.dilcode==0) {
-      //  cout << " twe.dilcode==0 \n" ;
         continue;
       }
       else if(twe.dilcode==11*11) {
-      //  cout << " twe.dilcode==11*11 \n" ; // for debugging -wz
         if(!(hasEETrigger || hasETrigger)) continue;
         if(selector_->isSingleElectronPD() && hasEETrigger) continue;
       }
       else if(twe.dilcode==13*13) {
-      //  cout << " twe.dilcode==13*13 \n" ; // for debugging -wz
         if(!(hasMMTrigger || hasMTrigger)) continue;
         if(selector_->isSingleMuonPD() && hasMMTrigger) continue;
       }
       else if(twe.dilcode==11*13) {
-      //  cout << " twe.dilcode==11*13 \n" ; // for debugging -wz
         if(!(hasEMTrigger || hasETrigger || hasMTrigger)) continue;
         if(selector_->isSingleMuonPD()     && hasEMTrigger) continue;
         if(selector_->isSingleElectronPD() && (hasEMTrigger || hasMTrigger)) continue;
       }
-     // cout << " Pass RECOLEVEL sel \n" ; // for debugging -wz
 
       ////////////////////
       // EVENT WEIGHTS //
       //////////////////
-      float wgt(1.0),widthWgt(1.0);
+      float wgt(1.0),widthWgt(1.0),btagWgt(1.0);
       std::vector<float>puWgts(3,1.0),topptWgts(2,1.0),bfragWgts(2,1.0),slbrWgts(2,1.0);
       EffCorrection_t trigSF(1.0,0.),l1SF(1.0,0.),l2SF(1.0,0.0),l1trigprefireProb(1.0,0.);      
       if (!ev_.isData) {
@@ -376,6 +367,9 @@ void TOP17010::runAnalysis()
         trigSF = gammaEffWR_->getDileptonTriggerCorrection(leptons);
         l1SF   = gammaEffWR_->getOfflineCorrection(leptons[0].id(),leptons[0].pt(),leptons[0].eta(), lperiod);
         l2SF   = gammaEffWR_->getOfflineCorrection(leptons[1].id(),leptons[1].pt(),leptons[1].eta(), lperiod);
+        
+        //b-tagging scale factor
+        btagWgt= btvSF_->getBtagWeightMethod1a(tweSelJets,ev_,"central");
 
         //for signal top pt weights        
         if(isSignal_) {
@@ -393,7 +387,7 @@ void TOP17010::runAnalysis()
              && targetGt_>0 && targetMt_>0 && origGt_>0  && origMt_>0
              && (targetGt_!=origGt_ || targetMt_ != origMt_) ) {
             widthWgt=weightBW(rbwigner_,genmt,targetGt_,targetMt_,origGt_,origMt_); 
-
+            
             //control the re-weighted BW
             for(auto genm:genmt) {
               std::vector<double> bwWgts(1,1.0);
@@ -403,58 +397,6 @@ void TOP17010::runAnalysis()
             }
           }
         }
-
-       // costhetastar gen
-       std::vector<Particle> genleptons        = selector_->getPartonLeptons(ev_, -1, 15);
-       std::vector<Particle> genwbosons        = selector_->getPartonWbosons(ev_, -1,  15.); 
-       std::vector<Particle> genbs             = selector_->getPartonBs(ev_, -1, 15 );
-      
-     //  if ( genleptons.size() <2 )  continue;
-     //  if ( genbs.size() <2 )  continue;
-       std::vector<float> costhetastar;
-
-       for(Int_t igen=0; igen<ev_.ngtop; igen++) {
-        // if ( genleptons.size() <2 ) cout << " special_event gtop_id " << ev_.gtop_id[igen] ;
-         if(abs(ev_.gtop_id[igen])!=6) continue;
-//          cout << " one gen top, id " << ev_.gtop_id[igen] << ", pt " << ev_.gtop_pt[igen] << "\n";
-         TLorentzVector gentop;
-         gentop.SetPtEtaPhiM( ev_.gtop_pt[igen], ev_.gtop_eta[igen], ev_.gtop_phi[igen], ev_.gtop_m[igen] );
-         
-           int genb_count = 0 ;
-           for ( auto& genb : genbs) {
-            if ( genb_count > 1 ) break;
-            genb_count ++;
-            for ( auto& genw : genwbosons ) {
-
-              for (auto& genl : genleptons) {
-                
-                // check t-l-b pair
-                int genb_id = genb.id();
-                int genl_id = genl.id();
-                int genw_id = genw.id();
-                if ( ev_.gtop_id[igen]*genb_id <0 ) continue;
-                if ( genw_id*genl_id > 0) continue; 
-                if ( genb_id*genl_id > 0) continue;  // lep and b oppo.
- //               cout << "genb_id " << genb_id << " genlep_id "<< genl_id << "\n" ; 
-                TLorentzVector l_wrf= genl.p4();
-                TLorentzVector b_trf= genb.p4();
-
-  //              TLorentzVector lepb = l_wrf+ b_trf;
-  //              float mlb_gen = lepb.M() ;
-  //              cout << " mlb_gen " << mlb_gen << "\n";
-
-                TVector3 wrf_boost=genw.BoostVector()*(-1);      
-                l_wrf.Boost(wrf_boost);
-                TVector3 trf_boost=gentop.BoostVector()*(-1);
-                b_trf.Boost(trf_boost);
-            
-                float costhstar = l_wrf.Vect().Dot(b_trf.Vect()) / (l_wrf.Vect().Mag()*b_trf.Vect().Mag());
-             cout << " getonecosthstar---- " << costhstar << "\n";
-               costhetastar.push_back(costhstar);
-              }
-            }
-           }
-       } 
 
         //b-fragmentation and semi-leptonic branching fractions
         bfragWgts[0] = computeBFragmentationWeight(ev_,fragWeights_["downFrag"]);
@@ -466,9 +408,8 @@ void TOP17010::runAnalysis()
         wgt *= (normH_? normH_->GetBinContent(1) : 1.0);
         wgt *= (ev_.g_nw>0 ? ev_.g_w[0] : 1.0);
         wgt *= widthWgt;
-        wgt *= puWgts[0]*l1trigprefireProb.first*trigSF.first*l1SF.first*l2SF.first;
+        wgt *= puWgts[0]*l1trigprefireProb.first*trigSF.first*l1SF.first*l2SF.first*btagWgt;
       }
-
       fillControlHistograms(twe,wgt);
 
       //experimental systs cycle: better not to do anything else after this...
@@ -511,25 +452,25 @@ void TOP17010::runAnalysis()
         iwgt *= widthWgt;
 
         EffCorrection_t selSF(1.0,0.0);
-        if(sname=="puup")       iwgt *= puWgts[1]*trigSF.first*selSF.first*l1trigprefireProb.first;
-        else if(sname=="pudn")  iwgt *= puWgts[2]*trigSF.first*selSF.first*l1trigprefireProb.first;
+        if(sname=="puup")       iwgt *= puWgts[1]*trigSF.first*selSF.first*l1trigprefireProb.first*btagWgt;
+        else if(sname=="pudn")  iwgt *= puWgts[2]*trigSF.first*selSF.first*l1trigprefireProb.first*btagWgt;
         else if( (sname.Contains("eetrig") && twe.dilcode==11*11) ||
                  (sname.Contains("emtrig") && twe.dilcode==11*13) ||
                  (sname.Contains("mmtrig") && twe.dilcode==13*13) ) {
           double newTrigSF( max(double(0.),double(trigSF.first+(isUpVar ? +1 : -1)*trigSF.second)) );
-          iwgt *= puWgts[0]*newTrigSF*selSF.first*l1trigprefireProb.first;
+          iwgt *= puWgts[0]*newTrigSF*selSF.first*l1trigprefireProb.first*btagWgt;
         }
         else if(sname.BeginsWith("esel") ) {
           double newESF( max(double(0.),double(combinedESF.first+(isUpVar ? +1 : -1)*combinedESF.second)) );
-          iwgt *= puWgts[0]*trigSF.first*newESF*combinedMSF.first*l1trigprefireProb.first;
+          iwgt *= puWgts[0]*trigSF.first*newESF*combinedMSF.first*l1trigprefireProb.first*btagWgt;
         }
         else if(sname.BeginsWith("msel") ) {
           double newMSF( max(double(0.),double(combinedMSF.first+(isUpVar ? +1 : -1)*combinedMSF.second)) );
-          iwgt *= puWgts[0]*trigSF.first*combinedESF.first*newMSF*l1trigprefireProb.first;
+          iwgt *= puWgts[0]*trigSF.first*combinedESF.first*newMSF*l1trigprefireProb.first*btagWgt;
         }
         else if(sname.BeginsWith("l1prefire") ){
           double newL1PrefireProb( max(double(0.),double(l1trigprefireProb.first+(isUpVar ? +1 : -1)*l1trigprefireProb.second)) );
-          iwgt *= puWgts[0]*trigSF.first*selSF.first*newL1PrefireProb;
+          iwgt *= puWgts[0]*trigSF.first*selSF.first*newL1PrefireProb*btagWgt;
         }
         else if(sname=="topptup")     iwgt = wgt*topptWgts[0];
         else if(sname=="topptdn")     iwgt = wgt*topptWgts[1];
@@ -537,8 +478,17 @@ void TOP17010::runAnalysis()
         else if(sname=="bfragdn")     iwgt = wgt*bfragWgts[1];
         else if(sname=="slbrup")      iwgt = wgt*slbrWgts[0];
         else if(sname=="slbrdn")      iwgt = wgt*slbrWgts[1];
-        else                          iwgt = wgt;           
-
+        else if(sname.Contains("btag")) {
+          TString btagSys(sname.ReplaceAll("btag",""));
+          if(btagSys.EndsWith("dn")) { btagSys=btagSys.ReplaceAll("dn",""); btagSys="down_"+btagSys;  }
+          if(btagSys.EndsWith("up")) { btagSys=btagSys.ReplaceAll("up",""); btagSys="up_"+btagSys;    }
+          double newBtagWgt=btvSF_->getBtagWeightMethod1a(tweSelJets,ev_,btagSys);
+          iwgt=wgt*newBtagWgt/btagWgt;
+        }
+        else {
+          iwgt = wgt;           
+        }
+        
         //leptons
         std::vector<Particle> ileptons(leptons);
         if(sname.BeginsWith("ees") || sname.BeginsWith("mes")) {
@@ -573,14 +523,8 @@ void TOP17010::runAnalysis()
         
         //jets
         std::vector<Jet> ijets(alljets);
-        if(sname.Contains("JEC") || sname.Contains("JER") || sname.BeginsWith("btag") || sname.BeginsWith("ltag") )  {
+        if(sname.Contains("JEC") || sname.Contains("JER") )  {
           reSelect=true;
-          btvSF_->addBTagDecisions(ev_,deepCSV_wp_);
-
-          if(sname=="btagup") btvSF_->updateBTagDecisions(ev_, "up",      "central"); 
-          if(sname=="btagdn") btvSF_->updateBTagDecisions(ev_, "down",    "central"); 
-          if(sname=="ltagup") btvSF_->updateBTagDecisions(ev_, "central", "up"); 
-          if(sname=="ltagdn") btvSF_->updateBTagDecisions(ev_, "central", "down"); 
             
           int jecIdx=-1;
           if(sname.Contains("AbsoluteStat"))     jecIdx=0;
@@ -680,7 +624,6 @@ void TOP17010::runAnalysis()
       }
 
       selector_->setDebug(debug_);
-      cout << " EndOfEvent " << iev << endl;  // for debugging -wz 
     }
   
   //close input file
