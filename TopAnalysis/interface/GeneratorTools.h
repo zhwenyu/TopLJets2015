@@ -2,6 +2,7 @@
 #define _GENERATORTOOLS_H_
 
 #include "TopLJets2015/TopAnalysis/interface/MiniEvent.h"
+#include "TopLJets2015/TopAnalysis/interface/CommonTools.h"
 
 #include <vector>
 #include <string>
@@ -28,5 +29,7 @@ float computeSemilepBRWeight(MiniEvent_t &ev, std::map<int, float> corr, int pid
 //resonance tools
 TF1 *getRBW(float m,float g);
 float weightBW(TF1 *bwigner,std::vector<float> &obsm,float g,float m,float gini,float mini);
+
+float weightHelicity (MiniEvent_t &ev, std::vector<Particle> genleptons, std::vector<Particle> genwbosons, std::vector<Particle> genbs, TString option= "left");
 
 #endif

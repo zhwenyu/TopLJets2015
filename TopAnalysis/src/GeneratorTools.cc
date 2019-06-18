@@ -1,6 +1,9 @@
 #include "TopLJets2015/TopAnalysis/interface/GeneratorTools.h"
 #include "TH1F.h"
 #include <iostream>
+#include <TVector3.h>
+#include <TLorentzVector.h>
+#include "TopLJets2015/TopAnalysis/interface/CommonTools.h"
 
 using namespace std;
 
@@ -191,3 +194,62 @@ float weightBW(TF1 *bwigner,std::vector<float> &obsm,float g,float m,float gini,
 
   return wgt;
 }
+
+
+float weightHelicity (MiniEvent_t &ev, vector<Particle> genleptons, vector<Particle> genwbosons, vector<Particle> genbs, TString option) {
+ 
+  float weight = 1.0;
+  vector<float> wgts; 
+
+  float fL=0, f0=0, fR=0;
+  const float fL_SM = 0.311, f0_SM = 0.687, fR_SM = 0.0017;
+  if (option == "left") { fL = 1; }
+  else if ( option == "longitudinal" ) { f0 = 1; }
+  else if ( option == "right") { fR = 1; }
+
+  for(Int_t igen=0; igen<ev.ngtop; igen++) {
+    if(abs(ev.gtop_id[igen])!=6) continue;
+    TLorentzVector gentop;
+    gentop.SetPtEtaPhiM( ev.gtop_pt[igen], ev.gtop_eta[igen], ev.gtop_phi[igen], ev.gtop_m[igen] );
+//    cout << "onegentop " << endl;
+    int genb_count = 0 ;
+    for ( auto& genb : genbs) {
+//    cout << "onegenb ";
+      if ( genb_count > 1 ) break;
+      genb_count ++;
+      for ( auto& genw : genwbosons ) {
+//       cout << "onegenw " ;
+        for (auto& genl : genleptons) {
+//        cout << "onegenlep ";
+        int genb_id = genb.id();
+        int genl_id = genl.id();
+        int genw_id = genw.id();
+        if ( ev.gtop_id[igen]*genb_id <0 ) continue;
+//        cout << "topid*bid >0 " ;
+        if ( genw_id*genl_id > 0) continue;
+//        cout << "wid*lid <0 ";
+        if ( genb_id*genl_id > 0) continue;  // lep and b oppo.
+//        cout << "bid*lid <0 ";
+        TLorentzVector l_wrf= genl.p4();
+        TLorentzVector b_trf= genb.p4();
+        TVector3 wrf_boost=genw.BoostVector()*(-1);
+        l_wrf.Boost(wrf_boost);
+        TVector3 trf_boost=gentop.BoostVector()*(-1);
+        b_trf.Boost(trf_boost);
+
+        float costhstar = l_wrf.Vect().Dot(b_trf.Vect()) / (l_wrf.Vect().Mag()*b_trf.Vect().Mag());
+//	cout << " costhstar " << costhstar << endl; 
+        float pdfSM = (1-costhstar)*(1-costhstar)*3/8*fL_SM + (1-costhstar*costhstar)*3/4*f0_SM + (1+costhstar)*(1+costhstar)*3/8*fR_SM;
+        float pdf = (1-costhstar)*(1-costhstar)*3/8*fL + (1-costhstar*costhstar)*3/4*f0 + (1+costhstar)*(1+costhstar)*3/8*fR ;
+          
+        float wgt = pdf/pdfSM;
+        wgts.push_back(wgt);
+        }
+      }
+   }
+ }
+  if ( wgts.size() == 2) weight = wgts[0]*wgts[1];
+ 
+  return weight;
+
+} 
