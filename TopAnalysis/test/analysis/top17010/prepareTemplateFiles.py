@@ -148,7 +148,7 @@ def getBinByBinUncertainties(h):
     return histos
 
 
-def getBinByBinUncertaintiesForSysts(h,hvars,method=2):
+def getBinByBinUncertaintiesForSysts(h,hvars,method=1):
     
     """
     loops over the bins of a template and build the bin-by-bin stat unc associated to systs
