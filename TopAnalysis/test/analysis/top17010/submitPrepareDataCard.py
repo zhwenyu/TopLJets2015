@@ -3,6 +3,12 @@ import sys
 import optparse
 import ROOT
 
+def getScenario(mt,gt):
+    mask=int('0xffff',16)
+    scenario=(int((gt-0.7)/0.01) & mask)
+    scenario |= ((int((mt-169)/0.25) & mask) << 16)
+    return scenario
+
 def getScanAnchors(opt):
 
     """ checks the directories available for likelihood scan anchors """
@@ -42,10 +48,20 @@ def getSignals(opt):
             keyname=key.GetName()
             pos=keyname.find('t#bar{t}')
             if pos<0: continue            
-            #use only FSR, mass and width variations
-            if 't#bar{t}fsr' in keyname or 't#bar{t}1' in keyname or 't#bar{t}0.5w' in keyname or 't#bar{t}4w' in keyname:
-                keyname=keyname[pos:]
+
+            keyname=keyname[pos:]
+            isNom=True if keyname=='t#bar{t}' else False
+
+            #use only FSR and CR as the main constrained systs
+            if isNom or 'fsr' in keyname or 'gluonmove' in keyname or 'erdon' in keyname or 'qcdBased' in keyname:
                 signals.append( 'sig,%s,$(dist)/$(dist)_%s'%(f,keyname) )
+
+            if isNom:
+                for mt,gt in [(169.5,1.23), (171.5,1.28), (172.5,1.0), (172.5,2.0), (173.5,1.34), (175.5,1.39)]:
+                    sigStr  = 'sig,%s,$(dist)/$(dist)_%s,'%(f,keyname)
+                    sigStr += 'scenario%d/MC13TeV_2016_TTJets.root,$(dist)'%getScenario(mt,gt)
+                    signals.append(sigStr)
+    print signals
     return signals
     
 def generateJobs(scanAnchors,signals,opt):

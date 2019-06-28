@@ -387,15 +387,15 @@ void TOP17010::runAnalysis()
              && targetGt_>0 && targetMt_>0 && origGt_>0  && origMt_>0
              && (targetGt_!=origGt_ || targetMt_ != origMt_) ) {
             widthWgt=weightBW(rbwigner_,genmt,targetGt_,targetMt_,origGt_,origMt_); 
-            
-            //control the re-weighted BW
-            for(auto genm:genmt) {
-              std::vector<double> bwWgts(1,1.0);
-              ht_->fill("genmass",  genm, bwWgts);
-              bwWgts[0]=widthWgt;
-              ht_->fill("genmass",  genm, bwWgts,"rwgt");
-            }
           }
+
+          //control the re-weighted BW
+          for(auto genm:genmt) {
+            std::vector<double> bwWgts(1,1.0);
+            ht_->fill("genmass",  genm, bwWgts);
+            bwWgts[0]=widthWgt;
+            ht_->fill("genmass",  genm, bwWgts,"rwgt");
+          }          
         }
 
         //b-fragmentation and semi-leptonic branching fractions

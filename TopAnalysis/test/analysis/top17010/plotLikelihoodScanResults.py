@@ -33,9 +33,10 @@ def getTheoryPrediction(x=np.arange(169,176,0.1)):
     
 
 
-def getScanPoint(inDir,fitTag,recover):
+def getScanPoint(inDir,fitTag):
 
     """read the fit result and return the likelihood value together with the corresponding mtop,width values"""
+
 
     #decode mass and width
     tag=os.path.basename(inDir)
@@ -45,6 +46,9 @@ def getScanPoint(inDir,fitTag,recover):
         mask=int('0xffff',16)
         gt = (flag&mask)*0.01+0.7
         mt = (((flag>>16)&mask))*0.25+169        
+    else:
+        if mt==172.5 and gt==1.31:
+            return mt,gt,None
 
     #read nll from fit
     nll=None
@@ -53,22 +57,15 @@ def getScanPoint(inDir,fitTag,recover):
         if not os.path.isfile(url):
             raise ValueError('%s is missing'%url)
         inF=ROOT.TFile.Open(url)
+        if inF.IsZombie() or inF.TestBit(ROOT.TFile.kRecovered):
+            raise ValueError('%s probably corrupted'%url)
         tree=inF.Get('fitresults')
         tree.GetEntry(0)
         nll=tree.nllvalfull
     except Exception as e:
-        print e
-        if recover:
-            try:
-                print 'Attempting recovery of',url
-                shScript=url.replace('/fitresults','/runFit')
-                shScript=shScript.replace('.root','.sh')
-                os.system('sh %s'%shScript)
-                os.system('rm fitresults*root')
-                os.system('rm fitresults*pck')
-                mt,gt,nll=getScanPoint(inDir,fitTag,False)
-            except:
-                print 'Recovery failed'
+        shScript=url.replace('/fitresults','/runFit')
+        shScript=shScript.replace('.root','.sh')
+        return shScript
 
     return mt,gt,nll
         
@@ -101,10 +98,13 @@ def profilePOI(data,outdir,axis=0,sigma=5):
         
         if len(y)<2: continue
 
+        #make sure it's sorted correcly
+        sortIdx=np.argsort(y)        
+
         #interpolate to generate equally spaced grid
         #and apply a gaussian filter
         y_unif = np.arange(bounds[0],bounds[1],0.001*(bounds[1]-bounds[0]))
-        z_spline = interp1d(y,z,kind='cubic',fill_value='extrapolate')
+        z_spline = interp1d(y[sortIdx],z[sortIdx],kind='cubic',fill_value='extrapolate')
         z_spline_val=z_spline(y_unif)
         z_filt = filters.gaussian_filter1d(z_spline_val,sigma=sigma)
 
@@ -255,7 +255,7 @@ def main():
     parser.add_option('-i', '--in',          
                       dest='input',       
                       help='input directory [%default]',  
-                      default='/eos/cms/store/cmst3/group/top/TOP17010/0c522df/fits/em_inc',
+                      default='/eos/cms/store/cmst3/group/top/TOP17010/final/0c522df/fits/em_inc',
                       type='string')
     parser.add_option('-o', '--out',          
                       dest='outdir',
@@ -280,19 +280,50 @@ def main():
     (opt, args) = parser.parse_args()
 
 
+    os.system('rm -rf {0} && mkdir -p {0}'.format(opt.outdir))
+
     #build nll scan
     fitres=[]
+    toSub=[]
     for f in os.listdir(opt.input):
-        scanRes=getScanPoint(inDir=os.path.join(opt.input,f),fitTag=opt.fitTag,recover=opt.recover)
-        if not scanRes[-1]: continue
+        scanRes=getScanPoint(inDir=os.path.join(opt.input,f),fitTag=opt.fitTag)
+        if isinstance(scanRes,basestring):
+            toSub.append(scanRes)
+            continue
+        elif not scanRes[-1]: 
+            continue
         fitres.append( scanRes )
-    fitres=np.array(fitres)
+
+    # treat missing jobs
+    print toSub
+    if len(toSub)>0:
+        condor_file='condor_recover_%s_%s.sub'%( os.path.basename(opt.input),opt.fitTag )
+        cmssw=os.environ['CMSSW_BASE']
+        with open(condor_file,'w') as condor:            
+            condor.write('executable  = %s/src/TopLJets2015/TopAnalysis/test/analysis/top17010/runFitWrapper.sh\n'%cmssw)
+            condor.write('output      = datacard_condor.out\n')
+            condor.write('error       = datacard_condor.err\n')
+            condor.write('log         = datacard_condor.log\n')
+            condor.write('requirements = (OpSysAndVer =?= "SLCern6")\n') #SLC6
+            condor.write('+JobFlavour = "workday"\n')
+            for f in toSub:
+                condor.write('arguments  = %s\n'%f)
+                condor.write('queue 1\n')
+        print 'I have %d missing/corrupted jobs to submit on condor - list @ %s'%(len(toSub),condor_file)        
+        if opt.recover:
+            os.system('condor_submit %s'%condor_file)
+            os.system('cp -v {0} {1}/{0}'.format(condor_file,opt.outdir))
 
     #plot the contour interpolating the available points
-    os.system('mkdir -p %s'%opt.outdir)
-    doContour(fitres,outdir=opt.outdir)
-    profilePOI(fitres,outdir=opt.outdir,axis=0,sigma=opt.filterSigma)
-    profilePOI(fitres,outdir=opt.outdir,axis=1,sigma=opt.filterSigma)
+    try:
+        fitres=np.array(fitres)
+        doContour(fitres,outdir=opt.outdir)
+        profilePOI(fitres,outdir=opt.outdir,axis=0,sigma=opt.filterSigma)
+        profilePOI(fitres,outdir=opt.outdir,axis=1,sigma=opt.filterSigma)
+    except Exception as e:
+        print '<'*50
+        print e
+        print '<'*50
 
 if __name__ == "__main__":
     sys.exit(main())

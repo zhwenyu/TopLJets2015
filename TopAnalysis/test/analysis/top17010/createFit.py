@@ -16,7 +16,7 @@ def main():
     parser.add_option('--nuisScan',
                       dest='nuisScan',       
                       help='nuisance scan script [%default]',
-                      default='/afs/cern.ch/user/p/psilva/work/TopLJets2015/TopAnalysis/test/analysis/top17010/nuisanceScan.py',
+                      default='/afs/cern.ch/user/p/psilva/work/CMSSW_9_4_11/src/TopLJets2015/TopAnalysis/test/analysis/top17010/nuisanceScan.py',
                       type='string')
     parser.add_option('-o', '--outdir',          
                       dest='outdir',       

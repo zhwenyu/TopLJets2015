@@ -312,6 +312,8 @@ void MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
 	ev_.g_w[ev_.g_nw]=ev_.g_w[0]*asdde/asdd;
 	ev_.g_nw++;
       }
+      const auto & hepeup = evet->hepeup();
+      ev_.g_nup=hepeup.NUP;
     }
      
   //

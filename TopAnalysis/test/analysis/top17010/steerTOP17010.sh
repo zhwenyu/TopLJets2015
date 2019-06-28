@@ -60,17 +60,20 @@ dists=${dists},eelowpt_mlb,eelowpt1b_mlb,eelowpt2b_mlb
 dists=${dists},mmhighpt_mlb,mmhighpt1b_mlb,mmhighpt2b_mlb
 dists=${dists},mmlowpt_mlb,mmlowpt1b_mlb,mmlowpt2b_mlb
 
-echo "Selection adapted to YEAR=${ERA}, inputs from ${eosdir}"
-
 queue=workday
 outdir=${STORAGE}
 if [ -z ${outdir} ]; then
     outdir=${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/top17010
 fi
 
+echo "Selection adapted to YEAR=${ERA}"
+echo "Original inputs from ${eosdir}"
+echo "Output directory is ${outdir}"
+
+
 json=test/analysis/top17010/samples_${ERA}.json
 syst_json=test/analysis/top17010/syst_samples_${ERA}.json
-wwwdir=${HOME}/www/top17010/final
+wwwdir=/eos/user/p/psilva/www/top17010/
 
 RED='\e[31m'
 NC='\e[0m'
@@ -226,6 +229,9 @@ case $WHAT in
             -o ${outdir}/${githash}/datacards \
             --systs test/analysis/top17010/systs_dict.json
         
+        #use a specific scenario
+        #dataDef=sig,${outdir}/${githash}/plots/plotter.root,${testDist}/${testDist}_t#bar{t},scenario131502/MC13TeV_2016_TTJets.root,${testDist} \
+
         args="${outdir}/${githash}/datacards/${testCat}/nom/tbart.datacard.dat"
         python test/analysis/top17010/createFit.py -o ${outdir}/${githash}/fits/${testCat}/nom -a -t 50 -c ${COMBINE} --tag tbart ${args}
 

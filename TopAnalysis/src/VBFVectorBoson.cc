@@ -550,7 +550,6 @@ void VBFVectorBoson::runAnalysis()
         else if(sname=="quarkqg")     iwgt *= qgWgt_q*puWgts[0]*trigSF.first*selSF.first*(l1prefireProb.first-l1prefireProb.second);
         else                          iwgt = wgt;           
         
-
         if(sname.Contains("aes") && chTag=="A")  {
           reSelect=true;
           iBoson *= (1+(isUpVar?1:-1)*bosonScaleUnc); 

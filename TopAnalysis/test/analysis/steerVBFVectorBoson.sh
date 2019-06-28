@@ -42,10 +42,11 @@ echo "Selection adapted to YEAR=${ERA}"
 #to run locally use local as queue + can add "--njobs 8" to use 8 parallel jobs
 queue=workday
 outdir=${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBFVectorBoson
-wwwdir=~/www/VBFVectorBoson
+wwwdir=/eos/user/p/psilva/www/SMP-19-005
 
 #k-factors for gamma+jets
 kFactors="--procSF MC13TeV_era${ERA}_QCDEM_15to20:1.26,MC13TeV_era${ERA}_QCDEM_20to30:1.26,MC13TeV_era${ERA}_QCDEM_30to50:1.26,MC13TeV_era${ERA}_QCDEM_50to80:1.26,MC13TeV_era${ERA}_QCDEM_80to120:1.26,MC13TeV_era${ERA}_QCDEM_120to170:1.26,MC13TeV_era${ERA}_QCDEM_170to300:1.26,MC13TeV_era${ERA}_QCDEM_300toInf:1.26,MC13TeV_era${ERA}_GJets_HT40to100:1.26,MC13TeV_era${ERA}_GJets_HT100to200:1.26,MC13TeV_era${ERA}_GJets_HT200to400:1.26,MC13TeV_era${ERA}_GJets_HT400to600:1.26,MC13TeV_era${ERA}_GJets_HT600toInf:1.26"
+#kFactors="--procSF #gamma+jets:1.26,QCD:1.26"
 
 
 RED='\e[31m'
@@ -55,14 +56,14 @@ case $WHAT in
     TESTSEL )
                
         json=data/era${ERA}/vbf_samples.json
-        tag=MC13TeV_2017_EWKAJJ
+        tag=MC13TeV_2017_EWKAJJ_nlo
         if [[ ${ERA} == "2016" ]]; then
             tag=MC13TeV_2016_EWKAJJ
         fi
-        #input=${eosdir}/${tag}/Chunk_0_ext0.root        
-        #output=${tag}.root 
-        input=${eosdir}
-        output=testsel
+        input=${eosdir}/${tag}/Chunk_0_ext0.root        
+        output=${tag}.root 
+        #input=${eosdir}
+        #output=testsel
 
 	python scripts/runLocalAnalysis.py \
             -i ${input} -o ${output} --tag ${tag} --only ${tag} --mvatree\
@@ -70,7 +71,7 @@ case $WHAT in
             --era era${ERA} -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts --debug --SRfake ;
 
         #--debug --mvatree \
-        ./scripts/mergeOutputs.py ${output};
+        #./scripts/mergeOutputs.py ${output};
         ;;
 
 
@@ -111,6 +112,11 @@ case $WHAT in
             -q ${queue} --genWeights genweights_${githash}.root \
             --era era${ERA} -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts --CR --skipexisting ${extraOpts};
 	;;
+
+    CHECKSELINTEG )
+        python scripts/checkLocalAnalysisInteg.py ../../../FARM${EXTRA}${githash}/ ${outdir}/${githash}/${EXTRA} 
+        ;;
+
 
     SELTRIGEFF )
 	python scripts/runLocalAnalysis.py \
@@ -159,10 +165,10 @@ case $WHAT in
 	plotOutDir=${outdir}/${githash}/${EXTRA}/plots/
 	commonOpts="-i ${outdir}/${githash}/${EXTRA} --puNormSF puwgtctr -l ${fulllumi} --saveLog --mcUnc ${lumiUnc} --lumiSpecs LowVPtLowMJJA:${vbflumi},LowVPtHighMJJA:${vbflumi}"
         python scripts/plotter.py ${commonOpts} -j ${gjets_json} --silent --only A_gen
-        #python scripts/plotter.py ${commonOpts} -j ${gjets_json} --noStack --only A_
-	#python scripts/plotter.py ${commonOpts} -j ${json} --only HighMJJ,LowMJJ ${kFactors}
-#	python scripts/plotter.py ${commonOpts} -j ${json} --only evcount ${kFactors} --saveTeX -o evcout_plotter.root
-#	python scripts/plotter.py ${commonOpts} -j ${syst_json} ${kFactors} --only HighMJJ,LowMJJ --silent -o syst_plotter.root
+        python scripts/plotter.py ${commonOpts} -j ${gjets_json} --noStack --only A_
+	python scripts/plotter.py ${commonOpts} -j ${json} --only HighMJJ,LowMJJ ${kFactors}
+	python scripts/plotter.py ${commonOpts} -j ${json} --only evcount ${kFactors} --saveTeX -o evcout_plotter.root
+	python scripts/plotter.py ${commonOpts} -j ${syst_json} ${kFactors} --only HighMJJ,LowMJJ --silent -o syst_plotter.root
         ;;
     
     NLOTFACTORS )

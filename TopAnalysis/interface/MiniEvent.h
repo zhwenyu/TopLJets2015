@@ -19,7 +19,7 @@ struct MiniEvent_t
   Int_t g_id1, g_id2;
   Float_t g_x1, g_x2, g_qscale;
   Int_t g_pu,g_putrue;
-  Int_t g_nw;
+  Int_t g_nw,g_nup;
   Float_t g_w[500];
   Int_t ng,ngtop;
   Int_t g_id[500],g_bid[500],g_tagCtrs[500];

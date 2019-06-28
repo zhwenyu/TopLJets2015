@@ -198,7 +198,7 @@ class Plot(object):
             except:
                 pass
 
-    def show(self, outDir,lumi,noStack=False,saveTeX=False,extraText=None,noRatio=False):
+    def show(self, outDir,lumi,noStack=False,saveTeX=False,extraText=None,noRatio=False,overlay=None):
         if len(self.mc)<1 and self.dataH is None and len(self.spimpose)<1:
             print '%s has 0 or 1 MC!' % self.name
             return
@@ -454,6 +454,10 @@ class Plot(object):
                     self.spimpose[m].Draw('histsame')
 
         if self.data is not None : self.data.Draw('p')
+
+        if overlay: 
+            for x in overlay: 
+                x.Draw('same')
 
         if (totalMC is not None and totalMC.GetMaximumBin() > totalMC.GetNbinsX()/2.):
             inix = 0.15
