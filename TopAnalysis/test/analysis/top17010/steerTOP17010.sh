@@ -89,7 +89,7 @@ case $WHAT in
         
         echo "Computing MC2MC corrections"
         echo "[WARN] currently hardcoded for 2016 samples"
-        python test/analysis/top17010/prepareMC2MCCorrections.py;
+        #python test/analysis/top17010/prepareMC2MCCorrections.py;
         ;;
 
     TESTSEL )               
