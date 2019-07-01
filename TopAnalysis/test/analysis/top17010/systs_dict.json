@@ -151,7 +151,9 @@
         },
         "dir":{
                "mtoptw"         : [["Singletop175.5",         "Singletop169.5"],        true, false , true],
-               "drdstw"         : [["SingletopDS"],                                     true, false , true]
+               "drdstw"         : [["SingletopDS"],                                     true, false , true],
+               "isrtw"          : [["Singletopisrup",         "Singletopisrdn"],        true, false , true],
+               "fsrtw"          : [["Singletopfsrup",         "Singletopfsrdn"],        true, false , true]
         }
 },
 
