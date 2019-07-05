@@ -85,9 +85,9 @@ for i,obs,title in [(0,'ptlb','p_{T}(lb) [GeV]'),
                     (1,'mlb', 'm(lb) [GeV]')]:
 
 
-    resolH = ROOT.TH1F('resolvs'+obs, '#Deltam(lb)/m(lb);%s;'%title, nq, array('d',xq[:,i]))
-    fcorrH = ROOT.TH1F('fcorrvs'+obs, 'correct assignments;%s;'%title, nq, array('d',xq[:,i]))
-    obsH   = ROOT.TH1F(obs,           'PDF;%s;'%title, nq, array('d',xq[:,i]))
+    resolH = ROOT.TH1D('resolvs'+obs, '#Deltam(lb)/m(lb);%s;'%title, nq, array('d',xq[:,i]))
+    fcorrH = ROOT.TH1D('fcorrvs'+obs, 'correct assignments;%s;'%title, nq, array('d',xq[:,i]))
+    obsH   = ROOT.TH1D(obs,           'PDF;%s;'%title, nq, array('d',xq[:,i]))
 
     totalPairs=float(len(summary))
     for iq in xrange(0,nq):

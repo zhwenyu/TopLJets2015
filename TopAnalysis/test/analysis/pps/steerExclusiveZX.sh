@@ -3,16 +3,18 @@
 WHAT=$1; 
 if [ "$#" -ne 1 ]; then 
     echo "steerExclusiveZX.sh <SEL/MERGE/PLOT/WWW>";
-    echo "   SEL          - launches selection jobs to the batch, output will contain summary trees and control plots"; 
-    echo "   MERGESEL     - merge output"
-    echo "   PLOTSEL      - make plots"
-    echo "   WWWSEL       - move plots to web-based are"
-    echo "   TRAINPUDISCR - train pileup discriminator"
-    echo "   RUNPRED      - run pileup discriminator prediction"
-    echo "   PREPAREANA   - prepare bank of events for event mixing from the summary trees"
-    echo "   COLLECTMIX   - collects all the mixing events found in PREPAREANA"
-    echo "   ANA          - run analysis on the summary trees"
-    echo "   PLOTANA      - plot analysis results"
+    echo "   SEL           - launches selection jobs to the batch, output will contain summary trees and control plots"; 
+    echo "   MERGESEL      - merge output"
+    echo "   PLOTSEL        - make plots"
+    echo "   WWWSEL        - move plots to web-based are"
+    echo "   TRAINPUDISCR  - train pileup discriminator"
+    echo "   RUNPRED       - run pileup discriminator prediction"
+    echo "   PREPAREANA    - prepare bank of events for event mixing from the summary trees"
+    echo "   COLLECTMIX    - collects all the mixing events found in PREPAREANA"
+    echo "   ANA           - run analysis on the summary trees"
+    echo "   PLOTANA       - plot analysis results"
+    echo "   OPTIMSTATANA  - optimize the statistical analysis"
+    echo "   DEFINESTATANA - define the final datacards based on the results of the optimization"
     exit 1; 
 fi
 
@@ -20,7 +22,7 @@ fi
 queue=tomorrow
 githash=ab05162
 eosdir=/store/cmst3/group/top/RunIIReReco/${githash}
-outdir=/store/cmst3/user/psilva/ExclusiveAna/${githash}
+outdir=/store/cmst3/user/psilva/ExclusiveAna/final/${githash}
 signal_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/signal_samples.json
 plot_signal_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/plot_signal_samples.json
 samples_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/samples.json
@@ -68,38 +70,42 @@ case $WHAT in
         baseOpt="${baseOpt} -o ${outdir} -q ${queue} --era era2017 -m ExclusiveZX::RunExclusiveZX --ch 0 --runSysts"
         #baseOpt="${baseOpt} --exactonly"        
 	python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py ${baseOpt} \
-            --only ${samples_json},${zx_samples_json},${zbias_samples_json};
+            --only ${samples_json},${zx_samples_json}; #,${zbias_samples_json};
 	;;
+
+    CHECKSELINTEG )
+        python scripts/checkLocalAnalysisInteg.py ../../../FARM${githash}/ analysis/data tree
+        ;;
+
 
     MERGESEL )
 	mergeOutputs.py /eos/cms/${outdir} True;
 	;;
 
     PLOTSEL )
-        lumiSpecs="--lumiSpecs lpta:2642"
-        kFactorList="--procSF #gamma+jets:1.4"
+        lumiSpecs="--lumiSpecs a:2642"
+        kFactorList="--procSF #gamma+jets:1.33"
 	commonOpts="-i /eos/cms/${outdir} --puNormSF puwgtctr -l ${lumi} --mcUnc ${lumiUnc} ${kFactorList} ${lumiSpecs}"
 	python scripts/plotter.py ${commonOpts} -j ${samples_json}    -O plots/sel --only mboson,mtboson,pt,eta,met,jets,nvtx,ratevsrun --saveLog; 
-        python scripts/plotter.py ${commonOpts} -j ${samples_json}    --rawYields --silent --only gen -O plots/zx_sel -o bkg_plotter.root ; 
-	python scripts/plotter.py ${commonOpts} -j ${zx_samples_json} --rawYields --silent --only gen -O plots/zx_sel;
+        python scripts/plotter.py ${commonOpts} -j ${samples_json}    --rawYields --silent --only gen -O plots/ -o bkg_plotter.root ; 
+	python scripts/plotter.py ${commonOpts} -j ${zx_samples_json} --rawYields --silent --only gen -O plots/;
         python test/analysis/pps/computeDileptonSelEfficiency.py 
-        mv *.{png,pdf} plots/zx_sel/
+        mv *.{png,pdf} plots/sel/
         mv effsummary* plots/
 	;;
 
     WWWSEL )
 	mkdir -p ${wwwdir}/presel
 	cp plots/sel/*.{png,pdf} ${wwwdir}/presel
-	cp plots/zx_sel/*.{png,pdf} ${wwwdir}/presel
 	cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}/presel
 	;;
 
     TRAINPUDISCR )
         echo "Please remember to use a >10_3_X release for this step"
 
-        commonOpts="--trainFrac 0.4  --RPout test/analysis/pps/golden_noRP.json -o /eos/cms/${outdir}/train_results"
-        #python test/analysis/pps/trainPUdiscriminators.py ${commonOpts} -s "isZ && bosonpt<10 && trainCat>=0" 
-        python test/analysis/pps/trainPUdiscriminators.py ${commonOpts} -s "hasZBTrigger && trainCat>=0" --zeroBiasTrain
+        commonOpts="--trainFrac 0.3  --RPout test/analysis/pps/golden_noRP.json -o /eos/cms/${outdir}/train_results"
+        python test/analysis/pps/trainPUdiscriminators.py ${commonOpts} -s "isZ && evcat==13*13 && bosonpt<10 && trainCat>=0" 
+        #python test/analysis/pps/trainPUdiscriminators.py ${commonOpts} -s "hasZBTrigger && trainCat>=0" --zeroBiasTrain
 
         ;;
 
@@ -111,6 +117,7 @@ case $WHAT in
         echo "output      = ${condor_prep}.out" >> $condor_prep
         echo "error       = ${condor_prep}.err" >> $condor_prep
         echo "log         = ${condor_prep}.log" >> $condor_prep
+        echo "requirements = (OpSysAndVer =?= \"SLCern6\")"  >> $condor_prep
         echo "arguments   = ${predout} \$(chunk)" >> $condor_prep
         echo "queue chunk matching (${predin}/*.root)" >> $condor_prep
         condor_submit $condor_prep
@@ -161,8 +168,10 @@ case $WHAT in
     ANASIG )
         
         python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 1 --jobs 8 \
-            --json ${signal_json} --RPout ${RPout_json} --mix /eos/cms/${outdir}/analysis/mixbank.pck \
-            -i /eos/cms/${outdir}/Chunks -o /eos/cms/${outdir}/analysis
+            --json ${signal_json} --RPout ${RPout_json} --mix /eos/cms/${outdir}/mixing/mixbank.pck \
+            -i /eos/cms/${outdir}/Chunks -o anasig/;
+
+         cp -v anasig/Chunks/*.root /eos/cms/${outdir}/analysis/
 
         ;;
 
@@ -173,52 +182,50 @@ case $WHAT in
     PLOTANA )
 
         lptalumi=2642
-        lumiSpecs="lpta:${lptalumi},lptahpur:${lptalumi},lptahpur120:${lptalumi},lptahpur130:${lptalumi},lptahpur140:${lptalumi},lptahpur150:${lptalumi}"
+        lumiSpecs="lpta:${lptalumi},lptaneg:${lptalumi},lptapos:${lptalumi},lptahpur:${lptalumi},lptahpur120:${lptalumi},lptahpur130:${lptalumi},lptahpur140:${lptalumi},lptahpur150:${lptalumi}"
+        lumiSpecs="${lumiSpecs},lpta120neg:${lptalumi},lpta130neg:${lptalumi},lpta140neg:${lptalumi},lpta150neg:${lptalumi},lpta120pos:${lptalumi},lpta130pos:${lptalumi},lpta140pos:${lptalumi},lpta150pos:${lptalumi}"
         lumiSpecs="${lumiSpecs},lptahpur120neg:${lptalumi},lptahpur130neg:${lptalumi},lptahpur140neg:${lptalumi},lptahpur150neg:${lptalumi},lptahpur120pos:${lptalumi},lptahpur130pos:${lptalumi},lptahpur140pos:${lptalumi},lptahpur150pos:${lptalumi}"
-
-	baseOpts="-i /eos/cms/${outdir}/analysis --lumiSpecs ${lumiSpecs} --procSF #gamma+jets:1.4 -l ${ppsLumi} --mcUnc ${lumiUnc} ${lumiSpecs} ${kFactorList}"
+	baseOpts="-i /eos/cms/${outdir}/analysis --lumiSpecs ${lumiSpecs} --procSF #gamma+jets:1.33 -l ${ppsLumi} --mcUnc ${lumiUnc} ${lumiSpecs} ${kFactorList}"
         
-        plots=xangle_ee,xangle_mm,xangle_eeZ,xangle_mmZ,xangle_eehptZ,xangle_mmhptZ
-        commonOpts="${baseOpts} -j ${zx_samples_json} -O plots/analysis/zx_yields" 
-        #python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py ${commonOpts} --only ${plots} --strictOnly --saveTeX --rebin 4;
-
-        
-        plots=xangle_eeZ,xangle_mmZ,xangle_eehptZ,xangle_mmhptZ,xangle_eehptZelpphighPur,xangle_mmhptZelpphighPur
-        commonOpts="${baseOpts} -j ${samples_json}" # --normToData"
-        #python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py ${commonOpts} --only ${plots} --strictOnly --saveTeX --rebin 4;
-                
-        plots=mll_ee,mll_mm,mll_em,ptll_eeZ,ptll_mmZ,ptll_em,ptll_lpta,ptll_hpta
-        plots=${plots},l1pt_eeZ,l1pt_mmZ,l1pt_em,l2pt_eeZ,l2pt_mmZ,l2pt_em
-        plots=${plots},acopl_eeZ,acopl_mmZ,acopl_em,l1eta_eeZ,l1eta_mmZ,l1eta_em,l2eta_eeZ,l2eta_mmZ,l2eta_em
-        plots=${plots},acopl_eeZelpphighPur140,acopl_mmZelpphighPur140,ptll_eeZelpphighPur140,ptll_mmZelpphighPur140
-        plots=${plots},l1pt_eeZelpphighPur140,l1pt_mmZelpphighPur140,l2pt_eeZelpphighPur140,l2pt_mmZelpphighPur140
-        plots=${plots},nvtx_eeZ,nvtx_mmZ,nvtx_em,xangle_eeZ,xangle_mmZ,xangle_em,nvtx_lpta,nvtx_hpta,xangle_lpta,xangle_lpta
-        #python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py ${commonOpts} --only ${plots} --strictOnly --signalJson ${plot_signal_json} --saveLog --normToData;
-
+        plots=xangle_eeZhpur,xangle_mmZhpur,xangle_emhpur,xangle_lptahpur
+        commonOpts="${baseOpts} -j ${samples_json} --signalJson ${plot_signal_json} -O plots/analysis/zx_yields" 
+        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py ${commonOpts} --only ${plots} --strictOnly --saveTeX --rebin 4;
 
         plots=""
-        for c in eeZhpur mmZhpur emhpur lptahpur hptahpur; do
+        for c in eeZ mmZ em lpta hpta eeZhpur mmZhpur emhpur lptahpur hptahpur; do         
+            for d in acopl ptll yll l1pt l2pt l1eta l2eta; do
+                plots="${plots},${d}_${c}"                
+            done            
             for d in xangle ntk; do
-                for s in pos neg; do
-                    plots="${plots},${d}_${c}${x}${s}"
+                for s in pos neg; do                    
+                    plots="${plots},${d}_${c}${s}"
                 done
             done
+            for d in csi; do            
+                for x in 120 130 140 150; do
+                    for s in pos neg; do
+                        plots="${plots},${d}_${c}${x}${s}"
+                    done
+                done        
+            done
+            
             for x in 120 130 140 150; do
-                for d in rho mpp ypp mpp2d ypp2d mmass nextramu ptll yll; do
+                for d in rho mpp ypp mmass nextramu ptll yll; do
                     plots="${plots},${d}_${c}${x}"
                 done
-                for d in csi csi2d; do
+                for r in HF HE EB EE; do
+                    for d in PFMult PFHt PFPz; do
+                        plots="${plots},${d}${r}_${c}${x}"
+                    done
+                done
+                for d in csi csi2d mpp2d ypp2d; do
                     for s in pos neg; do
                         plots="${plots},${d}_${c}${x}${s}"
                     done
                 done
             done
         done
-        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py ${commonOpts} --only ${plots} --strictOnly --signalJson ${plot_signal_json} --saveLog; # --normToData;
-        
-#python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py ${commonOpts} --only ${plots} --strictOnly --signalJson ${signal_json} --saveLog;
-        
-        #python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/compareBackgroundEstimation.py plots/analysis/plots/plotter.root plots/analysis/plots;
+        #python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py ${commonOpts} --only ${plots} --strictOnly --signalJson ${plot_signal_json} --saveLog; # --normToData;
         ;;
 
     WWWANA )
@@ -227,12 +234,33 @@ case $WHAT in
         cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}/ana
         ;;
 
-    OPTIMANA )
-        for i in 1000 1200 1400; do
-            python test/analysis/pps/optimizeSR.py ${i}; 
+    OPTIMSTATANA )
+
+        #run combine on condor
+        for m in 800 1000 1200 1400 1600; do
+
+            echo "Will first prepare the datacards/shapes files for m=${m}"
+            python test/analysis/pps/prepareOptimScanCards.py ${m}
+
+            echo "Will launch combine runs to condor for m=${m}"
+            condor_prep="condor_optim_m${m}.sub"
+            echo "executable  = ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/pps/wrapOptim.sh" > $condor_prep
+            echo "output      = ${condor_prep}.out" >> $condor_prep
+            echo "error       = ${condor_prep}.err" >> $condor_prep
+            echo "log         = ${condor_prep}.log" >> $condor_prep
+            echo "+JobFlavour =\"workday\""> $condor_prep
+            for x in 120 130 140 150; do
+                echo "arguments   = ${m} ${x} ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/analysis/stat_m${m}" >> $condor_prep
+                echo "queue 1" >> $condor_prep
+            done
+            condor_submit $condor_prep
         done
-        python test/analysis/pps/plotLimits.py 1000=optimresults_1000.pck,1200=optimresults_1200.pck,1400=optimresults_1400.pck
-        python test//analysis/pps/compareOptimResults.py
+        ;;
+
+    DEFINESTATANA)
+        python test/analysis/pps/compareOptimResults.py analysis/
+        #python test/analysis/pps/plotLimits.py 1000=optimresults_1000.pck,1200=optimresults_1200.pck,1400=optimresults_1400.pck
+        #python test//analysis/pps/compareOptimResults.py
         ;;
 
 esac

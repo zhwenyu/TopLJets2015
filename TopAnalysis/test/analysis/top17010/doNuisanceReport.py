@@ -189,7 +189,8 @@ def doNuisanceReport(args,outdir,onlyList,skipList):
         leg.SetTextSize(0.035)
         leg.SetBorderSize(0)
         leg.SetFillStyle(0)
-        for title in sorted(nuisGrs):
+        for ir in range(len(results)):
+            title,_=results[ir]
             nuisGrs[title].Draw('p')
             leg.AddEntry(nuisGrs[title],title,'p')
         leg.Draw()

@@ -1,5 +1,6 @@
 import ROOT
 import optparse
+import pickle
 import json
 import sys
 import os
@@ -148,9 +149,14 @@ def getBinByBinUncertainties(h):
     return histos
 
 
-def getBinByBinUncertaintiesForSysts(h,hvars,byMax=False):
+def getBinByBinUncertaintiesForSysts(h,hvars,method=2):
     
-    """loops over the bins of a template and build the bin-by-bin stat unc associated to systs"""
+    """
+    loops over the bins of a template and build the bin-by-bin stat unc associated to systs
+    method=0 max. relative uncertainty is used
+    method=1 rel. uncertainties are added in quadrature
+    method=2 rel. uncertainties are added linearly
+    """
     
     #init the up and down variations
     histos = [ [h.Clone('sysbin%dUp'%(xbin)),h.Clone('sysbin%dDown'%(xbin))] for xbin in xrange(1,h.GetNbinsX()+1) ]
@@ -166,13 +172,16 @@ def getBinByBinUncertaintiesForSysts(h,hvars,byMax=False):
             ival = ihvar.GetBinContent(xbin+1)
             if ival==0: continue
             relUnc = ihvar.GetBinError(xbin+1)/ival
-            if byMax:
+            if method==0:
                 unc = max(unc,relUnc)
-            else:
+            elif method==1:
                 unc += relUnc**2
+            else:
+                unc += relUnc
 
-        #finalize computation of total unc. for this bin
-        if not byMax: unc=ROOT.TMath.Sqrt(unc)
+        #if adding in quadrature take the sqrt in the end
+        if method==1: 
+            unc=ROOT.TMath.Sqrt(unc)
 
         #scale central yields up/down
         val=h.GetBinContent(xbin+1)
@@ -198,6 +207,7 @@ def getUncertaintiesFromProjection(opt,fIn,d,proc_systs,hnom):
     histos=[]
     errors=[]
     warns=[]
+    normVars=[]
 
     #map all systematics available for projection
     allSysts={}
@@ -279,7 +289,10 @@ def getUncertaintiesFromProjection(opt,fIn,d,proc_systs,hnom):
         if len(checkReport):
             pfix='Keep but' if keep else 'Discard as'
             warns.append('%s %s for %s'%(pfix,checkReport.replace('\n',','),s))
-
+            
+        if norm:
+            normVars.append( (s,[varDn.Integral()/hnom.Integral()-1,varUp.Integral()/hnom.Integral()-1]) )
+            
         formatTemplate(varUp,s+'Up',norm=hnom.Integral() if norm else None)
         formatTemplate(varDn,s+'Down',norm=hnom.Integral() if norm else None)
         if keep:            
@@ -302,7 +315,7 @@ def getUncertaintiesFromProjection(opt,fIn,d,proc_systs,hnom):
         for w in warns  : print w
         print '-'*50
             
-    return histos
+    return histos,normVars
 
 
 def getDirectUncertainties(opt,fIn,d,proc_systs,hnom):
@@ -312,6 +325,7 @@ def getDirectUncertainties(opt,fIn,d,proc_systs,hnom):
     histos=[]
     errors=[]
     warns=[]
+    normVars=[]
 
     #get systematics
     fIn.cd()
@@ -342,9 +356,11 @@ def getDirectUncertainties(opt,fIn,d,proc_systs,hnom):
 
                 if not h: continue
                 h.GetName()
-                if smooth: applySmoothing(varUp)
+                if smooth: applySmoothing(h)
                 varH.append(h)
-        except:
+        except Exception as e:
+            print s_i
+            print e
             pass
         if len(varH)==0 : continue
 
@@ -353,10 +369,17 @@ def getDirectUncertainties(opt,fIn,d,proc_systs,hnom):
             varH.append( getMirrored(varH[0],hnom,'vardn') )
 
         #add to the histograms
+        delta=[]
         for i in xrange(0,2):
             pfix='Up' if i==0 else 'Down'
+
+            if norm:
+                delta.append(varH[i].Integral()/hnom.Integral()-1)
             formatTemplate(varH[i],s.format(d)+pfix,norm=hnom.Integral() if norm else None)
             histos.append(varH[i])
+        
+        if len(delta)==2:
+            normVars.append( (s,delta) )
 
         #show plot with warnings found
         if opt.debug: 
@@ -371,7 +394,7 @@ def getDirectUncertainties(opt,fIn,d,proc_systs,hnom):
     if len(histos)==0:
         raise Exception('No direct histograms were retrieved from {0} for {1} {2}'.format(fIn.GetName(),proc_systs["title"],d))
 
-    return histos
+    return histos,normVars
 
             
 def getTemplateHistos(opt,d,proc,proc_systs):
@@ -404,19 +427,23 @@ def getTemplateHistos(opt,d,proc,proc_systs):
     #associated experimental/weighted theory uncertainties (use first found in inputs)
     projFound=False
     dirFound=False
+    normVars=[]
     for url in opt.input.split(','):        
         if not os.path.isfile(url) : continue
         fIn=ROOT.TFile.Open(url)
         try:
 
             if 'proj' in proc_systs and not projFound:
-                histos+=getUncertaintiesFromProjection(opt,fIn,d,proc_systs,histos[0])
+                ih,ivar=getUncertaintiesFromProjection(opt,fIn,d,proc_systs,histos[0])
+                histos+=ih
+                normVars+=ivar
                 projFound=True
 
             if 'dir' in proc_systs and not dirFound:
-                dirHistos=getDirectUncertainties(opt,fIn,d,proc_systs,histos[0])
-                histos+=dirHistos
-                systbbbUncHistos=getBinByBinUncertaintiesForSysts(histos[0],dirHistos)
+                ih,ivar=getDirectUncertainties(opt,fIn,d,proc_systs,histos[0])
+                histos+=ih
+                normVars+=ivar
+                systbbbUncHistos=getBinByBinUncertaintiesForSysts(histos[0],ih)
                 dirFound=True
 
         except Exception as e:
@@ -459,7 +486,7 @@ def getTemplateHistos(opt,d,proc,proc_systs):
                           None,
                           os.path.join(opt.output,'{0}_{1}_{2}bbb'.format(proc,d,tag)))
                       
-    return histos
+    return histos,normVars
 
 def prepareTemplateFile(opt,proc,proc_systs):
 
@@ -467,7 +494,9 @@ def prepareTemplateFile(opt,proc,proc_systs):
 
     #read histos and variations
     histos={}
-    for d in opt.distList.split(','): histos[d]=getTemplateHistos(opt,d,proc,proc_systs)
+    normVars={}
+    for d in opt.distList.split(','): 
+        histos[d],normVars[d]=getTemplateHistos(opt,d,proc,proc_systs)
 
     #dump histograms to file
     url=os.path.join(opt.output,'templates_%s.root'%proc)
@@ -480,7 +509,14 @@ def prepareTemplateFile(opt,proc,proc_systs):
     fOut.Close()
     print 'Templates for',proc,'stored at',url
 
+    #normalization variations
+    url=os.path.join(opt.output,'normvars_%s.pck'%proc)
+    with open(url,'w') as cache:
+        pickle.dump(normVars,cache,pickle.HIGHEST_PROTOCOL)
+    print 'Normalization variables stored in',url
+
     return
+
 
 
 def main():

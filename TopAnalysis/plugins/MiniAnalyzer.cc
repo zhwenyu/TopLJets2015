@@ -564,10 +564,10 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
   //CTPPS local tracks (only present in data)
   //
   ev_.nfwdtrk=0;
-  if(iEvent.isRealData()) {
+  edm::Handle<vector<reco::ProtonTrack>> recoProtons;
+  iEvent.getByToken(tokenRecoProtons_, recoProtons);
+  if(recoProtons.isValid()){
     try{
-      edm::Handle<vector<reco::ProtonTrack>> recoProtons;
-      iEvent.getByToken(tokenRecoProtons_, recoProtons);
       for (const auto & proton : *recoProtons)
         {
           if(!proton.valid()) continue;

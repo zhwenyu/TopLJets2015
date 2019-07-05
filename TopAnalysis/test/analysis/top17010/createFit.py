@@ -13,6 +13,11 @@ def main():
                       help='higgs combination tool location [%default]',
                       default='/afs/cern.ch/user/p/psilva/work/CMSSW_10_3_0_pre4/src/HiggsAnalysis/CombinedLimit',
                       type='string')
+    parser.add_option('--nuisScan',
+                      dest='nuisScan',       
+                      help='nuisance scan script [%default]',
+                      default='/afs/cern.ch/user/p/psilva/work/TopLJets2015/TopAnalysis/test/analysis/top17010/nuisanceScan.py',
+                      type='string')
     parser.add_option('-o', '--outdir',          
                       dest='outdir',       
                       help='output directory [%default]',
@@ -69,12 +74,14 @@ def main():
     script.write('#convert to HDF5 and run TF-based fits\n')
     script.write('text2hdf5.py datacard.dat\n')
     fitresultsName='fitresults' if not opt.tag else 'fitresults_%s'%opt.tag
-    script.write('combinetf.py datacard.dat.hdf5 -o %s.root\n'%fitresultsName)
+    script.write('combinetf.py datacard.dat.hdf5 -o %s.root --doImpacts\n'%fitresultsName)
     if opt.asimov:
-        script.write('combinetf.py datacard.dat.hdf5 -t -1 -o %s_asimov.root\n'%fitresultsName)
+        script.write('combinetf.py datacard.dat.hdf5 -t -1 -o %s_asimov.root --doImpacts\n'%fitresultsName)
     if opt.toys>0:
         script.write('combinetf.py datacard.dat.hdf5 -t %d -o %s_toys.root\n'%(opt.toys,fitresultsName))
     script.write('cp -v fitresults*root %s\n'%opt.outdir)
+    script.write('python %s datacard.dat\n'%opt.nuisScan)
+    script.write('cp -v fitresults_fixedgroups.pck %s/%s_fixedgroups.pck\n'%(opt.outdir,fitresultsName))
 
     script.close()
 

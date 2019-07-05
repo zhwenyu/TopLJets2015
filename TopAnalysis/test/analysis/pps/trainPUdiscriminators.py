@@ -57,7 +57,7 @@ def fitModels(data,features,opt,alwaysOptim=False,doGBC=False,doDNN=False):
         if alwaysOptim or xangle==120:
             rfc_params = {
                 'bootstrap': [True],
-                'n_estimators': [100,200,300],
+                'n_estimators': [100,200,300,400],
                 'max_depth': [5,10,15,20],
                 #'min_samples_split':[0.25,0.5],
                 #'min_samples_leaf':[0.25,0.5],
@@ -279,7 +279,7 @@ def runTrainJob(url,features,spectators,categs,onlyThis,opt):
     print 'Checking/substituting for NaN in features with the Imputer'
     from sklearn.preprocessing import Imputer
     imputer = Imputer(strategy="median",verbose=1)
-    data['X'].imputer.fit_transform(data['X'])
+    data['X']=imputer.fit_transform(data['X'])
 
     if opt.model is None:
 
