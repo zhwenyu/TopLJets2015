@@ -105,14 +105,16 @@ int TMVAClassification( TString myMethodList , TString extention, BDTOptimizer* 
    bool isLowVptHighMJJ  = (isLowVpt && isHighMJJ);
    bool isHighVptHighMJJ = (isHighVpt && isHighMJJ);
    bool isHighVptLowMJJ  = (isHighVpt && isLowMJJ);
-   isHighVpt = (isHighVptHighMJJ && isHighVptLowMJJ);
-   if (isVBF)    isLowVptHighMJJ = true;
+   isHighVpt = (isHighVptHighMJJ || isHighVptLowMJJ);
+   if (isVBF)    isLowVpt = true;
    if (isHighPt) isHighVpt       = true;
    if (isHighVpt && extention.Contains("HighV") && extention.Contains("HighM")) isHighVptHighMJJ = true;
    if (isHighVpt && extention.Contains("HighV") && extention.Contains("LowM")) isHighVptLowMJJ = true;
+   if (isLowVpt  && extention.Contains("HighM")) isLowVptHighMJJ = true;
    
    if (isVBF){
-     cut = cut + " && " + jet + " && " + highMJJ + " && " + lowVpt;
+     cut = cut + " && " + jet + " && " + lowVpt + " && mjj > 500 ";
+     if(isLowVptHighMJJ) cut = cut + " && " + highMJJ;
    }
    if (isHighPt){
      cut = cut + " && mjj > 500 && " + jet;
@@ -128,15 +130,8 @@ int TMVAClassification( TString myMethodList , TString extention, BDTOptimizer* 
    TCut mycutb = TCut(cut) || dyCut;
    cout << "Cut is : " <<cut<<endl;
    dataloader->readInputs(card);
-   if (Use["VBF"]) {
-     if (isLowVptHighMJJ)
-       dataloader->setVariables();
-     else if (isHighVpt && !isHighVptHighMJJ && !isHighVptLowMJJ)
-       dataloader->setAllVariables(); 
-     else if(isHighVptHighMJJ)
-       dataloader->setVariables();
-     else if(isHighVptLowMJJ)
-       dataloader->setVariables();
+   if (Use["VBF"]) {     
+     dataloader->setVariables();
    }
    else if (Use["Cuts"] || Use["CutsD"]) dataloader->setCutOptVars();
    else if (Use["Fisher"] || Use["BoostedFisher"]) dataloader->setBestVars(isLowVptHighMJJ, false);

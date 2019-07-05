@@ -228,7 +228,6 @@ def main():
             condor.write('error      = {0}/output_$(cfgFile).err\n'.format(FarmDirectory))
             condor.write('log        = {0}/output_common.log\n'.format(FarmDirectory))
             condor.write('+JobFlavour = "{0}"\n'.format(opt.queue))
-
             jobNb=0
             for method,inF,outF,channel,charge,flag,runSysts,systVar,era,tag,debug,CR,QCDTemp,SRfake,mvatree,genWeights,xsec in task_list:
 
