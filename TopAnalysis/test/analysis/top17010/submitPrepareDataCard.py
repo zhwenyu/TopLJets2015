@@ -32,6 +32,10 @@ def getSignals(opt):
 
     """opens the nominal and syst plotter and finds all t#bar{t} plots available"""
 
+    addSignals=['169.5','171.5','173.5','175.5',
+                '0.5w', '4w',
+                'fsr','gluonmove','erdon','qcdBased']
+
     signals=[]
     plotDir=os.path.join(os.path.dirname(opt.templ),'plots')
     plotters=['plotter.root','syst_plotter.root']
@@ -52,15 +56,22 @@ def getSignals(opt):
             keyname=keyname[pos:]
             isNom=True if keyname=='t#bar{t}' else False
 
-            #use only FSR and CR as the main constrained systs
-            if isNom or 'fsr' in keyname or 'gluonmove' in keyname or 'erdon' in keyname or 'qcdBased' in keyname:
+            isAddSignal=False
+            for x in addSignals:
+                if not x in keyname: continue
+                isAddSignal=True
+                break
+
+            #signals which are interesting to use as pseudo-data
+            if isNom or isAddSignal:
                 signals.append( 'sig,%s,$(dist)/$(dist)_%s'%(f,keyname) )
 
             if isNom:
-                for mt,gt in [(169.5,1.23), (171.5,1.28), (172.5,1.0), (172.5,2.0), (173.5,1.34), (175.5,1.39)]:
+                for mt,gt in [(171.5,1.28), (172.0,1.3), (173.0,1.32), (173.5,1.34) ]:
                     sigStr  = 'sig,%s,$(dist)/$(dist)_%s,'%(f,keyname)
                     sigStr += 'scenario%d/MC13TeV_2016_TTJets.root,$(dist)'%getScenario(mt,gt)
                     signals.append(sigStr)
+
     print signals
     return signals
     

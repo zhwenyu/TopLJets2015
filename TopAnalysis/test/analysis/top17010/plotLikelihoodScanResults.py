@@ -47,8 +47,7 @@ def getScanPoint(inDir,fitTag):
         gt = (flag&mask)*0.01+0.7
         mt = (((flag>>16)&mask))*0.25+169        
     else:
-        if mt==172.5 and gt==1.31:
-            return mt,gt,None
+        return mt,gt,None
 
     #read nll from fit
     nll=None
@@ -62,6 +61,8 @@ def getScanPoint(inDir,fitTag):
         tree=inF.Get('fitresults')
         tree.GetEntry(0)
         nll=tree.nllvalfull
+        print mt,gt,nll,url
+        
     except Exception as e:
         shScript=url.replace('/fitresults','/runFit')
         shScript=shScript.replace('.root','.sh')
@@ -96,6 +97,14 @@ def profilePOI(data,outdir,axis=0,sigma=5):
         bounds = [min(y),max(y)]
         z=rdata[:,2]
         
+        #filter for outliers
+        #medianz=np.median(z)
+        #filtIdx=np.where(abs(z-medianz) >=10000)
+        #y=y[filtIdx]
+        #z=z[filtIdx]
+
+
+        #check we still have enough points
         if len(y)<2: continue
 
         #make sure it's sorted correcly
@@ -127,12 +136,12 @@ def profilePOI(data,outdir,axis=0,sigma=5):
         plt.clf()
         fig, ax = plt.subplots()
         yp = np.linspace(bounds[0],bounds[1], 100)
-        plt.plot(y,  z,                   'o',  label='scan points')
+        plt.plot(y,  2*z,                   'o',  label='scan points')
         #plt.plot(yp, p(yp),               '-',  label='interpolation')
         #plt.plot(yp, ll_param(yp, *popt), '--', label='interpolation')
-        plt.plot(y_unif, z_filt,          '--', label='filtered')
+        plt.plot(y_unif, 2*z_filt,          '--', label='interpolated')
         plt.xlabel(xtit)
-        plt.ylabel(r'$-\log(\lambda)$')
+        plt.ylabel(r'$-2\log(\lambda)$')
         #plt.ylim(0.,20.0)
         ax.text(0,1.02,'CMS preliminary', transform=ax.transAxes, fontsize=16)
         ax.text(1.0,1.02,r'%s=%3.2f 34.5 fb$^{-1}$ (13 TeV)'%(ytit,xi), transform=ax.transAxes,horizontalalignment='right',fontsize=14)
@@ -141,6 +150,7 @@ def profilePOI(data,outdir,axis=0,sigma=5):
         #if axymax>axymin+20:
         #    ax.set_ylim([axymin,axymin+20])
         plt.savefig(os.path.join(outdir,'nllprofile_%d_%d.png'%(axis,ictr)))
+        plt.savefig(os.path.join(outdir,'nllprofile_%d_%d.pdf'%(axis,ictr)))
         ictr+=1
 
 
@@ -183,7 +193,7 @@ def profilePOI(data,outdir,axis=0,sigma=5):
     
     fig, ax = plt.subplots()
     plt.plot(xvals,      llvals,      'o',  label='scan points')
-    plt.plot(xvals_unif, llvals_filt, '--', label='filtered')
+    plt.plot(xvals_unif, llvals_filt, '--', label='interpolated')
     plt.xlabel(ytit)    
     plt.ylabel(r'$-2\Delta\log(\lambda)$')
     ax.text(0,1.02,'CMS preliminary', transform=ax.transAxes, fontsize=16)
@@ -191,6 +201,7 @@ def profilePOI(data,outdir,axis=0,sigma=5):
     ax.text(0.95,0.94,r'%s=$%3.2f^{+%3.2f}_{-%3.2f}$ GeV'%(ytit,x0,xUp-x0,x0-xLow), transform=ax.transAxes,horizontalalignment='right',fontsize=12)
     ax.legend(framealpha=0.0, fontsize=14, loc='upper left', numpoints=1)        
     plt.savefig(os.path.join(outdir,'finalnllprofile_%d.png'%(axis)))
+    plt.savefig(os.path.join(outdir,'finalnllprofile_%d.pdf'%(axis)))
 
 
 
@@ -207,6 +218,14 @@ def doContour(data,outdir,
     x=data[:,0]
     y=data[:,1]
     z=data[:,2]
+
+    #filter for outliers
+    #medianz=np.median(z)
+    #filtIdx=np.where( abs(z-medianz)>10000)
+    #x=x[filtIdx]
+    #y=y[filtIdx]
+    #z=z[filtIdx]
+
 
     #interpolate and find minimum
     xi = np.linspace(169.5, 175.5,100)
@@ -295,31 +314,30 @@ def main():
         fitres.append( scanRes )
 
     # treat missing jobs
-    print toSub
     if len(toSub)>0:
         condor_file='condor_recover_%s_%s.sub'%( os.path.basename(opt.input),opt.fitTag )
+        print 'I have %d missing/corrupted jobs to submit on condor - sub file @ %s'%(len(toSub),condor_file)        
         cmssw=os.environ['CMSSW_BASE']
         with open(condor_file,'w') as condor:            
             condor.write('executable  = %s/src/TopLJets2015/TopAnalysis/test/analysis/top17010/runFitWrapper.sh\n'%cmssw)
             condor.write('output      = datacard_condor.out\n')
             condor.write('error       = datacard_condor.err\n')
-            condor.write('log         = datacard_condor.log\n')
-            condor.write('requirements = (OpSysAndVer =?= "SLCern6")\n') #SLC6
+            condor.write('log         = datacard_condor.log\n')           
             condor.write('+JobFlavour = "workday"\n')
             for f in toSub:
                 condor.write('arguments  = %s\n'%f)
                 condor.write('queue 1\n')
-        print 'I have %d missing/corrupted jobs to submit on condor - list @ %s'%(len(toSub),condor_file)        
         if opt.recover:
+            print 'Submitting condor file'
             os.system('condor_submit %s'%condor_file)
             os.system('cp -v {0} {1}/{0}'.format(condor_file,opt.outdir))
 
     #plot the contour interpolating the available points
     try:
         fitres=np.array(fitres)
-        doContour(fitres,outdir=opt.outdir)
         profilePOI(fitres,outdir=opt.outdir,axis=0,sigma=opt.filterSigma)
         profilePOI(fitres,outdir=opt.outdir,axis=1,sigma=opt.filterSigma)
+        doContour(fitres,outdir=opt.outdir)
     except Exception as e:
         print '<'*50
         print e

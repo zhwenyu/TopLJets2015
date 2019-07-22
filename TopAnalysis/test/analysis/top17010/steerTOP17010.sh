@@ -176,10 +176,10 @@ case $WHAT in
     PLOT )
 	commonOpts="-i ${outdir}/${githash} --puNormSF puwgtctr -l ${fulllumi} --saveLog --mcUnc ${lumiUnc}"
         commonOpts="${commonOpts} --procSF DY:0.83"
-	#python scripts/plotter.py ${commonOpts} -j ${json};
-        #python scripts/plotter.py ${commonOpts} -j ${json}      --only evcount  --saveTeX -o evcount_plotter.root;
-        #python scripts/plotter.py ${commonOpts} -j ${json}      --only mlb,ptlb --binWid  -o lb_plotter.root;
-        python scripts/plotter.py ${commonOpts} -j ${syst_json} --only mlb      --silent  -o syst_plotter.root;
+	python scripts/plotter.py ${commonOpts} -j ${json};
+        python scripts/plotter.py ${commonOpts} -j ${json}      --only evcount  --saveTeX -o evcount_plotter.root;
+        python scripts/plotter.py ${commonOpts} -j ${json}      --only mlb,ptlb --binWid  -o lb_plotter.root;
+        python scripts/plotter.py ${commonOpts} -j ${syst_json} --only mlb,evcount      --silent  -o syst_plotter.root;
 
         ;;
 
@@ -187,17 +187,18 @@ case $WHAT in
         #combined plots
 
         script=test/analysis/top17010/combinePlotsForAllCategories.py
+        plotter=${outdir}/${githash}/plots/plotter.root
 
-        python ${script} mlb:mlbinc
-        python ${script} evcount:evcountinc ee,em,mm
-        python ${script} ptlb:ptlbinc ee,em,mm
-        python ${script} drlb:drlbinc ee,em,mm
+        python ${script} evcount:evcountinc ee,em,mm ${plotter}
+        python ${script} ptlb:ptlbinc ee,em,mm ${plotter}
+        python ${script} drlb:drlbinc ee,em,mm ${plotter}
 
         for d in ee em mm; do
             for c in lowpt highpt; do
                 for b in 1b 2b; do
                     cat=${d}${c}${b}
-                    python ${script} mlb:mlb_${cat} ${cat};
+                    python ${script} mlb:mlb_${cat} ${cat} ${plotter} False;
+                    python ${script} mlb:mlb_${cat} ${cat} ${plotter} True;
                 done
             done
         done
@@ -294,6 +295,13 @@ case $WHAT in
                 out="${outdir}/${githash}/fits/${FITTYPE}/${a}"
                 tag=`basename $s | cut -f -1 -d "."`
                 
+                if [ "${FITTYPE}" != "final" ]; then
+                    if [ "${tag}" != "data" ] && [ "${tag}" != "tbart" ]; then
+                        #echo "Skipping ${tag} for ${FITTYPE}";
+                        continue
+                    fi
+                fi
+
                 args=""
                 if [ "${FITTYPE}" == "em_inc" ]; then
                     args="${outdir}/${githash}/datacards/em/${a}/${tag}.datacard.dat"
@@ -350,6 +358,11 @@ case $WHAT in
             echo "queue tag from (" >> $condor_fit
             for s in ${signals[@]}; do
                 tag=`basename $s | cut -f -1 -d "."`
+                if [ "${FITTYPE}" != "final" ]; then
+                    if [ "${tag}" != "data" ] && [ "${tag}" != "tbart" ]; then
+                        continue
+                    fi
+                fi
                 echo " ${tag}" >> $condor_fit
             done
             echo ")" >> $condor_fit

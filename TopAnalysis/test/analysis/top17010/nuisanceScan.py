@@ -19,7 +19,7 @@ NUISGROUPS={'trigsel'    : ['eetrig','emtrig','mmtrig','esel','msel','l1prefire'
             'isr'        : ['ISR'],
             'hdamp'      : ['hdamp'],
             'cr'         : ['UE','CRerd','CRqcd','CRgmove'],
-            'tw'         : ['mtoptw','drdstw'],
+            'tw'         : ['mtoptw','drdstw','isrtw','fsrtw'],
             'allsoftqcd' : ['CRerd','CRqcd','CRgmove','FSR'],
             }
 
