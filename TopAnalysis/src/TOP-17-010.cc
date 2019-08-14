@@ -6,7 +6,6 @@
 #include <TSystem.h>
 #include <TGraph.h>
 #include <TLorentzVector.h>
-#include <TVector3.h> // added
 #include <TGraphAsymmErrors.h>
 
 #include "TopLJets2015/TopAnalysis/interface/MiniEvent.h"
@@ -32,8 +31,9 @@ void TOP17010::init(UInt_t scenario){
   triggerList_ = (TH1F *)f_->Get("analysis/triggerList");
   if(isSignal_) {
 //    weightSysts_ = getWeightSysts(f_,"TTJets2016");
-   weightSysts_ = getWeightSysts(f_,filename_.Contains("2016") ? "TTJets2016" : "TTJets2017");   // 2017 weights  
-   origGt_=1.31;
+    weightSysts_ = getWeightSysts(f_,filename_.Contains("2016") ? "TTJets2016" : "TTJets2017");   // 2017 weights  
+  
+    origGt_=1.31;
     origMt_=172.5;
     if ( filename_.Contains("w0p5") ) {                origGt_*=0.5;                    targetGt_=origGt_;}
     if ( filename_.Contains("w4p0") ) {                origGt_*=4.0;                    targetGt_=origGt_;}
@@ -93,8 +93,7 @@ void TOP17010::init(UInt_t scenario){
   t_ = (TTree*)f_->Get("analysis/data");
   attachToMiniEventTree(t_,ev_,true);
   nentries_ = t_->GetEntriesFast();
-//  if (debug_) 
-     nentries_ = (nentries_ > 10000? 4000: nentries_) ; //restrict number of entries for testing EDIT 10000
+  if (debug_) nentries_ = 10000; //restrict number of entries for testing
   t_->GetEntry(0);
 
   TString baseName=gSystem->BaseName(outname_); 
@@ -132,7 +131,6 @@ void TOP17010::bookHistograms() {
   ht_ = new HistTool(0);
   ht_->addHist("puwgtctr", new TH1D("puwgtctr", ";Weight sums;Events",                        2,0,2));  
   ht_->addHist("genscan",  new TH1D("gennscan", ";Parameter;Value",                           4,0,4));  
-//  ht_->addHist("nbjets_raw",   new TH1D("nbjets_raw",   ";b jet multiplicity;Events",               5,1,6)); // for btag test - debugging
   TH1 *gscan=ht_->getPlots()["genscan"];
   gscan->SetBinContent(1,origMt_);    gscan->GetXaxis()->SetBinLabel(1,"m_{t}^{i}");
   gscan->SetBinContent(2,origGt_);    gscan->GetXaxis()->SetBinLabel(2,"#Gamma_{t}^{i}");
@@ -184,7 +182,7 @@ void TOP17010::bookHistograms() {
                           "btaglfstats1up",   "btaglfstats1dn",
                           "btaglfstats2up",   "btaglfstats2dn",
                           "btagcferr1up",     "btagcferr1dn",
-                          "btagcferr2up",     "btagcferr2dn", 
+                          "btagcferr2up",     "btagcferr2dn",
                           "JERup",       "JERdn",
                           "JERstatup",   "JERstatdn",
                           "JERJECup",    "JERJECdn", 
@@ -242,17 +240,15 @@ void TOP17010::runAnalysis()
   for (Int_t iev=0;iev<nentries_;iev++)
     {
       t_->GetEntry(iev);
-  //     if(debug_)   // edit for debug -wz 
-      cout << "Event number: "<<iev<<endl;
+      if(debug_) cout << "Event number: "<<iev<<endl;
       if(iev%10000==0) printf ("\r [%3.0f%%] done", 100.*(float)iev/(float)nentries_);
       
       //////////////////
       // CORRECTIONS  //
       //////////////////
       TString period = lumi_->assignRunPeriod();
-//      double csvWgt = 1;  // btag method 1a
       btvSF_->addBTagDecisions(ev_,deepCSV_wp_);
-//      if(!ev_.isData) btvSF_->updateBTagDecisions(ev_, "central", "down");  // test -wz      
+      //if(!ev_.isData) btvSF_->updateBTagDecisions(ev_);      
       
       //TRIGGER
       bool hasETrigger(  selector_->hasTriggerBit("HLT_Ele32_eta2p1_WPTight_Gsf_v",                       ev_.triggerBits) );
@@ -324,26 +320,8 @@ void TOP17010::runAnalysis()
       std::vector<Particle> flaggedleptons = selector_->flaggedLeptons(ev_);     
       std::vector<Particle> leptons        = selector_->selLeptons(flaggedleptons,SelectionTool::TIGHT,SelectionTool::TIGHT,20,2.5);
       std::vector<Jet> alljets             = selector_->getGoodJets(ev_,30.,2.4,leptons);
-
-      ////**** for Helicity weight //
-      std::vector<Particle> genleptons        = selector_->getPartonLeptons(ev_, -1, 15);
-      std::vector<Particle> genwbosons        = selector_->getPartonWbosons(ev_, -1,  15.);
-      std::vector<Particle> genbs             = selector_->getPartonBs(ev_, -1, 15 );
-      
-      
       applyMC2MC(alljets);
       TopWidthEvent twe(leptons,alljets);
-
-      std::vector<LeptonBJetPair> lbPairs=twe.getPairs();    // TEST
-      if(lbPairs.size()>0) {
-      float WgtHelicity(1.0);
-       if(isSignal_) {  
-       WgtHelicity = weightHelicity(ev_, genleptons, genwbosons, genbs, "left");        
-       cout << " WgtsHelicity " << WgtHelicity << endl;
-       }
-     }
-
-
       std::vector<Jet> tweSelJets;
       for(size_t ij=0; ij<min(size_t(2),twe.selJetsIdx.size()); ij++) tweSelJets.push_back( alljets[ twe.selJetsIdx[ij] ] );
       if(twe.dilcode==0) {
@@ -389,10 +367,10 @@ void TOP17010::runAnalysis()
         trigSF = gammaEffWR_->getDileptonTriggerCorrection(leptons);
         l1SF   = gammaEffWR_->getOfflineCorrection(leptons[0].id(),leptons[0].pt(),leptons[0].eta(), lperiod);
         l2SF   = gammaEffWR_->getOfflineCorrection(leptons[1].id(),leptons[1].pt(),leptons[1].eta(), lperiod);
-
-        //b-tagging scale factor
-          btagWgt= btvSF_->getBtagWeightMethod1a(tweSelJets,ev_,"central");
         
+        //b-tagging scale factor
+        btagWgt= btvSF_->getBtagWeightMethod1a(tweSelJets,ev_,"central");
+
         //for signal top pt weights        
         if(isSignal_) {
           std::vector<float> genmt;
@@ -409,24 +387,17 @@ void TOP17010::runAnalysis()
              && targetGt_>0 && targetMt_>0 && origGt_>0  && origMt_>0
              && (targetGt_!=origGt_ || targetMt_ != origMt_) ) {
             widthWgt=weightBW(rbwigner_,genmt,targetGt_,targetMt_,origGt_,origMt_); 
-
-            //control the re-weighted BW
-            for(auto genm:genmt) {
-              std::vector<double> bwWgts(1,1.0);
-              ht_->fill("genmass",  genm, bwWgts);
-              bwWgts[0]=widthWgt;
-              ht_->fill("genmass",  genm, bwWgts,"rwgt");
-            }
           }
+
+          //control the re-weighted BW
+          for(auto genm:genmt) {
+            std::vector<double> bwWgts(1,1.0);
+            ht_->fill("genmass",  genm, bwWgts);
+            bwWgts[0]=widthWgt;
+            ht_->fill("genmass",  genm, bwWgts,"rwgt");
+          }          
         }
 
-/*
-       float WgtHelicity(1.0);
-       if(isSignal_) { 
-       WgtHelicity = weightHelicity(ev_, genleptons, genwbosons, genbs, "left");       
-       cout << " WgtsHelicity " << WgtHelicity << endl;
-       }
-*/
         //b-fragmentation and semi-leptonic branching fractions
         bfragWgts[0] = computeBFragmentationWeight(ev_,fragWeights_["downFrag"]);
         bfragWgts[1] = computeBFragmentationWeight(ev_,fragWeights_["upFrag"]);
@@ -438,9 +409,7 @@ void TOP17010::runAnalysis()
         wgt *= (ev_.g_nw>0 ? ev_.g_w[0] : 1.0);
         wgt *= widthWgt;
         wgt *= puWgts[0]*l1trigprefireProb.first*trigSF.first*l1SF.first*l2SF.first*btagWgt;
-//        wgt *= WgtHelicity;
       }
-
       fillControlHistograms(twe,wgt);
 
       //experimental systs cycle: better not to do anything else after this...
@@ -519,7 +488,7 @@ void TOP17010::runAnalysis()
         else {
           iwgt = wgt;           
         }
-
+        
         //leptons
         std::vector<Particle> ileptons(leptons);
         if(sname.BeginsWith("ees") || sname.BeginsWith("mes")) {
@@ -637,7 +606,6 @@ void TOP17010::runAnalysis()
           icat=itwe.cat;
           lbPairs=itwe.getPairs();
         }
-
 
         //fill with new values/weights
         std::vector<double> eweights(1,iwgt);
