@@ -81,8 +81,8 @@ def main():
     if opt.toys>0:
         script.write('combinetf.py datacard.dat.hdf5 -t %d -o %s_toys.root\n'%(opt.toys,fitresultsName))
     script.write('cp -v fitresults*root %s\n'%opt.outdir)
-    script.write('python %s datacard.dat\n'%opt.nuisScan)
-    script.write('cp -v fitresults_fixedgroups.pck %s/%s_fixedgroups.pck\n'%(opt.outdir,fitresultsName))
+#    script.write('python %s datacard.dat\n'%opt.nuisScan)
+#    script.write('cp -v fitresults_fixedgroups.pck %s/%s_fixedgroups.pck\n'%(opt.outdir,fitresultsName))
 
     script.close()
 
