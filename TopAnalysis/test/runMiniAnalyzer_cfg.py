@@ -125,7 +125,7 @@ customizeJetTools(process=process,
 #message logger
 process.load("FWCore.MessageService.MessageLogger_cfi")
 process.MessageLogger.cerr.threshold = ''
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(options.maxEvents) )
 process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 
 # set input to process
@@ -138,8 +138,8 @@ if '2016' in options.era:
 
 if options.runOnData:
       if '2017' in options.era:
-            process.source.fileNames = cms.untracked.vstring('/store/data/Run2017F/ZeroBias/MINIAOD/31Mar2018-v1/30000/8604984F-DF37-E811-ACFE-008CFA197B74.root')
-            #process.source.fileNames = cms.untracked.vstring('/store/data/Run2017B/SingleMuon/MINIAOD/31Mar2018-v1/90000/46CE7E24-EA37-E811-95CB-0025905A6132.root')
+            #process.source.fileNames = cms.untracked.vstring('/store/data/Run2017F/ZeroBias/MINIAOD/31Mar2018-v1/30000/8604984F-DF37-E811-ACFE-008CFA197B74.root')
+            process.source.fileNames = cms.untracked.vstring('/store/data/Run2017B/SingleMuon/MINIAOD/31Mar2018-v1/90000/46CE7E24-EA37-E811-95CB-0025905A6132.root')
             if options.runL1PrefireAna:
                   print 'Adding secondary filenames to run L1 prefire analysis'
                   process.source.secondaryFileNames = cms.untracked.vstring(['/store/data/Run2017B/SingleMuon/AOD/17Nov2017-v1/70003/C4FDB602-77D8-E711-B975-02163E011E63.root',
@@ -268,11 +268,11 @@ if options.runOnData:
       else:
             process.analysis.tagRecoProtons = cms.InputTag('ctppsProtonReconstruction')
 
-      if options.runL1PrefireAna:
-            print 'Prefire analysis is scheduled to be executed'
-            from TopLJets2015.TopAnalysis.l1prefireAnalysis_cfi import *
-            defineL1PrefireAnalysis(process,options.era)
-            toSchedule.append(process.l1prefirePath)
+      #if options.runL1PrefireAna:
+      #      print 'Prefire analysis is scheduled to be executed'
+      #      from TopLJets2015.TopAnalysis.l1prefireAnalysis_cfi import *
+      #      defineL1PrefireAnalysis(process,options.era)
+      #      toSchedule.append(process.l1prefirePath)
 print process.analysis.tagRecoProtons
                       
 process.schedule=cms.Schedule( (p for p in toSchedule) )

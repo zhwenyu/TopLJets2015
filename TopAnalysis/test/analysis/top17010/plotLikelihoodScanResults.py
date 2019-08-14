@@ -33,9 +33,10 @@ def getTheoryPrediction(x=np.arange(169,176,0.1)):
     
 
 
-def getScanPoint(inDir,fitTag,recover):
+def getScanPoint(inDir,fitTag):
 
     """read the fit result and return the likelihood value together with the corresponding mtop,width values"""
+
 
     #decode mass and width
     tag=os.path.basename(inDir)
@@ -45,65 +46,29 @@ def getScanPoint(inDir,fitTag,recover):
         mask=int('0xffff',16)
         gt = (flag&mask)*0.01+0.7
         mt = (((flag>>16)&mask))*0.25+169        
-#        print "scenario, m, gamma = %s, %s, %s"%(tag, mt, gt)  # edit 
+    else:
+        return mt,gt,None
 
     #read nll from fit
     nll=None
-    edm = None
     try:
         url=os.path.join(inDir,'fitresults%s.root'%fitTag)
         if not os.path.isfile(url):
             raise ValueError('%s is missing'%url)
         inF=ROOT.TFile.Open(url)
+        if inF.IsZombie() or inF.TestBit(ROOT.TFile.kRecovered):
+            raise ValueError('%s probably corrupted'%url)
         tree=inF.Get('fitresults')
         tree.GetEntry(0)
         nll=tree.nllvalfull
-        edm = tree.edmval   # edit -check converge
+        print mt,gt,nll,url
+        
     except Exception as e:
-        print e
-        if recover:
-            try:
-                print 'Attempting recovery of',url
-                shScript=url.replace('/fitresults','/runFit')
-                shScript=shScript.replace('.root','.sh')
-                os.system('sh %s'%shScript)
-                os.system('rm fitresults*root')
-                os.system('rm fitresults*pck')
-                mt,gt,nll=getScanPoint(inDir,fitTag,False)
-            except:
-                print 'Recovery failed'
+        shScript=url.replace('/fitresults','/runFit')
+        shScript=shScript.replace('.root','.sh')
+        return shScript
 
-    return mt,gt,nll,edm
-
-
-def profileedm(data,outdir,axis=0):
-
-    #raw values
-    x=data[:,axis]
-    xtit='$m_{t}$ [GeV]' if axis==1 else '$\Gamma_{t}$ [GeV]'
-    ytit='$m_{t}$ [GeV]' if axis==0 else '$\Gamma_{t}$ [GeV]'
-
-    ictr=0
-    for xi in np.unique(x):
-        print "xi = ", xi  
-        rdata=data[data[:,axis]==xi]
-        y=rdata[:,0 if axis==1 else 1]
-        z=rdata[:,2]
-        print "y = ", y  # edit
-        print "z = ", z
-
-
-        plt.clf()
-        fig, ax = plt.subplots()
-        plt.plot(y, z, '.',label='edmval')
-        plt.xlabel(xtit)
-        #plt.ylim(0.,20.0)
-        ax.text(0,1.02,'CMS preliminary', transform=ax.transAxes, fontsize=16)
-        ax.text(1.0,1.02,r'%s=%3.2f 35.9 fb$^{-1}$ (13 TeV)'%(ytit,xi), transform=ax.transAxes,horizontalalignment='right',fontsize=14)
-        ax.legend(framealpha=0.0, fontsize=14, loc='upper left', numpoints=1)
-#        plt.savefig(os.path.join(outdir,'edmprofile_%d_%d.png'%(axis,ictr)))
-        ictr+=1
-
+    return mt,gt,nll
         
 
 def profilePOI(data,outdir,axis=0,sigma=5):
@@ -127,29 +92,28 @@ def profilePOI(data,outdir,axis=0,sigma=5):
     xvals=[]
     llvals=[]
     for xi in np.unique(x):
-#        print "xi = %s"%(xi)   # edit   
         rdata=data[data[:,axis]==xi]
         y=rdata[:,0 if axis==1 else 1]
         bounds = [min(y),max(y)]
         z=rdata[:,2]
         
+        #filter for outliers
+        #medianz=np.median(z)
+        #filtIdx=np.where(abs(z-medianz) >=10000)
+        #y=y[filtIdx]
+        #z=z[filtIdx]
+
+
+        #check we still have enough points
         if len(y)<2: continue
-       
-        newy =[]
-        newy.append(y[0])
-        newz =[]
-        newz.append(z[0])
-        for i in range(len(y)-1):
-          if y[i+1] in newy : continue
-          newy.append(y[i+1])
-          newz.append(z[i+1])
-        y = np.array(newy)
-        z = np.array(newz)
-        print "y = ", y, "z = ", z
+
+        #make sure it's sorted correcly
+        sortIdx=np.argsort(y)        
+
         #interpolate to generate equally spaced grid
         #and apply a gaussian filter
         y_unif = np.arange(bounds[0],bounds[1],0.001*(bounds[1]-bounds[0]))
-        z_spline = interp1d(y,z,kind='cubic',fill_value='extrapolate')
+        z_spline = interp1d(y[sortIdx],z[sortIdx],kind='cubic',fill_value='extrapolate')
         z_spline_val=z_spline(y_unif)
         z_filt = filters.gaussian_filter1d(z_spline_val,sigma=sigma)
 
@@ -172,20 +136,21 @@ def profilePOI(data,outdir,axis=0,sigma=5):
         plt.clf()
         fig, ax = plt.subplots()
         yp = np.linspace(bounds[0],bounds[1], 100)
-        plt.plot(y,  z,                   'o',  label='scan points')
+        plt.plot(y,  2*z,                   'o',  label='scan points')
         #plt.plot(yp, p(yp),               '-',  label='interpolation')
         #plt.plot(yp, ll_param(yp, *popt), '--', label='interpolation')
-        plt.plot(y_unif, z_filt,          '--', label='filtered')
+        plt.plot(y_unif, 2*z_filt,          '--', label='interpolated')
         plt.xlabel(xtit)
-        plt.ylabel(r'$-\log(\lambda)$')
+        plt.ylabel(r'$-2\log(\lambda)$')
         #plt.ylim(0.,20.0)
         ax.text(0,1.02,'CMS preliminary', transform=ax.transAxes, fontsize=16)
-        ax.text(1.0,1.02,r'%s=%3.2f 35.9 fb$^{-1}$ (13 TeV)'%(ytit,xi), transform=ax.transAxes,horizontalalignment='right',fontsize=14)
+        ax.text(1.0,1.02,r'%s=%3.2f 34.5 fb$^{-1}$ (13 TeV)'%(ytit,xi), transform=ax.transAxes,horizontalalignment='right',fontsize=14)
         ax.legend(framealpha=0.0, fontsize=14, loc='upper left', numpoints=1)        
         #_,_,axymin,axymax = plt.axis()
         #if axymax>axymin+20:
         #    ax.set_ylim([axymin,axymin+20])
         plt.savefig(os.path.join(outdir,'nllprofile_%d_%d.png'%(axis,ictr)))
+        plt.savefig(os.path.join(outdir,'nllprofile_%d_%d.pdf'%(axis,ictr)))
         ictr+=1
 
 
@@ -228,14 +193,15 @@ def profilePOI(data,outdir,axis=0,sigma=5):
     
     fig, ax = plt.subplots()
     plt.plot(xvals,      llvals,      'o',  label='scan points')
-    plt.plot(xvals_unif, llvals_filt, '--', label='filtered')
+    plt.plot(xvals_unif, llvals_filt, '--', label='interpolated')
     plt.xlabel(ytit)    
     plt.ylabel(r'$-2\Delta\log(\lambda)$')
     ax.text(0,1.02,'CMS preliminary', transform=ax.transAxes, fontsize=16)
-    ax.text(1.0,1.02,r'35.9 fb$^{-1}$ (13 TeV)', transform=ax.transAxes,horizontalalignment='right',fontsize=14)
+    ax.text(1.0,1.02,r'34.5 fb$^{-1}$ (13 TeV)', transform=ax.transAxes,horizontalalignment='right',fontsize=14)
     ax.text(0.95,0.94,r'%s=$%3.2f^{+%3.2f}_{-%3.2f}$ GeV'%(ytit,x0,xUp-x0,x0-xLow), transform=ax.transAxes,horizontalalignment='right',fontsize=12)
     ax.legend(framealpha=0.0, fontsize=14, loc='upper left', numpoints=1)        
     plt.savefig(os.path.join(outdir,'finalnllprofile_%d.png'%(axis)))
+    plt.savefig(os.path.join(outdir,'finalnllprofile_%d.pdf'%(axis)))
 
 
 
@@ -252,6 +218,14 @@ def doContour(data,outdir,
     x=data[:,0]
     y=data[:,1]
     z=data[:,2]
+
+    #filter for outliers
+    #medianz=np.median(z)
+    #filtIdx=np.where( abs(z-medianz)>10000)
+    #x=x[filtIdx]
+    #y=y[filtIdx]
+    #z=z[filtIdx]
+
 
     #interpolate and find minimum
     xi = np.linspace(169.5, 175.5,100)
@@ -286,7 +260,7 @@ def doContour(data,outdir,
     plt.ylim(0.7,4.0)
     plt.xlim(169.5,175.5)
     ax.text(0,1.02,'CMS preliminary', transform=ax.transAxes, fontsize=16)
-    ax.text(1.0,1.02,r'35.9 fb$^{-1}$ (13 TeV)', transform=ax.transAxes,horizontalalignment='right',fontsize=14)
+    ax.text(1.0,1.02,r'34.5 fb$^{-1}$ (13 TeV)', transform=ax.transAxes,horizontalalignment='right',fontsize=14)
     ax.legend(framealpha=0.0, fontsize=14, loc='upper left', numpoints=1)
 
     for ext in ['png','pdf']:
@@ -300,7 +274,7 @@ def main():
     parser.add_option('-i', '--in',          
                       dest='input',       
                       help='input directory [%default]',  
-                      default='/eos/cms/store/cmst3/group/top/TOP17010/0c522df/fits/em_inc',
+                      default='/eos/cms/store/cmst3/group/top/TOP17010/final/0c522df/fits/em_inc',
                       type='string')
     parser.add_option('-o', '--out',          
                       dest='outdir',
@@ -325,34 +299,49 @@ def main():
     (opt, args) = parser.parse_args()
 
 
+    os.system('rm -rf {0} && mkdir -p {0}'.format(opt.outdir))
+
     #build nll scan
     fitres=[]
-    edmres=[]
+    toSub=[]
     for f in os.listdir(opt.input):
-        scanRes=getScanPoint(inDir=os.path.join(opt.input,f),fitTag=opt.fitTag,recover=opt.recover)    # (mt,gt,nll,edm)
-#	print "scanRes = ", scanRes   # edit 
-        if not scanRes[-2]:  # 172.5, 1.31 case, nll returns None 
-#          print scanRes   # edit 
-          continue 
-        if not scanRes[-1]: continue
+        scanRes=getScanPoint(inDir=os.path.join(opt.input,f),fitTag=opt.fitTag)
+        if isinstance(scanRes,basestring):
+            toSub.append(scanRes)
+            continue
+        elif not scanRes[-1]: 
+            continue
         fitres.append( scanRes )
 
-    edmres= [ [c1, c2, c4] for c1, c2, c3, c4 in fitres ]
-    fitres= [ [c1, c2, c3] for c1, c2, c3, c4 in fitres ]
-    edmres=np.array(edmres)
-    fitres=np.array(fitres)
+    # treat missing jobs
+    if len(toSub)>0:
+        condor_file='condor_recover_%s_%s.sub'%( os.path.basename(opt.input),opt.fitTag )
+        print 'I have %d missing/corrupted jobs to submit on condor - sub file @ %s'%(len(toSub),condor_file)        
+        cmssw=os.environ['CMSSW_BASE']
+        with open(condor_file,'w') as condor:            
+            condor.write('executable  = %s/src/TopLJets2015/TopAnalysis/test/analysis/top17010/runFitWrapper.sh\n'%cmssw)
+            condor.write('output      = datacard_condor.out\n')
+            condor.write('error       = datacard_condor.err\n')
+            condor.write('log         = datacard_condor.log\n')           
+            condor.write('+JobFlavour = "workday"\n')
+            for f in toSub:
+                condor.write('arguments  = %s\n'%f)
+                condor.write('queue 1\n')
+        if opt.recover:
+            print 'Submitting condor file'
+            os.system('condor_submit %s'%condor_file)
+            os.system('cp -v {0} {1}/{0}'.format(condor_file,opt.outdir))
 
     #plot the contour interpolating the available points
-#    os.system('mkdir -p %s'%opt.outdir)
-#    doContour(fitres,outdir=opt.outdir)
-#    profilePOI(fitres,outdir=opt.outdir,axis=0)
-#    profilePOI(fitres,outdir=opt.outdir,axis=1)
-#    profileedm(edmres,outdir=opt.outdir,axis=0)
-#    profileedm(edmres,outdir=opt.outdir,axis=1)
-    os.system('mkdir -p %s'%opt.outdir)
-    doContour(fitres,outdir=opt.outdir)
-    profilePOI(fitres,outdir=opt.outdir,axis=0,sigma=opt.filterSigma)
-    profilePOI(fitres,outdir=opt.outdir,axis=1,sigma=opt.filterSigma)
+    try:
+        fitres=np.array(fitres)
+        profilePOI(fitres,outdir=opt.outdir,axis=0,sigma=opt.filterSigma)
+        profilePOI(fitres,outdir=opt.outdir,axis=1,sigma=opt.filterSigma)
+        doContour(fitres,outdir=opt.outdir)
+    except Exception as e:
+        print '<'*50
+        print e
+        print '<'*50
 
 if __name__ == "__main__":
     sys.exit(main())

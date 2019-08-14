@@ -61,17 +61,20 @@ dists=${dists},eelowpt_mlb,eelowpt1b_mlb,eelowpt2b_mlb
 dists=${dists},mmhighpt_mlb,mmhighpt1b_mlb,mmhighpt2b_mlb
 dists=${dists},mmlowpt_mlb,mmlowpt1b_mlb,mmlowpt2b_mlb
 
-echo "Selection adapted to YEAR=${ERA}, inputs from ${eosdir}"
-
 queue=workday
 outdir=${STORAGE}
 if [ -z ${outdir} ]; then
     outdir=${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/top17010
 fi
 
+echo "Selection adapted to YEAR=${ERA}"
+echo "Original inputs from ${eosdir}"
+echo "Output directory is ${outdir}"
+
+
 json=test/analysis/top17010/samples_${ERA}.json
 syst_json=test/analysis/top17010/syst_samples_${ERA}.json
-wwwdir=${HOME}/www/top17010/final
+wwwdir=/eos/user/p/psilva/www/top17010/
 
 RED='\e[31m'
 NC='\e[0m'
@@ -87,7 +90,7 @@ case $WHAT in
         
         echo "Computing MC2MC corrections"
         echo "[WARN] currently hardcoded for 2016 samples"
-        python test/analysis/top17010/prepareMC2MCCorrections.py;
+        #python test/analysis/top17010/prepareMC2MCCorrections.py;
         ;;
 
     TESTSEL )               
@@ -178,7 +181,7 @@ case $WHAT in
 	python scripts/plotter.py ${commonOpts} -j ${json};
         python scripts/plotter.py ${commonOpts} -j ${json}      --only evcount  --saveTeX -o evcount_plotter.root;
         python scripts/plotter.py ${commonOpts} -j ${json}      --only mlb,ptlb --binWid  -o lb_plotter.root;
-        python scripts/plotter.py ${commonOpts} -j ${syst_json} --only mlb      --silent  -o syst_plotter.root;
+        python scripts/plotter.py ${commonOpts} -j ${syst_json} --only mlb,evcount      --silent  -o syst_plotter.root;
 
         ;;
 
@@ -186,17 +189,18 @@ case $WHAT in
         #combined plots
 
         script=test/analysis/top17010/combinePlotsForAllCategories.py
+        plotter=${outdir}/${githash}/plots/plotter.root
 
-        python ${script} mlb:mlbinc
-        python ${script} evcount:evcountinc ee,em,mm
-        python ${script} ptlb:ptlbinc ee,em,mm
-        python ${script} drlb:drlbinc ee,em,mm
+        python ${script} evcount:evcountinc ee,em,mm ${plotter}
+        python ${script} ptlb:ptlbinc ee,em,mm ${plotter}
+        python ${script} drlb:drlbinc ee,em,mm ${plotter}
 
         for d in ee em mm; do
             for c in lowpt highpt; do
                 for b in 1b 2b; do
                     cat=${d}${c}${b}
-                    python ${script} mlb:mlb_${cat} ${cat};
+                    python ${script} mlb:mlb_${cat} ${cat} ${plotter} False;
+                    python ${script} mlb:mlb_${cat} ${cat} ${plotter} True;
                 done
             done
         done
@@ -228,6 +232,9 @@ case $WHAT in
             -o ${outdir}/${githash}/datacards \
             --systs test/analysis/top17010/systs_dict.json
         
+        #use a specific scenario
+        #dataDef=sig,${outdir}/${githash}/plots/plotter.root,${testDist}/${testDist}_t#bar{t},scenario131502/MC13TeV_2016_TTJets.root,${testDist} \
+
         args="${outdir}/${githash}/datacards/${testCat}/nom/tbart.datacard.dat"
         python test/analysis/top17010/createFit.py -o ${outdir}/${githash}/fits/${testCat}/nom -a -t 50 -c ${COMBINE} --tag tbart ${args}
 
@@ -292,6 +299,13 @@ case $WHAT in
                 out="/afs/cern.ch/user/w/wenyu/afswork/work/topwidth/CMSSW_9_4_10/src/TopLJets2015/TopAnalysis/test/analysis/top17010/${githash}/fits/${FITTYPE}/${a}"    # edit -wz
                 tag=`basename $s | cut -f -1 -d "."`
                 
+                if [ "${FITTYPE}" != "final" ]; then
+                    if [ "${tag}" != "data" ] && [ "${tag}" != "tbart" ]; then
+                        #echo "Skipping ${tag} for ${FITTYPE}";
+                        continue
+                    fi
+                fi
+
                 args=""
                 if [ "${FITTYPE}" == "em_inc" ]; then
                     args="${outdir}/${githash}/datacards/em/${a}/${tag}.datacard.dat"
@@ -348,6 +362,11 @@ case $WHAT in
             echo "queue tag from (" >> $condor_fit
             for s in ${signals[@]}; do
                 tag=`basename $s | cut -f -1 -d "."`
+                if [ "${FITTYPE}" != "final" ]; then
+                    if [ "${tag}" != "data" ] && [ "${tag}" != "tbart" ]; then
+                        continue
+                    fi
+                fi
                 echo " ${tag}" >> $condor_fit
             done
             echo ")" >> $condor_fit
