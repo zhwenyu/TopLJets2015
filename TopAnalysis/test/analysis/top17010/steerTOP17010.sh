@@ -10,7 +10,7 @@ while getopts "o:y:s:f:c:" opt; do
             ;;
         y) ERA=$OPTARG
             ;;
-        s) STORAGE=$OPTARG
+        s) STORAGE=$OPTARG   # /eos/cms/store/cmst3/group/top/TOP17010/final/
             ;;
         f) FITTYPE=$OPTARG
             ;;
@@ -41,8 +41,8 @@ if [ -z "$WHAT" ]; then
 fi
 
 githash=0c522df
-#eosdir=/store/cmst3/group/top/RunIIReReco/2016/${githash}
-eosdir=/store/cmst3/group/top/RunIIReReco/2016/375837b  # testing -wz
+#githash=375837b
+eosdir=/store/cmst3/group/top/RunIIReReco/2016/${githash}
 fulllumi=35882
 lumiUnc=0.025
 if [[ ${ERA} = "2017" ]]; then
@@ -93,7 +93,7 @@ case $WHAT in
     TESTSEL )               
         tag=MC13TeV_${ERA}_TTJets
 #        input=${eosdir}/${tag}/Chunk_0_ext0.root
-        output=${tag}_1a.root 
+        output=${tag}.root 
         input=/store/cmst3/group/top/RunIIReReco/2016/375837b/MC13TeV_2016_TTJets/Chunk_0_ext0.root
 
         gidx=`python -c "print int((2-0.7)/0.01)"`
@@ -213,7 +213,7 @@ case $WHAT in
         inputs=${inputs},${outdir}/${githash}/plots/syst_plotter.root
         inputs=${inputs},${outdir}/${githash}/plots/plotter_dydata.root
         output=${outdir}/${githash}/templates/
-        python test/analysis/top17010/prepareTemplateFiles.py -i ${inputs} -d ${dists} -o ${output} --debug --bbbThr 0.005;
+        python test/analysis/top17010/prepareTemplateFiles.py -i ${inputs} -d ${dists} -o ${output} --debug --bbbThr 0.005; # --debug
 
         ;;
 
@@ -238,7 +238,7 @@ case $WHAT in
 
     DATACARD )
 
-#        dists=em_mlb
+        dists=ee_mlb,mm_mlb,emhighpt1b_mlb,emhighpt2b_mlb,emlowpt1b_mlb,emlowpt2b_mlb,eehighpt1b_mlb,eehighpt2b_mlb,eelowpt1b_mlb,eelowpt2b_mlb,mmhighpt1b_mlb,mmhighpt2b_mlb,mmlowpt1b_mlb,mmlowpt2b_mlb
         python test/analysis/top17010/submitPrepareDataCard.py --dists ${dists} \
             --systs ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/top17010/systs_dict.json \
             --templ ${outdir}/${githash}/templates \
