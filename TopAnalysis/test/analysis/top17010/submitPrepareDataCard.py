@@ -29,7 +29,7 @@ def getSignals(opt):
 
     signals=[]
     plotDir=os.path.join(os.path.dirname(opt.templ),'plots')
-    plotters=['plotter.root'  ,'syst_plotter.root']   # edit
+    plotters=['plotter.root' ]# ,'syst_plotter.root']   # edit
     for i in range(len(plotters)): 
         f=plotters[i]
         f=os.path.join(plotDir,f)
@@ -43,8 +43,9 @@ def getSignals(opt):
             keyname=key.GetName()
             pos=keyname.find('t#bar{t}')
             if pos<0: continue            
-            #use only FSR, mass and width variations
-            if 't#bar{t}fsr' in keyname or 't#bar{t}1' in keyname or 't#bar{t}0.5w' in keyname or 't#bar{t}4w' in keyname:
+            #use only FSR, mass and width variations   
+	    if 't#bar{t}' in keyname:
+#            if 't#bar{t}fsr' in keyname or 't#bar{t}1' in keyname or 't#bar{t}qcd' in keyname: # edit 
                 keyname=keyname[pos:]
                 signals.append( 'sig,%s,$(dist)/$(dist)_%s'%(f,keyname) )
     return signals
