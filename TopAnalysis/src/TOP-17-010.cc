@@ -174,15 +174,15 @@ void TOP17010::bookHistograms() {
                           "l1prefireup", "l1prefiredn",
                           "ees1up", "ees1dn", "ees2up", "ees2dn", "ees3up", "ees3dn", "ees4up", "ees4dn",  "ees5up", "ees5dn",  "ees6up", "ees6dn",  "ees7up", "ees7dn",
                           "mes1up", "mes1dn", "mes2up", "mes2dn", "mes3up", "mes3dn", "mes4up", "mes4dn",
-                          "btagjesup",        "btagjesdn",
+                          //"btagjesup",        "btagjesdn",
                           "btaglfup",         "btaglfdn",
                           "btaghfup",         "btaghfdn",
-                          "btaghfstats1up",   "btaghfstats1dn",
-                          "btaghfstats2up",   "btaghfstats2dn",
-                          "btaglfstats1up",   "btaglfstats1dn",
-                          "btaglfstats2up",   "btaglfstats2dn",
-                          "btagcferr1up",     "btagcferr1dn",
-                          "btagcferr2up",     "btagcferr2dn",
+                          //"btaghfstats1up",   "btaghfstats1dn",
+                          //"btaghfstats2up",   "btaghfstats2dn",
+                          //"btaglfstats1up",   "btaglfstats1dn",
+                          //"btaglfstats2up",   "btaglfstats2dn",
+                          //"btagcferr1up",     "btagcferr1dn",
+                          //"btagcferr2up",     "btagcferr2dn",
                           "JERup",       "JERdn",
                           "JERstatup",   "JERstatdn",
                           "JERJECup",    "JERJECdn", 
@@ -247,7 +247,7 @@ void TOP17010::runAnalysis()
       // CORRECTIONS  //
       //////////////////
       TString period = lumi_->assignRunPeriod();
-      btvSF_->addBTagDecisions(ev_,deepCSV_wp_);
+      btvSF_->addBTagDecisions(ev_,deepCSV_wp_,deepCSV_wp_);
       //if(!ev_.isData) btvSF_->updateBTagDecisions(ev_);      
       
       //TRIGGER
@@ -369,7 +369,7 @@ void TOP17010::runAnalysis()
         l2SF   = gammaEffWR_->getOfflineCorrection(leptons[1].id(),leptons[1].pt(),leptons[1].eta(), lperiod);
         
         //b-tagging scale factor
-        btagWgt= btvSF_->getBtagWeightMethod1a(tweSelJets,ev_,"central");
+        btagWgt= btvSF_->getBtagWeight(tweSelJets,ev_,"central",BTagSFUtil::METHOD1A);
 
         //for signal top pt weights        
         if(isSignal_) {
@@ -482,7 +482,7 @@ void TOP17010::runAnalysis()
           TString btagSys(sname.ReplaceAll("btag",""));
           if(btagSys.EndsWith("dn")) { btagSys=btagSys.ReplaceAll("dn",""); btagSys="down_"+btagSys;  }
           if(btagSys.EndsWith("up")) { btagSys=btagSys.ReplaceAll("up",""); btagSys="up_"+btagSys;    }
-          double newBtagWgt=btvSF_->getBtagWeightMethod1a(tweSelJets,ev_,btagSys);
+          double newBtagWgt=btvSF_->getBtagWeight(tweSelJets,ev_,btagSys,BTagSFUtil::SFWeightMethod::METHOD1A);
           iwgt=wgt*newBtagWgt/btagWgt;
         }
         else {
