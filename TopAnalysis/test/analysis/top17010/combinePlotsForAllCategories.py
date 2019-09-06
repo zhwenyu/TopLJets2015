@@ -102,7 +102,7 @@ def doPlot(plotName,chList,extraText,url,outpName,countOnly=False):
 
             #do systs, if available
             if keyName==pName+'_t#bar{t}':                
-                for syst in ['gen','exp']:
+                for syst in ['th','exp']:
                     systH=inF.Get('{0}_{1}/{0}_{1}_t#bar{{t}}'.format(pName,syst))
                     try:
                         for ybin in xrange(1,systH.GetNbinsY()+1):
