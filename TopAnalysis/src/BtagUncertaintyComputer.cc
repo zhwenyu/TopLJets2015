@@ -60,17 +60,17 @@ double BTagSFUtil::getBtagWeight(std::vector<Jet> &jetColl, MiniEvent_t &ev,TStr
       BTagEntry::JetFlavor hadFlav=BTagEntry::FLAV_UDSG;
       if(abs(ev.j_hadflav[k])==4) {
         hadFlav=BTagEntry::FLAV_C;
-        if(sys=="hfup") option="up";  
-        if(sys=="hfdn") option="down";  
+        if(sys=="up_hf") option="up";  
+        if(sys=="down_hf") option="down";  
       }
       else if(abs(ev.j_hadflav[k])==5) {
         hadFlav=BTagEntry::FLAV_B;
-        if(sys=="hfup") option="up";  
-        if(sys=="hfdn") option="down";  
+        if(sys=="up_hf") option="up";  
+        if(sys=="down_hf") option="down";  
       }
       else {
-        if(sys=="lfup") option="up";  
-        if(sys=="lfdn") option="down";  
+        if(sys=="up_lf") option="up";  
+        if(sys=="down_lf") option="down";  
       }
 
       //expected and expected corrected efficiency
@@ -81,6 +81,8 @@ double BTagSFUtil::getBtagWeight(std::vector<Jet> &jetColl, MiniEvent_t &ev,TStr
         expEff    = (1-expEff);
         expcorEff = (1-expcorEff);
       }
+
+      std::cout << "\t" << ev.j_hadflav[k] << " " << sys << " " << option << " "  << hadFlav << " " << expEff << " " << expcorEff << std::endl;
 
       prob_mc   *= expEff;
       prob_data *= expcorEff;
