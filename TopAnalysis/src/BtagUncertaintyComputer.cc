@@ -82,8 +82,6 @@ double BTagSFUtil::getBtagWeight(std::vector<Jet> &jetColl, MiniEvent_t &ev,TStr
         expcorEff = (1-expcorEff);
       }
 
-      std::cout << "\t" << ev.j_hadflav[k] << " " << sys << " " << option << " "  << hadFlav << " " << expEff << " " << expcorEff << std::endl;
-
       prob_mc   *= expEff;
       prob_data *= expcorEff;
 
