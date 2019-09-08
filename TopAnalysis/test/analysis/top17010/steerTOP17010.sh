@@ -93,8 +93,9 @@ case $WHAT in
         ;;
 
     TESTSEL )               
-        tag=MC13TeV_${ERA}_TTJets_fsrup
-        input=${eosdir}/${tag}/Chunk_0_ext1.root
+        tag=MC13TeV_${ERA}_TTJets
+        input=/store/cmst3/group/top/psilva/4835852/TT_TuneCUETP8M2T4_PSweights_13TeV-powheg-pythia8/crab_MC13TeV_2016_TTJets_psweights/190907_151653/0000/MiniEvents_10.root
+        #input=${eosdir}/${tag}/Chunk_0_ext1.root
         output=${tag}.root 
 
         gidx=`python -c "print int((2-0.7)/0.01)"`

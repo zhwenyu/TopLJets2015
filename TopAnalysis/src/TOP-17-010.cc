@@ -29,10 +29,17 @@ void TOP17010::init(UInt_t scenario){
   f_           = TFile::Open(filename_);
   isSignal_    = filename_.Contains("_TT");
   triggerList_ = (TH1F *)f_->Get("analysis/triggerList");
+
+  if(filename_.Contains("MC")) {
+    psWeightSysts_ = getPartonShowerWeightSysts(f_);
+    cout << psWeightSysts_.size() << " parton shower weights are available" << endl;
+  }
+
   if(isSignal_) {
-//    weightSysts_ = getWeightSysts(f_,"TTJets2016");
+
     weightSysts_ = getWeightSysts(f_,filename_.Contains("2016") ? "TTJets2016" : "TTJets2017");   // 2017 weights  
-  
+    cout << weightSysts_.size() << " matrix element weights are available" << endl;
+
     origGt_=1.31;
     origMt_=172.5;
     if ( filename_.Contains("w0p5") ) {                origGt_*=0.5;                    targetGt_=origGt_;}
@@ -61,8 +68,9 @@ void TOP17010::init(UInt_t scenario){
     
     //MC 2 MC corrections
     TString mc2mcTag("");
-    if( filename_.Contains("TTJets_fsrdn") )   mc2mcTag="MC13TeV_2016_TTJets_fsrdn";
-    if( filename_.Contains("TTJets_fsrup") )   mc2mcTag="MC13TeV_2016_TTJets_fsrup";
+    //do not apply for FSR so that the distributions can be compared 1:1 with the ones from PS weights
+    //if( filename_.Contains("TTJets_fsrdn") )   mc2mcTag="MC13TeV_2016_TTJets_fsrdn";
+    //if( filename_.Contains("TTJets_fsrup") )   mc2mcTag="MC13TeV_2016_TTJets_fsrup";
     if( filename_.Contains("TTJets_hdampup") ) mc2mcTag="MC13TeV_2016_TTJets_hdampup";
     if( filename_.Contains("TTJets_hdampdn") ) mc2mcTag="MC13TeV_2016_TTJets_hdampdn";
     if( filename_.Contains("TTJets_uedn") )    mc2mcTag="MC13TeV_2016_TTJets_uedn";
@@ -216,15 +224,20 @@ void TOP17010::bookHistograms() {
         ht_->get2dPlots()[hoi[ih]+"_exp"]->GetYaxis()->SetBinLabel(is+1,expSystNames[is]);
       
       //theory systs
-      size_t nthSysts(weightSysts_.size()); 
+      size_t nthSysts(weightSysts_.size()+psWeightSysts_.size()); 
       if(nthSysts>0){
         ht_->addHist(hoi[ih]+"_th",      
                     new TH2D(hoi[ih]+"_th", 
                              Form(";%s;Theory systematic variation;Events",histo->GetName()),
                              histo->GetNbinsX(),histo->GetXaxis()->GetXbins()->GetArray(),
                              nthSysts,0,nthSysts));
-        for(size_t is=0; is<nthSysts; is++)
+        for(size_t is=0; is<weightSysts_.size(); is++) 
           ht_->get2dPlots()[hoi[ih]+"_th"]->GetYaxis()->SetBinLabel(is+1,weightSysts_[is].first);
+
+        for(size_t is=0; is<psWeightSysts_.size(); is++) {
+          size_t xbin(is+weightSysts_.size());
+          ht_->get2dPlots()[hoi[ih]+"_th"]->GetYaxis()->SetBinLabel(xbin+1,psWeightSysts_[is].first);
+        }
       }
     }
 }
@@ -680,10 +693,20 @@ void TOP17010::fillControlHistograms(TopWidthEvent &twe,float &wgt) {
   if(ev_.g_w[0]==0 || normH_==NULL || normH_->GetBinContent(1)==0) return;
     
   //replicas for theory systs
-  for(size_t is=0; is<weightSysts_.size(); is++){
+  size_t nmeWeights(weightSysts_.size());
+  size_t nWeights(nmeWeights+psWeightSysts_.size());
+  for(size_t is=0; is<nWeights; is++){
+
+    //retrieve the appropriate weight (ME or PS)
     std::vector<double> sweights(1,cplotwgts[0]);
-    size_t idx=weightSysts_[is].second;
-    sweights[0] *= (ev_.g_w[idx]/ev_.g_w[0])*(normH_->GetBinContent(idx+1)/normH_->GetBinContent(1));
+    if(is<nmeWeights){
+      int meidx=weightSysts_[is].second;
+      sweights[0] *= (ev_.g_w[meidx]/ev_.g_w[0])*(normH_->GetBinContent(meidx+1)/normH_->GetBinContent(1));
+    }else{
+      int psidx=psWeightSysts_[is-nmeWeights].second;
+      sweights[0] *= ev_.g_psw[psidx];
+    }
+
     ht_->fill2D("evcount_th",  0., is, sweights, twe.cat);
     for(auto p4 : lbPairs) {
       ht_->fill2D("drlb_th",  p4.getDR(), is, sweights, twe.cat);
