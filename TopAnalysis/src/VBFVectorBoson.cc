@@ -578,7 +578,6 @@ void VBFVectorBoson::runAnalysis()
         else if(sname=="quarkqg")     iwgt *= qgWgt_q*puWgts[0]*trigSF.first*selSF.first*(l1prefireProb.first-l1prefireProb.second);
         else                          iwgt = wgt;           
         
-
         if(sname.Contains("aes") && chTag=="A")  {
           reSelect=true;
           iBoson *= (1+(isUpVar?1:-1)*bosonScaleUnc); 
@@ -736,8 +735,9 @@ void VBFVectorBoson::runAnalysis()
         
 	  
         //fill with new values/weights
+        double qgwgt(qgWgt_q*qgWgt_g);
+        std::vector<double> eweights(1,iwgt*qgwgt);
 
-	std::vector<double> eweights(1,iwgt);
 	for(unsigned int ic = 0; ic < myCat.size(); ic++){
 	  for(auto jr : tagJetResol) {
 	    ht_->fill2D("tagjetresol_exp",  jr, is,eweights,myCat[ic]);

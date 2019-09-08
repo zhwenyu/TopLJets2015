@@ -42,10 +42,12 @@ echo "Selection adapted to YEAR=${ERA}"
 #to run locally use local as queue + can add "--njobs 8" to use 8 parallel jobs
 queue=workday
 outdir=${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBFVectorBoson
-wwwdir=~/www/VBFVectorBoson
+wwwdir=/eos/user/p/psilva/www/SMP-19-005
 
 #k-factors for gamma+jets
-kFactors="--procSF MC13TeV_${ERA}_QCDEM_15to20:1.26,MC13TeV_${ERA}_QCDEM_20to30:1.26,MC13TeV_${ERA}_QCDEM_30to50:1.26,MC13TeV_${ERA}_QCDEM_50to80:1.26,MC13TeV_${ERA}_QCDEM_80to120:1.26,MC13TeV_${ERA}_QCDEM_120to170:1.26,MC13TeV_${ERA}_QCDEM_170to300:1.26,MC13TeV_${ERA}_QCDEM_300toInf:1.26,MC13TeV_${ERA}_GJets_HT40to100:1.26,MC13TeV_${ERA}_GJets_HT100to200:1.26,MC13TeV_${ERA}_GJets_HT200to400:1.26,MC13TeV_${ERA}_GJets_HT400to600:1.26,MC13TeV_${ERA}_GJets_HT600toInf:1.26"
+kFactors="--procSF MC13TeV_era${ERA}_QCDEM_15to20:1.26,MC13TeV_era${ERA}_QCDEM_20to30:1.26,MC13TeV_era${ERA}_QCDEM_30to50:1.26,MC13TeV_era${ERA}_QCDEM_50to80:1.26,MC13TeV_era${ERA}_QCDEM_80to120:1.26,MC13TeV_era${ERA}_QCDEM_120to170:1.26,MC13TeV_era${ERA}_QCDEM_170to300:1.26,MC13TeV_era${ERA}_QCDEM_300toInf:1.26,MC13TeV_era${ERA}_GJets_HT40to100:1.26,MC13TeV_era${ERA}_GJets_HT100to200:1.26,MC13TeV_era${ERA}_GJets_HT200to400:1.26,MC13TeV_era${ERA}_GJets_HT400to600:1.26,MC13TeV_era${ERA}_GJets_HT600toInf:1.26"
+#kFactors="--procSF #gamma+jets:1.26,QCD:1.26"
+
 
 #Fake raw list
 fake="--blined --rawList MC13TeV_${ERA}_Fake --skip MC13TeV_${ERA}_QCDEM"
@@ -61,10 +63,10 @@ case $WHAT in
         if [[ ${ERA} == "2016" ]]; then
             tag=MC13TeV_2016_EWKAJJ
         fi
-        #input=${eosdir}/${tag}/Chunk_0_ext0.root        
-        #output=${tag}.root 
-        input=${eosdir}
-        output=testsel
+        input=${eosdir}/${tag}/Chunk_0_ext0.root        
+        output=${tag}.root 
+        #input=${eosdir}
+        #output=testsel
 
 	python scripts/runLocalAnalysis.py \
             -i ${input} -o ${output} --tag ${tag} --only ${tag} \
@@ -72,7 +74,7 @@ case $WHAT in
             --era era${ERA} -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts;# --debug ;
 
         #--debug --mvatree \
-        ./scripts/mergeOutputs.py ${output};
+        #./scripts/mergeOutputs.py ${output};
         ;;
 
 
@@ -117,6 +119,11 @@ case $WHAT in
             -q ${queue} --genWeights genweights_${githash}.root \
             --era era${ERA} -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts ${extraOpts} --SRfake ;
 	;;
+
+    CHECKSELINTEG )
+        python scripts/checkLocalAnalysisInteg.py ../../../FARM${EXTRA}${githash}/ ${outdir}/${githash}/${EXTRA} 
+        ;;
+
 
     SELTRIGEFF )
 	python scripts/runLocalAnalysis.py \

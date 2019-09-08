@@ -5,7 +5,7 @@ from optparse import OptionParser
 from collections import defaultdict
 import numpy as np
 
-COLORS=[1, ROOT.kOrange,  ROOT.kRed+1, ROOT.kMagenta-9, ROOT.kBlue-7]
+COLORS=[1, ROOT.kOrange,  ROOT.kRed+1, ROOT.kMagenta-9, ROOT.kBlue-7, ROOT.kGreen+3]
 
 def doNuisanceReport(args,outdir,onlyList,skipList):
 
