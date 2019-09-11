@@ -21,7 +21,7 @@ def main():
     parser.add_option('-o', '--output',      dest='cache',       help='output file',                  default='data/era2016/genweights.root',                      type='string')
     (opt, args) = parser.parse_args()
 
-    baseEOS='/eos/cms/'
+    baseEOS='root://eoscms' #/eos/cms/'
     #eos_cmd = '/afs/cern.ch/project/eos/installation/0.3.15/bin/eos.select'
     #if opt.mount:
     #    baseEOS='eos/cms'
@@ -30,13 +30,13 @@ def main():
     #loop over samples available
     genweights={}
     puprofile={}
-    for sample in os.listdir('%s/%s' % (baseEOS,opt.inDir)):
+    for sample in os.listdir('/eos/cms/%s' % opt.inDir):
 
         #sum weight generator level weights
         wgtCounter=None
         putrue=None
         labelH=None
-        for f in os.listdir('%s/%s/%s' % (baseEOS,opt.inDir,sample ) ):
+        for f in os.listdir('/eos/cms/%s/%s' % (opt.inDir,sample ) ):
             
             try:
                 fIn=ROOT.TFile.Open('%s/%s/%s/%s' % (baseEOS,opt.inDir,sample,f ) )

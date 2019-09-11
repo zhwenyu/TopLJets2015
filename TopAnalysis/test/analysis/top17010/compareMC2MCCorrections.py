@@ -2,6 +2,7 @@ import ROOT
 import os
 
 leg_dict={
+'MC13TeV_2016_TTJetsTo2L2Nu_psweights':(1,'CP5'),
 'MC13TeV_2016_TTJets_fsrdn':(ROOT.kMagenta,'FSR up'),
 'MC13TeV_2016_TTJets_fsrup':(ROOT.kMagenta+2,'FSR dn'),
 'MC13TeV_2016_TTJets_hdampup':(ROOT.kAzure+7,'hdamp up'),

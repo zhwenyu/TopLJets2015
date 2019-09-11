@@ -235,14 +235,13 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile,maxEvents=-1):
     
         #base event selection
         if tree.evcat==DIELECTRONS and not tree.isSS : evcat='ee'
-        elif tree.evcat==EMU and not tree.isSS : evcat='em'
-        elif tree.evcat==DIMUONS and not tree.isSS : evcat='mm'
+        elif tree.evcat==EMU       and not tree.isSS : evcat='em'
+        elif tree.evcat==DIMUONS   and not tree.isSS : evcat='mm'
         elif tree.evcat==SINGLEPHOTON:
-            if isSignal: 
+            if isSignal or tree.hasATrigger : 
                 evcat="a" 
-            else:
-                if tree.hasATrigger : evcat="a"
-        elif tree.evcat==0  and tree.hasZBTrigger : evcat=='zbias'
+        elif tree.evcat==0  and tree.hasZBTrigger : 
+            evcat=='zbias'
         else : continue
         
         ht.fill((1,1),'rawcount', ['inc'],'')
@@ -385,9 +384,6 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile,maxEvents=-1):
         hasAHighPurSelection=False
         for protons,near_protons, pfix in mon_tasks:
 
-            #no calibration, not worth it...
-            if not beamXangle in VALIDLHCXANGLES: continue
-    
             #high purity selection for proton tracks
             highPur = True if protons and len(protons[0])==1 and len(protons[1])==1 else False  
             if highPur:
@@ -415,7 +411,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile,maxEvents=-1):
             cats += beamAngleCats
                 
 
-            #save he basic info on golden events
+            #save the basic info on golden events
             saveGoldenSel=False
             if isSignal and pfix in ['','_mixem2']:
                 saveGoldenSel=True
@@ -424,15 +420,18 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile,maxEvents=-1):
                     saveGoldenSel=True                
 
             if saveGoldenSel:                    
+           
+                #start the information to store
                 if not goldenSel:
                     goldenSel=[tree.evcat,wgt,beamXangle,
                                l1p4.Pt(),l1p4.Eta(),l2p4.Pt(),l2p4.Eta(),acopl,boson.Pt(),boson.Eta(),boson.Rapidity(),costhetacs,
                                nch,nvtx,rho,PFMultSumHF,PFHtSumHF,PFPzSumHF,rfc]
+                
+                #add proton information
                 task_protonInfo=[0,0,0,0]
                 if isElasticLike and highPur:
                     hasAHighPurSelection=True
-                    task_protonInfo=[protons[0][0],protons[1][0],pp.M(),mmass]
-                        
+                    task_protonInfo=[protons[0][0],protons[1][0],pp.M(),mmass]                        
                 goldenSel += task_protonInfo
 
 

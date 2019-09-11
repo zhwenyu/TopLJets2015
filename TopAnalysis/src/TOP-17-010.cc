@@ -26,7 +26,13 @@ using namespace std;
 void TOP17010::init(UInt_t scenario){
 
   //read input
+  filename_.ReplaceAll("root://eoscms//eos/cms/","root://eoscms//");
+  filename_.ReplaceAll("/eos/cms/","root://eoscms//");
+  if(filename_.BeginsWith("/store")) filename_ += "root://eoscms//";
+
+  cout << "[TOP17010::init] will analyze " << filename_ << endl;
   f_           = TFile::Open(filename_);
+
   isSignal_    = filename_.Contains("_TT");
   triggerList_ = (TH1F *)f_->Get("analysis/triggerList");
 
@@ -71,6 +77,7 @@ void TOP17010::init(UInt_t scenario){
     //do not apply for FSR so that the distributions can be compared 1:1 with the ones from PS weights
     //if( filename_.Contains("TTJets_fsrdn") )   mc2mcTag="MC13TeV_2016_TTJets_fsrdn";
     //if( filename_.Contains("TTJets_fsrup") )   mc2mcTag="MC13TeV_2016_TTJets_fsrup";
+    //if( filename_.Contains("MC13TeV_2016_TTJetsTo2L2Nu_psweights") ) mc2mcTag="MC13TeV_2016_TTJetsTo2L2Nu_psweights"; //CP5->CUETP8M2T4
     if( filename_.Contains("TTJets_hdampup") ) mc2mcTag="MC13TeV_2016_TTJets_hdampup";
     if( filename_.Contains("TTJets_hdampdn") ) mc2mcTag="MC13TeV_2016_TTJets_hdampdn";
     if( filename_.Contains("TTJets_uedn") )    mc2mcTag="MC13TeV_2016_TTJets_uedn";
@@ -165,6 +172,7 @@ void TOP17010::bookHistograms() {
   std::vector<TString> templates={"mlb","ptlb"};
   for(auto t : templates) {
     TH1D *th=(TH1D *)rIn->Get(t); 
+    th->GetYaxis()->SetRange(0,0);
     th->GetYaxis()->SetTitle("Events");
     th->SetTitle("");
     th->SetDirectory(0);
@@ -247,6 +255,10 @@ void TOP17010::bookHistograms() {
 //
 void TOP17010::runAnalysis()
 {
+  if(f_==NULL) {
+    cout << "[TOP17010::runAnalysis] caught a NULL file, won't do anything here" << endl;
+  }
+
   ///////////////////////
   // LOOP OVER EVENTS //
   /////////////////////

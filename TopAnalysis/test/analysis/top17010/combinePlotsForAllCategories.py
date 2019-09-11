@@ -37,14 +37,14 @@ def doPlot(plotName,chList,extraText,url,outpName,countOnly=False):
     systList={'toppt':False,
               'l1prefire':True,
               'pu':True,
-              'btagjes':True,
+              #'btagjes':True,
               'btaghf':True,
               'btaglf':True,
-              'btaghfstats1':True,
-              'btaghfstats2':True,
-              'btaglfstats1':True,
-              'btaglfstats2':True,
-              'btagcferr':True,
+              #'btaghfstats1':True,
+              #'btaghfstats2':True,
+              #'btaglfstats1':True,
+              #'btaglfstats2':True,
+              #'btagcferr':True,
               'JER':True,
               'bfrag':False,
               'slbr':False,
@@ -208,8 +208,8 @@ def doPlot(plotName,chList,extraText,url,outpName,countOnly=False):
             np=relShapeGr.GetN()
             relShapeGr.SetPoint(np,xcen,1)
             relShapeGr.SetPointError(np,0.5*xwid,r)
-        relShapeGr.SetFillStyle(3001)
-        relShapeGr.SetFillColor(ROOT.kRed)
+        relShapeGr.SetFillStyle(3354) #3001)
+        relShapeGr.SetFillColor(ROOT.kGray+3) #ROOT.kRed)
         relShapeGr.SetLineWidth(2)
         totalMCShape.Delete()
     
@@ -226,7 +226,7 @@ def doPlot(plotName,chList,extraText,url,outpName,countOnly=False):
     doDivideByBinWidth=False
     if 'mlb' in outpName or 'ptlb' in outpName : doDivideByBinWidth=True
     if relShapeGr : plot.relShapeGr=relShapeGr
-    plot.plotformats=['root','pdf','png']
+    plot.plotformats=['pdf','png']
     for key in ['Data','t#bar{t}','Single top','W','DY','Multiboson']:
         if not key in plotsPerProc : continue
         isData=True if 'Data' in plotsPerProc[key].GetTitle() else False
@@ -247,14 +247,14 @@ def doPlot(plotName,chList,extraText,url,outpName,countOnly=False):
     totalMC.Reset('ICE')
     for h in plot.mc: totalMC.Add(plot.mc[h])
     plot.normUncGr=ROOT.TGraphErrors(totalMC)
-    plot.normUncGr.SetFillStyle(3444)
-    plot.normUncGr.SetFillColor(1)
+    plot.normUncGr.SetFillStyle(3354)
+    plot.normUncGr.SetFillColor(ROOT.kGray+3)
     plot.normUncGr.SetMarkerStyle(1)
     plot.normUncGr.SetLineColor(1)
     plot.normUncGr.SetName("normuncgr")
-    plot.normUncGr.SetTitle('Stat #oplus norm')
+    plot.normUncGr.SetTitle('Stat #oplus syst')
     totalMC.Delete()
-    plot.show(outDir="plots/",lumi=35922,extraText=extraText,saveTeX=countOnly)
+    plot.show(outDir="plots/",lumi=35882,extraText=extraText,saveTeX=countOnly)
 
 def main():
 

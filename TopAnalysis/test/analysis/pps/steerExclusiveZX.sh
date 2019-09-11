@@ -216,9 +216,9 @@ case $WHAT in
         commonOpts="${baseOpts} -j ${samples_json} --signalJson ${plot_signal_json} -O /eos/cms/${outdir}/analysis/plots"
         python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py ${commonOpts} --only ${plots} --strictOnly --saveTeX --rebin 4;
 
-        plots=""
+        plots="rawcount"
         for c in eeZ mmZ em lpta hpta eeZhpur mmZhpur emhpur lptahpur hptahpur; do         
-            for d in acopl ptll yll l1pt l2pt l1eta l2eta nvtx; do
+            for d in acopl ptll yll l1pt l2pt l1eta l2eta mll etall costhetacs nvtx; do
                 plots="${plots},${d}_${c}"                
             done            
             continue
@@ -236,7 +236,7 @@ case $WHAT in
             done
             
             for x in 120 130 140 150; do
-                for d in rho mpp ypp mmass nextramu ptll yll; do
+                for d in rho mpp ypp mmass nextramu ptll etall yll mmass_full; do
                     plots="${plots},${d}_${c}${x}"
                 done
                 for r in HF HE EB EE; do

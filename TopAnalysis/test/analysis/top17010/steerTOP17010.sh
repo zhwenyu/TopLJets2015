@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ERA=2016
-STORAGE=""
+STORAGE="/store/cmst3/group/top/TOP17010/final_method1a"
 FITTYPE="em_inc"
 COMBINE=`dirname ${CMSSW_BASE}`/CMSSW_10_3_0_pre4
 while getopts "o:y:s:f:c:" opt; do
@@ -89,7 +89,7 @@ case $WHAT in
         
         echo "Computing MC2MC corrections"
         echo "[WARN] currently hardcoded for 2016 samples"
-        #python test/analysis/top17010/prepareMC2MCCorrections.py;
+        python test/analysis/top17010/prepareMC2MCCorrections.py;
         ;;
 
     TESTSEL )               
@@ -123,7 +123,7 @@ case $WHAT in
         ;;
 
     MERGE )
-	./scripts/mergeOutputs.py ${outdir}/${githash};
+	./scripts/mergeOutputs.py /eos/cms/${outdir}/${githash};
 	;;
     
     SELSCAN )
@@ -135,7 +135,7 @@ case $WHAT in
                 flag=`python -c "print (($midx<<16)|($gidx))"`
 
 	        python scripts/runLocalAnalysis.py \
-	            -i ${eosdir} --only MC13TeV_${ERA}_TTJets --exactonly --flag ${flag} \
+	            -i ${eosdir} --only MC13TeV_${ERA}_TTJets_psweights --exactonly --flag ${flag} \
                     -o ${outdir}/${githash}/scenario${flag} \
                     --farmappendix ${githash}SCAN${flag} \
                     -q ${queue} --genWeights genweights_${githash}.root \
@@ -175,20 +175,24 @@ case $WHAT in
 	;;
 
     PLOT )
-	commonOpts="-i ${outdir}/${githash} --puNormSF puwgtctr -l ${fulllumi} --saveLog --mcUnc ${lumiUnc}"
-        commonOpts="${commonOpts} --procSF DY:0.83"
+	commonOpts="-i /eos/cms/${outdir}/${githash} --puNormSF puwgtctr -l ${fulllumi} --saveLog --mcUnc ${lumiUnc}"
+        commonOpts="${commonOpts} --procSF t#bar{t}:0.965"
 	python scripts/plotter.py ${commonOpts} -j ${json};
-        python scripts/plotter.py ${commonOpts} -j ${json}      --only evcount  --saveTeX -o evcount_plotter.root;
-        python scripts/plotter.py ${commonOpts} -j ${json}      --only mlb,ptlb --binWid  -o lb_plotter.root;
-        python scripts/plotter.py ${commonOpts} -j ${syst_json} --only mlb,evcount      --silent  -o syst_plotter.root;
+        python scripts/plotter.py ${commonOpts} -j ${json}      --only evcount    --saveTeX  -o evcount_plotter.root;
+        python scripts/plotter.py ${commonOpts} -j ${json}      --only mlb,ptlb    --binWid  -o lb_plotter.root;
+        python scripts/plotter.py ${commonOpts} -j ${syst_json} --only mlb,evcount --silent  -o syst_plotter.root;
+        ;;
 
+
+    BKG )
+        python test/analysis/top17010/estimateDY.py -i /eos/cms/${outdir}/${githash}/plots/plotter.root -o /eos/cms/${outdir}/${githash}/plots/;
         ;;
 
     COMBPLOT )
         #combined plots
 
         script=test/analysis/top17010/combinePlotsForAllCategories.py
-        plotter=${outdir}/${githash}/plots/plotter.root
+        plotter=/eos/cms/${outdir}/${githash}/plots/plotter.root
 
         python ${script} evcount:evcountinc ee,em,mm ${plotter}
         python ${script} ptlb:ptlbinc ee,em,mm ${plotter}
@@ -203,19 +207,15 @@ case $WHAT in
                 done
             done
         done
-
-        ;;
-
-    BKG )
-        python test/analysis/top17010/estimateDY.py -i ${outdir}/${githash}/plots/plotter.root -o ${outdir}/${githash}/plots/;
+        mv plots/*.{png,pdf,dat} /eos/cms/${outdir}/${githash}/plots/
         ;;
 
     TEMPL )
         
-        inputs=${outdir}/${githash}/plots/plotter.root
-        inputs=${inputs},${outdir}/${githash}/plots/syst_plotter.root
-        inputs=${inputs},${outdir}/${githash}/plots/plotter_dydata.root
-        output=${outdir}/${githash}/templates/
+        inputs=/eos/cms/${outdir}/${githash}/plots/plotter.root
+        inputs=${inputs},/eos/cms/${outdir}/${githash}/plots/syst_plotter.root
+        inputs=${inputs},/eos/cms/${outdir}/${githash}/plots/plotter_dydata.root
+        output=/eos/cms/${outdir}/${githash}/templates/
         python test/analysis/top17010/prepareTemplateFiles.py -i ${inputs} -d ${dists} -o ${output} --debug --bbbThr 0.005;
 
         ;;
@@ -382,7 +382,7 @@ case $WHAT in
         ;;
 
     WWW )
-        pdir=${outdir}/${githash}
+        pdir=/eos/cms/${outdir}/${githash}
         if [ -d ${pdir} ]; then
             fdir=${wwwdir}/${githash}
 
