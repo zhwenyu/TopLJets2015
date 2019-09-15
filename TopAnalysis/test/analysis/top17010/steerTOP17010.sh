@@ -166,12 +166,12 @@ case $WHAT in
             for m in ${mtList[@]}; do
                 midx=`python -c "print int(($m-169)/0.25)"`
                 flag=`python -c "print (($midx<<16)|($gidx))"`
-	        ./scripts/mergeOutputs.py ${outdir}/${githash}/scenario${flag};
+	        ./scripts/mergeOutputs.py /eos/cms/${outdir}/${githash}/scenario${flag};
             done
         done
 
         #local sensitivities
-        python test/analysis/top17010/estimateLocalSensitivity.py -i ${outdir}/${githash} -o ${outdir}/${githash}/localsens/
+        python test/analysis/top17010/estimateLocalSensitivity.py -i /eos/cms/${outdir}/${githash} -o /eos/cms/${outdir}/${githash}/localsens/
 	;;
 
     PLOT )
@@ -246,14 +246,14 @@ case $WHAT in
 
         python test/analysis/top17010/submitPrepareDataCard.py --dists ${dists} \
             --systs ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/top17010/systs_dict.json \
-            --templ ${outdir}/${githash}/templates \
-            --nom MC13TeV_${ERA}_TTJets.root \
-            -o ${outdir}/${githash}/datacards
+            --templ /eos/cms/${outdir}/${githash}/templates \
+            --nom MC13TeV_${ERA}_TTJets_psweights.root \
+            -o /eos/cms/${outdir}/${githash}/datacards
         ;;
 
     CHECKDATACARD )
 
-        python test/analysis/top17010/checkDataCards.py ${outdir}/${githash}/datacards
+        python test/analysis/top17010/checkDataCards.py /eos/cms/${outdir}/${githash}/datacards
 
         ;;
 
@@ -276,8 +276,8 @@ case $WHAT in
         echo "Having that said I will now try to run with the following combine location $COMBINE"
         echo "" 
 
-        anchors=(`ls ${outdir}/${githash}/datacards/em`)
-        signals=(`ls ${outdir}/${githash}/datacards/em/nom/*datacard.dat`)
+        anchors=(`ls /eos/cms/${outdir}/${githash}/datacards/em`)
+        signals=(`ls /eos/cms/${outdir}/${githash}/datacards/em/nom/*datacard.dat`)
 
         echo "${#anchors[@]} anchors for ${#signals[@]} data/signals... it may take a while to prepare all the scripts to submit"
 
@@ -293,7 +293,7 @@ case $WHAT in
             a=`basename ${a}`;
 
             for s in ${signals[@]}; do                
-                out="${outdir}/${githash}/fits/${FITTYPE}/${a}"
+                out="/eos/cms/${outdir}/${githash}/fits/${FITTYPE}/${a}"
                 tag=`basename $s | cut -f -1 -d "."`
                 
                 if [ "${FITTYPE}" != "final" ]; then
@@ -305,31 +305,31 @@ case $WHAT in
 
                 args=""
                 if [ "${FITTYPE}" == "em_inc" ]; then
-                    args="${outdir}/${githash}/datacards/em/${a}/${tag}.datacard.dat"
+                    args="/eos/cms/${outdir}/${githash}/datacards/em/${a}/${tag}.datacard.dat"
                 elif [ "${FITTYPE}" == "dil_inc" ]; then
-                    args="em=${outdir}/${githash}/datacards/em/${a}/${tag}.datacard.dat"
-                    args="${args} mm=${outdir}/${githash}/datacards/mm/${a}/${tag}.datacard.dat"
-                    args="${args} ee=${outdir}/${githash}/datacards/ee/${a}/${tag}.datacard.dat"
+                    args="em=/eos/cms/${outdir}/${githash}/datacards/em/${a}/${tag}.datacard.dat"
+                    args="${args} mm=/eos/cms/${outdir}/${githash}/datacards/mm/${a}/${tag}.datacard.dat"
+                    args="${args} ee=/eos/cms/${outdir}/${githash}/datacards/ee/${a}/${tag}.datacard.dat"
                 elif [ "${FITTYPE}" == "ptlb_inc" ]; then
-                    args="emhighpt=${outdir}/${githash}/datacards/emhighpt/${a}/${tag}.datacard.dat"
-                    args="${args} mmhighpt=${outdir}/${githash}/datacards/mmhighpt/${a}/${tag}.datacard.dat"
-                    args="${args} eehighpt=${outdir}/${githash}/datacards/eehighpt/${a}/${tag}.datacard.dat"
-                    args="${args} emlowpt=${outdir}/${githash}/datacards/emlowpt/${a}/${tag}.datacard.dat"
-                    args="${args} mmlowpt=${outdir}/${githash}/datacards/mmlowpt/${a}/${tag}.datacard.dat"
-                    args="${args} eelowpt=${outdir}/${githash}/datacards/eelowpt/${a}/${tag}.datacard.dat"
+                    args="emhighpt=/eos/cms/${outdir}/${githash}/datacards/emhighpt/${a}/${tag}.datacard.dat"
+                    args="${args} mmhighpt=/eos/cms/${outdir}/${githash}/datacards/mmhighpt/${a}/${tag}.datacard.dat"
+                    args="${args} eehighpt=/eos/cms/${outdir}/${githash}/datacards/eehighpt/${a}/${tag}.datacard.dat"
+                    args="${args} emlowpt=/eos/cms/${outdir}/${githash}/datacards/emlowpt/${a}/${tag}.datacard.dat"
+                    args="${args} mmlowpt=/eos/cms/${outdir}/${githash}/datacards/mmlowpt/${a}/${tag}.datacard.dat"
+                    args="${args} eelowpt=/eos/cms/${outdir}/${githash}/datacards/eelowpt/${a}/${tag}.datacard.dat"
                 elif [ "${FITTYPE}" == "final" ]; then
-                    args="emhighpt2b=${outdir}/${githash}/datacards/emhighpt2b/${a}/${tag}.datacard.dat"
-                    args="${args} mmhighpt2b=${outdir}/${githash}/datacards/mmhighpt2b/${a}/${tag}.datacard.dat"
-                    args="${args} eehighpt2b=${outdir}/${githash}/datacards/eehighpt2b/${a}/${tag}.datacard.dat"
-                    args="${args} emhighpt1b=${outdir}/${githash}/datacards/emhighpt1b/${a}/${tag}.datacard.dat"
-                    args="${args} mmhighpt1b=${outdir}/${githash}/datacards/mmhighpt1b/${a}/${tag}.datacard.dat"
-                    args="${args} eehighpt1b=${outdir}/${githash}/datacards/eehighpt1b/${a}/${tag}.datacard.dat"
-                    args="${args} emlowpt2b=${outdir}/${githash}/datacards/emlowpt2b/${a}/${tag}.datacard.dat"
-                    args="${args} mmlowpt2b=${outdir}/${githash}/datacards/mmlowpt2b/${a}/${tag}.datacard.dat"
-                    args="${args} eelowpt2b=${outdir}/${githash}/datacards/eelowpt2b/${a}/${tag}.datacard.dat"
-                    args="${args} emlowpt1b=${outdir}/${githash}/datacards/emlowpt1b/${a}/${tag}.datacard.dat"
-                    args="${args} mmlowpt1b=${outdir}/${githash}/datacards/mmlowpt1b/${a}/${tag}.datacard.dat"
-                    args="${args} eelowpt1b=${outdir}/${githash}/datacards/eelowpt1b/${a}/${tag}.datacard.dat"
+                    args="emhighpt2b=/eos/cms/${outdir}/${githash}/datacards/emhighpt2b/${a}/${tag}.datacard.dat"
+                    args="${args} mmhighpt2b=/eos/cms/${outdir}/${githash}/datacards/mmhighpt2b/${a}/${tag}.datacard.dat"
+                    args="${args} eehighpt2b=/eos/cms/${outdir}/${githash}/datacards/eehighpt2b/${a}/${tag}.datacard.dat"
+                    args="${args} emhighpt1b=/eos/cms/${outdir}/${githash}/datacards/emhighpt1b/${a}/${tag}.datacard.dat"
+                    args="${args} mmhighpt1b=/eos/cms/${outdir}/${githash}/datacards/mmhighpt1b/${a}/${tag}.datacard.dat"
+                    args="${args} eehighpt1b=/eos/cms/${outdir}/${githash}/datacards/eehighpt1b/${a}/${tag}.datacard.dat"
+                    args="${args} emlowpt2b=/eos/cms/${outdir}/${githash}/datacards/emlowpt2b/${a}/${tag}.datacard.dat"
+                    args="${args} mmlowpt2b=/eos/cms/${outdir}/${githash}/datacards/mmlowpt2b/${a}/${tag}.datacard.dat"
+                    args="${args} eelowpt2b=/eos/cms/${outdir}/${githash}/datacards/eelowpt2b/${a}/${tag}.datacard.dat"
+                    args="${args} emlowpt1b=/eos/cms/${outdir}/${githash}/datacards/emlowpt1b/${a}/${tag}.datacard.dat"
+                    args="${args} mmlowpt1b=/eos/cms/${outdir}/${githash}/datacards/mmlowpt1b/${a}/${tag}.datacard.dat"
+                    args="${args} eelowpt1b=/eos/cms/${outdir}/${githash}/datacards/eelowpt1b/${a}/${tag}.datacard.dat"
                 else
                     echo "fit type=${FITTYPE} is not yet implemented... quitting"
                     exit -1
@@ -354,7 +354,7 @@ case $WHAT in
         echo "requirements = (OpSysAndVer =?= \"SLCern6\")" >> $condor_fit
         echo "+JobFlavour = \"workday\"" >> $condor_fit        
         for a in ${anchors[@]}; do
-            dir="${outdir}/${githash}/fits/${FITTYPE}/${a}"
+            dir="/eos/cms/${outdir}/${githash}/fits/${FITTYPE}/${a}"
             echo "arguments   = ${dir}/runFit_\$(tag).sh" >> $condor_fit
             echo "queue tag from (" >> $condor_fit
             for s in ${signals[@]}; do

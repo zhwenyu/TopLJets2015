@@ -69,7 +69,7 @@ def getSignals(opt):
             if isNom:
                 for mt,gt in [(171.5,1.28), (172.0,1.3), (173.0,1.32), (173.5,1.34) ]:
                     sigStr  = 'sig,%s,$(dist)/$(dist)_%s,'%(f,keyname)
-                    sigStr += 'scenario%d/MC13TeV_2016_TTJets.root,$(dist)'%getScenario(mt,gt)
+                    sigStr += 'scenario%d/MC13TeV_2016_TTJets_psweights.root,$(dist)'%getScenario(mt,gt)
                     signals.append(sigStr)
 
     print signals
