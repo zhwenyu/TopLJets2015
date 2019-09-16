@@ -320,6 +320,11 @@ void TOP17010::runAnalysis()
       std::vector<Particle> flaggedleptons = selector_->flaggedLeptons(ev_);     
       std::vector<Particle> leptons        = selector_->selLeptons(flaggedleptons,SelectionTool::TIGHT,SelectionTool::TIGHT,20,2.5);
       std::vector<Jet> alljets             = selector_->getGoodJets(ev_,30.,2.4,leptons);
+
+      ////**** for Helicity weight //
+      //      std::vector<Particle> genleptons        = selector_->getPartonLeptons(ev_, -1, 15);
+      //            std::vector<Particle> genwbosons        = selector_->getPartonWbosons(ev_, -1,  15.);
+      //                  std::vector<Particle> genbs             = selector_->getPartonBs(ev_, -1, 15 );
       applyMC2MC(alljets);
       TopWidthEvent twe(leptons,alljets);
       std::vector<Jet> tweSelJets;
