@@ -144,7 +144,7 @@ def profilePOI(data,outdir,axis=0,sigma=5):
         plt.ylabel(r'$-2\log(\lambda)$')
         #plt.ylim(0.,20.0)
         ax.text(0,1.02,'CMS preliminary', transform=ax.transAxes, fontsize=16)
-        ax.text(1.0,1.02,r'%s=%3.2f 34.5 fb$^{-1}$ (13 TeV)'%(ytit,xi), transform=ax.transAxes,horizontalalignment='right',fontsize=14)
+        ax.text(1.0,1.02,r'%s=%3.2f 35.9 fb$^{-1}$ (13 TeV)'%(ytit,xi), transform=ax.transAxes,horizontalalignment='right',fontsize=14)
         ax.legend(framealpha=0.0, fontsize=14, loc='upper left', numpoints=1)        
         #_,_,axymin,axymax = plt.axis()
         #if axymax>axymin+20:
@@ -197,7 +197,7 @@ def profilePOI(data,outdir,axis=0,sigma=5):
     plt.xlabel(ytit)    
     plt.ylabel(r'$-2\Delta\log(\lambda)$')
     ax.text(0,1.02,'CMS preliminary', transform=ax.transAxes, fontsize=16)
-    ax.text(1.0,1.02,r'34.5 fb$^{-1}$ (13 TeV)', transform=ax.transAxes,horizontalalignment='right',fontsize=14)
+    ax.text(1.0,1.02,r'35.9 fb$^{-1}$ (13 TeV)', transform=ax.transAxes,horizontalalignment='right',fontsize=14)
     ax.text(0.95,0.94,r'%s=$%3.2f^{+%3.2f}_{-%3.2f}$ GeV'%(ytit,x0,xUp-x0,x0-xLow), transform=ax.transAxes,horizontalalignment='right',fontsize=12)
     ax.legend(framealpha=0.0, fontsize=14, loc='upper left', numpoints=1)        
     plt.savefig(os.path.join(outdir,'finalnllprofile_%d.png'%(axis)))
@@ -260,7 +260,7 @@ def doContour(data,outdir,
     plt.ylim(0.7,4.0)
     plt.xlim(169.5,175.5)
     ax.text(0,1.02,'CMS preliminary', transform=ax.transAxes, fontsize=16)
-    ax.text(1.0,1.02,r'34.5 fb$^{-1}$ (13 TeV)', transform=ax.transAxes,horizontalalignment='right',fontsize=14)
+    ax.text(1.0,1.02,r'35.9 fb$^{-1}$ (13 TeV)', transform=ax.transAxes,horizontalalignment='right',fontsize=14)
     ax.legend(framealpha=0.0, fontsize=14, loc='upper left', numpoints=1)
 
     for ext in ['png','pdf']:

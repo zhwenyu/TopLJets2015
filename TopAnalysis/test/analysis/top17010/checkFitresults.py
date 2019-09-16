@@ -4,9 +4,11 @@ import sys, os
 
 tag_list = [
 #'data',
- 'tbart',
+# 'tbart',
 # 'tbart0p5w',
 # 'tbart169p5',
+# 'tbart171p5',
+ 'tbart173p5',
 # 'tbart175p5',
 # 'tbart2l2nu',
 # 'tbart2l2nufxfx',
@@ -19,7 +21,7 @@ tag_list = [
 # 'tbartuedn'
 ]
 
-job = 'fitptlb_inc_condor2.sub'
+job = 'fitfinal_condor2.sub'
 script=open('/afs/cern.ch/user/w/wenyu/afswork/work/topwidth/CMSSW_9_4_10/src/TopLJets2015/TopAnalysis/%s'%(job), 'w+')
 script.write('executable  = /afs/cern.ch/work/w/wenyu/work/topwidth/CMSSW_9_4_10/src/TopLJets2015/TopAnalysis/test/analysis/top17010/runFitWrapper.sh \n')
 script.write('output      = %s.out \n'%(job))
@@ -37,7 +39,7 @@ for dist in os.listdir(baseDir): # scenarios dir
         rootname = 'fitresults_'+ tag + '.root'
         if os.path.isfile(os.path.join(distDir,rootname)): continue
 	else:
-	    script.write('arguments   = /afs/cern.ch/user/w/wenyu/afswork/work/topwidth/CMSSW_9_4_10/src/TopLJets2015/TopAnalysis/test/analysis/top17010/%s/runFit_%s.sh \n'%(distDir, tag))
+	    script.write('arguments   = %s/runFit_%s.sh \n'%(distDir, tag))
 	    script.write('queue 1 \n')
 	    num = num +1
 

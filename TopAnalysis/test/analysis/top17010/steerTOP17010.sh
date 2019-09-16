@@ -95,9 +95,9 @@ case $WHAT in
 
     TESTSEL )               
         tag=MC13TeV_${ERA}_TTJets
-#        input=${eosdir}/${tag}/Chunk_0_ext0.root
+        input=${eosdir}/${tag}/Chunk_0_ext0.root
         output=${tag}.root 
-        input=/store/cmst3/group/top/RunIIReReco/2016/375837b/MC13TeV_2016_TTJets/Chunk_0_ext0.root
+#        input=/store/cmst3/group/top/RunIIReReco/2016/375837b/MC13TeV_2016_TTJets/Chunk_0_ext0.root
 
         gidx=`python -c "print int((2-0.7)/0.01)"`
         midx=`python -c "print int((172.5-169)/0.25)"`
@@ -191,16 +191,17 @@ case $WHAT in
         script=test/analysis/top17010/combinePlotsForAllCategories.py
         plotter=${outdir}/${githash}/plots/plotter.root
 
-        python ${script} evcount:evcountinc ee,em,mm ${plotter}
-        python ${script} ptlb:ptlbinc ee,em,mm ${plotter}
-        python ${script} drlb:drlbinc ee,em,mm ${plotter}
+       # python ${script} evcount:evcountinc ee,em,mm ${plotter}
+       # python ${script} ptlb:ptlbinc ee,em,mm ${plotter}
+       # python ${script} drlb:drlbinc ee,em,mm ${plotter}
 
         for d in ee em mm; do
+#	    for c in highpt; do
             for c in lowpt highpt; do
                 for b in 1b 2b; do
                     cat=${d}${c}${b}
                     python ${script} mlb:mlb_${cat} ${cat} ${plotter} False;
-                    python ${script} mlb:mlb_${cat} ${cat} ${plotter} True;
+     #               python ${script} mlb:mlb_${cat} ${cat} ${plotter} True;
                 done
             done
         done
@@ -245,7 +246,7 @@ case $WHAT in
 
     DATACARD )
 
-        dists=ee_mlb,mm_mlb,emhighpt1b_mlb,emhighpt2b_mlb,emlowpt1b_mlb,emlowpt2b_mlb,eehighpt1b_mlb,eehighpt2b_mlb,eelowpt1b_mlb,eelowpt2b_mlb,mmhighpt1b_mlb,mmhighpt2b_mlb,mmlowpt1b_mlb,mmlowpt2b_mlb
+        dists=em_mlb,ee_mlb,mm_mlb,emhighpt1b_mlb,emhighpt2b_mlb,emlowpt1b_mlb,emlowpt2b_mlb,eehighpt1b_mlb,eehighpt2b_mlb,eelowpt1b_mlb,eelowpt2b_mlb,mmhighpt1b_mlb,mmhighpt2b_mlb,mmlowpt1b_mlb,mmlowpt2b_mlb
         python test/analysis/top17010/submitPrepareDataCard.py --dists ${dists} \
             --systs ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/top17010/systs_dict.json \
             --templ ${outdir}/${githash}/templates \
@@ -296,7 +297,8 @@ case $WHAT in
             a=`basename ${a}`;
 
             for s in ${signals[@]}; do                
-                out="/afs/cern.ch/user/w/wenyu/afswork/work/topwidth/CMSSW_9_4_10/src/TopLJets2015/TopAnalysis/test/analysis/top17010/${githash}/fits/${FITTYPE}/${a}"    # edit -wz
+		out="${outdir}/${githash}/fits/${FITTYPE}/${a}"
+#                out="/afs/cern.ch/user/w/wenyu/afswork/work/topwidth/CMSSW_9_4_10/src/TopLJets2015/TopAnalysis/test/analysis/top17010/${githash}/fits/${FITTYPE}/${a}"    # edit -wz
                 tag=`basename $s | cut -f -1 -d "."`
                 
                 if [ "${FITTYPE}" != "final" ]; then
@@ -357,7 +359,8 @@ case $WHAT in
         echo "requirements = (OpSysAndVer =?= \"SLCern6\")" >> $condor_fit
         echo "+JobFlavour = \"workday\"" >> $condor_fit        
         for a in ${anchors[@]}; do
-            dir="/afs/cern.ch/user/w/wenyu/afswork/work/topwidth/CMSSW_9_4_10/src/TopLJets2015/TopAnalysis/test/analysis/top17010/${githash}/fits/${FITTYPE}/${a}"  # edit
+	    dir="${outdir}/${githash}/fits/${FITTYPE}/${a}"
+#            dir="/afs/cern.ch/user/w/wenyu/afswork/work/topwidth/CMSSW_9_4_10/src/TopLJets2015/TopAnalysis/test/analysis/top17010/${githash}/fits/${FITTYPE}/${a}"  # edit
             echo "arguments   = ${dir}/runFit_\$(tag).sh" >> $condor_fit
             echo "queue tag from (" >> $condor_fit
             for s in ${signals[@]}; do

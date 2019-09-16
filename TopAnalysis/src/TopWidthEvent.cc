@@ -10,12 +10,12 @@ TopWidthEvent::TopWidthEvent(std::vector<Particle> &leptons,std::vector<Jet> &je
   initSelectionCuts();
 //  cout << " jets.size() = " << jets.size() ;
   if(leptons.size()<2 || jets.size()<2) 
-     { // cout << " leptons.size()<2 || jets.size()<2 ";   // debugging -wz
+     {//  cout << " leptons.size()<2 || jets.size()<2 ";   // debugging -wz
        return;
      }
   //lepton selection
   if(leptons[0].Pt()<leadLeptonPt_    || fabs(leptons[0].Eta())>maxLeptonEta_) 
-   {// cout << "leptons[0].Pt()<leadLeptonPt_    || fabs(leptons[0].Eta())>maxLeptonEta_ " ;
+   { // cout << "leptons[0].Pt()<leadLeptonPt_    || fabs(leptons[0].Eta())>maxLeptonEta_ " ;
      return;
    } 
   if(leptons[1].Pt()<subLeadLeptonPt_ || fabs(leptons[1].Eta())>maxLeptonEta_) 
@@ -29,13 +29,13 @@ TopWidthEvent::TopWidthEvent(std::vector<Particle> &leptons,std::vector<Jet> &je
   
   //dilepton selection
   if(leptons[0].charge()*leptons[1].charge()>0) 
-  { // cout << " leptons[0].charge()*leptons[1].charge()>0 " ; 
+  {//  cout << " leptons[0].charge()*leptons[1].charge()>0 " ; 
    return;
   }
   mll   = ( (leptons[0]+leptons[1]).M() );
   ptll  = ( (leptons[0]+leptons[1]).Pt() );
   if(mll<20) 
-   { // cout << " mll<20 ";   
+   {//  cout << " mll<20 ";   
 return;
    }
   bool isZ( fabs(mll-91)<15 );

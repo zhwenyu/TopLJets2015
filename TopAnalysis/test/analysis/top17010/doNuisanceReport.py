@@ -33,6 +33,7 @@ def doNuisanceReport(args,outdir,onlyList,skipList):
         for b in fitres.GetListOfBranches():
             bname=b.GetName()
             if bname in blackList: continue
+	    if 'taureg' in bname: continue  # additional in 5bin? -wz
             if 'ttbar_mu' in bname: continue
             if '_In' in bname : continue
             if '_gen' in bname : continue
@@ -53,6 +54,7 @@ def doNuisanceReport(args,outdir,onlyList,skipList):
                     break
                 if not accept: continue
             varVals[bname]=[]
+#	    print bname # debug -wz
             
         ntoys=fitres.GetEntriesFast()
 
@@ -158,7 +160,7 @@ def doNuisanceReport(args,outdir,onlyList,skipList):
         txt.SetTextAlign(12)
         txt.DrawLatex(0.05,0.955,'#bf{CMS} #it{Preliminary}')
         txt.SetTextAlign(31)
-        txt.DrawLatex(0.95,0.955,'#scale[0.7]{35.6 fb^{-1} (13 TeV)}')
+        txt.DrawLatex(0.95,0.955,'#scale[0.7]{35.9 fb^{-1} (13 TeV)}')
 
         nuisGrs={}
         dy=1.0/float(len(results)+1)

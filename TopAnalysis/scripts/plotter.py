@@ -172,6 +172,17 @@ def main():
                         if not keep: continue
                         histos = []
                         obj=fIn.Get(key)
+			# debug -wz
+			if key == "eehighpt1b_mlb":
+			  print "eehighpt1b input intergral ", obj.Integral()
+			if key == "eehighpt1b_mlb_exp":
+			  for ybin in xrange(1,obj.GetNbinsY()+1):
+             		    syst=obj.GetYaxis().GetBinLabel(ybin)
+            		    if syst == "l1prefireup":
+              		      py=obj.ProjectionX('px',ybin,ybin)
+                              print "eehighpt1b l1prefireup ", py.Integral()
+
+
                         if obj.InheritsFrom('TH2'):
                             if key[-5:]=='_syst':
                                 if sample[3]=='t#bar{t}':

@@ -93,7 +93,7 @@ void TOP17010::init(UInt_t scenario){
   t_ = (TTree*)f_->Get("analysis/data");
   attachToMiniEventTree(t_,ev_,true);
   nentries_ = t_->GetEntriesFast();
-  if (debug_) nentries_ = 10000; //restrict number of entries for testing
+  if (debug_) nentries_ = 10000; //restrict number of entries for testing 10000
   t_->GetEntry(0);
 
   TString baseName=gSystem->BaseName(outname_); 
@@ -153,8 +153,11 @@ void TOP17010::bookHistograms() {
   ht_->addHist("j2eta",    new TH1D("j2eta",    ";Jet 2 pseudo-rapidity;Events",            10,0,2.5));
   ht_->addHist("evcount",  new TH1D("evcount",  ";Pass;Events", 1,0,1));  
   ht_->addHist("drlb",     new TH1D("drlb",     ";#DeltaR(l,b);Events", 15,0,2*TMath::Pi()));  
+  // edit - for 5 bin test -wz
+//  ht_->addHist("mlb",    new TH1D("mlb",   ";m(lb) [GeV];Events", 3,20,160));  
   TFile *rIn=TFile::Open("$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/top17010/mlbresol.root");  
   std::vector<TString> templates={"mlb","ptlb"};
+//  std::vector<TString> templates={"ptlb"};
   for(auto t : templates) {
     TH1D *th=(TH1D *)rIn->Get(t); 
     th->GetYaxis()->SetTitle("Events");
@@ -199,7 +202,7 @@ void TOP17010::bookHistograms() {
                           "slbrup",  "slbrdn"};
   
   //instantiate 2D histograms for most relevant variables to trace with systs
-  TString hoi[]={"ptlb","drlb","mlb","evcount"};
+  TString hoi[]={"mlb","ptlb","drlb","evcount"}; // edit -wz
   size_t nexpSysts=sizeof(expSystNames)/sizeof(TString);
   expSysts_=std::vector<TString>(expSystNames,expSystNames+nexpSysts);  
   for(size_t ih=0; ih<sizeof(hoi)/sizeof(TString); ih++)
@@ -227,6 +230,31 @@ void TOP17010::bookHistograms() {
           ht_->get2dPlots()[hoi[ih]+"_th"]->GetYaxis()->SetBinLabel(is+1,weightSysts_[is].first);
       }
     }
+
+  // mlb 5-bin test -wz
+//  TString hoi_mlb = "mlb";
+//  TH1 *histo=ht_->getPlots()[hoi_mlb];
+//  ht_->addHist(hoi_mlb+"_exp",
+//              new TH2D(hoi_mlb+"_exp",
+//                           Form(";%s;Experimental systematic variation;Events",histo->GetName()),
+//                           histo->GetNbinsX(), 20, 160,
+//                           nexpSysts,0,nexpSysts));
+//  for(size_t is=0; is<nexpSysts; is++)
+//        ht_->get2dPlots()[hoi_mlb+"_exp"]->GetYaxis()->SetBinLabel(is+1,expSystNames[is]);
+//
+//  size_t nthSysts(weightSysts_.size());
+//  if(nthSysts>0){
+//        ht_->addHist(hoi_mlb+"_th",
+//               new TH2D(hoi_mlb+"_th",
+//                             Form(";%s;Theory systematic variation;Events",histo->GetName()),
+//                             histo->GetNbinsX(),20, 160,
+//                             nthSysts,0,nthSysts));
+//  for(size_t is=0; is<nthSysts; is++)
+//        ht_->get2dPlots()[hoi_mlb+"_th"]->GetYaxis()->SetBinLabel(is+1,weightSysts_[is].first);
+//  }
+
+
+
 }
 
 

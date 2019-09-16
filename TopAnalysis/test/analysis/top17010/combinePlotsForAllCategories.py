@@ -34,17 +34,17 @@ def doPlot(plotName,chList,extraText,url,outpName,countOnly=False):
     inF = ROOT.TFile.Open(url)
 
     plotsPerProc={}
-    systList={'toppt':False,
+    systList={'toppt':True,
               'l1prefire':True,
               'pu':True,
-              'btagjes':True,
+#              'btagjes':True,
               'btaghf':True,
               'btaglf':True,
-              'btaghfstats1':True,
-              'btaghfstats2':True,
-              'btaglfstats1':True,
-              'btaglfstats2':True,
-              'btagcferr':True,
+#              'btaghfstats1':True,
+#              'btaghfstats2':True,
+#              'btaglfstats1':True,
+#              'btaglfstats2':True,
+#              'btagcferr':True,
               'JER':True,
               'bfrag':False,
               'slbr':False,
@@ -94,6 +94,10 @@ def doPlot(plotName,chList,extraText,url,outpName,countOnly=False):
 
             h=key.ReadObj()
             print keyName,h
+#	    # debug -wz
+#	    for xbin in range(1, h.GetNbinsX()+1):
+#	      print h.GetBinContent(xbin), h.GetBinError(xbin)
+
             if 'incmlb' in plotName:
                 h.GetXaxis().SetRangeUser(20,h.GetXaxis().GetXmax())
             if 'drlb' in plotName:
@@ -102,7 +106,7 @@ def doPlot(plotName,chList,extraText,url,outpName,countOnly=False):
 
             #do systs, if available
             if keyName==pName+'_t#bar{t}':                
-                for syst in ['gen','exp']:
+                for syst in ['th','exp']:
                     systH=inF.Get('{0}_{1}/{0}_{1}_t#bar{{t}}'.format(pName,syst))
                     try:
                         for ybin in xrange(1,systH.GetNbinsY()+1):
@@ -116,6 +120,7 @@ def doPlot(plotName,chList,extraText,url,outpName,countOnly=False):
                                     break
                             if keep is None: continue
                             py=systH.ProjectionX('px',ybin,ybin)
+			    fixExtremities(py) # TH2 needs to be fixed - wz
                             if countOnly: py=transformToCount(py)
 
                             #store effect on normalization
@@ -149,7 +154,12 @@ def doPlot(plotName,chList,extraText,url,outpName,countOnly=False):
                 plotsPerProc[title].SetLineColor(h.GetLineColor())
                 plotsPerProc[title].SetMarkerColor(h.GetMarkerColor())
             plotsPerProc[title].Add(h)
- 
+            # debug -wz
+#	    if title == 't#bar{t}':
+#              print " tbart after ch loop "
+#              for xbin in range(1, plotsPerProc[title].GetNbinsX()+1):
+#                print plotsPerProc[title].GetBinContent(xbin), plotsPerProc[title].GetBinError(xbin) 
+
     #finalize systematics
     sigH=plotsPerProc['t#bar{t}']
     nbins=sigH.GetNbinsX()+1
@@ -160,8 +170,11 @@ def doPlot(plotName,chList,extraText,url,outpName,countOnly=False):
     scaleVars['xsecup']=(1+.051)*totalExp
     scaleVars['xsecdn']=(1-.051)*totalExp
     scaleUnc=[0,0]
+#    numtemp_wz = 0 # debug -wz
     for key in scaleVars:
         sf=scaleVars[key]/totalExp
+#	if numtemp_wz <10: print key, scaleVars[key], totalExp, sf
+#	numtemp_wz += 1
         scaleUnc[1 if sf>1 else 0] += (1-sf)**2
     scaleUnc = [ROOT.TMath.Sqrt(x) for x in scaleUnc]
     for xbin in xrange(1,nbins+1):
@@ -208,11 +221,11 @@ def doPlot(plotName,chList,extraText,url,outpName,countOnly=False):
             np=relShapeGr.GetN()
             relShapeGr.SetPoint(np,xcen,1)
             relShapeGr.SetPointError(np,0.5*xwid,r)
-        relShapeGr.SetFillStyle(3001)
-        relShapeGr.SetFillColor(ROOT.kRed)
+        relShapeGr.SetFillStyle(3354)
+        relShapeGr.SetFillColor(ROOT.kGray+3)
         relShapeGr.SetLineWidth(2)
         totalMCShape.Delete()
-    
+
     #show
     finalOutpName=outpName
     if countOnly : finalOutpName += '_count'
@@ -226,7 +239,8 @@ def doPlot(plotName,chList,extraText,url,outpName,countOnly=False):
     doDivideByBinWidth=False
     if 'mlb' in outpName or 'ptlb' in outpName : doDivideByBinWidth=True
     if relShapeGr : plot.relShapeGr=relShapeGr
-    plot.plotformats=['root','pdf','png']
+    plot.plotformats=['pdf','png']
+
     for key in ['Data','t#bar{t}','Single top','W','DY','Multiboson']:
         if not key in plotsPerProc : continue
         isData=True if 'Data' in plotsPerProc[key].GetTitle() else False
@@ -242,19 +256,20 @@ def doPlot(plotName,chList,extraText,url,outpName,countOnly=False):
              )
     plot.finalize()
     plot.mcUnc=0.0
+    plot.normToData()   # debug -wz
 
     totalMC=sigH.Clone('tmptotal')
     totalMC.Reset('ICE')
     for h in plot.mc: totalMC.Add(plot.mc[h])
     plot.normUncGr=ROOT.TGraphErrors(totalMC)
-    plot.normUncGr.SetFillStyle(3444)
-    plot.normUncGr.SetFillColor(1)
+    plot.normUncGr.SetFillStyle(3354)
+    plot.normUncGr.SetFillColor(ROOT.kGray+3)
     plot.normUncGr.SetMarkerStyle(1)
     plot.normUncGr.SetLineColor(1)
     plot.normUncGr.SetName("normuncgr")
-    plot.normUncGr.SetTitle('Stat #oplus norm')
+    plot.normUncGr.SetTitle('Stat #oplus syst')
     totalMC.Delete()
-    plot.show(outDir="plots/",lumi=35922,extraText=extraText,saveTeX=countOnly)
+    plot.show(outDir="plots/",lumi=35822,extraText=extraText,saveTeX=countOnly)
 
 def main():
 
