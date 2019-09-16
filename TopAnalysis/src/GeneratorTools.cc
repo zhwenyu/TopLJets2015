@@ -249,7 +249,7 @@ float weightHelicity (MiniEvent_t &ev, vector<Particle> genleptons, vector<Parti
    }
  }
   if ( wgts.size() == 2) weight = wgts[0]*wgts[1];
-  cout << "wgtssize " << wgts.size() << endl; 
+//  cout << "wgtssize " << wgts.size() << endl; 
   return weight;
 
 } 
