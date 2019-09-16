@@ -77,7 +77,7 @@ def main():
 
     #remove temporary files
     os.system('rm datacard_fixed.dat')
-    os.system('rm fitresults_fixed.rot')
+    os.system('rm fitresults_fixed.root')
 
     #dump results to pickle file
     with open('fitresults_fixedgroups.pck','w') as cache:
