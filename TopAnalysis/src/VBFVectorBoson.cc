@@ -731,7 +731,7 @@ void VBFVectorBoson::runAnalysis()
         
         //fill with new values/weights
 
-        std::vector<double> eweights(1,iwgt*qgwgt);
+        std::vector<double> eweights(1,iwgt);
 	for(unsigned int ic = 0; ic < myCat.size(); ic++){
 	  for(auto jr : tagJetResol) {
 	    ht_->fill2D("tagjetresol_exp",  jr, is,eweights,myCat[ic]);
