@@ -269,7 +269,7 @@ def doPlot(plotName,chList,extraText,url,outpName,countOnly=False):
     plot.normUncGr.SetName("normuncgr")
     plot.normUncGr.SetTitle('Stat #oplus syst')
     totalMC.Delete()
-    plot.show(outDir="plots/",lumi=35822,extraText=extraText,saveTeX=countOnly)
+    plot.show(outDir="plots/",lumi=35882,extraText=extraText,saveTeX=countOnly)
 
 def main():
 
