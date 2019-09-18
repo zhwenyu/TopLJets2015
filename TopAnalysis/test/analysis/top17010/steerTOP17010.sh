@@ -196,8 +196,8 @@ case $WHAT in
        # python ${script} drlb:drlbinc ee,em,mm ${plotter}
 
         for d in ee em mm; do
-#	    for c in highpt; do
-            for c in lowpt highpt; do
+	    for c in highpt; do
+#            for c in lowpt highpt; do
                 for b in 1b 2b; do
                     cat=${d}${c}${b}
                     python ${script} mlb:mlb_${cat} ${cat} ${plotter} False;
