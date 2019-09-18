@@ -322,11 +322,22 @@ void TOP17010::runAnalysis()
       std::vector<Jet> alljets             = selector_->getGoodJets(ev_,30.,2.4,leptons);
 
       ////**** for Helicity weight //
-      //      std::vector<Particle> genleptons        = selector_->getPartonLeptons(ev_, -1, 15);
-      //            std::vector<Particle> genwbosons        = selector_->getPartonWbosons(ev_, -1,  15.);
-      //                  std::vector<Particle> genbs             = selector_->getPartonBs(ev_, -1, 15 );
+      std::vector<Particle> genleptons        = selector_->getPartonLeptons(ev_, -1, 15);
+      std::vector<Particle> genwbosons        = selector_->getPartonWbosons(ev_, -1,  15.);
+      std::vector<Particle> genbs             = selector_->getPartonBs(ev_, -1, 15 );
+
       applyMC2MC(alljets);
       TopWidthEvent twe(leptons,alljets);
+/*
+      std::vector<LeptonBJetPair> lbPairs=twe.getPairs();    // TEST
+      if(lbPairs.size()>0) {
+      float WgtHelicity(1.0);
+       if(isSignal_) {
+       WgtHelicity = weightHelicity(ev_, genleptons, genwbosons, genbs, "left");
+       cout << " WgtsHelicity " << WgtHelicity << endl;
+       }
+     }
+*/
       std::vector<Jet> tweSelJets;
       for(size_t ij=0; ij<min(size_t(2),twe.selJetsIdx.size()); ij++) tweSelJets.push_back( alljets[ twe.selJetsIdx[ij] ] );
       if(twe.dilcode==0) {
@@ -403,6 +414,12 @@ void TOP17010::runAnalysis()
           }          
         }
 
+        float WgtHelicity(1.0);
+        if(isSignal_) { 
+          WgtHelicity = weightHelicity(ev_, genleptons, genwbosons, genbs, "right");    
+        //  cout << " WgtsHelicity " << WgtHelicity << endl;
+        }
+
         //b-fragmentation and semi-leptonic branching fractions
         bfragWgts[0] = computeBFragmentationWeight(ev_,fragWeights_["downFrag"]);
         bfragWgts[1] = computeBFragmentationWeight(ev_,fragWeights_["upFrag"]);
@@ -414,6 +431,7 @@ void TOP17010::runAnalysis()
         wgt *= (ev_.g_nw>0 ? ev_.g_w[0] : 1.0);
         wgt *= widthWgt;
         wgt *= puWgts[0]*l1trigprefireProb.first*trigSF.first*l1SF.first*l2SF.first*btagWgt;
+	wgt *= WgtHelicity;
       }
       fillControlHistograms(twe,wgt);
 
