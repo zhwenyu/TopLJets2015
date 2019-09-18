@@ -220,8 +220,8 @@ class Plot(object):
         #holds the main plot
         c.cd()
         p1 = None
-        if self.dataH and not noRatio:
-            p1=ROOT.TPad('p1','p1',0.0,0.2,1.0,1.0) if cwid!=1000 else ROOT.TPad('p1','p1',0.0,0.0,1.0,1.0)
+        if self.dataH and not noRatio: # tpad -wz
+            p1=ROOT.TPad('p1','p1',0.0,0.5,1.0,1.0) if cwid!=1000 else ROOT.TPad('p1','p1',0.0,0.0,1.0,1.0)
             p1.SetRightMargin(0.05)
             p1.SetLeftMargin(0.12)
             p1.SetTopMargin(0.06)
@@ -504,7 +504,7 @@ class Plot(object):
         #holds the ratio
         c.cd()
         if not noRatio and self.dataH and len(self.mc)>0 :
-            p2 = ROOT.TPad('p2','p2',0.0,0.0,1.0,0.2)
+            p2 = ROOT.TPad('p2','p2',0.0,0.0,1.0,0.5) # tpad -wz
             p2.Draw()
             p2.SetBottomMargin(0.4)
             p2.SetRightMargin(0.05)
@@ -519,11 +519,11 @@ class Plot(object):
             ratioframe.GetYaxis().SetRangeUser(self.ratiorange[0], self.ratiorange[1])
             self._garbageList.append(ratioframe)
             ratioframe.GetYaxis().SetNdivisions(503)
-            ratioframe.GetYaxis().SetLabelSize(0.18)
-            ratioframe.GetYaxis().SetTitleSize(0.2)
+            ratioframe.GetYaxis().SetLabelSize(0.05)  # 0.18 -wz
+            ratioframe.GetYaxis().SetTitleSize(0.05)  # 0.2
             ratioframe.GetYaxis().SetTitleOffset(0.3)
-            ratioframe.GetXaxis().SetLabelSize(0.18)
-            ratioframe.GetXaxis().SetTitleSize(0.2)
+            ratioframe.GetXaxis().SetLabelSize(0.05)  # 0.18
+            ratioframe.GetXaxis().SetTitleSize(0.05)   # 0.2
             ratioframe.GetXaxis().SetTitleOffset(0.8)
             ratioframe.SetFillStyle(3254)
             ratioframe.SetFillColor(ROOT.TColor.GetColor('#9a9a9a'))
