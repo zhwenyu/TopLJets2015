@@ -361,6 +361,7 @@ void TOP17010::runAnalysis()
       // EVENT WEIGHTS //
       //////////////////
       float wgt(1.0),widthWgt(1.0),btagWgt(1.0);
+      float WgtHelicity(1.0);
       std::vector<float>puWgts(3,1.0),topptWgts(2,1.0),bfragWgts(2,1.0),slbrWgts(2,1.0);
       EffCorrection_t trigSF(1.0,0.),l1SF(1.0,0.),l2SF(1.0,0.0),l1trigprefireProb(1.0,0.);      
       if (!ev_.isData) {
@@ -414,7 +415,6 @@ void TOP17010::runAnalysis()
           }          
         }
 
-        float WgtHelicity(1.0);
         if(isSignal_) { 
           WgtHelicity = weightHelicity(ev_, genleptons, genwbosons, genbs, "right");    
         //  cout << " WgtsHelicity " << WgtHelicity << endl;
@@ -473,6 +473,7 @@ void TOP17010::runAnalysis()
         double iwgt=(ev_.g_nw>0 ? ev_.g_w[0] : 1.0);
         iwgt *= (normH_? normH_->GetBinContent(1) : 1.0);
         iwgt *= widthWgt;
+	iwgt *= WgtHelicity;
 
         EffCorrection_t selSF(1.0,0.0);
         if(sname=="puup")       iwgt *= puWgts[1]*trigSF.first*selSF.first*l1trigprefireProb.first*btagWgt;
