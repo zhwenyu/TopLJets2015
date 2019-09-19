@@ -191,17 +191,17 @@ case $WHAT in
         script=test/analysis/top17010/combinePlotsForAllCategories.py
         plotter=${outdir}/${githash}/plots/plotter.root
 
-       # python ${script} evcount:evcountinc ee,em,mm ${plotter}
-       # python ${script} ptlb:ptlbinc ee,em,mm ${plotter}
-       # python ${script} drlb:drlbinc ee,em,mm ${plotter}
+        python ${script} evcount:evcountinc ee,em,mm ${plotter}
+        python ${script} ptlb:ptlbinc ee,em,mm ${plotter}
+        python ${script} drlb:drlbinc ee,em,mm ${plotter}
 
         for d in ee em mm; do
-	    for c in highpt; do
-#            for c in lowpt highpt; do
+#	    for c in highpt; do
+            for c in lowpt highpt; do
                 for b in 1b 2b; do
                     cat=${d}${c}${b}
                     python ${script} mlb:mlb_${cat} ${cat} ${plotter} False;
-     #               python ${script} mlb:mlb_${cat} ${cat} ${plotter} True;
+                    python ${script} mlb:mlb_${cat} ${cat} ${plotter} True;
                 done
             done
         done

@@ -34,7 +34,7 @@ def doPlot(plotName,chList,extraText,url,outpName,countOnly=False):
     inF = ROOT.TFile.Open(url)
 
     plotsPerProc={}
-    systList={'toppt':True,
+    systList={'toppt':False,
               'l1prefire':True,
               'pu':True,
 #              'btagjes':True,
@@ -235,7 +235,7 @@ def doPlot(plotName,chList,extraText,url,outpName,countOnly=False):
     plot.doMCOverData = False
     plot.ratioFrameFill=3444
     plot.ratioFrameColor=1
-    plot.ratiorange=(0.8,1.2)  # -wz
+#    plot.ratiorange=(0.8,1.2)  # -wz
     doDivideByBinWidth=False
     if 'mlb' in outpName or 'ptlb' in outpName : doDivideByBinWidth=True
     if relShapeGr : plot.relShapeGr=relShapeGr
@@ -256,7 +256,7 @@ def doPlot(plotName,chList,extraText,url,outpName,countOnly=False):
              )
     plot.finalize()
     plot.mcUnc=0.0
-    plot.normToData()   # debug -wz
+#    plot.normToData()   # debug -wz
 
     totalMC=sigH.Clone('tmptotal')
     totalMC.Reset('ICE')
