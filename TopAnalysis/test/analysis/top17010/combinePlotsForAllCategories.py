@@ -226,7 +226,7 @@ def doPlot(plotName,chList,extraText,url,outpName,countOnly=False):
     doDivideByBinWidth=False
     if 'mlb' in outpName or 'ptlb' in outpName : doDivideByBinWidth=True
     if relShapeGr : plot.relShapeGr=relShapeGr
-    plot.plotformats=['root','pdf','png']
+    plot.plotformats=['pdf','png']
     for key in ['Data','t#bar{t}','Single top','W','DY','Multiboson']:
         if not key in plotsPerProc : continue
         isData=True if 'Data' in plotsPerProc[key].GetTitle() else False
@@ -254,7 +254,7 @@ def doPlot(plotName,chList,extraText,url,outpName,countOnly=False):
     plot.normUncGr.SetName("normuncgr")
     plot.normUncGr.SetTitle('Stat #oplus norm')
     totalMC.Delete()
-    plot.show(outDir="plots/",lumi=35922,extraText=extraText,saveTeX=countOnly)
+    plot.show(outDir="plots/",lumi=35882,extraText=extraText,saveTeX=countOnly)
 
 def main():
 
