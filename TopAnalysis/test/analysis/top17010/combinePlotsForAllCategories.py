@@ -10,6 +10,9 @@ COLORS={
     "Data":1
 }
 
+nuis= { "emhighpt1b": 1.217, "emhighpt2b": 1.240, 
+
+}
 def transformToCount(h):
 
     """ transform an histogram to a single bin counting experiment """
@@ -241,11 +244,19 @@ def doPlot(plotName,chList,extraText,url,outpName,countOnly=False):
     if relShapeGr : plot.relShapeGr=relShapeGr
     plot.plotformats=['pdf','png']
 
+    bkg_cnt = 0
+    data_cnt =0
+    tt_cnt = 0
     for key in ['Data','t#bar{t}','Single top','W','DY','Multiboson']:
         if not key in plotsPerProc : continue
         isData=True if 'Data' in plotsPerProc[key].GetTitle() else False
         color=COLORS[plotsPerProc[key].GetTitle()]
         if key=='DY': plotsPerProc[key].Scale(0.83)
+	# checking data/MC rate diff -wz
+	print key, plotsPerProc[key].Integral()
+	if key != 'Data' and key != 't#bar{t}': bkg_cnt += plotsPerProc[key].Integral()
+	if key == 'Data': data_cnt = plotsPerProc[key].Integral()
+	elif key == 't#bar{t}': tt_cnt= plotsPerProc[key].Integral()
         plot.add(plotsPerProc[key],
                  plotsPerProc[key].GetTitle(),
                  color,
@@ -257,6 +268,8 @@ def doPlot(plotName,chList,extraText,url,outpName,countOnly=False):
     plot.finalize()
     plot.mcUnc=0.0
 #    plot.normToData()   # debug -wz
+#    print plotsPerProc['Data'].Integral(), plotsPerProc['t#bar{t}'].Integral() # changed
+    print bkg_cnt, data_cnt/(tt_cnt + bkg_cnt), (tt_cnt*nuis[ch] + bkg_cnt)/(tt_cnt + bkg_cnt) 
 
     totalMC=sigH.Clone('tmptotal')
     totalMC.Reset('ICE')
@@ -269,7 +282,7 @@ def doPlot(plotName,chList,extraText,url,outpName,countOnly=False):
     plot.normUncGr.SetName("normuncgr")
     plot.normUncGr.SetTitle('Stat #oplus syst')
     totalMC.Delete()
-    plot.show(outDir="plots/",lumi=35882,extraText=extraText,saveTeX=countOnly)
+ #   plot.show(outDir="plots/",lumi=35882,extraText=extraText,saveTeX=countOnly) # -wz
 
 def main():
 
