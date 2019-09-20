@@ -106,6 +106,7 @@ class VBFVectorBoson{
 
     lowMJJCut_  = 500.;
     highMJJCut_ = 1000.;        
+    lowVPtMinMJJCut_ = 300.;
 
     applyTrigSafePhoton_=true;
   } 
@@ -188,7 +189,7 @@ private:
   int jetPuId_;
   bool cleanEENoise_;
   float zMassWindow_;
-  float lowVPtCut_,  lowVPtDetaJJCut_, lowVPtMaxRapCut_;
+  float lowVPtCut_,  lowVPtDetaJJCut_, lowVPtMaxRapCut_, lowVPtMinMJJCut_;
   float highVPtCut_;
   float lowMJJCut_, highMJJCut_;
   std::vector<TString> lowVPtPhotonTrigs_, highVPtPhotonTrigs_;

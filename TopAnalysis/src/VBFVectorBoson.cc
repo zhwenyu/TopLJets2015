@@ -157,7 +157,7 @@ void VBFVectorBoson::runAnalysis()
   for (Int_t iev=0;iev<nentries_;iev++)
     {
       t_->GetEntry(iev);
-      if(debug_) cout << "Number of event: "<<iev<<endl;
+      if(debug_) cout << "Number of event: "<<iev<<endl;      
       if(iev%10000==0) printf ("\r [%3.0f%%] done", 100.*(float)iev/(float)nentries_);
 
       std::vector<double>plotwgts(1,1.0);
@@ -420,18 +420,18 @@ void VBFVectorBoson::runAnalysis()
       }
 
       category_.set(cat);
+
       std::vector<TString> chTags( category_.getChannelTags() );
 
       //veto untriggerable events for photons
       if(chTag=="A" && cat[3]) {
-        if(fabs(boson.Rapidity())>lowVPtMaxRapCut_
-           || vbfVars_.mjj<highMJJCut_
+        if(fabs(boson.Eta())>lowVPtMaxRapCut_
+           || vbfVars_.mjj<lowVPtMinMJJCut_
            || vbfVars_.detajj<lowVPtDetaJJCut_)
           chTags.clear();
       }
       if(chTags.size()==0) continue;
-
-      TString baseCategory(chTags[chTags.size()-1]);
+      
 
       //evaluate discriminator MVA for categories of interest
       //FIXME: this probably needs to be modified for the new training
@@ -446,8 +446,8 @@ void VBFVectorBoson::runAnalysis()
 	vbfmva_[chTags[icat]]      = (readers[key]?readers[key]->EvaluateMVA(key):-1000);
 	flat_vbfmva_[chTags[icat]] = (readers[key]?readers[key]->EvaluateMVA(key):-1000);
 	if(mvaCDFinv[key]) flat_vbfmva_[chTags[icat]]=max(0.,mvaCDFinv[key]->Eval(vbfmva_[icat]));
-	  if(doBlindAnalysis_ && ev_.isData && flat_vbfmva_[chTags[icat]]>0.8) flat_vbfmva_[chTags[icat]]=-1000;
-	  if(doBlindAnalysis_ && ev_.isData && vbfmva_[chTags[icat]]>0.8) vbfmva_[chTags[icat]]=-1000;
+	  if(doBlindAnalysis_ && ev_.isData && chTags[icat].EndsWith("A") && flat_vbfmva_[chTags[icat]]>0.8) flat_vbfmva_[chTags[icat]]=-1000;
+	  if(doBlindAnalysis_ && ev_.isData && chTags[icat].EndsWith("A") && vbfmva_[chTags[icat]]>0.8) vbfmva_[chTags[icat]]=-1000;
       }
 	
       // if (cat[5] || cat[6]) {
@@ -502,15 +502,6 @@ void VBFVectorBoson::runAnalysis()
         //update weight for plotter
         plotwgts[0]=wgt;
       }
-      
-      //fake rate
-      bool FRmeasured(chTags.size() > 1);
-      if(ev_.isData && chTag=="A" && SRfake_ && FRmeasured) {
-	TString FRcat( baseCategory);
-	FRcat.Remove(FRcat.First(chTag),1);
-        cout << "Fake Rate will be applied in "<<baseCategory<<" with FRcat of "<<FRcat <<endl;
-        plotwgts[0]*=fr_->getWeight(FRcat, vbfVars_.mjj, photons_[0].Eta());
-      }
 
       //gen level
       genMjj_=0;
@@ -523,9 +514,20 @@ void VBFVectorBoson::runAnalysis()
         genMjj_ = (genJets.size()>1 ? (genJets[0]+genJets[1]).M() : 0.);        
       }
       
+      bool FRmeasured(chTags.size() > 1);
       //fill control histograms
-      for( auto c : chTags)
-	fillControlHistos( boson,  jets,  plotwgts[0], c, mults, fakeACR, tightACR);
+      for( auto c : chTags){
+	float myWgt(plotwgts[0]);
+	//fake rate      
+	if(ev_.isData && chTag=="A" && SRfake_ && FRmeasured) {
+	  if(c == "A") continue;
+	  TString FRcat(c);
+	  FRcat.Remove(FRcat.First(chTag),1);
+	  //	  myWgt*=fr_->getWeight(FRcat, vbfVars_.mjj, photons_[0].Eta());	 
+	  myWgt*=fr_->getWeight(FRcat, photons_[0].Pt(), photons_[0].Eta());	 
+	}
+	fillControlHistos( boson,  jets,  myWgt, c, mults, fakeACR, tightACR);
+      }
 
       //fill tree
       if(skimtree_) {
@@ -555,14 +557,14 @@ void VBFVectorBoson::runAnalysis()
         bool isUpVar(sname.Contains("up"));
         
         //base values and kinematics
-	TString icat(baseCategory);
-	std::map<TString,float> imva;
-	std::map<TString,float> flat_imva;
+	std::map<TString,float> imva(vbfmva_);
+	std::map<TString,float> flat_imva(flat_vbfmva_);
         float iwgt=(ev_.g_nw>0 ? ev_.g_w[0] : 1.0);
         iwgt *= (normH_? normH_->GetBinContent(1) : 1.0);
         TLorentzVector iBoson(boson);
         std::vector<Jet> ijets(jets);
         bool reSelect(false);        
+
 
         if(sname=="puup")             iwgt *= puWgts[1]*trigSF.first*selSF.first*l1prefireProb.first;
         else if(sname=="pudn")        iwgt *= puWgts[2]*trigSF.first*selSF.first*l1prefireProb.first;
@@ -659,42 +661,44 @@ void VBFVectorBoson::runAnalysis()
             ijets.push_back(j);
           }
         }
-	
         //re-select if needed
-	std::vector<TString> myCat;
+	std::vector<TString> myCat(chTags);
         if(reSelect) {
-          
-          if (ijets.size()<2) continue;
-
+	  imva.clear();
+	  flat_imva.clear();
+	  myCat.clear();
           vbfVars_.fillDiscriminatorVariables(iBoson,ijets,ev_);                   
           if(vbfVars_.leadj_pt    < leadJetPt_)    continue;
           if(vbfVars_.subleadj_pt < subLeadJetPt_) continue;
 
           //set the new category tag
-          bool isLowVPt = (passLowVPtTrig                                                      
-                           && iBoson.Pt()>lowVPtCut_
-                           && iBoson.Pt()<=highVPtCut_
-                           && isBosonTrigSafe);
-          bool isHighVPt = (passHighVPtTrig
-                            && iBoson.Pt()>highVPtCut_
-                            && isBosonTrigSafe );
-          bool isLowMJJ(vbfVars_.mjj>lowMJJCut_ && vbfVars_.mjj<=highMJJCut_);
-          bool isHighMJJ(vbfVars_.mjj>highMJJCut_);
 
-
-	  
-          if(isLowVPt && fabs(iBoson.Rapidity())<lowVPtMaxRapCut_ && vbfVars_.mjj>highMJJCut_ && vbfVars_.detajj>lowVPtDetaJJCut_){
-	    if(vbfVars_.mjj>lowMJJCut_){
-	      myCat.push_back("LowVPt"+chTag);
-	      if(isHighMJJ) myCat.push_back("LowVPtHighMJJ"+chTag);
-	    }
-	  } else if(isHighVPt) {
-	    if(vbfVars_.mjj>lowMJJCut_){
-	      myCat.push_back("HighVPt"+chTag);
-	      if(isLowMJJ) myCat.push_back("HighVPtLowMJJ"+chTag);
-	      else if(isHighVPt && isHighMJJ) myCat.push_back("HighVPtHighMJJ"+chTag);
-	    }
+          bool isLowVPt = (passLowVPtTrig && iBoson.Pt()>lowVPtCut_ && iBoson.Pt()<=highVPtCut_ && isBosonTrigSafe);
+          bool isHighVPt = (passHighVPtTrig  && iBoson.Pt()>highVPtCut_ && isBosonTrigSafe );
+	  bool isLowMJJ(false), isHighMJJ(false), isAllMJJ(false);
+	  if(ijets.size() >= 2){
+	    isLowMJJ = (vbfVars_.mjj>lowMJJCut_ && vbfVars_.mjj<=highMJJCut_);
+	    isHighMJJ = (vbfVars_.mjj>highMJJCut_);
+	    isAllMJJ =  (vbfVars_.mjj>lowMJJCut_);
 	  }
+
+	  if(chTag=="A" && isLowVPt) {
+	    if(fabs(iBoson.Eta())>lowVPtMaxRapCut_
+           || vbfVars_.mjj<lowVPtMinMJJCut_
+	       || vbfVars_.detajj<lowVPtDetaJJCut_)
+	      continue;
+	  }
+	  /*-----*/if(vbfVars_.mjj < lowMJJCut_) continue;
+          if(isLowVPt) {
+	    if(isAllMJJ) myCat.push_back("LowVPt"+chTag);
+	    if(isLowMJJ) myCat.push_back("LowVPtLowMJJ"+chTag);
+	    if(isHighMJJ) myCat.push_back("LowVPtHighMJJ"+chTag);
+	  } else if(isHighVPt) {
+	    if(isAllMJJ) myCat.push_back("HighVPt"+chTag);
+	    if(isLowMJJ)  myCat.push_back("HighVPtLowMJJ"+chTag);
+	    if(isHighMJJ) myCat.push_back("HighVPtHighMJJ"+chTag);
+	  }
+
           
           //re-evaluate MVA         
 	  // if (isLowMJJ || isHighMJJ) {
@@ -704,7 +708,6 @@ void VBFVectorBoson::runAnalysis()
           //     flat_imva=max(0.,mvaCDFinv[key]->Eval(imva));	    
           //   }
           // }
-
 	  for(unsigned int ic = 0; ic<myCat.size(); ic++){
 	    int pos(myCat[ic].EndsWith("A")? myCat[ic].Sizeof()-1 : myCat[ic].Sizeof()-2);
 	    std::string s(myCat[ic]);
@@ -718,6 +721,7 @@ void VBFVectorBoson::runAnalysis()
 	//        if( !icat.Contains("VPt") ) continue;
 	if(myCat.size() == 0) continue;
 
+
         std::vector<float> tagJetResol;        
         for(size_t ij=0; ij<min((size_t)2,ijets.size()); ij++) {
           int idx=ijets[ij].getJetIndex();
@@ -729,17 +733,16 @@ void VBFVectorBoson::runAnalysis()
           }
         }
         
+	  
         //fill with new values/weights
-
+        double qgwgt(qgWgt_q*qgWgt_g);
         std::vector<double> eweights(1,iwgt*qgwgt);
+
 	for(unsigned int ic = 0; ic < myCat.size(); ic++){
 	  for(auto jr : tagJetResol) {
 	    ht_->fill2D("tagjetresol_exp",  jr, is,eweights,myCat[ic]);
-	  }
-
-        std::vector<double> eweights(1,iwgt);
-
-
+	  }	  
+	  std::vector<double> eweights(1,iwgt);
 	  ht_->fill2D("vbfmva_exp",       imva[myCat[ic]],      is,eweights,myCat[ic]);
 	  ht_->fill2D("acdfvbfmva_exp",   flat_imva[myCat[ic]], is,eweights,myCat[ic]);
 	  ht_->fill2D("centraleta_exp",   vbfVars_.centraleta,  is,eweights,myCat[ic]);
@@ -795,7 +798,8 @@ void VBFVectorBoson::readTree()
   t_           = (TTree*)f_->Get("analysis/data");
   attachToMiniEventTree(t_,ev_,true);
   nentries_   = t_->GetEntriesFast();
-  if (debug_) nentries_ = min(500000,nentries_); //restrict number of entries for testing
+  if (debug_)  nentries_ = min(500000,nentries_); //restrict number of entries for testing  
+  //  nentries_ = 5000;
   t_->GetEntry(0);
 }
 
@@ -1063,6 +1067,7 @@ void VBFVectorBoson::addMVAvars(){
 //
 void VBFVectorBoson::fillControlHistos(TLorentzVector boson, std::vector<Jet> jets, float wgt, TString c, std::map<TString, int> mults, std::vector<Particle> fakeACR, std::vector<Particle> tightACR){
 
+
   //plot weight
   std::vector<double> cplotwgts(1,wgt);
 
@@ -1281,7 +1286,7 @@ void VBFVectorBoson::fillControlHistos(TLorentzVector boson, std::vector<Jet> je
     std::vector<double> AccWeights(1,1);
     AccWeights[0]*=(ev_.g_nw>0 ? ev_.g_w[0] : 1.0);
     ht_->fill("vbfmvaAcc", vbfmva_[c], AccWeights,c);
-    if(flat_vbfmva_[c]>0.9)
+    if(vbfmva_[c]>0.9)
       ht_->fill("evcount",  1, cplotwgts, c);  
   }
 

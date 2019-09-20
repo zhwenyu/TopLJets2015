@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ERA=2016
-STORAGE=""
+STORAGE="/store/cmst3/group/top/TOP17010/final_method1a"
 FITTYPE="em_inc"
 COMBINE=`dirname ${CMSSW_BASE}`/CMSSW_10_3_0_pre4
 while getopts "o:y:s:f:c:" opt; do
@@ -52,7 +52,7 @@ if [[ ${ERA} = "2017" ]]; then
 fi
 
 gtList=(0.7 0.8 0.9 1.0 1.05 1.1 1.15 1.2 1.23 1.25 1.28 1.3 1.31 1.32 1.34 1.36 1.38 1.39 1.4 1.45 1.5 1.55 1.6 1.65 1.7 1.75 1.85 1.9 1.95 2.0 2.2 2.4 2.6 2.8 3.0 3.5 4.0 5.0)
-mtList=(169.5 170.5 171 171.5 171.75 172 172.25 172.5 172.75 173 173.5 174.5 175.5)
+mtList=(169.5 170 170.5 170.7 170.9 171.1 171.3 171.5 171.7 171.9 172.1 172.2 172.3 172.5 172.7 172.9 173.1 173.3 173.5 174.0 174.5 175.0 175.5)
 dists=em_mlb,ee_mlb,mm_mlb
 dists=${dists},emhighpt_mlb,emhighpt1b_mlb,emhighpt2b_mlb
 dists=${dists},emlowpt_mlb,emlowpt1b_mlb,emlowpt2b_mlb
@@ -90,7 +90,7 @@ case $WHAT in
         
         echo "Computing MC2MC corrections"
         echo "[WARN] currently hardcoded for 2016 samples"
-        #python test/analysis/top17010/prepareMC2MCCorrections.py;
+        python test/analysis/top17010/prepareMC2MCCorrections.py;
         ;;
 
     TESTSEL )               
@@ -124,7 +124,7 @@ case $WHAT in
         ;;
 
     MERGE )
-	./scripts/mergeOutputs.py ${outdir}/${githash};
+	./scripts/mergeOutputs.py /eos/cms/${outdir}/${githash};
 	;;
     
     SELSCAN )
@@ -136,7 +136,7 @@ case $WHAT in
                 flag=`python -c "print (($midx<<16)|($gidx))"`
 
 	        python scripts/runLocalAnalysis.py \
-	            -i ${eosdir} --only MC13TeV_${ERA}_TTJets --exactonly --flag ${flag} \
+	            -i ${eosdir} --only MC13TeV_${ERA}_TTJets_psweights --exactonly --flag ${flag} \
                     -o ${outdir}/${githash}/scenario${flag} \
                     --farmappendix ${githash}SCAN${flag} \
                     -q ${queue} --genWeights genweights_${githash}.root \
@@ -167,29 +167,33 @@ case $WHAT in
             for m in ${mtList[@]}; do
                 midx=`python -c "print int(($m-169)/0.25)"`
                 flag=`python -c "print (($midx<<16)|($gidx))"`
-	        ./scripts/mergeOutputs.py ${outdir}/${githash}/scenario${flag};
+	        ./scripts/mergeOutputs.py /eos/cms/${outdir}/${githash}/scenario${flag};
             done
         done
 
         #local sensitivities
-        python test/analysis/top17010/estimateLocalSensitivity.py -i ${outdir}/${githash} -o ${outdir}/${githash}/localsens/
+        python test/analysis/top17010/estimateLocalSensitivity.py -i /eos/cms/${outdir}/${githash} -o /eos/cms/${outdir}/${githash}/localsens/
 	;;
 
     PLOT )
-	commonOpts="-i ${outdir}/${githash} --puNormSF puwgtctr -l ${fulllumi} --saveLog --mcUnc ${lumiUnc}"
-        commonOpts="${commonOpts} --procSF DY:0.83"
+	commonOpts="-i /eos/cms/${outdir}/${githash} --puNormSF puwgtctr -l ${fulllumi} --saveLog --mcUnc ${lumiUnc}"
+        commonOpts="${commonOpts} --procSF t#bar{t}:0.965"
 	python scripts/plotter.py ${commonOpts} -j ${json};
-        python scripts/plotter.py ${commonOpts} -j ${json}      --only evcount  --saveTeX -o evcount_plotter.root;
-        python scripts/plotter.py ${commonOpts} -j ${json}      --only mlb,ptlb --binWid  -o lb_plotter.root;
-        python scripts/plotter.py ${commonOpts} -j ${syst_json} --only mlb,evcount      --silent  -o syst_plotter.root;
+        python scripts/plotter.py ${commonOpts} -j ${json}      --only evcount    --saveTeX  -o evcount_plotter.root;
+        python scripts/plotter.py ${commonOpts} -j ${json}      --only mlb,ptlb    --binWid  -o lb_plotter.root;
+        python scripts/plotter.py ${commonOpts} -j ${syst_json} --only mlb,evcount --silent  -o syst_plotter.root;
+        ;;
 
+
+    BKG )
+        python test/analysis/top17010/estimateDY.py -i /eos/cms/${outdir}/${githash}/plots/plotter.root -o /eos/cms/${outdir}/${githash}/plots/;
         ;;
 
     COMBPLOT )
         #combined plots
 
         script=test/analysis/top17010/combinePlotsForAllCategories.py
-        plotter=${outdir}/${githash}/plots/plotter.root
+        plotter=/eos/cms/${outdir}/${githash}/plots/plotter.root
 
         python ${script} evcount:evcountinc ee,em,mm ${plotter}
         python ${script} ptlb:ptlbinc ee,em,mm ${plotter}
@@ -204,20 +208,16 @@ case $WHAT in
                 done
             done
         done
-
-        ;;
-
-    BKG )
-        python test/analysis/top17010/estimateDY.py -i ${outdir}/${githash}/plots/plotter.root -o ${outdir}/${githash}/plots/;
+        mv plots/*.{png,pdf,dat} /eos/cms/${outdir}/${githash}/plots/
         ;;
 
     TEMPL )
         
-        inputs=${outdir}/${githash}/plots/plotter.root
-        inputs=${inputs},${outdir}/${githash}/plots/syst_plotter.root
-        inputs=${inputs},${outdir}/${githash}/plots/plotter_dydata.root
-        output=${outdir}/${githash}/templates/
-        python test/analysis/top17010/prepareTemplateFiles.py -i ${inputs} -d ${dists} -o ${output} --debug --bbbThr 0.005; # --debug
+        inputs=/eos/cms/${outdir}/${githash}/plots/plotter.root
+        inputs=${inputs},/eos/cms/${outdir}/${githash}/plots/syst_plotter.root
+        inputs=${inputs},/eos/cms/${outdir}/${githash}/plots/plotter_dydata.root
+        output=/eos/cms/${outdir}/${githash}/templates/
+        python test/analysis/top17010/prepareTemplateFiles.py -i ${inputs} -d ${dists} -o ${output} --debug --bbbThr 0.005;
 
         ;;
 
@@ -245,18 +245,17 @@ case $WHAT in
 
     DATACARD )
 
-        dists=ee_mlb,mm_mlb,emhighpt1b_mlb,emhighpt2b_mlb,emlowpt1b_mlb,emlowpt2b_mlb,eehighpt1b_mlb,eehighpt2b_mlb,eelowpt1b_mlb,eelowpt2b_mlb,mmhighpt1b_mlb,mmhighpt2b_mlb,mmlowpt1b_mlb,mmlowpt2b_mlb
         python test/analysis/top17010/submitPrepareDataCard.py --dists ${dists} \
             --systs ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/top17010/systs_dict.json \
-            --templ ${outdir}/${githash}/templates \
-            --nom MC13TeV_${ERA}_TTJets.root \
-            -o ${outdir}/${githash}/datacards
 #            -o /afs/cern.ch/user/w/wenyu/afswork/work/topwidth/CMSSW_9_4_10/src/TopLJets2015/TopAnalysis/test/analysis/top17010/${githash}/datacards
+            --templ /eos/cms/${outdir}/${githash}/templates \
+            --nom MC13TeV_${ERA}_TTJets_psweights.root \
+            -o /eos/cms/${outdir}/${githash}/datacards
         ;;
 
     CHECKDATACARD )
 
-        python test/analysis/top17010/checkDataCards.py ${outdir}/${githash}/datacards
+        python test/analysis/top17010/checkDataCards.py /eos/cms/${outdir}/${githash}/datacards
 
         ;;
 
@@ -279,8 +278,8 @@ case $WHAT in
         echo "Having that said I will now try to run with the following combine location $COMBINE"
         echo "" 
 
-        anchors=(`ls ${outdir}/${githash}/datacards/em`)
-        signals=(`ls ${outdir}/${githash}/datacards/em/nom/*datacard.dat`)
+        anchors=(`ls /eos/cms/${outdir}/${githash}/datacards/em`)
+        signals=(`ls /eos/cms/${outdir}/${githash}/datacards/em/nom/*datacard.dat`)
 
         echo "${#anchors[@]} anchors for ${#signals[@]} data/signals... it may take a while to prepare all the scripts to submit"
 
@@ -296,7 +295,8 @@ case $WHAT in
             a=`basename ${a}`;
 
             for s in ${signals[@]}; do                
-                out="/afs/cern.ch/user/w/wenyu/afswork/work/topwidth/CMSSW_9_4_10/src/TopLJets2015/TopAnalysis/test/analysis/top17010/${githash}/fits/${FITTYPE}/${a}"    # edit -wz
+        #        out="/afs/cern.ch/user/w/wenyu/afswork/work/topwidth/CMSSW_9_4_10/src/TopLJets2015/TopAnalysis/test/analysis/top17010/${githash}/fits/${FITTYPE}/${a}"    # edit -wz
+                out="/eos/cms/${outdir}/${githash}/fits/${FITTYPE}/${a}"
                 tag=`basename $s | cut -f -1 -d "."`
                 
                 if [ "${FITTYPE}" != "final" ]; then
@@ -308,31 +308,31 @@ case $WHAT in
 
                 args=""
                 if [ "${FITTYPE}" == "em_inc" ]; then
-                    args="${outdir}/${githash}/datacards/em/${a}/${tag}.datacard.dat"
+                    args="/eos/cms/${outdir}/${githash}/datacards/em/${a}/${tag}.datacard.dat"
                 elif [ "${FITTYPE}" == "dil_inc" ]; then
-                    args="em=${outdir}/${githash}/datacards/em/${a}/${tag}.datacard.dat"
-                    args="${args} mm=${outdir}/${githash}/datacards/mm/${a}/${tag}.datacard.dat"
-                    args="${args} ee=${outdir}/${githash}/datacards/ee/${a}/${tag}.datacard.dat"
+                    args="em=/eos/cms/${outdir}/${githash}/datacards/em/${a}/${tag}.datacard.dat"
+                    args="${args} mm=/eos/cms/${outdir}/${githash}/datacards/mm/${a}/${tag}.datacard.dat"
+                    args="${args} ee=/eos/cms/${outdir}/${githash}/datacards/ee/${a}/${tag}.datacard.dat"
                 elif [ "${FITTYPE}" == "ptlb_inc" ]; then
-                    args="emhighpt=${outdir}/${githash}/datacards/emhighpt/${a}/${tag}.datacard.dat"
-                    args="${args} mmhighpt=${outdir}/${githash}/datacards/mmhighpt/${a}/${tag}.datacard.dat"
-                    args="${args} eehighpt=${outdir}/${githash}/datacards/eehighpt/${a}/${tag}.datacard.dat"
-                    args="${args} emlowpt=${outdir}/${githash}/datacards/emlowpt/${a}/${tag}.datacard.dat"
-                    args="${args} mmlowpt=${outdir}/${githash}/datacards/mmlowpt/${a}/${tag}.datacard.dat"
-                    args="${args} eelowpt=${outdir}/${githash}/datacards/eelowpt/${a}/${tag}.datacard.dat"
+                    args="emhighpt=/eos/cms/${outdir}/${githash}/datacards/emhighpt/${a}/${tag}.datacard.dat"
+                    args="${args} mmhighpt=/eos/cms/${outdir}/${githash}/datacards/mmhighpt/${a}/${tag}.datacard.dat"
+                    args="${args} eehighpt=/eos/cms/${outdir}/${githash}/datacards/eehighpt/${a}/${tag}.datacard.dat"
+                    args="${args} emlowpt=/eos/cms/${outdir}/${githash}/datacards/emlowpt/${a}/${tag}.datacard.dat"
+                    args="${args} mmlowpt=/eos/cms/${outdir}/${githash}/datacards/mmlowpt/${a}/${tag}.datacard.dat"
+                    args="${args} eelowpt=/eos/cms/${outdir}/${githash}/datacards/eelowpt/${a}/${tag}.datacard.dat"
                 elif [ "${FITTYPE}" == "final" ]; then
-                    args="emhighpt2b=${outdir}/${githash}/datacards/emhighpt2b/${a}/${tag}.datacard.dat"
-                    args="${args} mmhighpt2b=${outdir}/${githash}/datacards/mmhighpt2b/${a}/${tag}.datacard.dat"
-                    args="${args} eehighpt2b=${outdir}/${githash}/datacards/eehighpt2b/${a}/${tag}.datacard.dat"
-                    args="${args} emhighpt1b=${outdir}/${githash}/datacards/emhighpt1b/${a}/${tag}.datacard.dat"
-                    args="${args} mmhighpt1b=${outdir}/${githash}/datacards/mmhighpt1b/${a}/${tag}.datacard.dat"
-                    args="${args} eehighpt1b=${outdir}/${githash}/datacards/eehighpt1b/${a}/${tag}.datacard.dat"
-                    args="${args} emlowpt2b=${outdir}/${githash}/datacards/emlowpt2b/${a}/${tag}.datacard.dat"
-                    args="${args} mmlowpt2b=${outdir}/${githash}/datacards/mmlowpt2b/${a}/${tag}.datacard.dat"
-                    args="${args} eelowpt2b=${outdir}/${githash}/datacards/eelowpt2b/${a}/${tag}.datacard.dat"
-                    args="${args} emlowpt1b=${outdir}/${githash}/datacards/emlowpt1b/${a}/${tag}.datacard.dat"
-                    args="${args} mmlowpt1b=${outdir}/${githash}/datacards/mmlowpt1b/${a}/${tag}.datacard.dat"
-                    args="${args} eelowpt1b=${outdir}/${githash}/datacards/eelowpt1b/${a}/${tag}.datacard.dat"
+                    args="emhighpt2b=/eos/cms/${outdir}/${githash}/datacards/emhighpt2b/${a}/${tag}.datacard.dat"
+                    args="${args} mmhighpt2b=/eos/cms/${outdir}/${githash}/datacards/mmhighpt2b/${a}/${tag}.datacard.dat"
+                    args="${args} eehighpt2b=/eos/cms/${outdir}/${githash}/datacards/eehighpt2b/${a}/${tag}.datacard.dat"
+                    args="${args} emhighpt1b=/eos/cms/${outdir}/${githash}/datacards/emhighpt1b/${a}/${tag}.datacard.dat"
+                    args="${args} mmhighpt1b=/eos/cms/${outdir}/${githash}/datacards/mmhighpt1b/${a}/${tag}.datacard.dat"
+                    args="${args} eehighpt1b=/eos/cms/${outdir}/${githash}/datacards/eehighpt1b/${a}/${tag}.datacard.dat"
+                    args="${args} emlowpt2b=/eos/cms/${outdir}/${githash}/datacards/emlowpt2b/${a}/${tag}.datacard.dat"
+                    args="${args} mmlowpt2b=/eos/cms/${outdir}/${githash}/datacards/mmlowpt2b/${a}/${tag}.datacard.dat"
+                    args="${args} eelowpt2b=/eos/cms/${outdir}/${githash}/datacards/eelowpt2b/${a}/${tag}.datacard.dat"
+                    args="${args} emlowpt1b=/eos/cms/${outdir}/${githash}/datacards/emlowpt1b/${a}/${tag}.datacard.dat"
+                    args="${args} mmlowpt1b=/eos/cms/${outdir}/${githash}/datacards/mmlowpt1b/${a}/${tag}.datacard.dat"
+                    args="${args} eelowpt1b=/eos/cms/${outdir}/${githash}/datacards/eelowpt1b/${a}/${tag}.datacard.dat"
                 else
                     echo "fit type=${FITTYPE} is not yet implemented... quitting"
                     exit -1
@@ -357,7 +357,8 @@ case $WHAT in
         echo "requirements = (OpSysAndVer =?= \"SLCern6\")" >> $condor_fit
         echo "+JobFlavour = \"workday\"" >> $condor_fit        
         for a in ${anchors[@]}; do
-            dir="/afs/cern.ch/user/w/wenyu/afswork/work/topwidth/CMSSW_9_4_10/src/TopLJets2015/TopAnalysis/test/analysis/top17010/${githash}/fits/${FITTYPE}/${a}"  # edit
+         #   dir="/afs/cern.ch/user/w/wenyu/afswork/work/topwidth/CMSSW_9_4_10/src/TopLJets2015/TopAnalysis/test/analysis/top17010/${githash}/fits/${FITTYPE}/${a}"  # edit
+            dir="/eos/cms/${outdir}/${githash}/fits/${FITTYPE}/${a}"
             echo "arguments   = ${dir}/runFit_\$(tag).sh" >> $condor_fit
             echo "queue tag from (" >> $condor_fit
             for s in ${signals[@]}; do
@@ -385,7 +386,7 @@ case $WHAT in
         ;;
 
     WWW )
-        pdir=${outdir}/${githash}
+        pdir=/eos/cms/${outdir}/${githash}
         if [ -d ${pdir} ]; then
             fdir=${wwwdir}/${githash}
 

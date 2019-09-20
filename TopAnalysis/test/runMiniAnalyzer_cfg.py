@@ -134,7 +134,7 @@ process.source = cms.Source("PoolSource",
                             duplicateCheckMode = cms.untracked.string('noDuplicateCheck') 
                             )
 if '2016' in options.era:
-      process.source.fileNames = cms.untracked.vstring('/store/mc/RunIISummer16MiniAODv3/ST_t-channel_antitop_4f_mtop1715_inclusiveDecays_13TeV-powhegV2-madspin-pythia8/MINIAODSIM/PUMoriond17_94X_mcRun2_asymptotic_v3_ext1-v1/120000/16CEB785-3FE6-E811-AAE8-FA163E9D74F8.root')
+      process.source.fileNames = cms.untracked.vstring('/store/mc/RunIISummer16MiniAODv3/TT_TuneCUETP8M2T4_PSweights_13TeV-powheg-pythia8/MINIAODSIM/94X_mcRun2_asymptotic_v3-v1/100000/B28E96ED-08A6-E911-8D2C-FA163EEC7BB7.root')
 
 if options.runOnData:
       if '2017' in options.era:
