@@ -116,7 +116,8 @@ def doPlot(plotName,chList,extraText,url,outpName,countOnly=False):
                                     break
                             if keep is None: continue
                             py=systH.ProjectionX('px',ybin,ybin)
-                            if countOnly: py=transformToCount(py)
+                            fixExtremities(py) # TH2 needs to be fixed
+			    if countOnly: py=transformToCount(py)
 
                             #store effect on normalization
                             totalS=py.Integral()
