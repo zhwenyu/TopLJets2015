@@ -6,7 +6,6 @@ if [ "$#" -ne 1 ]; then
     echo "   SEL           - launches selection jobs to the batch, output will contain summary trees and control plots"; 
     echo "   MERGESEL      - merge output"
     echo "   PLOTSEL        - make plots"
-    echo "   WWWSEL        - move plots to web-based are"
     echo "   TRAINPUDISCR  - train pileup discriminator"
     echo "   RUNPRED       - run pileup discriminator prediction"
     echo "   PREPAREANA    - prepare bank of events for event mixing from the summary trees"
@@ -15,6 +14,7 @@ if [ "$#" -ne 1 ]; then
     echo "   PLOTANA       - plot analysis results"
     echo "   OPTIMSTATANA  - optimize the statistical analysis"
     echo "   DEFINESTATANA - define the final datacards based on the results of the optimization"
+    echo "   WWW           - move plots to web-based area"
     exit 1; 
 fi
 
@@ -22,6 +22,8 @@ fi
 queue=tomorrow
 githash=ab05162
 eosdir=/store/cmst3/group/top/RunIIReReco/${githash}
+#githash=b949800_newppscalib
+#eosdir=/store/cmst3/group/top/RunIIReReco/2017/${githash}
 signal_dir=/store/cmst3/group/top/RunIIReReco/2017/vxsimulations_19Aug
 outdir=/store/cmst3/user/psilva/ExclusiveAna/final/${githash}
 signal_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/signal_samples.json
@@ -41,6 +43,7 @@ inputfileTag=Data13TeV_2017B_ZeroBias
 inputfileTESTSEL=${eosdir}/${inputfileTag}/Chunk_0_ext0.root
 lumi=41833
 ppsLumi=37500
+lptalumi=2642
 lumiUnc=0.025
 
 
@@ -84,19 +87,13 @@ case $WHAT in
 	;;
 
     PLOTSEL )
-        lumiSpecs="--lumiSpecs a:2642"
+        lumiSpecs="--lumiSpecs a:${lptalumi}"
         kFactorList="--procSF #gamma+jets:1.33"
 	commonOpts="-i /eos/cms/${outdir} --puNormSF puwgtctr -l ${lumi} --mcUnc ${lumiUnc} ${kFactorList} ${lumiSpecs}"
-	python scripts/plotter.py ${commonOpts} -j ${samples_json}    -O plots/sel -o plotter.root --only mboson,mtboson,pt,eta,met,jets,nvtx,ratevsrun --saveLog; 
-        python scripts/plotter.py ${commonOpts} -j ${samples_json}    --rawYields --silent --only gen -O plots/ -o plots/bkg_gen_plotter.root; 
-	python scripts/plotter.py ${commonOpts} -j ${zx_samples_json} --rawYields --silent --only gen -O plots/ -o plots/zx_gen_plotter.root;
-        python test/analysis/pps/computeDileptonSelEfficiency.py         
-	;;
-
-    WWWSEL )
-	mkdir -p ${wwwdir}/presel
-	cp plots/sel/*.{png,pdf} ${wwwdir}/presel
-	cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}/presel
+	python scripts/plotter.py ${commonOpts} -j ${samples_json}    -O /eos/cms/${outdir}/plots/sel -o plotter.root --only mboson,mtboson,pt,eta,met,jets,nvtx,ratevsrun --saveLog; 
+        python scripts/plotter.py ${commonOpts} -j ${samples_json}    --rawYields --silent --only gen -O /eos/cms/${outdir}/plots/ -o plots/bkg_gen_plotter.root; 
+	python scripts/plotter.py ${commonOpts} -j ${zx_samples_json} --rawYields --silent --only gen -O /eos/cms/${outdir}/plots/ -o plots/zx_gen_plotter.root;
+        python test/analysis/pps/computeDileptonSelEfficiency.py /eos/cms/${outdir}/plots/       
 	;;
 
     TRAINPUDISCR )
@@ -146,14 +143,20 @@ case $WHAT in
 
 
     TESTANA )
+
         predin=/eos/cms/${outdir}/Chunks
         file=Data13TeV_2017B_DoubleMuon_0.root
+        file=MC13TeV_2017_DY50toInf_fxfx_0.root
+
+        predin=/eos/cms/${signal_dir}
+        file=Z_m_X_1440_xangle_130_2017_preTS2.root
+
         predout=/eos/cms/${outdir}/analysis
         mix_file=/eos/cms/${outdir}/mixing/mixbank.pck
         
         #run locally
         python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 1 --jobs 1 \
-            --json ${samples_json} --RPout ${RPout_json} -o ${predout} --mix ${mix_file} -i ${predin} --only ${file} --maxEvents 10000;
+            --json ${samples_json},${signal_json} --RPout ${RPout_json} -o ${predout} --mix ${mix_file} -i ${predin} --only ${file} --maxEvents 10000;
         
         ;;
 
@@ -206,14 +209,21 @@ case $WHAT in
 
     PLOTANA )
 
-        lptalumi=2642
-        lumiSpecs="lpta:${lptalumi},lptaneg:${lptalumi},lptapos:${lptalumi},lptahpur:${lptalumi},lptahpur120:${lptalumi},lptahpur130:${lptalumi},lptahpur140:${lptalumi},lptahpur150:${lptalumi}"
-        lumiSpecs="${lumiSpecs},lpta120neg:${lptalumi},lpta130neg:${lptalumi},lpta140neg:${lptalumi},lpta150neg:${lptalumi},lpta120pos:${lptalumi},lpta130pos:${lptalumi},lpta140pos:${lptalumi},lpta150pos:${lptalumi}"
-        lumiSpecs="${lumiSpecs},lptahpur120neg:${lptalumi},lptahpur130neg:${lptalumi},lptahpur140neg:${lptalumi},lptahpur150neg:${lptalumi},lptahpur120pos:${lptalumi},lptahpur130pos:${lptalumi},lptahpur140pos:${lptalumi},lptahpur150pos:${lptalumi}"
-	baseOpts="-i /eos/cms/${outdir}/analysis --lumiSpecs ${lumiSpecs} --procSF #gamma+jets:1.33 -l ${ppsLumi} --mcUnc ${lumiUnc} ${lumiSpecs} ${kFactorList}"
-        
-        plots=xangle_eeZhpur,xangle_mmZhpur,xangle_emhpur,xangle_lptahpur
+        lumiSpecs="mmrpin:${ppsLumi},eerpin:${ppsLumi},emrpin:${ppsLumi},a:${lptalumi}"        
+	baseOpts="-i /eos/cms/${outdir}/analysis --lumiSpecs ${lumiSpecs} --procSF #gamma+jets:1.33 -l ${lumi} --mcUnc ${lumiUnc} ${lumiSpecs} ${kFactorList}"
         commonOpts="${baseOpts} -j ${samples_json} --signalJson ${plot_signal_json} -O /eos/cms/${outdir}/analysis/plots"
+
+        plots=""
+        for evcat in ee mm em a; do
+            for p in nvtx rho xangle mll yll etall ptll l1eta l1pt l2eta l2pt acopl costhetacs; do
+                plots="${p}_${evcat},${plots}"
+            done
+        done
+        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py ${commonOpts} --only ${plots} --strictOnly;
+
+        exit -1
+
+        plots=xangle_eeZhpur,xangle_mmZhpur,xangle_emhpur,xangle_lptahpur        
         python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py ${commonOpts} --only ${plots} --strictOnly --saveTeX --rebin 4;
 
         plots="rawcount"
@@ -255,7 +265,12 @@ case $WHAT in
         python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py ${commonOpts} --only ${plots} --strictOnly --signalJson ${plot_signal_json} --saveLog; # --normToData;
         ;;
 
-    WWWANA )
+    WWW )
+
+	mkdir -p ${wwwdir}/presel
+	cp /eos/cms/${outdir}/plots/*.{png,pdf,dat} ${wwwdir}/presel
+	cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}/presel
+
         mkdir -p ${wwwdir}/ana
         cp /eos/cms/${outdir}/analysis/plots/*.{png,pdf,dat} ${wwwdir}/ana
         cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}/ana
