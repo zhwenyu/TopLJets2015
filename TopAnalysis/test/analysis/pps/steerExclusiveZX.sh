@@ -173,7 +173,7 @@ case $WHAT in
         echo "output      = ${condor_prep}.out" >> $condor_prep
         echo "error       = ${condor_prep}.err" >> $condor_prep
         echo "log         = ${condor_prep}.log" >> $condor_prep
-        echo "arguments   = ${step} ${predout} ${predin} \$(chunk)" ${mix_file} >> $condor_prep
+        echo "arguments   = ${step} ${predout} ${predin} \$(chunk) ${mix_file}" >> $condor_prep
         echo "queue chunk matching (${predin}/*.root)" >> $condor_prep
         condor_submit $condor_prep
 

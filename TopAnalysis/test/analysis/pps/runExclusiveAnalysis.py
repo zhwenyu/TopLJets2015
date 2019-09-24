@@ -38,7 +38,6 @@ def isValidRunLumi(run,lumi,runLumiList):
 
     for lran in runLumiList[run]:
         if lumi>=lran[0] and lumi<=lran[1]:
-            print run,lumi,lran
             return False
 
     #reached this far, nothing found in list

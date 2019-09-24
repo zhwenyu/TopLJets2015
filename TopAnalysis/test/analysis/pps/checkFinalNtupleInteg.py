@@ -21,7 +21,7 @@ def runAnaPacked(args):
     url,tag=args
     os.system('sh test/analysis/pps/wrapAnalysis.sh 1 {0}/analysis {0}/Chunks {1} {0}/mixing/mixbank.pck'.format(url,tag))
 
-dontrun=False
+runMode=2
 url=sys.argv[1]
 
 toCheck=[]
@@ -40,15 +40,26 @@ for f in os.listdir(url+'/Chunks'):
             print 'Corrupted or empty file for',f,e
             toCheck.append(f)
 
-if dontrun:
-
+if runMode==0:
     for x in toCheck:
         print x
-
-else:
-
-    print 'Submitting',len(toCheck),'/',nTot,'jobs'
+elif runMode==1:
+    print 'Running locally',len(toCheck),'/',nTot,'jobs'
     import multiprocessing as MP
     pool = MP.Pool(8)
     pool.map( runAnaPacked,[ (url,x) for x in toCheck ])
-
+elif runMode==2:
+    print 'Submitting',len(toCheck),'/',nTot,'jobs'
+    cmssw_base=os.environ['CMSSW_BASE']
+    with open('zxana_recover.sub','w') as cache:
+        cache.write("executable  = %s/src/TopLJets2015/TopAnalysis/test/analysis/pps/wrapAnalysis.sh\n"%cmssw_base)
+        cache.write("output      = zxana_recover.out\n")
+        cache.write("error       = zxana_recover.err\n")
+        cache.write("log         = zxana_recover.log\n")
+        for x in toCheck:
+            cache.write("arguments   = 1 {predout} {predin} {filein} {mix_file}\n".format(predout=url+'/analysis',
+                                                                                              predin=url+'/Chunks',
+                                                                                              filein=x,
+                                                                                              mix_file=url+'/mixing/mixingback.pck'))
+            cache.write("queue 1\n")
+        #os.system('condor_submit zxana_recover.sub')
