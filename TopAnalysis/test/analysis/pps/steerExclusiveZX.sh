@@ -10,7 +10,8 @@ if [ "$#" -ne 1 ]; then
     echo "   RUNPRED       - run pileup discriminator prediction"
     echo "   PREPAREANA    - prepare bank of events for event mixing from the summary trees"
     echo "   COLLECTMIX    - collects all the mixing events found in PREPAREANA"
-    echo "   ANA           - run analysis on the summary trees"
+    echo "   ANA/ANASIG    - run analysis on the summary trees"
+    echo "   CHECKANA      - check analysis integrity and re-run locally jobs which have failed"
     echo "   PLOTANA       - plot analysis results"
     echo "   OPTIMSTATANA  - optimize the statistical analysis"
     echo "   DEFINESTATANA - define the final datacards based on the results of the optimization"
@@ -41,9 +42,10 @@ inputfileTag=MC13TeV_2017_GJets_HT400to600
 #inputfileTag=Data13TeV_2017B_DoubleMuon
 inputfileTag=Data13TeV_2017B_ZeroBias
 inputfileTESTSEL=${eosdir}/${inputfileTag}/Chunk_0_ext0.root
-lumi=41833
-ppsLumi=37500
+lumi=41529
+ppsLumi=37193
 lptalumi=2642
+lptappslumi=2288
 lumiUnc=0.025
 
 
@@ -99,7 +101,7 @@ case $WHAT in
     TRAINPUDISCR )
         echo "Please remember to use a >10_3_X release for this step"
 
-        commonOpts="--trainFrac 0.3  --RPout test/analysis/pps/golden_noRP.json -o /eos/cms/${outdir}/train_results"
+        commonOpts="--trainFrac 0.3  --RPout ${RPout_json} -o /eos/cms/${outdir}/train_results"
         python test/analysis/pps/trainPUdiscriminators.py ${commonOpts} -s "isZ && evcat==13*13 && bosonpt<10 && trainCat>=0" 
         #python test/analysis/pps/trainPUdiscriminators.py ${commonOpts} -s "hasZBTrigger && trainCat>=0" --zeroBiasTrain
 
@@ -145,11 +147,11 @@ case $WHAT in
     TESTANA )
 
         predin=/eos/cms/${outdir}/Chunks
-        file=Data13TeV_2017B_DoubleMuon_0.root
-        file=MC13TeV_2017_DY50toInf_fxfx_0.root
-
-        predin=/eos/cms/${signal_dir}
-        file=Z_m_X_1440_xangle_130_2017_preTS2.root
+        file=Data13TeV_2017C_DoubleMuon_0.root
+        #file=MC13TeV_2017_DY50toInf_fxfx_0.root
+        
+        #predin=/eos/cms/${signal_dir}
+        #file=Z_m_X_1440_xangle_130_2017_preTS2.root
 
         predout=/eos/cms/${outdir}/analysis
         mix_file=/eos/cms/${outdir}/mixing/mixbank.pck
@@ -203,19 +205,57 @@ case $WHAT in
 
         ;;
 
+    CHECKANA )
+        python test/analysis/pps/checkFinalNtupleInteg.py /eos/cms/${outdir}
+        ;;
+
     MERGEANA )
         mergeOutputs.py /eos/cms/${outdir}/analysis;
         ;;
 
+    PLOTANAPERERA )
+
+        plots=""
+        for evcat in a ee mm em; do
+            for p in ptll mll; do 
+                plots="${p}_${evcat},${plots}"
+            done
+        done        
+        for era in B C D E F; do
+            alumi=${lptalumi}
+            eralumi=${lumi}
+            if [ "${era}" = "B" ]; then
+                alumi=`echo ${alumi}*0.115 | bc`
+                eralumi=`echo ${eralumi}*0.115 | bc`
+            elif [ "${era}" = "C" ]; then
+                alumi=`echo ${alumi}*0.233 | bc`
+                eralumi=`echo ${eralumi}*0.233 | bc`
+            elif [ "${era}" = "D" ]; then
+                alumi=`echo ${alumi}*0.103 | bc`
+                eralumi=`echo ${eralumi}*0.103 | bc`
+            elif [ "${era}" = "E" ]; then
+                alumi=`echo ${alumi}*0.22 | bc`
+                eralumi=`echo ${eralumi}*0.22 | bc`
+            elif [ "${era}" = "F" ]; then
+                alumi=`echo ${alumi}*0.329 | bc`
+                eralumi=`echo ${eralumi}*0.329 | bc`
+            fi
+
+	    baseOpts="-i /eos/cms/${outdir}/analysis --lumiSpecs a:${alumi} --procSF #gamma+jets:1.33 -l ${eralumi} --mcUnc ${lumiUnc}"
+            era_json=test/analysis/pps/test_samples_${era}.json;
+            commonOpts="${baseOpts} -j ${era_json} --signalJson ${plot_signal_json} -O /eos/cms/${outdir}/analysis/plots${era}"
+            python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py ${commonOpts} --only ${plots} --strictOnly;
+        done
+        ;;
     PLOTANA )
 
-        lumiSpecs="mmrpin:${ppsLumi},eerpin:${ppsLumi},emrpin:${ppsLumi},a:${lptalumi}"        
+        lumiSpecs="mmrpin:${ppsLumi},eerpin:${ppsLumi},emrpin:${ppsLumi},a:${lptalumi},arpin:${lptappslumi}"        
 	baseOpts="-i /eos/cms/${outdir}/analysis --lumiSpecs ${lumiSpecs} --procSF #gamma+jets:1.33 -l ${lumi} --mcUnc ${lumiUnc} ${lumiSpecs} ${kFactorList}"
         commonOpts="${baseOpts} -j ${samples_json} --signalJson ${plot_signal_json} -O /eos/cms/${outdir}/analysis/plots"
 
         plots=""
-        for evcat in ee mm em a; do
-            for p in nvtx rho xangle mll yll etall ptll l1eta l1pt l2eta l2pt acopl costhetacs; do
+        for evcat in a ee mm em; do #ee eerpin; do # mm em a; do
+            for p in ptll mll; do # nvtx rho xangle mll yll etall ptll l1eta l1pt l2eta l2pt acopl costhetacs; do
                 plots="${p}_${evcat},${plots}"
             done
         done

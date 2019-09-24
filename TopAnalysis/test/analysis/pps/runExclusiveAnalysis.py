@@ -38,6 +38,7 @@ def isValidRunLumi(run,lumi,runLumiList):
 
     for lran in runLumiList[run]:
         if lumi>=lran[0] and lumi<=lran[1]:
+            print run,lumi,lran
             return False
 
     #reached this far, nothing found in list
@@ -121,12 +122,17 @@ def isSignalFile(inFile):
     isSignal=True if 'gamma_m_X_' in inFile or 'Z_m_X_' in inFile else False
     return isSignal
 
+def isPhotonSignalFile(inFile):
+    isSignal=True if 'gamma_m_X_' in inFile else False
+    return isSignal
+
 def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile,effDir,maxEvents=-1):
     
     """event loop"""
 
     isData=True if 'Data' in inFile else False
     isSignal=isSignalFile(inFile)
+    isPhotonSignal=isPhotonSignalFile(inFile)
 
     #bind main tree with pileup discrimination tree, if failed return
     tree=ROOT.TChain('analysis/data' if isSignal else 'tree')
@@ -250,6 +256,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile,effDir,maxEvents
     for pfix in ['','mix','mixem']:
         summaryVars+='{0}csi1:{0}csi2:{0}mpp:{0}mmiss:{0}nearcsi1:{0}nearcsi2:{0}nearmpp:{0}nearmmiss:'.format(pfix)
     summaryVars=summaryVars.split(':')[0:-1] #cut away last token
+    nfail=[0,0,0]
     for i in xrange(0,nEntries):
 
         tree.GetEntry(i)
@@ -257,17 +264,18 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile,effDir,maxEvents
         if i%1000==0 : sys.stdout.write('\r [ %d/100 ] done' %(int(float(100.*i)/float(nEntries))))
     
         #base event selection
-        if tree.evcat==DIELECTRONS and not tree.isSS and tree.isZ: 
+        if tree.evcat==DIELECTRONS and tree.isZ: 
             evcat='ee'
         elif tree.evcat==EMU       and not tree.isSS: 
             evcat='em'
-        elif tree.evcat==DIMUONS   and not tree.isSS and tree.isZ: 
+        elif tree.evcat==DIMUONS   and tree.isZ: 
             evcat='mm'
-        elif tree.evcat==SINGLEPHOTON and (isSignal or tree.hasATrigger) : 
+        elif tree.evcat==SINGLEPHOTON and (isPhotonSignal or tree.hasATrigger) : 
             evcat="a" 
         elif tree.evcat==0 and tree.hasZBTrigger : 
             evcat=='zbias'
         else : 
+            nfail[0]+=1
             continue
 
         #assign data-taking era and crossing angle
@@ -284,6 +292,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile,effDir,maxEvents
         isRPIn=False if isData else True
         if isData and beamXangle in VALIDLHCXANGLES and isValidRunLumi(tree.run,tree.lumi,runLumiList):
             isRPIn=True
+        if not isRPIn : nfail[1]+=1
 
         #lepton kinematics
         l1p4=ROOT.TLorentzVector(0,0,0,0)
@@ -410,7 +419,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile,effDir,maxEvents
             if isZ:
                 finalPlots=[ [wgt*mcEff['eez'].Eval(boson.Pt())/nEntries, cats],
                              [wgt*mcEff['mmz'].Eval(boson.Pt())/nEntries, [c.replace(evcat,'mm') for c in cats if c[0:2]=='ee']] ]
-            else:
+            elif isPhotonSignal:
                 finalPlots=[ [wgt*mcEff['a'].Eval(boson.Pt())/nEntries, cats] ]
 
         for pwgt,pcats in finalPlots:   
@@ -516,7 +525,9 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile,effDir,maxEvents
                 else:
                     ippSummary += [0,0,0,0]
             evSummary += ippSummary
-        if not passAtLeastOneSelection: continue
+        if not passAtLeastOneSelection: 
+            nfail[2]+=1
+            continue
 
         #for signal update the event weight for ee/mm/photon hypothesis
         if isData:
@@ -559,7 +570,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile,effDir,maxEvents
     #dump events for fitting
     nSelEvents=len(selEvents)
     if nSelEvents>0:
-        print 'Adding',nSelEvents,'selected events to',outFileName
+        print 'Adding',nSelEvents,'selected events to',outFileName,'(',nfail,'events failed baseline selection)'
         fOut=ROOT.TFile.Open(outFileName,'UPDATE')
         fOut.cd()
         t=ROOT.TNtuple('data','data',':'.join(summaryVars))
