@@ -2,7 +2,7 @@
 HOME=`pwd`
 CMSSW=/afs/cern.ch/user/p/psilva/work/CMSSW_9_4_11
 PPS=${CMSSW}/src/TopLJets2015/TopAnalysis/test/analysis/pps
-samples_json=${PPS}/samples.json,${PPS}/signal_samples.json
+samples_json=${PPS}/samples.json,${PPS}/signal_samples.json,${PPS}/signal_samples_postTS2.json
 RPout_json=${PPS}/golden_noRP.json
 cd ${CMSSW}/src
 eval `scram r -sh`
@@ -21,7 +21,7 @@ localout="${localout%.*}"
 a=(`ls Chunks/${localout}.*`)
 for i in ${a[@]}; do
     echo $i
-    echo "xrdcp -f ${i} root://eoscms${2/\/eos\/cms/}/`basename ${i}`"
-    xrdcp -f ${i} root://eoscms${2/\/eos\/cms/}/`basename ${i}`
+    echo "xrdcp -f ${i} root://eoscms${2/\/eos\/cms/}/Chunks/`basename ${i}`"
+    xrdcp -f ${i} root://eoscms${2/\/eos\/cms/}/Chunks/`basename ${i}`
+    rm -v ${i}
 done
-#mv -v ./Chunks/${localout}.* ${2}/Chunks/

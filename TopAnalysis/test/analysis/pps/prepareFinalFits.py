@@ -5,7 +5,7 @@ import numpy as np
 import sys
 import pickle
        
-MASSPOINTS=[800,1000,1200,1400,1600]
+MASSPOINTS=[780,800,840,900,960,1000,1020,1080,1140,1200,1260,1320,1380,1400,1440,1500,1560,1600,1620]
 
 def generateDataCards(baseDir,l1pt,l2pt,bosonpt,categs,runGen):
 
@@ -23,7 +23,7 @@ def generateDataCards(baseDir,l1pt,l2pt,bosonpt,categs,runGen):
             if runGen:
                 for xangle in generateBinnedWorkspace.VALIDLHCXANGLES:
                     generateBinnedWorkspace.main(['--xangle', '%d'%xangle,
-                                                  '--sig',    'MC13TeV_ppxz_m{0}_x{1}.root'.format(m,xangle),
+                                                  '--sig',    'Z_m_X_{0}_xangle_{1}_2017_preTS2.root'.format(m,xangle),
                                                   '--presel', 'cat=={0} && l1pt>{1} && l2pt>{2} && bosonpt>{3}'.format(cat,l1pt,l2pt,bosonpt),
                                                   '--categs', categs,
                                                   '-o',       jobDir
@@ -36,7 +36,7 @@ def generateDataCards(baseDir,l1pt,l2pt,bosonpt,categs,runGen):
             for xangle in generateBinnedWorkspace.VALIDLHCXANGLES:
                 generateBinnedWorkspace.main(['--xangle', '%d'%xangle,
                                               '--lumi',   '2642',
-                                              '--sig',    'MC13TeV_ppxz_gamma_m{0}_x{1}.root'.format(m,xangle),
+                                              '--sig',    'gamma_m_X_{0}_xangle_{1}_2017_preTS2.root'.format(m,xangle),
                                               '--presel', 'cat==22 && bosonpt>{0} && bosonpt<200'.format(bosonpt),
                                               '--categs', categs,
                                               '-o',       jobDir

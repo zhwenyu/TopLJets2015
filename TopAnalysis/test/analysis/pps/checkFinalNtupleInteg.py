@@ -37,6 +37,7 @@ toCheck=[]
 nTot=0
 for f in os.listdir(url+'/Chunks'):
 
+    #if not 'Data' in f : continue
     if step==0 :
         if not ('SingleMuon' in f or 'MuonEG' in f or 'DoubleMuon' in f) :
             continue

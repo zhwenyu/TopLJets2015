@@ -214,7 +214,7 @@ case $WHAT in
         #0-just check
         #1-run locally
         #2-submit to condor
-        python test/analysis/pps/checkFinalNtupleInteg.py /eos/cms/${outdir} 0 1
+        python test/analysis/pps/checkFinalNtupleInteg.py /eos/cms/${outdir} 1 1
         ;;
 
     MERGEANA )
@@ -256,79 +256,61 @@ case $WHAT in
         done
         ;;
 
+    PLOTSENS )
+
+        for xangle in 120 130 140 150; do
+            python test/analysis/pps/estimateLocalSensitivity.py \
+                -i /eos/cms/${outdir}/analysis \
+                -o /eos/cms/${outdir}/analysis/plots \
+                --xangle ${xangle};
+        done
+        ;;
+
     PLOTANA )
 
         lumiSpecs="mmrpin:${ppsLumi},eerpin:${ppsLumi},emrpin:${ppsLumi},a:${lptalumi},arpin:${lptappslumi}"        
-        for c in hpur hpur120xangle hpur130xangle hpur140xangle hpur150xangle rpinhpurneg rpinhpurpos; do
+        for c in neg pos hpur hpurpos hpurneg hpur120xangle hpur130xangle hpur140xangle hpur150xangle; do
             lumiSpecs="${lumiSpecs},mmrpin${c}:${ppsLumi},eerpin${c}:${ppsLumi},emrpin${c}:${ppsLumi},arpin${c}:${lptappslumi}";
         done
 	baseOpts="-i /eos/cms/${outdir}/analysis --lumiSpecs ${lumiSpecs} --procSF #gamma+jets:1.33 -l ${lumi} --mcUnc ${lumiUnc} ${lumiSpecs} ${kFactorList}"
-        commonOpts="${baseOpts} -j ${samples_json} --signalJson ${plot_signal_json} -O /eos/cms/${outdir}/analysis/plots"
+        commonOpts="${baseOpts} -j ${samples_json} --signalJson ${plot_signal_json} -O /eos/cms/${outdir}/analysis/plots --saveLog"
 
-        plots=""
-        cats=("" "rpin" "rpinhpur" "rpinhpur120" "rpinhpur130" "rpinhpur140" "rpinhpur150" "rpinhpurneg" "rpinhpurpos")
-        for evcat in ${cats[@]}; do            
-            for p in ptll mll nvtx rho xangle mll yll etall ptll l1eta l1pt l2eta l2pt acopl costhetacs; do
-                plots="${p}_${evcat},${plots}"
-            done
-
-            if [[ $evcat == *"rpin"* ]]; then
-                for p in nextramu extramupt extramueta mmass ntk ppcount ypp2d ypp mpp mpp2d mmass_full; do
-                    plots="${p}_${evcat},${plots}"
-                done
-            fi
-            
-            if [[ $evcat == *"pos"* || $evcat == *"neg"* ]]; then
-                for p in csi csi2d ppcount; do
-                    plots="${p}_${evcat},${plots}"
-                done
-            fi
-            
-        done
-        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py ${commonOpts} --only ${plots} --strictOnly;
-
-        exit -1
-
-        plots=xangle_eeZhpur,xangle_mmZhpur,xangle_emhpur,xangle_lptahpur        
+        plots=xangle_eerpinhpur,xangle_mmrpinhpur,xangle_emrpinhpur,xangle_arpinhpur
         python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py ${commonOpts} --only ${plots} --strictOnly --saveTeX --rebin 4;
 
-        plots="rawcount"
-        for c in eeZ mmZ em lpta hpta eeZhpur mmZhpur emhpur lptahpur hptahpur; do         
-            for d in acopl ptll yll l1pt l2pt l1eta l2eta mll etall costhetacs nvtx; do
-                plots="${plots},${d}_${c}"                
-            done            
-            continue
-            for d in xangle ntk; do
-                for s in pos neg; do                    
-                    plots="${plots},${d}_${c}${s}"
-                done
-            done
-            for d in csi; do            
-                for x in 120 130 140 150; do
-                    for s in pos neg; do
-                        plots="${plots},${d}_${c}${x}${s}"
-                    done
-                done        
-            done
-            
-            for x in 120 130 140 150; do
-                for d in rho mpp ypp mmass nextramu ptll etall yll mmass_full; do
-                    plots="${plots},${d}_${c}${x}"
-                done
-                for r in HF HE EB EE; do
-                    for d in PFMult PFHt PFPz; do
-                        plots="${plots},${d}${r}_${c}${x}"
-                    done
-                done
-                for d in csi csi2d mpp2d ypp2d; do
-                    for s in pos neg; do
-                        plots="${plots},${d}_${c}${x}${s}"
-                    done
-                done
-            done
-        done
+        cats=(
+            "" 
+            "rpin" 
+            "rpinpos" "rpinneg"
+            "rpinhpur" 
+            "rpinhpurneg" "rpinhpurpos" 
+            "rpinhpur120xangle" "rpinhpur130xangle" "rpinhpur140xangle" "rpinhpur150xangle" 
+        )
+        for ch in mm ee a em; do
+           plots=""
 
-        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py ${commonOpts} --only ${plots} --strictOnly --signalJson ${plot_signal_json} --saveLog; # --normToData;
+            for c in "${cats[@]}"; do            
+                evcat=${ch}${c}
+                
+                for p in ptll mll nvtx rho xangle mll yll etall ptll l1eta l1pt l2eta l2pt acopl costhetacs; do
+                    plots="${p}_${evcat},${plots}"
+                done
+
+                if [[ $evcat == *"rpin"* ]]; then
+                    for p in nextramu extramupt extramueta mmass ppcount ypp2d ypp mpp mpp2d mmass_full; do
+                        plots="${p}_${evcat},${plots}"
+                    done
+                fi
+                
+                if [[ $evcat == *"pos"* || $evcat == *"neg"* ]]; then
+                    for p in ntk csi csi2d ntk; do
+                        plots="${p}_${evcat},${plots}"
+                    done
+                fi            
+            done
+            python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py ${commonOpts} --only ${plots} --strictOnly  -o plots/plotter_${ch}.root &
+        done
+        
         ;;
 
     WWW )
@@ -356,9 +338,9 @@ case $WHAT in
             echo "output      = ${condor_prep}.out" >> $condor_prep
             echo "error       = ${condor_prep}.err" >> $condor_prep
             echo "log         = ${condor_prep}.log" >> $condor_prep
-            echo "+JobFlavour =\"workday\""> $condor_prep
+            echo "+JobFlavour =\"workday\"" >> $condor_prep
             for x in 120 130 140 150; do
-                echo "arguments   = ${m} ${x} ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/analysis/stat_m${m}" >> $condor_prep
+                echo "arguments   = ${CMSSW_BASE} ${m} ${x} ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/analysis/stat_m${m}" >> $condor_prep
                 echo "queue 1" >> $condor_prep
             done
             condor_submit $condor_prep

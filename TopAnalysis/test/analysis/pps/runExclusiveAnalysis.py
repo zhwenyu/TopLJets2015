@@ -262,6 +262,10 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile,effDir,maxEvents
 
         if i%1000==0 : sys.stdout.write('\r [ %d/100 ] done' %(int(float(100.*i)/float(nEntries))))
     
+        if isSignal:
+            if isPhotonSignal and tree.evcat!=SINGLEPHOTON : continue
+            if not isPhotonSignal and tree.evcat==SINGLEPHOTON : continue
+
         #base event selection
         if tree.evcat==DIELECTRONS and tree.isZ: 
             evcat='ee'
@@ -313,6 +317,12 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile,effDir,maxEvents
         boson.SetPtEtaPhiM(tree.bosonpt,tree.bosoneta,tree.bosonphi,tree.mboson)
         isZ=tree.isZ
         isA=tree.isA
+
+        #for the signal-electron hypothesis this cut needs to be applied
+        hasEEEBTransition=False
+        if isZ:
+            if abs(l1p4.Eta())>1.4442 and abs(l1p4.Eta())<1.5660 : hasEEEBTransition=True
+            if abs(l2p4.Eta())>1.4442 and abs(l2p4.Eta())<1.5660 : hasEEEBTransition=True
 
         #PU-related variables
         #for signal most of these will be overriden by mixing       
@@ -419,8 +429,13 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile,effDir,maxEvents
             #signal has been pre-selected in the fiducial phase space so nEntries is 
             #the effective number of events (or sum of weights) generated
             if isZ:
-                finalPlots=[ [wgt*mcEff['eez'].Eval(boson.Pt())/nEntries, cats],
+                finalPlots=[ [wgt*mcEff['eez'].Eval(boson.Pt())/nEntries , cats],
                              [wgt*mcEff['mmz'].Eval(boson.Pt())/nEntries, [c.replace(evcat,'mm') for c in cats if c[0:2]=='ee']] ]
+
+                #reject Z->ee if one electron in the transition
+                if hasEEEBTransition:
+                    finalPlots[0][0]=0.
+
             elif isPhotonSignal:
                 finalPlots=[ [wgt*mcEff['a'].Eval(boson.Pt())/nEntries, cats] ]
 
@@ -537,10 +552,11 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile,effDir,maxEvents
         elif isSignal:
             if isZ:
                 #add a copy for ee
-                eeEvSummary=copy.copy(evSummary)
-                eeEvSummary[0]=DIELECTRONS
-                eeEvSummary[1]=evSummary[1]*mcEff['eez'].Eval(boson.Pt())/nEntries
-                selEvents.append(eeEvSummary)
+                if not hasEEEBTransition:
+                    eeEvSummary=copy.copy(evSummary)
+                    eeEvSummary[0]=DIELECTRONS
+                    eeEvSummary[1]=evSummary[1]*mcEff['eez'].Eval(boson.Pt())/nEntries
+                    selEvents.append(eeEvSummary)
                 
                 #add a copy for mm
                 mmEvSummary=copy.copy(evSummary)
