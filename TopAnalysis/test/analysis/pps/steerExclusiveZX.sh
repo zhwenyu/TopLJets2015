@@ -139,6 +139,10 @@ case $WHAT in
 
         ;;
 
+    CHECKMIX )
+        python test/analysis/pps/checkFinalNtupleInteg.py /eos/cms/${outdir} 0 0
+        ;;
+
     COLLECTMIX )
         python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/collectEventsForMixing.py /eos/cms/${outdir}
         ;;
@@ -147,9 +151,10 @@ case $WHAT in
     TESTANA )
 
         predin=/eos/cms/${outdir}/Chunks
-        file=Data13TeV_2017C_DoubleMuon_0.root
+        #file=Data13TeV_2017D_DoubleEG_2.root
         #file=MC13TeV_2017_DY50toInf_fxfx_0.root
-        
+        file=Data13TeV_2017C_DoubleEG_0.root
+
         #predin=/eos/cms/${signal_dir}
         #file=Z_m_X_1440_xangle_130_2017_preTS2.root
 
@@ -206,7 +211,10 @@ case $WHAT in
         ;;
 
     CHECKANA )
-        python test/analysis/pps/checkFinalNtupleInteg.py /eos/cms/${outdir}
+        #0-just check
+        #1-run locally
+        #2-submit to condor
+        python test/analysis/pps/checkFinalNtupleInteg.py /eos/cms/${outdir} 0 1
         ;;
 
     MERGEANA )
@@ -247,17 +255,35 @@ case $WHAT in
             python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py ${commonOpts} --only ${plots} --strictOnly;
         done
         ;;
+
     PLOTANA )
 
         lumiSpecs="mmrpin:${ppsLumi},eerpin:${ppsLumi},emrpin:${ppsLumi},a:${lptalumi},arpin:${lptappslumi}"        
+        for c in hpur hpur120xangle hpur130xangle hpur140xangle hpur150xangle rpinhpurneg rpinhpurpos; do
+            lumiSpecs="${lumiSpecs},mmrpin${c}:${ppsLumi},eerpin${c}:${ppsLumi},emrpin${c}:${ppsLumi},arpin${c}:${lptappslumi}";
+        done
 	baseOpts="-i /eos/cms/${outdir}/analysis --lumiSpecs ${lumiSpecs} --procSF #gamma+jets:1.33 -l ${lumi} --mcUnc ${lumiUnc} ${lumiSpecs} ${kFactorList}"
         commonOpts="${baseOpts} -j ${samples_json} --signalJson ${plot_signal_json} -O /eos/cms/${outdir}/analysis/plots"
 
         plots=""
-        for evcat in a ee mm em; do #ee eerpin; do # mm em a; do
-            for p in ptll mll; do # nvtx rho xangle mll yll etall ptll l1eta l1pt l2eta l2pt acopl costhetacs; do
+        cats=("" "rpin" "rpinhpur" "rpinhpur120" "rpinhpur130" "rpinhpur140" "rpinhpur150" "rpinhpurneg" "rpinhpurpos")
+        for evcat in ${cats[@]}; do            
+            for p in ptll mll nvtx rho xangle mll yll etall ptll l1eta l1pt l2eta l2pt acopl costhetacs; do
                 plots="${p}_${evcat},${plots}"
             done
+
+            if [[ $evcat == *"rpin"* ]]; then
+                for p in nextramu extramupt extramueta mmass ntk ppcount ypp2d ypp mpp mpp2d mmass_full; do
+                    plots="${p}_${evcat},${plots}"
+                done
+            fi
+            
+            if [[ $evcat == *"pos"* || $evcat == *"neg"* ]]; then
+                for p in csi csi2d ppcount; do
+                    plots="${p}_${evcat},${plots}"
+                done
+            fi
+            
         done
         python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py ${commonOpts} --only ${plots} --strictOnly;
 

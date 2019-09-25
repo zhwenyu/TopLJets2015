@@ -206,7 +206,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile,effDir,maxEvents
     ht.add(ROOT.TH1F('l1eta',';Pseudo-rapidiy;Events',50,0,2.5))
     ht.add(ROOT.TH1F('l1pt',';Transverse momentum [GeV];Events',50,0,250))
     ht.add(ROOT.TH1F('l2eta',';Pseudo-rapidiy;Events',50,0,2.5))
-    ht.add(ROOT.TH1F('l2pt',';LTransverse momentum [GeV];Events',50,0,250))
+    ht.add(ROOT.TH1F('l2pt',';Transverse momentum [GeV];Events',50,0,250))
     ht.add(ROOT.TH1F('acopl',';A=1-|#Delta#phi|/#pi;Events',50,0,1))
     ht.add(ROOT.TH1F('costhetacs',';cos#theta_{CS};Events',50,-1,1))
 
@@ -358,9 +358,12 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile,effDir,maxEvents
             continue
 
         #event mixing
-        mixed_far_rptks,mixed_near_rptks={},{}
+        mixed_far_rptks,mixed_near_rptks={DIMUONS:None,EMU:None},{DIMUONS:None,EMU:None}
         try:
             for mixEvCat in [DIMUONS,EMU]:
+
+                if isData and not beamXangle in VALIDLHCXANGLES : continue
+
                 mixedEvKey                 = (evEra,beamXangle,mixEvCat)
                 mixedEv                    = random.choice( mixedRP[mixedEvKey] )
                 mixed_far_rptks[mixEvCat]  = mixedEv.far_rptks

@@ -18,4 +18,10 @@ python $PPS/runExclusiveAnalysis.py --step $1 --json ${samples_json} --RPout ${R
 mkdir -p ${2}/Chunks
 localout=`basename $4`
 localout="${localout%.*}"
-cp -v ./Chunks/${localout}.* $2/Chunks/
+a=(`ls Chunks/${localout}.*`)
+for i in ${a[@]}; do
+    echo $i
+    echo "xrdcp -f ${i} root://eoscms${2/\/eos\/cms/}/`basename ${i}`"
+    xrdcp -f ${i} root://eoscms${2/\/eos\/cms/}/`basename ${i}`
+done
+#mv -v ./Chunks/${localout}.* ${2}/Chunks/
