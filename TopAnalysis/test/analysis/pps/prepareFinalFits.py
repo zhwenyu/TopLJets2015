@@ -14,35 +14,46 @@ def generateDataCards(baseDir,l1pt,l2pt,bosonpt,categs,runGen):
     dataCards={}
 
     os.system('mkdir -p %s'%baseDir)
+    errorList=[]
     for m in MASSPOINTS:
-        dataCards[m]={'Z':[],'gamma':[]}
+        try:
+            dataCards[m]={'Z':[],'gamma':[]}
 
-        #ee/mumu cases
-        for cat in [121,169]:
-            jobDir='%s/m%d/cat%d'%(baseDir,m,cat)
+            #ee/mumu cases
+            for cat in [121,169]:
+                jobDir='%s/m%d/cat%d'%(baseDir,m,cat)
+                if runGen:
+                    for xangle in generateBinnedWorkspace.VALIDLHCXANGLES:
+                        generateBinnedWorkspace.main(['--xangle', '%d'%xangle,
+                                                      '--sig',    'Z_m_X_{0}_xangle_{1}_2017_preTS2_opt_v1_simu_reco.root'.format(m,xangle),
+                                                      '--presel', 'cat=={0} && l1pt>{1} && l2pt>{2} && bosonpt>{3}'.format(cat,l1pt,l2pt,bosonpt),
+                                                      '--categs', categs,
+                                                      '-o',       jobDir
+                                                  ])
+                dataCards[m]['Z'].append( jobDir )
+                
+            #photon case
+            continue
+            jobDir='%s/m%d/cat22'%(baseDir,m)
             if runGen:
                 for xangle in generateBinnedWorkspace.VALIDLHCXANGLES:
                     generateBinnedWorkspace.main(['--xangle', '%d'%xangle,
-                                                  '--sig',    'Z_m_X_{0}_xangle_{1}_2017_preTS2.root'.format(m,xangle),
-                                                  '--presel', 'cat=={0} && l1pt>{1} && l2pt>{2} && bosonpt>{3}'.format(cat,l1pt,l2pt,bosonpt),
+                                                  '--lumi',   '2288',
+                                                  '--sig',    'gamma_m_X_{0}_xangle_{1}_2017_preTS2_opt_v1_simu_reco.root'.format(m,xangle),
+                                                  '--presel', 'cat==22 && bosonpt>{0} && bosonpt<200'.format(bosonpt),
                                                   '--categs', categs,
                                                   '-o',       jobDir
-                                                  ])
-            dataCards[m]['Z'].append( jobDir )
-                
-        #photon case
-        jobDir='%s/m%d/cat22'%(baseDir,m)
-        if runGen:
-            for xangle in generateBinnedWorkspace.VALIDLHCXANGLES:
-                generateBinnedWorkspace.main(['--xangle', '%d'%xangle,
-                                              '--lumi',   '2642',
-                                              '--sig',    'gamma_m_X_{0}_xangle_{1}_2017_preTS2.root'.format(m,xangle),
-                                              '--presel', 'cat==22 && bosonpt>{0} && bosonpt<200'.format(bosonpt),
-                                              '--categs', categs,
-                                              '-o',       jobDir
                                               ])
-        dataCards[m]['gamma'].append( jobDir )
-            
+                dataCards[m]['gamma'].append( jobDir )
+        except Exception as e:
+            errorList.append( (m,e) )
+
+    if len(errorList)>0:
+        for m,e in errorList:
+            print m
+            print e
+        raw_input()
+        
 
     return dataCards
 
@@ -77,13 +88,21 @@ def runFits(inputDirs):
     return results
     
 
-runGen=False
-baseDir='analysis/nicolafit'
+runGen=True
+
+#baseDir='analysis/nicolafit'
+#l1pt=30
+#l2pt=20
+#bosonpt=50
+
+baseDir='analysis/finalfit'
 l1pt=30
 l2pt=20
 bosonpt=50
 categs='nvtx<20,nvtx>=20'
+
 dataCards=generateDataCards(baseDir,l1pt,l2pt,bosonpt,categs,runGen)
+
 results=[]
 for m in dataCards:
     for proc in dataCards[m]:

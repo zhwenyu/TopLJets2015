@@ -21,7 +21,7 @@ localout="${localout%.*}"
 a=(`ls Chunks/${localout}.*`)
 for i in ${a[@]}; do
     echo $i
-    echo "xrdcp -f ${i} root://eoscms${2/\/eos\/cms/}/Chunks/`basename ${i}`"
-    xrdcp -f ${i} root://eoscms${2/\/eos\/cms/}/Chunks/`basename ${i}`
+    echo "xrdcp -f ${i} root://eoscms/${2/\/eos\/cms/}/Chunks/`basename ${i}`"
+    xrdcp -f ${i} root://eoscms/${2/\/eos\/cms/}/Chunks/`basename ${i}`
     rm -v ${i}
 done
