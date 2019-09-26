@@ -178,7 +178,7 @@ case $WHAT in
     BKG )
 	commonOpts="-i /eos/cms/${outdir}/${githash} --puNormSF puwgtctr -l ${fulllumi} --saveLog --mcUnc ${lumiUnc}"
         commonOpts="${commonOpts} --procSF t#bar{t}:0.965"
-	python scripts/plotter.py ${commonOpts} -j ${json} --only mll --silent -o dy_plotter.root;
+	python scripts/plotter.py ${commonOpts} -j ${json} --only mll,mlb --silent -o dy_plotter.root;
         python test/analysis/top17010/estimateDY.py -i /eos/cms/${outdir}/${githash}/plots/dy_plotter.root -o /eos/cms/${outdir}/${githash}/plots/;
         ;;
 
