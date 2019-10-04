@@ -210,8 +210,11 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile,effDir,maxEvents
         ht.add(ROOT.TH1F('PFHt'+d,';PF HT (%s) [GeV];Events'%d,50,0,1000))
         ht.add(ROOT.TH1F('PFPz'+d,';PF P_{z} (%s) [TeV];Events'%d,50,0,40))
     ht.add(ROOT.TH1F('met',';Missing transverse energy [GeV];Events',50,0,200))
+    ht.add(ROOT.TH1F('mpf',';MPF;Events',50,0,200))
     ht.add(ROOT.TH1F('metbits',';MET filters;Events',124,0,124))
     ht.add(ROOT.TH1F('njets',';Jet multiplicity;Events',5,0,5))
+    ht.add(ROOT.TH1F('zjb',';Z-jet balance [GeV];Events',50,-150,150))
+    ht.add(ROOT.TH1F('zj2b',';Z-2 jets balance [GeV];Events',50,-150,150))
     ht.add(ROOT.TH1F('nch', ';Charged particle multiplicity;Events',50,0,50))
     ht.add(ROOT.TH1F('nextramu',';Additional muons ;Events',10,0,10))
     ht.add(ROOT.TH1F('extramupt',';Additional muon p_{T} [GeV] ;Events',10,0,50))
@@ -250,7 +253,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile,effDir,maxEvents
     rpData={}
     selEvents=[]
     summaryVars='cat:wgt:xangle:'
-    summaryVars+='l1pt:l1eta:l2pt:l2eta:acopl:bosonpt:bosoneta:bosony:costhetacs:'
+    summaryVars+='l1pt:l1eta:l2pt:l2eta:acopl:bosonpt:bosoneta:bosony:costhetacs:njets:mpf:zjb:zj2b:'
     summaryVars+='nch:nvtx:rho:PFMultSumHF:PFHtSumHF:PFPzSumHF:rfc:gen_pzpp:gen_pzwgtUp:gen_pzwgtDown:'
     for pfix in ['','syst']:
         summaryVars+='{0}csi1:{0}csi2:{0}nearcsi1:{0}nearcsi2:{0}mpp:{0}ypp:{0}pzpp:{0}mmiss:'.format(pfix)
@@ -328,12 +331,14 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile,effDir,maxEvents
         #PU-related variables
         #for signal most of these will be overriden by mixing       
         n_extra_mu,nvtx,nch,rho,met,njets,PFMultSumHF,PFHtSumHF,PFPzSumHF,rfc=0,0,0,0,0,0,0,0,0,0
+        mpf,zjb,zj2b=0,0,0
         extra_muons=[]
         if not isSignal:
             nvtx=tree.nvtx
             nch=tree.nchPV
             rho=tree.rho
             met=tree.met_pt
+            metphi=tree.met_phi
             njets=tree.nj 
             PFMultSumHF=tree.PFMultSumHF
             PFHtSumHF=tree.PFHtSumHF
@@ -346,6 +351,19 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile,effDir,maxEvents
                 if mup4.DeltaR(l2p4)<0.05 : continue
                 extra_muons.append( ROOT.TLorentzVector(mup4) )
             n_extra_mu=len(extra_muons)
+            
+            metp4=TLorentzVector(0,0,0,0)
+            metp4.SetPtEtaPhiM(met,0,metphi,0)
+            mpf=1.+(metp4.Px()*boson.Px()+metp4.Py()*boson.Py())/(boson.Pt()**2+1.0e-6)            
+            if njets>0: 
+                zjb=tree.j1pt-boson.Pt()
+                if njets>1:
+                    j1p4=ROOT.TLorentzVector(0,0,0,0)
+                    j1p4.SetPtEtaPhiM(tree.j1pt,tree.j1eta,tree.j1phi,tree.j1m)
+                    j2p4=ROOT.TLorentzVector(0,0,0,0)
+                    j2p4.SetPtEtaPhiM(tree.j2pt,tree.j2eta,tree.j2phi,tree.j2m)
+                    zj2b=(j1p4+j2p4).Pt()-boson.Pt()
+
 
         #proton tracks (standard and mixed)
         far_rptks, near_rptks = None, None
@@ -445,7 +463,10 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile,effDir,maxEvents
             ht.fill((nvtx,pwgt),                  'nvtx',   pcats)
             ht.fill((rho,pwgt),                   'rho',    pcats)
             ht.fill((met,pwgt),                   'met',    pcats)
+            ht.fill((mpf,pwgt),                   'mpf',    pcats)
             ht.fill((njets,pwgt),                 'njets',  pcats)
+            if njets>0: ht.fill((zjb,pwgt),       'zjb',    pcats)
+            if njets>1: ht.fill((zj2b,pwgt),      'zj2b',   pcats)
             ht.fill((nch,pwgt),                   'nch',    pcats) 
             #ht.fill((getattr(tree,'rfc_%d'%beamXangle),pwgt), 'rfc',         pcats)
             ht.fill((PFMultSumHF,pwgt),     'PFMultHF',    pcats)
@@ -512,6 +533,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile,effDir,maxEvents
 
             evSummary=[tree.evcat,wgt,beamXangle,
                        l1p4.Pt(),l1p4.Eta(),l2p4.Pt(),l2p4.Eta(),acopl,boson.Pt(),boson.Eta(),boson.Rapidity(),costhetacs,
+                       njets,mpf,zjb,jz2b,
                        nch,nvtx,rho,PFMultSumHF,PFHtSumHF,PFPzSumHF,rfc,gen_pzpp,gen_pzwgt[1],gen_pzwgt[2]]
             
             if itry==0:
