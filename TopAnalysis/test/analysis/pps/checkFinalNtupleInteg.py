@@ -18,24 +18,27 @@ def getEntries(url,tname):
     return n
 
 def runAnaPacked(args):
-    url,tag,step,stepDir,mix_file=args
+    inurl,outurl,tag,step,stepDir,mix_file=args
+    os.system('sh test/analysis/pps/wrapAnalysis.sh {step} {outurl} {inurl} {tag} {mix_file}'.format(step=step,
+                                                                                                     outurl=outurl,
+                                                                                                     inurl=inurl,
+                                                                                                     tag=tag,
+                                                                                                     stepDir=stepDir,
+                                                                                                     mix_file=mix_file))
 
-    os.system('sh test/analysis/pps/wrapAnalysis.sh {step} {url}/{stepDir} {url}/Chunks {tag} {mix_file}'.format(step=step,
-                                                                                                                 url=url,
-                                                                                                                 tag=tag,
-                                                                                                                 stepDir=stepDir,
-                                                                                                                 mix_file=mix_file))
 
-
-url=sys.argv[1]
-runMode=int(sys.argv[2])
-step=int(sys.argv[3])
+inurl=sys.argv[1]
+outurl=sys.argv[2]
+runMode=int(sys.argv[3])
+step=int(sys.argv[4])
+mix_file=''
+if len(sys.argv)>5:
+    mix_file=sys.argv[5]
 stepDir='analysis' if step==1 else 'mixing'
-mix_file=url+'/mixing/mixbank.pck' if step==1 else ''
 
 toCheck=[]
 nTot=0
-for f in os.listdir(url+'/Chunks'):
+for f in os.listdir(inurl):
 
     #if not 'Data' in f : continue
     if step==0 :
@@ -44,7 +47,7 @@ for f in os.listdir(url+'/Chunks'):
             
     nTot+=1
 
-    fullf=os.path.join(url+'/%s/Chunks'%stepDir,f)
+    fullf=os.path.join(outurl,f)
 
     if step==0:
         if not os.path.isfile(fullf.replace('.root','.pck')): 
@@ -68,7 +71,7 @@ elif runMode==1:
     print 'Running locally',len(toCheck),'/',nTot,'jobs'
     import multiprocessing as MP
     pool = MP.Pool(8)
-    pool.map( runAnaPacked,[ (url,x,step,stepDir,mix_file) for x in toCheck ])
+    pool.map( runAnaPacked,[ (inurl,outurl,x,step,stepDir,mix_file) for x in toCheck ])
 elif runMode==2:
     print 'Submitting',len(toCheck),'/',nTot,'jobs'
     cmssw_base=os.environ['CMSSW_BASE']
@@ -79,8 +82,8 @@ elif runMode==2:
         cache.write("log         = zxana_recover.log\n")
         for x in toCheck:
             cache.write("arguments   = {step} {predout} {predin} {filein} {mix_file}\n".format(step=step,
-                                                                                               predout=url+'/'+stepDir,
-                                                                                               predin=url+'/Chunks',
+                                                                                               predout=outurl.replace('/Chunks',''),
+                                                                                               predin=inurl,
                                                                                                filein=x,
                                                                                                mix_file=mix_file))
             cache.write("queue 1\n")

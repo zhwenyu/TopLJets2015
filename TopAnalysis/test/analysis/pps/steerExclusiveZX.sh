@@ -25,8 +25,9 @@ githash=ab05162
 eosdir=/store/cmst3/group/top/RunIIReReco/${githash}
 #githash=b949800_newppscalib
 #eosdir=/store/cmst3/group/top/RunIIReReco/2017/${githash}
-signal_dir=/store/cmst3/group/top/RunIIReReco/2017/vxsimulations_19Aug
+signal_dir=/store/cmst3/group/top/RunIIReReco/2017/vxsimulations_30Sep
 outdir=/store/cmst3/user/psilva/ExclusiveAna/final/${githash}
+anadir=${outdir}/analysis_0p05
 signal_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/signal_samples.json
 plot_signal_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/plot_signal_samples.json
 samples_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/samples.json
@@ -121,16 +122,29 @@ case $WHAT in
         condor_submit $condor_prep
         ;;
 
-    PREPAREANA )       
+    TESTPREPAREMIX )
+
+        predin=/eos/cms/${outdir}/Chunks
+        file=Data13TeV_2017D_DoubleMuon_2.root
+        predout=/eos/cms/${anadir}/mixing
+        mkdir -p $predout
+        
+        #run locally
+        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 0 --jobs 1 \
+            --json ${samples_json},${signal_json} --RPout ${RPout_json} -o ${predout} -i ${predin} --only ${file} --maxEvents 10000;
+        
+        ;;
+
+    PREPAREMIX )       
         step=0
         predin=/eos/cms/${outdir}/Chunks
-        predout=/eos/cms/${outdir}/mixing
+        predout=/eos/cms/${anadir}/mixing
         condor_prep=runana_condor.sub
         echo "executable  = ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/pps/wrapAnalysis.sh" > $condor_prep
         echo "output      = ${condor_prep}.out" >> $condor_prep
         echo "error       = ${condor_prep}.err" >> $condor_prep
         echo "log         = ${condor_prep}.log" >> $condor_prep
-        echo "arguments   = ${step} ${predout} ${predin} \$(chunk)" >> $condor_prep
+        echo "arguments   = ${CMSSW_BASE} ${step} ${predout} ${predin} \$(chunk)" >> $condor_prep
         echo "queue chunk matching (${predin}/Data*.root)" >> $condor_prep
         condor_submit $condor_prep
         
@@ -139,12 +153,13 @@ case $WHAT in
 
         ;;
 
+
     CHECKMIX )
-        python test/analysis/pps/checkFinalNtupleInteg.py /eos/cms/${outdir} 0 0
+        python test/analysis/pps/checkFinalNtupleInteg.py ${anadir} 0 0
         ;;
 
     COLLECTMIX )
-        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/collectEventsForMixing.py /eos/cms/${outdir}
+        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/collectEventsForMixing.py ${anadir}
         ;;
 
 
@@ -155,11 +170,11 @@ case $WHAT in
         #file=MC13TeV_2017_DY50toInf_fxfx_0.root
         file=Data13TeV_2017C_DoubleEG_0.root
 
-        #predin=/eos/cms/${signal_dir}
-        #file=Z_m_X_1440_xangle_130_2017_preTS2.root
+        predin=/eos/cms/${signal_dir}
+        file=Z_m_X_1440_xangle_130_2017_preTS2.root
 
-        predout=/eos/cms/${outdir}/analysis
-        mix_file=/eos/cms/${outdir}/mixing/mixbank.pck
+        predout=${anadir}
+        mix_file=${anadir}/mixing/mixbank.pck
         
         #run locally
         python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 1 --jobs 1 \
@@ -214,7 +229,11 @@ case $WHAT in
         #0-just check
         #1-run locally
         #2-submit to condor
-        python test/analysis/pps/checkFinalNtupleInteg.py /eos/cms/${outdir} 1 1
+        python test/analysis/pps/checkFinalNtupleInteg.py /eos/cms/${outdir}/Chunks /eos/cms/${outdir}/analysis/Chunks 2 1 /eos/cms/${outdir}/mixing/mixbank.pck
+        ;;
+   
+    CHECKANASIG )
+        python test/analysis/pps/checkFinalNtupleInteg.py /eos/cms/${signal_dir} /eos/cms/${outdir}/analysis/Chunks 1 1 /eos/cms/${outdir}/mixing/mixbank.pck
         ;;
 
     MERGEANA )
@@ -297,7 +316,7 @@ case $WHAT in
                 done
 
                 if [[ $evcat == *"rpin"* ]]; then
-                    for p in nextramu extramupt extramueta mmass ppcount ypp2d ypp mpp mpp2d mmass_full; do
+                    for p in nextramu extramupt extramueta mmass ppcount ypp2d ypp mpp pzpp mpp2d mmass_full; do
                         plots="${p}_${evcat},${plots}"
                     done
                 fi
@@ -343,6 +362,7 @@ case $WHAT in
                 echo "arguments   = ${CMSSW_BASE} ${m} ${x} ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/analysis/stat_m${m}" >> $condor_prep
                 echo "queue 1" >> $condor_prep
             done
+
             condor_submit $condor_prep
         done
         ;;

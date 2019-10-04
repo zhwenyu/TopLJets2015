@@ -166,6 +166,7 @@ case $WHAT in
             for m in ${mtList[@]}; do
                 midx=`python -c "print int(($m-169)/0.25)"`
                 flag=`python -c "print (($midx<<16)|($gidx))"`
+                ls -ltrh /eos/cms/${outdir}/${githash}/scenario${flag}/*.root;
 	        ./scripts/mergeOutputs.py /eos/cms/${outdir}/${githash}/scenario${flag};
             done
         done

@@ -19,7 +19,7 @@ def defineCsiAcceptanceAndBinning(url,mass):
     if not url : return {}
     with open(url,'r') as f:
         csiaccParam=pickle.load(f)
-        resolParam=pickle.load(f)
+        #resolParam=pickle.load(f)
 
     csiacc={}
     for xangle in VALIDLHCXANGLES:
@@ -27,7 +27,7 @@ def defineCsiAcceptanceAndBinning(url,mass):
         for rp in [23,123]:
             a,b=csiaccParam[(xangle,'pre',rp)]
             csiacc[xangle].append( (a+b*mass/1000.,0.18) )
-    return csiacc,resolParam
+    return csiacc #,resolParam
 
 
 def defineProcessTemplates(histos,norm=False):
@@ -157,7 +157,7 @@ def fillSignalTemplates(opt):
     dataAlt.AddFile(os.path.join(opt.input,opt.sig).replace('preTS2','postTS2'))
 
     #define final preselection cuts
-    cuts='xangle==%d'%opt.xangle
+    cuts='xangle==%d && gen_pzpp>-300 && gen_pzpp<500'%opt.xangle
     if len(opt.presel) : cuts += ' && ' + opt.presel
     if opt.csiacc:
         csiCuts ='csi1>%f && csi1<%f && '%opt.csiacc[opt.xangle][0]
@@ -328,14 +328,14 @@ def main(args):
     opt.mass=int(opt.sig.split('_')[3])
 
     if opt.csiacc: 
-        opt.csiacc,resolParam=defineCsiAcceptanceAndBinning(opt.csiacc,opt.mass)
-        setattr(opt,'massResol',resolParam[(opt.xangle,'pre')].Eval(opt.mass))
-        setattr(opt,'nbins', ROOT.TMath.FloorNint( (opt.mMax-opt.mMin)/(opt.massResol)) )
+        opt.csiacc=defineCsiAcceptanceAndBinning(opt.csiacc,opt.mass)
     else:
         opt.csiacc={}
-        for a in VALIDLHCXANGLES : opt.csiacc[a]=[(0.02,0.18),(0.02,0.18)]
-        setattr(opt,'massResol',50)
-        setattr(opt,'nbins',ROOT.TMath.FloorNint( (opt.mMax-opt.mMin)/(opt.massResol)) )
+        for a in VALIDLHCXANGLES : opt.csiacc[a]=[(0.02,0.13),(0.02,0.15)]
+
+    setattr(opt,'massResol',50) 
+    setattr(opt,'nbins', ROOT.TMath.FloorNint( (opt.mMax-opt.mMin)/(opt.massResol)) )
+        
 
     print '[generateWorkspace]'
     print '\t signal from',opt.sig,'mass=',opt.mass

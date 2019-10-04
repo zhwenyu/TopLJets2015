@@ -15,6 +15,7 @@ def runWorkspacePacked(args):
                                       '--sig',    'Z_m_X_{0}_xangle_{1}_2017_preTS2_opt_v1_simu_reco.root'.format(m,xangle),
                                       '--presel', 'cat==169 && l1pt>{0} && l2pt>{1} && bosonpt>{2}'.format(l1pt,l2pt,bosonpt),
                                       '--categs', categs,
+                                      '--csiacc', '{cmssw}/src/TopLJets2015/TopAnalysis/test/analysis/pps/csiaccparam_Z.pck'.format(cmssw=os.environ['CMSSW_BASE']),
                                       '-o',       '%s/optim_task%d'%(baseDir,itask)
                                   ])
 
