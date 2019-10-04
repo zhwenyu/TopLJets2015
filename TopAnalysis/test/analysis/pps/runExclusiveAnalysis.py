@@ -352,7 +352,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile,effDir,maxEvents
                 extra_muons.append( ROOT.TLorentzVector(mup4) )
             n_extra_mu=len(extra_muons)
             
-            metp4=TLorentzVector(0,0,0,0)
+            metp4=ROOT.TLorentzVector(0,0,0,0)
             metp4.SetPtEtaPhiM(met,0,metphi,0)
             mpf=1.+(metp4.Px()*boson.Px()+metp4.Py()*boson.Py())/(boson.Pt()**2+1.0e-6)            
             if njets>0: 
@@ -363,7 +363,6 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,mixFile,effDir,maxEvents
                     j2p4=ROOT.TLorentzVector(0,0,0,0)
                     j2p4.SetPtEtaPhiM(tree.j2pt,tree.j2eta,tree.j2phi,tree.j2m)
                     zj2b=(j1p4+j2p4).Pt()-boson.Pt()
-
 
         #proton tracks (standard and mixed)
         far_rptks, near_rptks = None, None

@@ -155,11 +155,11 @@ case $WHAT in
 
 
     CHECKMIX )
-        python test/analysis/pps/checkFinalNtupleInteg.py ${anadir} 0 0
+        python test/analysis/pps/checkFinalNtupleInteg.py /eos/cms/${outdir}/Chunks /eos/cms/${anadir}/mixing/Chunks 1 0
         ;;
 
     COLLECTMIX )
-        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/collectEventsForMixing.py ${anadir}
+        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/collectEventsForMixing.py /eos/cms/${anadir}
         ;;
 
 
@@ -311,7 +311,7 @@ case $WHAT in
             for c in "${cats[@]}"; do            
                 evcat=${ch}${c}
                 
-                for p in ptll mll nvtx rho xangle mll yll etall ptll l1eta l1pt l2eta l2pt acopl costhetacs; do
+                for p in ptll mll nvtx rho xangle mll yll etall ptll l1eta l1pt l2eta l2pt acopl costhetacs met njets mpf zjb zj2b; do
                     plots="${p}_${evcat},${plots}"
                 done
 

@@ -19,12 +19,13 @@ def getEntries(url,tname):
 
 def runAnaPacked(args):
     inurl,outurl,tag,step,stepDir,mix_file=args
-    os.system('sh test/analysis/pps/wrapAnalysis.sh {step} {outurl} {inurl} {tag} {mix_file}'.format(step=step,
-                                                                                                     outurl=outurl,
-                                                                                                     inurl=inurl,
-                                                                                                     tag=tag,
-                                                                                                     stepDir=stepDir,
-                                                                                                     mix_file=mix_file))
+    os.system('sh test/analysis/pps/wrapAnalysis.sh {cmssw} {step} {outurl} {inurl} {tag} {mix_file}'.format(cmssw=os.environ['CMSSW_BASE'],
+                                                                                                             step=step,
+                                                                                                             outurl=outurl,
+                                                                                                             inurl=inurl,
+                                                                                                             tag=tag,
+                                                                                                             stepDir=stepDir,
+                                                                                                             mix_file=mix_file))
 
 
 inurl=sys.argv[1]
@@ -50,7 +51,8 @@ for f in os.listdir(inurl):
     fullf=os.path.join(outurl,f)
 
     if step==0:
-        if not os.path.isfile(fullf.replace('.root','.pck')): 
+        fullf=fullf.replace('.root','.pck')
+        if not os.path.isfile(fullf): 
             print 'Missing in action',fullf
             toCheck.append(f)
     else:
@@ -64,10 +66,15 @@ for f in os.listdir(inurl):
                 print 'Corrupted or empty file for',f,e
                 toCheck.append(f)
 
-if runMode==0:
-    for x in toCheck:
-        print x
-elif runMode==1:
+
+print '-'*50
+print 'These outputs are missing'
+print [x.replace('.root','') for x in toCheck]
+print '-'*50
+
+
+outurl=outurl.replace('/Chunks','')
+if runMode==1:
     print 'Running locally',len(toCheck),'/',nTot,'jobs'
     import multiprocessing as MP
     pool = MP.Pool(8)
@@ -82,7 +89,7 @@ elif runMode==2:
         cache.write("log         = zxana_recover.log\n")
         for x in toCheck:
             cache.write("arguments   = {step} {predout} {predin} {filein} {mix_file}\n".format(step=step,
-                                                                                               predout=outurl.replace('/Chunks',''),
+                                                                                               predout=outurl,
                                                                                                predin=inurl,
                                                                                                filein=x,
                                                                                                mix_file=mix_file))
