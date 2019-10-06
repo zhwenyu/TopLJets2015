@@ -17,16 +17,6 @@ def getEntries(url,tname):
 
     return n
 
-def runAnaPacked(args):
-    inurl,outurl,tag,step,stepDir,mix_file=args
-    os.system('sh test/analysis/pps/wrapAnalysis.sh {cmssw} {step} {outurl} {inurl} {tag} {mix_file}'.format(cmssw=os.environ['CMSSW_BASE'],
-                                                                                                             step=step,
-                                                                                                             outurl=outurl,
-                                                                                                             inurl=inurl,
-                                                                                                             tag=tag,
-                                                                                                             stepDir=stepDir,
-                                                                                                             mix_file=mix_file))
-
 
 inurl=sys.argv[1]
 outurl=sys.argv[2]
@@ -76,9 +66,14 @@ print '-'*50
 outurl=outurl.replace('/Chunks','')
 if runMode==1:
     print 'Running locally',len(toCheck),'/',nTot,'jobs'
-    import multiprocessing as MP
-    pool = MP.Pool(8)
-    pool.map( runAnaPacked,[ (inurl,outurl,x,step,stepDir,mix_file) for x in toCheck ])
+    os.system('sh test/analysis/pps/wrapAnalysis.sh {cmssw} {step} {outurl} {inurl} {tag} {mix_file}'.format(cmssw=os.environ['CMSSW_BASE'],
+                                                                                                             step=step,
+                                                                                                             outurl=outurl,
+                                                                                                             inurl=inurl,
+                                                                                                             tag=','.join(toCheck),
+                                                                                                             stepDir=stepDir,
+                                                                                                             mix_file=mix_file))
+
 elif runMode==2:
     print 'Submitting',len(toCheck),'/',nTot,'jobs'
     cmssw_base=os.environ['CMSSW_BASE']
@@ -87,11 +82,14 @@ elif runMode==2:
         cache.write("output      = zxana_recover.out\n")
         cache.write("error       = zxana_recover.err\n")
         cache.write("log         = zxana_recover.log\n")
+        cache.write("+JobFlavour = \"tomorrow\"\n")
+        cache.write("request_cpus = 4\n")
         for x in toCheck:
-            cache.write("arguments   = {step} {predout} {predin} {filein} {mix_file}\n".format(step=step,
-                                                                                               predout=outurl,
-                                                                                               predin=inurl,
-                                                                                               filein=x,
-                                                                                               mix_file=mix_file))
+            cache.write("arguments   = {cmssw} {step} {predout} {predin} {filein} {mix_file}\n".format(cmssw=os.environ['CMSSW_BASE'],
+                                                                                                       step=step,
+                                                                                                       predout=outurl,
+                                                                                                       predin=inurl,
+                                                                                                       filein=x,
+                                                                                                       mix_file=mix_file))
             cache.write("queue 1\n")
         os.system('condor_submit zxana_recover.sub')

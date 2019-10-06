@@ -172,10 +172,11 @@ case $WHAT in
 
         predin=/eos/cms/${signal_dir}
         file=Z_m_X_1440_xangle_130_2017_preTS2.root
+        file=gamma_m_X_1440_xangle_130_2017_preTS2.root
 
-        predout=${anadir}
-        mix_file=${anadir}/mixing/mixbank.pck
-        
+        predout=/eos/cms/${anadir}
+        #mix_file=/eos/cms/${anadir}/mixing/mixbank.pck
+        mix_file=/eos/cms//store/cmst3/user/psilva/ExclusiveAna/final/ab05162/mixing/mixbank.pck
         #run locally
         python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 1 --jobs 1 \
             --json ${samples_json},${signal_json} --RPout ${RPout_json} -o ${predout} --mix ${mix_file} -i ${predin} --only ${file} --maxEvents 10000;
@@ -186,14 +187,16 @@ case $WHAT in
     ANA )
         step=1
         predin=/eos/cms/${outdir}/Chunks
-        predout=/eos/cms/${outdir}/analysis
+        predout=/eos/cms/${anadir}
         condor_prep=runana_condor.sub
-        mix_file=/eos/cms/${outdir}/mixing/mixbank.pck
+        mix_file=/eos/cms/${anadir}/mixing/mixbank.pck
         echo "executable  = ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/pps/wrapAnalysis.sh" > $condor_prep
-        echo "output      = ${condor_prep}.out" >> $condor_prep
-        echo "error       = ${condor_prep}.err" >> $condor_prep
-        echo "log         = ${condor_prep}.log" >> $condor_prep
-        echo "arguments   = ${step} ${predout} ${predin} \$(chunk) ${mix_file}" >> $condor_prep
+        echo "output       = ${condor_prep}.out" >> $condor_prep
+        echo "error        = ${condor_prep}.err" >> $condor_prep
+        echo "log          = ${condor_prep}.log" >> $condor_prep
+        echo "+JobFlavour = \"tomorrow\"">> $condor_prep
+        echo "request_cpus = 4" >> $condor_prep
+        echo "arguments    = ${CMSSW_BASE} ${step} ${predout} ${predin} \$(chunk) ${mix_file}" >> $condor_prep
         echo "queue chunk matching (${predin}/*.root)" >> $condor_prep
         condor_submit $condor_prep
 
@@ -206,14 +209,16 @@ case $WHAT in
     ANASIG )
         step=1
         predin=/eos/cms/${signal_dir}
-        predout=/eos/cms/${outdir}/analysis
+        predout=/eos/cms/${anadir}
         condor_prep=runanasig_condor.sub
-        mix_file=/eos/cms/${outdir}/mixing/mixbank.pck
+        mix_file=/eos/cms/${anadir}/mixing/mixbank.pck
         echo "executable  = ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/pps/wrapAnalysis.sh" > $condor_prep
         echo "output      = ${condor_prep}.out" >> $condor_prep
         echo "error       = ${condor_prep}.err" >> $condor_prep
         echo "log         = ${condor_prep}.log" >> $condor_prep
-        echo "arguments   = ${step} ${predout} ${predin} \$(chunk)" ${mix_file} >> $condor_prep
+        echo "+JobFlavour = \"tomorrow\"">> $condor_prep
+        echo "request_cpus = 4" >> $condor_prep
+        echo "arguments   = ${CMSSW_BASE} ${step} ${predout} ${predin} \$(chunk)" ${mix_file} >> $condor_prep
         echo "queue chunk matching (${predin}/*.root)" >> $condor_prep
         condor_submit $condor_prep
 
@@ -229,15 +234,15 @@ case $WHAT in
         #0-just check
         #1-run locally
         #2-submit to condor
-        python test/analysis/pps/checkFinalNtupleInteg.py /eos/cms/${outdir}/Chunks /eos/cms/${outdir}/analysis/Chunks 2 1 /eos/cms/${outdir}/mixing/mixbank.pck
+        python test/analysis/pps/checkFinalNtupleInteg.py /eos/cms/${outdir}/Chunks /eos/cms/${anadir}/Chunks 1 1 /eos/cms/${anadir}/mixing/mixbank.pck
         ;;
    
     CHECKANASIG )
-        python test/analysis/pps/checkFinalNtupleInteg.py /eos/cms/${signal_dir} /eos/cms/${outdir}/analysis/Chunks 1 1 /eos/cms/${outdir}/mixing/mixbank.pck
+        python test/analysis/pps/checkFinalNtupleInteg.py /eos/cms/${signal_dir} /eos/cms/${anadir}/Chunks 2 1 /eos/cms/${anadir}/mixing/mixbank.pck
         ;;
 
     MERGEANA )
-        mergeOutputs.py /eos/cms/${outdir}/analysis;
+        mergeOutputs.py /eos/cms/${anadir};
         ;;
 
     PLOTANAPERERA )
@@ -268,9 +273,9 @@ case $WHAT in
                 eralumi=`echo ${eralumi}*0.329 | bc`
             fi
 
-	    baseOpts="-i /eos/cms/${outdir}/analysis --lumiSpecs a:${alumi} --procSF #gamma+jets:1.33 -l ${eralumi} --mcUnc ${lumiUnc}"
+	    baseOpts="-i /eos/cms/${anadir} --lumiSpecs a:${alumi} --procSF #gamma+jets:1.33 -l ${eralumi} --mcUnc ${lumiUnc}"
             era_json=test/analysis/pps/test_samples_${era}.json;
-            commonOpts="${baseOpts} -j ${era_json} --signalJson ${plot_signal_json} -O /eos/cms/${outdir}/analysis/plots${era}"
+            commonOpts="${baseOpts} -j ${era_json} --signalJson ${plot_signal_json} -O /eos/cms/${anadir}/plots${era}"
             python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py ${commonOpts} --only ${plots} --strictOnly;
         done
         ;;
@@ -279,8 +284,8 @@ case $WHAT in
 
         for xangle in 120 130 140 150; do
             python test/analysis/pps/estimateLocalSensitivity.py \
-                -i /eos/cms/${outdir}/analysis \
-                -o /eos/cms/${outdir}/analysis/plots \
+                -i /eos/cms/${anadir} \
+                -o /eos/cms/${anadir}/plots \
                 --xangle ${xangle};
         done
         ;;
@@ -291,8 +296,8 @@ case $WHAT in
         for c in neg pos hpur hpurpos hpurneg hpur120xangle hpur130xangle hpur140xangle hpur150xangle; do
             lumiSpecs="${lumiSpecs},mmrpin${c}:${ppsLumi},eerpin${c}:${ppsLumi},emrpin${c}:${ppsLumi},arpin${c}:${lptappslumi}";
         done
-	baseOpts="-i /eos/cms/${outdir}/analysis --lumiSpecs ${lumiSpecs} --procSF #gamma+jets:1.33 -l ${lumi} --mcUnc ${lumiUnc} ${lumiSpecs} ${kFactorList}"
-        commonOpts="${baseOpts} -j ${samples_json} --signalJson ${plot_signal_json} -O /eos/cms/${outdir}/analysis/plots --saveLog"
+	baseOpts="-i /eos/cms/${anadir} --lumiSpecs ${lumiSpecs} --procSF #gamma+jets:1.33 -l ${lumi} --mcUnc ${lumiUnc} ${lumiSpecs} ${kFactorList}"
+        commonOpts="${baseOpts} -j ${samples_json} --signalJson ${plot_signal_json} -O /eos/cms/${anadir}/plots"
 
         plots=xangle_eerpinhpur,xangle_mmrpinhpur,xangle_emrpinhpur,xangle_arpinhpur
         python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py ${commonOpts} --only ${plots} --strictOnly --saveTeX --rebin 4;
@@ -339,7 +344,7 @@ case $WHAT in
 	cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}/presel
 
         mkdir -p ${wwwdir}/ana
-        cp /eos/cms/${outdir}/analysis/plots/*.{png,pdf,dat} ${wwwdir}/ana
+        cp /eos/cms/${anadir}/plots/*.{png,pdf,dat} ${wwwdir}/ana
         cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}/ana
         ;;
 
