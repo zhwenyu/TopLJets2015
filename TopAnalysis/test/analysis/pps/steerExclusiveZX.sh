@@ -234,7 +234,7 @@ case $WHAT in
         #0-just check
         #1-run locally
         #2-submit to condor
-        python test/analysis/pps/checkFinalNtupleInteg.py /eos/cms/${outdir}/Chunks /eos/cms/${anadir}/Chunks 1 1 /eos/cms/${anadir}/mixing/mixbank.pck
+        python test/analysis/pps/checkFinalNtupleInteg.py /eos/cms/${outdir}/Chunks /eos/cms/${anadir}/Chunks 2 1 /eos/cms/${anadir}/mixing/mixbank.pck
         ;;
    
     CHECKANASIG )
@@ -304,9 +304,7 @@ case $WHAT in
 
         cats=(
             "" 
-            "rpin" 
-            "rpinpos" "rpinneg"
-            "rpinhpur" 
+            "rpin" "rpinhpur" 
             "rpinhpurneg" "rpinhpurpos" 
             "rpinhpur120xangle" "rpinhpur130xangle" "rpinhpur140xangle" "rpinhpur150xangle" 
         )
@@ -316,7 +314,7 @@ case $WHAT in
             for c in "${cats[@]}"; do            
                 evcat=${ch}${c}
                 
-                for p in ptll mll nvtx rho xangle mll yll etall ptll l1eta l1pt l2eta l2pt acopl costhetacs met njets mpf zjb zj2b; do
+                for p in ptll mll nvtx rho xangle mll yll etall ptll l1eta l1pt l2eta l2pt acopl costhetacs met njets mpf zjb zj2b; do                  
                     plots="${p}_${evcat},${plots}"
                 done
 
@@ -327,7 +325,7 @@ case $WHAT in
                 fi
                 
                 if [[ $evcat == *"pos"* || $evcat == *"neg"* ]]; then
-                    for p in ntk csi csi2d ntk; do
+                    for p in ntk csi csi2d; do
                         plots="${p}_${evcat},${plots}"
                     done
                 fi            
