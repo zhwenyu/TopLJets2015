@@ -348,32 +348,13 @@ case $WHAT in
 
     OPTIMSTATANA )
 
-        #run combine on condor
-        for m in 800 1000 1200 1400 1600; do
+        #afs needs to be used here...
+        python test/analysis/pps/prepareOptimScanCards.py ppvx_analysis /eos/cms/${anadir}
 
-            echo "Will first prepare the datacards/shapes files for m=${m}"
-            python test/analysis/pps/prepareOptimScanCards.py ${m}
-
-            echo "Will launch combine runs to condor for m=${m}"
-            condor_prep="condor_optim_m${m}.sub"
-            echo "executable  = ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/pps/wrapOptim.sh" > $condor_prep
-            echo "output      = ${condor_prep}.out" >> $condor_prep
-            echo "error       = ${condor_prep}.err" >> $condor_prep
-            echo "log         = ${condor_prep}.log" >> $condor_prep
-            echo "+JobFlavour =\"workday\"" >> $condor_prep
-            for x in 120 130 140 150; do
-                echo "arguments   = ${CMSSW_BASE} ${m} ${x} ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/analysis/stat_m${m}" >> $condor_prep
-                echo "queue 1" >> $condor_prep
-            done
-
-            condor_submit $condor_prep
-        done
         ;;
 
     DEFINESTATANA)
-        python test/analysis/pps/compareOptimResults.py analysis/
-        #python test/analysis/pps/plotLimits.py 1000=optimresults_1000.pck,1200=optimresults_1200.pck,1400=optimresults_1400.pck
-        #python test//analysis/pps/compareOptimResults.py
+        python test/analysis/pps/compareOptimResults.py ppvx_analysis
         ;;
 
 esac

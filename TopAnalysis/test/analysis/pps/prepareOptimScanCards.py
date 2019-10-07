@@ -18,6 +18,9 @@ CATEGS     = ['nvtx>0',
 
 
 baseDir=sys.argv[1]
+inputDir='eos/cms/store/cmst3/user/psilva/ExclusiveAna/final/ab05162/analysis_0p05'
+if len(sys.argv)>2:
+    inputDir=sys.argv[2]
 
 ipt=0
 for ana in list(itertools.product(KINEMATICS, RPSEL,CATEGS)):
@@ -34,7 +37,7 @@ for ana in list(itertools.product(KINEMATICS, RPSEL,CATEGS)):
 
         #initialization
         script.write('\n')
-        script.write('input=/eos/cms/store/cmst3/user/psilva/ExclusiveAna/final/ab05162/analysis_0p05/\n')
+        script.write('input=%s\n'%inputDir)
         script.write('preselZ="%s && %s"\n'%(kin[0],rpsel))
         script.write('preselGamma="%s && %s"\n'%(kin[1],rpsel))        
         script.write('categs="%s"\n'%(cats))
