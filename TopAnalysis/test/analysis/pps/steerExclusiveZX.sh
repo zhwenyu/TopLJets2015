@@ -346,6 +346,15 @@ case $WHAT in
         cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}/ana
         ;;
 
+    TESTSTATANA)
+
+        echo "Generating a datacard takes a bit as it'll project the shapes for a given set of cuts"
+        echo "You can run locally with python test/analysis/pps/generatedBinnedWorkspace.py and your preferred set of cuts"
+        echo "Running with the default values for ${anadir} and output @ ppvx_analysis/test"
+        python test/analysis/pps/generatedBinnedWorkspace.py -i /eos/cms/${anadr} -o ppvx_analysis/test
+
+        ;;
+
     OPTIMSTATANA )
 
         #afs needs to be used here...
