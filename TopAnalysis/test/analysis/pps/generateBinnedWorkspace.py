@@ -249,14 +249,13 @@ def writeDataCards(opt,shapesURL):
             dc.write('-'*50+'\n')
             
             #uncertainties
-            dc.write('lumi                       %8s %15s %15s %15s\n'%('lnN',                '1.027', '-',   '-'))
-            dc.write('eff_%s                     %8s %15s %15s %15s\n'%(finalState,  'lnN',   '1.05',  '-',  '-'))
-            dc.write('sigShape                   %8s %15s %15s %15s\n'%('shape',              '1',     '1',  '-'))
-            dc.write('sigShapeSingleDiff         %8s %15s %15s %15s\n'%('shape',              '1',     '1',  '-'))
-            dc.write('sigCalib                   %8s %15s %15s %15s\n'%('shape',              '1',     '1',  '-'))
-            dc.write('sigPzModel                 %8s %15s %15s %15s\n'%('shape',              '1',     '1',  '-'))
-            dc.write('bkg_%s_bkgShape            %8s %15s %15s %15s\n'%(cat,'shape',          '-',     '-',  '1')) #uncorrelate background shapes
-            dc.write('bkgS_%s_bkgShapeSingleDiff %8s %15s %15s %15s\n'%(cat,'shape',          '-',     '-',  '1'))
+            dc.write('lumi                   %8s %15s %15s %15s\n'%('lnN',                '1.027', '-',  '-'))
+            dc.write('eff_%s                 %8s %15s %15s %15s\n'%(finalState,  'lnN',   '1.03',  '-',  '-'))
+            dc.write('sigShape               %8s %15s %15s %15s\n'%('shape',              '1',     '1',  '-'))           
+            dc.write('sigCalib               %8s %15s %15s %15s\n'%('shape',              '1',     '1',  '-'))
+            dc.write('sigPzModel             %8s %15s %15s %15s\n'%('shape',              '1',     '1',  '-'))
+            dc.write('%s_bkgShape            %8s %15s %15s %15s\n'%(cat,'shape',          '-',     '-',  '1')) #uncorrelate background shapes
+            dc.write('%s_bkgShapeSingleDiff  %8s %15s %15s %15s\n'%(cat,'shape',          '-',     '-',  '1'))
 
             #template statistics
             dc.write('{0} autoMCStats 0.0 1\n'.format(cat))

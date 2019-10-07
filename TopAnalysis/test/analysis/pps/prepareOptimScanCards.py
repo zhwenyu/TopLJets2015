@@ -73,7 +73,7 @@ for ana in list(itertools.product(KINEMATICS, RPSEL,CATEGS)):
         
         #run statistical analysis
         script.write('echo "Running combine"\n')
-        script.write('for b in Z g; do\n')
+        script.write('for b in z g; do\n')
         script.write('\t for m in 800 900 1000 1080 1200 1320 1400 1500; do\n')
         script.write('\t\t pfix=${b}_m${m}\n')
         script.write('\t\t text2workspace.py ${b}_datacard.dat -m ${m} -o ${pfix}_workspace.root\n')
