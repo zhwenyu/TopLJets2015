@@ -362,8 +362,8 @@ case $WHAT in
 
         ;;
 
-    DEFINESTATANA)
-        python test/analysis/pps/compareOptimResults.py ppvx_analysis
+    FINALIZESTATANA )
+        python test/analysis/pps/compareOptimResults.py ppvx_analysis/
         ;;
 
 esac
