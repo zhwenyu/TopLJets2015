@@ -207,11 +207,12 @@ def showShapes(resultsDir,name,title,mass,boson,r95,lumi):
                 p=Plot('%s_%s_a%d_cat%d'%(name,v,angle,icat))
                 p.xtit='Missing mass [GeV]'
                 p.ytit='Events'
-                p.add(fidsigH,         title=title+' (%d)'%m, color=ROOT.TColor.GetColor('#fdc086'), isData=False, spImpose=False, isSyst=False)
-                p.add(outfidsigH,      title='non-fiducial',  color=ROOT.TColor.GetColor('#a6cee3'), isData=False, spImpose=False, isSyst=False)
-                p.add(bkgH,            title='background',    color=ROOT.TColor.GetColor('#1f78b4'), isData=False, spImpose=False, isSyst=False)
-                p.add(dataH,           title='pseudo-data',   color=1, isData=True, spImpose=False, isSyst=False)
-                p.add(fidsigH.Clone(), title=title+' (%d)'%m, color=ROOT.TColor.GetColor('#fdc086'), isData=False, spImpose=True,  isSyst=False)
+                p.add(fidsigH,            title=title+' (%d)'%m, color=ROOT.TColor.GetColor('#fdc086'), isData=False, spImpose=False, isSyst=False)
+                p.add(outfidsigH,         title='non-fiducial',  color=ROOT.TColor.GetColor('#a6cee3'), isData=False, spImpose=False, isSyst=False)
+                p.add(bkgH,               title='background',    color=ROOT.TColor.GetColor('#1f78b4'), isData=False, spImpose=False, isSyst=False)
+                p.add(dataH,              title='pseudo-data',   color=1, isData=True, spImpose=False, isSyst=False)
+                p.add(fidsigH.Clone(),    title=title+' (%d)'%m, color=ROOT.TColor.GetColor('#fdc086'), isData=False, spImpose=True,  isSyst=False)
+                p.add(outfidsigH.Clone(), title='non-fiducial',  color=ROOT.TColor.GetColor('#a6cee3'), isData=False, spImpose=True,  isSyst=False)
                 p.ratiorange=[0.88,1.12]
                 p.show('./',lumi,extraText='%s, %d#murad\\#mu_{95}<%3.3f'%(channel,angle,r95))
 

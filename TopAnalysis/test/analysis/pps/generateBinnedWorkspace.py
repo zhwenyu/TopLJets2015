@@ -45,7 +45,8 @@ def defineProcessTemplates(histos,norm=False):
             for xbin in range(templates[0].GetNbinsX()):
                 ratioVal=ratio.GetBinContent(xbin+1)
                 if ratioVal==0: continue
-                if abs(1-ratio.GetBinError(xbin+1)/ratioVal) > 0.5:
+                relUnc=abs(ratio.GetBinError(xbin+1)/ratioVal)
+                if  relUnc> 0.5:
                     templates[-1].SetBinContent(xbin+1,histos[0].GetBinContent(xbin+1)) #keep nominal if relative uncertainty is too large
                 else:
                     templates[-1].SetBinContent(xbin+1,histos[0].GetBinContent(xbin+1)/ratioVal)
@@ -71,6 +72,7 @@ def fillBackgroundTemplates(opt):
 
     totalBkg={}
     templates=[]
+    data_templates=[]
 
     #import signal events
     data=ROOT.TChain('data')
@@ -135,10 +137,10 @@ def fillBackgroundTemplates(opt):
             data_obs=data.GetHistogram().Clone('data_obs_'+catName)
             data_obs.SetDirectory(0)
 
-        templates.append(data_obs)
+        data_templates.append(data_obs)
 
     print '\t total background:',totalBkg
-    return totalBkg,templates
+    return totalBkg,templates,data_templates
 
 
 def fillSignalTemplates(mass,signalFile,xsec,opt,fiducialCuts='gencsi1>0.03 & gencsi1<0.13 && gencsi2>0.03 && gencsi2<0.16'):
@@ -147,6 +149,7 @@ def fillSignalTemplates(mass,signalFile,xsec,opt,fiducialCuts='gencsi1>0.03 & ge
 
     totalSig={'fid':{},'outfid':{}}
     templates={'fid':[],'outfid':[]}
+    nom_templates={'fid':[],'outfid':[]}
 
     #import signal events
     data=ROOT.TChain('data')
@@ -168,7 +171,6 @@ def fillSignalTemplates(mass,signalFile,xsec,opt,fiducialCuts='gencsi1>0.03 & ge
         print '\t\t',catName,categCut
                
         #define final preselection cuts and repeat for fiducial/non-fiducial regions
-        histos={}
         for sigType in totalSig.keys():
                         
             #signal modelling histograms
@@ -202,12 +204,13 @@ def fillSignalTemplates(mass,signalFile,xsec,opt,fiducialCuts='gencsi1>0.03 & ge
 
                 if len(histos)==1:
                     totalSig[sigType][icat]=h.Integral()
+                    nom_templates[sigType].append(h)
 
                 h.Reset('ICE')
             templates[sigType] += defineProcessTemplates(histos)
     
     print '\t total signal:',totalSig
-    return totalSig,templates
+    return totalSig,templates,nom_templates
 
 
 def writeDataCards(opt,shapesURL):
@@ -285,7 +288,7 @@ def datacardTask(args):
 
     #define background templates
     print '\t filling background templates and observed data'
-    bkgExp,bkgTemplates=fillBackgroundTemplates(opt)    
+    bkgExp,bkgTemplates,data_templates=fillBackgroundTemplates(opt)    
     for h in bkgTemplates:        
         h.SetDirectory(fOut)
         h.Write()
@@ -294,14 +297,25 @@ def datacardTask(args):
     print '\t filling signal templates' 
     for m in opt.massList:
         signalFile=opt.sig.format(boson=boson,xangle=xangle,mass=m)
-        sigExp,sigTemplates=fillSignalTemplates(mass=m,
-                                                signalFile=signalFile,
-                                                xsec=SIGNALXSECS[xangle] if boson=='Z' else PHOTONSIGNALXSECS[xangle],
-                                                opt=opt)
+        sigExp,sigTemplates,sigNomTemplates=fillSignalTemplates(mass=m,
+                                                                signalFile=signalFile,
+                                                                xsec=SIGNALXSECS[xangle] if boson=='Z' else PHOTONSIGNALXSECS[xangle],
+                                                                opt=opt)
         for key in sigTemplates:
+
+            #if blinded add signal pseudo-data (hardcoded mass choice 1200)
+            if not opt.unblind and m==1200:
+                for i in range(len(sigTemplates[key])):
+                    data_templates[i].Add(sigNomTemplates[key][i])
+
             for h in sigTemplates[key]:
                 h.SetDirectory(fOut)
                 h.Write()
+        
+    #now write the data
+    for h in data_templates:
+        h.SetDirectory(fOut)
+        h.Write()
 
     #all done
     fOut.Close()
@@ -325,7 +339,7 @@ def main(args):
                         help='signal point [%default]')
     parser.add_argument('--massList',
                         dest='massList',
-                        default='800,900,1000,1080,1200,1320,1400,1500',
+                        default='780,800,840,900,960,1000,1020,1080,1140,1200,1260,1320,1380,1400,1440,1500,1560,1600',
                         help='signal mass list (CSV) [%default]')
     parser.add_argument('--preselZ',
                         dest='preselZ', 
@@ -397,7 +411,7 @@ def main(args):
     for ch in CH_DICT.keys():
         for angle in VALIDLHCXANGLES:
             task_list.append( (ch,angle,copy.deepcopy(opt)) )
-
+            
     import multiprocessing as MP
     pool = MP.Pool(8)
     pool.map( datacardTask, task_list )

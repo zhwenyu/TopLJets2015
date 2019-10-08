@@ -8,13 +8,15 @@ KINEMATICS = [('bosonpt>20', 'bosonpt>95'),
               ('bosonpt>40', 'bosonpt>110'),
               ('bosonpt>50', 'bosonpt>120'),
               ('bosonpt>60', 'bosonpt>130')]
-RPSEL      = ['csi1>0.05  && csi2>0.05',
-              'csi1>0.055 && csi2>0.055',
-              'csi1>0.06  && csi2>0.06']
-CATEGS     = ['nvtx>0',
+RPSEL      = ['csi1>0.05 && csi2>0.05',
+              'csi1>0.05 && csi2>0.055',
+              'csi1>0.055 && csi2>0.05',
+              'csi1>0.06 && csi2>0.06']
+CATEGS     = ['nvtx>15',
               'nvtx<15,nvtx>=15',
               'nvtx<20,nvtx>=20',
-              'nvtx<25,nvtx>=25']
+              'nvtx<25,nvtx>=25',
+              'nvtx<30,nvtx>=30']
 OPTIMLIST=list(itertools.product(KINEMATICS, RPSEL,CATEGS))
 
 def main():
@@ -78,26 +80,28 @@ def main():
             script.write('\t for m in 800 900 1000 1080 1200 1320 1400 1500; do\n')
             script.write('\t\t pfix=${b}_m${m}\n')
             script.write('\t\t text2workspace.py ${b}_datacard.dat -m ${m} -o ${pfix}_workspace.root\n')
-            script.write('\t\t combine ${pfix}_workspace.root -n PP${b}X -M AsymptoticLimits -m ${m}\n')
-            script.write('\t\t combine ${pfix}_workspace.root -n PP${b}X -M Significance     -m ${m} --expectSignal=1 --setParameters mu_outfidsig=1\n')
-            script.write('\t\t combine ${pfix}_workspace.root -n PP${b}X -M FitDiagnostics   -m ${m} --expectSignal=1 --setParameters mu_outfidsig=1\n')
+            script.write('\t\t combine ${pfix}_workspace.root -n PP${b}X.obs -M AsymptoticLimits -m ${m}\n')
+            script.write('\t\t combine ${pfix}_workspace.root -n PP${b}X     -M AsymptoticLimits -m ${m} -t -1 --expectSignal=1 --setParameters mu_outfidsig=1\n')
+            script.write('\t\t combine ${pfix}_workspace.root -n PP${b}X.obs -M Significance -m ${m}\n')
+            script.write('\t\t combine ${pfix}_workspace.root -n PP${b}X     -M Significance -m ${m} -t -1 --expectSignal=1 --setParameters mu_outfidsig=1\n')
+            script.write('\t\t #combine ${pfix}_workspace.root -n PP${b}X -M FitDiagnostics -m ${m} -t -1 --expectSignal=1 --setParameters mu_outfidsig=1\n')
             script.write('\t done\n')
             script.write('done\n')
             script.write('cd -\n')        
 
-        #submit optimization points to crab
-        print 'Will submit %d optimization scan points'%ipt
-        with open('zxstatana_scan.sub','w') as condor:
-            condor.write("executable  = %s/optim_$(point)/optimJob.sh\n"%os.path.abspath(baseDir))
-            condor.write("output       = zxstatana_scan.out\n")
-            condor.write("error        = zxstatana_scan.err\n")
-            condor.write("log          = zxstatana_scan.log\n")
-            condor.write("+JobFlavour = \"tomorrow\"\n")
-            condor.write("request_cpus = 4\n")
-            for i in range(ipt):
-                condor.write("point=%d\n"%(i+1))
-                condor.write("queue 1\n")
-        os.system('condor_submit zxstatana_scan.sub')
+    #submit optimization points to crab
+    print 'Will submit %d optimization scan points'%ipt
+    with open('zxstatana_scan.sub','w') as condor:
+        condor.write("executable  = %s/optim_$(point)/optimJob.sh\n"%os.path.abspath(baseDir))
+        condor.write("output       = zxstatana_scan.out\n")
+        condor.write("error        = zxstatana_scan.err\n")
+        condor.write("log          = zxstatana_scan.log\n")
+        condor.write("+JobFlavour = \"tomorrow\"\n")
+        condor.write("request_cpus = 4\n")
+        for i in range(ipt):
+            condor.write("point=%d\n"%(i+1))
+            condor.write("queue 1\n")
+    os.system('condor_submit zxstatana_scan.sub')
 
 
 if __name__ == "__main__":

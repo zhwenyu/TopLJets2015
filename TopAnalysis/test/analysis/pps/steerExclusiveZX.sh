@@ -173,7 +173,7 @@ case $WHAT in
         predin=/eos/cms/${signal_dir}
         file=Z_m_X_1440_xangle_130_2017_preTS2.root
         file=gamma_m_X_1440_xangle_130_2017_preTS2.root
-
+        
         predout=/eos/cms/${anadir}
         #mix_file=/eos/cms/${anadir}/mixing/mixbank.pck
         mix_file=/eos/cms//store/cmst3/user/psilva/ExclusiveAna/final/ab05162/mixing/mixbank.pck
