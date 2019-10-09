@@ -11,13 +11,35 @@ def getLimitsFrom(url):
     """parses the r95 limits from the tree"""
 
     fIn=ROOT.TFile.Open(url)
-    t=fIn.Get('limit')
-    vals=[]
-    for i in range(5):
-        t.GetEntry(i)
-        vals.append(t.limit)
-    fIn.Close()
-    return (vals[2],vals[3]-vals[2],vals[1]-vals[2],vals[4]-vals[2],vals[0]-vals[2])
+    try:
+        t=fIn.Get('limit')
+        vals=[]
+        for i in range(5):
+            t.GetEntry(i)
+            vals.append(t.limit)
+        fIn.Close()
+    except:
+        vals=[999.]*5
+
+    return [vals[2],vals[3]-vals[2],vals[1]-vals[2],vals[4]-vals[2],vals[0]-vals[2]]
+
+
+def getSignificanceFrom(url):
+
+    """parses the significance value from combine tree and converts it to a p-value"""
+
+    fIn=ROOT.TFile.Open(url)
+    try:
+        t=fIn.Get('limit')
+        t.GetEntry(0)
+        vals=[t.limit,ROOT.RooStats.SignificanceToPValue(t.limit)]
+        fIn.Close()
+    except:
+        vals=[0,1]
+
+    return vals
+
+
 
 
 def showOptimizationScan(results,name,title,lumi):
@@ -32,7 +54,8 @@ def showOptimizationScan(results,name,title,lumi):
     c.SetGridx()
     c.SetGridy()
 
-    h=ROOT.TH1F('optimscan',';;95% CL on #sigma_{fid} [pb]',len(results),0,len(results))
+    h    = ROOT.TH1F('optimscan',    '#sigma_{fid}^{95%CL};;95% CL on #sigma_{fid} [pb]', len(results),0,len(results))
+    hsig = ROOT.TH1F('optimscansig', 'Significance;;Significance (asymptotic)',           len(results),0,len(results))
     maxy=0
     for ipt,limits in results:
 
@@ -40,36 +63,70 @@ def showOptimizationScan(results,name,title,lumi):
         xlabel=kinCuts[0] if '_z' in name else kinCuts[1] #dirty hack
         xlabel=xlabel.replace('bosonpt','p_{T}')
         xlabel+=' && ' + rpCuts
-        xlabel=xlabel.replace('csi1','#xi_{1}')
-        xlabel=xlabel.replace('csi2','#xi_{2}')
+        xlabel=xlabel.replace('csi1','#xi')
+        xlabel=xlabel.replace('&& csi2>','/ ')
         xlabel=xlabel.replace(' && ',' #wedge ')
         xlabel += ' (' + categs.split(',')[0] + ')'
-        xlabel=xlabel.replace('nvtx','n_{vtx}')
+        xlabel=xlabel.replace('nvtx','vtx')
+        xlabel='#scale[0.8]{%s}'%xlabel
         h.GetXaxis().SetBinLabel(ipt,xlabel)
         h.SetBinContent(ipt,limits[0])
+
+        hsig.GetXaxis().SetBinLabel(ipt,xlabel)
+        hsig.SetBinContent(ipt,limits[5])
 
         maxy=max(maxy,limits[0])
 
     h.SetFillStyle(1001)
     h.SetFillColor(ROOT.kGray)
-    h.GetYaxis().SetTitleOffset(1.2)
+    h.GetYaxis().SetLabelSize(0.025)
+    h.GetYaxis().SetTitleSize(0.03)
+    h.GetYaxis().SetTitleOffset(0.7)
     h.GetYaxis().SetRangeUser(0,1.1*maxy)
     h.GetYaxis().SetNdivisions(5)
     h.Draw('hbar')
+
+    #scale hint1 to the pad coordinates
+    rightmax = 1.1*hsig.GetMaximum()
+    scale = h.GetMaximum()/rightmax
+    hsig.SetLineColor(ROOT.kOrange+2)
+    hsig.SetFillColor(ROOT.kOrange+2)
+    hsig.SetFillStyle(0)
+    hsig.Scale(scale)
+    hsig.Draw("hbarsame")
+
+    leg=ROOT.TLegend(0.7,0.92,0.95,0.83)
+    leg.SetTextFont(42)
+    leg.SetBorderSize(0)
+    leg.SetTextSize(0.035)
+    leg.SetHeader(title)
+    leg.AddEntry(h,h.GetTitle(),'f')
+    leg.AddEntry(hsig,hsig.GetTitle(),'f')
+    leg.Draw()
+
+    axis = ROOT.TGaxis(0,-6, h.GetMaximum(),-6, 0, rightmax,5,"-L=");
+    axis.SetTickLength(0.005)
+    axis.SetTextFont(42)
+    axis.SetLabelFont(42)
+    axis.SetLabelOffset(-0.01)
+    axis.SetLabelSize(0.03)
+    axis.SetTitle(hsig.GetYaxis().GetTitle())
+    axis.SetTitleOffset(0.5)
+    axis.SetTextSize(0.001)
+    axis.Draw()
 
     tex=ROOT.TLatex()
     tex.SetTextFont(42)
     tex.SetTextSize(0.04)
     tex.SetNDC()
     tex.DrawLatex(0.4,0.96,'#bf{CMS} #it{preliminary}')
-    tex.DrawLatex(0.4,0.03,title)
     tex.SetTextAlign(ROOT.kHAlignRight+ROOT.kVAlignBottom)
     tex.DrawLatex(0.95,0.96,'#scale[0.8]{%s fb^{-1} (13 TeV)}'%lumi)
 
     c.Modified()
     c.Update()
     c.RedrawAxis()
-
+    raw_input()
     for ext in ['png','pdf']:
         c.SaveAs('%s.%s'%(name,ext))
 
@@ -171,7 +228,7 @@ def showLimits(results,name,title,lumi):
         c.SaveAs('%s_log.%s'%(name,ext))
 
 
-def showShapes(resultsDir,name,title,mass,boson,r95,lumi):
+def showShapes(resultsDir,name,title,mass,boson,r95,sig,lumi):
 
     """ show the shapes corresponding to a given analysis """
     
@@ -214,7 +271,7 @@ def showShapes(resultsDir,name,title,mass,boson,r95,lumi):
                 p.add(fidsigH.Clone(),    title=title+' (%d)'%m, color=ROOT.TColor.GetColor('#fdc086'), isData=False, spImpose=True,  isSyst=False)
                 p.add(outfidsigH.Clone(), title='non-fiducial',  color=ROOT.TColor.GetColor('#a6cee3'), isData=False, spImpose=True,  isSyst=False)
                 p.ratiorange=[0.88,1.12]
-                p.show('./',lumi,extraText='%s, %d#murad\\#mu_{95}<%3.3f'%(channel,angle,r95))
+                p.show('./',lumi,extraText='%s, %d#murad\\#mu_{95}(exp.)<%3.3f\\S(exp.)=%3.3f'%(channel,angle,r95,sig))
 
                 colors=[ROOT.kGreen+1,ROOT.kAzure+3,ROOT.kRed+2]
 
@@ -273,11 +330,11 @@ for optimPt in os.listdir(baseDir):
         if not mass in results['z']:
             results['z'][mass]=[]
             results['g'][mass]=[]            
+        
+        results['z'][mass].append( (pt,getLimitsFrom(f)+getSignificanceFrom(f.replace('AsymptoticLimits','Significance'))) )
 
-        results['z'][mass].append( (pt,getLimitsFrom(f)) )
-
-        fg=f.replace('PPzX','PPgX')
-        results['g'][mass].append( (pt,getLimitsFrom(fg)) )
+        fg=f.replace('PPzX','PPgX')        
+        results['g'][mass].append( (pt,getLimitsFrom(fg)+getSignificanceFrom(fg.replace('AsymptoticLimits','Significance'))) )
 
 
 #print results and show limit plots
@@ -292,7 +349,7 @@ for v in results.keys():
         lumi=2.64
 
     fOut.write('-'*50+'\n')
-    fOut.write('%s @ lumi=%f'%(title,lumi))
+    fOut.write('%s @ lumi=%f\n'%(title,lumi))
     
     bestResults=[]
     bestResultsDir=[]
@@ -301,18 +358,20 @@ for v in results.keys():
         results[v][m].sort(key=lambda x: x[1], reverse=False)
         bestPoint,limits=results[v][m][0]
         
-        showShapes( resultsDir=os.path.join(baseDir,'optim_%d'%bestPoint),
-                    name='shapes_m%d'%m,
-                    title=title,
-                    mass=m,
-                    boson=v,
-                    r95=limits[0],
-                    lumi=lumi )
+        #showShapes( resultsDir=os.path.join(baseDir,'optim_%d'%bestPoint),
+        #            name='shapes_m%d'%m,
+        #            title=title,
+        #            mass=m,
+        #            boson=v,
+        #            r95=limits[0],
+        #            sig=limits[5],
+        #            lumi=lumi )
 
         kinCuts,rpCuts,categs=OPTIMLIST[bestPoint-1]
-        fOut.write('%10s r95<%3.3f %25s %25s %25s %d\n'%(str(m),limits[0],kinCuts[0] if v=='z' else kinCuts[1] ,rpCuts,categs,bestPoint))
+        fOut.write('%10s r95<%3.3f S=%3.3f (p-val=%3.3f) %25s %25s %25s %d\n'%(str(m),limits[0],limits[5],limits[6],kinCuts[0] if v=='z' else kinCuts[1] ,rpCuts,categs,bestPoint))
         bestResults.append( (m,limits) )
 
+        ROOT.gROOT.SetBatch(False)
         showOptimizationScan(results[v][m],'optimscan_%s_m%d'%(v,m),title,lumi)
 
     showLimits(bestResults,'limits_%s'%v,title,lumi)

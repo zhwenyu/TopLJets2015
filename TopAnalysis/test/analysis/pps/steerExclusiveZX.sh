@@ -4,18 +4,18 @@ WHAT=$1;
 if [ "$#" -ne 1 ]; then 
     echo "steerExclusiveZX.sh <SEL/MERGE/PLOT/WWW>";
     echo "   SEL           - launches selection jobs to the batch, output will contain summary trees and control plots"; 
-    echo "   MERGESEL      - merge output"
-    echo "   PLOTSEL        - make plots"
-    echo "   TRAINPUDISCR  - train pileup discriminator"
-    echo "   RUNPRED       - run pileup discriminator prediction"
-    echo "   PREPAREANA    - prepare bank of events for event mixing from the summary trees"
-    echo "   COLLECTMIX    - collects all the mixing events found in PREPAREANA"
-    echo "   ANA/ANASIG    - run analysis on the summary trees"
-    echo "   CHECKANA      - check analysis integrity and re-run locally jobs which have failed"
-    echo "   PLOTANA       - plot analysis results"
-    echo "   OPTIMSTATANA  - optimize the statistical analysis"
-    echo "   DEFINESTATANA - define the final datacards based on the results of the optimization"
-    echo "   WWW           - move plots to web-based area"
+    echo "   MERGESEL        - merge output"
+    echo "   PLOTSEL         - make plots"
+    echo "   TRAINPUDISCR    - train pileup discriminator"
+    echo "   RUNPRED         - run pileup discriminator prediction"
+    echo "   PREPAREANA      - prepare bank of events for event mixing from the summary trees"
+    echo "   COLLECTMIX      - collects all the mixing events found in PREPAREANA"
+    echo "   ANA/ANASIG      - run analysis on the summary trees"
+    echo "   CHECKANA        - check analysis integrity and re-run locally jobs which have failed"
+    echo "   PLOTANA         - plot analysis results"
+    echo "   OPTIMSTATANA    - optimize the statistical analysis"
+    echo "   FINALIZESTATANA - define the final datacards based on the results of the optimization"
+    echo "   WWW             - move plots to web-based area"
     exit 1; 
 fi
 
@@ -358,7 +358,7 @@ case $WHAT in
     OPTIMSTATANA )
 
         #afs needs to be used here...
-        python test/analysis/pps/prepareOptimScanCards.py ppvx_analysis /eos/cms/${anadir}
+        python test/analysis/pps/prepareOptimScanCards.py ppvx_analysis_1200 /eos/cms/${anadir}
 
         ;;
 

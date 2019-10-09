@@ -204,7 +204,8 @@ def fillSignalTemplates(mass,signalFile,xsec,opt,fiducialCuts='gencsi1>0.03 & ge
 
                 if len(histos)==1:
                     totalSig[sigType][icat]=h.Integral()
-                    nom_templates[sigType].append(h)
+                    nom_templates[sigType].append(h.Clone(name+'_sigforpseudodata'))
+                    nom_templates[sigType][-1].SetDirectory(0)
 
                 h.Reset('ICE')
             templates[sigType] += defineProcessTemplates(histos)
@@ -303,14 +304,15 @@ def datacardTask(args):
                                                                 opt=opt)
         for key in sigTemplates:
 
-            #if blinded add signal pseudo-data (hardcoded mass choice 1200)
-            if not opt.unblind and m==1200:
-                for i in range(len(sigTemplates[key])):
-                    data_templates[i].Add(sigNomTemplates[key][i])
-
             for h in sigTemplates[key]:
                 h.SetDirectory(fOut)
                 h.Write()
+
+            #if blinded add signal pseudo-data (hardcoded mass choice 1200)
+            if not opt.unblind and m=='1200':
+                for i in range(len(sigNomTemplates[key])):
+                    data_templates[i].Add(sigNomTemplates[key][i])
+                    sigNomTemplates[key][i].Delete() #no longer needed
         
     #now write the data
     for h in data_templates:
