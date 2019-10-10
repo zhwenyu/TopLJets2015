@@ -230,19 +230,20 @@ case $WHAT in
         testCat=em
         testDist=${testCat}_mlb
         python test/analysis/top17010/prepareDataCard.py -d ${testDist} \
-            -t ${outdir}/${githash}/templates \
-            dataDef=sig,${outdir}/${githash}/plots/plotter.root,${testDist}/${testDist}_t#bar{t} \
-            -s nom,${outdir}/${githash}/MC13TeV_${ERA}_TTJets.root \
-            -o ${outdir}/${githash}/datacards \
+            -t /eos/cms/${outdir}/${githash}/templates \
+            dataDef=sig,/eos/cms/${outdir}/${githash}/plots/plotter.root,${testDist}/${testDist}_t#bar{t},scenario1114162/MC13TeV_2016_TTJets_psweights.root,${testDist} \
+            -s nom,/eos/cms/${outdir}/${githash}/MC13TeV_${ERA}_TTJets_psweights.root \
+            -o datacards \
             --systs test/analysis/top17010/systs_dict.json
         
         #use a specific scenario
-        #dataDef=sig,${outdir}/${githash}/plots/plotter.root,${testDist}/${testDist}_t#bar{t},scenario131502/MC13TeV_2016_TTJets.root,${testDist} \
+        #   dataDef=sig,${outdir}/${githash}/plots/plotter.root,${testDist}/${testDist}_t#bar{t} \
 
-        args="${outdir}/${githash}/datacards/${testCat}/nom/tbart.datacard.dat"
-        python test/analysis/top17010/createFit.py -o ${outdir}/${githash}/fits/${testCat}/nom -a -t 50 -c ${COMBINE} --tag tbart ${args}
+        #fixme...
+        #args="${outdir}/${githash}/datacards/${testCat}/nom/tbart.datacard.dat"
+        #python test/analysis/top17010/createFit.py -o ${outdir}/${githash}/fits/${testCat}/nom -a -t 50 -c ${COMBINE} --tag tbart ${args}
 
-        sh ${outdir}/${githash}/fits/${testCat}/nom/runFit_tbart.sh 
+        #sh ${outdir}/${githash}/fits/${testCat}/nom/runFit_tbart.sh 
 
         ;;
 

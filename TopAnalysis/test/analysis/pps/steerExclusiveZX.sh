@@ -91,7 +91,7 @@ case $WHAT in
 
     PLOTSEL )
         lumiSpecs="--lumiSpecs a:${lptalumi}"
-        kFactorList="--procSF #gamma+jets:1.33"
+        kFactorList="--procSF #gamma+jets:1.4"
 	commonOpts="-i /eos/cms/${outdir} --puNormSF puwgtctr -l ${lumi} --mcUnc ${lumiUnc} ${kFactorList} ${lumiSpecs}"
 	python scripts/plotter.py ${commonOpts} -j ${samples_json}    -O /eos/cms/${outdir}/plots/sel -o plotter.root --only mboson,mtboson,pt,eta,met,jets,nvtx,ratevsrun --saveLog; 
         python scripts/plotter.py ${commonOpts} -j ${samples_json}    --rawYields --silent --only gen -O /eos/cms/${outdir}/plots/ -o plots/bkg_gen_plotter.root; 
@@ -273,7 +273,7 @@ case $WHAT in
                 eralumi=`echo ${eralumi}*0.329 | bc`
             fi
 
-	    baseOpts="-i /eos/cms/${anadir} --lumiSpecs a:${alumi} --procSF #gamma+jets:1.33 -l ${eralumi} --mcUnc ${lumiUnc}"
+	    baseOpts="-i /eos/cms/${anadir} --lumiSpecs a:${alumi} --procSF #gamma+jets:1.4 -l ${eralumi} --mcUnc ${lumiUnc}"
             era_json=test/analysis/pps/test_samples_${era}.json;
             commonOpts="${baseOpts} -j ${era_json} --signalJson ${plot_signal_json} -O /eos/cms/${anadir}/plots${era}"
             python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py ${commonOpts} --only ${plots} --strictOnly;
@@ -296,7 +296,7 @@ case $WHAT in
         for c in neg pos hpur hpurpos hpurneg hpur120xangle hpur130xangle hpur140xangle hpur150xangle; do
             lumiSpecs="${lumiSpecs},mmrpin${c}:${ppsLumi},eerpin${c}:${ppsLumi},emrpin${c}:${ppsLumi},arpin${c}:${lptappslumi}";
         done
-	baseOpts="-i /eos/cms/${anadir} --lumiSpecs ${lumiSpecs} --procSF #gamma+jets:1.33 -l ${lumi} --mcUnc ${lumiUnc} ${lumiSpecs} ${kFactorList}"
+	baseOpts="-i /eos/cms/${anadir} --lumiSpecs ${lumiSpecs} --procSF #gamma+jets:1.4 -l ${lumi} --mcUnc ${lumiUnc} ${lumiSpecs} ${kFactorList}"
         commonOpts="${baseOpts} -j ${samples_json} --signalJson ${plot_signal_json} -O /eos/cms/${anadir}/plots"
 
         plots=xangle_eerpinhpur,xangle_mmrpinhpur,xangle_emrpinhpur,xangle_arpinhpur
@@ -330,15 +330,17 @@ case $WHAT in
                     done
                 fi            
             done
-            python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py ${commonOpts} --only ${plots} --strictOnly  -o plots/plotter_${ch}.root &
+            python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py ${commonOpts} --only ${plots} --strictOnly  -o plots/plotter_${ch}.root --saveLog &
         done
         
         ;;
 
     WWW )
 
+	cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}
 	mkdir -p ${wwwdir}/presel
 	cp /eos/cms/${outdir}/plots/*.{png,pdf,dat} ${wwwdir}/presel
+	cp /eos/cms/${outdir}/plots/sel/*.{png,pdf,dat} ${wwwdir}/presel
 	cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}/presel
 
         mkdir -p ${wwwdir}/ana
@@ -358,12 +360,23 @@ case $WHAT in
     OPTIMSTATANA )
 
         #afs needs to be used here...
-        python test/analysis/pps/prepareOptimScanCards.py ppvx_analysis_1200 /eos/cms/${anadir}
+        python test/analysis/pps/prepareOptimScanCards.py -o ppvx_analysis -i /eos/cms/${anadir}
 
         ;;
 
     FINALIZESTATANA )
         python test/analysis/pps/compareOptimResults.py ppvx_analysis/
         ;;
+
+    
+    INJECTSIGNAL )
+
+        #afs needs to be used here...
+        for m in 800 1200 1400; do
+            python test/analysis/pps/prepareOptimScanCards.py -o ppvx_analysis_${m}  -i /eos/cms/${anadir} --injectMass ${m} --just 5,45;
+        done
+
+        ;;
+
 
 esac

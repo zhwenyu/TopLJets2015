@@ -40,17 +40,15 @@ def getSignificanceFrom(url):
     return vals
 
 
-
-
 def showOptimizationScan(results,name,title,lumi):
 
     """a bar plot with the expected limits obtained at each optimization point"""
 
     c=ROOT.TCanvas('c','c',500,800)
-    c.SetLeftMargin(0.4)
+    c.SetLeftMargin(0.3)
     c.SetRightMargin(0.05)
     c.SetTopMargin(0.05)
-    c.SetBottomMargin(0.1)
+    c.SetBottomMargin(0.15)
     c.SetGridx()
     c.SetGridy()
 
@@ -61,7 +59,7 @@ def showOptimizationScan(results,name,title,lumi):
 
         kinCuts,rpCuts,categs=OPTIMLIST[ipt-1]
         xlabel=kinCuts[0] if '_z' in name else kinCuts[1] #dirty hack
-        xlabel=xlabel.replace('bosonpt','p_{T}')
+        xlabel=xlabel.replace('bosonpt','pT')
         xlabel+=' && ' + rpCuts
         xlabel=xlabel.replace('csi1','#xi')
         xlabel=xlabel.replace('&& csi2>','/ ')
@@ -81,7 +79,7 @@ def showOptimizationScan(results,name,title,lumi):
     h.SetFillColor(ROOT.kGray)
     h.GetYaxis().SetLabelSize(0.025)
     h.GetYaxis().SetTitleSize(0.03)
-    h.GetYaxis().SetTitleOffset(0.7)
+    h.GetYaxis().SetTitleOffset(0.8)
     h.GetYaxis().SetRangeUser(0,1.1*maxy)
     h.GetYaxis().SetNdivisions(5)
     h.Draw('hbar')
@@ -104,14 +102,14 @@ def showOptimizationScan(results,name,title,lumi):
     leg.AddEntry(hsig,hsig.GetTitle(),'f')
     leg.Draw()
 
-    axis = ROOT.TGaxis(0,-6, h.GetMaximum(),-6, 0, rightmax,5,"-L=");
+    axis = ROOT.TGaxis(0,-8, h.GetMaximum(),-8, 0, rightmax,5,"-L=");
     axis.SetTickLength(0.005)
     axis.SetTextFont(42)
     axis.SetLabelFont(42)
-    axis.SetLabelOffset(-0.01)
+    axis.SetLabelOffset(-0.05)
     axis.SetLabelSize(0.03)
     axis.SetTitle(hsig.GetYaxis().GetTitle())
-    axis.SetTitleOffset(0.5)
+    axis.SetTitleOffset(0.8)
     axis.SetTextSize(0.001)
     axis.Draw()
 
@@ -119,14 +117,13 @@ def showOptimizationScan(results,name,title,lumi):
     tex.SetTextFont(42)
     tex.SetTextSize(0.04)
     tex.SetNDC()
-    tex.DrawLatex(0.4,0.96,'#bf{CMS} #it{preliminary}')
+    tex.DrawLatex(0.3,0.96,'#bf{CMS} #it{preliminary}')
     tex.SetTextAlign(ROOT.kHAlignRight+ROOT.kVAlignBottom)
     tex.DrawLatex(0.95,0.96,'#scale[0.8]{%s fb^{-1} (13 TeV)}'%lumi)
 
     c.Modified()
     c.Update()
     c.RedrawAxis()
-    raw_input()
     for ext in ['png','pdf']:
         c.SaveAs('%s.%s'%(name,ext))
 
@@ -309,72 +306,77 @@ def showShapes(resultsDir,name,title,mass,boson,r95,sig,lumi):
 
 
 
+def main():
 
-ROOT.gStyle.SetOptStat(0)
-ROOT.gStyle.SetOptTitle(0)
-ROOT.gROOT.SetBatch(True)
+    ROOT.gStyle.SetOptStat(0)
+    ROOT.gStyle.SetOptTitle(0)
+    ROOT.gROOT.SetBatch(True)
 
-#loop over all results in output directory
-baseDir=sys.argv[1]
-results={'z':{},'g':{}}
-for optimPt in os.listdir(baseDir):
+    #loop over all results in output directory
+    baseDir=sys.argv[1]
+    results={'z':{},'g':{}}
+    for optimPt in os.listdir(baseDir):
 
-    pt = int(re.search('optim_(\d+)', optimPt).group(1))
+        pt = int(re.search('optim_(\d+)', optimPt).group(1))
 
-    optimDir=os.path.join(baseDir,optimPt)
-    limitFiles=[os.path.join(optimDir,x) for x in os.listdir(optimDir) if 'PPzX.AsymptoticLimits' in x]
+        optimDir=os.path.join(baseDir,optimPt)
+        limitFiles=[os.path.join(optimDir,x) for x in os.listdir(optimDir) if 'PPzX.AsymptoticLimits' in x]
 
-    for f in limitFiles:
-        mass = int(re.search('.mH(\d+)', f).group(1))
+        for f in limitFiles:
+            mass = int(re.search('.mH(\d+)', f).group(1))
         
-        if not mass in results['z']:
-            results['z'][mass]=[]
-            results['g'][mass]=[]            
+            if not mass in results['z']:
+                results['z'][mass]=[]
+                results['g'][mass]=[]            
         
-        results['z'][mass].append( (pt,getLimitsFrom(f)+getSignificanceFrom(f.replace('AsymptoticLimits','Significance'))) )
+            results['z'][mass].append( (pt,getLimitsFrom(f)+getSignificanceFrom(f.replace('AsymptoticLimits','Significance'))) )
 
-        fg=f.replace('PPzX','PPgX')        
-        results['g'][mass].append( (pt,getLimitsFrom(fg)+getSignificanceFrom(fg.replace('AsymptoticLimits','Significance'))) )
+            fg=f.replace('PPzX','PPgX')        
+            results['g'][mass].append( (pt,getLimitsFrom(fg)+getSignificanceFrom(fg.replace('AsymptoticLimits','Significance'))) )
 
 
-#print results and show limit plots
-fOut=open('optimresults.dat','w')
-for v in results.keys():
+    #print results and show limit plots
+    fOut=open('optimresults.dat','w')
+    for v in results.keys():
 
-    #cosmetics for the plots
-    title='pp#rightarrowppZX'
-    lumi=37.5
-    if v=='g':
-        title='pp#rightarrowpp#gammaX'
-        lumi=2.64
+        #cosmetics for the plots
+        title='pp#rightarrowppZX'
+        lumi=37.5
+        if v=='g':
+            title='pp#rightarrowpp#gammaX'
+            lumi=2.64
 
-    fOut.write('-'*50+'\n')
-    fOut.write('%s @ lumi=%f\n'%(title,lumi))
+        fOut.write('-'*50+'\n')
+        fOut.write('%s @ lumi=%f\n'%(title,lumi))
     
-    bestResults=[]
-    bestResultsDir=[]
-    for m in results[v]:
+        bestResults=[]
+        bestResultsDir=[]
+        for m in results[v]:
 
-        results[v][m].sort(key=lambda x: x[1], reverse=False)
-        bestPoint,limits=results[v][m][0]
+            results[v][m].sort(key=lambda x: x[1], reverse=False)
+            bestPoint,limits=results[v][m][0]
         
-        #showShapes( resultsDir=os.path.join(baseDir,'optim_%d'%bestPoint),
-        #            name='shapes_m%d'%m,
-        #            title=title,
-        #            mass=m,
-        #            boson=v,
-        #            r95=limits[0],
-        #            sig=limits[5],
-        #            lumi=lumi )
+            if m in [800,1000,1200,1400]:
+                showShapes( resultsDir=os.path.join(baseDir,'optim_%d'%bestPoint),
+                            name='shapes_m%d'%m,
+                            title=title,
+                            mass=m,
+                            boson=v,
+                            r95=limits[0],
+                            sig=limits[5],
+                            lumi=lumi )
 
-        kinCuts,rpCuts,categs=OPTIMLIST[bestPoint-1]
-        fOut.write('%10s r95<%3.3f S=%3.3f (p-val=%3.3f) %25s %25s %25s %d\n'%(str(m),limits[0],limits[5],limits[6],kinCuts[0] if v=='z' else kinCuts[1] ,rpCuts,categs,bestPoint))
-        bestResults.append( (m,limits) )
+            kinCuts,rpCuts,categs=OPTIMLIST[bestPoint-1]
+            fOut.write('%10s r95<%3.3f S=%3.3f (p-val=%3.3f) %25s %25s %25s %d\n'%(str(m),limits[0],limits[5],limits[6],kinCuts[0] if v=='z' else kinCuts[1] ,rpCuts,categs,bestPoint))
+            bestResults.append( (m,limits) )
 
-        ROOT.gROOT.SetBatch(False)
-        showOptimizationScan(results[v][m],'optimscan_%s_m%d'%(v,m),title,lumi)
+            showOptimizationScan(results[v][m],'optimscan_%s_m%d'%(v,m),title,lumi)
 
-    showLimits(bestResults,'limits_%s'%v,title,lumi)
+        showLimits(bestResults,'limits_%s'%v,title,lumi)
+        
+    fOut.close()
+    print 'Summary can be found in optimresults.dat'
 
-fOut.close()
-print 'Summary can be found in optimresults.dat'
+
+if __name__ == "__main__":
+    main()

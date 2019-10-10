@@ -1,6 +1,7 @@
 import ROOT
 import os
 import sys
+import argparse
 import itertools
 
 KINEMATICS = [('bosonpt>20', 'bosonpt>95'),
@@ -19,19 +20,46 @@ CATEGS     = ['nvtx>15',
               'nvtx<30,nvtx>=30']
 OPTIMLIST=list(itertools.product(KINEMATICS, RPSEL,CATEGS))
 
-def main():
-    baseDir=sys.argv[1]
-    inputDir='eos/cms/store/cmst3/user/psilva/ExclusiveAna/final/ab05162/analysis_0p05'
-    if len(sys.argv)>2:
-        inputDir=sys.argv[2]
+def main(args):
+
+    parser = argparse.ArgumentParser(description='usage: %prog [options]')
+    parser.add_argument('-i', '--input',
+                        dest='input',   
+                        default='/eos/cms/store/cmst3/user/psilva/ExclusiveAna/final/ab05162/analysis_0p05',
+                        help='input directory with the files [default: %default]')
+    parser.add_argument('--injectMass',
+                        dest='injectMass',
+                        default=None,
+                        help='mass to inject in pseudo-data [%default]')
+    parser.add_argument('-o', '--output',
+                        dest='output', 
+                        default='ppvx_analysis',
+                        help='Output directory [default: %default]')
+    parser.add_argument('--just',
+                        dest='just',
+                        default=None,
+                        help='Run only this optimization points (CSV list) [default: %default]')
+    parser.add_argument('--unblind',
+                        dest='unblind', 
+                        default=False,
+                        action='store_true',
+                        help='Use non-mixed data in the final fit [default: %default]')
+    opt=parser.parse_args(args)
+
+    #build a list of the points to run
+    if opt.just: opt.just=[int(x) for x in opt.just.split(',')]
 
     ipt=0
+    n2sub=[]
     for ana in OPTIMLIST:
         ipt+=1
 
+        if opt.just and not ipt in opt.just: continue
+        n2sub.append(ipt)
+
         kin,rpsel,cats=ana
 
-        workDir='%s/optim_%d'%(baseDir,ipt)
+        workDir='%s/optim_%d'%(opt.output,ipt)
         print workDir
 
         os.system('mkdir -p ' + workDir)
@@ -40,10 +68,14 @@ def main():
 
             #initialization
             script.write('\n')
-            script.write('input=%s\n'%inputDir)
+            script.write('input=%s\n'%opt.input)
             script.write('preselZ="%s && %s"\n'%(kin[0],rpsel))
             script.write('preselGamma="%s && %s"\n'%(kin[1],rpsel))        
             script.write('categs="%s"\n'%(cats))
+            if opt.injectMass:
+                script.write('injectMass="--injectMass %s"\n'%opt.injectMass)
+            else:
+                script.write('injectMass=""\n')
             script.write('output=%s\n'%os.path.abspath(workDir))     
             script.write('\n')
 
@@ -56,7 +88,7 @@ def main():
 
             #create datacard
             script.write('echo "Running datacard creation"\n')
-            script.write('python ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/pps/generateBinnedWorkspace.py -i ${input} -o ${output} --preselZ "${preselZ}" --preselGamma "${preselGamma}" --categs "${categs}"\n')
+            script.write('python ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/pps/generateBinnedWorkspace.py -i ${input} -o ${output} --preselZ "${preselZ}" --preselGamma "${preselGamma}" --categs "${categs} ${injectMass}"\n')
             script.write('\n')
 
             #combine cards
@@ -90,19 +122,19 @@ def main():
             script.write('cd -\n')        
 
     #submit optimization points to crab
-    print 'Will submit %d optimization scan points'%ipt
+    print 'Will submit %d optimization scan points'%len(n2sub)
     with open('zxstatana_scan.sub','w') as condor:
-        condor.write("executable  = %s/optim_$(point)/optimJob.sh\n"%os.path.abspath(baseDir))
+        condor.write("executable  = %s/optim_$(point)/optimJob.sh\n"%os.path.abspath(opt.output))
         condor.write("output       = zxstatana_scan.out\n")
         condor.write("error        = zxstatana_scan.err\n")
         condor.write("log          = zxstatana_scan.log\n")
         condor.write("+JobFlavour = \"tomorrow\"\n")
         condor.write("request_cpus = 4\n")
-        for i in range(ipt):
-            condor.write("point=%d\n"%(i+1))
+        for i in n2sub:
+            condor.write("point=%d\n"%i)
             condor.write("queue 1\n")
     os.system('condor_submit zxstatana_scan.sub')
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main(sys.argv[1:]))

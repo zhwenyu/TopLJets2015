@@ -105,6 +105,17 @@ def fillBackgroundTemplates(opt):
         #background modelling histos
         histos=[]
         data_obs=None
+
+        data.Draw('mmiss >> h({0},{1},{2})'.format(opt.nbins,opt.mMin,opt.mMax),
+                  '{0} && mmiss>0 && mixType==0'.format(categCut),
+                  'goff')
+        h=data.GetHistogram()
+        totalBkg[icat]=h.Integral()
+        if opt.unblind:
+            data_obs=h.GetHistogram().Clone('data_obs_'+catName)
+            data_obs.SetDirectory(0)
+        h.Reset('ICE')
+
         for name,mixType,pfix in [('bkg_'+catName,                      1, ''),
                                   ('bkg_%s_bkgShape'%catName,           1, 'syst'),
                                   ('bkg_%s_bkgShapeSingleDiff'%catName, 2, ''),
@@ -116,27 +127,20 @@ def fillBackgroundTemplates(opt):
                       'wgt*({0} && {1}mmiss>0 && mixType=={2})'.format(templCuts,pfix,mixType),
                       'goff')
             h=data.GetHistogram()
+            print name,mixType,pfix,totalBkg[icat],h.Integral()
+            h.Scale(totalBkg[icat]/h.Integral())
             histos.append(h.Clone(name))
             histos[-1].SetDirectory(0)
 
-            if len(histos)==1:
-                totalBkg[icat]=h.Integral()
-                if not opt.unblind :
-                    data_obs=h.Clone('data_obs_'+catName)
-                    data_obs.SetDirectory(0)
+            #use first histogram in a category as pseudo-data in case we're blinded
+            if len(histos)==1 and not opt.unblind :
+                data_obs=h.Clone('data_obs_'+catName)
+                data_obs.SetDirectory(0)
 
             h.Reset('ICE')
+
+        #finalize templates
         templates += defineProcessTemplates(histos)
-
-        #observed data in this category if unblinding
-        if opt.unblind:
-            categCut += ' && mixType==0'
-            data.Draw('mmiss >> h({1},{2},{3})'.format(opt.nbins,opt.mMin,opt.mMax),
-                      '{0} && mmiss>0'.format(categCut),
-                      'goff')
-            data_obs=data.GetHistogram().Clone('data_obs_'+catName)
-            data_obs.SetDirectory(0)
-
         data_templates.append(data_obs)
 
     print '\t total background:',totalBkg
@@ -308,8 +312,8 @@ def datacardTask(args):
                 h.SetDirectory(fOut)
                 h.Write()
 
-            #if blinded add signal pseudo-data (hardcoded mass choice 1200)
-            if not opt.unblind and m=='1200':
+            #if blinded add signal pseudo-data 
+            if not opt.unblind and opt.injectMass==m:
                 for i in range(len(sigNomTemplates[key])):
                     data_templates[i].Add(sigNomTemplates[key][i])
                     sigNomTemplates[key][i].Delete() #no longer needed
@@ -343,6 +347,10 @@ def main(args):
                         dest='massList',
                         default='780,800,840,900,960,1000,1020,1080,1140,1200,1260,1320,1380,1400,1440,1500,1560,1600',
                         help='signal mass list (CSV) [%default]')
+    parser.add_argument('--injectMass',
+                        dest='injectMass',
+                        default=None,
+                        help='mass to inject in pseudo-data [%default]')
     parser.add_argument('--preselZ',
                         dest='preselZ', 
                         default='l1pt>30 && l2pt>20 && bosonpt>50',
@@ -396,7 +404,7 @@ def main(args):
     if len(opt.categs)==0 : opt.categs=[]
     opt.massList=opt.massList.split(',')
     setattr(opt,'nbins', ROOT.TMath.FloorNint( (opt.mMax-opt.mMin)/(opt.mBin)) )
-    
+
     print '[generateWorkspace]'
     print '\t signal for masses=',opt.massList
     print '\t will apply the following preselection:'
@@ -405,6 +413,11 @@ def main(args):
     print '\t histograms defined as (%d,%f,%f)'%(opt.nbins,opt.mMin,opt.mMax)
     if len(opt.categs) : 
         print '\t will categorize in:',opt.categs
+    if opt.unblind:
+        print '\t Analysis will be unblinded'
+    else:
+        print '\t Pseudo-data built from background expectations'
+        print '\t Signal injected from mass=',opt.injectMass
 
     #prepare output
     os.system('mkdir -p %s'%opt.output)
