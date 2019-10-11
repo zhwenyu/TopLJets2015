@@ -127,7 +127,6 @@ def fillBackgroundTemplates(opt):
                       'wgt*({0} && {1}mmiss>0 && mixType=={2})'.format(templCuts,pfix,mixType),
                       'goff')
             h=data.GetHistogram()
-            print name,mixType,pfix,totalBkg[icat],h.Integral()
             h.Scale(totalBkg[icat]/h.Integral())
             histos.append(h.Clone(name))
             histos[-1].SetDirectory(0)

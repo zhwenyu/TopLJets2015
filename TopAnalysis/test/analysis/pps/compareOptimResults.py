@@ -185,7 +185,7 @@ def showLimits(results,name,title,lumi):
     mg.Add(r68,'l3')
     mg.Add(rmed,'l')
     frame=ROOT.TH1F('frame',';m_{X} [GeV];95% CL limits on #sigma_{fid} [pb]',1,700,1700)
-    frame.GetYaxis().SetRangeUser(1e-1,maxRan*1.1)
+    frame.GetYaxis().SetRangeUser(1e-2,maxRan*1.1)
     frame.SetBinContent(1,1)
     frame.SetLineWidth(2)
     frame.SetLineColor(ROOT.kRed)
@@ -252,7 +252,9 @@ def showShapes(resultsDir,name,title,mass,boson,r95,sig,lumi):
 
             bkgH       = fIn.Get('bkg_%s_a%d_%d'%(v,angle,icat))
             fidsigH    = fIn.Get('fidsig_%s_a%d_%d_m%d'%(v,angle,icat,mass))
+            fidsigH.Scale(5)
             outfidsigH = fIn.Get('outfidsig_%s_a%d_%d_m%d'%(v,angle,icat,mass))
+            outfidsigH.Scale(5)
             dataH = fIn.Get('data_obs_%s_a%d_%d'%(v,angle,icat))
             
             try:
@@ -261,14 +263,14 @@ def showShapes(resultsDir,name,title,mass,boson,r95,sig,lumi):
                 p=Plot('%s_%s_a%d_cat%d'%(name,v,angle,icat))
                 p.xtit='Missing mass [GeV]'
                 p.ytit='Events'
-                p.add(fidsigH,            title=title+' (%d)'%m, color=ROOT.TColor.GetColor('#fdc086'), isData=False, spImpose=False, isSyst=False)
-                p.add(outfidsigH,         title='non-fiducial',  color=ROOT.TColor.GetColor('#a6cee3'), isData=False, spImpose=False, isSyst=False)
+                p.add(fidsigH,            title='#scale[0.5]{5x}'+title+'#scale[0.8]{(%d)}'%mass, color=ROOT.TColor.GetColor('#fdc086'), isData=False, spImpose=False, isSyst=False)
+                p.add(outfidsigH,         title='#scale[0.5]{5x}non-fiducial',  color=ROOT.TColor.GetColor('#a6cee3'), isData=False, spImpose=False, isSyst=False)
                 p.add(bkgH,               title='background',    color=ROOT.TColor.GetColor('#1f78b4'), isData=False, spImpose=False, isSyst=False)
                 p.add(dataH,              title='pseudo-data',   color=1, isData=True, spImpose=False, isSyst=False)
-                p.add(fidsigH.Clone(),    title=title+' (%d)'%m, color=ROOT.TColor.GetColor('#fdc086'), isData=False, spImpose=True,  isSyst=False)
+                p.add(fidsigH.Clone(),    title=title+'#scale[0.8]{(%d)}'%mass, color=ROOT.TColor.GetColor('#fdc086'), isData=False, spImpose=True,  isSyst=False)
                 p.add(outfidsigH.Clone(), title='non-fiducial',  color=ROOT.TColor.GetColor('#a6cee3'), isData=False, spImpose=True,  isSyst=False)
                 p.ratiorange=[0.88,1.12]
-                p.show('./',lumi,extraText='%s, %d#murad\\#mu_{95}(exp.)<%3.3f\\S(exp.)=%3.3f'%(channel,angle,r95,sig))
+                p.show('./',lumi,extraText='%s, %d#murad\\sub-category %d\\#mu_{95}(exp.)<%3.3f\\S(exp.)=%3.3f'%(channel,angle,icat,r95,sig))
 
                 colors=[ROOT.kGreen+1,ROOT.kAzure+3,ROOT.kRed+2]
 
@@ -293,10 +295,10 @@ def showShapes(resultsDir,name,title,mass,boson,r95,sig,lumi):
                 p.add(fidsigH, title='signal', color=1, isData=True,spImpose=False, isSyst=False)
                 ic=0
                 for syst in ['ShapeUp','CalibUp','PzModelUp']:
-                    p.add(fIn.Get('fidsig_%s_a%d_%d_m%d_sig%s'%(v,angle,icat,m,syst)), title=syst, color=colors[ic], isData=False, spImpose=False, isSyst=False)
+                    p.add(fIn.Get('fidsig_%s_a%d_%d_m%d_sig%s'%(v,angle,icat,mass,syst)), title=syst, color=colors[ic], isData=False, spImpose=False, isSyst=False)
                     ic+=1
                 p.ratiorange=[0.76,1.24]
-                p.show('./',lumi,noStack=True,extraText='%s, %d#murad\\m_{X}=%d GeV'%(channel,angle,m))
+                p.show('./',lumi,noStack=True,extraText='%s, %d#murad\\m_{X}=%d GeV'%(channel,angle,mass))
 
             except Exception as e:
                 print e
