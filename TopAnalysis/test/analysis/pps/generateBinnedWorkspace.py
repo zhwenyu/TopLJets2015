@@ -62,6 +62,7 @@ def defineProcessTemplates(histos,norm=False):
         for xbin in range(h.GetNbinsX()):
             if h.GetBinContent(xbin+1)>0: continue
             h.SetBinContent(xbin+1,1e-6)
+            h.SetBinError(xbin+1,1e-6)
             
     return templates
 
