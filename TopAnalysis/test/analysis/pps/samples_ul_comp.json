@@ -1,0 +1,28 @@
+{
+"Data13TeV_2017B_DoubleMuon_ul"         : [1,    1, "/DoubleMuon/Run2017B-31Mar2018-v1/MINIAOD",   "Data (UL)", 9, false, false, 0],
+"Data13TeV_2017C_DoubleMuon_ul"         : [1,    1, "/DoubleMuon/Run2017C-31Mar2018-v1/MINIAOD",   "Data (UL)", 9, false, false, 0],
+"Data13TeV_2017D_DoubleMuon_ul"         : [1,    1, "/DoubleMuon/Run2017D-31Mar2018-v1/MINIAOD",   "Data (UL)", 9, false, false, 0],
+"Data13TeV_2017E_DoubleMuon_ul"         : [1,    1, "/DoubleMuon/Run2017E-31Mar2018-v1/MINIAOD",   "Data (UL)", 9, false, false, 0],
+"Data13TeV_2017F_DoubleMuon_ul"         : [1,    1, "/DoubleMuon/Run2017F-31Mar2018-v1/MINIAOD",   "Data (UL)", 9, false, false, 0],
+"Data13TeV_2017B_DoubleEG_ul"           : [1,    1, "/DoubleEG/Run2017B-31Mar2018-v1/MINIAOD",     "Data (UL)", 9, false, false, 0],
+"Data13TeV_2017C_DoubleEG_ul"           : [1,    1, "/DoubleEG/Run2017C-31Mar2018-v1/MINIAOD",     "Data (UL)", 9, false, false, 0],
+"Data13TeV_2017D_DoubleEG_ul"           : [1,    1, "/DoubleEG/Run2017D-31Mar2018-v1/MINIAOD",     "Data (UL)", 9, false, false, 0],
+"Data13TeV_2017E_DoubleEG_ul"           : [1,    1, "/DoubleEG/Run2017E-31Mar2018-v1/MINIAOD",     "Data (UL)", 9, false, false, 0],
+"Data13TeV_2017F_DoubleEG_ul"           : [1,    1, "/DoubleEG/Run2017F-31Mar2018-v1/MINIAOD",     "Data (UL)", 9, false, false, 0],
+"Data13TeV_2017B_MuonEG_ul"             : [1,    1, "/MuonEG/Run2017B-31Mar2018-v1/MINIAOD",       "Data (UL)", 9, false, false, 0],
+"Data13TeV_2017C_MuonEG_ul"             : [1,    1, "/MuonEG/Run2017C-31Mar2018-v1/MINIAOD",       "Data (UL)", 9, false, false, 0],
+"Data13TeV_2017D_MuonEG_ul"             : [1,    1, "/MuonEG/Run2017D-31Mar2018-v1/MINIAOD",       "Data (UL)", 9, false, false, 0],
+"Data13TeV_2017E_MuonEG_ul"             : [1,    1, "/MuonEG/Run2017E-31Mar2018-v1/MINIAOD",       "Data (UL)", 9, false, false, 0],
+"Data13TeV_2017F_MuonEG_ul"             : [1,    1, "/MuonEG/Run2017F-31Mar2018-v1/MINIAOD",       "Data (UL)", 9, false, false, 0],
+"Data13TeV_2017B_SingleMuon_ul"         : [1,    1, "/SingleMuon/Run2017B-31Mar2018-v1/MINIAOD",   "Data (UL)", 9, false, false, 0],
+"Data13TeV_2017C_SingleMuon_ul"         : [1,    1, "/SingleMuon/Run2017C-31Mar2018-v1/MINIAOD",   "Data (UL)", 9, false, false, 0],
+"Data13TeV_2017D_SingleMuon_ul"         : [1,    1, "/SingleMuon/Run2017D-31Mar2018-v1/MINIAOD",   "Data (UL)", 9, false, false, 0],
+"Data13TeV_2017E_SingleMuon_ul"         : [1,    1, "/SingleMuon/Run2017E-31Mar2018-v1/MINIAOD",   "Data (UL)", 9, false, false, 0],
+"Data13TeV_2017F_SingleMuon_ul"         : [1,    1, "/SingleMuon/Run2017F-31Mar2018-v1/MINIAOD",   "Data (UL)", 9, false, false, 0],
+"Data13TeV_2017B_SinglePhoton_ul"       : [1,    1, "/SinglePhoton/Run2017B-31Mar2018-v1/MINIAOD", "Data (UL)", 9, false, false, 0],
+"Data13TeV_2017C_SinglePhoton_ul"       : [1,    1, "/SinglePhoton/Run2017C-31Mar2018-v1/MINIAOD", "Data (UL)", 9, false, false, 0],
+"Data13TeV_2017D_SinglePhoton_ul"       : [1,    1, "/SinglePhoton/Run2017D-31Mar2018-v1/MINIAOD", "Data (UL)", 9, false, false, 0],
+"Data13TeV_2017E_SinglePhoton_ul"       : [1,    1, "/SinglePhoton/Run2017E-31Mar2018-v1/MINIAOD", "Data (UL)", 9, false, false, 0],
+"Data13TeV_2017F_SinglePhoton_ul"       : [1,    1, "/SinglePhoton/Run2017F-31Mar2018-v1/MINIAOD", "Data (UL)", 9, false, false, 0]
+}
+
