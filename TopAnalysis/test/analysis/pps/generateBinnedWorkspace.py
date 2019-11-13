@@ -106,8 +106,10 @@ def fillBackgroundTemplates(opt):
         #background modelling histos
         histos=[]
         data_obs=None
-
-        data.Draw('mmiss >> h({0},{1},{2})'.format(opt.nbins,opt.mMin,opt.mMax),
+        histodef='mmiss >> h({0},{1},{2})'.format(opt.nbins,opt.mMin,opt.mMax),
+        if opt.signed:
+            histodef='(ypp>=0 ? mmiss : -mmiss) >> h({0},{1},{2})'.format(2*opt.nbins,-opt.mMax,opt.mMax)
+        data.Draw( histodef,
                   '{0} && mmiss>0 && mixType==0'.format(categCut),
                   'goff')
         h=data.GetHistogram()
@@ -124,7 +126,10 @@ def fillBackgroundTemplates(opt):
 
             templCuts=categCut.replace('csi1',pfix+'csi1')
             templCuts=templCuts.replace('csi2',pfix+'csi2')
-            data.Draw('{0}mmiss >> h({1},{2},{3})'.format(pfix,opt.nbins,opt.mMin,opt.mMax),
+            histodef='{0}mmiss >> h({1},{2},{3})'.format(pfix,opt.nbins,opt.mMin,opt.mMax)           
+            if opt.signed:
+                histodef='({0}ypp>=0 ? {0}mmiss : -{0}mmiss) >> h({1},{2},{3})'.format(2*opt.nbins,-opt.mMax,opt.mMax)
+            data.Draw(histodef,
                       'wgt*({0} && {1}mmiss>0 && mixType=={2})'.format(templCuts,pfix,mixType),
                       'goff')
             h=data.GetHistogram()
@@ -194,7 +199,10 @@ def fillSignalTemplates(mass,signalFile,xsec,opt,fiducialCuts='gencsi1>0.03 & ge
                     templCuts+=' && %s'%fiducialCuts
 
                 chain=dataAlt if 'sigCalib' in name else data
-                chain.Draw('{0}mmiss >> h({1},{2},{3})'.format(pfix,opt.nbins,opt.mMin,opt.mMax),
+                histodef='{0}mmiss >> h({1},{2},{3})'.format(pfix,opt.nbins,opt.mMin,opt.mMax)           
+                if opt.signed:
+                    histodef='({0}ypp>=0 ? {0}mmiss : -{0}mmiss) >> h({1},{2},{3})'.format(2*opt.nbins,-opt.mMax,opt.mMax)
+                chain.Draw(histodef,
                            '{0}*{1}*({2} && mixType=={3} && {4}mmiss>0)'.format(wgtExpr,
                                                                                 addWgt if addWgt else '1',
                                                                                 templCuts,
@@ -363,6 +371,11 @@ def main(args):
                         dest='categs',
                         default='nvtx<20,nvtx>=20',
                         help='Sub-categories [default: %default]')
+    parser.add_argument('--signed',
+                        dest='signed',
+                        default=False,
+                        help='use signed missing mass [default %default]',
+                        action='store_true')
     parser.add_argument('--lumi',
                         dest='lumi',
                         default=37500.,

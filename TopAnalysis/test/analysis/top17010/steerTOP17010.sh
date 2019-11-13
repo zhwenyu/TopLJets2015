@@ -45,7 +45,7 @@ eosdir=/store/cmst3/group/top/RunIIReReco/2016/${githash}
 fulllumi=35882
 lumiUnc=0.025
 if [[ ${ERA} = "2017" ]]; then
-    githash=3129835
+    githash=ab05162
     eosdir=/store/cmst3/group/top/RunIIReReco/${githash}
     fulllumi=41367
 fi

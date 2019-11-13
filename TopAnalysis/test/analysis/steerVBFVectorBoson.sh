@@ -25,7 +25,7 @@ if [ -z "$WHAT" ]; then
     exit 1; 
 fi
 
-githash=3129835
+githash=ab05162
 eosdir=/store/cmst3/group/top/RunIIReReco/${githash}
 fulllumi=41367
 vbflumi=7661
@@ -77,21 +77,6 @@ case $WHAT in
         #./scripts/mergeOutputs.py ${output};
         ;;
 
-
-    TESTSELTRIGEFF )
-               
-        json=data/era${ERA}/vbf_samples.json
-        tag=Data13TeV_${ERA}C_SingleMuon
-        input=${eosdir}/${tag}/Chunk_1_ext0.root
-        output=${tag}.root 
-
-	python scripts/runLocalAnalysis.py \
-            -i ${input} -o ${output} --tag ${tag} --only ${json} --mvatree\
-            --njobs 1 -q local --genWeights genweights_${githash}.root \
-            --era era${ERA} -m PhotonTrigEff::RunPhotonTrigEff --ch 0 --runSysts --debug;
-
-        ;;
-
     SEL )
 	##### NOTE: There are three options here:
         ### --mvatree: to store trees for BDT training in signal region
@@ -124,6 +109,23 @@ case $WHAT in
         python scripts/checkLocalAnalysisInteg.py ../../../FARM${EXTRA}${githash}/ ${outdir}/${githash}/${EXTRA} 
         ;;
 
+#######################
+### TRIGGER STUDIES ###
+#######################
+
+    TESTSELTRIGEFF )
+               
+        json=data/era${ERA}/vbf_samples.json
+        tag=Data13TeV_${ERA}C_SinglePhoton
+        input=${eosdir}/${tag}/Chunk_1_ext0.root
+        output=${tag}.root 
+
+	python scripts/runLocalAnalysis.py \
+            -i ${input} -o ${output} --tag ${tag} --only ${json} --mvatree\
+            --njobs 1 -q local --genWeights genweights_${githash}.root \
+            --era era${ERA} -m PhotonTrigEff::RunPhotonTrigEff --ch 0 --runSysts --debug;
+
+        ;;
 
     SELTRIGEFF )
 	python scripts/runLocalAnalysis.py \
@@ -134,6 +136,24 @@ case $WHAT in
             --era era${ERA} -m PhotonTrigEff::RunPhotonTrigEff --ch 0 --runSysts ${extraOpts};
 	;;
 
+    CHECKTRIGEFFINTEG )
+        python scripts/checkLocalAnalysisInteg.py ../../../FARMtrig${githash}/
+        ;;
+
+    MERGETRIGEFF )
+	./scripts/mergeOutputs.py ${outdir}/trig/${githash}/${EXTRA};
+	;;
+
+    TRIGEFF )
+        python test/analysis/computeTriggerEff.py ${outdir}/trig/${githash}/${EXTRA};
+        ;;
+
+    WWWTRIGEFF )
+        fdir=${wwwdir}/${githash}/${EXTRA}/trigeff
+	mkdir -p ${fdir}
+	cp ${outdir}/trig/${githash}/${EXTRA}/trigeff/*.{png,pdf} ${fdir}
+	cp test/index.php ${fdir};        
+	;;
 
     SELJETHT )
 	json=data/era${ERA}/JetHT.json;
@@ -158,10 +178,6 @@ case $WHAT in
 
     MERGE )
 	./scripts/mergeOutputs.py ${outdir}/${githash}/${EXTRA}${QCD};
-	;;
-
-    MERGETRIGEFF )
-	./scripts/mergeOutputs.py ${outdir}/trig/${githash}/${EXTRA};
 	;;
 
     PLOT )
@@ -198,23 +214,6 @@ case $WHAT in
         python test/analysis/computeTransferFactor.py ${commonOpts} --var balance    --rebin 2
         ;;
 
-    TRIGEFF )
-        #trigger efficiencies
-        json=data/era${ERA}/vbf_samples.json;
-	inDir=${outdir}/trig/${githash}/${EXTRA}
-	plotOutDir=${outdir}/trig/${githash}/${EXTRA}/plots/       
-	commonOpts="-i ${inDir} --puNormSF puwgtctr -l ${fulllumi} --saveLog --mcUnc ${lumiUnc} --lumiSpecs LowVPtLowMJJA:${vbflumi},LowVPtHighMJJA:${vbflumi}"
-       
-        #skipList=Data13TeV_2016G_SingleMuon,Data13TeV_2016H_SingleMuon
-        #if [[ ${ERA} == "2017" ]]; then
-        #    skipList=Data13TeV_2017B_SingleMuon,Data13TeV_2017C_SingleMuon,Data13TeV_2017D_SingleMuon,Data13TeV_2017E_SingleMuon
-        #fi
-	python scripts/plotter.py ${commonOpts} -j ${json} ${kFactors} --silent; # --skip ${skipList};
-
-        python test/analysis/computeTriggerEff.py ${inDir}/plots/plotter.root ${ERA};
-
-        #python test/analysis/computeVBFTriggerEff.py -p ${plotOutDir}/plotter.root -o ${plotOutDir};
-        ;;
 
     BDTTRANSFORM )
         #python test/analysis/VBF_weights/getInverseCDF.py

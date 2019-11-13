@@ -18,12 +18,16 @@ def fillShapes(inputDir,selCuts,proc='MuonEG'):
 
     histos={}
     sf=None
-    for dist,hist,title in [('mmiss',   '(30,0,2500)',    'Missing mass [GeV]'),
-                            ('csi1',    '(25,0.04,0.18)', '#xi'),
-                            ('csi2',    '(25,0.04,0.18)', '#xi'),                            
-                            ('mpp',     '(25,500,2500)',  'Di-proton mass [GeV]'),
-                            ('ypp',     '(50,-1,1)',      'Di-proton rapidity')
-                            ]:
+    for dist,hist,title in [('mmiss',                 '(30,0,2500)',             'Missing mass [GeV]'),
+                            ('(ypp>=0?mmiss:-mmiss)', '(30,-2500,2500)',         'Rapidity-signed missing mass [GeV]'),
+                            ('csi1',                  '(25,0.04,0.18)',          '#xi'),
+                            ('csi2',                  '(25,0.04,0.18)',          '#xi'),                            
+                            ('mpp',                   '(25,500,2500)',           'Di-proton mass [GeV]'),
+                            ('ypp',                   '(50,-1,1)',               'Di-proton rapidity'),
+                            ('mmiss:mpp',             '(25,500,2500,30,0,2500)', 'Missing mass [GeV];Di-proton mass [GeV]'),
+                            ('ypp:mpp',               '(25,500,2500,50,-1,1)',   'Di-proton rapidity;Di-proton mass [GeV]'),
+                        
+]:
 
         print dist
         histos[dist]={}
@@ -34,13 +38,23 @@ def fillShapes(inputDir,selCuts,proc='MuonEG'):
                                 ('bkgsinglediff', 'syst',1),
                                 ('bkgshape',      '',    2), 
                                 ]:
-            data.Draw('{0}{1} >> h{2}'.format(pf,dist,hist),
+            finaldist=dist
+            for c in ['mmiss','ypp','mpp','csi1','csi2']:
+                finaldist=finaldist.replace(c,pf+c)
+                
+            data.Draw('{0} >> h{1}'.format(finaldist,hist),
                       'wgt*({0} && {1}mmiss>0 && mixType=={2})'.format(selCuts,pf,mixType),
                       'goff')
             h=data.GetHistogram()
             histos[dist][tag]=h.Clone('{0}_{1}_{2}_obs'.format(dist,tag,proc))
-            histos[dist][tag].GetYaxis().SetTitle('Events')
-            histos[dist][tag].GetXaxis().SetTitle(title)
+            if ';' in title:
+                xtit,ytit=title.split(';')
+                histos[dist][tag].GetZaxis().SetTitle('Events')
+                histos[dist][tag].GetYaxis().SetTitle(ytit)
+                histos[dist][tag].GetXaxis().SetTitle(xtit)
+            else:
+                histos[dist][tag].GetYaxis().SetTitle('Events')
+                histos[dist][tag].GetXaxis().SetTitle(title)
             histos[dist][tag].SetDirectory(0)
             h.Reset('ICE')
             if tag=='data' : continue
@@ -50,8 +64,9 @@ def fillShapes(inputDir,selCuts,proc='MuonEG'):
 
         #use low missing mass to fix possible normalization differences
         if sf is None:
-            upBin=histos[dist]['data'].GetXaxis().FindBin(500.)
-            sf=histos[dist]['data'].Integral(0,upBin)/histos[dist]['bkg'].Integral(0,upBin)
+            sf=histos[dist]['data'].Integral()/histos[dist]['bkg'].Integral()
+            #upBin=histos[dist]['data'].GetXaxis().FindBin(500.)
+            #sf=histos[dist]['data'].Integral(0,upBin)/histos[dist]['bkg'].Integral(0,upBin)
             print 'Scale factor:',sf
 
         #scale background estimates
@@ -116,7 +131,10 @@ def main(args):
             selCuts.append( (opt.selCuts + ' && xangle==%d'%xangle,'_%d'%xangle,'e#mu, %d #murad'%xangle) )
     for cuts,pfix,catTitle in selCuts:
 
+        os.system('rm %s/plotter_%s.root'%(opt.output,pfix))
+
         data=fillShapes(inputDir=opt.input,selCuts=cuts,proc='MuonEG')
+
         #sigs={}
         #for m in opt.massList.split():
         #    if not m in sigs: sigs[m]={}
@@ -129,7 +147,11 @@ def main(args):
         #FIXME plot me
 
         for dist in data:
-            p=Plot(dist+pfix)
+
+            pname=dist+pfix
+            for c in [':',',','>','=','(',')','-','<']: pname=pname.replace(c,'')
+
+            p=Plot(pname)
             p.doChi2=True
             p.nominalDistForSystsName='background'
 
@@ -151,7 +173,8 @@ def main(args):
 
             p.ratiorange=[0.88,1.12]
             p.show(opt.output,opt.lumi,extraText=catTitle)
-
+            p.appendTo('%s/plotter_%s.root'%(opt.output,pfix))
+            p.reset()
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))

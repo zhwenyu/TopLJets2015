@@ -25,6 +25,7 @@ DIELECTRONS=11*11
 SINGLEPHOTON=22
 MINCSI=0.04
 MIXEDRP=None
+MIXEDRPSIG=None # this is only for a test
 
 
 def isValidRunLumi(run,lumi,runLumiList):
@@ -149,6 +150,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,maxEvents=-1):
     """event loop"""
 
     global MIXEDRP
+    global MIXEDRPSIG
 
     isData=True if 'Data' in inFile else False
     isSignal=isSignalFile(inFile)
@@ -402,6 +404,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,maxEvents=-1):
                                                                         isData=isData,
                                                                         validAngles=VALIDLHCXANGLES,
                                                                         mixEvCategs=[DIMUONS,EMU])
+
         if isSignal:
             mixed_far_rptks,mixed_near_rptks=evMixTool.mergeWithMixedEvent(far_rptks,mixed_far_rptks,near_rptks,mixed_near_rptks)
             n_extra_mu,nvtx,rho,PFMultSumHF,PFHtSumHF,PFPzSumHF,rfc=mixed_pudiscr[DIMUONS]
@@ -576,6 +579,16 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,maxEvents=-1):
                                                                       isData=isData,
                                                                       validAngles=VALIDLHCXANGLES,
                                                                       mixEvCategs=[DIMUONS,EMU])
+
+                if MIXEDRPSIG:
+                    sigCsi=random.choice( MIXEDRPSIG[beamXangle] )
+                    for mixEvCat in mixed_far_rptks:
+                        tksPos=mixed_far_rptks[mixEvCat][0]+[sigCsi[0]]
+                        shuffle(tksPos)
+                        tksNeg=mixed_far_rptks[mixEvCat][1]+[sigCsi[1]]
+                        shuffle(tksNeg)
+                        mixed_far_rptks[mixEvCat]=(tksPos,tksNeg)
+
                 if isSignal:
                     mixed_far_rptks,mixed_near_rptks=evMixTool.mergeWithMixedEvent(far_rptks,mixed_far_rptks,
                                                                                    near_rptks,mixed_near_rptks)
@@ -741,6 +754,25 @@ def runAnalysisTasks(opt):
         runLumi=json.load(cachefile,  encoding='utf-8', object_pairs_hook=OrderedDict).items()
         runLumi={int(x[0]):x[1] for x in runLumi}
 
+    #used to test inclusion of potential signal (test case from conveners request)
+    global MIXEDRPSIG
+    if opt.mixSignal:
+
+        print 'Going to add mixed signal here from %s'%opt.mixSignal
+        print 'Use this at your own risk...'
+
+        MIXEDRPSIG={}
+        for a in VALIDLHCXANGLES:
+            MIXEDRPSIG[a]=[]
+            fIn=ROOT.TFile.Open(opt.mixSignal.format(a))
+            data=fIn.Get('data')
+            for i in range(data.GetEntriesFast()):
+                data.GetEntry(i)
+                if data.mixType!=0 : continue
+                MIXEDRPSIG[a].append( (data.csi1,data.csi2) )
+            fIn.Close()
+            print '\t',a,'murad has',len(MIXEDRPSIG[a]),'events'
+
     #open this just once as it's quite heavy
     global MIXEDRP
     if opt.mix:
@@ -748,6 +780,7 @@ def runAnalysisTasks(opt):
         with open(opt.mix,'r') as cachefile:
             MIXEDRP=pickle.load(cachefile)
         print 'Size of mixing bank is',sys.getsizeof(MIXEDRP),'byte'
+
 
     #create the tasks and submit them
     import multiprocessing as MP
@@ -812,6 +845,11 @@ def main():
                       default=None,
                       type='string',
                       help='bank of events to use for the mixing')
+    parser.add_option('--mixSignal',
+                      dest='mixSignal',
+                      default=None,
+                      type='string',
+                      help='this is just for a test : what if signal protons are added on top of the pileup protons?')
     parser.add_option('-o', '--output',
                       dest='output', 
                       default='analysis',

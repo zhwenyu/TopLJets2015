@@ -290,7 +290,9 @@ def showShapes(resultsDir,name,title,mass,boson,r95,sig,lumi):
             outfidsigH = fIn.Get('outfidsig_%s_a%d_%d_m%d'%(v,angle,icat,mass))
             outfidsigH.Scale(5)
             dataH = fIn.Get('data_obs_%s_a%d_%d'%(v,angle,icat))
-            
+            dataH.Reset('ICE')
+            for iev in range(ROOT.gRandom.Poisson( bkgH.Integral()+outfidsigH.Integral()+fidsigH.Integral() ) ):
+                dataH.Fill( bkgH.GetRandom() )
             try:
                 
                 #main shapes
@@ -303,8 +305,8 @@ def showShapes(resultsDir,name,title,mass,boson,r95,sig,lumi):
                 p.add(dataH,              title='pseudo-data',   color=1, isData=True, spImpose=False, isSyst=False)
                 p.add(fidsigH.Clone(),    title=title+'#scale[0.8]{(%d)}'%mass, color=ROOT.TColor.GetColor('#fdc086'), isData=False, spImpose=True,  isSyst=False)
                 p.add(outfidsigH.Clone(), title='non-fiducial',  color=ROOT.TColor.GetColor('#a6cee3'), isData=False, spImpose=True,  isSyst=False)
-                p.ratiorange=[0.88,1.12]
-                p.show('./',lumi,extraText='%s, %d#murad\\sub-category %d\\#mu_{95}(exp.)<%3.3f\\S(exp.)=%3.3f'%(channel,angle,icat,r95,sig))
+                p.ratiorange=[0.48,1.52]
+                p.show('./',lumi*1000,extraText='%s, %d#murad\\sub-category %d\\#mu_{95}(exp.)<%3.3f\\S(exp.)=%3.3f'%(channel,angle,icat,r95,sig))
 
                 colors=[ROOT.kGreen+1,ROOT.kAzure+3,ROOT.kRed+2]
 

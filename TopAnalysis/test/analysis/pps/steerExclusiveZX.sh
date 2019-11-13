@@ -21,11 +21,18 @@ fi
 
 #to run locally use local as queue + can add "--njobs 8" to use 8 parallel jobs
 queue=tomorrow
+
+#pre-app
 githash=ab05162
 eosdir=/store/cmst3/group/top/RunIIReReco/${githash}
-#githash=b949800_newppscalib
-#eosdir=/store/cmst3/group/top/RunIIReReco/2017/${githash}
 signal_dir=/store/cmst3/group/top/RunIIReReco/2017/vxsimulations_30Sep
+
+
+#ultralegacy
+#githash=955fa95_ul
+#eosdir=/store/cmst3/group/top/RunIIReReco/2017/${githash}
+#signal_dir=/store/cmst3/group/top/RunIIReReco/2017/vxsimulations_19Oct
+
 outdir=/store/cmst3/user/psilva/ExclusiveAna/final/${githash}
 #anadir=${outdir}/analysis_0p05
 anadir=${outdir}/analysis_0p04
@@ -94,7 +101,8 @@ case $WHAT in
     PLOTSEL )
         lumiSpecs="--lumiSpecs a:${lptalumi}"
         kFactorList="--procSF #gamma+jets:1.4"
-	commonOpts="-i /eos/cms/${outdir} --puNormSF puwgtctr -l ${lumi} --mcUnc ${lumiUnc} ${kFactorList} ${lumiSpecs}"
+        ul_json=${samples_json/.json/_ul_comp.json}
+	commonOpts="-i /eos/cms/${outdir} --puNormSF puwgtctr -l ${lumi} --mcUnc ${lumiUnc} ${kFactorList} ${lumiSpecs} --signalJson ${ul_json}"
 	python scripts/plotter.py ${commonOpts} -j ${samples_json}    -O /eos/cms/${outdir}/plots/sel -o plotter.root --only mboson,mtboson,pt,eta,met,jets,nvtx,ratevsrun --saveLog; 
         python scripts/plotter.py ${commonOpts} -j ${samples_json}    --rawYields --silent --only gen -O /eos/cms/${outdir}/plots/ -o plots/bkg_gen_plotter.root; 
 	python scripts/plotter.py ${commonOpts} -j ${zx_samples_json} --rawYields --silent --only gen -O /eos/cms/${outdir}/plots/ -o plots/zx_gen_plotter.root;
@@ -170,18 +178,28 @@ case $WHAT in
         predin=/eos/cms/${outdir}/Chunks
         #file=Data13TeV_2017D_DoubleEG_2.root
         #file=MC13TeV_2017_DY50toInf_fxfx_0.root
-        file=Data13TeV_2017C_DoubleEG_0.root
+        file=Data13TeV_2017B_MuonEG_0.root,Data13TeV_2017B_MuonEG_1.root
 
-        predin=/eos/cms/${signal_dir}
-        file=Z_m_X_1440_xangle_130_2017_preTS2.root
-        file=gamma_m_X_1440_xangle_130_2017_preTS2.root
+        #predin=/eos/cms/${signal_dir}
+        #file=Z_m_X_1440_xangle_130_2017_preTS2.root
+        #file=gamma_m_X_1440_xangle_130_2017_preTS2.root
         
-        predout=/eos/cms/${anadir}
-        #mix_file=/eos/cms/${anadir}/mixing/mixbank.pck
-        mix_file=/eos/cms//store/cmst3/user/psilva/ExclusiveAna/final/ab05162/mixing/mixbank.pck
-        #run locally
+        mix_file=/eos/cms/${anadir}/mixing/mixbank.pck
+
+        predout=./mixNone
+        addOpt=""
         python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 1 --jobs 1 \
-            --json ${samples_json},${signal_json} --RPout ${RPout_json} -o ${predout} --mix ${mix_file} -i ${predin} --only ${file} --maxEvents 10000;
+            --json ${samples_json},${signal_json} --RPout ${RPout_json} -o ${predout} --mix ${mix_file} -i ${predin} --only ${file} ${addOpt};
+
+        predout=./mix1200
+        addOpt="--mixSignal /eos/cms/${anadir}/Z_m_X_1200_xangle_{0}_2017_preTS2_opt_v1_simu_reco.root"
+        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 1 --jobs 1 \
+            --json ${samples_json},${signal_json} --RPout ${RPout_json} -o ${predout} --mix ${mix_file} -i ${predin} --only ${file} ${addOpt};
+
+        predout=./mix800
+        addOpt="--mixSignal /eos/cms/${anadir}/Z_m_X_800_xangle_{0}_2017_preTS2_opt_v1_simu_reco.root"
+        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 1 --jobs 1 \
+            --json ${samples_json},${signal_json} --RPout ${RPout_json} -o ${predout} --mix ${mix_file} -i ${predin} --only ${file} ${addOpt};
         
         ;;
 
@@ -313,7 +331,8 @@ case $WHAT in
             "rpinhpurneg" "rpinhpurpos" 
             "rpinhpur120xangle" "rpinhpur130xangle" "rpinhpur140xangle" "rpinhpur150xangle" 
         )
-        for ch in a; do #mm ee a em; do
+        channels=(mm)
+        for ch in ${channels[@]}; do #mm ee a em; do
            plots=""
 
             for c in "${cats[@]}"; do            
@@ -335,6 +354,7 @@ case $WHAT in
                     done
                 fi            
             done
+
             python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py ${commonOpts} --only ${plots} --strictOnly  -o plots/plotter_${ch}.root --saveLog &
         done
         
@@ -381,8 +401,8 @@ case $WHAT in
         ;;
 
     FINALIZESTATANA )
-        #python test/analysis/pps/compareOptimResults.py ppvx_analysis/
-        python test/analysis/pps/compareOptimResults.py ppvx_analysis/ 45
+        python test/analysis/pps/compareOptimResults.py ppvx_analysis/
+        #python test/analysis/pps/compareOptimResults.py ppvx_analysis/ 45
         ;;
 
     

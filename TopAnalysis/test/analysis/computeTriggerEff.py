@@ -1,177 +1,186 @@
 import ROOT
 import os,sys
-
-url=sys.argv[1]
-year=sys.argv[2]
-
-HISTOLIST=[('hptoff_apt','hpttrig_hptoff_apt'),
-           ('lptoff_apt','lpttrig_lptoff_apt'),
-           #('lpthmjjoff_apt','lpthmjjtrig_lpthmjjoff_apt'),
-           ('lpthmjjoff_mjj','lpthmjjtrig_lpthmjjoff_mjj'),
-           ]
-
+from array import array
 
 def getData2MC(data,mc):
+
+    """computes the ratio of two efficiency graphs"""
 
     gr=data.Clone('%s_SF'%data.GetName())
     gr.Set(0)
     x,y=ROOT.Double(0),ROOT.Double(0)
+    xmc,ymc=ROOT.Double(0),ROOT.Double(0)
     for i in range(data.GetN()):
-        data.GetPoint(i,x,y)
-        
-        xbin=mc.GetXaxis().FindBin(float(x))
-        mcVal=mc.GetBinContent(xbin)
 
-        if mcVal<0.05 : continue   
+        data.GetPoint(i,x,y)
+
+        #find closest (sometimes points are missing)
+        closej=-1
+        closedx=9999999.
+        for j in range(mc.GetN()):
+            mc.GetPoint(j,xmc,ymc)
+            dx=abs(float(xmc)-float(x))
+            if dx>closedx: continue
+            closedx=dx
+            closej=j
+        if closedx>10: continue
+
+        j=closej
+        mc.GetPoint(j,xmc,ymc)
+        if float(ymc)<0.01 : continue
 
         ip=gr.GetN()
-        gr.SetPoint(ip,float(x),float(y)/mcVal)
-        gr.SetPointError(ip,0,0,data.GetErrorYlow(i),data.GetErrorYhigh(i))
-    return gr
-
-def getEffGraph(name,total_pass,total,isData):
-
-    if not isData:
-        gr=total_pass.Clone(name+'mc')
-        gr.Divide(total)
-        gr.SetFillStyle(0)
-        gr.SetLineColor(ROOT.kBlue)
-        gr.SetLineWidth(2)
-        gr.SetTitle('MC')
-    else:            
-        gr=ROOT.TGraphAsymmErrors()
-        gr.BayesDivide(total_pass,total)
-        gr.SetName(name)
-        gr.SetTitle('Data')
-        gr.SetFillStyle(0)
-        gr.SetMarkerStyle(20)
+        sf=float(y)/float(ymc)
+        gr.SetPoint(ip,float(x),sf)
+        sflo=(float(y)-data.GetErrorYlow(i))/(float(ymc)+mc.GetErrorYhigh(i))
+        sfhi=(float(y)+data.GetErrorYhigh(i))/(float(ymc)-mc.GetErrorYlow(i))
+        gr.SetPointError(ip,0,0,abs(sflo-sf),abs(sfhi-sf))        
 
     return gr
 
-def scaleGr(gr,sf):
-    x,y=ROOT.Double(0),ROOT.Double(0)
-    for ip in range(gr.GetN()):
-        gr.GetPoint(ip,x,y)
-        gr.SetPoint(ip,float(x),float(y*sf))
-        gr.SetPointEYhigh(ip,gr.GetErrorYhigh(ip)*sf)
-        gr.SetPointEYlow(ip,gr.GetErrorYlow(ip)*sf)
-        
 
-def getEffPlots(url,year,isData=True):
+def fillTrigHisto(var,hdef,tag,probe,data,effOpt):
 
-    fIn=ROOT.TFile.Open(url)
+    """projects the tree to build a specific histogram before and after the probe cut"""
 
-    histos={}
-    for a,b in HISTOLIST:
-        histos[a]=None
-        histos[b]=None
+    histos=[]
+    for hname,cut in [ ('tagdata',    tag),
+                       ('probedata',  '%s && %s'%(tag,probe))]:
+        data.Draw('{0} >> {1}'.format(var,hdef.GetName()),'wgt*({0})'.format(cut),'goff')
+        histos.append( hdef.Clone(hname) )
+        histos[-1].SetDirectory(0)
+        histos[-1].Sumw2()
+        hdef.Reset('ICE')
 
-    for h in histos:
-        tag=''
-        if not isData: tag='_EWK #gammajj'
-        try:
-            histos[h]=fIn.Get('{0}/{0}{1}'.format(h,tag))
-            histos[h].SetDirectory(0)
-        except Exception as e:
-            print e
-            pass
-        
-    fIn.Close()    
+    #compute efficiency
+    effgr=ROOT.TGraphAsymmErrors()
+    effgr.SetFillStyle(0)
+    effgr.Divide(histos[1],histos[0],effOpt)
+    histos.append(effgr)
 
-    effGrs=[ getEffGraph(b,histos[b],histos[a],isData) for a,b in HISTOLIST ]
-#    if isData:
-#        for gr in effGrs:
-#            grname=gr.GetName()
-#            sf=1.
-#            if year=='2016' and not 'hpt' in grname:
-#                sf=2567./35879. if not 'hmjj' in grname else 28412./35879.
-#            if year=='2017' and not 'hpt' in grname:
-#                sf=1327./41367. if not 'hmjj' in grname else 7661./41367.
-#            scaleGr(gr,sf)
-#
-    return effGrs
+    return histos
 
-url=sys.argv[1]
-effGr=getEffPlots(url,year)
-mcEffGr=getEffPlots(url,year,isData=False)
+def show2DSFs(h2d,extraTxt,outdir):
 
+    """show the final 2D"""
 
-ROOT.gStyle.SetOptStat(0)
-ROOT.gStyle.SetOptTitle(0)
-ROOT.gROOT.SetBatch(True)
+    c=ROOT.TCanvas('c','c',500,500)
+    c.SetLeftMargin(0.12)
+    c.SetBottomMargin(0.11)
+    c.SetTopMargin(0.05)
+    c.SetRightMargin(0.12)
+    #c.SetLogx()
 
-c=ROOT.TCanvas('c','c',500,500)
-c.SetBottomMargin(0)
-c.SetTopMargin(0)
-c.SetLeftMargin(0)
-c.SetRightMargin(0)
+    h2d.Draw('colz') # text E')
+    h2d.GetZaxis().SetTitleOffset(-0.3)
+    #h2d.GetXaxis().GetMoreLogLabels()
+    h2d.GetZaxis().SetRangeUser(0,1)
 
-c.cd()
-p1=ROOT.TPad('p1','p1',0,0.5,1,1.0)
-p1.Draw()
-p1.SetRightMargin(0.03)
-p1.SetLeftMargin(0.12)
-p1.SetTopMargin(0.1)
-p1.SetBottomMargin(0.01)
-p1.SetGridy()
+    txt=ROOT.TLatex()
+    txt.SetNDC(True)
+    txt.SetTextFont(42)
+    txt.SetTextSize(0.045)
+    txt.SetTextAlign(12)
+    txt.DrawLatex(0.12,0.97,'#bf{CMS} #it{Preliminary}')
+    txt.SetTextSize(0.04)
+    txt.SetTextAlign(ROOT.kHAlignRight+ROOT.kVAlignCenter)
+    txt.DrawLatex(0.95,0.97,extraTxt)
 
-c.cd()
-p2=ROOT.TPad('p2','p2',0,0,1,0.5)
-p2.SetRightMargin(0.03)
-p2.SetLeftMargin(0.12)
-p2.SetTopMargin(0.01)
-p2.SetBottomMargin(0.18)
-p2.SetGridy()
-p2.Draw()
+    for ext in ['png','pdf']:
+        c.SaveAs('%s/%s.%s'%(outdir,h2d.GetName(),ext))
 
+def showTriggerEfficiency(histos,hname,extraTxt,xtitle,outdir):
 
-for i in xrange(len(effGr)):
+    """plots a standard canvas with the trigger efficiencies and scale factors"""
 
+    c=ROOT.TCanvas('c','c',500,500)
+    c.SetBottomMargin(0)
+    c.SetTopMargin(0)
+    c.SetLeftMargin(0)
+    c.SetRightMargin(0)
+    
     c.cd()
+    p1=ROOT.TPad('p1','p1',0,0.5,1,1.0)
+    p1.Draw()
+    p1.SetRightMargin(0.03)
+    p1.SetLeftMargin(0.12)
+    p1.SetTopMargin(0.1)
+    p1.SetBottomMargin(0.01)
+    p1.SetGridy()
     p1.cd()
-    p1.Clear()
-    mcEffGr[i].Draw('hist')
-    effGr[i].Draw('p')    
-    mcEffGr[i].GetXaxis().SetTitleSize(0.0)
-    mcEffGr[i].GetXaxis().SetLabelSize(0.0)
-    mcEffGr[i].GetYaxis().SetTitleSize(0.08)
-    mcEffGr[i].GetYaxis().SetLabelSize(0.08)
-    mcEffGr[i].GetYaxis().SetTitleOffset(0.7)
-    mcEffGr[i].GetYaxis().SetRangeUser(0.01,1.)
 
-    leg1=ROOT.TLegend(0.15,0.88,0.6,0.66)
-    leg1.SetFillStyle(0)
-    leg1.SetBorderSize(0)
-    leg1.SetTextFont(42)
-    leg1.SetTextSize(0.08)
-    leg1.AddEntry(effGr[i],'Data','p')
-    leg1.AddEntry(mcEffGr[i],'EWK #gammajj','l')
-    leg1.Draw()
+    frame=histos['mc'][0].Clone('frame')
+    frame.Reset('ICE')
+    frame.Draw()
+    frame.GetXaxis().SetTitleSize(0.0)
+    frame.GetXaxis().SetLabelSize(0.0)
+    frame.GetYaxis().SetTitleSize(0.08)
+    frame.GetYaxis().SetLabelSize(0.08)
+    frame.GetYaxis().SetTitleOffset(0.7)
+    frame.GetYaxis().SetTitle('Efficiency')
+    frame.GetYaxis().SetRangeUser(0.04,1.)
+
+    mg=ROOT.TMultiGraph()
+    histos['mc'][-1].SetMarkerStyle(24)
+    histos['mc'][-1].SetMarkerColor(ROOT.kAzure+1)
+    histos['mc'][-1].SetLineColor(ROOT.kAzure+1)
+    mg.Add(histos['mc'][-1],'p')
+
+    histos['data'][-1].SetMarkerStyle(20)
+    for i in range(histos['data'][-1].GetN()):
+        histos['data'][-1].SetPointEXhigh(i,0)
+        histos['data'][-1].SetPointEXlow(i,0)
+
+    mg.Add(histos['data'][-1],'p')
+    mg.Draw('p')
+
+    leg=ROOT.TLegend(0.55,0.12,0.95,0.17)
+    leg.SetFillStyle(0)
+    leg.SetBorderSize(0)
+    leg.SetTextFont(42)
+    leg.SetTextSize(0.08)
+    leg.SetNColumns(2)
+    leg.AddEntry(histos['data'][-1], 'Data',         'ep')
+    leg.AddEntry(histos['mc'][-1],   'EWK #gammajj', 'ep')
+    leg.Draw()
 
     txt=ROOT.TLatex()
     txt.SetNDC(True)
     txt.SetTextFont(42)
     txt.SetTextSize(0.08)
     txt.SetTextAlign(12)
-    txt.DrawLatex(0.12,0.95,'#bf{CMS} #it{preliminary}')
+    txt.DrawLatex(0.12,0.95,'#bf{CMS} #it{Preliminary}')
+    txt.SetTextSize(0.07)
+    txt.SetTextAlign(ROOT.kHAlignRight+ROOT.kVAlignCenter)
+    txt.DrawLatex(0.95,0.95,extraTxt)
     p1.RedrawAxis()
 
-
     c.cd()
+    p2=ROOT.TPad('p2','p2',0,0,1,0.5)
+    p2.SetRightMargin(0.03)
+    p2.SetLeftMargin(0.12)
+    p2.SetTopMargin(0.01)
+    p2.SetBottomMargin(0.18)
+    p2.SetGridy()
+    p2.Draw()
     p2.cd()
-    frame=mcEffGr[i].Clone()
-    frame.Reset('ICE')
-    frame.Draw()
-    frame.GetYaxis().SetNdivisions(5)
-    frame.GetYaxis().SetRangeUser(0.62,1.28)
-    frame.GetXaxis().SetTitleSize(0.08)
-    frame.GetXaxis().SetLabelSize(0.08)
-    frame.GetYaxis().SetTitleSize(0.08)
-    frame.GetYaxis().SetLabelSize(0.08)
-    frame.GetYaxis().SetTitleOffset(0.7)
-    frame.GetYaxis().SetTitle('Data/MC')
+
+    rframe=histos['mc'][0].Clone('rframe')
+    rframe.Reset('ICE')
+    rframe.Draw()
+    rframe.GetXaxis().SetTitleSize(0.08)
+    rframe.GetXaxis().SetLabelSize(0.08)
+    rframe.GetYaxis().SetTitleSize(0.08)
+    rframe.GetYaxis().SetLabelSize(0.08)
+    rframe.GetYaxis().SetTitleOffset(0.7)
+    rframe.GetYaxis().SetTitle('Data / MC')
+    rframe.GetXaxis().SetTitle(xtitle)
+    rframe.GetYaxis().SetRangeUser(0.0,1.04)
+
+    sfgr=getData2MC(histos['data'][-1],histos['mc'][-1])
+    sfgr.Draw('p')
     
-    sfgr=getData2MC(effGr[i],mcEffGr[i])
+    """  
     minX=150
     if 'vbf' in effGr[i].GetName(): minX=50
     sff=ROOT.TF1('sff','0.5*[0]*(1.+TMath::Erf((x-[1])/(TMath::Sqrt(2.)*[2])))',minX,frame.GetYaxis().GetXmax())    
@@ -192,9 +201,6 @@ for i in xrange(len(effGr)):
 
     sfgr.Fit(sff,'M+')
 
-
-    sfgr.Draw('p')
-
     txt=ROOT.TLatex()
     txt.SetNDC(True)
     txt.SetTextFont(42)
@@ -203,9 +209,136 @@ for i in xrange(len(effGr)):
     for ip in range(3):
         txt.DrawLatex(0.15,0.9-0.07*ip,'p_{%d}=%3.3f'%(ip+1,sff.GetParameter(ip)))
     p2.RedrawAxis()
+    """
 
     c.cd()
     c.Modified()
     c.Update()
     for ext in ['png','pdf']:
-        c.SaveAs('%s_%s.%s'%(effGr[i].GetName(),year,ext))
+        c.SaveAs('%s/%s.%s'%(outdir,hname,ext))
+
+
+ROOT.gStyle.SetOptStat(0)
+ROOT.gStyle.SetOptTitle(0)
+ROOT.gROOT.SetBatch(True)
+ROOT.gStyle.SetPaintTextFormat('4.2f')
+ROOT.gStyle.SetPalette(ROOT.kTemperatureMap)
+
+
+#build the chains with data fo trigger measuremnets
+url=sys.argv[1]
+outdir='%s/trigeff'%url
+os.system('mkdir -p %s'%outdir)
+year=2016
+data=ROOT.TChain('tree')
+mc=ROOT.TChain('tree')
+for f in os.listdir(url):
+    if 'Data' in f:
+        data.AddFile(os.path.join(url,f))
+        if '2017' in f: year=2017
+        if '2018' in f: year=2018
+    if 'EWKAJJ.root' in f:
+        mc.AddFile(os.path.join(url,f))
+
+binDef={'lowvpt':{'pt' :   [70,72.5,75,77.5,80,85,90,100,120,150,200],
+                  'mjj':   [475,525,575,625,675,775,1000,2000],
+                  'eta':   [0,1.442],
+                  'tag':   'passLowPtCtrlTrig && lowPtHighMJJCtrTrigActive && mjj>500 && detajj>3.5 && fabs(veta)<1.5 && r9>0.9 && hoe<0.1',
+                  'probe': 'passLowPtHighMJJTrig'
+                  },
+        'highvpt':{'pt' :   [170,172.5,175,177.5,180,185,190,195,200,205,210,220,230,240,250,300,400,500],
+                   'mjj':   [475,525,575,625,775,1000,2000],
+                   'eta':   [0,1.442,2.4],
+                   'tag':   'passHighPtCtrlTrig',
+                   'probe': 'passHighPtTrig'                   
+                   },
+        }
+if year==2017 :
+    binDef['highvpt']['pt']=[195,197.5,200,202.5,205,210,220,230,240,250,300,400,500]
+
+varTitles={'vpt':'Photon p_{T} [GeV]',
+           'mjj':'Dijet invariant mass [GeV]'}
+
+finalSFs=[]
+
+for cat in ['lowvpt']: # binDef:
+
+    hbase={'vpt':ROOT.TH1F('hpt',  'hpt',  len(binDef[cat]['pt'])-1,  array('d',binDef[cat]['pt'])),
+           'mjj':ROOT.TH1F('hmjj', 'hmjj', len(binDef[cat]['mjj'])-1, array('d',binDef[cat]['mjj']))}
+
+    #loop over bins in eta (first bin is inclusive)
+    for i in range(0,len(binDef[cat]['eta'])):
+
+        if i==0:
+            etamin=0
+            etamax=binDef[cat]['eta'][-1]
+        else:
+            etamin=binDef[cat]['eta'][i-1]
+            etamax=binDef[cat]['eta'][i]
+    
+        #get efficiency as function of photon pT in different mjj ranges
+        hptvsmjj=ROOT.TH2F('hptvmjj_%d_%s'%(i,cat),  
+                           ';%s;%s;Data / MC'%(varTitles['vpt'],varTitles['mjj']),  
+                           len(binDef[cat]['pt'])-1,  array('d',binDef[cat]['pt']),
+                           len(binDef[cat]['mjj'])-1, array('d',binDef[cat]['mjj']))    
+        for im in range(1,len(binDef[cat]['mjj'])):        
+            tagcut  = binDef[cat]['tag']+' && fabs(veta)>=%f && fabs(veta)<%f'%(etamin,etamax)
+            tagcut += ' && mjj>=%f && mjj<%f'%(binDef[cat]['mjj'][im-1],binDef[cat]['mjj'][im])
+            probecut = tagcut+' && ' + binDef[cat]['probe']
+            histos={'data' : fillTrigHisto('vpt',hbase['vpt'],tagcut,probecut,data,'cp'), 
+                    'mc'   : fillTrigHisto('vpt',
+                                           hbase['vpt'],
+                                           tagcut.replace('&& lowPtHighMJJCtrTrigActive',''),
+                                           probecut.replace('&& lowPtHighMJJCtrTrigActive',''),
+                                           mc,  
+                                           'central')}
+            sfgr=getData2MC(histos['data'][-1],histos['mc'][-1])
+
+            #copy to the appropriate row in the final scale factor histogram
+            xval,sfval=ROOT.Double(0),ROOT.Double(0)
+            for ip in range(sfgr.GetN()):
+                sfgr.GetPoint(ip,xval,sfval)
+                sfvalunc=sfgr.GetErrorY(ip)
+                xbin=hptvsmjj.GetXaxis().FindBin(float(xval))
+                hptvsmjj.SetBinContent(xbin,im,float(sfval))
+                hptvsmjj.SetBinError(xbin,im,sfvalunc)
+                   
+        show2DSFs(h2d=hptvsmjj,
+                  extraTxt='%3.1f<|#eta|<%3.1f (%d)'%(etamin,etamax,year),
+                  outdir=outdir)
+        finalSFs.append(hptvsmjj)
+        finalSFs[-1].SetDirectory(0)
+
+        #plot vs pt or mjj inclusively
+        for key in hbase:
+
+            tagcut   = binDef[cat]['tag']+' && fabs(veta)>=%f && fabs(veta)<%f'%(etamin,etamax)
+
+            #add low photon pt requirement
+            if key=='mjj':
+                lowvpt=75 if 'lowvpt' in cat else 200
+                tagcut += ' && vpt>%f'%lowvpt
+
+            probecut = tagcut+' && ' + binDef[cat]['probe']
+
+            #compute trigger efficiency
+            histos={'data' : fillTrigHisto(key,hbase[key],tagcut,probecut,data,'cp'), 
+                    'mc'   : fillTrigHisto(key,
+                                           hbase[key],
+                                           tagcut.replace('&& lowPtHighMJJCtrTrigActive',''),
+                                           probecut.replace('&& lowPtHighMJJCtrTrigActive',''),
+                                           mc,  
+                                           'central')}
+            showTriggerEfficiency(histos=histos,
+                                  hname='%s_%d_%s'%(key,i,cat),
+                                  extraTxt='%3.1f<|#eta|<%3.1f (%d)'%(etamin,etamax,year),
+                                  xtitle=varTitles[key],
+                                  outdir=outdir)
+
+fname='%s/trigger_sf.root'%outdir
+fOut=ROOT.TFile(fname,'RECREATE')
+for h in finalSFs:
+    h.SetDirectory(fOut)
+    h.Write()
+fOut.Close()
+print 'Scale factors for year=',year,'available in',fname

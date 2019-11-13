@@ -113,7 +113,7 @@ class Plot(object):
         except:
             pass
 
-        if isData:
+        if isData and not spImpose:
             try:
                 self.dataH.Add(h)
             except:
@@ -564,12 +564,12 @@ class Plot(object):
                     ratioGrs[-1].SetMarkerColor(ci)
                     ratioGrs[-1].SetLineColor(ci)
                     ratioGrs[-1].SetLineWidth(self.data.GetLineWidth())
-                    ratioGrs[-1].Draw('lX' if self.noErrorsOnRatio  else 'p')
+                    ratioGrs[-1].Draw('lX' if self.noErrorsOnRatio  else '0P')
                     
             #in case we stacked compare only the total
             else:
                 if self.relShapeGr:
-                    self.relShapeGr.Draw('2')
+                    self.relShapeGr.Draw('20')
                 elif (len(self.mcsyst)>0):
                     ratioframeshape=ratioframe.Clone('ratioframeshape')
                     self._garbageList.append(ratioframeshape)
@@ -592,7 +592,9 @@ class Plot(object):
                     ratioframe.SetBinContent(xbin,totalMCnoUnc.GetBinContent(xbin)/val)
                     ratioframe.SetBinError(xbin,totalUnc)
                 ratioframe.Draw('e2')
-                if (len(self.mcsyst)>0): ratioframeshape.Draw('e2 same')
+
+                if (len(self.mcsyst)>0): 
+                    ratioframeshape.Draw('e2 same')
                 try:
                     ratio=self.dataH.Clone('ratio')
                     ratio.SetDirectory(0)
@@ -604,7 +606,7 @@ class Plot(object):
                     gr.SetMarkerColor(self.data.GetMarkerColor())
                     gr.SetLineColor(self.data.GetLineColor())
                     gr.SetLineWidth(self.data.GetLineWidth())
-                    gr.Draw('p')
+                    gr.Draw('p0')
                 except:
                     pass
         #all done

@@ -21,7 +21,7 @@
 using namespace std;
 
 //
-void RunPhotonTrigEff(TString filename,
+void PhotonFakeRate(TString filename,
                       TString outname,
                       TH1F *normH, 
                       TH1F *genPU,
@@ -46,24 +46,26 @@ void RunPhotonTrigEff(TString filename,
   t->GetEntry(0);
 
   cout << "...producing " << outname << " from " << nentries << " events" << endl;
-  
+
+  TString jetTrigs[] = {
+    "HLT_PFJet40_v","HLT_PFJet60_v","HLT_PFJet80_v","HLT_PFJet140_v",
+    "HLT_PFJet200_v","HLT_PFJet260_v","HLT_PFJet320_v","HLT_PFJet400_v",
+    "HLT_PFJet450_v","HLT_PFJet500_v","HLT_PFJet550_v",
+  };
+  Int_t nJetTrig(sizeof(jetTrigs)/sizeof(TString));
+
   //PREPARE OUTPUT
   TString baseName=gSystem->BaseName(outname); 
   TString dirName=gSystem->DirName(outname);
   TFile *fOut=TFile::Open(dirName+"/"+baseName,"RECREATE");
   fOut->cd();
   TTree *outT=new TTree("tree","tree");
-  Bool_t passHighPtCtrlTrig(false), passLowPtCtrlTrig(false), passLowPtHighMJJCtrlTrig(false), passHighPtTrig(false), passLowPtHighMJJTrig(false),passLowPtCtrlTrigNoId(false);
-  Bool_t lowPtHighMJJCtrTrigActive(true);
-  Float_t wgt,vpt,veta,vphi,r9,hoe,chiso,nhiso,phoiso,mjj,detajj,j1pt,j1eta,j2pt,j2eta;
-  Int_t VBFreq(0);
-  outT->Branch("passHighPtCtrlTrig",        &passHighPtCtrlTrig,        "passHighPtCtrlTrig/O");
-  outT->Branch("passLowPtCtrlTrig",         &passLowPtCtrlTrig,         "passLowPtCtrlTrig/O");
-  outT->Branch("passLowPtHighMJJCtrlTrig",  &passLowPtHighMJJCtrlTrig,  "passLowPtHighMJJCtrlTrig/O");
-  outT->Branch("passHighPtTrig",            &passHighPtTrig,            "passHighPtTrig/O");
-  outT->Branch("passLowPtHighMJJTrig",      &passLowPtHighMJJTrig,      "passLowPtHighMJJTrig/O");
-  outT->Branch("passLowPtCtrlTrigNoId",     &passLowPtCtrlTrigNoId,     "passLowPtCtrlTrigNoId/O");
-  outT->Branch("lowPtHighMJJCtrTrigActive", &lowPtHighMJJCtrTrigActive, "lowPtHighMJJCtrTrigActive/O");
+  Int_t passJetTrig(0),passid(0);
+  Bool_t passHighPtTrig(false), passLowPtHighMJJTrig(false);
+  Float_t wgt,vpt,veta,vphi,r9,hoe,chiso,nhiso,phoiso,sieie,njets,mindraj;
+  outT->Branch("passJetTrig",          &passJetTrig,          "passJetTrig/I");
+  outT->Branch("passHighPtTrig",       &passHighPtTrig,       "passHighPtTrig/O");
+  outT->Branch("passLowPtHighMJJTrig", &passLowPtHighMJJTrig, "passLowPtHighMJJTrig/O");
   outT->Branch("wgt",    &wgt,    "wgt/F");
   outT->Branch("vpt",    &vpt,    "vpt/F");
   outT->Branch("veta",   &veta,   "veta/F");
@@ -73,14 +75,15 @@ void RunPhotonTrigEff(TString filename,
   outT->Branch("phoiso", &phoiso, "phoiso/F");
   outT->Branch("nhiso",  &nhiso,  "nhiso/F");
   outT->Branch("vphi",   &vphi,   "vphi/F");
-  outT->Branch("mjj",    &mjj,    "mjj/F");
-  outT->Branch("detajj", &detajj, "detajj/F");
-  outT->Branch("j1pt",   &j1pt,   "j1pt/F");
-  outT->Branch("j1eta",  &j1eta,  "j1eta/F");
-  outT->Branch("j2pt",   &j2pt,   "j2pt/F");
-  outT->Branch("j2eta",  &j2eta,  "j2eta/F");
-  outT->Branch("VBFreq", &VBFreq, "VBFreq/I");
+  outT->Branch("sieie",  &sieie,  "sieie/F");
+  outT->Branch("passid", &passid, "passid/F"); 
   outT->SetDirectory(fOut);
+  
+  //TODO
+  //no leptons
+  //check first passed jet trigger and passed photon triggers
+  //add cut-based ids with/without iso
+  //add kinematics
 
   std::cout << "init done" << std::endl;
   if (debug){std::cout<<"\n DEBUG MODE"<<std::endl;}
@@ -112,10 +115,10 @@ void RunPhotonTrigEff(TString filename,
       //leptons
       std::vector<Particle> leptons = selector.flaggedLeptons(ev);
       leptons = selector.selLeptons(leptons,SelectionTool::MEDIUM,SelectionTool::MVA80,20,2.5);
+      if(leptons.size()>0) continue;
 
       //select offline photons
       std::vector<Particle> photons=selector.flaggedPhotons(ev);
-      photons=selector.selPhotons(photons,SelectionTool::TIGHT,leptons,50.,2.4);
       if(photons.size()==0 ) continue;
       vpt=photons[0].Pt();
       veta=photons[0].Eta();
@@ -123,50 +126,21 @@ void RunPhotonTrigEff(TString filename,
       int pidx = photons[0].originalReference();
       r9       = ev.gamma_r9[pidx];
       hoe      = ev.gamma_hoe[pidx];
+      sieie    = ev.gamma_sihih[pidx];
       chiso    = ev.gamma_chargedHadronIso[pidx];
       nhiso    = ev.gamma_neutralHadronIso[pidx];
       phoiso   = ev.gamma_photonIso[pidx];
-
-
-      //jets
-      std::vector<Jet> allJets = selector.getGoodJets(ev,50.,4.7,leptons,photons);
-      mjj=(allJets.size()>=2 ? (allJets[0]+allJets[1]).M() : -1 );
-      detajj=(allJets.size()>=2 ? fabs(allJets[0].eta()-allJets[1].eta()) : -1 );
-      j1pt=(allJets.size()>=1 ? allJets[0].Pt() : -999);
-      j2pt=(allJets.size()>=2 ? allJets[1].Pt() : -999);
-      j1eta=(allJets.size()>=1 ? allJets[0].Eta() : -999);
-      j2eta=(allJets.size()>=2 ? allJets[1].Eta() : -999);
-
-      //in 2016,2017 there is no cross cleaning between the photon and jet candidates...
-      VBFreq=0;
-      if(allJets.size()>=2) {
-        TLorentzVector vj1(photons[0]+allJets[0]);
-        float detavj1(fabs(photons[0].Eta()-allJets[0].Eta()));
-        TLorentzVector vj2(photons[0]+allJets[1]);
-        float detavj2(fabs(photons[0].Eta()-allJets[1].Eta()));
-        if(mjj>500 && detajj>3)    VBFreq |= 1;
-        if(vj1.M()>500 && detavj1) VBFreq |= (1<<1);
-        if(vj2.M()>500 && detavj2) VBFreq |= (1<<2);
-      }
+      passid    = (photons[0].hasQualityFlag(LOOSE) )
+        | (photons[0].hasQualityFlag(TIGHT) << 1 )
+        | (photons[0].hasQualityFlag(TIGHTIFNOSIHIH) << 2);
       
-      //online categories
-      passHighPtCtrlTrig=false; passLowPtCtrlTrig=false; passLowPtHighMJJCtrlTrig=false;      
+      //online categories      
       passHighPtTrig=false;     passLowPtHighMJJTrig=false;
-      passLowPtCtrlTrigNoId=false;
-      lowPtHighMJJCtrTrigActive=true;
       if(is2016) {
-        passLowPtCtrlTrigNoId    = selector.hasTriggerBit("HLT_Photon50_v",  ev.triggerBits);                
-        passHighPtCtrlTrig       = selector.hasTriggerBit("HLT_Photon90_v",  ev.triggerBits);                
         passHighPtTrig           = selector.hasTriggerBit("HLT_Photon175_v", ev.triggerBits);
-        passLowPtCtrlTrig        = selector.hasTriggerBit("HLT_Photon50_R9Id90_HE10_IsoM_v",ev.triggerBits);
-        passLowPtHighMJJCtrlTrig = selector.hasTriggerBit("HLT_Photon75_R9Id90_HE10_IsoM_v",ev.triggerBits);
         passLowPtHighMJJTrig     = selector.hasTriggerBit("HLT_Photon75_R9Id90_HE10_Iso40_EBOnly_VBF",ev.triggerBits);
       }else if(is2017){
-        if(ev.run<305405 || ev.run>306460) lowPtHighMJJCtrTrigActive=false;
-        passHighPtCtrlTrig       = selector.hasTriggerBit("HLT_Photon150_v",ev.triggerBits);
         passHighPtTrig           = selector.hasTriggerBit("HLT_Photon200_v",ev.triggerBits);
-        passLowPtCtrlTrig        = selector.hasTriggerBit("HLT_Photon50_R9Id90_HE10_IsoM_v",ev.triggerBits);
-        passLowPtHighMJJCtrlTrig = selector.hasTriggerBit("HLT_Photon75_R9Id90_HE10_IsoM_v",ev.triggerBits);
         passLowPtHighMJJTrig     = selector.hasTriggerBit("HLT_Photon75_R9Id90_HE10_IsoM_EBOnly_PFJetsMJJ300DEta3_v",ev.triggerBits);
       }else {
         //

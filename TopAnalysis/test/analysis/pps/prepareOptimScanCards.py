@@ -121,19 +121,27 @@ def main(args):
             script.write('\tcombineCards.py $combstr > ${v}_datacard.dat\n')
             script.write('done\n')
             script.write('\n')
-        
-            #run statistical analysis
-            script.write('echo "Running combine"\n')
+
+        #run statistical analysis        
+        with open('%s/statAnaJob.sh'%workDir,'w') as script:
+
+            #environment
+            script.write('echo "Setting up environment"\n')
+            script.write('cd %s/src\n'%os.environ['CMSSW_BASE'])
+            script.write('eval `scram r -sh`\n')
+            script.write('cd -\n')
+            script.write('\n')
+
+            script.write('m=${1}\n')
+            script.write('echo "Running combine for m=${m}"\n')
             script.write('for b in z g; do\n')
-            script.write('\t for m in 780 800 840 900 960 1000 1020 1080 1140 1200 1260 1320 1380 1400 1440 1500 1560 1600; do \n')
-            script.write('\t\t pfix=${b}_m${m}\n')
-            script.write('\t\t text2workspace.py ${b}_datacard.dat -m ${m} -o ${pfix}_workspace.root\n')
-            script.write('\t\t combine ${pfix}_workspace.root -n PP${b}X.obs -M AsymptoticLimits -m ${m}\n')
-            script.write('\t\t combine ${pfix}_workspace.root -n PP${b}X     -M AsymptoticLimits -m ${m} -t -1 --expectSignal=1 --setParameters mu_outfidsig=1\n')
-            script.write('\t\t combine ${pfix}_workspace.root -n PP${b}X.obs -M Significance -m ${m}\n')
-            script.write('\t\t combine ${pfix}_workspace.root -n PP${b}X     -M Significance -m ${m} -t -1 --expectSignal=1 --setParameters mu_outfidsig=1\n')
-            script.write('\t\t #combine ${pfix}_workspace.root -n PP${b}X -M FitDiagnostics -m ${m} -t -1 --expectSignal=1 --setParameters mu_outfidsig=1\n')
-            script.write('\t done\n')
+            script.write('\t pfix=${b}_m${m}\n')
+            script.write('\t text2workspace.py ${b}_datacard.dat -m ${m} -o ${pfix}_workspace.root\n')
+            script.write('\t combine ${pfix}_workspace.root -n PP${b}X.obs -M AsymptoticLimits -m ${m}\n')
+            script.write('\t combine ${pfix}_workspace.root -n PP${b}X     -M AsymptoticLimits -m ${m} -t -1 --expectSignal=1 --setParameters mu_outfidsig=1\n')
+            script.write('\t combine ${pfix}_workspace.root -n PP${b}X.obs -M Significance -m ${m}\n')
+            script.write('\t combine ${pfix}_workspace.root -n PP${b}X     -M Significance -m ${m} -t -1 --expectSignal=1 --setParameters mu_outfidsig=1\n')
+            script.write('\t #combine ${pfix}_workspace.root -n PP${b}X -M FitDiagnostics -m ${m} -t -1 --expectSignal=1 --setParameters mu_outfidsig=1\n')
             script.write('done\n')
             script.write('cd -\n')        
 
@@ -150,6 +158,19 @@ def main(args):
             condor.write("point=%d\n"%i)
             condor.write("queue 1\n")
     os.system('condor_submit zxstatana_scan.sub')
+
+    with open('zxstatana_run.sub','w') as condor:
+        condor.write("executable  = %s/optim_$(point)/statAnaJob.sh\n"%os.path.abspath(opt.output))
+        condor.write("output       = zxstatana_run.out\n")
+        condor.write("error        = zxstatana_run.err\n")
+        condor.write("log          = zxstatana_run.log\n")
+        condor.write("+JobFlavour = \"tomorrow\"\n")
+        condor.write("request_cpus = 4\n")
+        for i in n2sub:
+            condor.write("point=%d\n"%i)
+            condor.write("arguments=$(mass)\n"%i)
+            condor.write("queue mass from ( 780 800 840 900 960 1000 1020 1080 1140 1200 1260 1320 1380 1400 1440 1500 1560 1600 )\n")
+    print 'Once datacards are ready can submit statistical analysis with zxstatana_run.sub'
 
 
 if __name__ == "__main__":

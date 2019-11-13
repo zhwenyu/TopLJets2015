@@ -66,7 +66,11 @@ with open(os.path.join(FARMDIR,'localanalysis_integ_report.dat'),'w') as r:
             i=i.replace('/eos/cms/','')
 
         ires=checkIntegrity(i,itname)
-        ores=checkIntegrity('root://eoscms//'+o.replace('/eos/cms/',''),otname)
+
+        oname=o
+        if '/store/' in oname:
+            oname='root://eoscms//'+o.replace('/eos/cms/','')
+        ores=checkIntegrity(oname,otname)
 
         msg='IS OK' if ires[0] is None and ores[0] is None else 'NOTOK'
         ijob='/'.join(i.split('/')[-2:])
