@@ -389,30 +389,33 @@ case $WHAT in
         echo "Generating a datacard takes a bit as it'll project the shapes for a given set of cuts"
         echo "You can run locally with python test/analysis/pps/generatedBinnedWorkspace.py and your preferred set of cuts"
         echo "Running with the default values for ${anadir} and output @ ppvx_analysis/test"
-        python test/analysis/pps/generatedBinnedWorkspace.py -i /eos/cms/${anadir} -o ppvx_analysis/test
+        python test/analysis/pps/generateBinnedWorkspace.py -i /eos/cms/${anadir} -o ppvx_analysis/test &
+        python test/analysis/pps/generateBinnedWorkspace.py -i /eos/cms/${anadir} -o ppvx_analysis/test_signed --signed &
 
         ;;
 
     OPTIMSTATANA )
 
         #afs needs to be used here...
-        python test/analysis/pps/prepareOptimScanCards.py -o ppvx_analysis -i /eos/cms/${anadir}
+        python test/analysis/pps/prepareOptimScanCards.py -o ppvx_analysis_freeze        -i /eos/cms/${anadir}
+        python test/analysis/pps/prepareOptimScanCards.py -o ppvx_analysis_freeze_signed -i /eos/cms/${anadir} --signed
 
         ;;
 
-    FINALIZESTATANA )
-        python test/analysis/pps/compareOptimResults.py ppvx_analysis/
-        #python test/analysis/pps/compareOptimResults.py ppvx_analysis/ 45
-        ;;
-
-    
     INJECTSIGNAL )
 
         #afs needs to be used here...
         for m in 800 1200 1400; do
-            python test/analysis/pps/prepareOptimScanCards.py -o ppvx_analysis_${m}  -i /eos/cms/${anadir} --injectMass ${m} --just 2,11,37;
+            python test/analysis/pps/prepareOptimScanCards.py -o ppvx_analysis_freeze_${m}         -i /eos/cms/${anadir} --injectMass ${m} --just 2,11,37;
+            python test/analysis/pps/prepareOptimScanCards.py -o ppvx_analysis_freeze_signed_${m}  -i /eos/cms/${anadir} --injectMass ${m} --just 2,11,37 --signed;
         done
 
+        ;;
+
+
+    FINALIZESTATANA )
+        python test/analysis/pps/compareOptimResults.py ppvx_analysis/
+        #python test/analysis/pps/compareOptimResults.py ppvx_analysis/ 45
         ;;
 
 

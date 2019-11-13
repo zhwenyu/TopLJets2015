@@ -47,6 +47,11 @@ def main(args):
                         dest='injectMass',
                         default=None,
                         help='mass to inject in pseudo-data [%default]')
+    parser.add_argument('--signed',
+                        dest='signed',
+                        default=False,
+                        help='used rapidity-signed missing mass [%default]',
+                        action='store_true')
     parser.add_argument('-o', '--output',
                         dest='output', 
                         default='ppvx_analysis',
@@ -92,6 +97,11 @@ def main(args):
                 script.write('injectMass="--injectMass %s"\n'%opt.injectMass)
             else:
                 script.write('injectMass=""\n')
+            if opt.signed:
+                script.write('extraOpt=--signed\n')
+            else:
+                script.write('extraOpt=""\n')
+
             script.write('output=%s\n'%os.path.abspath(workDir))     
             script.write('\n')
 
@@ -104,7 +114,7 @@ def main(args):
 
             #create datacard
             script.write('echo "Running datacard creation"\n')
-            script.write('python ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/pps/generateBinnedWorkspace.py -i ${input} -o ${output} --preselZ "${preselZ}" --preselGamma "${preselGamma}" --categs "${categs}" ${injectMass}\n')
+            script.write('python ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/pps/generateBinnedWorkspace.py -i ${input} -o ${output} --preselZ "${preselZ}" --preselGamma "${preselGamma}" --categs "${categs}" ${injectMass} ${extraOpt}\n')
             script.write('\n')
 
             #combine cards
@@ -147,7 +157,7 @@ def main(args):
 
     #submit optimization points to crab
     print 'Will submit %d optimization scan points'%len(n2sub)
-    with open('zxstatana_scan.sub','w') as condor:
+    with open('%s/zxstatana_scan.sub'%opt.output,'w') as condor:
         condor.write("executable  = %s/optim_$(point)/optimJob.sh\n"%os.path.abspath(opt.output))
         condor.write("output       = zxstatana_scan.out\n")
         condor.write("error        = zxstatana_scan.err\n")
@@ -157,9 +167,9 @@ def main(args):
         for i in n2sub:
             condor.write("point=%d\n"%i)
             condor.write("queue 1\n")
-    os.system('condor_submit zxstatana_scan.sub')
+    os.system('condor_submit %s/zxstatana_scan.sub'%opt.output)
 
-    with open('zxstatana_run.sub','w') as condor:
+    with open('%s/zxstatana_run.sub'%opt.output,'w') as condor:
         condor.write("executable  = %s/optim_$(point)/statAnaJob.sh\n"%os.path.abspath(opt.output))
         condor.write("output       = zxstatana_run.out\n")
         condor.write("error        = zxstatana_run.err\n")
@@ -168,9 +178,9 @@ def main(args):
         condor.write("request_cpus = 4\n")
         for i in n2sub:
             condor.write("point=%d\n"%i)
-            condor.write("arguments=$(mass)\n"%i)
+            condor.write("arguments=$(mass)\n")
             condor.write("queue mass from ( 780 800 840 900 960 1000 1020 1080 1140 1200 1260 1320 1380 1400 1440 1500 1560 1600 )\n")
-    print 'Once datacards are ready can submit statistical analysis with zxstatana_run.sub'
+    print 'Once datacards are ready can submit statistical analysis with %s/zxstatana_run.sub'%opt.output
 
 
 if __name__ == "__main__":

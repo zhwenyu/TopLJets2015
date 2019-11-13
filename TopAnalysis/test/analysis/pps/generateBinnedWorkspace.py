@@ -106,10 +106,10 @@ def fillBackgroundTemplates(opt):
         #background modelling histos
         histos=[]
         data_obs=None
-        histodef='mmiss >> h({0},{1},{2})'.format(opt.nbins,opt.mMin,opt.mMax),
+        histodef='mmiss >> h(%d,%f,%f)'%(opt.nbins,opt.mMin,opt.mMax)
         if opt.signed:
-            histodef='(ypp>=0 ? mmiss : -mmiss) >> h({0},{1},{2})'.format(2*opt.nbins,-opt.mMax,opt.mMax)
-        data.Draw( histodef,
+            histodef='(ypp>=0 ? mmiss : -mmiss) >> h(%d,%f,%f)'%(2*opt.nbins,-opt.mMax,opt.mMax)
+        data.Draw(histodef,
                   '{0} && mmiss>0 && mixType==0'.format(categCut),
                   'goff')
         h=data.GetHistogram()
@@ -126,9 +126,11 @@ def fillBackgroundTemplates(opt):
 
             templCuts=categCut.replace('csi1',pfix+'csi1')
             templCuts=templCuts.replace('csi2',pfix+'csi2')
-            histodef='{0}mmiss >> h({1},{2},{3})'.format(pfix,opt.nbins,opt.mMin,opt.mMax)           
+
+            histodef='%smmiss >> h(%d,%f,%f)'%(pfix,opt.nbins,opt.mMin,opt.mMax)           
             if opt.signed:
-                histodef='({0}ypp>=0 ? {0}mmiss : -{0}mmiss) >> h({1},{2},{3})'.format(2*opt.nbins,-opt.mMax,opt.mMax)
+                histodef='(%sypp>=0 ? %smmiss : -%smmiss) >> h(%d,%f,%f)'%(pfix,pfix,pfix,2*opt.nbins,-opt.mMax,opt.mMax)
+            
             data.Draw(histodef,
                       'wgt*({0} && {1}mmiss>0 && mixType=={2})'.format(templCuts,pfix,mixType),
                       'goff')
@@ -199,9 +201,9 @@ def fillSignalTemplates(mass,signalFile,xsec,opt,fiducialCuts='gencsi1>0.03 & ge
                     templCuts+=' && %s'%fiducialCuts
 
                 chain=dataAlt if 'sigCalib' in name else data
-                histodef='{0}mmiss >> h({1},{2},{3})'.format(pfix,opt.nbins,opt.mMin,opt.mMax)           
+                histodef='%smmiss >> h(%d,%f,%f)'%(pfix,opt.nbins,opt.mMin,opt.mMax)           
                 if opt.signed:
-                    histodef='({0}ypp>=0 ? {0}mmiss : -{0}mmiss) >> h({1},{2},{3})'.format(2*opt.nbins,-opt.mMax,opt.mMax)
+                    histodef='(%sypp>=0 ? %smmiss : -%smmiss) >> h(%d,%f,%f)'.format(pfix,pfix,pfix,2*opt.nbins,-opt.mMax,opt.mMax)
                 chain.Draw(histodef,
                            '{0}*{1}*({2} && mixType=={3} && {4}mmiss>0)'.format(wgtExpr,
                                                                                 addWgt if addWgt else '1',
@@ -277,7 +279,7 @@ def writeDataCards(opt,shapesURL):
             dc.write('{0} autoMCStats 0.0 1\n'.format(cat))
         
             #float the background normalization as well as the signal
-            dc.write('mu_bkg       rateParam * bkg       1\n')
+            dc.write('mu_bkg_%s       rateParam * bkg       1\n'%cat)
             dc.write('mu_outfidsig rateParam * outfidsig 0\n')
 
     print '\tshapes available @',shapesURL

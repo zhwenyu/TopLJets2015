@@ -149,7 +149,7 @@ def main(args):
         for dist in data:
 
             pname=dist+pfix
-            for c in [':',',','>','=','(',')','-','<']: pname=pname.replace(c,'')
+            for c in [':',',','>','=','(',')','-','<','?']: pname=pname.replace(c,'')
 
             p=Plot(pname)
             p.doChi2=True
