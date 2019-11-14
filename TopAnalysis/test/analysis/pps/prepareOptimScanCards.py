@@ -135,11 +135,14 @@ def main(args):
         #run statistical analysis        
         with open('%s/statAnaJob.sh'%workDir,'w') as script:
 
+            script.write('#!/bin/bash\n')
+
             #environment
             script.write('echo "Setting up environment"\n')
             script.write('cd %s/src\n'%os.environ['CMSSW_BASE'])
             script.write('eval `scram r -sh`\n')
-            script.write('cd -\n')
+            script.write('output=%s\n'%os.path.abspath(workDir))     
+            script.write('cd ${output}\n')
             script.write('\n')
 
             script.write('m=${1}\n')
@@ -167,21 +170,27 @@ def main(args):
         for i in n2sub:
             condor.write("point=%d\n"%i)
             condor.write("queue 1\n")
-    os.system('condor_submit %s/zxstatana_scan.sub'%opt.output)
+    #os.system('condor_submit %s/zxstatana_scan.sub'%opt.output)
 
     with open('%s/zxstatana_run.sub'%opt.output,'w') as condor:
         condor.write("executable  = %s/optim_$(point)/statAnaJob.sh\n"%os.path.abspath(opt.output))
         condor.write("output       = zxstatana_run.out\n")
         condor.write("error        = zxstatana_run.err\n")
         condor.write("log          = zxstatana_run.log\n")
-        condor.write("+JobFlavour = \"tomorrow\"\n")
+        condor.write("+JobFlavour = \"longlunch\"\n")
         condor.write("request_cpus = 4\n")
         for i in n2sub:
-            condor.write("point=%d\n"%i)
-            condor.write("arguments=$(mass)\n")
-            condor.write("queue mass from ( 780 800 840 900 960 1000 1020 1080 1140 1200 1260 1320 1380 1400 1440 1500 1560 1600 )\n")
-    print 'Once datacards are ready can submit statistical analysis with %s/zxstatana_run.sub'%opt.output
+            for mass in [780,800,840,900,960,1000,1020,1080,1140,1200,1260,1320,1380,1400,1440,1500,1560,1600]:
+                condor.write("point=%d\n"%i)
+                condor.write("arguments=%d\n"%mass)
+                condor.write("queue 1\n")
+    #print 'Once datacards are ready can submit statistical analysis with %s/zxstatana_run.sub'%opt.output
 
+    with open('%s/zxstatana.dag'%opt.output,'w') as condor:
+        condor.write('JOB A zxstatana_scan.sub\n')
+        condor.write('JOB B zxstatana_run.sub\n')
+        condor.write('PARENT A CHILD B\n')
+    os.system('cd %s && condor_submit_dag zxstatana.dag'%opt.output)
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))

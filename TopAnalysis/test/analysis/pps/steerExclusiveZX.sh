@@ -397,7 +397,7 @@ case $WHAT in
     OPTIMSTATANA )
 
         #afs needs to be used here...
-        python test/analysis/pps/prepareOptimScanCards.py -o ppvx_analysis_freeze        -i /eos/cms/${anadir}
+        #python test/analysis/pps/prepareOptimScanCards.py -o ppvx_analysis_freeze        -i /eos/cms/${anadir}
         python test/analysis/pps/prepareOptimScanCards.py -o ppvx_analysis_freeze_signed -i /eos/cms/${anadir} --signed
 
         ;;
