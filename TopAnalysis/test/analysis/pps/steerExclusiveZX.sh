@@ -178,28 +178,28 @@ case $WHAT in
         predin=/eos/cms/${outdir}/Chunks
         #file=Data13TeV_2017D_DoubleEG_2.root
         #file=MC13TeV_2017_DY50toInf_fxfx_0.root
-        file=Data13TeV_2017B_MuonEG_0.root,Data13TeV_2017B_MuonEG_1.root
+        #file=Data13TeV_2017B_MuonEG_0.root,Data13TeV_2017B_MuonEG_1.root
 
-        #predin=/eos/cms/${signal_dir}
-        #file=Z_m_X_1440_xangle_130_2017_preTS2.root
+        predin=/eos/cms/${signal_dir}
+        file=Z_m_X_1440_xangle_130_2017_preTS2.root
         #file=gamma_m_X_1440_xangle_130_2017_preTS2.root
         
         mix_file=/eos/cms/${anadir}/mixing/mixbank.pck
 
-        predout=./mixNone
+        predout=./mixSig
         addOpt=""
         python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 1 --jobs 1 \
             --json ${samples_json},${signal_json} --RPout ${RPout_json} -o ${predout} --mix ${mix_file} -i ${predin} --only ${file} ${addOpt};
 
-        predout=./mix1200
-        addOpt="--mixSignal /eos/cms/${anadir}/Z_m_X_1200_xangle_{0}_2017_preTS2_opt_v1_simu_reco.root"
-        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 1 --jobs 1 \
-            --json ${samples_json},${signal_json} --RPout ${RPout_json} -o ${predout} --mix ${mix_file} -i ${predin} --only ${file} ${addOpt};
+        #predout=./mix1200
+        #addOpt="--mixSignal /eos/cms/${anadir}/Z_m_X_1200_xangle_{0}_2017_preTS2_opt_v1_simu_reco.root"
+        #python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 1 --jobs 1 \
+        #    --json ${samples_json},${signal_json} --RPout ${RPout_json} -o ${predout} --mix ${mix_file} -i ${predin} --only ${file} ${addOpt};
 
-        predout=./mix800
-        addOpt="--mixSignal /eos/cms/${anadir}/Z_m_X_800_xangle_{0}_2017_preTS2_opt_v1_simu_reco.root"
-        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 1 --jobs 1 \
-            --json ${samples_json},${signal_json} --RPout ${RPout_json} -o ${predout} --mix ${mix_file} -i ${predin} --only ${file} ${addOpt};
+        #predout=./mix800
+        #addOpt="--mixSignal /eos/cms/${anadir}/Z_m_X_800_xangle_{0}_2017_preTS2_opt_v1_simu_reco.root"
+        #python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 1 --jobs 1 \
+        #    --json ${samples_json},${signal_json} --RPout ${RPout_json} -o ${predout} --mix ${mix_file} -i ${predin} --only ${file} ${addOpt};
         
         ;;
 
@@ -414,8 +414,11 @@ case $WHAT in
 
 
     FINALIZESTATANA )
-        python test/analysis/pps/compareOptimResults.py ppvx_analysis/
-        #python test/analysis/pps/compareOptimResults.py ppvx_analysis/ 45
+        for d in ppvx_analysis_freeze ppvx_analysis_freeze_signed; do
+            python test/analysis/pps/compareOptimResults.py ${d}
+            mkdir -p ${d}/plots
+            mv *.{png,pdf,dat} ${d}/plots
+        done
         ;;
 
 

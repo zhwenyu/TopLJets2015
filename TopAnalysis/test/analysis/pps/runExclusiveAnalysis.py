@@ -589,15 +589,17 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,maxEvents=-1):
                         shuffle(tksNeg)
                         mixed_far_rptks[mixEvCat]=(tksPos,tksNeg)
 
-                if isSignal:
+                #merge signal protons with pileup protons for first attempt
+                if isSignal and itry==1:
                     mixed_far_rptks,mixed_near_rptks=evMixTool.mergeWithMixedEvent(far_rptks,mixed_far_rptks,
                                                                                    near_rptks,mixed_near_rptks)
                     n_extra_mu,nvtx,rho,PFMultSumHF,PFHtSumHF,PFPzSumHF,rfc=mixed_pudiscr[DIMUONS]
 
                 itry_wgt = wgt/float(nMixTries)
 
-                if itry<=nMixTries:
+                if itry<=nMixTries or isSignal:
                     mixType           = 1
+                    if isSignal: mixType=itry
                     far_protons       = mixed_far_rptks[DIMUONS]
                     far_protons_syst  = mixed_far_rptks[EMU]
                     near_protons      = mixed_near_rptks[DIMUONS]

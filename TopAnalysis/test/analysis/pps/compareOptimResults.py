@@ -305,7 +305,7 @@ def showShapes(resultsDir,name,title,mass,boson,r95,sig,lumi):
                 p.add(dataH,              title='pseudo-data',   color=1, isData=True, spImpose=False, isSyst=False)
                 p.add(fidsigH.Clone(),    title=title+'#scale[0.8]{(%d)}'%mass, color=ROOT.TColor.GetColor('#fdc086'), isData=False, spImpose=True,  isSyst=False)
                 p.add(outfidsigH.Clone(), title='non-fiducial',  color=ROOT.TColor.GetColor('#a6cee3'), isData=False, spImpose=True,  isSyst=False)
-                p.ratiorange=[0.48,1.52]
+                p.ratiorange=[0.68,1.32]
                 p.show('./',lumi*1000,extraText='%s, %d#murad\\sub-category %d\\#mu_{95}(exp.)<%3.3f\\S(exp.)=%3.3f'%(channel,angle,icat,r95,sig))
 
                 colors=[ROOT.kGreen+1,ROOT.kAzure+3,ROOT.kRed+2]
@@ -383,7 +383,11 @@ def main():
     toCheck=[]
     for optimPt in os.listdir(baseDir):
 
-        pt = int(re.search('optim_(\d+)', optimPt).group(1))
+        try:
+            pt = int(re.search('optim_(\d+)', optimPt).group(1))
+        except:
+            print optimPt,'doesn\'t look like an optimization directory...bailing out'
+            continue
 
         #cherry pick a given optimPt
         if pickOptimPt and pt!=pickOptimPt: continue

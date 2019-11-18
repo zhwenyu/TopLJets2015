@@ -4,7 +4,7 @@ import ROOT
 import os
 from TopLJets2015.TopAnalysis.Plot import *
 
-mass='800'
+mass='1200'
 histos=[]
 for d in ['mixNone','mix'+mass]:
 
