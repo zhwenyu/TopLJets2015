@@ -259,7 +259,7 @@ def showLimits(results,name,title,lumi,results_obs=None):
         c.SaveAs('%s_log.%s'%(name,ext))
 
 
-def showShapes(resultsDir,name,title,mass,boson,r95,sig,lumi):
+def showShapes(resultsDir,name,title,mass,boson,r95,sig,lumi,showPseudoData=True,showAllBkgs=True):
 
     """ show the shapes corresponding to a given analysis """
     
@@ -300,13 +300,27 @@ def showShapes(resultsDir,name,title,mass,boson,r95,sig,lumi):
                 p.xtit='Missing mass [GeV]'
                 p.ytit='Events'
                 p.add(fidsigH,            title='#scale[0.5]{5x}'+title+'#scale[0.8]{(%d)}'%mass, color=ROOT.TColor.GetColor('#fdc086'), isData=False, spImpose=False, isSyst=False)
-                p.add(outfidsigH,         title='#scale[0.5]{5x}non-fiducial',  color=ROOT.TColor.GetColor('#a6cee3'), isData=False, spImpose=False, isSyst=False)
-                p.add(bkgH,               title='background',    color=ROOT.TColor.GetColor('#1f78b4'), isData=False, spImpose=False, isSyst=False)
-                p.add(dataH,              title='pseudo-data',   color=1, isData=True, spImpose=False, isSyst=False)
+    
+                if showAllBkgs:
+                    p.add(outfidsigH,         title='#scale[0.5]{5x}non-fiducial',  color=ROOT.TColor.GetColor('#a6cee3'), isData=False, spImpose=False, isSyst=False)
+                    p.add(bkgH,               title='background',    color=ROOT.TColor.GetColor('#1f78b4'), isData=False, spImpose=False, isSyst=False)
+                else:
+                    allBkg=bkgH.Clone('allbkg')
+                    allBkg.Add(outfidsigH)
+                    p.add(allBkg,               title='background',    color=ROOT.TColor.GetColor('#1f78b4'), isData=False, spImpose=False, isSyst=False)
+
+                if showPseudoData:
+                    p.add(dataH,              title='pseudo-data',   color=1, isData=True, spImpose=False, isSyst=False)
                 p.add(fidsigH.Clone(),    title=title+'#scale[0.8]{(%d)}'%mass, color=ROOT.TColor.GetColor('#fdc086'), isData=False, spImpose=True,  isSyst=False)
-                p.add(outfidsigH.Clone(), title='non-fiducial',  color=ROOT.TColor.GetColor('#a6cee3'), isData=False, spImpose=True,  isSyst=False)
+
+                if showAllBkgs:
+                    p.add(outfidsigH.Clone(), title='non-fiducial',  color=ROOT.TColor.GetColor('#a6cee3'), isData=False, spImpose=True,  isSyst=False)
                 p.ratiorange=[0.68,1.32]
-                p.show('./',lumi*1000,extraText='%s, %d#murad\\sub-category %d\\#mu_{95}(exp.)<%3.3f\\S(exp.)=%3.3f'%(channel,angle,icat,r95,sig))
+                
+                extraText='%s, %d#murad\\sub-category %d'%(channel,angle,icat)
+                if r95: extraText += '\\#mu_{95}(exp.)<%3.3f'%r95
+                if sig: extraText += '\\S(exp.)=%3.3f'%sig
+                p.show('./',lumi*1000,extraText=extraText)
 
                 colors=[ROOT.kGreen+1,ROOT.kAzure+3,ROOT.kRed+2]
 

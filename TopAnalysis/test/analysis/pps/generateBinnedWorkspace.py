@@ -108,7 +108,8 @@ def fillBackgroundTemplates(opt):
         data_obs=None
         histodef='mmiss >> h(%d,%f,%f)'%(opt.nbins,opt.mMin,opt.mMax)
         if opt.signed:
-            histodef='(ypp>=0 ? mmiss : -mmiss) >> h(%d,%f,%f)'%(2*opt.nbins,-opt.mMax,opt.mMax)
+            #histodef='(ypp>=0 ? mmiss : -mmiss) >> h(%d,%f,%f)'%(2*opt.nbins,-opt.mMax,opt.mMax)
+            histodef='(bosoneta>=0 ? mmiss : -mmiss) >> h(%d,%f,%f)'%(2*opt.nbins,-opt.mMax,opt.mMax)
         data.Draw(histodef,
                   '{0} && mmiss>0 && mixType==0'.format(categCut),
                   'goff')
@@ -129,7 +130,8 @@ def fillBackgroundTemplates(opt):
 
             histodef='%smmiss >> h(%d,%f,%f)'%(pfix,opt.nbins,opt.mMin,opt.mMax)           
             if opt.signed:
-                histodef='(%sypp>=0 ? %smmiss : -%smmiss) >> h(%d,%f,%f)'%(pfix,pfix,pfix,2*opt.nbins,-opt.mMax,opt.mMax)
+                #histodef='(%sypp>=0 ? %smmiss : -%smmiss) >> h(%d,%f,%f)'%(pfix,pfix,pfix,2*opt.nbins,-opt.mMax,opt.mMax)
+                histodef='(bosoneta>=0 ? %smmiss : -%smmiss) >> h(%d,%f,%f)'%(pfix,pfix,2*opt.nbins,-opt.mMax,opt.mMax)
             
             data.Draw(histodef,
                       'wgt*({0} && {1}mmiss>0 && mixType=={2})'.format(templCuts,pfix,mixType),
@@ -203,7 +205,8 @@ def fillSignalTemplates(mass,signalFile,xsec,opt,fiducialCuts='gencsi1>0.03 & ge
                 chain=dataAlt if 'sigCalib' in name else data
                 histodef='%smmiss >> h(%d,%f,%f)'%(pfix,opt.nbins,opt.mMin,opt.mMax)           
                 if opt.signed:
-                    histodef='(%sypp>=0 ? %smmiss : -%smmiss) >> h(%d,%f,%f)'%(pfix,pfix,pfix,2*opt.nbins,-opt.mMax,opt.mMax)
+                    #histodef='(%sypp>=0 ? %smmiss : -%smmiss) >> h(%d,%f,%f)'%(pfix,pfix,pfix,2*opt.nbins,-opt.mMax,opt.mMax)
+                    histodef='(bosoneta>=0 ? %smmiss : -%smmiss) >> h(%d,%f,%f)'%(pfix,pfix,2*opt.nbins,-opt.mMax,opt.mMax)
                 chain.Draw(histodef,
                            '{0}*{1}*({2} && mixType=={3} && {4}mmiss>0)'.format(wgtExpr,
                                                                                 addWgt if addWgt else '1',

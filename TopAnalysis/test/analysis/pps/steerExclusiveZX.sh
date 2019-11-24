@@ -29,9 +29,9 @@ signal_dir=/store/cmst3/group/top/RunIIReReco/2017/vxsimulations_30Sep
 
 
 #ultralegacy
-#githash=955fa95_ul
-#eosdir=/store/cmst3/group/top/RunIIReReco/2017/${githash}
-#signal_dir=/store/cmst3/group/top/RunIIReReco/2017/vxsimulations_19Oct
+githash=955fa95_ul
+eosdir=/store/cmst3/group/top/RunIIReReco/2017/${githash}
+signal_dir=/store/cmst3/group/top/RunIIReReco/2017/vxsimulations_19Oct
 
 outdir=/store/cmst3/user/psilva/ExclusiveAna/final/${githash}
 #anadir=${outdir}/analysis_0p05
@@ -177,11 +177,11 @@ case $WHAT in
 
         predin=/eos/cms/${outdir}/Chunks
         #file=Data13TeV_2017D_DoubleEG_2.root
-        #file=MC13TeV_2017_DY50toInf_fxfx_0.root
+        file=MC13TeV_2017_DY50toInf_fxfx_8.root,MC13TeV_2017_DY50toInf_fxfx_9.root,MC13TeV_2017_DY50toInf_fxfx_10.root,MC13TeV_2017_DY50toInf_fxfx_11.root,MC13TeV_2017_DY50toInf_fxfx_12.root,MC13TeV_2017_DY50toInf_fxfx_13.root,MC13TeV_2017_DY50toInf_fxfx_14.root,MC13TeV_2017_DY50toInf_fxfx_15.root
         #file=Data13TeV_2017B_MuonEG_0.root,Data13TeV_2017B_MuonEG_1.root
 
-        predin=/eos/cms/${signal_dir}
-        file=Z_m_X_1440_xangle_130_2017_preTS2.root
+        #predin=/eos/cms/${signal_dir}
+        #file=Z_m_X_1440_xangle_130_2017_preTS2.root
         #file=gamma_m_X_1440_xangle_130_2017_preTS2.root
         
         mix_file=/eos/cms/${anadir}/mixing/mixbank.pck

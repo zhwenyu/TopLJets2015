@@ -67,6 +67,7 @@ class Plot(object):
         self.normUncGr  = None #external input for normalization uncertainty
         self.relShapeGr = None #external input for relative shape
         self.range=None
+        self.ratiotitle='Ratio '
         self.ratiorange = [0.4,1.6]
         self.xtit=None
         self.ytit=None
@@ -532,7 +533,7 @@ class Plot(object):
             self._garbageList.append(p2)
             p2.cd()
             ratioframe=frame.Clone('ratioframe')
-            ratioframe.GetYaxis().SetTitle('Ratio ')
+            ratioframe.GetYaxis().SetTitle(self.ratiotitle)
             ratioframe.GetYaxis().SetRangeUser(self.ratiorange[0], self.ratiorange[1])
             self._garbageList.append(ratioframe)
             ratioframe.GetYaxis().SetNdivisions(503)

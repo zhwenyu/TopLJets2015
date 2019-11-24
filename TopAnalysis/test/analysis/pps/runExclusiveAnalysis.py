@@ -127,6 +127,10 @@ def isSignalFile(inFile):
     isSignal=True if 'gamma_m_X_' in inFile or 'Z_m_X_' in inFile else False
     return isSignal
 
+def isDYFile(inFile):
+    isDY=True if 'DY50toInf' in inFile else False
+    return isDY
+
 def isPhotonSignalFile(inFile):
     isSignal=True if 'gamma_m_X_' in inFile else False
     return isSignal
@@ -153,6 +157,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,maxEvents=-1):
     global MIXEDRPSIG
 
     isData=True if 'Data' in inFile else False
+    isDY=isDYFile(inFile)
     isSignal=isSignalFile(inFile)
     isPhotonSignal=isPhotonSignalFile(inFile)
     gen_mX=signalMassPoint(inFile) if isSignal else 0.
@@ -542,7 +547,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,maxEvents=-1):
                     if nopu_mmass>0:
                         ht.fill((nopu_mmass,pwgt), 'mmass',  pcats, 'nopu')
 
-        if not isData and not isSignal : continue
+        if not isData and not isSignal and not isDY : continue
         
         #save the event summary for the statistical analysis        
         nMixTries=100 if isData else 1
@@ -656,7 +661,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,maxEvents=-1):
             if not passAtLeastOneSelection: continue
 
             #for signal update the event weight for ee/mm/photon hypothesis
-            if isData:
+            if isData or isDY:
                 selEvents.append(evSummary)
             elif isSignal:
                 if isZ:
