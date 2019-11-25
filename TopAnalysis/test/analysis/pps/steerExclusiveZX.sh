@@ -22,36 +22,32 @@ fi
 #to run locally use local as queue + can add "--njobs 8" to use 8 parallel jobs
 queue=tomorrow
 
-#pre-app
-githash=ab05162
-eosdir=/store/cmst3/group/top/RunIIReReco/${githash}
-signal_dir=/store/cmst3/group/top/RunIIReReco/2017/vxsimulations_30Sep
+githash=2017_unblind
 
+datadir=/store/cmst3/group/top/RunIIReReco/2017/955fa95_ul
+datajson=${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/pps/datasamples.json
+RPout_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/golden_noRP.json
 
-#ultralegacy
-githash=955fa95_ul
-eosdir=/store/cmst3/group/top/RunIIReReco/2017/${githash}
-signal_dir=/store/cmst3/group/top/RunIIReReco/2017/vxsimulations_19Oct
+mcdir=/store/cmst3/group/top/RunIIReReco/ab05162
+mcjson=${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/pps/mcsamples.json
+zxjson=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/zx_samples.json
+genweights=genweights_ab05162.root
+
+signaldir=/store/cmst3/group/top/RunIIReReco/2017/vxsimulations_19Oct
+signaljson=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/signal_samples.json
 
 outdir=/store/cmst3/user/psilva/ExclusiveAna/final/${githash}
-#anadir=${outdir}/analysis_0p05
 anadir=${outdir}/analysis_0p04
-signal_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/signal_samples.json
+wwwdir=/eos/user/p/psilva/www/ExclusiveAna_${githash}
+
 plot_signal_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/plot_signal_samples.json
 plot_signal_ext_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/plot_signal_samples_ext.json
-samples_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/samples.json
-jetht_samples_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/jetht_samples.json
-zx_samples_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/zx_samples.json
+
+
 zbias_samples_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/zbias_samples.json
-RPout_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/golden_noRP.json
-wwwdir=/eos/user/p/psilva/www/ExclusiveAna_0p04
-inputfileTag=MC13TeV_2017_GGH2000toZZ2L2Nu
-inputfileTag=MC13TeV_2017_GGToEE_lpair
-inputfileTag=Data13TeV_2017F_MuonEG
-inputfileTag=MC13TeV_2017_GJets_HT400to600
-#inputfileTag=Data13TeV_2017B_DoubleMuon
-inputfileTag=Data13TeV_2017B_ZeroBias
-inputfileTESTSEL=${eosdir}/${inputfileTag}/Chunk_0_ext0.root
+
+
+
 lumi=41529
 ppsLumi=37193
 lptalumi=2642
@@ -67,26 +63,29 @@ case $WHAT in
         
         python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py \
             -i /store/cmst3/user/psilva/ExclusiveAna/synch/Data13TeV_2017_DoubleMuon_synch.root \
-            -o testsynch.root --genWeights genweights_${githash}.root \
+            -o testsynch.root --genWeights ${genweights} \
             --njobs 1 -q local --debug \
             --era era2017 -m ExclusiveZX::RunExclusiveZX --ch 0 --runSysts;
 
         ;;
 
     TESTSEL )
+
+        inputfileTag=MC13TeV_2017_GJets_HT400to600
+        inputfileTESTSEL=${mcdir}/${inputfileTag}/Chunk_0_ext0.root
         python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py \
             -i ${inputfileTESTSEL} --tag ${inputfileTag} \
-            -o testsel.root --genWeights genweights_${githash}.root \
+            -o testsel.root --genWeights ${genweights} \
             --njobs 1 -q local --debug \
             --era era2017 -m ExclusiveZX::RunExclusiveZX --ch 0 --runSysts;
         ;;
 
     SEL )
-        baseOpt="-i ${eosdir} --genWeights genweights_${githash}.root"
-        baseOpt="${baseOpt} -o ${outdir} -q ${queue} --era era2017 -m ExclusiveZX::RunExclusiveZX --ch 0 --runSysts"
-        #baseOpt="${baseOpt} --exactonly"        
-	python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py ${baseOpt} \
-            --only ${samples_json},${zx_samples_json}; #,${zbias_samples_json};
+        baseOpt="--genWeights ${genweights} --era era2017 -m ExclusiveZX::RunExclusiveZX --ch 0 --runSysts"
+        baseOpt="${baseOpt} -o ${outdir} -q ${queue}"
+	python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py ${baseOpt} -i ${mcdir}   --only ${mcjson},${zxjson};
+	python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py ${baseOpt} -i ${datadir} --only ${datajson};
+	python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py ${baseOpt} -i ${signaldir};        
 	;;
 
     CHECKSELINTEG )

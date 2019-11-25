@@ -21,12 +21,12 @@
 using namespace std;
 
 //
-void PhotonFakeRate(TString filename,
-                      TString outname,
-                      TH1F *normH, 
-                      TH1F *genPU,
-                      TString era,
-                      bool debug) 
+void RunPhotonFakeRate(TString filename,
+                       TString outname,
+                       TH1F *normH, 
+                       TH1F *genPU,
+                       TString era,
+                       bool debug) 
 {
   /////////////////////
   // INITIALIZATION //
@@ -126,13 +126,13 @@ void PhotonFakeRate(TString filename,
       int pidx = photons[0].originalReference();
       r9       = ev.gamma_r9[pidx];
       hoe      = ev.gamma_hoe[pidx];
-      sieie    = ev.gamma_sihih[pidx];
+      //    sieie    = ev.gamma_sihih[pidx];
       chiso    = ev.gamma_chargedHadronIso[pidx];
       nhiso    = ev.gamma_neutralHadronIso[pidx];
       phoiso   = ev.gamma_photonIso[pidx];
-      passid    = (photons[0].hasQualityFlag(LOOSE) )
-        | (photons[0].hasQualityFlag(TIGHT) << 1 )
-        | (photons[0].hasQualityFlag(TIGHTIFNOSIHIH) << 2);
+      //passid    = (photons[0].hasQualityFlag(LOOSE) )
+      //  | (photons[0].hasQualityFlag(TIGHT) << 1 )
+      //  | (photons[0].hasQualityFlag(TIGHTIFNOSIHIH) << 2);
       
       //online categories      
       passHighPtTrig=false;     passLowPtHighMJJTrig=false;

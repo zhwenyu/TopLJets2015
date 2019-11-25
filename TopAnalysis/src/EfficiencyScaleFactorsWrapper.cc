@@ -36,7 +36,7 @@ void EfficiencyScaleFactorsWrapper::init(TString era)
        << "\tDon't forget to fix these and update these items!" << endl;
 
   //PHOTONS
-  TString gid(era_==2016? "MVAWP80" : "MVAwp80");
+  TString gid(era_==2016? "MVAWP90" : "MVAwp90");
   if(cfgMap_.find("g_id")!=cfgMap_.end()) gid=cfgMap_["g_id"]; 
   TString url(era+"/2017_Photons"+gid+".root");
   if(era_==2016) url=era+"/2016LegacyReReco_Photon"+gid+".root";
@@ -46,6 +46,14 @@ void EfficiencyScaleFactorsWrapper::init(TString era)
   scaleFactorsH_["g_id"]->SetDirectory(0);
   fIn->Close();
   
+  url=era+"/PixelSeed_ScaleFactors_2017.root";
+  gSystem->ExpandPathName(url);
+  fIn=TFile::Open(url);
+  TString gidForPSV(gid.Contains("MVA") ? "MVA" : gid);
+  scaleFactorsH_["g_psv"]=(TH2 *)fIn->Get(gidForPSV+"_ID")->Clone();
+  scaleFactorsH_["g_psv"]->SetDirectory(0);     
+  fIn->Close();
+
   url=era+"/egammaEffi.txt_EGM2D.root";
   gSystem->ExpandPathName(url);
   fIn=TFile::Open(url);
@@ -313,10 +321,22 @@ EffCorrection_t EfficiencyScaleFactorsWrapper::getOfflineCorrection(int pdgId,fl
       iSFUnc=h->GetBinError(xbin,ybin);
     }
    
-    corr.second = sqrt(pow(iSFUnc*corr.first,2)+pow(iSF*corr.second,2));
+    corr.second = sqrt(pow(iSFUnc*corr.first,2)+pow(iSF*corr.second,2));   
     corr.first  = corr.first*iSF;
   }
      
+
+  //pixel-seed veto
+  if(pdgId==22 && scaleFactorsH_.find("g_psv")!=scaleFactorsH_.end()) {
+    int bin(1);
+    if(fabs(eta)>1.5) bin=4;
+    float iSF=scaleFactorsH_["g_psv"]->GetBinContent(bin);
+    float iSFUnc=scaleFactorsH_["g_psv"]->GetBinError(bin);
+    corr.second = sqrt(pow(iSFUnc*corr.first,2)+pow(iSF*corr.second,2));   
+    corr.first  = corr.first*iSF;
+  }
+  
+
   //
   return corr;
 }
