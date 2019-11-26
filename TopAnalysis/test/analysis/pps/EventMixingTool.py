@@ -43,6 +43,7 @@ class EventMixingTool:
         except Exception as e:
             print '-'*50
             print e
+            print 'Note: this error is probably ok if one hasn\'t yet defined the mixing bank'
             print '-'*50
 
 

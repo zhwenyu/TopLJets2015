@@ -2,7 +2,7 @@
 HOME=`pwd`
 CMSSW=${1}
 PPS=${CMSSW}/src/TopLJets2015/TopAnalysis/test/analysis/pps
-samples_json=${PPS}/samples.json,${PPS}/signal_samples.json,${PPS}/signal_samples_postTS2.json
+samples_json=${PPS}/datasamples.json,${PPS}/mcsamples.json,${PPS}/signal_samples.json,${PPS}/signal_samples_postTS2.json
 RPout_json=${PPS}/golden_noRP.json
 cd ${CMSSW}/src
 eval `scram r -sh`

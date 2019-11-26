@@ -37,7 +37,7 @@ signaldir=/store/cmst3/group/top/RunIIReReco/2017/vxsimulations_19Oct
 signaljson=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/signal_samples.json
 
 outdir=/store/cmst3/user/psilva/ExclusiveAna/final/${githash}
-anadir=${outdir}/analysis_0p04
+anadir=${outdir}/analysis_0p035
 wwwdir=/eos/user/p/psilva/www/ExclusiveAna_${githash}
 
 plot_signal_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/plot_signal_samples.json
@@ -59,16 +59,6 @@ RED='\e[31m'
 NC='\e[0m'
 case $WHAT in
 
-    TESTSYNCH )
-        
-        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py \
-            -i /store/cmst3/user/psilva/ExclusiveAna/synch/Data13TeV_2017_DoubleMuon_synch.root \
-            -o testsynch.root --genWeights ${genweights} \
-            --njobs 1 -q local --debug \
-            --era era2017 -m ExclusiveZX::RunExclusiveZX --ch 0 --runSysts;
-
-        ;;
-
     TESTSEL )
 
         inputfileTag=MC13TeV_2017_GJets_HT400to600
@@ -81,17 +71,18 @@ case $WHAT in
         ;;
 
     SEL )
-        baseOpt="--genWeights ${genweights} --era era2017 -m ExclusiveZX::RunExclusiveZX --ch 0 --runSysts"
-        baseOpt="${baseOpt} -o ${outdir} -q ${queue}"
-	python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py ${baseOpt} -i ${mcdir}   --only ${mcjson},${zxjson};
-	python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py ${baseOpt} -i ${datadir} --only ${datajson};
-	python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py ${baseOpt} -i ${signaldir};        
+        baseCmd="$CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py"
+        baseCmd="${baseCmd} --genWeights ${genweights} --era era2017 -m ExclusiveZX::RunExclusiveZX --ch 0 --runSysts"
+        baseCmd="${baseCmd} -o ${outdir} -q ${queue}"
+
+	python ${baseCmd} --farmappendix ZXMC   -i ${mcdir}   --only ${mcjson},${zxjson};
+	python ${baseCmd} --farmappendix ZXData -i ${datadir} --only ${datajson};
 	;;
 
     CHECKSELINTEG )
-        python scripts/checkLocalAnalysisInteg.py ../../../FARM${githash}/ analysis/data tree
+        python scripts/checkLocalAnalysisInteg.py ../../../FARM${githash}ZXMC/   analysis/data tree
+        python scripts/checkLocalAnalysisInteg.py ../../../FARM${githash}ZXData/ analysis/data tree
         ;;
-
 
     MERGESEL )
 	mergeOutputs.py /eos/cms/${outdir} True;
@@ -99,14 +90,146 @@ case $WHAT in
 
     PLOTSEL )
         lumiSpecs="--lumiSpecs a:${lptalumi}"
-        kFactorList="--procSF #gamma+jets:1.4"
-        ul_json=${samples_json/.json/_ul_comp.json}
-	commonOpts="-i /eos/cms/${outdir} --puNormSF puwgtctr -l ${lumi} --mcUnc ${lumiUnc} ${kFactorList} ${lumiSpecs} --signalJson ${ul_json}"
-	python scripts/plotter.py ${commonOpts} -j ${samples_json}    -O /eos/cms/${outdir}/plots/sel -o plotter.root --only mboson,mtboson,pt,eta,met,jets,nvtx,ratevsrun --saveLog; 
-        python scripts/plotter.py ${commonOpts} -j ${samples_json}    --rawYields --silent --only gen -O /eos/cms/${outdir}/plots/ -o plots/bkg_gen_plotter.root; 
-	python scripts/plotter.py ${commonOpts} -j ${zx_samples_json} --rawYields --silent --only gen -O /eos/cms/${outdir}/plots/ -o plots/zx_gen_plotter.root;
-        python test/analysis/pps/computeDileptonSelEfficiency.py /eos/cms/${outdir}/plots/       
+        kFactorList="--procSF #gamma+jets:1.4"        
+	commonOpts="-i /eos/cms/${outdir} --puNormSF puwgtctr -l ${lumi} --mcUnc ${lumiUnc} ${kFactorList} ${lumiSpecs}"
+
+	python scripts/plotter.py ${commonOpts} -j ${mcjson},${datajson}    -O /eos/cms/${outdir}/plots/sel -o plotter.root --only mll,pt,eta,met,jets,nvtx,ratevsrun --saveLog; 
+        #python scripts/plotter.py ${commonOpts} -j ${samples_json}    --rawYields --silent --only gen -O /eos/cms/${outdir}/plots/ -o plots/bkg_gen_plotter.root; 
+	#python scripts/plotter.py ${commonOpts} -j ${zx_samples_json} --rawYields --silent --only gen -O /eos/cms/${outdir}/plots/ -o plots/zx_gen_plotter.root;
+        #python test/analysis/pps/computeDileptonSelEfficiency.py /eos/cms/${outdir}/plots/       
 	;;
+
+    TESTPREPAREMIX )
+        predin=/eos/cms/${outdir}/Chunks
+        file=Data13TeV_2017D_DoubleMuon_2.root
+        predout=/eos/cms/${anadir}/mixing
+        mkdir -p $predout
+        
+        #run locally
+        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 0 --jobs 1 \
+            --json ${mcjson},${datajson},${signaljson} --RPout ${RPout_json} -o ${predout} -i ${predin} --only ${file} --maxEvents 10000
+        ;;
+
+    PREPAREMIX )       
+        step=0
+        predin=/eos/cms/${outdir}/Chunks
+        predout=/eos/cms/${anadir}/mixing
+        condor_prep=runana_condor.sub
+        echo "executable  = ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/pps/wrapAnalysis.sh" > $condor_prep
+        echo "output      = ${condor_prep}.out" >> $condor_prep
+        echo "error       = ${condor_prep}.err" >> $condor_prep
+        echo "log         = ${condor_prep}.log" >> $condor_prep
+        echo "arguments   = ${CMSSW_BASE} ${step} ${predout} ${predin} \$(chunk)" >> $condor_prep
+        echo "queue chunk matching (${predin}/Data*.root)" >> $condor_prep
+        condor_submit $condor_prep
+        
+        #python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 0 --jobs 8 \
+        #    --json ${samples_json} --RPout ${RPout_json} -o ${predout} -i ${predin};
+
+        ;;
+
+    CHECKMIX )
+        python test/analysis/pps/checkFinalNtupleInteg.py /eos/cms/${outdir}/Chunks /eos/cms/${anadir}/mixing/Chunks 1 0
+        ;;
+
+    COLLECTMIX )
+        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/collectEventsForMixing.py /eos/cms/${anadir}
+        ;;
+
+    TESTANA )        
+        predin=/eos/cms/${outdir}/Chunks
+        file=Data13TeV_2017D_DoubleEG_2.root
+        mix_file=/eos/cms/${anadir}/mixing/mixbank.pck
+
+        predout=./mixtest
+        addOpt=""
+        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 1 --jobs 1 \
+            --json ${mcjson},${datajson},${signaljson} --RPout ${RPout_json} -o ${predout} --mix ${mix_file} -i ${predin} --only ${file} ${addOpt};
+
+        #predout=./mix1200
+        #addOpt="--mixSignal /eos/cms/${anadir}/Z_m_X_1200_xangle_{0}_2017_preTS2_opt_v1_simu_reco.root"
+        #python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 1 --jobs 1 \
+        #    --json ${mcjson},${datajson},${signaljson} --RPout ${RPout_json} -o ${predout} --mix ${mix_file} -i ${predin} --only ${file} ${addOpt};
+        ;;
+
+
+    ANA )
+        step=1
+        predin=/eos/cms/${outdir}/Chunks
+        predout=/eos/cms/${anadir}
+        condor_prep=runana_condor.sub
+        mix_file=/eos/cms/${anadir}/mixing/mixbank.pck
+        echo "executable  = ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/pps/wrapAnalysis.sh" > $condor_prep
+        echo "output       = ${condor_prep}.out" >> $condor_prep
+        echo "error        = ${condor_prep}.err" >> $condor_prep
+        echo "log          = ${condor_prep}.log" >> $condor_prep
+        echo "+JobFlavour = \"tomorrow\"">> $condor_prep
+        echo "request_cpus = 4" >> $condor_prep
+        echo "arguments    = ${CMSSW_BASE} ${step} ${predout} ${predin} \$(chunk) ${mix_file}" >> $condor_prep
+        echo "queue chunk matching (${predin}/*.root)" >> $condor_prep
+        condor_submit $condor_prep
+
+        #run locally
+        #python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 1 --jobs 8 \
+        #    --json ${mcjson},${datajson},${signaljson} --RPout ${RPout_json} -o ${predout} --mix ${mix_file} -i ${predin};
+        
+        ;;
+
+    CHECKANA )
+        #0-just check
+        #1-run locally
+        #2-submit to condor
+        python test/analysis/pps/checkFinalNtupleInteg.py /eos/cms/${outdir}/Chunks /eos/cms/${anadir}/Chunks 2 1 /eos/cms/${anadir}/mixing/mixbank.pck
+        ;;
+    
+    ANASIG )
+        step=1
+        predin=/eos/cms/${signal_dir}
+        predout=/eos/cms/${anadir}
+        condor_prep=runanasig_condor.sub
+        mix_file=/eos/cms/${anadir}/mixing/mixbank.pck
+        echo "executable  = ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/pps/wrapAnalysis.sh" > $condor_prep
+        echo "output      = ${condor_prep}.out" >> $condor_prep
+        echo "error       = ${condor_prep}.err" >> $condor_prep
+        echo "log         = ${condor_prep}.log" >> $condor_prep
+        echo "+JobFlavour = \"tomorrow\"">> $condor_prep
+        echo "request_cpus = 4" >> $condor_prep
+        echo "arguments   = ${CMSSW_BASE} ${step} ${predout} ${predin} \$(chunk)" ${mix_file} >> $condor_prep
+        echo "queue chunk matching (${predin}/*.root)" >> $condor_prep
+        condor_submit $condor_prep
+
+        #run locally
+        #python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 1 --jobs 8 \
+        #    --json ${signaljson} --RPout ${RPout_json} --mix /eos/cms/${outdir}/mixing/mixbank.pck \
+        #    -i /eos/cms/${signal_dir} -o anasig/;
+        # cp -v anasig/Chunks/*.root /eos/cms/${outdir}/analysis/
+        ;;
+   
+    CHECKANASIG )
+        python test/analysis/pps/checkFinalNtupleInteg.py /eos/cms/${signal_dir} /eos/cms/${anadir}/Chunks 1 1 /eos/cms/${anadir}/mixing/mixbank.pck
+        ;;
+
+    MERGEANA )
+        mergeOutputs.py /eos/cms/${anadir};
+        ;;
+
+
+
+    ###                                                                                         ###
+    ### THESE OPTIONS WERE USED AT SOME POINT IN THE ANALYSIS BUT HAVE NOT BEEN TESTED RECENTLY ###
+    ###                                                                                         ###
+
+    TESTSYNCH )
+        
+        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py \
+            -i /store/cmst3/user/psilva/ExclusiveAna/synch/Data13TeV_2017_DoubleMuon_synch.root \
+            -o testsynch.root --genWeights ${genweights} \
+            --njobs 1 -q local --debug \
+            --era era2017 -m ExclusiveZX::RunExclusiveZX --ch 0 --runSysts;
+
+        ;;
+
+
 
     TRAINPUDISCR )
         echo "Please remember to use a >10_3_X release for this step"
@@ -131,138 +254,9 @@ case $WHAT in
         condor_submit $condor_prep
         ;;
 
-    TESTPREPAREMIX )
-
-        predin=/eos/cms/${outdir}/Chunks
-        file=Data13TeV_2017D_DoubleMuon_2.root
-        predout=/eos/cms/${anadir}/mixing
-        mkdir -p $predout
-        
-        #run locally
-        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 0 --jobs 1 \
-            --json ${samples_json},${signal_json} --RPout ${RPout_json} -o ${predout} -i ${predin} --only ${file} --maxEvents 10000;
-        
-        ;;
-
-    PREPAREMIX )       
-        step=0
-        predin=/eos/cms/${outdir}/Chunks
-        predout=/eos/cms/${anadir}/mixing
-        condor_prep=runana_condor.sub
-        echo "executable  = ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/pps/wrapAnalysis.sh" > $condor_prep
-        echo "output      = ${condor_prep}.out" >> $condor_prep
-        echo "error       = ${condor_prep}.err" >> $condor_prep
-        echo "log         = ${condor_prep}.log" >> $condor_prep
-        echo "arguments   = ${CMSSW_BASE} ${step} ${predout} ${predin} \$(chunk)" >> $condor_prep
-        echo "queue chunk matching (${predin}/Data*.root)" >> $condor_prep
-        condor_submit $condor_prep
-        
-        #python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 0 --jobs 8 \
-        #    --json ${samples_json} --RPout ${RPout_json} -o ${predout} -i ${predin};
-
-        ;;
 
 
-    CHECKMIX )
-        python test/analysis/pps/checkFinalNtupleInteg.py /eos/cms/${outdir}/Chunks /eos/cms/${anadir}/mixing/Chunks 1 0
-        ;;
 
-    COLLECTMIX )
-        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/collectEventsForMixing.py /eos/cms/${anadir}
-        ;;
-
-
-    TESTANA )
-
-        predin=/eos/cms/${outdir}/Chunks
-        #file=Data13TeV_2017D_DoubleEG_2.root
-        file=MC13TeV_2017_DY50toInf_fxfx_8.root,MC13TeV_2017_DY50toInf_fxfx_9.root,MC13TeV_2017_DY50toInf_fxfx_10.root,MC13TeV_2017_DY50toInf_fxfx_11.root,MC13TeV_2017_DY50toInf_fxfx_12.root,MC13TeV_2017_DY50toInf_fxfx_13.root,MC13TeV_2017_DY50toInf_fxfx_14.root,MC13TeV_2017_DY50toInf_fxfx_15.root
-        #file=Data13TeV_2017B_MuonEG_0.root,Data13TeV_2017B_MuonEG_1.root
-
-        #predin=/eos/cms/${signal_dir}
-        #file=Z_m_X_1440_xangle_130_2017_preTS2.root
-        #file=gamma_m_X_1440_xangle_130_2017_preTS2.root
-        
-        mix_file=/eos/cms/${anadir}/mixing/mixbank.pck
-
-        predout=./mixSig
-        addOpt=""
-        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 1 --jobs 1 \
-            --json ${samples_json},${signal_json} --RPout ${RPout_json} -o ${predout} --mix ${mix_file} -i ${predin} --only ${file} ${addOpt};
-
-        #predout=./mix1200
-        #addOpt="--mixSignal /eos/cms/${anadir}/Z_m_X_1200_xangle_{0}_2017_preTS2_opt_v1_simu_reco.root"
-        #python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 1 --jobs 1 \
-        #    --json ${samples_json},${signal_json} --RPout ${RPout_json} -o ${predout} --mix ${mix_file} -i ${predin} --only ${file} ${addOpt};
-
-        #predout=./mix800
-        #addOpt="--mixSignal /eos/cms/${anadir}/Z_m_X_800_xangle_{0}_2017_preTS2_opt_v1_simu_reco.root"
-        #python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 1 --jobs 1 \
-        #    --json ${samples_json},${signal_json} --RPout ${RPout_json} -o ${predout} --mix ${mix_file} -i ${predin} --only ${file} ${addOpt};
-        
-        ;;
-
-
-    ANA )
-        step=1
-        predin=/eos/cms/${outdir}/Chunks
-        predout=/eos/cms/${anadir}
-        condor_prep=runana_condor.sub
-        mix_file=/eos/cms/${anadir}/mixing/mixbank.pck
-        echo "executable  = ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/pps/wrapAnalysis.sh" > $condor_prep
-        echo "output       = ${condor_prep}.out" >> $condor_prep
-        echo "error        = ${condor_prep}.err" >> $condor_prep
-        echo "log          = ${condor_prep}.log" >> $condor_prep
-        echo "+JobFlavour = \"tomorrow\"">> $condor_prep
-        echo "request_cpus = 4" >> $condor_prep
-        echo "arguments    = ${CMSSW_BASE} ${step} ${predout} ${predin} \$(chunk) ${mix_file}" >> $condor_prep
-        echo "queue chunk matching (${predin}/*.root)" >> $condor_prep
-        condor_submit $condor_prep
-
-        #run locally
-        #python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 1 --jobs 8 \
-        #    --json ${samples_json} --RPout ${RPout_json} -o ${predout} --mix ${mix_file} -i ${predin};
-        
-        ;;
-
-    ANASIG )
-        step=1
-        predin=/eos/cms/${signal_dir}
-        predout=/eos/cms/${anadir}
-        condor_prep=runanasig_condor.sub
-        mix_file=/eos/cms/${anadir}/mixing/mixbank.pck
-        echo "executable  = ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/pps/wrapAnalysis.sh" > $condor_prep
-        echo "output      = ${condor_prep}.out" >> $condor_prep
-        echo "error       = ${condor_prep}.err" >> $condor_prep
-        echo "log         = ${condor_prep}.log" >> $condor_prep
-        echo "+JobFlavour = \"tomorrow\"">> $condor_prep
-        echo "request_cpus = 4" >> $condor_prep
-        echo "arguments   = ${CMSSW_BASE} ${step} ${predout} ${predin} \$(chunk)" ${mix_file} >> $condor_prep
-        echo "queue chunk matching (${predin}/*.root)" >> $condor_prep
-        condor_submit $condor_prep
-
-        #run locally
-        #python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 1 --jobs 8 \
-        #    --json ${signal_json} --RPout ${RPout_json} --mix /eos/cms/${outdir}/mixing/mixbank.pck \
-        #    -i /eos/cms/${signal_dir} -o anasig/;
-        # cp -v anasig/Chunks/*.root /eos/cms/${outdir}/analysis/
-
-        ;;
-
-    CHECKANA )
-        #0-just check
-        #1-run locally
-        #2-submit to condor
-        python test/analysis/pps/checkFinalNtupleInteg.py /eos/cms/${outdir}/Chunks /eos/cms/${anadir}/Chunks 2 1 /eos/cms/${anadir}/mixing/mixbank.pck
-        ;;
-   
-    CHECKANASIG )
-        python test/analysis/pps/checkFinalNtupleInteg.py /eos/cms/${signal_dir} /eos/cms/${anadir}/Chunks 1 1 /eos/cms/${anadir}/mixing/mixbank.pck
-        ;;
-
-    MERGEANA )
-        mergeOutputs.py /eos/cms/${anadir};
-        ;;
 
     PLOTANAPERERA )
 

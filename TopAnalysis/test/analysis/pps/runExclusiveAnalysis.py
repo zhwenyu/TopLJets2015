@@ -23,7 +23,7 @@ DIMUONS=13*13
 EMU=11*13
 DIELECTRONS=11*11
 SINGLEPHOTON=22
-MINCSI=0.04
+MINCSI=0.035
 MIXEDRP=None
 MIXEDRPSIG=None # this is only for a test
 
@@ -208,9 +208,11 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,maxEvents=-1):
     ht.add(ROOT.TH1F('rho',';Fastjet #rho;Events',50,0,50))
     ht.add(ROOT.TH1F('xangle',';LHC crossing angle [#murad];Events',4,120,160))
     ht.add(ROOT.TH1F('mll',';Invariant mass [GeV];Events',50,76,106))
+    ht.add(ROOT.TH1F('mll_full',';Invariant mass [GeV];Events',50,0,250))
     ht.add(ROOT.TH1F('yll',';Rapidity;Events',50,-3,3))
     ht.add(ROOT.TH1F('etall',';Pseudo-rapidity;Events',50,-6,6))
     ht.add(ROOT.TH1F('ptll',';Transverse momentum [GeV];Events',50,0,250))
+    ht.add(ROOT.TH1F('ptll_high',';Transverse momentum [GeV];Events',50,50,500))
     ht.add(ROOT.TH1F('l1eta',';Pseudo-rapidiy;Events',50,0,2.5))
     ht.add(ROOT.TH1F('l1pt',';Transverse momentum [GeV];Events',50,0,250))
     ht.add(ROOT.TH1F('l2eta',';Pseudo-rapidiy;Events',50,0,2.5))
@@ -475,9 +477,11 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,maxEvents=-1):
             ht.fill((abs(l2p4.Eta()),pwgt),       'l2eta',        pcats)
             ht.fill((acopl,pwgt),                 'acopl',        pcats)
             ht.fill((boson.M(),pwgt),             'mll',          pcats)
+            ht.fill((boson.M(),pwgt),             'mll_full',     pcats)
             ht.fill((boson.Rapidity(),pwgt),      'yll',          pcats)
             ht.fill((boson.Eta(),pwgt),           'etall',        pcats)
             ht.fill((boson.Pt(),pwgt),            'ptll',         pcats)
+            ht.fill((boson.Pt(),pwgt),            'ptll_high',    pcats)
             ht.fill((costhetacs,pwgt),            'costhetacs',   pcats)
             
             #pileup related
