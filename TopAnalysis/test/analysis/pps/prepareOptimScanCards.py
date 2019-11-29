@@ -153,7 +153,7 @@ def main(args):
         for i in n2sub:
             condor.write("point=%d\n"%i)
             condor.write("queue 1\n")
-    #os.system('condor_submit %s/zxstatana_scan.sub'%opt.output)
+    os.system('condor_submit %s/zxstatana_scan.sub'%opt.output)
 
     with open('%s/zxstatana_run.sub'%opt.output,'w') as condor:
         condor.write("executable  = %s/optim_$(point)/statAnaJob.sh\n"%os.path.abspath(opt.output))
@@ -168,14 +168,13 @@ def main(args):
                     condor.write("point=%d\n"%i)
                     condor.write("arguments=%d %s\n"%(mass,boson))
                     condor.write("queue 1\n")
+    print 'Once datacards are ready can submit statistical analysis with %s/zxstatana_run.sub'%opt.output
 
-    #print 'Once datacards are ready can submit statistical analysis with %s/zxstatana_run.sub'%opt.output
-
-    with open('%s/zxstatana.dag'%opt.output,'w') as condor:
-        condor.write('JOB A zxstatana_scan.sub\n')
-        condor.write('JOB B zxstatana_run.sub\n')
-        condor.write('PARENT A CHILD B\n')
-    os.system('cd %s && condor_submit_dag zxstatana.dag'%opt.output)
+    #with open('%s/zxstatana.dag'%opt.output,'w') as condor:
+    #   condor.write('JOB A zxstatana_scan.sub\n')
+    #    condor.write('JOB B zxstatana_run.sub\n')
+    #    condor.write('PARENT A CHILD B\n')
+    #os.system('cd %s && condor_submit_dag zxstatana.dag'%opt.output)
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))

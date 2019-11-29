@@ -306,8 +306,9 @@ case $WHAT in
         echo "Generating a datacard takes a bit as it'll project the shapes for a given set of cuts"
         echo "You can run locally with python test/analysis/pps/generatedBinnedWorkspace.py and your preferred set of cuts"
         echo "Running with the default values for ${anadir} and output @ ppvx_analysis/test"
-        python test/analysis/pps/generateBinnedWorkspace.py -i /eos/cms/${anadir} -o ppvx_${githash}/test &
-        python test/analysis/pps/generateBinnedWorkspace.py -i /eos/cms/${anadir} -o ppvx_${githash}/test_signed --signed &
+        commonOpts="-i /eos/cms/${anadir} --massList 800,1200,1600"
+        python test/analysis/pps/generateBinnedWorkspace.py ${commonOpts} -o ppvx_${githash}/test &
+        python test/analysis/pps/generateBinnedWorkspace.py ${commonOpts} -o ppvx_${githash}_signed/test --signed &
 
         ;;
 
@@ -322,7 +323,7 @@ case $WHAT in
     INJECTSIGNAL )
 
         #afs needs to be used here...
-        for m in 800 1200 1400; do
+        for m in 600 800 1200 1400; do
             python test/analysis/pps/prepareOptimScanCards.py -o ppvx_${gitash}_${m}         -i /eos/cms/${anadir} --injectMass ${m} --just 2,11,37;
             python test/analysis/pps/prepareOptimScanCards.py -o ppvx_${githash}_signed_${m}  -i /eos/cms/${anadir} --injectMass ${m} --just 2,11,37 --signed;
         done

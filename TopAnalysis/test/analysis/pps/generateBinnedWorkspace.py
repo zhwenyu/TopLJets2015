@@ -227,7 +227,8 @@ def fillSignalTemplates(mass,signalFile,xsec,opt,fiducialCuts='gencsi1>0.02 && g
             for name,mixType,pfix,addWgt in [('sig_%s_m%s'%(catName,mass),                    1, '',     None),
                                              ('sig_%s_m%s_sigShape'%(catName,mass),           1, 'syst', None),
                                              ('sig_%s_m%s_sigShapeSingleDiff'%(catName,mass), 2, '',     None),
-                                             ('sig_%s_m%s_sigCalib'%(catName,mass),           1, '',     None),
+                                             ('sig_%s_m%s_sigCalibUp'%(catName,mass),         1, '',     None),
+                                             ('sig_%s_m%s_sigCalibDown'%(catName,mass),       1, '',     None),
                                              ('sig_%s_m%s_sigPzModel'%(catName,mass),         1, '',     'gen_pzwgtUp')]:
 
                 name=sigType+name
@@ -244,7 +245,9 @@ def fillSignalTemplates(mass,signalFile,xsec,opt,fiducialCuts='gencsi1>0.02 && g
                     histodef='(bosoneta>=0 ? %smmiss : -%smmiss) >> h(%d,%f,%f)'%(pfix,pfix,2*opt.nbins,-opt.mMax,opt.mMax)
 
                 shiftDataWgt=1.0
-                if 'sigCalib' in name: shiftDataWgt *=1.03
+                if 'sigCalibUp' in name:   shiftDataWgt *=1.03
+                if 'sigCalibDown' in name: shiftDataWgt *=0.97
+                
 
                 #sum up contributions
                 data.Draw(histodef,
@@ -255,7 +258,7 @@ def fillSignalTemplates(mass,signalFile,xsec,opt,fiducialCuts='gencsi1>0.02 && g
                                                                                    mixType,
                                                                                    pfix),
                           'goff')
-                h=chain.GetHistogram()
+                h=data.GetHistogram()
 
                 dataAlt.Draw(histodef.replace('h(','halt('),
                              '{0}*{1}*{2}*({3} && mixType=={4} && {5}mmiss>0)'.format(wgtExpr,
