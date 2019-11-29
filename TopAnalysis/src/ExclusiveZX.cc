@@ -337,6 +337,20 @@ void RunExclusiveZX(const TString in_fname,
       std::vector<Particle> allPhotons=selector.flaggedPhotons(ev);
       allPhotons=selector.selPhotons(allPhotons,SelectionTool::MVA90,{},50,3);
       std::vector<Particle> photons=selector.selPhotons(allPhotons,SelectionTool::MVA90,leptons,95,1.4442);
+      
+      //FIXME: this should be disabled when e/g produces the updated postReco corrections
+      //an ad-hoc correction https://hypernews.cern.ch/HyperNews/CMS/get/egamma/2308.html
+      if(ev.isData) {
+        for(size_t il=0; il<leptons.size(); il++){
+          if(abs(leptons[il].id())!=11) continue;
+          if(fabs(leptons[il].Eta())<1.5) continue;
+          leptons[il] *= TMath::Sqrt(1.027);
+        }
+        for(size_t il=0; il<photons.size(); il++){
+          if(fabs(photons[il].Eta())<1.5) continue;
+          photons[il] *= TMath::Sqrt(1.027);
+        }
+      }
 
       //jets
       std::vector<Jet> allJets = selector.getGoodJets(ev,30.,4.7,leptons,photons);

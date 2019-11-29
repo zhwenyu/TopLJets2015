@@ -349,23 +349,21 @@ std::vector<Particle> SelectionTool::flaggedPhotons(MiniEvent_t &ev)
     int pid(ev.gamma_pid[ig]);
     int addpid(ev.gamma_idFlags[ig]);
 
-    bool passCSEV( (addpid & 0x1) );
-    bool passPixelSeedVeto( ((addpid>>1) & 0x1) );
+    //bool passCSEV( (addpid & 0x1) );
+    bool hasPixelSeed( ((addpid>>1) & 0x1) );
     bool hasmvaWP80( ((addpid>>2) & 0x1) );
     bool hasmvaWP90( ((addpid>>3) & 0x1) );
     
-
     //see bits in plugins/MiniAnalyzer.cc
-
     int qualityFlagsWord(0);
     if( pt>30 && eta<2.4)
       {
-        if( (pid&0x7f)==0x7f )         qualityFlagsWord |= (0x1 << LOOSE);
-        if( ((pid>>10)&0x7f)==0x7f   ) qualityFlagsWord |= (0x1 << MEDIUM);
-        if( ((pid>>20)&0x7f)==0x7f   ) qualityFlagsWord |= (0x1 << TIGHT);
-        if( ((pid>>20) &0x7d)==0x7d  ) qualityFlagsWord |= (0x1 << TIGHTIDNOSIHIH);
-        if( passPixelSeedVeto && hasmvaWP80 ) qualityFlagsWord |= (0x1 << MVA80);
-        if( passPixelSeedVeto && hasmvaWP90 ) qualityFlagsWord |= (0x1 << MVA90);
+        if( !hasPixelSeed && (pid&0x7f)==0x7f         ) qualityFlagsWord |= (0x1 << LOOSE);
+        if( !hasPixelSeed && ((pid>>10)&0x7f)==0x7f   ) qualityFlagsWord |= (0x1 << MEDIUM);
+        if( !hasPixelSeed && ((pid>>20)&0x7f)==0x7f   ) qualityFlagsWord |= (0x1 << TIGHT);
+        if( !hasPixelSeed && ((pid>>20) &0x7d)==0x7d  ) qualityFlagsWord |= (0x1 << TIGHTIDNOSIHIH);
+        if( !hasPixelSeed && hasmvaWP80 )   qualityFlagsWord |= (0x1 << MVA80);
+        if( !hasPixelSeed && hasmvaWP90 )   qualityFlagsWord |= (0x1 << MVA90);
 	if( isInclusivePhoton(ev,ig) ) qualityFlagsWord |= (0x1 << CONTROL);
 	if( isQCDTemplate(ev,ig))      qualityFlagsWord |= (0x1 << QCDTEMP);
 	if( isRelaxedTight(ev,ig)    ) qualityFlagsWord |= (0x1 << RELAXEDTIGHT);

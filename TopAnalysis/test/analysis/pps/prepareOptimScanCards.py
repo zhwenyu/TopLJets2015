@@ -3,23 +3,6 @@ import os
 import sys
 import argparse
 import itertools
-"""
-KINEMATICS = [('bosonpt>20', 'bosonpt>95'),
-              ('bosonpt>30', 'bosonpt>100'),
-              ('bosonpt>40', 'bosonpt>110'),
-              ('bosonpt>50', 'bosonpt>120'),
-              ('bosonpt>60', 'bosonpt>130')]
-RPSEL      = ['csi1>0.05 && csi2>0.05',
-              'csi1>0.05 && csi2>0.055',
-              'csi1>0.055 && csi2>0.05',
-              'csi1>0.06 && csi2>0.06']
-CATEGS     = ['nvtx>15',
-              'nvtx<15,nvtx>=15',
-              'nvtx<20,nvtx>=20',
-              'nvtx<25,nvtx>=25',
-              'nvtx<30,nvtx>=30']
-"""
-
 
 KINEMATICS = [('bosonpt>30',                       'bosonpt>95'),
               ('bosonpt>40',                       'bosonpt>100'),
@@ -27,9 +10,9 @@ KINEMATICS = [('bosonpt>30',                       'bosonpt>95'),
               ('bosonpt>50',                       'bosonpt>120'),
               ('bosonpt>50 && l1pt>40 && l2pt>30', 'bosonpt>130'),             
               ('bosonpt>60',                       'bosonpt>140')]
-RPSEL      = ['csi1>0.04 && csi2>0.04',
-              'csi1>0.05 && csi2>0.05',              
-              'csi1>0.06 && csi2>0.06']
+RPSEL      = ['csi1>0.035 && csi2>0.035',
+              'csi1>0.045 && csi2>0.045',              
+              'csi1>0.045 && csi2>0.055']
 CATEGS     = ['nvtx<20,nvtx>=20',
               'nvtx<25,nvtx>=25',
               'nvtx<30,nvtx>=30']
@@ -120,7 +103,7 @@ def main(args):
             #combine cards
             script.write('echo "Combining datacards"\n')
             script.write('cd $output\n')        
-            script.write('for v in z g; do\n')
+            script.write('for v in z zmm zee g; do\n')
             script.write('\ta=(`ls shapes-parametric.datacard_${v}*.dat`)\n')
             script.write('\tcombstr=""\n')
             script.write('\tncards=${#a[@]}\n')
@@ -146,16 +129,16 @@ def main(args):
             script.write('\n')
 
             script.write('m=${1}\n')
-            script.write('echo "Running combine for m=${m}"\n')
-            script.write('for b in z g; do\n')
-            script.write('\t pfix=${b}_m${m}\n')
-            script.write('\t text2workspace.py ${b}_datacard.dat -m ${m} -o ${pfix}_workspace.root\n')
-            script.write('\t combine ${pfix}_workspace.root -n PP${b}X.obs -M AsymptoticLimits -m ${m}\n')
-            script.write('\t combine ${pfix}_workspace.root -n PP${b}X     -M AsymptoticLimits -m ${m} -t -1 --expectSignal=1 --setParameters mu_outfidsig=1\n')
-            script.write('\t combine ${pfix}_workspace.root -n PP${b}X.obs -M Significance -m ${m}\n')
-            script.write('\t combine ${pfix}_workspace.root -n PP${b}X     -M Significance -m ${m} -t -1 --expectSignal=1 --setParameters mu_outfidsig=1\n')
-            script.write('\t #combine ${pfix}_workspace.root -n PP${b}X -M FitDiagnostics -m ${m} -t -1 --expectSignal=1 --setParameters mu_outfidsig=1\n')
-            script.write('done\n')
+            script.write('b=${2}\n')
+            script.write('echo "Running combine for b=${2} m=${m}"\n')
+            script.write('pfix=${b}_m${m}\n')
+            script.write('text2workspace.py ${b}_datacard.dat -m ${m} -o ${pfix}_workspace.root\n')
+            script.write('baseCmd=\"combine ${pfix}_workspace.root -m ${m} --X-rtd MINIMIZER_analytic\"\n')
+            script.write('${baseCmd} -n PP${b}X.obs -M AsymptoticLimits\n')
+            script.write('${baseCmd} -n PP${b}X     -M AsymptoticLimits -t -1 --expectSignal=1 --setParameters mu_outfidsig=1\n')
+            script.write('${baseCmd} -n PP${b}X.obs -M Significance\n')
+            script.write('${baseCmd} -n PP${b}X     -M Significance     -t -1 --expectSignal=1 --setParameters mu_outfidsig=1\n')
+            script.write('#${baseCmd} -n PP${b}X     -M FitDiagnostics   -t -1 --expectSignal=1 --setParameters mu_outfidsig=1\n')
             script.write('cd -\n')        
 
     #submit optimization points to crab
@@ -180,10 +163,12 @@ def main(args):
         condor.write("+JobFlavour = \"longlunch\"\n")
         condor.write("request_cpus = 4\n")
         for i in n2sub:
-            for mass in [780,800,840,900,960,1000,1020,1080,1140,1200,1260,1320,1380,1400,1440,1500,1560,1600]:
-                condor.write("point=%d\n"%i)
-                condor.write("arguments=%d\n"%mass)
-                condor.write("queue 1\n")
+            for mass in [600,660,720,780,800,840,900,960,1000,1020,1080,1140,1200,1260,1320,1380,1400,1440,1500,1560,1600]:
+                for boson in ['z','g','zmm','zee']:
+                    condor.write("point=%d\n"%i)
+                    condor.write("arguments=%d %s\n"%(mass,boson))
+                    condor.write("queue 1\n")
+
     #print 'Once datacards are ready can submit statistical analysis with %s/zxstatana_run.sub'%opt.output
 
     with open('%s/zxstatana.dag'%opt.output,'w') as condor:

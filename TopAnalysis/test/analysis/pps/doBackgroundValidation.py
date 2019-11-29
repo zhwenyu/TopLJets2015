@@ -4,8 +4,9 @@ import sys
 import argparse
 import pickle
 import copy
-from generateBinnedWorkspace import defineProcessTemplates,VALIDLHCXANGLES
+from generateBinnedWorkspace import defineProcessTemplates,smoothMissingMass,VALIDLHCXANGLES
 from TopLJets2015.TopAnalysis.Plot import *
+    
         
 def fillShapes(inputDir,selCuts,proc='MuonEG'):
 
@@ -18,14 +19,14 @@ def fillShapes(inputDir,selCuts,proc='MuonEG'):
 
     histos={}
     sf=None
-    for dist,hist,title in [('mmiss',                 '(30,0,2500)',             'Missing mass [GeV]'),
-                            ('(ypp>=0?mmiss:-mmiss)', '(30,-2500,2500)',         'Rapidity-signed missing mass [GeV]'),
-                            ('csi1',                  '(25,0.04,0.18)',          '#xi'),
-                            ('csi2',                  '(25,0.04,0.18)',          '#xi'),                            
-                            ('mpp',                   '(25,500,2500)',           'Di-proton mass [GeV]'),
-                            ('ypp',                   '(50,-1,1)',               'Di-proton rapidity'),
-                            ('mmiss:mpp',             '(25,500,2500,30,0,2500)', 'Missing mass [GeV];Di-proton mass [GeV]'),
-                            ('ypp:mpp',               '(25,500,2500,50,-1,1)',   'Di-proton rapidity;Di-proton mass [GeV]'),
+    for dist,hist,title in [('mmiss',                    '(40,0,2000)',             'Missing mass [GeV]'),
+                            ('(bosony>=0?mmiss:-mmiss)', '(80,-2000,2000)',         'Missing mass x sgn[y(e#mu)] [GeV]'),
+                            #('csi1',                     '(25,0.035,0.18)',         '#xi(+)'),
+                            #('csi2',                     '(25,0.035,0.18)',         '#xi(-)'),                            
+                            #('mpp',                      '(25,500,2500)',           'Di-proton mass [GeV]'),                            
+                            #('ypp',                      '(50,-1,1)',               'Di-proton rapidity'),
+                            #('mmiss:mpp',                '(25,500,2500,30,0,2500)', 'Missing mass [GeV];Di-proton mass [GeV]'),
+                            #('ypp:mpp',                  '(25,500,2500,50,-1,1)',   'Di-proton rapidity;Di-proton mass [GeV]'),
                         
 ]:
 
@@ -58,6 +59,15 @@ def fillShapes(inputDir,selCuts,proc='MuonEG'):
             histos[dist][tag].SetDirectory(0)
             h.Reset('ICE')
             if tag=='data' : continue
+
+            #apply a smoothing procedure for 1D mmiss
+            if 'mmiss' in dist and not h.InheritsFrom('TH2'):
+                rawH=histos[dist][tag]
+                histos[dist][tag]=smoothMissingMass(rawH)
+                histos[dist][tag].SetName(rawH.GetName())
+                histos[dist][tag].SetDirectory(0)
+                rawH.Delete()
+
             bkgHistos.append(histos[dist][tag])
 
         h.Delete()
@@ -121,7 +131,6 @@ def main(args):
     ROOT.gROOT.SetBatch(True)
     ROOT.gStyle.SetOptTitle(0)
     ROOT.gStyle.SetOptStat(0)
-
     
     os.system('mkdir -p %s'%opt.output)
 
@@ -171,7 +180,7 @@ def main(args):
                       spImpose=False, 
                       isSyst=True)       
 
-            p.ratiorange=[0.88,1.12]
+            p.ratiorange=[0.78,1.22]
             p.show(opt.output,opt.lumi,extraText=catTitle)
             p.appendTo('%s/plotter_%s.root'%(opt.output,pfix))
             p.reset()

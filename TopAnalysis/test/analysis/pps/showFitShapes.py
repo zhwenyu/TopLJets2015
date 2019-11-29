@@ -6,8 +6,11 @@ ROOT.gStyle.SetOptStat(0)
 ROOT.gStyle.SetOptTitle(0)
 ROOT.gROOT.SetBatch(True)
 
+lumi=37.5
 bosonName=sys.argv[3]
-if bosonName=='g' : bosonName='#gamma'
+if bosonName=='g' : 
+    bosonName='#gamma'
+    lumi=2.76
 
 showShapes(resultsDir=sys.argv[1],
            name='shapes',
@@ -16,6 +19,6 @@ showShapes(resultsDir=sys.argv[1],
            boson=sys.argv[3],
            r95=None,
            sig=None,
-           lumi=37.500,
+           lumi=lumi,
            showPseudoData=False,
            showAllBkgs=True) #False)

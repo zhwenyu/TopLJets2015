@@ -15,6 +15,41 @@ CH_DICT           = {'169':'zmm','121':'zee','22':'g'}
 CH_TITLE_DICT     = {'169':'Z#rightarrow#mu#mu','121':'Z#rightarrowee','22':'#gamma'}
 
 
+def smoothMissingMass(h,smoothRanges=[(-300,   300,  'pol2'),
+                                      ( 1500,  2500, 'gaus'),
+                                      (-2500, -1500, 'gaus')]):
+
+    """smooths missing mass spectrum in specified ranges"""
+
+    smoothH=h.Clone(h.GetName()+'_smooth')
+
+    hxmin=h.GetXaxis().GetXmin()
+    hxmax=h.GetXaxis().GetXmax()
+
+    for xran in smoothRanges:
+        
+        xmin,xmax,fname=xran
+        print h.GetName(), xmin,xmax,'->',
+        xmin=min(hxmax,max(hxmin,xmin))
+        xmax=min(hxmax,max(hxmin,xmax))
+        print xmin,xmax
+        if xmin==xmax :
+            print 'Skipping', xran,'for',h.GetName()
+            continue
+        imin,imax=h.GetXaxis().FindBin(xmin),h.GetXaxis().FindBin(xmax)
+        h.Fit(fname,'RQM+','',xmin,xmax)
+        ffunc=h.GetFunction(fname)
+        try:        
+            for xbin in range(imin,imax) :
+                xcen=h.GetXaxis().GetBinCenter(xbin)
+                smoothH.SetBinContent(xbin,ffunc.Eval(xcen))
+            ffunc.Delete()
+        except:
+            print '[Warn] no smoothing applied in',xmin,xmax,'to',h.GetName()
+
+    return smoothH
+
+
 def defineProcessTemplates(histos,norm=False):
 
     """defines the nominal template and the variations and checks fo 0's in the histograms"""
@@ -156,7 +191,7 @@ def fillBackgroundTemplates(opt):
     return totalBkg,templates,data_templates
 
 
-def fillSignalTemplates(mass,signalFile,xsec,opt,fiducialCuts='gencsi1>0.03 & gencsi1<0.13 && gencsi2>0.03 && gencsi2<0.16'):
+def fillSignalTemplates(mass,signalFile,xsec,opt,fiducialCuts='gencsi1>0.02 && gencsi1<0.16 && gencsi2>0.03 && gencsi2<0.18'):
 
     """fills the signal histograms"""
 
@@ -167,6 +202,7 @@ def fillSignalTemplates(mass,signalFile,xsec,opt,fiducialCuts='gencsi1>0.03 & ge
     #import signal events
     data=ROOT.TChain('data')
     data.AddFile(os.path.join(opt.input,signalFile))
+    dataWgt=18674.5/41529.3
 
     dataAlt=ROOT.TChain('data')
     dataAlt.AddFile(os.path.join(opt.input,signalFile).replace('preTS2','postTS2'))
@@ -202,19 +238,34 @@ def fillSignalTemplates(mass,signalFile,xsec,opt,fiducialCuts='gencsi1>0.03 & ge
                 else:
                     templCuts+=' && %s'%fiducialCuts
 
-                chain=dataAlt if 'sigCalib' in name else data
                 histodef='%smmiss >> h(%d,%f,%f)'%(pfix,opt.nbins,opt.mMin,opt.mMax)           
                 if opt.signed:
                     #histodef='(%sypp>=0 ? %smmiss : -%smmiss) >> h(%d,%f,%f)'%(pfix,pfix,pfix,2*opt.nbins,-opt.mMax,opt.mMax)
                     histodef='(bosoneta>=0 ? %smmiss : -%smmiss) >> h(%d,%f,%f)'%(pfix,pfix,2*opt.nbins,-opt.mMax,opt.mMax)
-                chain.Draw(histodef,
-                           '{0}*{1}*({2} && mixType=={3} && {4}mmiss>0)'.format(wgtExpr,
-                                                                                addWgt if addWgt else '1',
-                                                                                templCuts,
-                                                                                mixType,
-                                                                                pfix),
-                           'goff')
+
+                shiftDataWgt=1.0
+                if 'sigCalib' in name: shiftDataWgt *=1.03
+
+                #sum up contributions
+                data.Draw(histodef,
+                          '{0}*{1}*{2}*({3} && mixType=={4} && {5}mmiss>0)'.format(wgtExpr,
+                                                                                   addWgt if addWgt else '1',
+                                                                                   dataWgt*shiftDataWgt,
+                                                                                   templCuts,
+                                                                                   mixType,
+                                                                                   pfix),
+                          'goff')
                 h=chain.GetHistogram()
+
+                dataAlt.Draw(histodef.replace('h(','halt('),
+                             '{0}*{1}*{2}*({3} && mixType=={4} && {5}mmiss>0)'.format(wgtExpr,
+                                                                                      addWgt if addWgt else '1',
+                                                                                      (1-dataWgt*shiftDataWgt),
+                                                                                      templCuts,
+                                                                                      mixType,
+                                                                                      pfix),
+                             'goff')
+                h.Add(dataAlt.GetHistogram())
 
                 histos.append( h.Clone(name) )         
                 histos[-1].SetDirectory(0)
@@ -278,8 +329,11 @@ def writeDataCards(opt,shapesURL):
             dc.write('%s_bkgShape            %8s %15s %15s %15s\n'%(cat,'shape',          '-',     '-',  '1')) #uncorrelate background shapes
             dc.write('%s_bkgShapeSingleDiff  %8s %15s %15s %15s\n'%(cat,'shape',          '-',     '-',  '1'))
 
-            #template statistics
-            dc.write('{0} autoMCStats 0.0 1\n'.format(cat))
+            #template statistics 
+            # threshold=effecting entries (neff~1600 is approximately 2% relative unc.
+            # but it's safer to leave it to 0 as this is a bump hunt and any stat effect matters...)
+            # include signal=0 (1 would count also the signal entries but it has unknown normalization at start in a search)
+            dc.write('{0} autoMCStats 0.0 0\n'.format(cat))
         
             #float the background normalization as well as the signal
             dc.write('mu_bkg_%s       rateParam * bkg       1\n'%cat)
@@ -344,7 +398,6 @@ def datacardTask(args):
     writeDataCards(opt,os.path.basename(shapesURL))
     
 
-
 def main(args):
 
     parser = argparse.ArgumentParser(description='usage: %prog [options]')
@@ -354,11 +407,11 @@ def main(args):
                         help='input directory with the files [default: %default]')
     parser.add_argument('--sig',
                         dest='sig',
-                        default='{boson}_m_X_{mass}_xangle_{xangle}_2017_preTS2_opt_v1_simu_reco.root',
+                        default='{boson}_m_X_{mass}_xangle_{xangle}_2017_preTS2.root',
                         help='signal point [%default]')
     parser.add_argument('--massList',
                         dest='massList',
-                        default='780,800,840,900,960,1000,1020,1080,1140,1200,1260,1320,1380,1400,1440,1500,1560,1600',
+                        default='600,660,720,780,800,840,900,960,1000,1020,1080,1140,1200,1260,1320,1380,1400,1440,1500,1560,1600',
                         help='signal mass list (CSV) [%default]')
     parser.add_argument('--injectMass',
                         dest='injectMass',
@@ -398,7 +451,7 @@ def main(args):
                         help='minimum missing mass [default: %default]')
     parser.add_argument('--mMax',
                         dest='mMax',
-                        default=2500,
+                        default=2000,
                         type=float,
                         help='maximum missing mass [default: %default]')
     parser.add_argument('-o', '--output',

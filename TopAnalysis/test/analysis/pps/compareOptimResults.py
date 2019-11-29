@@ -216,7 +216,7 @@ def showLimits(results,name,title,lumi,results_obs=None):
     if robs:
         mg.Add(robs,'lp')
 
-    frame=ROOT.TH1F('frame',';m_{X} [GeV];95% CL limits on #sigma_{fid} [pb]',1,700,1700)
+    frame=ROOT.TH1F('frame',';m_{X} [GeV];95% CL limits on #sigma_{fid} [pb]',1,580,1700)
     frame.GetYaxis().SetRangeUser(1e-1,maxRan*1.1)
     frame.SetBinContent(1,1)
     frame.SetLineWidth(2)
@@ -341,6 +341,7 @@ def showShapes(resultsDir,name,title,mass,boson,r95,sig,lumi,showPseudoData=True
                 #signal systs
                 p=Plot('%s_%s_a%d_cat%d_sigunc'%(name,v,angle,icat))
                 fidsigH.Scale(1./5.)
+                p.doPoissonErrorBars=False
                 p.noErrorsOnRatio=True
                 p.xtit='Missing mass [GeV]'
                 p.ytit='Events'
@@ -357,6 +358,7 @@ def showShapes(resultsDir,name,title,mass,boson,r95,sig,lumi,showPseudoData=True
                 #out fiducial signal systs
                 p=Plot('%s_%s_a%d_cat%d_outfidsigunc'%(name,v,angle,icat))
                 outfidsigH.Scale(1./5.)
+                p.doPoissonErrorBars=False
                 p.noErrorsOnRatio=True
                 p.xtit='Missing mass [GeV]'
                 p.ytit='Events'
