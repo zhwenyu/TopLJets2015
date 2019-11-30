@@ -216,8 +216,8 @@ def showLimits(results,name,title,lumi,results_obs=None):
     if robs:
         mg.Add(robs,'lp')
 
-    frame=ROOT.TH1F('frame',';m_{X} [GeV];95% CL limits on #sigma_{fid} [pb]',1,580,1700)
-    frame.GetYaxis().SetRangeUser(1e-1,maxRan*1.1)
+    frame=ROOT.TH1F('frame',';m_{X} [GeV];95% CL limits on #sigma_{fid}#timesBR [pb]',1,580,1700)
+    frame.GetYaxis().SetRangeUser(5e-2,5)
     frame.SetBinContent(1,1)
     frame.SetLineWidth(2)
     frame.SetLineColor(ROOT.kRed)
@@ -247,7 +247,7 @@ def showLimits(results,name,title,lumi,results_obs=None):
     c.Update()   
     c.RedrawAxis()
     
-    for ext in ['png','pdf']:
+    for ext in ['png','pdf','root']:
         c.SaveAs('%s.%s'%(name,ext))
     
     c.SetLogy()
@@ -327,6 +327,7 @@ def showShapes(resultsDir,name,title,mass,boson,r95,sig,lumi,showPseudoData=True
                 #background systs
                 p=Plot('%s_%s_a%d_cat%d_bkgunc'%(name,v,angle,icat))
                 p.noErrorsOnRatio=True
+                p.doPoissonErrorBars=False
                 p.xtit='Missing mass [GeV]'
                 p.ytit='Events'
                 p.add(bkgH, title='background', color=1, isData=True,spImpose=False, isSyst=False)

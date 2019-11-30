@@ -45,7 +45,7 @@ def showPvalSummary(grpval):
         leg.AddEntry(gr,gr.GetTitle(),'lep')
 
     mg.Draw('apc')
-    mg.GetYaxis().SetRangeUser(1e-8,1.5)
+    mg.GetYaxis().SetRangeUser(1e-10,1.5)
     mg.GetYaxis().SetTitle('Local p-value')
     mg.GetYaxis().SetTitleOffset(1.3)
     mg.GetXaxis().SetTitle('m_{X} [GeV]')
@@ -91,8 +91,8 @@ def main():
     markers=[20,24,21]
 
     for i in range(1,len(sys.argv)):
-        key,resultsDir=sys.argv[i].split(':')
-        mass=int(re.search('analysis_(\d+)', resultsDir).group(1))
+        key,mass,resultsDir=sys.argv[i].split(':')
+        mass=int(mass)
         print key,resultsDir,mass
         files=[os.path.join(resultsDir,f) for f in os.listdir(resultsDir) if '.obs.Significance' in f and key in f]
         grpval.append( fillPvalGraphFrom(files) )

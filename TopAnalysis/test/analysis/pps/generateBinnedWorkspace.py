@@ -4,7 +4,6 @@ import sys
 import argparse
 import pickle
 import copy
-from TopLJets2015.TopAnalysis.roofitTools import showFitResult,shushRooFit
 
 #sigma=1pb distributed accross crossing angles 
 #NB this does not sum to 1 as we don't use all crossing angles in the analysis
@@ -471,7 +470,6 @@ def main(args):
     ROOT.gROOT.SetBatch(True)
     ROOT.gStyle.SetOptTitle(0)
     ROOT.gStyle.SetOptStat(0)
-    shushRooFit()
 
     #configuration
     opt.categs=opt.categs.split(',')

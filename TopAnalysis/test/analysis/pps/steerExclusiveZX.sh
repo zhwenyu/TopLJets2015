@@ -324,44 +324,45 @@ case $WHAT in
 
         #afs needs to be used here...
         for m in 600 800 1200 1400; do
-            python test/analysis/pps/prepareOptimScanCards.py -o ppvx_${gitash}_${m}         -i /eos/cms/${anadir} --injectMass ${m} --just 2,11,37;
-            python test/analysis/pps/prepareOptimScanCards.py -o ppvx_${githash}_signed_${m}  -i /eos/cms/${anadir} --injectMass ${m} --just 2,11,37 --signed;
+            python test/analysis/pps/prepareOptimScanCards.py -o ppvx_${githash}_${m}         -i /eos/cms/${anadir} --injectMass ${m} --just 2,10,36;
+            python test/analysis/pps/prepareOptimScanCards.py -o ppvx_${githash}_signed_${m}  -i /eos/cms/${anadir} --injectMass ${m} --just 2,10,36 --signed;
         done
 
         ;;
 
 
     FINALIZESTATANA )
-        for d in ppvx_${githash}_signed; do # ppvx_${githash}; do
+        for d in ppvx_${githash} ppvx_${githash}_signed; do
             python test/analysis/pps/compareOptimResults.py ${d}
             mkdir -p ${d}/plots
             mkdir -p /eos/cms/${anadir}/${d}
             mv *.{png,pdf,dat} /eos/cms/${anadir}/${d}
+            mv limits*root  /eos/cms/${anadir}/${d}
         done
         ;;
 
 
     WWW )
 
-	cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}
-	mkdir -p ${wwwdir}/presel
-	cp /eos/cms/${outdir}/plots/*.{png,pdf,dat} ${wwwdir}/presel
-	cp /eos/cms/${outdir}/plots/sel/*.{png,pdf,dat} ${wwwdir}/presel
-	cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}/presel
+	#cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}
+	#mkdir -p ${wwwdir}/presel
+	#cp /eos/cms/${outdir}/plots/*.{png,pdf,dat} ${wwwdir}/presel
+	#cp /eos/cms/${outdir}/plots/sel/*.{png,pdf,dat} ${wwwdir}/presel
+	#cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}/presel
 
         #analysis control plots
-        mkdir -p ${wwwdir}/ana
-        cp /eos/cms/${anadir}/plots/*.{png,pdf,dat} ${wwwdir}/ana
-        cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}/ana
+        #mkdir -p ${wwwdir}/ana
+        #cp /eos/cms/${anadir}/plots/*.{png,pdf,dat} ${wwwdir}/ana
+        #cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}/ana
 
         #signal acceptance plots
-        mkdir -p ${wwwdir}/signal
-        cp /eos/cms/${anadir}/plots_signal/*.{png,pdf,dat} ${wwwdir}/signal
-        cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}/signal
+        #mkdir -p ${wwwdir}/signal
+        #cp /eos/cms/${anadir}/plots_signal/*.{png,pdf,dat} ${wwwdir}/signal
+        #cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}/signal
 
         #local sensitivity
-        mkdir -p ${wwwdir}/localsens
-        cp /eos/cms/${anadir}/localsens/*.{png,pdf,dat} ${wwwdir}/locasens
+        #mkdir -p ${wwwdir}/localsens
+        cp /eos/cms/${anadir}/localsens/*.{png,pdf,dat} ${wwwdir}/localsens
         cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}/localsens
 
         #background closure plots
@@ -369,15 +370,16 @@ case $WHAT in
             pdir=/eos/cms/${outdir}/bkg_ptll${pt}
             odir=${wwwdir}/bkg/emu_ptll${pt}
             mkdir -p ${odir}
-            cp ${pdir}/*.{png,pdf,dat} ${odir}
-            cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${odir}
+            #cp ${pdir}/*.{png,pdf,dat} ${odir}
+            #cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${odir}
         done
 
         #statistical analysis
-        for d in ppvx_${githash} ppvx_${githash}; do
+        for d in ppvx_${githash} ppvx_${githash}_signed; do
             odir=${wwwdir}/stat/${d}
             mkdir -p ${odir}
             cp /eos/cms/${anadir}/${d}/* ${odir}
+            cp /eos/cms/${anadir}/${d}/limits* ${odir}
             cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${odir}
         done
         cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}/stat
@@ -394,9 +396,23 @@ case $WHAT in
         echo "[Display fit shapes]"
         echo "python ${scriptDir}/showFitShapes.py ppvx_${githash}/optim_1 1200 z"
         echo ""
-
+        echo "[Signal injection studies]"
+        esStr=""
+        for m in 600 800 1200 1400; do
+            resStr="${resStr} PPgX:${m}:ppvx_${githash}_${m}/optim_2 PPzX:${m}:ppvx_${githash}_${m}/optim_10"
+        done
+        odir=${wwwdir}/stat/ppvx_${githash}
+        echo "python ${scriptDir}/drawPvalCurve.py ${resStr}"
+        echo "mv *.{png,pdf} ${odir}"
+        echo "mv limits*root ${odir}"
+        odir=${odir}_signed
+        resStr=${resStr//${githash}/${githash}_signed}
+        echo "python ${scriptDir}/drawPvalCurve.py ${resStr}"
+        echo "mv *.{png,pdf} ${odir}"
+        echo "mv limits*root ${odir}"
+        echo""
         ;;
-
+    
 
     ###                                                                                         ###
     ### THESE OPTIONS WERE USED AT SOME POINT IN THE ANALYSIS BUT HAVE NOT BEEN TESTED RECENTLY ###

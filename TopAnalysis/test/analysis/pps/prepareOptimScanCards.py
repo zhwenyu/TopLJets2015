@@ -164,7 +164,7 @@ def main(args):
         condor.write("request_cpus = 4\n")
         for i in n2sub:
             for mass in [600,660,720,780,800,840,900,960,1000,1020,1080,1140,1200,1260,1320,1380,1400,1440,1500,1560,1600]:
-                for boson in ['z','g','zmm','zee']:
+                for boson in ['z','g']: #,'zmm','zee']:
                     condor.write("point=%d\n"%i)
                     condor.write("arguments=%d %s\n"%(mass,boson))
                     condor.write("queue 1\n")
