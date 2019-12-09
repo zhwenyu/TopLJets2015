@@ -6,8 +6,15 @@ import pickle
 import copy
 from generateBinnedWorkspace import defineProcessTemplates,smoothMissingMass,VALIDLHCXANGLES
 from TopLJets2015.TopAnalysis.Plot import *
-    
-        
+import numpy as np
+
+def rebinUnequalBinSize(h,newBins):
+    nBin = len(newBins)
+    newname = h.GetName()+'_new'
+    hnew = h.Rebin(nBin-1, newname, np.array(newBins))
+    return hnew
+
+
 def fillShapes(inputDir,selCuts,proc='MuonEG'):
 
     """fills the shapes from a set of files"""
@@ -19,14 +26,14 @@ def fillShapes(inputDir,selCuts,proc='MuonEG'):
 
     histos={}
     sf=None
-    for dist,hist,title in [('mmiss',                    '(40,0,2000)',             'Missing mass [GeV]'),
-                            ('(bosony>=0?mmiss:-mmiss)', '(80,-2000,2000)',         'Missing mass x sgn[y(e#mu)] [GeV]'),
-                            #('csi1',                     '(25,0.035,0.18)',         '#xi(+)'),
-                            #('csi2',                     '(25,0.035,0.18)',         '#xi(-)'),                            
-                            #('mpp',                      '(25,500,2500)',           'Di-proton mass [GeV]'),                            
-                            #('ypp',                      '(50,-1,1)',               'Di-proton rapidity'),
-                            #('mmiss:mpp',                '(25,500,2500,30,0,2500)', 'Missing mass [GeV];Di-proton mass [GeV]'),
-                            #('ypp:mpp',                  '(25,500,2500,50,-1,1)',   'Di-proton rapidity;Di-proton mass [GeV]'),
+    for dist,hist,title in [('mmiss',                    '(50,0,2000)',             'Missing mass [GeV]'),
+                            ('(bosony>=0?mmiss:-mmiss)', '(100,-2000,2000)',        'Missing mass x sgn[y(e#mu)] [GeV]'),
+                            #('csi1',                   '(25,0.035,0.18)',         '#xi(+)'),
+                            #('csi2',                   '(25,0.035,0.18)',         '#xi(-)'),
+                            #('mpp',                    '(25,500,2500)',           'Di-proton mass [GeV]'),
+                            #('ypp',                    '(50,-1,1)',               'Di-proton rapidity'),
+                            #('mmiss:mpp',              '(25,500,2500,30,0,2500)', 'Missing mass [GeV];Di-proton mass [GeV]'),
+                            #('ypp:mpp',                '(25,500,2500,50,-1,1)',   'Di-proton rapidity;Di-proton mass [GeV]'),
                         
 ]:
 
@@ -43,9 +50,24 @@ def fillShapes(inputDir,selCuts,proc='MuonEG'):
             for c in ['mmiss','ypp','mpp','csi1','csi2']:
                 finaldist=finaldist.replace(c,pf+c)
                 
+            #if dist=='mmiss' or dist=='(bosony>=0?mmiss:-mmiss)':
+            #    from array import array
+            #    newBins=range(0,2000,40)
+            #    #newBins=[0,100]+range(200,1000,40)+[1000,1100,1200,1500,2000]
+            #    if dist!='mmiss':
+            #        newBins=range(-2000,2000,40)
+            #        #nbins=len(newBins)
+            #        #newBins=[-newBins[ix] for ix in range(nbins-1,0,-1)] + newBins
+            #    h=ROOT.TH1F( 'hmiss',';Missing mass [GeV];Events',len(newBins)-1,array('d',newBins) )
+            #    data.Draw('{0} >> hmiss'.format(finaldist),
+            #              'wgt*({0} && {1}mmiss>0 && mixType=={2})'.format(selCuts,pf,mixType),
+            #              'goff')
+            #else:
+
             data.Draw('{0} >> h{1}'.format(finaldist,hist),
                       'wgt*({0} && {1}mmiss>0 && mixType=={2})'.format(selCuts,pf,mixType),
                       'goff')
+                
             h=data.GetHistogram()
             histos[dist][tag]=h.Clone('{0}_{1}_{2}_obs'.format(dist,tag,proc))
             if ';' in title:
@@ -58,16 +80,18 @@ def fillShapes(inputDir,selCuts,proc='MuonEG'):
                 histos[dist][tag].GetXaxis().SetTitle(title)
             histos[dist][tag].SetDirectory(0)
             h.Reset('ICE')
-            if tag=='data' : continue
+
+            if tag=='data' : 
+                continue
 
             #apply a smoothing procedure for 1D mmiss
-            if 'mmiss' in dist and not h.InheritsFrom('TH2'):
-                rawH=histos[dist][tag]
-                histos[dist][tag]=smoothMissingMass(rawH)
-                histos[dist][tag].SetName(rawH.GetName())
-                histos[dist][tag].SetDirectory(0)
-                rawH.Delete()
-
+            #if 'mmiss' in dist and not h.InheritsFrom('TH2'):
+            #    rawH=histos[dist][tag]
+            #    histos[dist][tag]=smoothMissingMass(rawH)
+            #    histos[dist][tag].SetName(rawH.GetName())
+            #    histos[dist][tag].SetDirectory(0)
+            #    rawH.Delete()
+            
             bkgHistos.append(histos[dist][tag])
 
         h.Delete()
@@ -164,9 +188,19 @@ def main(args):
             p.doChi2=True
             p.nominalDistForSystsName='background'
 
+            #if dist=='mmiss':
+            #    newBins=range(0,1000,40)+[1000,1100,1200,1500,2000]
+            #    print 'Rebinning',dist,'to',newBins
+            #    for k in data[dist]:
+            #        data[dist][k]=rebinUnequalBinSize(data[dist][k],newBins)
+
             #main distributions
-            p.add(data[dist]['data'], title='data',       color=ROOT.kBlack, isData=True, spImpose=False, isSyst=False)
-            p.add(data[dist]['bkg'],  title='background', color=ROOT.TColor.GetColor('#1f78b4'), isData=False, spImpose=False, isSyst=False)
+            #doDivideByBinWidth=True if dist=='mmiss' or dist=='(bosony>=0?mmiss:-mmiss)' else False
+            #if doDivideByBinWidth:
+            #    p.doPoissonErrorBars=False
+
+            p.add(data[dist]['data'], title='data',       color=ROOT.kBlack, isData=True, spImpose=False, isSyst=False)#,doDivideByBinWidth=doDivideByBinWidth)
+            p.add(data[dist]['bkg'],  title='background', color=ROOT.TColor.GetColor('#1f78b4'), isData=False, spImpose=False, isSyst=False) #,doDivideByBinWidth=doDivideByBinWidth)
 
             #background systematics
             for syst in ['{0}_bkgshape_MuonEG_obsUp',        
@@ -178,9 +212,12 @@ def main(args):
                       color=ROOT.TColor.GetColor('#1f78b4'), 
                       isData=False, 
                       spImpose=False, 
-                      isSyst=True)       
+                      isSyst=True)
+                      #doDivideByBinWidth=doDivideByBinWidth)       
 
-            p.ratiorange=[0.78,1.22]
+            #p.ratiorange=[0.78,1.22]
+            #p.ratiorange=[0.58,1.42]
+            p.ratiorange=[0.,2.]
             p.show(opt.output,opt.lumi,extraText=catTitle)
             p.appendTo('%s/plotter_%s.root'%(opt.output,pfix))
             p.reset()

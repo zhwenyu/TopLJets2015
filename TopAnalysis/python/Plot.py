@@ -58,6 +58,7 @@ class Plot(object):
         self.totalMCUnc = None
         self.spimpose={}
         self.spimposeWithErrors=False
+        self.spimposeOpt='p'
         self.dataH = None
         self.data = None
         self._garbageList = []
@@ -385,7 +386,7 @@ class Plot(object):
             else:
                 frame=ROOT.TMultiGraph()
                 for x in self.spimpose:
-                    frame.Add(self.spimpose[x],'p')
+                    frame.Add(self.spimpose[x],self.spimposeOpt)
 
         self._garbageList.append(frame)
 
@@ -498,17 +499,20 @@ class Plot(object):
         try:
             
             if self.doChi2 and totalMC and self.dataH:
-                if self.totalMCUnc:
-                    chi2=self.totalMCUnc.Chi2Test( self.dataH, 'WU CHI2')
-                    pval=self.totalMCUnc.Chi2Test( self.dataH, 'WWU')
-                else:
-                    chi2=totalMC.Chi2Test( self.dataH, 'WU CHI2')
-                    pval=totalMC.Chi2Test( self.dataH, 'WWU')
+                #if self.totalMCUnc:
+                #    chi2=self.totalMCUnc.Chi2Test( self.dataH, 'WW CHI2')
+                #    pval=self.totalMCUnc.Chi2Test( self.dataH, 'WW')
+                #
+                #else:
+                chi2=self.dataH.Chi2Test(totalMC, 'UW CHI2')
+                pval=self.dataH.Chi2Test(totalMC, 'UW')
+                pval_ks=totalMC.KolmogorovTest( self.dataH, 'X')
+                print self.dataH.GetName(),pval,pval_ks
                 if not extraText:
                     extraText=''
                 else:
                     extraText+='\\'
-                extraText+='#chi^{2}/dof=%3.1f/%d (p-val: %3.3f)'%(chi2,self.dataH.GetNbinsX(),pval)
+                extraText+='p-val %3.3f (#chi^{2}) %3.3f (K.S.)'%(pval,pval_ks)
                 
             extraCtr=1
             for extra in extraText.split('\\'):
@@ -516,7 +520,8 @@ class Plot(object):
                     txt.SetTextAlign(ROOT.kHAlignLeft+ROOT.kVAlignCenter)
                 txt.DrawLatex(0.93 if inix<0.5 else 0.16,iniy-0.05*extraCtr,'#scale[0.9]{%s}'%extra)
                 extraCtr+=1
-        except:
+        except Exception as e:
+            print e
             pass
 
         #holds the ratio

@@ -1,6 +1,6 @@
 import ROOT
 import os
-from runExclusiveAnalysis import getTracksPerRomanPot,buildDiproton
+from runExclusiveAnalysis import getTracksPerRomanPot,buildDiProton
 from TopLJets2015.TopAnalysis.HistoTool import *
 from TopLJets2015.TopAnalysis.myProgressBar import *
 from TopLJets2015.TopAnalysis.Plot import *
@@ -10,7 +10,7 @@ def buildControlPlots(tag,excSel):
 
     """loop over data events and make control plots"""
 
-    baseDir='/eos/cms/store/cmst3/user/psilva/ExclusiveAna/ab05162/Chunks/'
+    baseDir='/eos/cms/store/cmst3/user/psilva/ExclusiveAna/final/2017_unblind/Chunks/'
     
     if len(tag)==1:
         tree=ROOT.TChain('tree')
@@ -102,9 +102,9 @@ def buildControlPlots(tag,excSel):
                     passMatch=True
             
         #diproton kinematics
-        pp_far=buildDiproton([[csi_rp023],[csi_rp123]]) if passPix else None
+        pp_far=buildDiProton([[csi_rp023],[csi_rp123]]) if passPix else None
         mmass_far=(pp_far-boson).M() if pp_far else None
-        pp_near=buildDiproton([[csi_rp003],[csi_rp103]]) if passStrip else None
+        pp_near=buildDiProton([[csi_rp003],[csi_rp103]]) if passStrip else None
         mmass_near=(pp_near-boson).M() if pp_near else None
 
 
@@ -158,56 +158,50 @@ def buildControlPlots(tag,excSel):
     ht.writeToFile(outURL)
     print 'Results can be found in',outURL
 
-def drawPlots(data,mc,period):
+def drawPlots(data,period):
 
     """draw final plots comparing distributions in data and in mc"""
-
-    files={'data':data,'mc':mc}
 
     base='passStrip'
     baseTitle='=2 strip'
     base='passPix'
     baseTitle='=2 px'
     for d,pfix in [
-        ('xangle',''),    
-        #('nvtx',''),      ('yboson',''),  ('dyboson',''),
-        #('n','RP003'),    ('n','RP023'),    ('n','RP103'),   ('n','RP123'),
-        #('csi','RP003'),  ('csi','RP023'),  ('csi','RP103'), ('csi','RP123'),
-        ('mpp','far'),    ('mpp','near'),   ('mmass','far'),  ('mmass','near'),
-        #('dmpp',''),      ('dmmass',''),
+            ('xangle',''),    
+            ('nvtx',''),      ('yboson',''),  ('dyboson',''),
+            ('n','RP003'),    ('n','RP023'),    ('n','RP103'),   ('n','RP123'),
+            ('csi','RP003'),  ('csi','RP023'),  ('csi','RP103'), ('csi','RP123'),
+            ('mpp','far'),    ('mpp','near'),   ('mmass','far'),  ('mmass','near'),
+            ('dmpp',''),      ('dmmass',''),
         ]:
 
         hpercat={}
 
         for tag in ['','matched']:
-            for x in files:
+            for cat in [base,'passPixandpassStrip']:
+                try:
+                    hpercat[ (tag,cat) ]=data.Get('%s_%s%s%s'%(d,cat,tag,pfix))
+                    hpercat[ (tag,cat) ].SetDirectory(0)
+                    hpercat[ (tag,cat) ].Sumw2()
+                    hpercat[ (tag,cat) ].GetYaxis().SetTitle('PDF')
+                except Exception as e:
+                    print e
+                    pass
+                                
+            #build the total
+            hpercat[(tag,'tot')]=hpercat[(tag,base)].Clone('tot_%s_%s'%(d,tag))
+            hpercat[(tag,'tot')].Add(hpercat[(tag,'passPixandpassStrip')])                
+            hpercat[(tag,'tot')].SetDirectory(0)
+            ntot=hpercat[(tag,'tot')].Integral()
 
-                for cat in [base,'passPixandpassStrip']:
-                    try:
-                        hpercat[ (x,tag,cat) ]=files[x].Get('%s_%s%s%s'%(d,cat,tag,pfix))
-                        hpercat[ (x,tag,cat) ].SetDirectory(0)
-                        hpercat[ (x,tag,cat) ].Sumw2()
-                        hpercat[ (x,tag,cat) ].GetYaxis().SetTitle('PDF')
-                    except:
-                        pass
-                
-                #remove overlap
-                #hpercat[(x,tag,base)].Add(hpercat[(x,tag,'passPixandpassStrip')],-1)
-                
-                #build the total
-                hpercat[(x,tag,'tot')]=hpercat[(x,tag,base)].Clone('tot_%s_%s'%(d,tag))
-                hpercat[(x,tag,'tot')].Add(hpercat[(x,tag,'passPixandpassStrip')])                
-                hpercat[(x,tag,'tot')].SetDirectory(0)
-                ntot=hpercat[(x,tag,'tot')].Integral()
-
-                continue
-                for cat in [base,'passPixandpassStrip']:
-                    hpercat[ (x,tag,cat) ].Scale(1./ntot)
+            continue
+            for cat in [base,'passPixandpassStrip']:
+                hpercat[ (tag,cat) ].Scale(1./ntot)
 
             if tag=='':
-                print base,hpercat[ ('data','',base) ].Integral()
-                print base+'passPixandpassStrip',hpercat[('data','','passPixandpassStrip')].Integral()
-                print '\t',hpercat[ ('data','',base) ].Integral()/hpercat[('data','','passPixandpassStrip')].Integral()
+                print base,hpercat[ ('',base) ].Integral()
+                print base+'passPixandpassStrip',hpercat[('','passPixandpassStrip')].Integral()
+                print '\t',hpercat[ ('',base) ].Integral()/hpercat[('','passPixandpassStrip')].Integral()
             continue
 
 
@@ -218,32 +212,12 @@ def drawPlots(data,mc,period):
             p.savelog=True
             p.range=[1e-3,1]
             p.doPoissonErrorBars=False
-            p.add(hpercat[('data',tag,base)],          title=baseTitle,     color=633,       isData=False, spImpose=False, isSyst=False)
-            p.add(hpercat[('data',tag,'passPixandpassStrip')], title='=2 px+strip', color="#fdc086", isData=False, spImpose=False, isSyst=False)
-            try:
-                hpercat[('mc',tag,'tot')].Scale(1./hpercat[('mc',tag,'tot')].Integral())
-                p.add(hpercat[('mc',tag,'tot')],               title='signal',   color=1,         isData=False, spImpose=True,  isSyst=False)
-            except:
-                pass
+            p.add(hpercat[(tag,base)],          title=baseTitle,     color=633,       isData=False, spImpose=False, isSyst=False)
+            p.add(hpercat[(tag,'passPixandpassStrip')], title='=2 px+strip', color="#fdc086", isData=False, spImpose=False, isSyst=False)
             p.show(outDir='./', lumi=37500, noStack=False)
 
         continue
-        #efficiency
-        effgr={}
-        for x,ms in [('data',20),('mc',24)]:
-            effgr[x]=ROOT.TGraphAsymmErrors()
-            effgr[x].Divide(hpercat[(x,'matched','tot')],hpercat[(x,'','tot')])
-            effgr[x].SetMarkerStyle(ms)
-            effgr[x].SetTitle(x)
-            effgr[x].SetName(x)
-        p=Plot('%s%s_eff_era%s'%(d,pfix,period),com='13 TeV')
-        p.ytit='Efficiency'
-        p.xtit=hpercat[(x,'matched','tot')].GetXaxis().GetTitle()
-        p.savelog=False
-        p.range=[1e-3,1]
-        #p.add(effgr['mc'],   title='MC',   color=ROOT.kCyan+1,  isData=False, spImpose=True,  isSyst=False)        
-        p.add(effgr['data'], title='Data', color=1,             isData=False, spImpose=True,  isSyst=False)        
-        p.show(outDir='./', lumi=37500, noStack=True)
+        
 
 ROOT.gROOT.SetBatch(True)
 ROOT.gStyle.SetOptStat(0)
@@ -253,11 +227,11 @@ if len(sys.argv)==1:
     for period in 'BCDEF':
         buildControlPlots(period,excSel=True)
         #buildControlPlots(period,excSel=False)
-elif len(sys.argv)==2:
-    arg=sys.argv[1]
-    buildControlPlots(arg,excSel=True)
-    #buildControlPlots(arg,excSel=False)
+#elif len(sys.argv)==2:
+#    arg=sys.argv[1]
+#    buildControlPlots(arg,excSel=True)
+#    #buildControlPlots(arg,excSel=False)
 else:
-    data,mc=sys.argv[1:3]
+    data=sys.argv[1] #,mc=sys.argv[1:3]
     for period in 'BDCEF':
-        drawPlots(ROOT.TFile.Open('%s%s.root'%(data,period)),ROOT.TFile.Open(mc),period)
+        drawPlots(ROOT.TFile.Open('%s%s.root'%(data,period)),'2017%s'%period)

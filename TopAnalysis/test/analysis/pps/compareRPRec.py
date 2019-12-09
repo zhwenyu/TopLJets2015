@@ -1,14 +1,14 @@
 import ROOT
 import os
 
-BASEDIR='/eos/cms/store/cmst3/user/psilva/ExclusiveAna/final/ab05162/Chunks/'
+BASEDIR='/eos/cms/store/cmst3/user/psilva/ExclusiveAna/final/2017_unblind/Chunks/'
 
 def getTree(fList,baseDir=BASEDIR):
     tree=ROOT.TChain('tree')
-    pudisc=ROOT.TChain('pudiscr')
+    #pudisc=ROOT.TChain('pudiscr')
     for f in fList: 
         tree.AddFile(baseDir+f)
-        pudisc.AddFile(baseDir+'/pudiscr/'+f)
+        #pudisc.AddFile(baseDir+'/pudiscr/'+f)
     tree.AddFriend(pudisc)
     return tree
 
@@ -27,7 +27,7 @@ def getHistos(t,name,title,lw,lc,ms):
         'hfmult_120':ROOT.TH1F('hfmult_120'+name,';PF multiplicity (HF);PDF',50,0,1000),
         'hfht_120':ROOT.TH1F('hfht_120'+name,';PF sum p_{T}(HF) [GeV];PDF',50,0,1000),
         'hfpz_120':ROOT.TH1F('hfpz_120'+name,';PF sum |p_{z}|(HF) [TeV];PDF',50,0,40),
-        'rfc_120':ROOT.TH1F('rfc_120'+name,';Random forest classifier;PDF',25,0,1),
+        #'rfc_120':ROOT.TH1F('rfc_120'+name,';Random forest classifier;PDF',25,0,1),
         }
     for key in histos.keys():
         for xangle in ['130','140','150']:
@@ -66,7 +66,7 @@ def getHistos(t,name,title,lw,lc,ms):
         histos['nj_%d'%xangle].Fill(t.nj+t.nb,w)
         histos['ht_%d'%xangle].Fill(t.htj+t.htb,w)
         histos['nrptk_%d'%xangle].Fill(t.nRPtk,w)
-        histos['rfc_%d'%xangle].Fill(getattr(t,'rfc_%d'%xangle),w)
+        #histos['rfc_%d'%xangle].Fill(getattr(t,'rfc_%d'%xangle),w)
         histos['hfmult_%d'%xangle].Fill(t.PFMultSumHF,w)
         histos['hfht_%d'%xangle].Fill(t.PFHtSumHF,w)
         histos['hfpz_%d'%xangle].Fill(t.PFPzSumHF/1000.,w)
@@ -95,12 +95,12 @@ c.SetTopMargin(0.05)
 c.SetLeftMargin(0.12)
 c.SetBottomMargin(0.1)
 
-for era in 'FDE':
-
-    zbfiles=[f for f in os.listdir(BASEDIR+'/pudiscr/') if '2017%s_ZeroBias'%era in f][0:2]
+for era in 'BCDEF':
+    
+    zbfiles=[f for f in os.listdir(BASEDIR) if '2017%s_ZeroBias'%era in f][0:2]
     zb=getTree(zbfiles)
 
-    mmfiles=[f for f in os.listdir(BASEDIR+'/pudiscr/') if '2017%s_DoubleMuon'%era in f][0:2]
+    mmfiles=[f for f in os.listdir(BASEDIR) if '2017%s_DoubleMuon'%era in f][0:2]
     mm=getTree(mmfiles)
     
     zbh  = getHistos(zb, 'zb', 'ZeroBias',                    lw=2,lc=ROOT.kGray,ms=1)

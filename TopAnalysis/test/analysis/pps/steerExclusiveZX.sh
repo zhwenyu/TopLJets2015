@@ -143,6 +143,8 @@ case $WHAT in
     TESTANA )        
         predin=/eos/cms/${outdir}/Chunks
         file=Data13TeV_2017D_DoubleEG_2.root
+        predin=/eos/cms/${signaldir}
+        file=Z_m_X_1200_xangle_120_2017_preTS2.root
         mix_file=/eos/cms/${anadir}/mixing/mixbank.pck
 
         predout=./mixtest
@@ -248,7 +250,7 @@ case $WHAT in
             "rpinhpurneg" "rpinhpurpos" 
             "rpinhpur120xangle" "rpinhpur130xangle" "rpinhpur140xangle" "rpinhpur150xangle" 
         )
-        channels=(mm ee a em)
+        channels=(mm) #mm ee a em)
         for ch in ${channels[@]}; do #mm ee a em; do
            plots=""
 
@@ -271,6 +273,10 @@ case $WHAT in
                     done
                 fi            
             done
+
+            if [[ $c == *"a"* ]]; then
+                commonOpts="${commonOpts} --normToData"
+            fi
 
             python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py \
                 ${commonOpts} --only ${plots} \
@@ -323,10 +329,20 @@ case $WHAT in
     INJECTSIGNAL )
 
         #afs needs to be used here...
+        mu=0.5
         for m in 600 800 1200 1400; do
-            python test/analysis/pps/prepareOptimScanCards.py -o ppvx_${githash}_${m}         -i /eos/cms/${anadir} --injectMass ${m} --just 2,10,36;
-            python test/analysis/pps/prepareOptimScanCards.py -o ppvx_${githash}_signed_${m}  -i /eos/cms/${anadir} --injectMass ${m} --just 2,10,36 --signed;
+            python test/analysis/pps/prepareOptimScanCards.py -o ppvx_${githash}_${m}_${mu}         -i /eos/cms/${anadir} --injectMass ${m} --injectMu ${mu} --just 2,10,46;
+            python test/analysis/pps/prepareOptimScanCards.py -o ppvx_${githash}_signed_${m}_${mu}  -i /eos/cms/${anadir} --injectMass ${m} --injectMu ${mu} --just 2,10,46 --signed;
         done
+
+        ;;
+
+    UNBLIND )
+
+        #the real thing
+        python test/analysis/pps/prepareOptimScanCards.py -o ppvx_${githash}_obs        --unblind  -i /eos/cms/${anadir} --just 2,10,46;
+        python test/analysis/pps/prepareOptimScanCards.py -o ppvx_${githash}_signed_obs --unblind  -i /eos/cms/${anadir}  --just 2,10,46 --signed;
+        
 
         ;;
 
@@ -370,19 +386,20 @@ case $WHAT in
             pdir=/eos/cms/${outdir}/bkg_ptll${pt}
             odir=${wwwdir}/bkg/emu_ptll${pt}
             mkdir -p ${odir}
-            #cp ${pdir}/*.{png,pdf,dat} ${odir}
-            #cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${odir}
+            cp ${pdir}/*.{png,pdf,dat} ${odir}
+            cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${odir}
         done
 
         #statistical analysis
         for d in ppvx_${githash} ppvx_${githash}_signed; do
             odir=${wwwdir}/stat/${d}
             mkdir -p ${odir}
-            cp /eos/cms/${anadir}/${d}/* ${odir}
-            cp /eos/cms/${anadir}/${d}/limits* ${odir}
-            cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${odir}
+            #cp /eos/cms/${anadir}/${d}/* ${odir}
+            #cp /eos/cms/${anadir}/${d}/limits* ${odir}
+            #cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${odir}
         done
-        cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}/stat
+        #cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}/stat
+
         ;;
 
 
@@ -392,6 +409,8 @@ case $WHAT in
         echo ""
         echo "This is a printout of additional scripts used for cross checks or specific plots"
         echo "Scripts can be found in ${scriptDir}"
+        echo "[Additional supporting plots]"
+        echo "python test/analysis/pps/compareNvtx.py"
         echo ""
         echo "[Display fit shapes]"
         echo "python ${scriptDir}/showFitShapes.py ppvx_${githash}/optim_1 1200 z"
@@ -399,7 +418,7 @@ case $WHAT in
         echo "[Signal injection studies]"
         esStr=""
         for m in 600 800 1200 1400; do
-            resStr="${resStr} PPgX:${m}:ppvx_${githash}_${m}/optim_2 PPzX:${m}:ppvx_${githash}_${m}/optim_10"
+            resStr="${resStr} PPgX:${m}:ppvx_${githash}_${m}_0.5/optim_2 PPzX:${m}:ppvx_${githash}_${m}_0.5/optim_10"
         done
         odir=${wwwdir}/stat/ppvx_${githash}
         echo "python ${scriptDir}/drawPvalCurve.py ${resStr}"
@@ -410,7 +429,19 @@ case $WHAT in
         echo "python ${scriptDir}/drawPvalCurve.py ${resStr}"
         echo "mv *.{png,pdf} ${odir}"
         echo "mv limits*root ${odir}"
-        echo""
+        echo ""
+        echo "[High pT version]"
+        odir=${wwwdir}/stat/ppvx_${githash}/highpt
+        echo "python ${scriptDir}/drawPvalCurve.py PPzX:0:ppvx_${githash}/optim_46"
+        echo "mkdir -p ${odir}"
+        echo "mv *.{png,pdf} ${odir}"
+        echo "mv limits*root ${odir}"
+        echo ""
+        echo "[Limit comparison]"
+        odir=${wwwdir}/stat/ppvx_${githash}
+        echo "python ${scriptDir}/compareLimits.py 'baseline':${odir}/limits_PPzX_1200.root 'high p_{T}':${odir}/highpt/limits_PPzX_0.root '#eta signed':${odir}_signed/limits_PPzX_1200.root"
+        echo "mv limitcomp* ${odir}"
+        echo ""
         ;;
     
 
@@ -452,10 +483,6 @@ case $WHAT in
         echo "queue chunk matching (${predin}/*.root)" >> $condor_prep
         condor_submit $condor_prep
         ;;
-
-
-
-
 
     PLOTANAPERERA )
 

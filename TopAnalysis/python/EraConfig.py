@@ -5,21 +5,26 @@ def getEraConfiguration(era,isData):
     """ defines global tags, JEC/R corrections, etc. depending on the era """
 
     globalTags = {
-        'era2016':('94X_mcRun2_asymptotic_v3', '94X_dataRun2_v10'),
-        'era2017':('94X_mc2017_realistic_v17', '94X_dataRun2_v11')
+        'era2016':('94X_mcRun2_asymptotic_v3',       '94X_dataRun2_v10'),
+        'era2017':('94X_mc2017_realistic_v17',       '94X_dataRun2_v11'),
+        'era2018':('102X_upgrade2018_realistic_v19', '102X_dataRun2_v11'),
         }
     jecFiles    = {
         'era2016':('Summer16_07Aug2017_V11_MC',   'Summer16_07Aug2017All_V11_DATA', 'Summer16_07Aug2017_V11_MC_UncertaintySources_AK4PFchs'),
-        'era2017':('Fall17_17Nov2017_V32_94X_MC', 'Fall17_17Nov2017_V32_94X_DATA',  'Fall17_17Nov2017_V32_MC_UncertaintySources_AK4PFchs')
+        'era2017':('Fall17_17Nov2017_V32_94X_MC', 'Fall17_17Nov2017_V32_94X_DATA',  'Fall17_17Nov2017_V32_MC_UncertaintySources_AK4PFchs'),
+        'era2018':(),
         }
     jerFiles    = {
         'era2016':('Summer16_25nsV1_MC',         'Summer16_25nsV1_DATA'),
         'era2017':('Summer16_25nsV1_MC',         'Summer16_25nsV1_DATA'),
+        'era2018':(),
         }
     muonFiles   = {
         'era2016':'RoccoR2016.txt',
-        'era2017':'RoccoR2017.txt'
+        'era2017':'RoccoR2017.txt',
+        'era2018':,
         }
+
     globalTag = globalTags[era][isData]
     jecFile   = jecFiles[era][isData]
     jecTag    = '_'.join( jecFile.split('_')[0:-1] )

@@ -14,7 +14,7 @@ CH_DICT           = {'169':'zmm','121':'zee','22':'g'}
 CH_TITLE_DICT     = {'169':'Z#rightarrow#mu#mu','121':'Z#rightarrowee','22':'#gamma'}
 
 
-def smoothMissingMass(h,smoothRanges=[(-300,   300,  'pol2'),
+def smoothMissingMass(h,smoothRanges=[#(-300,   300,  'pol2'),
                                       ( 1500,  2500, 'gaus'),
                                       (-2500, -1500, 'gaus')]):
 
@@ -150,7 +150,7 @@ def fillBackgroundTemplates(opt):
         h=data.GetHistogram()
         totalBkg[icat]=h.Integral()
         if opt.unblind:
-            data_obs=h.GetHistogram().Clone('data_obs_'+catName)
+            data_obs=h.Clone('data_obs_'+catName)
             data_obs.SetDirectory(0)
         h.Reset('ICE')
 
@@ -351,13 +351,15 @@ def datacardTask(args):
     setattr(opt,'chTag','%s_a%d'%(CH_DICT[ch],xangle))
     setattr(opt,'chTitle',CH_TITLE_DICT[ch])
     setattr(opt,'presel','cat==%s && xangle==%d && %s'%(ch,xangle,opt.preselZ))
+    
     boson='Z'
     if ch=='22':
         boson='gamma'
-        setattr(opt,'presel','cat==%s && xangle==%d && %s'%(ch,xangle,opt.preselGamma))
-
+        setattr(opt,'presel','cat==%s && xangle==%d && %s'%(ch,xangle,opt.preselGamma))        
+        
     #start the output
-    shapesURL=os.path.join(opt.output,'shapes_%s_a%d.root'%(ch,xangle))
+    outName='shapes_%s_a%d.root'%(ch,xangle)
+    shapesURL=os.path.join(opt.output,outName)
     fOut=ROOT.TFile.Open(shapesURL,'RECREATE')
 
     #define background templates
@@ -384,7 +386,7 @@ def datacardTask(args):
             #if blinded add signal pseudo-data 
             if not opt.unblind and opt.injectMass==m:
                 for i in range(len(sigNomTemplates[key])):
-                    data_templates[i].Add(sigNomTemplates[key][i])
+                    data_templates[i].Add(sigNomTemplates[key][i],opt.injectMu)
                     sigNomTemplates[key][i].Delete() #no longer needed
         
     #now write the data
@@ -419,6 +421,10 @@ def main(args):
                         dest='injectMass',
                         default=None,
                         help='mass to inject in pseudo-data [%default]')
+    parser.add_argument('--injectMu',
+                        dest='injectMu',
+                        default=1.0,
+                        help='signal strength of the mass to inject in pseudo-data [%default]')
     parser.add_argument('--preselZ',
                         dest='preselZ', 
                         default='l1pt>30 && l2pt>20 && bosonpt>50',
@@ -486,10 +492,11 @@ def main(args):
     if len(opt.categs) : 
         print '\t will categorize in:',opt.categs
     if opt.unblind:
-        print '\t Analysis will be unblinded'
+        print '\t Analysis will be unblinded...'
+        print '\t ...how sure are you of what you did?'
     else:
         print '\t Pseudo-data built from background expectations'
-        print '\t Signal injected from mass=',opt.injectMass
+        print '\t Signal injected from mass=',opt.injectMass,'with mu=',opt.injectMu
 
     #prepare output
     os.system('mkdir -p %s'%opt.output)
@@ -498,7 +505,7 @@ def main(args):
     for ch in CH_DICT.keys():
         for angle in VALIDLHCXANGLES:
             task_list.append( (ch,angle,copy.deepcopy(opt)) )
-            
+
     import multiprocessing as MP
     pool = MP.Pool(8)
     pool.map( datacardTask, task_list )

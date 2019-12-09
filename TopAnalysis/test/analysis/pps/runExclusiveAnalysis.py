@@ -275,7 +275,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,maxEvents=-1):
     if isSignal: summaryVars+='gencsi1:gencsi2:'
     for pfix in ['','syst']:
         summaryVars+='{0}csi1:{0}csi2:{0}nearcsi1:{0}nearcsi2:{0}mpp:{0}ypp:{0}pzpp:{0}mmiss:'.format(pfix)
-    summaryVars += 'mixType:'
+    summaryVars += 'mmissvup:mmissvdn:mixType:'
     summaryVars=summaryVars.split(':')[0:-1] #cut away last token
     nfail=[0,0,0]
     for i in xrange(0,nEntries):
@@ -631,9 +631,15 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,maxEvents=-1):
             passAtLeastOneSelection=False
 
             #check if nominal passes the selection and and info to the event
-            highPur      = passHighPurSelection(far_protons,boson)
-            ppSystem     = buildDiProton(far_protons)
-            mmassSystem  = buildMissingMassSystem(far_protons,boson)            
+            highPur     = passHighPurSelection(far_protons,boson)
+            ppSystem    = buildDiProton(far_protons)
+            mmassSystem = buildMissingMassSystem(far_protons,boson)            
+            
+            #vary boson energy scale
+            boson_up=boson*1.03
+            mmassSystem_vup = buildMissingMassSystem(far_protons,boson_up)            
+            boson_dn=boson*0.97
+            mmassSystem_vdn = buildMissingMassSystem(far_protons,boson_dn)            
             
             if highPur and mmassSystem:
                 passAtLeastOneSelection=True
@@ -659,7 +665,9 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,maxEvents=-1):
                 evSummary+=[0]*8
             
             #add information on the type of event (non-mix/mixed)
-            evSummary += [mixType]
+            evSummary += [ mmassSystem_vup.M() if mmassSystem_vup else 0.,
+                           mmassSystem_vdn.M() if mmassSystem_vdn else 0.,
+                           mixType]
 
             #if no selection passes the cuts ignore its summary
             if not passAtLeastOneSelection: continue

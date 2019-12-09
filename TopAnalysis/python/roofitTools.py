@@ -1,6 +1,29 @@
 import ROOT
 import os
 
+#import numpy as np
+#
+#def chiSquare(hobs,href,hsysts):
+#    
+#    nbins=hobs.GetNbinsX()
+#    statCov=np.zeros(nbins,nbins)
+#    systCov=[ np.zeros(nbins,nbins) for is in range(len(hsysts)) ]
+#    diff=np.zeros(nbins)
+#
+#    for xbin in range(nbins):
+#        
+#        statCov[xbin][xbin]+=(hobs.GetBinError(xbin+1))**2
+#
+#        for ybin in range(nbins):
+#
+#            if ybin==xbin:
+#                statCov[xbin][xbin] += (href.GetBinError(xbin+1))**2
+#                diff[xbin]=hobs.GetBinContent(xbin+1)-href.GetBinContent(xbin+1)
+                
+        
+                
+
+
 def showFitResult(w,varDesc,data,pdfCompList,extraText,outName,xran=None):
 
     """ 

@@ -259,14 +259,19 @@ def showLimits(results,name,title,lumi,results_obs=None):
         c.SaveAs('%s_log.%s'%(name,ext))
 
 
-def showShapes(resultsDir,name,title,mass,boson,r95,sig,lumi,showPseudoData=True,showAllBkgs=True):
+def showShapes(resultsDir,name,title,mass,boson,r95,sig,lumi,plotData=True,showPseudoData=True,showAllBkgs=True):
 
     """ show the shapes corresponding to a given analysis """
     
     shapeFiles=[os.path.join(resultsDir,f) for f in os.listdir(resultsDir) if 'shapes_' in f and '.root' in f]
     for f in shapeFiles:
 
-        angle=int(re.search('_a(\d+)',f).group(1))
+        try:
+            angle=int(re.search('_a(\d+)',f).group(1))
+        except:
+            print 'No angle could be parsed, assuming this is an inclusive analysis'
+            angle=None
+
         fIn=ROOT.TFile.Open(f)
 
         #check consistency of the file with the boson to plot
@@ -284,40 +289,71 @@ def showShapes(resultsDir,name,title,mass,boson,r95,sig,lumi,showPseudoData=True
 
         for icat in range(2):
 
-            bkgH       = fIn.Get('bkg_%s_a%d_%d'%(v,angle,icat))
-            fidsigH    = fIn.Get('fidsig_%s_a%d_%d_m%d'%(v,angle,icat,mass))
-            fidsigH.Scale(5)
-            outfidsigH = fIn.Get('outfidsig_%s_a%d_%d_m%d'%(v,angle,icat,mass))
-            outfidsigH.Scale(5)
-            dataH = fIn.Get('data_obs_%s_a%d_%d'%(v,angle,icat))
-            dataH.Reset('ICE')
-            for iev in range(ROOT.gRandom.Poisson( bkgH.Integral()+outfidsigH.Integral()+fidsigH.Integral() ) ):
-                dataH.Fill( bkgH.GetRandom() )
+            if angle:
+                bkgH       = fIn.Get('bkg_%s_a%d_%d'%(v,angle,icat))
+                fidsigH    = fIn.Get('fidsig_%s_a%d_%d_m%d'%(v,angle,icat,mass))
+                outfidsigH = fIn.Get('outfidsig_%s_a%d_%d_m%d'%(v,angle,icat,mass))
+                dataH = fIn.Get('data_obs_%s_a%d_%d'%(v,angle,icat))
+            else:
+                bkgH       = fIn.Get('bkg_%s_%d'%(v,icat))
+                fidsigH    = fIn.Get('fidsig_%s_%d_m%d'%(v,icat,mass))
+                outfidsigH = fIn.Get('outfidsig_%s_%d_m%d'%(v,icat,mass))
+                dataH = fIn.Get('data_obs_%s_%d'%(v,icat))
+
+            print bkgH,fidsigH,outfidsigH,dataH
+
+            try:
+                fidsigH.Scale(5)
+                outfidsigH.Scale(5)
+            except:
+                fidsigH=None
+                outfidsigH=None
+
+
+            if showPseudoData:
+                dataH.Reset('ICE')
+                nexp=bkgH.Integral()
+                if fidsigH: nexp+=bkgH.Integral()
+                if outfidsigH: nexp+=outfidsigH.Integral()
+                for iev in range( ROOT.gRandom.Poisson( nexp ) ):
+                    dataH.Fill( bkgH.GetRandom() )
             try:
                 
                 #main shapes
-                p=Plot('%s_%s_a%d_cat%d'%(name,v,angle,icat))
+                if angle:
+                    p=Plot('%s_%s_a%d_cat%d'%(name,v,angle,icat))
+                else:
+                    p=Plot('%s_%s_inc_cat%d'%(name,v,icat))
+
                 p.xtit='Missing mass [GeV]'
                 p.ytit='Events'
-                p.add(fidsigH,            title='#scale[0.5]{5x}'+title+'#scale[0.8]{(%d)}'%mass, color=ROOT.TColor.GetColor('#fdc086'), isData=False, spImpose=False, isSyst=False)
+                if fidsigH:
+                    p.add(fidsigH,            title='#scale[0.5]{5x}'+title+'#scale[0.8]{(%d)}'%mass, color=ROOT.TColor.GetColor('#fdc086'), isData=False, spImpose=False, isSyst=False)
     
                 if showAllBkgs:
-                    p.add(outfidsigH,         title='#scale[0.5]{5x}non-fiducial',  color=ROOT.TColor.GetColor('#a6cee3'), isData=False, spImpose=False, isSyst=False)
+                    if outfidsigH:
+                        p.add(outfidsigH,         title='#scale[0.5]{5x}non-fiducial',  color=ROOT.TColor.GetColor('#a6cee3'), isData=False, spImpose=False, isSyst=False)
                     p.add(bkgH,               title='background',    color=ROOT.TColor.GetColor('#1f78b4'), isData=False, spImpose=False, isSyst=False)
                 else:
                     allBkg=bkgH.Clone('allbkg')
-                    allBkg.Add(outfidsigH)
+                    if outfidsigH : 
+                        allBkg.Add(outfidsigH)
                     p.add(allBkg,               title='background',    color=ROOT.TColor.GetColor('#1f78b4'), isData=False, spImpose=False, isSyst=False)
 
-                if showPseudoData:
-                    p.add(dataH,              title='pseudo-data',   color=1, isData=True, spImpose=False, isSyst=False)
-                p.add(fidsigH.Clone(),    title=title+'#scale[0.8]{(%d)}'%mass, color=ROOT.TColor.GetColor('#fdc086'), isData=False, spImpose=True,  isSyst=False)
+                if plotData:
+                    dtitle='pseudo-data' if showPseudoData else 'Data'
+                    p.add(dataH, title=dtitle,   color=1, isData=True, spImpose=False, isSyst=False)
+                if fidsigH:
+                    p.add(fidsigH.Clone(),    title=title+'#scale[0.8]{(%d)}'%mass, color=ROOT.TColor.GetColor('#fdc086'), isData=False, spImpose=True,  isSyst=False)
 
-                if showAllBkgs:
+                if showAllBkgs and outfidsigH:
                     p.add(outfidsigH.Clone(), title='non-fiducial',  color=ROOT.TColor.GetColor('#a6cee3'), isData=False, spImpose=True,  isSyst=False)
                 p.ratiorange=[0.68,1.32]
                 
-                extraText='%s, %d#murad\\sub-category %d'%(channel,angle,icat)
+                if angle:
+                    extraText='%s, %d#murad\\sub-category %d'%(channel,angle,icat)
+                else:
+                    extraText='%s, inclusive\\sub-category %d'%(channel,icat)
                 if r95: extraText += '\\#mu_{95}(exp.)<%3.3f'%r95
                 if sig: extraText += '\\S(exp.)=%3.3f'%sig
                 p.show('./',lumi*1000,extraText=extraText)
@@ -325,7 +361,10 @@ def showShapes(resultsDir,name,title,mass,boson,r95,sig,lumi,showPseudoData=True
                 colors=[ROOT.kGreen+1,ROOT.kAzure+3,ROOT.kRed+2]
 
                 #background systs
-                p=Plot('%s_%s_a%d_cat%d_bkgunc'%(name,v,angle,icat))
+                if angle:
+                    p=Plot('%s_%s_a%d_cat%d_bkgunc'%(name,v,angle,icat))
+                else:
+                    p=Plot('%s_%s_inc_cat%d_bkgunc'%(name,v,icat))
                 p.noErrorsOnRatio=True
                 p.doPoissonErrorBars=False
                 p.xtit='Missing mass [GeV]'
@@ -334,44 +373,74 @@ def showShapes(resultsDir,name,title,mass,boson,r95,sig,lumi,showPseudoData=True
                 ic=0
                 for syst,title in [('Up','Pileup spec.'),
                                    ('SingleDiffUp','Single diff.')]:
-                    p.add(fIn.Get('bkg_%s_a%d_%d_bkgShape%s'%(v,angle,icat,syst)), title=title, color=colors[ic], isData=False, spImpose=False, isSyst=False)
+                    if angle:
+                        p.add(fIn.Get('bkg_%s_a%d_%d_bkgShape%s'%(v,angle,icat,syst)), title=title, color=colors[ic], isData=False, spImpose=False, isSyst=False)
+                    else:
+                        p.add(fIn.Get('bkg_%s_inc_%d_bkgShape%s'%(v,icat,syst)), title=title, color=colors[ic], isData=False, spImpose=False, isSyst=False)
                     ic+=1
                 p.ratiorange=[0.76,1.24]
-                p.show('./',lumi,noStack=True,extraText='%s, %d#murad'%(channel,angle))
+                if angle:
+                    extraText='%s, %d#murad'%(channel,angle)
+                else:
+                    extraText='%s, inclusive'%(channel)
+                p.show('./',lumi,noStack=True,extraText=extraText)
 
                 #signal systs
-                p=Plot('%s_%s_a%d_cat%d_sigunc'%(name,v,angle,icat))
-                fidsigH.Scale(1./5.)
-                p.doPoissonErrorBars=False
-                p.noErrorsOnRatio=True
-                p.xtit='Missing mass [GeV]'
-                p.ytit='Events'
-                p.add(fidsigH, title='signal', color=1, isData=True,spImpose=False, isSyst=False)
-                ic=0
-                for syst,title in [('ShapeUp','Pileup spec.'),
-                                   ('CalibUp','Time dependence'),
-                                   ('PzModelUp','p_{z}(pp)')]:
-                    p.add(fIn.Get('fidsig_%s_a%d_%d_m%d_sig%s'%(v,angle,icat,mass,syst)), title=title, color=colors[ic], isData=False, spImpose=False, isSyst=False)
-                    ic+=1
-                p.ratiorange=[0.76,1.24]
-                p.show('./',lumi,noStack=True,extraText='%s, %d#murad\\m_{X}=%d GeV'%(channel,angle,mass))
+                if fidsigH:
+                    if angle:
+                        p=Plot('%s_%s_a%d_cat%d_sigunc'%(name,v,angle,icat))
+                    else:
+                        p=Plot('%s_%s_inc_cat%d_sigunc'%(name,v,icat))
+                    fidsigH.Scale(1./5.)
+                    p.doPoissonErrorBars=False
+                    p.noErrorsOnRatio=True
+                    p.xtit='Missing mass [GeV]'
+                    p.ytit='Events'
+                    p.add(fidsigH, title='signal', color=1, isData=True,spImpose=False, isSyst=False)
+                    ic=0
+                    for syst,title in [('ShapeUp','Pileup spec.'),
+                                       ('CalibUp','Time dependence'),
+                                       ('PzModelUp','p_{z}(pp)')]:
+                        if angle:
+                            p.add(fIn.Get('fidsig_%s_a%d_%d_m%d_sig%s'%(v,angle,icat,mass,syst)), title=title, color=colors[ic], isData=False, spImpose=False, isSyst=False)
+                        else:
+                            p.add(fIn.Get('fidsig_%s_%d_m%d_sig%s'%(v,icat,mass,syst)), title=title, color=colors[ic], isData=False, spImpose=False, isSyst=False)
+                        ic+=1
+                    p.ratiorange=[0.76,1.24]
+                    if angle:
+                        extraText='%s, %d#murad\\m_{X}=%d GeV'%(channel,angle,mass)
+                    else:
+                        extraText='%s, inclusive\\m_{X}=%d GeV'%(channel,mass)
+                    p.show('./',lumi,noStack=True,extraText=extraText)
 
                 #out fiducial signal systs
-                p=Plot('%s_%s_a%d_cat%d_outfidsigunc'%(name,v,angle,icat))
-                outfidsigH.Scale(1./5.)
-                p.doPoissonErrorBars=False
-                p.noErrorsOnRatio=True
-                p.xtit='Missing mass [GeV]'
-                p.ytit='Events'
-                p.add(outfidsigH, title='out-fid. signal', color=1, isData=True,spImpose=False, isSyst=False)
-                ic=0
-                for syst,title in [('ShapeUp','Pileup spec.'),
-                                   ('CalibUp','Time dependence'),
-                                   ('PzModelUp','p_{z}(pp)')]:
-                    p.add(fIn.Get('outfidsig_%s_a%d_%d_m%d_sig%s'%(v,angle,icat,mass,syst)), title=title, color=colors[ic], isData=False, spImpose=False, isSyst=False)
-                    ic+=1
-                p.ratiorange=[0.76,1.24]
-                p.show('./',lumi,noStack=True,extraText='%s, %d#murad\\m_{X}=%d GeV'%(channel,angle,mass))
+                if outfidsigH:
+                    if angle:
+                        p=Plot('%s_%s_a%d_cat%d_outfidsigunc'%(name,v,angle,icat))
+                    else:
+                        p=Plot('%s_%s_inc_cat%d_outfidsigunc'%(name,v,icat))
+                    outfidsigH.Scale(1./5.)
+                    p.doPoissonErrorBars=False
+                    p.noErrorsOnRatio=True
+                    p.xtit='Missing mass [GeV]'
+                    p.ytit='Events'
+                    p.add(outfidsigH, title='out-fid. signal', color=1, isData=True,spImpose=False, isSyst=False)
+                    ic=0
+                    for syst,title in [('ShapeUp','Pileup spec.'),
+                                       ('CalibUp','Time dependence'),
+                                       ('PzModelUp','p_{z}(pp)')]:
+                        if angle:
+                            p.add(fIn.Get('outfidsig_%s_a%d_%d_m%d_sig%s'%(v,angle,icat,mass,syst)), title=title, color=colors[ic], isData=False, spImpose=False, isSyst=False)
+                        else:
+                            p.add(fIn.Get('outfidsig_%s_%d_m%d_sig%s'%(v,icat,mass,syst)), title=title, color=colors[ic], isData=False, spImpose=False, isSyst=False)
+                        ic+=1
+
+                    p.ratiorange=[0.76,1.24]
+                    if angle:
+                        extraText='%s, %d#murad\\m_{X}=%d GeV'%(channel,angle,mass)
+                    else:
+                        extraText='%s, inclusive\\m_{X}=%d GeV'%(channel,mass)
+                    p.show('./',lumi,noStack=True,extraText=extraText)
 
 
             except Exception as e:
@@ -395,6 +464,9 @@ def main():
     if len(sys.argv)>2:
         pickOptimPt=int(sys.argv[2])
         plotPFix='_pt%d'%pickOptimPt
+    showPseudoData=True
+    if len(sys.argv)>3:
+        showPseudoData=bool(sys.argv[3])
    
     results={'z':{},'g':{}}
     toCheck=[]
@@ -460,6 +532,8 @@ def main():
                             title=title,
                             mass=m,
                             boson=v,
+                            plotData=True,
+                            showPseudoData=False,
                             r95=limits[0],
                             sig=limits[5],
                             lumi=lumi )

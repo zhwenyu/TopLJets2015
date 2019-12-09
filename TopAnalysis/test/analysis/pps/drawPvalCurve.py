@@ -100,6 +100,8 @@ def main():
         title=key
         title=title.replace('g','#gamma')
         title=title.replace('z','Z')
+        title=title.replace('mm','(#mu#mu)')
+        title=title.replace('ee','(ee)')
         title=title.replace('PP','pp#rightarrowpp')
         title +='(%d)'%mass
         grpval[-1].SetTitle(title)

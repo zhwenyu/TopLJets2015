@@ -30,6 +30,10 @@ def main(args):
                         dest='injectMass',
                         default=None,
                         help='mass to inject in pseudo-data [%default]')
+    parser.add_argument('--injectMu',
+                        dest='injectMu',
+                        default=1.0,
+                        help='signal strength of the mass to inject in pseudo-data [%default]')
     parser.add_argument('--signed',
                         dest='signed',
                         default=False,
@@ -84,6 +88,9 @@ def main(args):
                 script.write('extraOpt=--signed\n')
             else:
                 script.write('extraOpt=""\n')
+            if opt.unblind:
+                print 'You\'re submitting unblinded jobs - how sure are you of what you did?'
+                script.write('extraOpt="${extraOpt} --unblind"\n')
 
             script.write('output=%s\n'%os.path.abspath(workDir))     
             script.write('\n')
@@ -164,7 +171,7 @@ def main(args):
         condor.write("request_cpus = 4\n")
         for i in n2sub:
             for mass in [600,660,720,780,800,840,900,960,1000,1020,1080,1140,1200,1260,1320,1380,1400,1440,1500,1560,1600]:
-                for boson in ['z','g']: #,'zmm','zee']:
+                for boson in ['z','g','zmm','zee']:
                     condor.write("point=%d\n"%i)
                     condor.write("arguments=%d %s\n"%(mass,boson))
                     condor.write("queue 1\n")

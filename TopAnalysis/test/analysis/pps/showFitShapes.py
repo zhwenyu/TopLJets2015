@@ -20,5 +20,6 @@ showShapes(resultsDir=sys.argv[1],
            r95=None,
            sig=None,
            lumi=lumi,
+           plotData=True,
            showPseudoData=False,
            showAllBkgs=True) #False)
