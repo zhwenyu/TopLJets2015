@@ -99,11 +99,11 @@ def main():
         grpval[-1].SetName(key+'_%d'%i)
         title=key
         title=title.replace('g','#gamma')
+        title=title.replace('zmm','Z(#mu#mu)')
+        title=title.replace('zee','Z(ee)')
         title=title.replace('z','Z')
-        title=title.replace('mm','(#mu#mu)')
-        title=title.replace('ee','(ee)')
         title=title.replace('PP','pp#rightarrowpp')
-        title +='(%d)'%mass
+        if mass !=0 : title +='(%d)'%mass
         grpval[-1].SetTitle(title)
         grpval[-1].SetLineWidth(2)
 

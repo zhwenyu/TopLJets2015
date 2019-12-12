@@ -365,7 +365,7 @@ void MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
         ev_.ng++;
         
         //gen level selection
-        if(genJet->pt()>25 && fabs(genJet->eta())<2.5)
+        if(genJet->pt()>15) // && fabs(genJet->eta())<2.5)
           {
             ngjets++;	
             if(abs(genJet->pdgId())==5) ngbjets++;
@@ -420,6 +420,8 @@ void MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
   ev_.g_sumPVChPt=0; 
   ev_.g_sumPVChPz=0; 
   ev_.g_sumPVChHt=0; 
+  ev_.ngtop=0; 
+
   edm::Handle<pat::PackedGenParticleCollection> genParticles;
   iEvent.getByToken(genParticlesToken_,genParticles);
   LorentzVector pvP4(0,0,0,0);
@@ -427,6 +429,7 @@ void MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
     for (size_t i = 0; i < genParticles->size(); ++i)
       {
         const pat::PackedGenParticle & genIt = (*genParticles)[i];
+
         if(genIt.pt()<0.5) continue;
         if(genIt.charge()==0) continue;
         ev_.g_nchPV++;
@@ -440,7 +443,6 @@ void MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
   //Bhadrons and top quarks (lastCopy)
   edm::Handle<reco::GenParticleCollection> prunedGenParticles;
   iEvent.getByToken(prunedGenParticlesToken_,prunedGenParticles);
-  ev_.ngtop=0; 
   if(prunedGenParticles.isValid()){
     for (size_t i = 0; i < prunedGenParticles->size(); ++i)
       {
@@ -449,7 +451,9 @@ void MiniAnalyzer::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
         bool outGoingProton( absid==2212 && genIt.status()==1 && fabs(genIt.eta())>4.7 );
         bool topLastCopy(absid==6 && genIt.isLastCopy());
         bool wLastCopy(absid==24 && genIt.isLastCopy());
-        if(outGoingProton || topLastCopy)
+        bool isHardProcess(genIt.isHardProcess() || genIt.statusFlags().fromHardProcess()|| genIt.statusFlags().fromHardProcessBeforeFSR());
+
+        if(outGoingProton || topLastCopy || (isHardProcess  && (absid==22 || absid<=6 || (absid>=11 && absid<=16))) )
           {
             ev_.gtop_id[ ev_.ngtop ]  = genIt.pdgId();
             ev_.gtop_pt[ ev_.ngtop ]  = genIt.pt();

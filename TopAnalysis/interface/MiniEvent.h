@@ -25,8 +25,8 @@ struct MiniEvent_t
   Int_t g_id[500],g_bid[500],g_tagCtrs[500];
   Bool_t g_isSemiLepBhad[500];
   Float_t g_pt[500],g_eta[500],g_phi[500],g_m[500],g_xb[500],g_xbp[500]; 
-  Int_t gtop_id[25];
-  Float_t gtop_pt[25],gtop_eta[25],gtop_phi[25],gtop_m[25]; 
+  Int_t gtop_id[50];
+  Float_t gtop_pt[50],gtop_eta[50],gtop_phi[50],gtop_m[50]; 
   Int_t g_nchPV;
   Float_t g_sumPVChPt,g_sumPVChPz,g_sumPVChHt;
 

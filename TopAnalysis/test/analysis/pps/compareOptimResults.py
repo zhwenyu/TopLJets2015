@@ -350,10 +350,11 @@ def showShapes(resultsDir,name,title,mass,boson,r95,sig,lumi,plotData=True,showP
                     p.add(outfidsigH.Clone(), title='non-fiducial',  color=ROOT.TColor.GetColor('#a6cee3'), isData=False, spImpose=True,  isSyst=False)
                 p.ratiorange=[0.68,1.32]
                 
+                subcatName='low pileup' if icat==0 else 'high pileup'
                 if angle:
-                    extraText='%s, %d#murad\\sub-category %d'%(channel,angle,icat)
+                    extraText='%s, %d#murad\\%s'%(channel,angle,subcatName)
                 else:
-                    extraText='%s, inclusive\\sub-category %d'%(channel,icat)
+                    extraText='%s, inclusive\\%s'%(channel,subcatName)
                 if r95: extraText += '\\#mu_{95}(exp.)<%3.3f'%r95
                 if sig: extraText += '\\S(exp.)=%3.3f'%sig
                 p.show('./',lumi*1000,extraText=extraText)

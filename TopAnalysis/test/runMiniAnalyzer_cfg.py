@@ -99,6 +99,8 @@ process.load("GeneratorInterface.RivetInterface.mergedGenParticles_cfi")
 process.load("GeneratorInterface.RivetInterface.genParticles2HepMC_cfi")
 process.genParticles2HepMC.genParticles = cms.InputTag("mergedGenParticles")
 process.load("GeneratorInterface.RivetInterface.particleLevel_cfi") 
+process.particleLevel.jetMinPt=cms.double(15.)
+process.particleLevel.jetMaxEta=cms.double(5.)
 
 # particle level definitions
 process.load('SimGeneral.HepPDTESSource.pythiapdt_cfi')
@@ -134,7 +136,8 @@ process.source = cms.Source("PoolSource",
                             duplicateCheckMode = cms.untracked.string('noDuplicateCheck') 
                             )
 if '2016' in options.era:
-      process.source.fileNames = cms.untracked.vstring('/store/mc/RunIISummer16MiniAODv3/TT_TuneCUETP8M2T4_PSweights_13TeV-powheg-pythia8/MINIAODSIM/94X_mcRun2_asymptotic_v3-v1/100000/B28E96ED-08A6-E911-8D2C-FA163EEC7BB7.root')
+      process.source.fileNames = cms.untracked.vstring('/store/mc/RunIISummer16MiniAODv3/GJets_SM_5f_TuneEE5C_EWK_13TeV-madgraph-herwigpp/MINIAODSIM/94X_mcRun2_asymptotic_v3-v1/80000/C8C51E09-5113-E911-978A-0025905A608A.root')
+      #/store/mc/RunIISummer16MiniAODv3/TT_TuneCUETP8M2T4_PSweights_13TeV-powheg-pythia8/MINIAODSIM/94X_mcRun2_asymptotic_v3-v1/100000/B28E96ED-08A6-E911-8D2C-FA163EEC7BB7.root
 
 if options.runOnData:
       if '2017' in options.era:
