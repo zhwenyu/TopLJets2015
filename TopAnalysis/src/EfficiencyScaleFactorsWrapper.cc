@@ -45,14 +45,16 @@ void EfficiencyScaleFactorsWrapper::init(TString era)
   scaleFactorsH_["g_id"]=(TH2 *)fIn->Get("EGamma_SF2D")->Clone();
   scaleFactorsH_["g_id"]->SetDirectory(0);
   fIn->Close();
-  
-  url=era+"/PixelSeed_ScaleFactors_2017.root";
-  gSystem->ExpandPathName(url);
-  fIn=TFile::Open(url);
-  TString gidForPSV(gid.Contains("MVA") ? "MVA" : gid);
-  scaleFactorsH_["g_psv"]=(TH2 *)fIn->Get(gidForPSV+"_ID")->Clone();
-  scaleFactorsH_["g_psv"]->SetDirectory(0);     
-  fIn->Close();
+
+  if(era_==2017){
+    url=era+"/PixelSeed_ScaleFactors_2017.root";
+    gSystem->ExpandPathName(url);
+    fIn=TFile::Open(url);
+    TString gidForPSV(gid.Contains("MVA") ? "MVA" : gid);
+    scaleFactorsH_["g_psv"]=(TH2 *)fIn->Get(gidForPSV+"_ID")->Clone();
+    scaleFactorsH_["g_psv"]->SetDirectory(0);     
+    fIn->Close();
+  }
 
   url=era+"/egammaEffi.txt_EGM2D.root";
   gSystem->ExpandPathName(url);
