@@ -140,13 +140,18 @@ void RunExclusiveZX(const TString in_fname,
     outVars[fvars[i]]=0.;
     ADDVAR(&(outVars[fvars[i]]),fvars[i],"F",outT);
   }
-  int nRPtk(0),RPid[50];
-  float RPfarcsi[50],RPnearcsi[50];
+  
+  int nProtons;
+  Bool_t isFarRPProton[50], isMultiRPProton[50], isPosRPProton[50];
+  Int_t protonRPid[50];
+  Float_t protonCsi[50];
   if(filename.Contains("Data13TeV")){
-    outT->Branch("nRPtk",&nRPtk,"nRPtk/i");
-    outT->Branch("RPid",RPid,"RPid[nRPtk]/i");
-    outT->Branch("RPfarcsi",RPfarcsi,"RPfarcsi[nRPtk]/F");
-    outT->Branch("RPnearcsi",RPnearcsi,"RPnearcsi[nRPtk]/F");
+    outT->Branch("nProtons",       &nProtons,        "nProtons/I");
+    outT->Branch("isFarRPProton",   isFarRPProton,   "isFarRPProton[nProtons]/O");
+    outT->Branch("isPosRPProton",   isPosRPProton,   "isPosRPProton[nProtons]/O");
+    outT->Branch("isMultiRPProton", isMultiRPProton, "isMultiRPProton[nProtons]/O");
+    outT->Branch("protonRPid",      protonRPid,      "protonRPid[nProtons]/I");
+    outT->Branch("protonCsi",       protonCsi,       "protonCsi[nProtons]/F");
   }
   outT->SetDirectory(fOut);
   
@@ -754,15 +759,9 @@ void RunExclusiveZX(const TString in_fname,
       outVars["PFChHtDiffHF"]   = fabs(ev.sumPFChHt[0]-ev.sumPFChHt[7]); 
      
       //fill data with roman pot information
-      nRPtk=0;
+      nProtons=0;
+      int multiIds(1),farIds(1);
       if (ev.isData) {
-        
-        //reset information
-        for(size_t irp=0; irp<50; irp++) { 
-          RPid[irp]=0; 
-          RPfarcsi[irp]=0; 
-          RPnearcsi[irp]=0; 
-        }
         
         try{
           const edm::EventID ev_id( ev.run, ev.lumi, ev.event );        
@@ -772,61 +771,20 @@ void RunExclusiveZX(const TString in_fname,
           outVars["lumiReco"]  = lhc_cond.luminosity.recorded;
           ht.fill("beamXangle", beamXangle, plotwgts, selCat);
           
-          if(beamXangle==120 || beamXangle==130 || beamXangle==140 || beamXangle==150) {
-            
-            std::vector< std::pair<int,float> > nearCsis;
-            std::map<int,int> ntks;
-            ntks[23]=0; ntks[123]=0;
+          if(beamXangle==120 || beamXangle==130 || beamXangle==140 || beamXangle==150) {           
+
+            nProtons=ev.nfwdtrk;
             for (int ift=0; ift<ev.nfwdtrk; ift++) {
-              if(ev.fwdtrk_method[ift]!=0) continue;
-            
-              const unsigned short pot_raw_id = ev.fwdtrk_pot[ift];
-              float xi=ev.fwdtrk_xi[ift];
-              if (pot_raw_id!=3 && pot_raw_id!=23 && pot_raw_id!=103 && pot_raw_id!=123) continue;              
-              if (pot_raw_id==23 || pot_raw_id==123) {
-                RPid[nRPtk]=pot_raw_id;
-                RPfarcsi[nRPtk]=xi;
-                RPnearcsi[nRPtk]=0;              
-                nRPtk++;
-                
-                //monitor track multiplicity and csi values
-                if(ntks.find(pot_raw_id)==ntks.end()) ntks[pot_raw_id]=0;
-
-                ntks[pot_raw_id]++;
-                ht.fill("csirp",xi,plotwgts, Form("%s_%d",selCat.Data(),pot_raw_id));
-                
-              }
-              else{
-                //save near detector info to match to pixel tracks
-                nearCsis.push_back( std::pair<int,float>(pot_raw_id,xi) );
-              }
-            }
-            
-            //now try to find the best matches for strip in pixels
-            for(auto stk : nearCsis) {
-              
-              int matchTk(-1);
-              float minDcsi=1;
-              for(int itk=0; itk<nRPtk; itk++) {
-                
-                //require on the same side of the beam pipe
-                if( !( (RPid[itk]==123 && stk.first==103) || (RPid[itk]==23 && stk.first==3) ) )
-                  continue;
-              
-                float dcsi=fabs(stk.second-RPfarcsi[itk]);
-                if(dcsi>minDcsi) continue;
-                matchTk=itk;
-                minDcsi=dcsi;                
-              }
-              
-              if(matchTk<0) continue;
-              RPnearcsi[matchTk]=stk.second;
-            }
-          
-          
-            for(auto nit : ntks) 
-              ht.fill("ntkrp", nit.second, plotwgts, Form("%s_%d",selCat.Data(),nit.first));
-
+             
+              const unsigned short pot_raw_id = ev.fwdtrk_pot[ift];             
+              protonRPid[ift]      = pot_raw_id;
+              isFarRPProton[ift]   = (pot_raw_id==123 || pot_raw_id==23);
+              isMultiRPProton[ift] = (ev.fwdtrk_method[ift]==1);
+              isPosRPProton[ift]   = (pot_raw_id<100);
+              protonCsi[ift]       = ev.fwdtrk_xi[ift];   
+              if(isMultiRPProton[ift])    multiIds *= pot_raw_id;
+              else if(isFarRPProton[ift]) farIds *= pot_raw_id;
+            }                      
           }
           
         }catch(...){
@@ -835,8 +793,8 @@ void RunExclusiveZX(const TString in_fname,
 
       //training category
       float trainCatVal=-1;
-      if(nRPtk==0) trainCatVal=0;
-      if(nRPtk==2 && RPid[0]*RPid[1]==23*123) trainCatVal=1;
+      if(nProtons==0) trainCatVal=0;
+      if(farIds==23*123 || multiIds==3*103 || multiIds==23*123) trainCatVal=1;
       outVars["trainCat"]=trainCatVal;
       
       if(debug && isZ) {
@@ -845,8 +803,9 @@ void RunExclusiveZX(const TString in_fname,
                   << hasMTrigger << " " << hasMMTrigger << " "
                   << boson.Pt() << " " << boson.Eta() << " " << boson.Phi() << " " << boson.M() << " " 
                   << ev.nrawmu-2 << " ";
-        for(int irp=0; irp<nRPtk; irp++)
-          debug_out << RPid[irp] << " " << RPfarcsi[irp] << " ";
+        for(int irp=0; irp<nProtons; irp++)
+          debug_out << protonRPid[irp] << " " << isMultiRPProton[irp] << " "
+                    << protonCsi[irp] << endl;
         debug_out << endl;
       }
 

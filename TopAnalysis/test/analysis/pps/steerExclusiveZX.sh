@@ -22,9 +22,9 @@ fi
 #to run locally use local as queue + can add "--njobs 8" to use 8 parallel jobs
 queue=tomorrow
 
-githash=2017_unblind
+githash=2017_unblind_multi
 
-datadir=/store/cmst3/group/top/RunIIReReco/2017/955fa95_ul
+datadir=/store/cmst3/group/top/RunIIReReco/2017/f439f08_ul
 datajson=${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/pps/datasamples.json
 RPout_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/golden_noRP.json
 
@@ -33,7 +33,7 @@ mcjson=${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/pps/mcsamples.js
 zxjson=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/zx_samples.json
 genweights=genweights_ab05162.root
 
-signaldir=/store/cmst3/group/top/RunIIReReco/2017/vxsimulations_26Nov
+signaldir=/store/cmst3/group/top/RunIIReReco/2017/vxsimulations_7Dec
 signaljson=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/signal_samples.json
 
 outdir=/store/cmst3/user/psilva/ExclusiveAna/final/${githash}
@@ -79,8 +79,8 @@ case $WHAT in
         baseCmd="${baseCmd} --genWeights ${genweights} --era era2017 -m ExclusiveZX::RunExclusiveZX --ch 0 --runSysts"
         baseCmd="${baseCmd} -o ${outdir} -q ${queue}"
         
-	python ${baseCmd} --farmappendix ZXMC   -i ${mcdir}   --only ${mcjson},${zxjson};
 	python ${baseCmd} --farmappendix ZXData -i ${datadir} --only ${datajson};
+	python ${baseCmd} --farmappendix ZXMC   -i ${mcdir}   --only ${mcjson},${zxjson};
 	;;
 
     CHECKSELINTEG )
