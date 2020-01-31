@@ -33,8 +33,9 @@ mcjson=${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/pps/mcsamples.js
 zxjson=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/zx_samples.json
 genweights=genweights_ab05162.root
 
-signaldir=/store/cmst3/group/top/RunIIReReco/2017/vxsimulations_7Dec
+signaldir=/store/cmst3/group/top/RunIIReReco/2017/vxsimulations_21Jan
 signaljson=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/signal_samples.json
+signalpostts2json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/signal_samples_postTS2.json
 
 outdir=/store/cmst3/user/psilva/ExclusiveAna/final/${githash}
 anadir=${outdir}/analysis_0p035
@@ -96,11 +97,10 @@ case $WHAT in
         lumiSpecs="--lumiSpecs a:${lptalumi}"
         kFactorList="--procSF #gamma+jets:1.4"        
 	commonOpts="-i /eos/cms/${outdir} --puNormSF puwgtctr -l ${lumi} --mcUnc ${lumiUnc} ${kFactorList} ${lumiSpecs}"
-
-	python scripts/plotter.py ${commonOpts} -j ${mcjson},${datajson}    -O /eos/cms/${outdir}/plots/sel -o plotter.root --only mll,pt,eta,met,jets,nvtx,ratevsrun --saveLog; 
-        python scripts/plotter.py ${commonOpts} -j ${samples_json}    --rawYields --silent --only gen -O /eos/cms/${outdir}/plots/ -o plots/bkg_gen_plotter.root; 
-	python scripts/plotter.py ${commonOpts} -j ${zx_samples_json} --rawYields --silent --only gen -O /eos/cms/${outdir}/plots/ -o plots/zx_gen_plotter.root;
-        #python test/analysis/pps/computeDileptonSelEfficiency.py /eos/cms/${outdir}/plots/       
+	python scripts/plotter.py ${commonOpts} -j ${mcjson},${datajson}    -O /eos/cms/${outdir}/plots/sel -o plotter.root --only mll,pt,eta,met,jets,nvtx,ratevsrun; # --saveLog; 
+        python scripts/plotter.py ${commonOpts} -j ${mcjson}    --rawYields --silent --only gen -O /eos/cms/${outdir}/plots/ -o plots/bkg_gen_plotter.root; 
+	python scripts/plotter.py ${commonOpts} -j ${zxjson} --rawYields --silent --only gen -O /eos/cms/${outdir}/plots/ -o plots/zx_gen_plotter.root;
+        python test/analysis/pps/computeDileptonSelEfficiency.py /eos/cms/${outdir}/plots/       
 	;;
 
     TESTPREPAREMIX )
@@ -111,7 +111,7 @@ case $WHAT in
         
         #run locally
         python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 0 --jobs 1 \
-            --json ${mcjson},${datajson},${signaljson} --RPout ${RPout_json} -o ${predout} -i ${predin} --only ${file} --maxEvents 10000
+            --json ${mcjson},${datajson},${signaljson},${signalpostts2json} --RPout ${RPout_json} -o ${predout} -i ${predin} --only ${file} --maxEvents 10000
         ;;
 
     PREPAREMIX )       
@@ -141,21 +141,24 @@ case $WHAT in
         ;;
 
     TESTANA )        
+
         predin=/eos/cms/${outdir}/Chunks
         file=Data13TeV_2017D_DoubleEG_2.root
+        
         predin=/eos/cms/${signaldir}
-        file=Z_m_X_1200_xangle_120_2017_preTS2.root
-        mix_file=/eos/cms/${anadir}/mixing/mixbank.pck
+        file=Z_m_X_600_xangle_120_2017_postTS2.root
+        
+        mix_file=/eos/cms/${anadir}/mixing/test_mixbank.pck
 
         predout=./mixtest
-        addOpt=""
+        addOpt="--effDir /eos/cms/${outdir}/plots/"
         python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 1 --jobs 1 \
-            --json ${mcjson},${datajson},${signaljson} --RPout ${RPout_json} -o ${predout} --mix ${mix_file} -i ${predin} --only ${file} ${addOpt};
+            --json ${mcjson},${datajson},${signaljson},${signalpostts2json} --RPout ${RPout_json} -o ${predout} --mix ${mix_file} -i ${predin} --only ${file} ${addOpt} --maxEvents 10000;
 
         #predout=./mix1200
         #addOpt="--mixSignal /eos/cms/${anadir}/Z_m_X_1200_xangle_{0}_2017_preTS2_opt_v1_simu_reco.root"
         #python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 1 --jobs 1 \
-        #    --json ${mcjson},${datajson},${signaljson} --RPout ${RPout_json} -o ${predout} --mix ${mix_file} -i ${predin} --only ${file} ${addOpt};
+        #    --json ${mcjson},${datajson},${signaljson},${signalpostts2json} --RPout ${RPout_json} -o ${predout} --mix ${mix_file} -i ${predin} --only ${file} ${addOpt};
         ;;
 
 
@@ -177,7 +180,7 @@ case $WHAT in
 
         #run locally
         #python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 1 --jobs 8 \
-        #    --json ${mcjson},${datajson},${signaljson} --RPout ${RPout_json} -o ${predout} --mix ${mix_file} -i ${predin};
+        #    --json ${mcjson},${datajson},${signaljson},${signalpostts2json} --RPout ${RPout_json} -o ${predout} --mix ${mix_file} -i ${predin};
         
         ;;
 
@@ -206,13 +209,13 @@ case $WHAT in
 
         #run locally
         #python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 1 --jobs 8 \
-        #    --json ${signaljson} --RPout ${RPout_json} --mix /eos/cms/${outdir}/mixing/mixbank.pck \
+        #    --json ${signaljson},${signalpostts2json} --RPout ${RPout_json} --mix /eos/cms/${outdir}/mixing/mixbank.pck \
         #    -i /eos/cms/${signal_dir} -o anasig/;
         # cp -v anasig/Chunks/*.root /eos/cms/${outdir}/analysis/
         ;;
    
     CHECKANASIG )
-        python test/analysis/pps/checkFinalNtupleInteg.py /eos/cms/${signaldir} /eos/cms/${anadir}/Chunks 1 1 /eos/cms/${anadir}/mixing/mixbank.pck
+        python test/analysis/pps/checkFinalNtupleInteg.py /eos/cms/${signaldir} /eos/cms/${anadir}/Chunks 2 1 /eos/cms/${anadir}/mixing/mixbank.pck
         ;;
 
     MERGEANA )
@@ -220,19 +223,38 @@ case $WHAT in
         ;;
 
     BKGVALIDATION )       
-        for pt in 0 40 60; do
+
+        ptlist=(0 40 60)        
+
+        for pt in ${ptlist[@]}; do 
+
             output=/eos/cms/${outdir}/bkg_ptll${pt}
+            #extra="--doPerAngle"
+            extra=""
+
+            #inclusive
             python test/analysis/pps/doBackgroundValidation.py \
-                --doPerAngle -i /eos/cms/${anadir} \
+                ${extra} -i /eos/cms/${anadir} \
                 -o ${output} \
                 --selCuts "bosonpt>=${pt} && l1pt>30 && l2pt>20" &
+            
+            #per proton category
+            for protonCat in 1 2 3 4; do
+                python test/analysis/pps/doBackgroundValidation.py \
+                    ${extra} -i /eos/cms/${anadir} \
+                    -o ${output} \
+                    --protonCat ${protonCat} \
+                    --selCuts "bosonpt>=${pt} && l1pt>30 && l2pt>20" &
+            done
+
         done
+
         ;;
 
     PLOTANA )
 
-        lumiSpecs="mmrpin:${ppsLumi},eerpin:${ppsLumi},emrpin:${ppsLumi},a:${lptalumi},arpin:${lptappslumi},arpinhpur:${lptappslumi}"   
-        for c in neg pos hpur hpurpos hpurneg hpur120xangle hpur130xangle hpur140xangle hpur150xangle; do
+        lumiSpecs="mmrpin:${ppsLumi},eerpin:${ppsLumi},emrpin:${ppsLumi},a:${lptalumi},arpin:${lptappslumi}"   
+        for c in hpur hpur1 hpur2 hpur3 hpur4 hpur0pos hpur0neg hpur1pos hpur1neg hpur2pos hpur2neg; do
             lumiSpecs="${lumiSpecs},mmrpin${c}:${ppsLumi},eerpin${c}:${ppsLumi},emrpin${c}:${ppsLumi},arpin${c}:${lptappslumi}";
         done
 	baseOpts="-i /eos/cms/${anadir} --lumiSpecs ${lumiSpecs} --procSF #gamma+jets:1.4 -l ${lumi} --mcUnc ${lumiUnc} ${lumiSpecs} ${kFactorList}"
@@ -244,13 +266,17 @@ case $WHAT in
         commonOpts="${baseOpts} -j ${mcjson},${datajson} --signalJson ${plot_signal_json} -O /eos/cms/${anadir}/plots"
         cats=(
             "" 
-            "rpin"
-            "rpinpos" "rpinneg"
+            #"rpin"
+            #"rpinpos" "rpinneg"
             "rpinhpur" 
-            "rpinhpurneg" "rpinhpurpos" 
-            "rpinhpur120xangle" "rpinhpur130xangle" "rpinhpur140xangle" "rpinhpur150xangle" 
+            "rpinhpur0pos" "rpinhpur1pos" "rpinhpur2pos"
+            "rpinhpur0neg" "rpinhpur1neg" "rpinhpur2neg"
+            "rpinhpur1" "rpinhpur2" "rpinhpur3" "rpinhpur4" 
+
+            #"rpinhpurneg" "rpinhpurpos" 
+            #"rpinhpur120xangle" "rpinhpur130xangle" "rpinhpur140xangle" "rpinhpur150xangle" 
         )
-        channels=(mm) #mm ee a em)
+        channels=(em) #mm ee a em)
         for ch in ${channels[@]}; do #mm ee a em; do
            plots=""
 
@@ -262,13 +288,13 @@ case $WHAT in
                 done
 
                 if [[ $evcat == *"rpin"* ]]; then
-                    for p in nextramu extramupt extramueta mmass ppcount ypp2d ypp mpp pzpp mpp2d mmass_full; do
+                    for p in nextramu extramupt extramueta mmass ppcount ypp mpp pzpp mmass_full; do
                         plots="${p}_${evcat},${plots}"
                     done
                 fi
                 
                 if [[ $evcat == *"pos"* || $evcat == *"neg"* ]]; then
-                    for p in ntk csi csi2d; do
+                    for p in ntk csi; do
                         plots="${p}_${evcat},${plots}"
                     done
                 fi            
@@ -280,7 +306,7 @@ case $WHAT in
 
             python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py \
                 ${commonOpts} --only ${plots} \
-                --strictOnly  -o plotter_${ch}.root --saveLog &
+                --strictOnly  -o plotter_${ch}.root & # --saveLog &
         done
         
         ;;
@@ -360,16 +386,17 @@ case $WHAT in
 
     WWW )
 
+        #preselection
 	#cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}
 	#mkdir -p ${wwwdir}/presel
 	#cp /eos/cms/${outdir}/plots/*.{png,pdf,dat} ${wwwdir}/presel
 	#cp /eos/cms/${outdir}/plots/sel/*.{png,pdf,dat} ${wwwdir}/presel
-	#cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}/presel
-
+	cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}/presel
+        echo "CMSSW_BASE=$CMSSW_BASE"
         #analysis control plots
-        #mkdir -p ${wwwdir}/ana
+        mkdir -p ${wwwdir}/ana
         #cp /eos/cms/${anadir}/plots/*.{png,pdf,dat} ${wwwdir}/ana
-        #cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}/ana
+        cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}/ana
 
         #signal acceptance plots
         #mkdir -p ${wwwdir}/signal
@@ -378,8 +405,8 @@ case $WHAT in
 
         #local sensitivity
         #mkdir -p ${wwwdir}/localsens
-        cp /eos/cms/${anadir}/localsens/*.{png,pdf,dat} ${wwwdir}/localsens
-        cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}/localsens
+        #cp /eos/cms/${anadir}/localsens/*.{png,pdf,dat} ${wwwdir}/localsens
+        #cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}/localsens
 
         #background closure plots
         for pt in 0 40 60; do
@@ -391,13 +418,13 @@ case $WHAT in
         done
 
         #statistical analysis
-        for d in ppvx_${githash} ppvx_${githash}_signed; do
-            odir=${wwwdir}/stat/${d}
-            mkdir -p ${odir}
+        #for d in ppvx_${githash} ppvx_${githash}_signed; do
+        #    odir=${wwwdir}/stat/${d}
+        #    mkdir -p ${odir}
             #cp /eos/cms/${anadir}/${d}/* ${odir}
             #cp /eos/cms/${anadir}/${d}/limits* ${odir}
             #cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${odir}
-        done
+       # done
         #cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}/stat
 
         ;;

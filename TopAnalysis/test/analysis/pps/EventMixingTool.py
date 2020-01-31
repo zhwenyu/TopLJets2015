@@ -59,49 +59,72 @@ class EventMixingTool:
         """get new list of mixed protons from different event categories
         also returns a list of variables which be used for pileup discrimination"""
 
-        mixed_far_rptks={}
-        mixed_near_rptks={}
+        mixed_pos_protons={}
+        mixed_neg_protons={}
         mixed_pudiscr={}
 
         try:
             for mixEvCat in mixEvCategs:
-                mixed_far_rptks[mixEvCat]=[[],[]]
-                mixed_near_rptks[mixEvCat]=[[],[]]
-                mixed_pudiscr[mixEvCat]=[[],[]]
+                mixed_pos_protons[mixEvCat]=[[],[],[]]
+                mixed_neg_protons[mixEvCat]=[[],[],[]]
+                mixed_pudiscr[mixEvCat]=[]
 
                 if isData and not beamXangle in validAngles : continue
                 
-                mixedEvKey                 = (evEra,beamXangle,mixEvCat)
-                mixedEv                    = random.choice( self.mixedRP[mixedEvKey] )
-                mixed_pudiscr[mixEvCat]    = mixedEv.puDiscr
-                mixed_far_rptks[mixEvCat]  = mixedEv.far_rptks
-                mixed_near_rptks[mixEvCat] = mixedEv.near_rptks
+                mixedEvKey                  = (evEra,beamXangle,mixEvCat)
+                mixedEv                     = random.choice( self.mixedRP[mixedEvKey] )
+                mixed_pudiscr[mixEvCat]     = mixedEv.puDiscr
+                mixed_pos_protons[mixEvCat] = mixedEv.pos_protons
+                mixed_neg_protons[mixEvCat] = mixedEv.neg_protons
         except Exception as e:
             print e  
             print evEra,beamXangle,mixEvCat,'->',mixedEvKey
             pass
 
 
-        return mixed_far_rptks, mixed_near_rptks, mixed_pudiscr
+        return mixed_pos_protons, mixed_neg_protons, mixed_pudiscr
 
-    def mergeWithMixedEvent(self,far_rptks,mixed_far_rptks,near_rptks,mixed_near_rptks):
+
+    def mergeWithMixedEvent(self,pos_protons,mixed_pos_protons,neg_protons,mixed_neg_protons):
             
         """merges tracks from two different events (useful for pure signal embedding) """
-                    
-        for mixEvCat in mixed_far_rptks:
-            tksPos=mixed_far_rptks[mixEvCat][0]+far_rptks[0]
-            shuffle(tksPos)
-            tksNeg=mixed_far_rptks[mixEvCat][1]+far_rptks[1]
-            shuffle(tksNeg)
-            mixed_far_rptks[mixEvCat]=(tksPos,tksNeg)
 
-            tksPos=mixed_near_rptks[mixEvCat][0]+near_rptks[0]
-            shuffle(tksPos)
-            tksNeg=mixed_near_rptks[mixEvCat][1]+near_rptks[1]
-            shuffle(tksNeg)
-            mixed_near_rptks[mixEvCat]=(tksPos,tksNeg)
-            
-        return mixed_far_rptks,mixed_near_rptks
+        merged_pos_protons={}
+        merged_neg_protons={}
+
+        #iterate over sources of mixed events
+        for mixEvCat in mixed_pos_protons:
+
+            merged_pos_protons[mixEvCat]=[[],[],[]]
+            merged_neg_protons[mixEvCat]=[[],[],[]]
+
+            #iterate over track reconstruction methods
+            #for multiRP and strips if >1 track, reset (only 1 allowed per event in 2017)
+            for i in range(3):
+
+                merged_pos_protons[mixEvCat][i]=pos_protons[i]+mixed_pos_protons[mixEvCat][i]
+                shuffle(merged_pos_protons[mixEvCat][i])                
+
+                merged_neg_protons[mixEvCat][i]=neg_protons[i]+mixed_neg_protons[mixEvCat][i]
+                shuffle(merged_neg_protons[mixEvCat][i])
+                
+                if i==1: continue
+
+                if len(merged_pos_protons[mixEvCat][i])>1:
+                    merged_pos_protons[mixEvCat][i]=[]
+
+                    #make sure multiRP have been killed by > 1 strip
+                    if i==2: merged_pos_protons[mixEvCat][0]=[]
+
+                if len(merged_neg_protons[mixEvCat][i])>1:
+                    merged_neg_protons[mixEvCat][i]=[]
+
+                    #make sure multiRP have been killed by > 1 strip
+                    if i==2: merged_neg_protons[mixEvCat][0]=[]
+
+
+        return merged_pos_protons, merged_neg_protons
+
 
     def getRandomLHCCrossingAngle(self,evEra,evCat):
 
@@ -111,4 +134,5 @@ class EventMixingTool:
         if self.xangleRelFracs:
             xangleKey=(evEra,evCat)
             xbin=ROOT.TMath.FloorNint(self.xangleRelFracs[xangleKey].GetRandom())
+
         return xbin

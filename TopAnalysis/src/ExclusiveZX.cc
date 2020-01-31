@@ -99,10 +99,11 @@ void RunExclusiveZX(const TString in_fname,
   outT->Branch("hasATrigger",  &hasATrigger,  "hasATrigger/O");
   outT->Branch("hasZBTrigger", &hasZBTrigger, "hasZBTrigger/O");
 
-  bool isSS,isSF,isZ,isA;
+  bool isSS,isSF,isZ,isoffZ,isA;
   outT->Branch("isSS",&isSS,"isSS/O");
   outT->Branch("isSF",&isSF,"isSF/O");
   outT->Branch("isZ",&isZ,"isZ/O");
+  outT->Branch("isoffZ",&isoffZ,"isoffZ/O");
   outT->Branch("isA",&isA,"isA/O");
   
   ADDVAR(&ev.rho,"rho","F",outT);
@@ -441,6 +442,7 @@ void RunExclusiveZX(const TString in_fname,
       if(!selector.isZeroBiasPD()) {
         if(selCode!=22 && mass<20) continue;
         isZ=( isSF && !isSS && fabs(mass-91)<10);
+        isoffZ=( isSF && !isSS && mass>101);
         isA=(selCode==22);
       }
       else {

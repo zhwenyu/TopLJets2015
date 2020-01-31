@@ -27,13 +27,13 @@ def fillShapes(inputDir,selCuts,proc='MuonEG'):
     histos={}
     sf=None
     for dist,hist,title in [('mmiss',                    '(50,0,2000)',             'Missing mass [GeV]'),
-                            ('(bosony>=0?mmiss:-mmiss)', '(100,-2000,2000)',        'Missing mass x sgn[y(e#mu)] [GeV]'),
-                            #('csi1',                   '(25,0.035,0.18)',         '#xi(+)'),
-                            #('csi2',                   '(25,0.035,0.18)',         '#xi(-)'),
-                            #('mpp',                    '(25,500,2500)',           'Di-proton mass [GeV]'),
-                            #('ypp',                    '(50,-1,1)',               'Di-proton rapidity'),
-                            #('mmiss:mpp',              '(25,500,2500,30,0,2500)', 'Missing mass [GeV];Di-proton mass [GeV]'),
-                            #('ypp:mpp',                '(25,500,2500,50,-1,1)',   'Di-proton rapidity;Di-proton mass [GeV]'),
+                            #('(bosony>=0?mmiss:-mmiss)', '(100,-2000,2000)',        'Missing mass x sgn[y(e#mu)] [GeV]'),
+                            #('csi1',                     '(25,0.025,0.18)',         '#xi(+)'),
+                            #('csi2',                     '(25,0.025,0.18)',         '#xi(-)'),
+                            #('mpp',                      '(25,500,2500)',           'Di-proton mass [GeV]'),
+                            #('ypp',                      '(50,-1,1)',               'Di-proton rapidity'),
+                            #('mmiss:mpp',                '(25,500,2500,30,0,2500)', 'Missing mass [GeV];Di-proton mass [GeV]'),
+                            #('ypp:mpp',                  '(25,500,2500,50,-1,1)',   'Di-proton rapidity;Di-proton mass [GeV]'),
                         
 ]:
 
@@ -141,6 +141,11 @@ def main(args):
                         default=False,
                         help='do per crossing angle [default: %default]',
                         action='store_true')
+    parser.add_argument('--protonCat',
+                        dest='protonCat', 
+                        default=None,
+                        type=int,
+                        help='proton reco category [default: %default]')
     parser.add_argument('--lumi',
                         dest='lumi',
                         default=37500.,
@@ -158,11 +163,28 @@ def main(args):
     
     os.system('mkdir -p %s'%opt.output)
 
-    selCuts=[ (opt.selCuts,'','e#mu') ]
+    #upate pre-selection
+    catTitle='(inclusive)'
+    if opt.protonCat:
+        opt.selCuts += ' && protonCat==%d'%opt.protonCat
+        if opt.protonCat==1:
+            catTitle='multi-multi'
+        if opt.protonCat==2:
+            catTitle='multi-single'
+        if opt.protonCat==3:
+            catTitle='single-multi'
+        if opt.protonCat==4:
+            catTitle='single-single'
+
+    selCuts=[ (opt.selCuts,'','e#mu, %s'%catTitle) ]
     if opt.doPerAngle:
         for xangle in VALIDLHCXANGLES:
-            selCuts.append( (opt.selCuts + ' && xangle==%d'%xangle,'_%d'%xangle,'e#mu, %d #murad'%xangle) )
+            selCuts.append( (opt.selCuts + ' && xangle==%d'%xangle,'_%d'%xangle,'e#mu, %s, %d #murad'%(catTitle,xangle)) )
+
     for cuts,pfix,catTitle in selCuts:
+
+        if opt.protonCat:
+            pfix += 'pp%d'%opt.protonCat
 
         os.system('rm %s/plotter_%s.root'%(opt.output,pfix))
 
@@ -183,6 +205,9 @@ def main(args):
 
             pname=dist+pfix
             for c in [':',',','>','=','(',')','-','<','?']: pname=pname.replace(c,'')
+            if opt.protonCat:
+                pname += 'pp%d'%opt.protonCat
+
 
             p=Plot(pname)
             p.doChi2=True

@@ -33,11 +33,12 @@ class HistoTool:
             self.histos[key][cat].Fill(*val)
             
 
-    def writeToFile(self,outFileName):
+    def writeToFile(self,fOut):
 
         """dumps all histograms to a file"""
         
-        fOut=ROOT.TFile.Open(outFileName,'RECREATE')
+        if isinstance(fOut,str):
+            fOut=ROOT.TFile.Open(fOut,'RECREATE')
         fOut.cd()
         
         for name in self.histos:

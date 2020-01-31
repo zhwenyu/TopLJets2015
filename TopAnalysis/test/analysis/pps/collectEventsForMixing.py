@@ -32,10 +32,22 @@ print 'Total number of events for mixing'
 for key in rpData:
     print key,len(rpData[key])
 
+print 'Writing test mixing bank @ %s/mixing/test_mixbank.pck'%baseDir
+with open('test_mixbank.pck','w') as cache:
+    testRPData={}
+    for key in rpData:
+        testRPData[key]=rpData[key][0:min(len(rpData[key])-1,1000)]
+    pickle.dump(testRPData,cache)
+os.system('mv -v test_mixbank.pck %s/mixing/test_mixbank.pck'%baseDir)
+
+
 print 'Writing mixing bank @ %s/mixing/mixbank.pck'%baseDir
 with open('mixbank.pck','w') as cache:
     pickle.dump(rpData,cache)
 os.system('mv -v mixbank.pck %s/mixing/mixbank.pck'%baseDir)
+
+
+
 
 
 if len(toCheck)>0:
