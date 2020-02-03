@@ -31,7 +31,9 @@ toCheck=[]
 nTot=0
 for f in os.listdir(inurl):
 
-    if not 'Data' in f : continue
+    #if not 'Data' in f : continue
+    #if not 'MC' in f : continue
+
     if step==0 :
         if not ('SingleMuon' in f or 'MuonEG' in f or 'DoubleMuon' in f) :
             continue

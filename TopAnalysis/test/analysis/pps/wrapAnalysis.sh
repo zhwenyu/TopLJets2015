@@ -11,6 +11,8 @@ if [ ! -z ${6} ]; then
     extraOpts="--mix ${6}";
 fi
 
+extraOpts="${extraOpts} --effDir ${PPS}"
+
 echo "python $PPS/runExclusiveAnalysis.py --step $2 --json ${samples_json} --RPout ${RPout_json} -o ./ -i $4 --only $5 ${extraOpts}"
 python $PPS/runExclusiveAnalysis.py --step $2 --json ${samples_json} --RPout ${RPout_json} -o ./ -i $4 --only $5 ${extraOpts}
 

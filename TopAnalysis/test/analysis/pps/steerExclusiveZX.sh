@@ -101,6 +101,7 @@ case $WHAT in
         python scripts/plotter.py ${commonOpts} -j ${mcjson}    --rawYields --silent --only gen -O /eos/cms/${outdir}/plots/ -o plots/bkg_gen_plotter.root; 
 	python scripts/plotter.py ${commonOpts} -j ${zxjson} --rawYields --silent --only gen -O /eos/cms/${outdir}/plots/ -o plots/zx_gen_plotter.root;
         python test/analysis/pps/computeDileptonSelEfficiency.py /eos/cms/${outdir}/plots/       
+        cp -v /eos/cms/${outdir}/plots/effsummary_* test/analysis/pps/
 	;;
 
     TESTPREPAREMIX )
@@ -151,7 +152,7 @@ case $WHAT in
         mix_file=/eos/cms/${anadir}/mixing/test_mixbank.pck
 
         predout=./mixtest
-        addOpt="--effDir /eos/cms/${outdir}/plots/"
+        addOpt="--effDir test/analysis/pps"
         python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 1 --jobs 1 \
             --json ${mcjson},${datajson},${signaljson},${signalpostts2json} --RPout ${RPout_json} -o ${predout} --mix ${mix_file} -i ${predin} --only ${file} ${addOpt} --maxEvents 10000;
 
@@ -237,16 +238,15 @@ case $WHAT in
                 ${extra} -i /eos/cms/${anadir} \
                 -o ${output} \
                 --selCuts "bosonpt>=${pt} && l1pt>30 && l2pt>20" &
-            
+
             #per proton category
             for protonCat in 1 2 3 4; do
                 python test/analysis/pps/doBackgroundValidation.py \
                     ${extra} -i /eos/cms/${anadir} \
                     -o ${output} \
                     --protonCat ${protonCat} \
-                    --selCuts "bosonpt>=${pt} && l1pt>30 && l2pt>20" &
-            done
-
+                    --selCuts "bosonpt>=${pt} && l1pt>30 && l2pt>20" &             
+            done            
         done
 
         ;;
@@ -260,7 +260,7 @@ case $WHAT in
 	baseOpts="-i /eos/cms/${anadir} --lumiSpecs ${lumiSpecs} --procSF #gamma+jets:1.4 -l ${lumi} --mcUnc ${lumiUnc} ${lumiSpecs} ${kFactorList}"
         commonOpts="${baseOpts} -j ${mcjson},${datajson} --signalJson ${plot_signal_ext_json} -O /eos/cms/${anadir}/plots"
 
-        plots=xangle_arpinhpur xangle_eerpinhpur,xangle_mmrpinhpur,xangle_emrpinhpur,xangle_arpinhpur
+        plots=xangle_arpinhpur,xangle_eerpinhpur,xangle_mmrpinhpur,xangle_emrpinhpur,xangle_arpinhpur
         python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py ${commonOpts} --only ${plots} --strictOnly --saveTeX --rebin 4;
 
         commonOpts="${baseOpts} -j ${mcjson},${datajson} --signalJson ${plot_signal_json} -O /eos/cms/${anadir}/plots"
@@ -271,13 +271,12 @@ case $WHAT in
             "rpinhpur" 
             "rpinhpur0pos" "rpinhpur1pos" "rpinhpur2pos"
             "rpinhpur0neg" "rpinhpur1neg" "rpinhpur2neg"
-            "rpinhpur1" "rpinhpur2" "rpinhpur3" "rpinhpur4" 
-
+            "rpinhpur1" "rpinhpur2" "rpinhpur3" "rpinhpur4"
             #"rpinhpurneg" "rpinhpurpos" 
             #"rpinhpur120xangle" "rpinhpur130xangle" "rpinhpur140xangle" "rpinhpur150xangle" 
         )
-        channels=(em) #mm ee a em)
-        for ch in ${channels[@]}; do #mm ee a em; do
+        channels=(em mm ee a em)
+        for ch in ${channels[@]}; do
            plots=""
 
             for c in "${cats[@]}"; do            
@@ -515,7 +514,12 @@ case $WHAT in
 
         plots=""
         for evcat in a ee mm em; do
-            for p in ptll mll; do 
+            if [[ $evcat == *"a"* ]]; then
+                plist=(ptll)
+            else
+                plist=(ptll mll l1eta l2eta)
+            fi
+            for p in ${plist[@]}; do 
                 plots="${p}_${evcat},${plots}"
             done
         done        

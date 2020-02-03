@@ -23,28 +23,27 @@ def fillShapes(inputDir,selCuts,proc='MuonEG'):
     data=ROOT.TChain('data')
     for f in [os.path.join(inputDir,x) for x in os.listdir(inputDir) if proc in x]:
         data.AddFile(f)
-
+        
     histos={}
     sf=None
     for dist,hist,title in [('mmiss',                    '(50,0,2000)',             'Missing mass [GeV]'),
-                            #('(bosony>=0?mmiss:-mmiss)', '(100,-2000,2000)',        'Missing mass x sgn[y(e#mu)] [GeV]'),
-                            #('csi1',                     '(25,0.025,0.18)',         '#xi(+)'),
-                            #('csi2',                     '(25,0.025,0.18)',         '#xi(-)'),
-                            #('mpp',                      '(25,500,2500)',           'Di-proton mass [GeV]'),
-                            #('ypp',                      '(50,-1,1)',               'Di-proton rapidity'),
-                            #('mmiss:mpp',                '(25,500,2500,30,0,2500)', 'Missing mass [GeV];Di-proton mass [GeV]'),
-                            #('ypp:mpp',                  '(25,500,2500,50,-1,1)',   'Di-proton rapidity;Di-proton mass [GeV]'),
-                        
-]:
+                            ('(bosony>=0?mmiss:-mmiss)', '(100,-2000,2000)',        'Missing mass x sgn[y(e#mu)] [GeV]'),
+                            ('csi1',                     '(25,0.025,0.18)',         '#xi(+)'),
+                            ('csi2',                     '(25,0.025,0.18)',         '#xi(-)'),
+                            ('mpp',                      '(25,500,2500)',           'Di-proton mass [GeV]'),
+                            ('ypp',                      '(50,-1,1)',               'Di-proton rapidity'),
+                            ('mmiss:mpp',                '(25,500,2500,30,0,2500)', 'Missing mass [GeV];Di-proton mass [GeV]'),
+                            ('ypp:mpp',                  '(25,500,2500,50,-1,1)',   'Di-proton rapidity;Di-proton mass [GeV]'),                        
+                            ]:
 
-        print dist
         histos[dist]={}
 
         bkgHistos=[]
-        for tag,pf,mixType in [ ('data',          '',    0),
-                                ('bkg',           '',    1),
-                                ('bkgsinglediff', 'syst',1),
-                                ('bkgshape',      '',    2), 
+        for tag,pf,mixType in [ ('data',               '',        0),   #observed data
+                                ('bkg',                '',        1),   #mixed data
+                                ('bkgshape',           'syst',    1),   #mixed data from e-mu
+                                ('bkgsinglediffUp',    '',        2),   #mix only pos. arm
+                                ('bkgsinglediffDown',  'syst',    2),   #mix only neg. arm
                                 ]:
             finaldist=dist
             for c in ['mmiss','ypp','mpp','csi1','csi2']:
@@ -64,6 +63,10 @@ def fillShapes(inputDir,selCuts,proc='MuonEG'):
             #              'goff')
             #else:
 
+            finalSelCuts=selCuts
+            if pf=='syst' : 
+                finalSelCuts=finalSelCuts.replace('protonCat','systprotonCat')
+            print finalSelCuts
             data.Draw('{0} >> h{1}'.format(finaldist,hist),
                       'wgt*({0} && {1}mmiss>0 && mixType=={2})'.format(selCuts,pf,mixType),
                       'goff')
@@ -164,7 +167,7 @@ def main(args):
     os.system('mkdir -p %s'%opt.output)
 
     #upate pre-selection
-    catTitle='(inclusive)'
+    catTitle='inclusive'
     if opt.protonCat:
         opt.selCuts += ' && protonCat==%d'%opt.protonCat
         if opt.protonCat==1:
@@ -208,9 +211,8 @@ def main(args):
             if opt.protonCat:
                 pname += 'pp%d'%opt.protonCat
 
-
             p=Plot(pname)
-            p.doChi2=True
+            p.doChi2=False #True
             p.nominalDistForSystsName='background'
 
             #if dist=='mmiss':
@@ -230,8 +232,13 @@ def main(args):
             #background systematics
             for syst in ['{0}_bkgshape_MuonEG_obsUp',        
                          '{0}_bkgshape_MuonEG_obsDown',
-                         '{0}_bkgsinglediff_MuonEG_obsDown', 
-                         '{0}_bkgsinglediff_MuonEG_obsUp']:
+                         '{0}_bkgsinglediffUp_MuonEG_obs', 
+                         '{0}_bkgsinglediffDown_MuonEG_obs', 
+                         #'{0}_bkgsinglediffpos_MuonEG_obsUp',
+                         #'{0}_bkgsinglediffpos_MuonEG_obsDown',
+                         #'{0}_bkgsinglediffneg_MuonEG_obsDown', 
+                         #'{0}_bkgsinglediffneg_MuonEG_obsUp'
+                         ]:
                 p.add(data[dist][syst.format(dist)],  
                       title=syst, 
                       color=ROOT.TColor.GetColor('#1f78b4'), 
@@ -241,8 +248,8 @@ def main(args):
                       #doDivideByBinWidth=doDivideByBinWidth)       
 
             #p.ratiorange=[0.78,1.22]
-            #p.ratiorange=[0.58,1.42]
-            p.ratiorange=[0.,2.]
+            p.ratiorange=[0.58,1.42]
+            #p.ratiorange=[0.,2.]
             p.show(opt.output,opt.lumi,extraText=catTitle)
             p.appendTo('%s/plotter_%s.root'%(opt.output,pfix))
             p.reset()
