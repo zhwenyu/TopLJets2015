@@ -440,24 +440,28 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
         ev_pos_protons,ev_neg_protons = [[],[],[]],[[],[],[]]
         ppsPosEff,ppsPosEffUnc=1.0,0.0
         ppsNegEff,ppsNegEffUnc=1.0,0.0
+        killStripsPos,killStripsNeg=[False]*3,[False]*3
         if isSignal or (isData and isRPIn): 
+    
             ev_pos_protons,ev_neg_protons  = getTracksPerRomanPot(tree,minCsi=MINCSI)
-
-            #kill strips in sector 45 if era being simulated is 2017E
-            if isSignal and evEra=='2017E':
-                r=random.random()
-                if r<0.859:
-                    ev_pos_protons[0]=[]
-                    ev_pos_protons[2]=[]                
 
             #apply efficiency
             if ppsEffReader:
+            
                 if len(ev_pos_protons[2])>0:
                     ppsPosEff,ppsPosEffUnc=ppsEffReader.getPPSEfficiency(evEra,beamXangle,ev_pos_protons[2][0],rp=3)
+                    r=random.random()
+                    if r>ppsPosEff              : killStripsPos[0]=True
+                    if r>ppsPosEff+ppsPosEffUnc : killStripsPos[1]=True
+                    if r>ppsPosEff-ppsPosEffUnc : killStripsPos[2]=True
+
                 if len(ev_neg_protons[2])>0:
                     ppsNegEff,ppsNegEffUnc=ppsEffReader.getPPSEfficiency(evEra,beamXangle,ev_neg_protons[2][0],rp=103)
-
-
+                    r=random.random()
+                    if r>ppsNegEff              : killStripsNeg[0]=True
+                    if r>ppsNegEff+ppsNegEffUnc : killStripsNeg[1]=True
+                    if r>ppsNegEff-ppsNegEffUnc : killStripsNeg[2]=True        
+    
         #if data and there is nothing to mix store the main characteristics of the event and continue
         if evMixTool.isIdle():
             if isData and isRPIn:
@@ -482,9 +486,10 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
             mixed_pos_protons, mixed_neg_protons = evMixTool.mergeWithMixedEvent(ev_pos_protons, 
                                                                                  mixed_pos_protons,
                                                                                  ev_neg_protons,
-                                                                                 mixed_neg_protons)
+                                                                                 mixed_neg_protons,
+                                                                                 killStripsPos[0],
+                                                                                 killStripsNeg[0])
             n_extra_mu,nvtx,rho,PFMultSumHF,PFHtSumHF,PFPzSumHF,rfc = mixed_pudiscr[DIMUONS]
-
 
         #kinematics using RP tracks
         pos_protons = ev_pos_protons if isData else mixed_pos_protons[DIMUONS]
@@ -654,13 +659,16 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
                 #        tksNeg=mixed_far_rptks[mixEvCat][1]+[sigCsi[1]]
                 #        shuffle(tksNeg)
                 #        mixed_far_rptks[mixEvCat]=(tksPos,tksNeg)
-
+                #FIXME PEDRO STOPPED HERE
                 #merge signal protons with pileup protons for first attempt
-                if isSignal and itry==1:
+                if isSignal and (itry>=1 or itry<=3):
+                    idx=itry-1
                     i_mixed_pos_protons, i_mixed_neg_protons = evMixTool.mergeWithMixedEvent(ev_pos_protons, 
                                                                                              i_mixed_pos_protons,
                                                                                              ev_neg_protons,
-                                                                                             i_mixed_neg_protons)
+                                                                                             i_mixed_neg_protons,
+                                                                                             killStripsPos[idx],
+                                                                                             killStripsNeg[idx])
                     n_extra_mu,nvtx,rho,PFMultSumHF,PFHtSumHF,PFPzSumHF,rfc = i_mixed_pudiscr[DIMUONS]
 
                 itry_wgt = wgt/float(nMixTries)

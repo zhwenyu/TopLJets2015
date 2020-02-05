@@ -58,7 +58,7 @@ class PPSEfficiencyReader:
 
 
     def getCombinedEfficiency(self,ppsPosEff,ppsPosEffUnc,ppsNegEff,ppsNegEffUnc,i_proton_cat):
-        ppsEff,ppsEffUnc=0.,0.
+        ppsEff,ppsEffUnc=1.0,0.0
         if i_proton_cat==1:
             ppsEff=ppsPosEff*ppsNegEff
             ppsEffUnc=ROOT.TMath.Sqrt( (ppsPosEff*ppsNegEffUnc)**2+(ppsPosEffUnc*ppsNegEff)**2)

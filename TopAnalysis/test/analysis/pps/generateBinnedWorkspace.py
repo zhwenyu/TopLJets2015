@@ -201,7 +201,7 @@ def fillSignalTemplates(mass,signalFile,xsec,opt,fiducialCuts='gencsi1>0.02 && g
     #import signal events
     data=ROOT.TChain('data')
     data.AddFile(os.path.join(opt.input,signalFile))
-    dataWgt=18674.5/41529.3
+    dataWgt=14586.4464/41529.3 #preTS2/total
 
     dataAlt=ROOT.TChain('data')
     dataAlt.AddFile(os.path.join(opt.input,signalFile).replace('preTS2','postTS2'))
