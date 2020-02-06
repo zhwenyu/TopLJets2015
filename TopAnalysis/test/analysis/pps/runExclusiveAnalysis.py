@@ -198,7 +198,7 @@ def isSignalFiducial(csiPos,csiNeg,gen_pzpp):
 
 
 
-def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEvents=-1):
+def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEvents=-1,sighyp=0):
     
     """event loop"""
 
@@ -253,6 +253,13 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
 
     #start histograms
     ht=HistoTool()   
+
+    if isSignal:
+        ht.add(ROOT.TH2F('sighyp', ';Initial category; Final category;Events',16,0,16,16,0,16))
+        for i in range(16):
+            lab="|{0:04b}>".format(i)
+            ht.histos['sighyp']['inc'].GetXaxis().SetBinLabel(i+1,lab)
+            ht.histos['sighyp']['inc'].GetYaxis().SetBinLabel(i+1,lab)
 
     #main analysis histograms
     ht.add(ROOT.TH1F('nvtx',';Vertex multiplicity;Events',50,0,100))
@@ -440,27 +447,8 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
         ev_pos_protons,ev_neg_protons = [[],[],[]],[[],[],[]]
         ppsPosEff,ppsPosEffUnc=1.0,0.0
         ppsNegEff,ppsNegEffUnc=1.0,0.0
-        killStripsPos,killStripsNeg=[False]*3,[False]*3
-        if isSignal or (isData and isRPIn): 
-    
-            ev_pos_protons,ev_neg_protons  = getTracksPerRomanPot(tree,minCsi=MINCSI)
-
-            #apply efficiency
-            if ppsEffReader:
-            
-                if len(ev_pos_protons[2])>0:
-                    ppsPosEff,ppsPosEffUnc=ppsEffReader.getPPSEfficiency(evEra,beamXangle,ev_pos_protons[2][0],rp=3)
-                    r=random.random()
-                    if r>ppsPosEff              : killStripsPos[0]=True
-                    if r>ppsPosEff+ppsPosEffUnc : killStripsPos[1]=True
-                    if r>ppsPosEff-ppsPosEffUnc : killStripsPos[2]=True
-
-                if len(ev_neg_protons[2])>0:
-                    ppsNegEff,ppsNegEffUnc=ppsEffReader.getPPSEfficiency(evEra,beamXangle,ev_neg_protons[2][0],rp=103)
-                    r=random.random()
-                    if r>ppsNegEff              : killStripsNeg[0]=True
-                    if r>ppsNegEff+ppsNegEffUnc : killStripsNeg[1]=True
-                    if r>ppsNegEff-ppsNegEffUnc : killStripsNeg[2]=True        
+        if isSignal or (isData and isRPIn):     
+            ev_pos_protons,ev_neg_protons  = getTracksPerRomanPot(tree,minCsi=MINCSI)  
     
         #if data and there is nothing to mix store the main characteristics of the event and continue
         if evMixTool.isIdle():
@@ -482,13 +470,38 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
                                                                            isData=isData,
                                                                            validAngles=VALIDLHCXANGLES,
                                                                            mixEvCategs=[DIMUONS,EMU])
+        ppsEff,ppsEffUnc=1.0,0.0
         if isSignal:
+
+            ppsPosEff,ppsPosEffUnc=0.0,0.0
+            if len(ev_pos_protons[2])>0:
+                ppsPosEff,ppsPosEffUnc=ppsEffReader.getPPSEfficiency(evEra,beamXangle,ev_pos_protons[2][0],rp=3)
+
+            ppsNegEff,ppsNegEffUnc=0.0,0.0
+            if len(ev_neg_protons[2])>0:
+                ppsNegEff,ppsNegEffUnc=ppsEffReader.getPPSEfficiency(evEra,beamXangle,ev_neg_protons[2][0],rp=103)
+
+            rawSigHyp=0
+            if len(ev_neg_protons[1])>0: rawSigHyp += 1
+            if len(ev_neg_protons[0])>0: rawSigHyp += 2
+            if len(ev_pos_protons[1])>0: rawSigHyp += 4
+            if len(ev_pos_protons[0])>0: rawSigHyp += 8
+
+            #assign the final list of reconstructed protons depending on how the sighyp is requested
+            ev_pos_protons,ev_neg_protons,ppsEff,ppsEffUnc = ppsEffReader.getProjectedFinalState( ev_pos_protons, ppsPosEff, ppsPosEffUnc,
+                                                                                                  ev_neg_protons, ppsNegEff, ppsNegEffUnc,
+                                                                                                  sighyp)
+            #mixed_pos_protons={DIMUONS:ev_pos_protons,EMU:ev_pos_protons}
+            #mixed_neg_protons={DIMUONS:ev_neg_protons,EMU:ev_neg_protons}
             mixed_pos_protons, mixed_neg_protons = evMixTool.mergeWithMixedEvent(ev_pos_protons, 
                                                                                  mixed_pos_protons,
                                                                                  ev_neg_protons,
-                                                                                 mixed_neg_protons,
-                                                                                 killStripsPos[0],
-                                                                                 killStripsNeg[0])
+                                                                                 mixed_neg_protons)
+
+            #control before and after projection
+            ht.fill((rawSigHyp,sighyp,1.0),    'sighyp',  ['raw'])
+            ht.fill((rawSigHyp,sighyp,ppsEff), 'sighyp',  ['wgt'])
+
             n_extra_mu,nvtx,rho,PFMultSumHF,PFHtSumHF,PFPzSumHF,rfc = mixed_pudiscr[DIMUONS]
 
         #kinematics using RP tracks
@@ -521,14 +534,6 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
             gen_pzwgt[0] = ROOT.TMath.Gaus(gen_pzpp,0,pzwid)
             gen_pzwgt[1] = ROOT.TMath.Gaus(gen_pzpp,0,pzwid*1.1)/gen_pzwgt[0]
             gen_pzwgt[2] = ROOT.TMath.Gaus(gen_pzpp,0,pzwid*0.9)/gen_pzwgt[0]
-
-            ppsEff=1.0
-            if proton_cat==1:
-                ppsEff=ppsPosEff*ppsNegEff
-            elif proton_cat==2:
-                ppsEff=ppsPosEff
-            elif proton_cat==3:
-                ppsEff=ppsNegEff
 
             #use the sum of pz weighted events as normalization factor
             if isZ:
@@ -659,16 +664,14 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
                 #        tksNeg=mixed_far_rptks[mixEvCat][1]+[sigCsi[1]]
                 #        shuffle(tksNeg)
                 #        mixed_far_rptks[mixEvCat]=(tksPos,tksNeg)
-                #FIXME PEDRO STOPPED HERE
+
                 #merge signal protons with pileup protons for first attempt
-                if isSignal and (itry>=1 or itry<=3):
-                    idx=itry-1
+                if isSignal and itry==1:
                     i_mixed_pos_protons, i_mixed_neg_protons = evMixTool.mergeWithMixedEvent(ev_pos_protons, 
                                                                                              i_mixed_pos_protons,
                                                                                              ev_neg_protons,
-                                                                                             i_mixed_neg_protons,
-                                                                                             killStripsPos[idx],
-                                                                                             killStripsNeg[idx])
+                                                                                             i_mixed_neg_protons)
+
                     n_extra_mu,nvtx,rho,PFMultSumHF,PFHtSumHF,PFPzSumHF,rfc = i_mixed_pudiscr[DIMUONS]
 
                 itry_wgt = wgt/float(nMixTries)
@@ -688,13 +691,14 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
                     i_pos_protons_syst = pos_protons
                     i_neg_protons_syst = i_mixed_neg_protons[DIMUONS]
 
-            i_proton_cat,i_csi_pos,i_csi_neg,i_ppSystem,i_mmassSystem = getDiProtonCategory(i_pos_protons,i_neg_protons,boson)
-            i_proton_cat_syst,i_csi_pos_syst,i_csi_neg_syst,i_ppSystem_syst,i_mmassSystem_syst = getDiProtonCategory(i_pos_protons_syst,i_neg_protons_syst,boson)
+            i_proton_cat,     i_csi_pos,     i_csi_neg,     i_ppSystem,     i_mmassSystem      = getDiProtonCategory(i_pos_protons,     i_neg_protons,      boson)
+            i_proton_cat_syst,i_csi_pos_syst,i_csi_neg_syst,i_ppSystem_syst,i_mmassSystem_syst = getDiProtonCategory(i_pos_protons_syst,i_neg_protons_syst, boson)
 
             passAtLeastOneSelection=(i_proton_cat>0 or i_proton_cat_syst>0)
 
             #start event summary
             evSummary.reset()
+            evSummary.sighyp[0]=int(sighyp)
             if isData:
                 evSummary.run[0]=int(tree.run)
                 evSummary.event[0]=long(tree.event)
@@ -749,9 +753,6 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
                 evSummary.pzpp   [0]= i_ppSystem.Pz()
                 evSummary.mmiss  [0]= i_mmassSystem.M()
                 evSummary.ymmiss [0]= i_mmassSystem.Rapidity()
-                ppsEff,ppsEffUnc=1.0,0.0
-                if ppsEffReader:
-                    ppsEff,ppsEffUnc=ppsEffReader.getCombinedEfficiency(ppsPosEff,ppsPosEffUnc,ppsNegEff,ppsNegEffUnc,i_proton_cat)
                 evSummary.ppsEff[0]=ppsEff
                 evSummary.ppsEffUnc[0]=ppsEffUnc                
 
@@ -764,9 +765,6 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
                 evSummary.systpzpp   [0]= i_ppSystem_syst.Pz()
                 evSummary.systmmiss  [0]= i_mmassSystem_syst.M()
                 evSummary.systymmiss [0]= i_mmassSystem_syst.Rapidity()
-                ppsEff,ppsEffUnc=1.0,0.0
-                if ppsEffReader:
-                    ppsEff,ppsEffUnc=ppsEffReader.getCombinedEfficiency(ppsPosEff,ppsPosEffUnc,ppsNegEff,ppsNegEffUnc,i_proton_cat_syst)
                 evSummary.systppsEff[0]=ppsEff
                 evSummary.systppsEffUnc[0]=ppsEffUnc                
 
@@ -900,16 +898,33 @@ def runAnalysisTasks(opt):
     import multiprocessing as MP
     pool = MP.Pool(opt.jobs)
     task_list=[]
+    mergeList={}
     for x in task_dict.keys():
         
-        isData = True if 'Data' in x else False
+        isData     = True if 'Data' in x else False
+        isSignal,_ = isSignalFile(x)        
         if opt.step==0 and not isData : continue
         runLumiList=runLumi if isData else None
         for f in task_dict[x]:
-            fOut='%s/Chunks/%s'%(opt.output,os.path.basename(f))
-            task_list.append( (f,fOut,runLumiList,opt.effDir,opt.ppsEffFile,opt.maxEvents) )
+            if isSignal:
+                sigOut='%s/Chunks/%s'%(opt.output,os.path.basename(f))
+                mergeList[sigOut]=[]
+                for sighyp in range(16):
+                    fOut=sigOut.replace('.root','_%d.root'%sighyp)
+                    mergeList[sigOut].append(fOut)
+                    task_list.append( (f,fOut,runLumiList,opt.effDir,opt.ppsEffFile,opt.maxEvents,sighyp) )
+            else:
+                fOut='%s/Chunks/%s'%(opt.output,os.path.basename(f))
+                task_list.append( (f,fOut,runLumiList,opt.effDir,opt.ppsEffFile,opt.maxEvents,0) )
 
     pool.map(runExclusiveAnalysisPacked,task_list)
+
+    #signals need to be merged
+    for fOut,fList in mergeList.items():
+        fListStr=' '.join(fList)
+        os.system('hadd -f -k %s %s'%(fOut,fListStr))
+        os.system('rm %s'%fListStr)
+
 
 
 def main():

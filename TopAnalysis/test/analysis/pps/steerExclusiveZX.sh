@@ -147,7 +147,7 @@ case $WHAT in
         file=Data13TeV_2017D_DoubleEG_2.root
         
         predin=/eos/cms/${signaldir}
-        file=Z_m_X_600_xangle_120_2017_postTS2.root
+        file=Z_m_X_960_xangle_120_2017_preTS2.root
         
         mix_file=/eos/cms/${anadir}/mixing/test_mixbank.pck
 

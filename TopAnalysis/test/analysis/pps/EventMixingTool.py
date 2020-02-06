@@ -87,8 +87,7 @@ class EventMixingTool:
 
     def mergeWithMixedEvent(self,
                             pos_protons,         mixed_pos_protons,
-                            neg_protons,         mixed_neg_protons,
-                            killStripsPos=False, killStripsNeg=False):
+                            neg_protons,         mixed_neg_protons):
             
         """merges tracks from two different events (useful for pure signal embedding) """
 
@@ -106,13 +105,11 @@ class EventMixingTool:
             for i in range(3):
 
                 merged_pos_protons[mixEvCat][i] += mixed_pos_protons[mixEvCat][i]
-                if not killStripsPos:
-                    merged_pos_protons[mixEvCat][i] += pos_protons[i]
+                merged_pos_protons[mixEvCat][i] += pos_protons[i]
                 shuffle(merged_pos_protons[mixEvCat][i])                
 
                 merged_neg_protons[mixEvCat][i] += mixed_neg_protons[mixEvCat][i]
-                if not killStripsNeg:
-                    merged_neg_protons[mixEvCat][i] += neg_protons[i]
+                merged_neg_protons[mixEvCat][i] += neg_protons[i]
                 shuffle(merged_neg_protons[mixEvCat][i])
                 
                 if i==1: continue
