@@ -13,8 +13,6 @@ cmsrel CMSSW_9_4_11
 cd CMSSW_9_4_11/src
 cmsenv
 
-##OPTIONAL (TAKES TOO LONG/MUCH SPACE, USE ONLY IF CREATING NTUPLES FROM SCRATCH)
-
 git cms-init
 
 #proton reconstruction
@@ -24,6 +22,8 @@ git fetch ctpps
 git checkout -b test ctpps/ctpps_initial_proton_reconstruction_CMSSW_9_4_11
 git cms-addpkg CondFormats/CTPPSOpticsObjects DataFormats/ProtonReco IOMC/EventVertexGenerators IOMC/ParticleGuns RecoCTPPS/ProtonReconstruction RecoCTPPS/TotemRPLocal SimCTPPS/OpticsParameterisation Validation/CTPPS CondFormats/RunInfo CondFormats/DataRecord
 scram b -j 8
+
+##OPTIONAL (TAKES TOO LONG/MUCH SPACE, USE ONLY IF CREATING NTUPLES FROM SCRATCH)
 
 #MVA v2 ids
 #photon/electron id+scale and smearing fixes for MINIAOD 2017v2 (doesn't harm 2016v3)
