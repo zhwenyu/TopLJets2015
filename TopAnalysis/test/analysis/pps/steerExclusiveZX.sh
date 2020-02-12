@@ -1,6 +1,7 @@
 #!/bin/bash
 
-WHAT=$1; 
+WHAT=${1}; 
+
 if [ "$#" -ne 1 ]; then 
     echo "steerExclusiveZX.sh <SEL/MERGE/PLOT/WWW>";
     echo "   SEL           - launches selection jobs to the batch, output will contain summary trees and control plots"; 
@@ -38,7 +39,7 @@ signaljson=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/signal_sam
 signalpostts2json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/signal_samples_postTS2.json
 
 outdir=/store/cmst3/user/psilva/ExclusiveAna/final/${githash}
-anadir=${outdir}/analysis_0p035
+anadir=${outdir}/analysis
 wwwdir=/eos/user/p/psilva/www/ExclusiveAna_${githash}
 
 plot_signal_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/plot_signal_samples.json
@@ -46,7 +47,6 @@ plot_signal_ext_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/
 
 
 zbias_samples_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/zbias_samples.json
-
 
 
 lumi=41529
@@ -147,14 +147,17 @@ case $WHAT in
         file=Data13TeV_2017D_DoubleEG_2.root
         
         predin=/eos/cms/${signaldir}
-        file=Z_m_X_960_xangle_120_2017_preTS2.root
+        #file=Z_m_X_960_xangle_120_2017_preTS2.root
+        file=Z_m_X_960_xangle_120_2017_postTS2.root
         
         mix_file=/eos/cms/${anadir}/mixing/test_mixbank.pck
 
         predout=./mixtest
         addOpt="--effDir test/analysis/pps"
         python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 1 --jobs 1 \
-            --json ${mcjson},${datajson},${signaljson},${signalpostts2json} --RPout ${RPout_json} -o ${predout} --mix ${mix_file} -i ${predin} --only ${file} ${addOpt} --maxEvents 10000;
+            --json ${mcjson},${datajson},${signaljson},${signalpostts2json} --RPout ${RPout_json} -o ${predout} \
+            --mix ${mix_file} -i ${predin} --only ${file} ${addOpt} --maxEvents 10000 \
+            --allowPix 1;
 
         #predout=./mix1200
         #addOpt="--mixSignal /eos/cms/${anadir}/Z_m_X_1200_xangle_{0}_2017_preTS2_opt_v1_simu_reco.root"
@@ -164,6 +167,7 @@ case $WHAT in
 
 
     ANA )
+
         step=1
         predin=/eos/cms/${outdir}/Chunks
         predout=/eos/cms/${anadir}
@@ -215,8 +219,8 @@ case $WHAT in
         # cp -v anasig/Chunks/*.root /eos/cms/${outdir}/analysis/
         ;;
    
-    CHECKANASIG )
-        python test/analysis/pps/checkFinalNtupleInteg.py /eos/cms/${signaldir} /eos/cms/${anadir}/Chunks 2 1 /eos/cms/${anadir}/mixing/mixbank.pck
+    CHECKANASIG )        
+        python test/analysis/pps/checkFinalNtupleInteg.py /eos/cms/${signaldir} /eos/cms/${anadir}/Chunks 1 1 /eos/cms/${anadir}/mixing/mixbank.pck
         ;;
 
     MERGEANA )
@@ -226,24 +230,21 @@ case $WHAT in
     BKGVALIDATION )       
 
         ptlist=(0 40 60)        
+        indirForPlots=/eos/cms/${anadir}_1exc
 
         for pt in ${ptlist[@]}; do 
 
-            output=/eos/cms/${outdir}/bkg_ptll${pt}
-            #extra="--doPerAngle"
-            extra=""
+            output=${indirForPlots}/bkg_ptll${pt}
 
             #inclusive
             python test/analysis/pps/doBackgroundValidation.py \
-                ${extra} -i /eos/cms/${anadir} \
-                -o ${output} \
-                --selCuts "bosonpt>=${pt} && l1pt>30 && l2pt>20" &
+                -i ${indirForPlots} -o ${output} \
+                --selCuts "bosonpt>=${pt} && l1pt>30 && l2pt>20" --doPerAngle  &
 
             #per proton category
             for protonCat in 1 2 3 4; do
                 python test/analysis/pps/doBackgroundValidation.py \
-                    ${extra} -i /eos/cms/${anadir} \
-                    -o ${output} \
+                    -i ${indirForPlots} -o ${output} \
                     --protonCat ${protonCat} \
                     --selCuts "bosonpt>=${pt} && l1pt>30 && l2pt>20" &             
             done            
@@ -251,113 +252,139 @@ case $WHAT in
 
         ;;
 
+    PLOTSIGACC )
+
+        
+        indirForPlots=/eos/cms/${anadir}_1exc
+
+        for m in 600 800 1200 1400; do 
+            for i in `seq 2 5`; do 
+                python test/analysis/pps/drawSignalPeak.py \
+                    ${indirForPlots}/Z_m_X_${m}_xangle_1${i}0_2017_preTS2.root ; 
+            done 
+        done
+        mkdir -p ${indirForPlots}/plots_signal
+        mv mmass*sig* ${indirForPlots}/plots_signal
+        ;;
+
+
     PLOTANA )
+
+        indirForPlots=/eos/cms/${anadir}_1exc
 
         lumiSpecs="mmrpin:${ppsLumi},eerpin:${ppsLumi},emrpin:${ppsLumi},a:${lptalumi},arpin:${lptappslumi}"   
         for c in hpur hpur1 hpur2 hpur3 hpur4 hpur0pos hpur0neg hpur1pos hpur1neg hpur2pos hpur2neg; do
             lumiSpecs="${lumiSpecs},mmrpin${c}:${ppsLumi},eerpin${c}:${ppsLumi},emrpin${c}:${ppsLumi},arpin${c}:${lptappslumi}";
         done
-	baseOpts="-i /eos/cms/${anadir} --lumiSpecs ${lumiSpecs} --procSF #gamma+jets:1.4 -l ${lumi} --mcUnc ${lumiUnc} ${lumiSpecs} ${kFactorList}"
-        commonOpts="${baseOpts} -j ${mcjson},${datajson} --signalJson ${plot_signal_ext_json} -O /eos/cms/${anadir}/plots"
+
+	baseOpts="-i ${indirForPlots} --lumiSpecs ${lumiSpecs} --procSF #gamma+jets:1.4 -l ${lumi} --mcUnc ${lumiUnc} ${lumiSpecs} ${kFactorList}"
+        commonOpts="${baseOpts} -j ${mcjson},${datajson} --signalJson ${plot_signal_json} -O ${indirForPlots}/plots"
 
         plots=xangle_arpinhpur,xangle_eerpinhpur,xangle_mmrpinhpur,xangle_emrpinhpur,xangle_arpinhpur
         python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py ${commonOpts} --only ${plots} --strictOnly --saveTeX --rebin 4;
 
-        commonOpts="${baseOpts} -j ${mcjson},${datajson} --signalJson ${plot_signal_json} -O /eos/cms/${anadir}/plots"
+        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py ${commonOpts} --only catcount --saveTeX;
+
+        commonOpts="${baseOpts} -j ${mcjson},${datajson} --signalJson ${plot_signal_json} -O ${indirForPlots}/plots"
         cats=(
             "" 
-            #"rpin"
-            #"rpinpos" "rpinneg"
-            "rpinhpur" 
-            "rpinhpur0pos" "rpinhpur1pos" "rpinhpur2pos"
-            "rpinhpur0neg" "rpinhpur1neg" "rpinhpur2neg"
-            "rpinhpur1" "rpinhpur2" "rpinhpur3" "rpinhpur4"
-            #"rpinhpurneg" "rpinhpurpos" 
-            #"rpinhpur120xangle" "rpinhpur130xangle" "rpinhpur140xangle" "rpinhpur150xangle" 
+            "rpinhpur"      
+            "rpinhpur0pos"  "rpinhpur1pos"  "rpinhpur2pos"
+            "rpinhpur0neg"  "rpinhpur1neg"  "rpinhpur2neg"
+            "rpinhpur1"     "rpinhpur2"     "rpinhpur3"     "rpinhpur4"            
         )
-        channels=(em mm ee a em)
+        channels=(mm ee a em offz)
         for ch in ${channels[@]}; do
            plots=""
 
-            for c in "${cats[@]}"; do            
-                evcat=${ch}${c}
-                
-                for p in ptll mll nvtx rho xangle mll mll_full yll etall ptll ptll_high l1eta l1pt l2eta l2pt acopl costhetacs met njets mpf zjb zj2b nch; do                  
-                    plots="${p}_${evcat},${plots}"
-                done
+            for c in "${cats[@]}"; do 
 
+                evcat=${ch}${c};
+                
+                #proton-related plots
                 if [[ $evcat == *"rpin"* ]]; then
-                    for p in nextramu extramupt extramueta mmass ppcount ypp mpp pzpp mmass_full; do
+
+                    for p in mmass_full mmass ppcount ypp mpp pzpp; do
+                        plots="${p}_${evcat},${plots}"
+                    done
+
+                    if [[ $evcat == *"pos"* || $evcat == *"neg"* ]]; then
+                        for p in ntk csi; do
+                            plots="${p}_${evcat},${plots}"
+                        done
+                    fi            
+
+                #central-kinematics plots
+                else
+                    for p in nextramu extramupt extramueta ptll mll nvtx rho xangle mll mll_full yll etall ptll ptll_high l1eta l1pt l2eta l2pt acopl costhetacs met njets mpf zjb zj2b nch; do
                         plots="${p}_${evcat},${plots}"
                     done
                 fi
                 
-                if [[ $evcat == *"pos"* || $evcat == *"neg"* ]]; then
-                    for p in ntk csi; do
-                        plots="${p}_${evcat},${plots}"
-                    done
-                fi            
             done
 
+            finalPlotOpts=${commonOpts}
             if [[ $c == *"a"* ]]; then
-                commonOpts="${commonOpts} --normToData"
+                finalPlotOpts="${commonOpts} --normToData"
             fi
 
             python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py \
-                ${commonOpts} --only ${plots} \
-                --strictOnly  -o plotter_${ch}.root & # --saveLog &
+                ${finalPlotOpts} --only ${plots} --strictOnly  -o plotter_${ch}.root  # --saveLog &
         done
         
         ;;
 
-    PLOTSIGACC )
-        for m in 600 800 1200 1400; do 
-            for i in `seq 2 5`; do 
-                python test/analysis/pps/drawSignalPeak.py \
-                    /eos/cms/${anadir}/Z_m_X_${m}_xangle_1${i}0_2017_preTS2.root ; 
-            done 
-        done
-        mkdir -p /eos/cms/${anadir}/plots_signal
-        mv mmass*sig* /eos/cms/${anadir}/plots_signal
-        ;;
 
+    PLOTLOCALSENS )     
 
-    PLOTLOCALSENS )       
-        odir=/eos/cms/${anadir}/localsens
+        indirForPlots=/eos/cms/${anadir}_1exc  
+        odir=${indirForPlots}/localsens
         mkdir -p ${odir};
         for xangle in 120 130 140 150; do
-            python test/analysis/pps/estimateLocalSensitivity.py --xangle ${xangle} \
-                -i /eos/cms/${anadir} -o ${odir} &            
+            python test/analysis/pps/estimateLocalSensitivity.py --xangle ${xangle} -i ${indirForPlots} -o ${odir} &            
         done
         ;;
 
 
     TESTSTATANA)
 
+        pfix=_1exc
+        indirForPlots=/eos/cms/${anadir}${pfix}
+        commonOpts="-i ${indirForPlots} --massList 800,1200,1600"
+
         echo "Generating a datacard takes a bit as it'll project the shapes for a given set of cuts"
         echo "You can run locally with python test/analysis/pps/generatedBinnedWorkspace.py and your preferred set of cuts"
-        echo "Running with the default values for ${anadir} and output @ ppvx_analysis/test"
-        commonOpts="-i /eos/cms/${anadir} --massList 800,1200,1600"
-        python test/analysis/pps/generateBinnedWorkspace.py ${commonOpts} -o ppvx_${githash}/test &
-        python test/analysis/pps/generateBinnedWorkspace.py ${commonOpts} -o ppvx_${githash}_signed/test --signed &
+        echo "Running with the default values for ${commonOpts} and output @ ppvx_${githash}${pfix}/test"
+        
+        #python test/analysis/pps/generateBinnedWorkspace.py ${commonOpts} -o ppvx_${githash}${pfix}/test &
+        python test/analysis/pps/generateBinnedWorkspace.py ${commonOpts} -o ppvx_${githash}${pfix}_inc/test --xangles 0&
+        #python test/analysis/pps/generateBinnedWorkspace.py ${commonOpts} -o ppvx_${githash}${pfix}_signed/test --signed &
 
         ;;
 
     OPTIMSTATANA )
         
+        pfix=_1exc
+        indirForPlots=/eos/cms/${anadir}${pfix}
+
         #afs needs to be used here...
-        python test/analysis/pps/prepareOptimScanCards.py -o ppvx_${githash}        -i /eos/cms/${anadir}
-        python test/analysis/pps/prepareOptimScanCards.py -o ppvx_${githash}_signed -i /eos/cms/${anadir} --signed
+        python test/analysis/pps/prepareOptimScanCards.py -o ppvx_${githash}${pfix}        -i ${indirForPlots}
+        python test/analysis/pps/prepareOptimScanCards.py -o ppvx_${githash}${pfix}_inc    -i ${indirForPlots} --xangles 0
+        #python test/analysis/pps/prepareOptimScanCards.py -o ppvx_${githash}${pfix}_signed -i ${indirForPlots} --signed
         
         ;;
 
     INJECTSIGNAL )
 
         #afs needs to be used here...
+        pfix=_1exc
+        indirForPlots=/eos/cms/${anadir}${pfix}
         mu=0.5
-        for m in 600 800 1200 1400; do
-            python test/analysis/pps/prepareOptimScanCards.py -o ppvx_${githash}_${m}_${mu}         -i /eos/cms/${anadir} --injectMass ${m} --injectMu ${mu} --just 2,10,46;
-            python test/analysis/pps/prepareOptimScanCards.py -o ppvx_${githash}_signed_${m}_${mu}  -i /eos/cms/${anadir} --injectMass ${m} --injectMu ${mu} --just 2,10,46 --signed;
+        for m in 600 800 1000 1200; do
+            baseOpts="-i ${indirForPlots} --injectMass ${m} --injectMu ${mu} --just 0,1,2,3,4,5";
+            python test/analysis/pps/prepareOptimScanCards.py -o ppvx_${githash}${pfix}_${m}_${mu}        ${baseOpts};
+            python test/analysis/pps/prepareOptimScanCards.py -o ppvx_${githash}${pfix}_inc_${m}_${mu}    ${baseOpts} --xangles 0;
+            #python test/analysis/pps/prepareOptimScanCards.py -o ppvx_${githash}${pfix}_signed_${m}_${mu}  ${baseOpts} --signed;
         done
 
         ;;
@@ -394,7 +421,7 @@ case $WHAT in
         echo "CMSSW_BASE=$CMSSW_BASE"
         #analysis control plots
         mkdir -p ${wwwdir}/ana
-        #cp /eos/cms/${anadir}/plots/*.{png,pdf,dat} ${wwwdir}/ana
+        cp /eos/cms/${anadir}/plots/*.{png,pdf,dat} ${wwwdir}/ana
         cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}/ana
 
         #signal acceptance plots

@@ -28,7 +28,7 @@ SINGLEPHOTON=22
 MINCSI=0.035
 MIXEDRP=None
 MIXEDRPSIG=None # this is only for a test
-
+ALLOWPIXMULT=[1,2]
 
 def isValidRunLumi(run,lumi,runLumiList):
 
@@ -132,13 +132,13 @@ def getDiProtonCategory(pos_protons,neg_protons,boson):
     if nmulti_pos==1 and nmulti_neg==1:
         proton_cat=1
         csi_pos,csi_neg=pos_protons[0][0],neg_protons[0][0]
-    elif nmulti_pos==1 and (nmulti_neg==0 and npix_neg==1):
+    elif nmulti_pos==1 and (nmulti_neg==0 and npix_neg in ALLOWPIXMULT):    
         proton_cat=2
         csi_pos,csi_neg=pos_protons[0][0],neg_protons[1][0]
-    elif (nmulti_pos==0 and npix_pos==1) and nmulti_neg==1:
+    elif (nmulti_pos==0 and npix_pos in ALLOWPIXMULT) and nmulti_neg==1:
         proton_cat=3
         csi_pos,csi_neg=pos_protons[1][0],neg_protons[0][0]
-    elif (nmulti_pos==0 and npix_pos==1) and (nmulti_neg==0 and npix_neg==1):
+    elif (nmulti_pos==0 and npix_pos in ALLOWPIXMULT) and (nmulti_neg==0 and npix_neg in ALLOWPIXMULT):
         proton_cat=4
         csi_pos,csi_neg=pos_protons[1][0],neg_protons[1][0]
 
@@ -204,6 +204,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
 
     global MIXEDRP
     global MIXEDRPSIG
+    global ALLOWPIXMULT
 
     isData=True if 'Data' in inFile else False
     isDY=isDYFile(inFile)
@@ -250,6 +251,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
 
     #start event mixing tool
     evMixTool=EventMixingTool(mixedRP=MIXEDRP,validAngles=VALIDLHCXANGLES)
+    print 'Allowed pixel multiplicity is',ALLOWPIXMULT 
 
     #start histograms
     ht=HistoTool()   
@@ -260,6 +262,9 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
             lab="|{0:04b}>".format(i)
             ht.histos['sighyp']['inc'].GetXaxis().SetBinLabel(i+1,lab)
             ht.histos['sighyp']['inc'].GetYaxis().SetBinLabel(i+1,lab)
+    ht.add(ROOT.TH1F('catcount',';Proton selection category;Events',6,0,6))
+    for i,c in enumerate(['inc','=2s','mm','ms','sm','ss']):
+        ht.histos['catcount']['inc'].GetXaxis().SetBinLabel(i+1,c)
 
     #main analysis histograms
     ht.add(ROOT.TH1F('nvtx',';Vertex multiplicity;Events',50,0,100))
@@ -449,7 +454,9 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
         ppsNegEff,ppsNegEffUnc=1.0,0.0
         if isSignal or (isData and isRPIn):     
             ev_pos_protons,ev_neg_protons  = getTracksPerRomanPot(tree,minCsi=MINCSI)  
-    
+            orig_ev_pos_protons = copy.deepcopy(ev_pos_protons)
+            orig_ev_neg_protons = copy.deepcopy(ev_neg_protons)
+
         #if data and there is nothing to mix store the main characteristics of the event and continue
         if evMixTool.isIdle():
             if isData and isRPIn:
@@ -498,6 +505,13 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
                                                                                  ev_neg_protons,
                                                                                  mixed_neg_protons)
 
+
+            orig_mixed_pos_protons, orig_mixed_neg_protons = evMixTool.mergeWithMixedEvent(orig_ev_pos_protons, 
+                                                                                           mixed_pos_protons,
+                                                                                           orig_ev_neg_protons,
+                                                                                           mixed_neg_protons)
+
+
             #control before and after projection
             ht.fill((rawSigHyp,sighyp,1.0),    'sighyp',  ['raw'])
             ht.fill((rawSigHyp,sighyp,ppsEff), 'sighyp',  ['wgt'])
@@ -508,6 +522,18 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
         pos_protons = ev_pos_protons if isData else mixed_pos_protons[DIMUONS]
         neg_protons = ev_neg_protons if isData else mixed_neg_protons[DIMUONS]        
         proton_cat,csi_pos,csi_neg,ppSystem,mmassSystem = getDiProtonCategory(pos_protons,neg_protons,boson)
+
+        #compare categorization with fully exclusive selection of pixels
+        ht.fill((0,ppsEff),'catcount',['inc'])
+        if len(pos_protons[1]) in ALLOWPIXMULT and len(neg_protons[1]) in ALLOWPIXMULT : 
+            ht.fill((1,ppsEff),'catcount',['inc'])
+            ht.fill((proton_cat+1,ppsEff),'catcount',['inc'])
+        if isSignal:
+            ht.fill((0,1.),'catcount',['single'])
+            if len(orig_mixed_pos_protons[DIMUONS][1]) in ALLOWPIXMULT and len(orig_mixed_neg_protons[DIMUONS][1]) in ALLOWPIXMULT:
+                ht.fill((1,1.),'catcount',['single'])
+
+
 
         #event categories
         cats=[]            
@@ -676,7 +702,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
 
                 itry_wgt = wgt/float(nMixTries)
 
-                #FIXME this point fwd
+
                 if itry<=nMixTries or isSignal:
                     mixType           = 1
                     if isSignal: mixType=itry
@@ -866,6 +892,12 @@ def runAnalysisTasks(opt):
         runLumi=json.load(cachefile,  encoding='utf-8', object_pairs_hook=OrderedDict).items()
         runLumi={int(x[0]):x[1] for x in runLumi}
 
+    global ALLOWPIXMULT
+    if opt.allowPix:
+        print 'Updating the number of allowed pixels'
+        ALLOWPIXMULT=[int(x) for x in opt.allowPix.split(',')]
+        print ALLOWPIXMULT 
+
     #used to test inclusion of potential signal (test case from conveners request)
     global MIXEDRPSIG
     if opt.mixSignal:
@@ -944,6 +976,10 @@ def main():
                       default=-1,
                       type=int,
                       help='# of events to process [default: %default]')
+    parser.add_option('--allowPix',
+                      dest='allowPix', 
+                      default='1,2',
+                      help='number of pixel protons allowed [default: %default]')
     parser.add_option('--json',
                       dest='json', 
                       default='pps_samples.json',

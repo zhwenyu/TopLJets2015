@@ -4,18 +4,32 @@ import sys
 import argparse
 import itertools
 
-KINEMATICS = [('bosonpt>30',                       'bosonpt>95'),
-              ('bosonpt>40',                       'bosonpt>100'),
-              ('bosonpt>40 && l1pt>40 && l2pt>30', 'bosonpt>110'),             
-              ('bosonpt>50',                       'bosonpt>120'),
-              ('bosonpt>50 && l1pt>40 && l2pt>30', 'bosonpt>130'),             
-              ('bosonpt>60',                       'bosonpt>140')]
-RPSEL      = ['csi1>0.035 && csi2>0.035',
-              'csi1>0.045 && csi2>0.045',              
-              'csi1>0.045 && csi2>0.055']
+#PRE-APP VERSION
+#KINEMATICS = [('bosonpt>30',                       'bosonpt>95'),
+#              ('bosonpt>40',                       'bosonpt>100'),
+#              ('bosonpt>40 && l1pt>40 && l2pt>30', 'bosonpt>110'),             
+#              ('bosonpt>50',                       'bosonpt>120'),
+#              ('bosonpt>50 && l1pt>40 && l2pt>30', 'bosonpt>130'),             
+#              ('bosonpt>60',                       'bosonpt>140')]
+#RPSEL      = ['csi1>0.035 && csi2>0.035',
+#              'csi1>0.045 && csi2>0.045',              
+#              'csi1>0.045 && csi2>0.055']
+#CATEGS     = ['nvtx<20,nvtx>=20',
+#              'nvtx<25,nvtx>=25',
+#              'nvtx<30,nvtx>=30']
+
+
+#NEW VERSION
+KINEMATICS = [('bosonpt>30', 'bosonpt>95'),
+              ('bosonpt>40', 'bosonpt>100'),
+              ('bosonpt>50', 'bosonpt>120'),]
+RPSEL      = ['csi1>0.035 && csi2>0.035',]
 CATEGS     = ['nvtx<20,nvtx>=20',
-              'nvtx<25,nvtx>=25',
-              'nvtx<30,nvtx>=30']
+              'protonCat==1 && nvtx<20,protonCat==1 && nvtx>=20',
+              'protonCat==1,protonCat==2,protonCat==3,protonCat==4']
+
+
+
 
 OPTIMLIST=list(itertools.product(KINEMATICS, RPSEL,CATEGS))
 
@@ -43,6 +57,10 @@ def main(args):
                         dest='output', 
                         default='ppvx_analysis',
                         help='Output directory [default: %default]')
+    parser.add_argument('--xangles',
+                        dest='xangles', 
+                        default='120,130,140,150',
+                        help='Scan these cross angles (0=inclusive) [default: %default]')
     parser.add_argument('--just',
                         dest='just',
                         default=None,
@@ -80,6 +98,7 @@ def main(args):
             script.write('preselZ="%s && %s"\n'%(kin[0],rpsel))
             script.write('preselGamma="%s && %s"\n'%(kin[1],rpsel))        
             script.write('categs="%s"\n'%(cats))
+            script.write('xangles="%s"\n'%(opt.xangles))
             if opt.injectMass:
                 script.write('injectMass="--injectMass %s"\n'%opt.injectMass)
             else:
@@ -104,7 +123,7 @@ def main(args):
 
             #create datacard
             script.write('echo "Running datacard creation"\n')
-            script.write('python ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/pps/generateBinnedWorkspace.py -i ${input} -o ${output} --preselZ "${preselZ}" --preselGamma "${preselGamma}" --categs "${categs}" ${injectMass} ${extraOpt}\n')
+            script.write('python ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/pps/generateBinnedWorkspace.py -i ${input} -o ${output} --preselZ "${preselZ}" --preselGamma "${preselGamma}" --categs "${categs}" ${injectMass} ${extraOpt} --xangles "${xangles}" \n')
             script.write('\n')
 
             #combine cards

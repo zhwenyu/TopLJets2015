@@ -54,7 +54,7 @@ class EventMixingTool:
         return False if self.mixedRP else True
 
 
-    def getNew(self,evEra,beamXangle,isData,validAngles,mixEvCategs):
+    def getNew(self,evEra,beamXangle,isData,validAngles,mixEvCategs,orderByDecreasingCsi=True):
 
         """get new list of mixed protons from different event categories
         also returns a list of variables which be used for pileup discrimination"""
@@ -74,8 +74,13 @@ class EventMixingTool:
                 mixedEvKey                  = (evEra,beamXangle,mixEvCat)
                 mixedEv                     = random.choice( self.mixedRP[mixedEvKey] )
                 mixed_pudiscr[mixEvCat]     = mixedEv.puDiscr
-                mixed_pos_protons[mixEvCat] = mixedEv.pos_protons
+                mixed_pos_protons[mixEvCat] = mixedEv.pos_protons               
                 mixed_neg_protons[mixEvCat] = mixedEv.neg_protons
+
+                if orderByDecreasingCsi:
+                    mixed_pos_protons[mixEvCat][1].sort(reverse = True) 
+                    mixed_neg_protons[mixEvCat][1].sort(reverse = True) 
+
         except Exception as e:
             print e  
             print evEra,beamXangle,mixEvCat,'->',mixedEvKey
@@ -87,7 +92,8 @@ class EventMixingTool:
 
     def mergeWithMixedEvent(self,
                             pos_protons,         mixed_pos_protons,
-                            neg_protons,         mixed_neg_protons):
+                            neg_protons,         mixed_neg_protons,
+                            orderByDecreasingCsi = True):
             
         """merges tracks from two different events (useful for pure signal embedding) """
 
@@ -106,12 +112,17 @@ class EventMixingTool:
 
                 merged_pos_protons[mixEvCat][i] += mixed_pos_protons[mixEvCat][i]
                 merged_pos_protons[mixEvCat][i] += pos_protons[i]
-                shuffle(merged_pos_protons[mixEvCat][i])                
 
                 merged_neg_protons[mixEvCat][i] += mixed_neg_protons[mixEvCat][i]
                 merged_neg_protons[mixEvCat][i] += neg_protons[i]
-                shuffle(merged_neg_protons[mixEvCat][i])
-                
+
+                if orderByDecreasingCsi:
+                    merged_pos_protons[mixEvCat][i].sort(reverse = True) 
+                    merged_neg_protons[mixEvCat][i].sort(reverse = True) 
+                else:
+                    shuffle(merged_pos_protons[mixEvCat][i])                
+                    shuffle(merged_neg_protons[mixEvCat][i])
+
                 if i==1: continue
 
                 if len(merged_pos_protons[mixEvCat][i])>1:
