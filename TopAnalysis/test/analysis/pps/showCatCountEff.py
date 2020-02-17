@@ -3,7 +3,7 @@ import sys
 
 fIn=ROOT.TFile.Open(sys.argv[1])
 
-for k in fIn.Get('catcount_single').GetListOfKeys():
+for k in fIn.Get('catcount').GetListOfKeys():
     h=k.ReadObj()
     norm=h.GetBinContent(1)
 

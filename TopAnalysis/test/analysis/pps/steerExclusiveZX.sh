@@ -144,20 +144,20 @@ case $WHAT in
     TESTANA )        
 
         predin=/eos/cms/${outdir}/Chunks
-        file=Data13TeV_2017D_DoubleEG_2.root
+        file=Data13TeV_2017B_DoubleMuon_2.root
         
-        predin=/eos/cms/${signaldir}
+        #predin=/eos/cms/${signaldir}
         #file=Z_m_X_960_xangle_120_2017_preTS2.root
-        file=Z_m_X_960_xangle_120_2017_postTS2.root
+        #file=Z_m_X_960_xangle_120_2017_postTS2.root
         
-        mix_file=/eos/cms/${anadir}/mixing/test_mixbank.pck
+        mix_file=/eos/cms/${anadir}/mixing/
 
         predout=./mixtest
         addOpt="--effDir test/analysis/pps"
         python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 1 --jobs 1 \
             --json ${mcjson},${datajson},${signaljson},${signalpostts2json} --RPout ${RPout_json} -o ${predout} \
-            --mix ${mix_file} -i ${predin} --only ${file} ${addOpt} --maxEvents 10000 \
-            --allowPix 1;
+            --mix ${mix_file} -i ${predin} --only ${file} ${addOpt} --maxEvents 1000 \
+            --allowPix 1,2;
 
         #predout=./mix1200
         #addOpt="--mixSignal /eos/cms/${anadir}/Z_m_X_1200_xangle_{0}_2017_preTS2_opt_v1_simu_reco.root"
@@ -172,7 +172,7 @@ case $WHAT in
         predin=/eos/cms/${outdir}/Chunks
         predout=/eos/cms/${anadir}
         condor_prep=runana_condor.sub
-        mix_file=/eos/cms/${anadir}/mixing/mixbank.pck
+        mix_file=/eos/cms/${anadir}/mixing/
         echo "executable  = ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/pps/wrapAnalysis.sh" > $condor_prep
         echo "output       = ${condor_prep}.out" >> $condor_prep
         echo "error        = ${condor_prep}.err" >> $condor_prep
@@ -193,7 +193,7 @@ case $WHAT in
         #0-just check
         #1-run locally
         #2-submit to condor
-        python test/analysis/pps/checkFinalNtupleInteg.py /eos/cms/${outdir}/Chunks /eos/cms/${anadir}/Chunks 2 1 /eos/cms/${anadir}/mixing/mixbank.pck
+        python test/analysis/pps/checkFinalNtupleInteg.py /eos/cms/${outdir}/Chunks /eos/cms/${anadir}/Chunks 2 1 /eos/cms/${anadir}/mixing/
         ;;
     
     ANASIG )
@@ -201,7 +201,7 @@ case $WHAT in
         predin=/eos/cms/${signaldir}
         predout=/eos/cms/${anadir}
         condor_prep=runanasig_condor.sub
-        mix_file=/eos/cms/${anadir}/mixing/mixbank.pck
+        mix_file=/eos/cms/${anadir}/mixing/
         echo "executable  = ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/pps/wrapAnalysis.sh" > $condor_prep
         echo "output      = ${condor_prep}.out" >> $condor_prep
         echo "error       = ${condor_prep}.err" >> $condor_prep
@@ -220,7 +220,7 @@ case $WHAT in
         ;;
    
     CHECKANASIG )        
-        python test/analysis/pps/checkFinalNtupleInteg.py /eos/cms/${signaldir} /eos/cms/${anadir}/Chunks 1 1 /eos/cms/${anadir}/mixing/mixbank.pck
+        python test/analysis/pps/checkFinalNtupleInteg.py /eos/cms/${signaldir} /eos/cms/${anadir}/Chunks 2 1 /eos/cms/${anadir}/mixing
         ;;
 
     MERGEANA )
@@ -229,25 +229,12 @@ case $WHAT in
 
     BKGVALIDATION )       
 
-        ptlist=(0 40 60)        
-        indirForPlots=/eos/cms/${anadir}_1exc
-
+        ptlist=(0) # 50)
+        indirForPlots=/eos/cms/${anadir} #_1exc
+        baseOpts="-i ${indirForPlots}" # --doPerEra --doPerPU --doPerAngle"
         for pt in ${ptlist[@]}; do 
-
             output=${indirForPlots}/bkg_ptll${pt}
-
-            #inclusive
-            python test/analysis/pps/doBackgroundValidation.py \
-                -i ${indirForPlots} -o ${output} \
-                --selCuts "bosonpt>=${pt} && l1pt>30 && l2pt>20" --doPerAngle  &
-
-            #per proton category
-            for protonCat in 1 2 3 4; do
-                python test/analysis/pps/doBackgroundValidation.py \
-                    -i ${indirForPlots} -o ${output} \
-                    --protonCat ${protonCat} \
-                    --selCuts "bosonpt>=${pt} && l1pt>30 && l2pt>20" &             
-            done            
+            python test/analysis/pps/doBackgroundValidation.py ${baseOpts} -o ${output} --selCuts "bosonpt>=${pt}&&l1pt>30&&l2pt>20"
         done
 
         ;;
@@ -255,7 +242,7 @@ case $WHAT in
     PLOTSIGACC )
 
         
-        indirForPlots=/eos/cms/${anadir}_1exc
+        indirForPlots=/eos/cms/${anadir}
 
         for m in 600 800 1200 1400; do 
             for i in `seq 2 5`; do 
@@ -270,7 +257,7 @@ case $WHAT in
 
     PLOTANA )
 
-        indirForPlots=/eos/cms/${anadir}_1exc
+        indirForPlots=/eos/cms/${anadir} #_1exc
 
         lumiSpecs="mmrpin:${ppsLumi},eerpin:${ppsLumi},emrpin:${ppsLumi},a:${lptalumi},arpin:${lptappslumi}"   
         for c in hpur hpur1 hpur2 hpur3 hpur4 hpur0pos hpur0neg hpur1pos hpur1neg hpur2pos hpur2neg; do
@@ -400,12 +387,16 @@ case $WHAT in
 
 
     FINALIZESTATANA )
-        for d in ppvx_${githash} ppvx_${githash}_signed; do
+
+        pfix=_1exc
+        indirForPlots=/eos/cms/${anadir}${pfix}
+
+        for d in ppvx_${githash}${pfix} ppvx_${githash}${pfix}_inc; do
             python test/analysis/pps/compareOptimResults.py ${d}
             mkdir -p ${d}/plots
-            mkdir -p /eos/cms/${anadir}/${d}
-            mv *.{png,pdf,dat} /eos/cms/${anadir}/${d}
-            mv limits*root  /eos/cms/${anadir}/${d}
+            mkdir -p ${indirForPlots}/${d}
+            mv *.{png,pdf,dat} ${indirForPlots}/${d}
+            mv limits*root ${indirForPlots}/${d} 
         done
         ;;
 
@@ -417,12 +408,12 @@ case $WHAT in
 	#mkdir -p ${wwwdir}/presel
 	#cp /eos/cms/${outdir}/plots/*.{png,pdf,dat} ${wwwdir}/presel
 	#cp /eos/cms/${outdir}/plots/sel/*.{png,pdf,dat} ${wwwdir}/presel
-	cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}/presel
-        echo "CMSSW_BASE=$CMSSW_BASE"
+	#cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}/presel
+        #echo "CMSSW_BASE=$CMSSW_BASE"
         #analysis control plots
-        mkdir -p ${wwwdir}/ana
-        cp /eos/cms/${anadir}/plots/*.{png,pdf,dat} ${wwwdir}/ana
-        cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}/ana
+        #mkdir -p ${wwwdir}/ana
+        #cp /eos/cms/${anadir}/plots/*.{png,pdf,dat} ${wwwdir}/ana
+        #cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}/ana
 
         #signal acceptance plots
         #mkdir -p ${wwwdir}/signal
@@ -434,10 +425,13 @@ case $WHAT in
         #cp /eos/cms/${anadir}/localsens/*.{png,pdf,dat} ${wwwdir}/localsens
         #cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}/localsens
 
+        pfix="" #_1exc
+        indirForPlots=/eos/cms/${anadir}${pfix}
+
         #background closure plots
-        for pt in 0 40 60; do
-            pdir=/eos/cms/${outdir}/bkg_ptll${pt}
-            odir=${wwwdir}/bkg/emu_ptll${pt}
+        for pt in 0; do # 50; do
+            pdir=${indirForPlots}/bkg_ptll${pt}
+            odir=${wwwdir}${pfix}/bkg/emu_ptll${pt}
             mkdir -p ${odir}
             cp ${pdir}/*.{png,pdf,dat} ${odir}
             cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${odir}

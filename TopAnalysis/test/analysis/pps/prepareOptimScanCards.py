@@ -28,8 +28,12 @@ CATEGS     = ['nvtx<20,nvtx>=20',
               'protonCat==1 && nvtx<20,protonCat==1 && nvtx>=20',
               'protonCat==1,protonCat==2,protonCat==3,protonCat==4']
 
-
-
+#USE THIS FOR JET VETO VERSION
+#KINEMATICS = [('bosonpt>50', 'bosonpt>95'),]
+#RPSEL      = ['csi1>0.035 && csi2>0.035',]
+#CATEGS     = ['njets==0,njets>0',
+#              'protonCat==1 && njets==0,protonCat==1 && njets>0',
+#              'protonCat==1 && njets==0,protonCat==1 && njets>0,protonCat==2 && njets==0,protonCat==2 && njets>0,protonCat==3 && njets==0,protonCat==3 && njets>0,protonCat==4 && njets==0,protonCat==4 && njets>0']
 
 OPTIMLIST=list(itertools.product(KINEMATICS, RPSEL,CATEGS))
 

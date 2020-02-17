@@ -1,6 +1,7 @@
 import pickle
 import ROOT
 import random
+import copy
 from random import shuffle
 
 class EventMixingTool:
@@ -72,10 +73,10 @@ class EventMixingTool:
                 if isData and not beamXangle in validAngles : continue
                 
                 mixedEvKey                  = (evEra,beamXangle,mixEvCat)
-                mixedEv                     = random.choice( self.mixedRP[mixedEvKey] )
-                mixed_pudiscr[mixEvCat]     = mixedEv.puDiscr
-                mixed_pos_protons[mixEvCat] = mixedEv.pos_protons               
-                mixed_neg_protons[mixEvCat] = mixedEv.neg_protons
+                mixedEv                     = random.choice( self.mixedRP[mixedEvKey] )                
+                mixed_pudiscr[mixEvCat]     = copy.deepcopy(mixedEv.puDiscr)
+                mixed_pos_protons[mixEvCat] = copy.deepcopy(mixedEv.pos_protons)               
+                mixed_neg_protons[mixEvCat] = copy.deepcopy(mixedEv.neg_protons)
 
                 if orderByDecreasingCsi:
                     mixed_pos_protons[mixEvCat][1].sort(reverse = True) 
@@ -86,13 +87,12 @@ class EventMixingTool:
             print evEra,beamXangle,mixEvCat,'->',mixedEvKey
             pass
 
-
         return mixed_pos_protons, mixed_neg_protons, mixed_pudiscr
 
 
     def mergeWithMixedEvent(self,
-                            pos_protons,         mixed_pos_protons,
-                            neg_protons,         mixed_neg_protons,
+                            pos_protons, mixed_pos_protons,
+                            neg_protons, mixed_neg_protons,
                             orderByDecreasingCsi = True):
             
         """merges tracks from two different events (useful for pure signal embedding) """
@@ -136,7 +136,6 @@ class EventMixingTool:
 
                     #make sure multiRP have been killed by > 1 strip
                     if i==2: merged_neg_protons[mixEvCat][0]=[]
-
 
         return merged_pos_protons, merged_neg_protons
 
