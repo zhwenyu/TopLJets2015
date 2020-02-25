@@ -28,13 +28,13 @@ def smoothMissingMass(h,smoothRanges=[#(-300,   300,  'pol2'),
     for xran in smoothRanges:
         
         xmin,xmax,fname=xran
-        print h.GetName(), xmin,xmax,'->',
         xmin=min(hxmax,max(hxmin,xmin))
         xmax=min(hxmax,max(hxmin,xmax))
-        print xmin,xmax
+
         if xmin==xmax :
             print 'Skipping', xran,'for',h.GetName()
             continue
+
         imin,imax=h.GetXaxis().FindBin(xmin),h.GetXaxis().FindBin(xmax)
         h.Fit(fname,'RQM+','',xmin,xmax)
         ffunc=h.GetFunction(fname)
@@ -149,14 +149,16 @@ def fillBackgroundTemplates(opt):
             data_obs.SetDirectory(0)
         h.Reset('ICE')
 
-        for name,mixType,pfix in [('bkg_'+catName,                      1, ''),
-                                  ('bkg_%s_bkgShape'%catName,           1, 'syst'),
-                                  ('bkg_%s_bkgShapeSingleDiffUp'%catName, 2, ''),
+        for name,mixType,pfix in [('bkg_'+catName,                          1, ''),
+                                  ('bkg_%s_bkgShape'%catName,               1, 'syst'),
+                                  ('bkg_%s_bkgShapeSingleDiffUp'%catName,   2, ''),
                                   ('bkg_%s_bkgShapeSingleDiffDown'%catName, 2, 'syst'),
                               ]:
 
             templCuts=categCut.replace('csi1',pfix+'csi1')
             templCuts=templCuts.replace('csi2',pfix+'csi2')
+            if pfix=='syst':
+                templCuts=templCuts.replace('protonCat','systprotonCat')
 
             histodef='%smmiss >> h(%d,%f,%f)'%(pfix,opt.nbins,opt.mMin,opt.mMax)           
             if opt.signed:
@@ -219,13 +221,12 @@ def fillSignalTemplates(mass,signalFile,xsec,opt,fiducialCuts='gencsi1>0.02 && g
                         
             #signal modelling histograms
             histos=[]
-            for name,mixType,pfix,addWgt in [('sig_%s_m%s'%(catName,mass),                        1, '',     None),
-                                             ('sig_%s_m%s_sigShape'%(catName,mass),               1, 'syst', None),
-                                             #('sig_%s_m%s_sigShapeSingleDiffUp'%(catName,mass),   2, '',     None),
-                                             #('sig_%s_m%s_sigShapeSingleDiffDown'%(catName,mass), 2, 'syst',     None),
-                                             ('sig_%s_m%s_sigCalibUp'%(catName,mass),             1, '',     None),
-                                             ('sig_%s_m%s_sigCalibDown'%(catName,mass),           1, '',     None),
-                                             ('sig_%s_m%s_sigPzModel'%(catName,mass),             1, '',     'gen_pzwgtUp')]:
+            for name,mixType,pfix,addWgt in [('sig_%s_m%s'%(catName,mass),               1, '',     None),
+                                             ('sig_%s_m%s_sigShape'%(catName,mass),      1, 'syst', None),                                             
+                                             ('sig_%s_m%s_sigCalibUp'%(catName,mass),    1, '',     None),
+                                             ('sig_%s_m%s_sigCalibDown'%(catName,mass),  1, '',     None),
+                                             ('sig_%s_m%s_sigPPSEff'%(catName,mass),     1, '',     '(ppsEff>0 ? 1.0+0.04/ppsEff : 1.0)'),
+                                             ('sig_%s_m%s_sigPzModel'%(catName,mass),    1, '',     'gen_pzwgtUp')]:
 
                 name=sigType+name
                 templCuts=categCut.replace('csi1',pfix+'csi1')
@@ -234,6 +235,8 @@ def fillSignalTemplates(mass,signalFile,xsec,opt,fiducialCuts='gencsi1>0.02 && g
                     templCuts+=' && !(%s)'%fiducialCuts
                 else:
                     templCuts+=' && %s'%fiducialCuts
+                if pfix=='syst':
+                    templCuts=templCuts.replace('protonCat','systprotonCat')
 
                 histodef='%smmiss >> h(%d,%f,%f)'%(pfix,opt.nbins,opt.mMin,opt.mMax)           
                 if opt.signed:
@@ -324,6 +327,7 @@ def writeDataCards(opt,shapesURL):
             dc.write('eff_%s                 %8s %15s %15s %15s\n'%(finalState,  'lnN',   '1.03',  '-',  '-'))
             dc.write('sigShape               %8s %15s %15s %15s\n'%('shape',              '1',     '1',  '-'))           
             dc.write('sigCalib               %8s %15s %15s %15s\n'%('shape',              '1',     '1',  '-'))
+            dc.write('sigPPSEff              %8s %15s %15s %15s\n'%('shape',              '1',     '1',  '-'))
             dc.write('sigPzModel             %8s %15s %15s %15s\n'%('shape',              '1',     '1',  '-'))
             dc.write('%s_bkgShape            %8s %15s %15s %15s\n'%(cat,'shape',          '-',     '-',  '1')) #uncorrelate background shapes
             dc.write('%s_bkgShapeSingleDiff  %8s %15s %15s %15s\n'%(cat,'shape',          '-',     '-',  '1'))

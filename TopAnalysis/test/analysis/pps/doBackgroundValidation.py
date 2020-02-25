@@ -18,6 +18,7 @@ def parseTitleFromCut(cut):
                            ('single-multi',  'protonCat==3'),
                            ('single-single', 'protonCat==4'),
                            ('N(vtx)',        'nvtx'),
+                           ('nch',           'N_{ch}(PV)'),
                            ('=',             '=='),
                            ('#geq',          '>='),
                            ('#leq',          '<='),
@@ -146,6 +147,11 @@ def main(args):
                         dest='selCuts', 
                         default='bosonpt>40 && l1pt>30 && l2pt>20',
                         help='preselection for Z categories [default: %default]')
+    parser.add_argument('--doPerNch',
+                        dest='doPerNch', 
+                        default=False,
+                        action='store_true',
+                        help='break-down per Nch [default: %default]')
     parser.add_argument('--doPerEra',
                         dest='doPerEra', 
                         default=False,
@@ -184,6 +190,7 @@ def main(args):
     if opt.doPerEra:   subCats += ['era==%d'%int(ord(x)) for x in 'BCDEF']
     if opt.doPerPU:    subCats += ['nvtx<20','nvtx>=20']
     if opt.doPerAngle: subCats += ['xangle==%d'%i for i in [120,130,140,150]]
+    if opt.doPerNch:   subCats += ['nch<15','nch>=15']
     catList = list(itertools.product(baseCats,subCats))
     
     outF='%s/plotter_embkg.root'%opt.output
@@ -231,10 +238,10 @@ def main(args):
                 ci=ci+1
                 p.add(data[dist][syst.format(dist)],  
                       title=syst, 
-                      color=ci, #ROOT.kCyan-6,
+                      color=ROOT.kCyan-6, #ci
                       isData=False, 
-                      spImpose=True, #False,
-                      isSyst=False) #True)
+                      spImpose=False,  #True,
+                      isSyst=True)     #False)
 
             #p.ratiorange=[0.78,1.22]
             p.ratiorange=[0.58,1.43]

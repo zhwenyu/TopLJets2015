@@ -5,65 +5,30 @@ from optparse import OptionParser
 from collections import defaultdict
 import numpy as np
 
-COLORS=[1, ROOT.kOrange,  ROOT.kRed+1, ROOT.kMagenta-9, ROOT.kBlue-7, ROOT.kGreen+3]
-
-def doNuisanceReport(args,outdir,onlyList,skipList,fitname):
+def doNuisanceReport(url,npergroup=20, blackList=['r']):
 
     """compare postfit nuisances"""
 
-    blackList=[]
-    
-    results=[]
-    varsMaxConstr={}
-    for i in xrange(0,len(args)):
+    fitResults=defaultdict(dict)
+    inF=ROOT.TFile.Open(url)
+    for fit in ['b','s']:
+        fres=inF.Get('fit_%s'%fit)
+        pars=fres.floatParsFinal()
+        iter = pars.createIterator()
+        var = iter.Next()
+        while var :
+            name=var.GetName()
+            if 'prop_' in name:
+                name=name.replace('prop_bin','')
+                name=name.replace('_bin','')
 
-        title,url=args[i].split('=')
-
-        varVals=defaultdict(dict)
-        try:
-            inF=ROOT.TFile.Open(url)
-            fitres=inF.Get(fitname)
-
-            iter = fitres.floatParsFinal().createIterator()
-            var = iter.Next()
-            while var :
-                bname=var.GetName()
-
-                accept=True
-                if onlyList:
-                    accept=False
-                    for tag in onlyList:
-                        if not tag in bname: continue
-                        accept=True
-                        break
-                if skipList:
-                    for tag in skipList:
-                        if not tag in bname: continue
-                        accept=False
-                        break
-                if not accept: 
-                    var = iter.Next()
-                    continue
-
-                varVals[bname]=[]
-                varVals[bname]=[ var.getVal(), abs(var.getErrorLo()), abs(var.getErrorHi()) ]
-                if not bname in varsMaxConstr: varsMaxConstr[bname]=9999.
-                varsMaxConstr[bname]=min(varsMaxConstr[bname],min(varVals[bname][1],varVals[bname][2]))
+            if not name in blackList:
+                val=var.getVal()
+                ehi=var.getErrorHi()
+                elo=var.getErrorLo()
                 var = iter.Next()
-
-        except Exception as e:
-            print '[doNuisanceReport] Unable to get results from',url
-            print e
-            continue
-            
-        results.append( (title,varVals) )
-
-    if len(results)==0:
-        print '[doNuisanceReport] no valid results have been found'
-        return
-
-    #form a list of the nuisances ordered by post-fit constrained values
-    allVars=sorted(varsMaxConstr,key=varsMaxConstr.get)
+                fitResults[name][fit]=(val,ehi,elo)
+            var = iter.Next()
 
     #show nuisances
     c=ROOT.TCanvas('c','c',500,500)
@@ -71,13 +36,14 @@ def doNuisanceReport(args,outdir,onlyList,skipList,fitname):
     c.SetTopMargin(0.1)
     c.SetRightMargin(0.05)
     c.SetBottomMargin(1.0)
-    c.SetGridy(True)
-    npergroup=20
-    ngroups=len(allVars)/npergroup+1
+    c.SetGridy(True)    
+    varNames=fitResults.keys()
+    ngroups=len(varNames)/npergroup+1
     for ig in range(ngroups):
+
         first=npergroup*ig
-        last=min(npergroup*(ig+1),len(allVars))
-        varList=allVars[first:last]
+        last=min(npergroup*(ig+1),len(varNames))
+        varList=varNames[first:last]
 
         #prepare a frame
         npars=len(varList)
@@ -137,80 +103,62 @@ def doNuisanceReport(args,outdir,onlyList,skipList,fitname):
         txt.SetTextSize(0.05)
         txt.SetTextAlign(12)
         txt.DrawLatex(0.05,0.955,'#bf{CMS} #it{Preliminary}')
-        txt.SetTextAlign(31)
-        txt.DrawLatex(0.95,0.955,'#scale[0.7]{35.6 fb^{-1} (13 TeV)}')
-
-        nuisGrs={}
-        dy=1.0/float(len(results)+1)
+        #txt.SetTextAlign(31)
+        #txt.DrawLatex(0.95,0.955,'#scale[0.7]{35.6 fb^{-1} (13 TeV)}')
         
+        nuisGrs={}
         for iv in range(len(varList)):
+
             v=varList[iv]
 
-            for ir in range(len(results)):
-                title,varVals=results[ir]                
-                if not title in nuisGrs:               
-                    nuisGrs[title]=ROOT.TGraphAsymmErrors()
-                    nuisGrs[title].SetTitle(title)
-                    nuisGrs[title].SetMarkerStyle(20+ir)
-                    nuisGrs[title].SetMarkerColor(COLORS[ir])
-                    nuisGrs[title].SetLineColor(COLORS[ir])
-                    nuisGrs[title].SetLineWidth(2)
-                    nuisGrs[title].SetFillStyle(0)
+            for fit in fitResults[v]:
 
-                if not v in varVals: continue
-                npts=nuisGrs[title].GetN()
-                val,uncLo,uncHi = varVals[v]
-                nuisGrs[title].SetPoint(npts,val,iv+dy*(ir+1))
-                nuisGrs[title].SetPointError(npts,abs(uncLo),abs(uncHi),0.,0.)
+                #start graph if needed
+                if not fit in nuisGrs:
+                    nuisGrs[fit]=ROOT.TGraphAsymmErrors()
+                    nuisGrs[fit].SetTitle(fit)
+                    marker=20 if fit=='s' else 24
+                    ci=1 if fit=='s' else ROOT.kGreen+2
+                    nuisGrs[fit].SetMarkerStyle(marker)
+                    nuisGrs[fit].SetMarkerColor(ci)
+                    nuisGrs[fit].SetLineColor(ci)
+                    nuisGrs[fit].SetLineWidth(2)
+                    nuisGrs[fit].SetFillStyle(0)
+
+                npts=nuisGrs[fit].GetN()
+                val,uncLo,uncHi = fitResults[v][fit]
+                y0=frame.GetYaxis().GetBinCenter(iv+1)
+                dy=frame.GetYaxis().GetBinWidth(iv)
+                if fit=='s': y0-=0.1*dy
+                if fit=='b': y0+=0.1*dy
+                nuisGrs[fit].SetPoint(npts,val,y0)
+                nuisGrs[fit].SetPointError(npts,abs(uncLo),abs(uncHi),0.,0.)
                 
-        leg=ROOT.TLegend(0.8,0.9,0.95,0.9-0.06*len(args))
+        leg=ROOT.TLegend(0.8,0.9,0.95,0.78)
         leg.SetTextFont(42)
         leg.SetTextSize(0.035)
         leg.SetBorderSize(0)
         leg.SetFillStyle(0)
-        for ir in range(len(results)):
-            title,_=results[ir]
-            if title in nuisGrs:
-                nuisGrs[title].Draw('p')
-                leg.AddEntry(nuisGrs[title],title,'p')
+        for fit in nuisGrs:
+            nuisGrs[fit].Draw('p')
+            leg.AddEntry(nuisGrs[fit],fit,'p')
         leg.Draw()
 
         c.RedrawAxis()
         c.Modified()
         c.Update()
 
-        for ext in ['png','pdf']:
-            c.SaveAs('%s/nuisances_%s_%d.%s'%(outdir,fitname,ig,ext))
+        for ext in ['png']: #,'pdf']:
+            c.SaveAs('nuisances_%d.%s'%(ig,ext))
 
     return
 
-
-"""
-steer the script
-"""
 def main():
 
     ROOT.gROOT.SetBatch(True)
     ROOT.gStyle.SetOptTitle(0)
     ROOT.gStyle.SetOptStat(0)
-
-    #parse user input
-    parser = OptionParser(
-        usage="%prog -o nuisances label1=fitresults_1.root label2=fitresults_2.root",
-        epilog="Summarizes the post-fit results"
-        )
-    parser.add_option("-o",    type="string",       dest="outdir",  default='nuisances',  help="name of the output directory")
-    parser.add_option("--only",    type="string",   dest="only",    default=None,  help="only nuisances matching these tags (CSV list)")
-    parser.add_option("--skip",    type="string",   dest="skip",    default=None,  help="skip these nuisances")
-    (opt, args) = parser.parse_args()
-
-    os.system('mkdir -p %s'%opt.outdir)
-    for fitname in ['fit_s','fit_b']:
-        doNuisanceReport(args=args,
-                         outdir=opt.outdir,
-                         onlyList=opt.only.split(',') if opt.only else None,
-                         skipList=opt.skip.split(',') if opt.skip else None,
-                         fitname=fitname)
+    doNuisanceReport(url=sys.argv[1])
 
 
 if __name__ == "__main__":

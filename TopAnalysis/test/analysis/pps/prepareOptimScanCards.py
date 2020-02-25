@@ -22,18 +22,17 @@ import itertools
 #NEW VERSION
 KINEMATICS = [('bosonpt>30', 'bosonpt>95'),
               ('bosonpt>40', 'bosonpt>100'),
-              ('bosonpt>50', 'bosonpt>120'),]
+              ('bosonpt>50', 'bosonpt>105'),]
 RPSEL      = ['csi1>0.035 && csi2>0.035',]
-CATEGS     = ['nvtx<20,nvtx>=20',
-              'protonCat==1 && nvtx<20,protonCat==1 && nvtx>=20',
-              'protonCat==1,protonCat==2,protonCat==3,protonCat==4']
-
-#USE THIS FOR JET VETO VERSION
-#KINEMATICS = [('bosonpt>50', 'bosonpt>95'),]
-#RPSEL      = ['csi1>0.035 && csi2>0.035',]
-#CATEGS     = ['njets==0,njets>0',
-#              'protonCat==1 && njets==0,protonCat==1 && njets>0',
-#              'protonCat==1 && njets==0,protonCat==1 && njets>0,protonCat==2 && njets==0,protonCat==2 && njets>0,protonCat==3 && njets==0,protonCat==3 && njets>0,protonCat==4 && njets==0,protonCat==4 && njets>0']
+CATEGS     = [
+    'protonCat==1',
+    ','.join( ['protonCat==1 && xangle==%d'%angle for angle in [120,130,140,150] ] ),    
+    'protonCat==1 && nvtx<20, protonCat==1 && nvtx>=20',
+    'protonCat==1 && nch<15,  protonCat==1 && nch>=15',
+    ','.join( ['protonCat==%d'%(i+1) for i in range(4)] ),
+    ','.join( ['protonCat==%d && nvtx<20'%(i+1) for i in range(4)] )  +','+  ','.join( ['protonCat==%d && nvtx>=20'%(i+1) for i in range(4)] ),
+    ','.join( ['protonCat==%d && nch<15'%(i+1) for i in range(4)] )   +','+  ','.join( ['protonCat==%d && nch>=15'%(i+1) for i in range(4)] ),
+]
 
 OPTIMLIST=list(itertools.product(KINEMATICS, RPSEL,CATEGS))
 
@@ -164,11 +163,11 @@ def main(args):
             script.write('pfix=${b}_m${m}\n')
             script.write('text2workspace.py ${b}_datacard.dat -m ${m} -o ${pfix}_workspace.root\n')
             script.write('baseCmd=\"combine ${pfix}_workspace.root -m ${m} --X-rtd MINIMIZER_analytic\"\n')
-            script.write('${baseCmd} -n PP${b}X.obs -M AsymptoticLimits\n')
-            script.write('${baseCmd} -n PP${b}X     -M AsymptoticLimits -t -1 --expectSignal=1 --setParameters mu_outfidsig=1\n')
-            script.write('${baseCmd} -n PP${b}X.obs -M Significance\n')
-            script.write('${baseCmd} -n PP${b}X     -M Significance     -t -1 --expectSignal=1 --setParameters mu_outfidsig=1\n')
-            script.write('#${baseCmd} -n PP${b}X     -M FitDiagnostics   -t -1 --expectSignal=1 --setParameters mu_outfidsig=1\n')
+            script.write('${baseCmd} -n PP${b}X.obs   -M AsymptoticLimits\n')
+            script.write('${baseCmd} -n PP${b}X       -M AsymptoticLimits -t -1 --expectSignal=1 --setParameters mu_outfidsig=1\n')
+            script.write('${baseCmd} -n PP${b}X.obs   -M Significance\n')
+            script.write('${baseCmd} -n PP${b}X       -M Significance     -t -1 --expectSignal=1 --setParameters mu_outfidsig=1\n')
+            script.write('${baseCmd} -n PP${b}X.m${m} -M FitDiagnostics\n')
             script.write('cd -\n')        
 
     #submit optimization points to crab

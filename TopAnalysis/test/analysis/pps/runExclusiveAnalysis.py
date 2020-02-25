@@ -188,7 +188,7 @@ def isPhotonSignalFile(inFile):
     return isSignal
 
 def signalMassPoint(inFile):
-    return float(os.path.basename(inFile).split('_')[3])
+    return float(re.search('m_X_(\d+)', inFile).group(1))
 
 def isSignalFiducial(csiPos,csiNeg,gen_pzpp):
 
@@ -214,6 +214,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
     era=os.path.basename(inFile).split('_')[1] if isData else None
     isDY=isDYFile(inFile)
     isSignal,isPreTS2Signal=isSignalFile(inFile)
+    isFullSimSignal = True if isSignal and 'fullsim' in inFile else False
     isPhotonSignal=isPhotonSignalFile(inFile)
     gen_mX=signalMassPoint(inFile) if isSignal else 0.
 
@@ -251,7 +252,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
 
 
     #bind main tree with pileup discrimination tree, if failed return
-    tree=ROOT.TChain('analysis/data' if isSignal else 'tree')
+    tree=ROOT.TChain('analysis/data' if isSignal and not isFullSimSignal else 'tree')
     tree.AddFile(inFile)
     #try:
     #    pudiscr_tree=ROOT.TChain('pudiscr')
@@ -451,7 +452,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
         n_extra_mu,nvtx,nch,rho,met,njets,PFMultSumHF,PFHtSumHF,PFPzSumHF,rfc=0,0,0,0,0,0,0,0,0,0
         mpf,zjb,zj2b=0,0,0
         extra_muons=[]
-        if not isSignal:
+        if isFullSimSignal or not isSignal:
             nvtx=tree.nvtx
             nch=tree.nchPV
             rho=tree.rho
@@ -593,16 +594,19 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
             gen_pzwgt[2] = ROOT.TMath.Gaus(gen_pzpp,0,pzwid*0.9)/gen_pzwgt[0]
 
             #use the sum of pz weighted events as normalization factor
-            if isZ:
-                finalPlots=[ [wgt*ppsEff*gen_pzwgt[0]*mcEff['eez'].Eval(boson.Pt())/nSignalWgtSum , cats],
-                             [wgt*ppsEff*gen_pzwgt[0]*mcEff['mmz'].Eval(boson.Pt())/nSignalWgtSum, [c.replace(evcat,'mm') for c in cats if c[0:2]=='ee']] ]
+            if not isFullSimSignal:
+                if isZ:
+                    finalPlots=[ [wgt*ppsEff*gen_pzwgt[0]*mcEff['eez'].Eval(boson.Pt())/nSignalWgtSum , cats],
+                                 [wgt*ppsEff*gen_pzwgt[0]*mcEff['mmz'].Eval(boson.Pt())/nSignalWgtSum, [c.replace(evcat,'mm') for c in cats if c[0:2]=='ee']] ]
 
-                #reject Z->ee if one electron in the transition
-                if hasEEEBTransition:
-                    finalPlots[0][0]=0.
+                    #reject Z->ee if one electron in the transition
+                    if hasEEEBTransition:
+                        finalPlots[0][0]=0.
 
-            elif isPhotonSignal:
-                finalPlots=[ [wgt*ppsEff*gen_pzwgt[0]*mcEff['a'].Eval(boson.Pt())/nSignalWgtSum, cats] ]
+                elif isPhotonSignal:
+                    finalPlots=[ [wgt*ppsEff*gen_pzwgt[0]*mcEff['a'].Eval(boson.Pt())/nSignalWgtSum, cats] ]
+            else:
+                finalPlots=[ [wgt*ppsEff*gen_pzwgt[0]/nSignalWgtSum, cats] ]
 
         for pwgt,pcats in finalPlots:   
 
@@ -638,7 +642,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
             ht.fill((PFHtSumHF,pwgt),       'PFHtHF',      pcats)
             ht.fill((PFPzSumHF/1.e3,pwgt),  'PFPZHF',      pcats)
             ht.fill((n_extra_mu,pwgt), 'nextramu', pcats)
-            if not isSignal:
+            if isFullSimSignal or not isSignal:
                 ht.fill((tree.metfilters,pwgt), 'metbits', pcats)
                 for sd in ['HE','EE','EB']:
                     ht.fill((getattr(tree,'PFMultSum'+sd),pwgt),    'PFMult'+sd, pcats)
@@ -728,8 +732,8 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
                                                                                              i_mixed_pos_protons,
                                                                                              ev_neg_protons,
                                                                                              i_mixed_neg_protons)
-
-                    n_extra_mu,nvtx,rho,PFMultSumHF,PFHtSumHF,PFPzSumHF,rfc = i_mixed_pudiscr[DIMUONS]
+                    if not isFullSimSignal:
+                        n_extra_mu,nvtx,rho,PFMultSumHF,PFHtSumHF,PFPzSumHF,rfc = i_mixed_pudiscr[DIMUONS]
 
                 itry_wgt = wgt/float(nMixTries)
 
@@ -838,6 +842,12 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
             #for signal update the event weight for ee/mm/photon hypothesis
             if isData or isDY:
                 tOut.Fill()
+
+            elif isFullSimSignal:
+                origWgt          = evSummary.wgt[0]
+                evSummary.wgt[0] = origWgt*gen_pzwgt[0]/nSignalWgtSum
+                tOut.Fill()
+
             elif isSignal:
 
                 origWgt=evSummary.wgt[0]
@@ -912,10 +922,11 @@ def runAnalysisTasks(opt):
 
         file_name,ext=os.path.splitext(file_path)
         if ext != '.root' : continue
-        
+
+
         #check if file tag is already in the list of samples to process
         isSignal,_=isSignalFile(file_name)
-        if isSignal:
+        if isSignal and not 'fullsim' in file_name:
             tag=file_name
         else:
             lastTkn=file_name.rfind('_')
@@ -996,7 +1007,7 @@ def main():
                       help='input directory with the files [default: %default]')
     parser.add_option('--jobs',
                       dest='jobs', 
-                      default=8,
+                      default=2,
                       type=int,
                       help='# of jobs to process in parallel the trees [default: %default]')
     parser.add_option('--maxEvents',
