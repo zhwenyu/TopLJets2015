@@ -42,7 +42,7 @@ echo "Selection adapted to YEAR=${ERA}"
 #to run locally use local as queue + can add "--njobs 8" to use 8 parallel jobs
 queue=workday
 outdir=${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/VBFVectorBoson
-wwwdir=/eos/user/p/psilva/www/SMP-19-005
+wwwdir=/eos/user/h/hbakhshi/www/SMP-19-005
 
 #k-factors for gamma+jets
 kFactors="--procSF MC13TeV_era${ERA}_QCDEM_15to20:1.26,MC13TeV_era${ERA}_QCDEM_20to30:1.26,MC13TeV_era${ERA}_QCDEM_30to50:1.26,MC13TeV_era${ERA}_QCDEM_50to80:1.26,MC13TeV_era${ERA}_QCDEM_80to120:1.26,MC13TeV_era${ERA}_QCDEM_120to170:1.26,MC13TeV_era${ERA}_QCDEM_170to300:1.26,MC13TeV_era${ERA}_QCDEM_300toInf:1.26,MC13TeV_era${ERA}_GJets_HT40to100:1.26,MC13TeV_era${ERA}_GJets_HT100to200:1.26,MC13TeV_era${ERA}_GJets_HT200to400:1.26,MC13TeV_era${ERA}_GJets_HT400to600:1.26,MC13TeV_era${ERA}_GJets_HT600toInf:1.26"
@@ -63,7 +63,7 @@ case $WHAT in
         if [[ ${ERA} == "2016" ]]; then
             tag=MC13TeV_2016_EWKAJJ
         fi
-        input=${eosdir}/${tag}/Chunk_0_ext0.root        
+        input=${eosdir}/${tag}/Chunk_1_ext0.root        
         output=${tag}.root 
         #input=${eosdir}
         #output=testsel
@@ -96,13 +96,13 @@ case $WHAT in
 	    echo 'I do QCD Template photon selection'
 	    extraOpts=${extraOpts}" --QCDTemp"
 	fi	
-	echo ${json}
+	echo ${json} #--only SinglePhoton
 	python scripts/runLocalAnalysis.py \
-      	    -i ${eosdir} --only SinglePhoton \
+      	    -i ${eosdir} \
             -o ${outdir}/${githash}/${EXTRA}${QCD} \
             --farmappendix ${githash}${QCD} \
             -q ${queue} --genWeights genweights_${githash}.root \
-            --era era${ERA} -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts ${extraOpts} --SRfake ;
+            --era era${ERA} -m VBFVectorBoson::RunVBFVectorBoson --ch 0 --runSysts ${extraOpts} ;
 	;;
 
     CHECKSELINTEG )
@@ -188,13 +188,13 @@ case $WHAT in
 	fake_json=data/era${ERA}/vbf_fake_samples.json;
 	plotOutDir=${outdir}/${githash}/${EXTRA}/plots/
 	commonOpts="-i ${outdir}/${githash}/${EXTRA} --puNormSF puwgtctr -l ${fulllumi} --saveLog --mcUnc ${lumiUnc} --lumiSpecs LowVPtLowMJJA:${vbflumi},LowVPtHighMJJA:${vbflumi},LowVPtA:${vbflumi}"
-#        python scripts/plotter.py ${commonOpts} -j ${gjets_json} --silent --only A_gen
+	#python scripts/plotter.py ${commonOpts} -j ${gjets_json} --silent --only A_gen
         #python scripts/plotter.py ${commonOpts} -j ${gjets_json} --noStack --only A_
-#	python scripts/plotter.py ${commonOpts} -j ${json} --only VPt ${kFactors}
-#	python scripts/plotter.py ${commonOpts} -j ${json} --only VPt ${kFactors} --rawYields -o acceptance_plotter.root
-	python scripts/plotter.py ${commonOpts} -j ${json} --only evcount ${kFactors} --saveTeX -o evcout_plotter.root
-#	python scripts/plotter.py ${commonOpts} -j ${syst_json} ${kFactors} --only VPt --silent -o syst_plotter.root
-#	python scripts/plotter.py ${commonOpts} -j ${json},${fake_json} --only LowVPt,HighVPt ${kFactors} ${fake} -o fake_plotter.root
+        python scripts/plotter.py ${commonOpts} -j ${json} ${kFactors}
+        #python scripts/plotter.py ${commonOpts} -j ${json} --only VPt ${kFactors} --rawYields -o acceptance_plotter.root
+        #python scripts/plotter.py ${commonOpts} -j ${json} --only evcount ${kFactors} --saveTeX -o evcout_plotter.root
+        #python scripts/plotter.py ${commonOpts} -j ${syst_json} ${kFactors} --only VPt --silent -o syst_plotter.root
+	#python scripts/plotter.py ${commonOpts} -j ${json},${fake_json} --only LowVPt,HighVPt ${kFactors} ${fake} -o fake_plotter.root
         ;;
     
     NLOTFACTORS )
@@ -204,7 +204,7 @@ case $WHAT in
         python test/analysis/computeTransferFactor.py ${commonOpts} --var leadpt     --binList 50,100,150,200,250,300,400,500
         python test/analysis/computeTransferFactor.py ${commonOpts} --var centraleta --binList 0,0.4,0.8,1.2,2,3,5
         python test/analysis/computeTransferFactor.py ${commonOpts} --var forwardeta --binList 0,0.8,1.2,2,3,5
-#        python test/analysis/computeTransferFactor.py ${commonOpts} --var detajj     --binList 0,0.8,1.6,2.4,3.2,4,5,8
+        #python test/analysis/computeTransferFactor.py ${commonOpts} --var detajj     --binList 0,0.8,1.6,2.4,3.2,4,5,8
         python test/analysis/computeTransferFactor.py ${commonOpts} --var dphijj     --rebin 2
         python test/analysis/computeTransferFactor.py ${commonOpts} --var mjj        --binList 500,600,700,800,900,1000,1250,1500,2000,3000,4000
         python test/analysis/computeTransferFactor.py ${commonOpts} --var vpt        --binList 75,100,150,200,250,300,350,400,550
@@ -223,9 +223,10 @@ case $WHAT in
 
     WWW )
 
-        plotList=(plots)
+        plotList=(plots/plotter)
         gh=${githash}
         for p in ${plotList[@]}; do
+	    echo ${p}
             pdir=${outdir}/${gh}/${EXTRA}/${p}
             if [ -d ${pdir} ]; then
                 fdir=${wwwdir}/${gh}/${EXTRA}/${p}
