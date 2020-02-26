@@ -259,7 +259,7 @@ def showLimits(results,name,title,lumi,results_obs=None):
         c.SaveAs('%s_log.%s'%(name,ext))
 
 
-def showShapes(resultsDir,name,title,mass,boson,r95,sig,lumi,plotData=True,showPseudoData=True,showAllBkgs=True):
+def showShapes(resultsDir,name,title,mass,boson,r95,sig,lumi,plotData=True,showPseudoData=True,showAllBkgs=True,subCatTitles=None):
 
     """ show the shapes corresponding to a given analysis """
     
@@ -286,8 +286,9 @@ def showShapes(resultsDir,name,title,mass,boson,r95,sig,lumi,plotData=True,showP
             channel='Z#rightarrowee'
         else:
             continue
-
-        for icat in range(4):
+        
+        ncats=len(subCatTitles) if subCatTitles else 1
+        for icat in range(ncats):
             
             if angle>=0:
                 bkgH       = fIn.Get('bkg_%s_a%d_%d'%(v,angle,icat))
@@ -351,15 +352,11 @@ def showShapes(resultsDir,name,title,mass,boson,r95,sig,lumi,plotData=True,showP
                 if showAllBkgs and outfidsigH:
                     p.add(outfidsigH.Clone(), title='non-fiducial',  color=ROOT.TColor.GetColor('#a6cee3'), isData=False, spImpose=True,  isSyst=False)
                 p.ratiorange=[0.68,1.32]
-                
-                subcatName='low pileup' if icat==0 else 'high pileup'
-                if angle>=0:
-                    extraText='%s, %d#murad\\%s'%(channel,angle,subcatName)
-                else:
-                    extraText='%s, inclusive\\%s'%(channel,subcatName)
-                if r95: extraText += '\\#mu_{95}(exp.)<%3.3f'%r95
-                if sig: extraText += '\\S(exp.)=%3.3f'%sig
-                p.show('./',lumi*1000,extraText=extraText)
+
+                extraText=[subCatTitles[icat] if subCatTitles else '']
+                if r95: extraText += ['#mu_{95}(exp.)<%3.3f'%r95]
+                if sig: extraText += ['S(exp.)=%3.3f'%sig]
+                p.show('./',lumi*1000,extraText='\\'.join(extraText))
 
                 colors=[ROOT.kGreen+1,ROOT.kAzure+3,ROOT.kRed+2]
 

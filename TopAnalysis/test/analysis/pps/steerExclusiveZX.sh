@@ -454,16 +454,13 @@ case $WHAT in
 
     FINALIZESTATANA )
 
-        pfix=_1exc
         indirForPlots=/eos/cms/${anadir}${pfix}
-
-        for d in ppvx_${githash}${pfix} ppvx_${githash}${pfix}_inc; do
-            python test/analysis/pps/compareOptimResults.py ${d}
-            mkdir -p ${d}/plots
-            mkdir -p ${indirForPlots}/${d}
-            mv *.{png,pdf,dat} ${indirForPlots}/${d}
-            mv limits*root ${indirForPlots}/${d} 
-        done
+        d=ppvx_${githash}${pfix}_inc
+        python test/analysis/pps/compareOptimResults.py ${d}
+        mkdir -p ${indirForPlots}/${d}
+        mv *.{png,pdf,dat} ${indirForPlots}/${d}
+        mv limits*root ${indirForPlots}/${d} 
+        
         ;;
 
 
