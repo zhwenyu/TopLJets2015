@@ -1,0 +1,118 @@
+import ROOT
+import os
+import sys
+import argparse
+import itertools
+import re
+from prepareOptimScanCards import OPTIMLIST
+from collections import defaultdict
+
+
+def main(args):
+
+    parser = argparse.ArgumentParser(description='usage: %prog [options]')
+    parser.add_argument('-i', '--input',
+                        dest='input',   
+                        default=None,
+                        help='input directory with the files [default: %default]')
+    parser.add_argument('--cmssw',
+                        dest='cmssw',   
+                        default='/afs/cern.ch/work/p/psilva/HIN-19-001/CMSSW_10_2_13/src/',
+                        help='input directory with the files [default: %default]')
+    opt=parser.parse_args(args)
+
+
+    statAna=defaultdict(list)
+    for i in range(len(OPTIMLIST)):
+        ana=OPTIMLIST[i]
+        protonCat      = int(re.search('protonCat==(\d+)',ana).group(1))
+        pcatRec        = 'pcat%d'%protonCat
+        requiresXangle = True if 'xangle' in ana else False
+        requiresNvtx   = True if 'nvtx'   in ana else False
+        requiresNch    = True if 'nch'    in ana else False
+
+        if not requiresXangle and not requiresNvtx and not requiresNch: 
+            statAna['inc'].append(i)
+            statAna[pcatRec].append(i)
+        if     requiresXangle and not requiresNvtx and not requiresNch:
+            statAna['inc_xangle'].append(i)
+            statAna[pcatRec+'_xangle'].append(i)
+        if not requiresXangle and     requiresNvtx and not requiresNch:
+            statAna['inc_nvtx'].append(i)
+            statAna[pcatRec+'_nvtx'].append(i)
+        if     requiresXangle and     requiresNvtx and not requiresNch:
+            statAna['inc_xangle_nvtx'].append(i)
+            statAna[pcatRec+'_xangle_nvtx'].append(i)
+        if not requiresXangle and not requiresNvtx and     requiresNch: 
+            statAna['inc_nch'].append(i)
+            statAna[pcatRec+'_nch'].append(i)
+
+    for key,optimPts in statAna.items():
+
+        odir='%s/%s'%(opt.input,key)
+        os.system('mkdir -p '+odir)
+
+        #a human-readable summary
+        baseDataCards=[]
+        with open(os.path.join(odir,'info.dat'),'w') as f:
+            f.write(key+' analysis\n')
+            f.write('-'*50+'\n')
+            for ioptim in optimPts:
+                f.write('%3d %s\n'%(ioptim,OPTIMLIST[ioptim]))
+                icat=len(baseDataCards)
+                baseDataCards.append('{ch}cat%d=../optim_%d/shapes-parametric.datacard_{ch}.dat'%(icat,ioptim))
+            f.write('-'*50+'\n')
+            f.write('Final statistical analysis will be composed for the different categories from\n')
+            f.write(' '.join(baseDataCards))
+        
+        #the steering script for combine
+        with open(os.path.join('%s/statAnaJob.sh'%odir),'w') as script:
+
+            script.write('#!/bin/bash\n')
+
+            #environment
+            script.write('echo "Setting up environment"\n')
+            script.write('cd %s\n'%opt.cmssw)
+            script.write('eval `scram r -sh`\n')
+            script.write('output=%s\n'%os.path.abspath(odir))     
+            script.write('cd ${output}\n')
+            script.write('\n')
+
+            script.write('m=${1}\n')
+            script.write('b=${2}\n')
+            script.write('pfix=${b}_m${m}\n')
+            script.write('echo "Running combine for b=${2} m=${m} with CMSSW_BASE=${CMSSW_BASE}"\n')
+            script.write('\n')
+
+            cardsToCombine=' '.join(baseDataCards).format(ch='${b}')
+            script.write('combineCards.py %s > ${b}_datacard.dat\n'%cardsToCombine)
+            script.write('\n')
+
+            script.write('text2workspace.py ${b}_datacard.dat -m ${m} -o ${pfix}_workspace.root --channel-masks\n')
+            script.write('\n')
+
+            script.write('baseCmd=\"combine ${pfix}_workspace.root -m ${m} --X-rtd MINIMIZER_analytic\"\n')
+            script.write('${baseCmd} -n PP${b}X.obs   -M AsymptoticLimits\n')
+            script.write('${baseCmd} -n PP${b}X       -M AsymptoticLimits -t -1 --expectSignal=1 --setParameters mu_outfidsig=1\n')
+            script.write('${baseCmd} -n PP${b}X.obs   -M Significance\n')
+            script.write('${baseCmd} -n PP${b}X       -M Significance     -t -1 --expectSignal=1 --setParameters mu_outfidsig=1\n')
+            script.write('${baseCmd} -n PP${b}X.m${m} -M FitDiagnostics\n')
+            script.write('cd -\n')
+
+        #run with condor
+        with open('%s/zxstatana_run.sub'%odir,'w') as condor:
+            condor.write("executable  = %s/statAnaJob.sh\n"%os.path.abspath(odir))
+            condor.write("output       = zxstatana_run.out\n")
+            condor.write("error        = zxstatana_run.err\n")
+            condor.write("log          = zxstatana_run.log\n")
+            condor.write("+JobFlavour = \"longlunch\"\n")
+            condor.write("request_cpus = 4\n")        
+            for mass in [600,660,720,780,800,840,900,960,1000,1020,1080,1140,1200,1260,1320,1380,1400,1440,1500,1560,1600]:
+                for boson in ['z','g','zmm','zee']:
+                    condor.write("arguments=%d %s\n"%(mass,boson))
+                    condor.write("queue 1\n")
+
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

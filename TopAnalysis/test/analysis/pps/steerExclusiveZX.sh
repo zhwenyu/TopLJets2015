@@ -16,7 +16,7 @@ if [ "$#" -ne 2 ]; then
     echo "   ANA/ANASIG      - run analysis on the summary trees"
     echo "   CHECKANA        - check analysis integrity and re-run locally jobs which have failed"
     echo "   PLOTANA         - plot analysis results"
-    echo "   OPTIMSTATANA    - optimize the statistical analysis"
+    echo "   {PREPARE,CHECK,RUN}OPTIMSTATANA - optimize the statistical analysis"
     echo "   FINALIZESTATANA - define the final datacards based on the results of the optimization"
     echo "   WWW             - move plots to web-based area"
     exit 1; 
@@ -406,7 +406,7 @@ case $WHAT in
     TESTSTATANA)
 
         indirForPlots=/eos/cms/${anadir}${pfix}
-        commonOpts="-i ${indirForPlots} --massList 800,1200,1600 --xangles 0"
+        commonOpts="-i ${indirForPlots} --massList 960"
 
         echo "Generating a datacard takes a bit as it'll project the shapes for a given set of cuts"
         echo "You can run locally with python test/analysis/pps/generatedBinnedWorkspace.py and your preferred set of cuts"
@@ -417,15 +417,28 @@ case $WHAT in
 
         ;;
 
-    OPTIMSTATANA )
-
+    PREPAREOPTIMSTATANA )
         indirForPlots=/eos/cms/${anadir}${pfix}
-
-        #afs needs to be used here...        
-        python test/analysis/pps/prepareOptimScanCards.py -o ppvx_${githash}${pfix}_inc    -i ${indirForPlots} --xangles 0
-        #python test/analysis/pps/prepareOptimScanCards.py -o ppvx_${githash}${pfix}_signed -i ${indirForPlots} --signed --xangles 0
-        
+        python test/analysis/pps/prepareOptimScanCards.py -o ppvx_${githash}${pfix} -i ${indirForPlots}
         ;;
+
+    CHECKOPTIMSTATANA )
+        python test/analysis/pps/checkStatAnaInteg.py ppvx_${githash}${pfix}
+        ;;
+
+    RUNSTATANA )
+        python test/analysis/pps/prepareFinalStatAnalysis.py -i ppvx_${githash}${pfix}
+        ;;
+
+    FINALIZESTATANA )
+        indirForPlots=/eos/cms/${anadir}${pfix}
+        d=ppvx_${githash}${pfix}
+        python test/analysis/pps/compareOptimResults.py ${d}
+        mkdir -p ${indirForPlots}/${d}
+        mv *.{png,pdf,dat} ${indirForPlots}/${d}
+        mv limits*root ${indirForPlots}/${d} 
+        ;;
+
 
     INJECTSIGNAL )
 
@@ -449,18 +462,6 @@ case $WHAT in
         python test/analysis/pps/prepareOptimScanCards.py -o ppvx_${githash}_signed_obs --unblind  -i /eos/cms/${anadir}  --just 2,10,46 --signed;
         
 
-        ;;
-
-
-    FINALIZESTATANA )
-
-        indirForPlots=/eos/cms/${anadir}${pfix}
-        d=ppvx_${githash}${pfix}_inc
-        python test/analysis/pps/compareOptimResults.py ${d}
-        mkdir -p ${indirForPlots}/${d}
-        mv *.{png,pdf,dat} ${indirForPlots}/${d}
-        mv limits*root ${indirForPlots}/${d} 
-        
         ;;
 
 
