@@ -426,7 +426,7 @@ case $WHAT in
         python test/analysis/pps/checkStatAnaInteg.py ppvx_${githash}${pfix}
         ;;
 
-    RUNSTATANA )
+    RUNOPTIMSTATANA )
         python test/analysis/pps/prepareFinalStatAnalysis.py -i ppvx_${githash}${pfix}
         ;;
 

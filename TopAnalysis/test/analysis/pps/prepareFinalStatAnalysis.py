@@ -60,7 +60,7 @@ def main(args):
             for ioptim in optimPts:
                 f.write('%3d %s\n'%(ioptim,OPTIMLIST[ioptim]))
                 icat=len(baseDataCards)
-                baseDataCards.append('{ch}cat%d=../optim_%d/shapes-parametric.datacard_{ch}.dat'%(icat,ioptim))
+                baseDataCards.append('../optim_%d/shapes-parametric.datacard_{ch}.dat'%icat)
             f.write('-'*50+'\n')
             f.write('Final statistical analysis will be composed for the different categories from\n')
             f.write(' '.join(baseDataCards))
@@ -84,8 +84,37 @@ def main(args):
             script.write('echo "Running combine for b=${2} m=${m} with CMSSW_BASE=${CMSSW_BASE}"\n')
             script.write('\n')
 
-            cardsToCombine=' '.join(baseDataCards).format(ch='${b}')
-            script.write('combineCards.py %s > ${b}_datacard.dat\n'%cardsToCombine)
+            cardsToCombine   = ' '.join(baseDataCards).format(ch='${b}')
+            zCardsToCombine  = ' '.join(baseDataCards).format(ch='zee')
+            zCardsToCombine += ' '+' '.join(baseDataCards).format(ch='zmm')
+            script.write('if [ "${b}" = "z" ]; then\n')
+            script.write('    cardsList=(%s)\n'%zCardsToCombine)
+            script.write('else\n')
+            script.write('    cardsList=(%s)\n'%cardsToCombine)
+            script.write('fi\n')
+            script.write('\n')
+
+            script.write('mkdir -p ${b}_cards\n')
+            script.write('combStr=""\n')
+            script.write('for icat in "${!cardsList[@]}"; do\n')
+            script.write('     dc=${cardsList[$icat]}\n')
+            script.write('     full_dc=`readlink -f ${dc}`\n')
+            script.write('     full_dc=`dirname ${full_dc}`\n')
+            script.write('     full_dc=${full_dc//\//\\\\/}\n')
+            script.write('     regex="_(.+)\.dat"\n')
+            script.write('     if [[ "`basename $dc`" =~ $regex ]]; then\n')
+            script.write('         ch="${BASH_REMATCH[1]}"\n')
+            script.write('     fi\n')
+            script.write('     mod_dc=${b}_cards/datacard_cat${icat}.dat\n')
+            script.write('     sed -e "s/mu_bkg/mu_bkgCat${icat}/" -e "s/shapes_/${full_dc}\/shapes_/" ${dc} > ${mod_dc}\n')
+            script.write('     echo "nuisance edit rename bkg * ${ch}_bkgShape           ${ch}_bkgShapeCat${icat}" >> ${mod_dc}\n')
+            script.write('     echo "nuisance edit rename bkg * ${ch}_bkgShapeSingleDiff ${ch}_bkgShapeSinglediffCat${icat}" >> ${mod_dc}\n')
+            script.write('     combStr="${combStr} cat${icat}=${mod_dc}"\n')
+            script.write('done\n')
+            script.write('\n')
+
+            script.write('combineCards.py ${combStr} > ${b}_datacard.dat\n')
+            script.write('sed -i -e "s/${b}_cards\///" ${b}_datacard.dat\n')
             script.write('\n')
 
             script.write('text2workspace.py ${b}_datacard.dat -m ${m} -o ${pfix}_workspace.root --channel-masks\n')
@@ -93,10 +122,10 @@ def main(args):
 
             script.write('baseCmd=\"combine ${pfix}_workspace.root -m ${m} --X-rtd MINIMIZER_analytic\"\n')
             script.write('${baseCmd} -n PP${b}X.obs   -M AsymptoticLimits\n')
-            script.write('${baseCmd} -n PP${b}X       -M AsymptoticLimits -t -1 --expectSignal=1 --setParameters mu_outfidsig=1\n')
+            script.write('${baseCmd} -n PP${b}X       -M AsymptoticLimits -t -1 --expectSignal=0.1 --setParameters mu_outfidsig=0.1\n')
             script.write('${baseCmd} -n PP${b}X.obs   -M Significance\n')
-            script.write('${baseCmd} -n PP${b}X       -M Significance     -t -1 --expectSignal=1 --setParameters mu_outfidsig=1\n')
-            script.write('${baseCmd} -n PP${b}X.m${m} -M FitDiagnostics\n')
+            script.write('${baseCmd} -n PP${b}X       -M Significance     -t -1 --expectSignal=0.1 --setParameters mu_outfidsig=0.1\n')
+            script.write('#${baseCmd} -n PP${b}X.m${m} -M FitDiagnostics\n')
             script.write('cd -\n')
 
         #run with condor
@@ -111,7 +140,8 @@ def main(args):
                 for boson in ['z','g','zmm','zee']:
                     condor.write("arguments=%d %s\n"%(mass,boson))
                     condor.write("queue 1\n")
-
+        print 'Submitting jobs for',odir
+        os.system('condor_submit %s/zxstatana_run.sub'%odir)
 
 
 if __name__ == "__main__":

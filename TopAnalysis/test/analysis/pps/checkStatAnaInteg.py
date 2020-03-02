@@ -12,10 +12,17 @@ for d in optimList:
 
         try:
             fIn=ROOT.TFile.Open(os.path.join(d,'shapes_%d.root'%ch))
-            size=fIn.GetListOfKeys().GetSize()
-            if size==0: isOK=False
+            if fIn.IsZombie():
+                raise Exception('corrupted')
+            elif fIn.TestBit(ROOT.TFile.kRecovered) : 
+                raise Exception('recovered')
+            else:
+                size=fIn.GetListOfKeys().GetSize()
+                if size==0: 
+                    raise Exception('no keys')
             fIn.Close()
-        except:
+        except Exception as e:
+            print 'Will submit',d,'error:',e
             isOK=False
             pass
 

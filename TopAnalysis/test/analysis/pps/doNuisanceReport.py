@@ -222,6 +222,8 @@ def main():
     ROOT.gROOT.SetBatch(True)
     ROOT.gStyle.SetOptTitle(0)
     ROOT.gStyle.SetOptStat(0)
+
+    #os.system('combine %s -m %s --X-rtd MINIMIZER_analytic --cminDefaultMinimizerStrategy 0 -M FitDiagnostics'%(sys.argv[1],sys.argv[2]))
     doNuisanceReport(url=sys.argv[1])
 
 
