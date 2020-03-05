@@ -28,6 +28,7 @@ SINGLEPHOTON=22
 MINCSI=0.035
 MIXEDRPSIG=None # this is only for a test
 ALLOWPIXMULT=[1,2]
+USESINGLERP=False
 
 def isValidRunLumi(run,lumi,runLumiList):
 
@@ -94,6 +95,12 @@ def getTracksPerRomanPot(tree,mcTruth=False,minCsi=0,orderByDecreasingCsi=True):
             tkPos[idx].sort(reverse=True)
             tkNeg[idx].sort(reverse=True)
         
+    if USESINGLERP:
+        tkPos[0]=[]
+        tkPos[2]=[]
+        tkNeg[0]=[]
+        tkNeg[2]=[]
+
     #return all tracks
     return tkPos,tkNeg
 
@@ -285,7 +292,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
 
     #start event mixing tool
     print MIXEDRP.keys()
-    evMixTool=EventMixingTool(mixedRP=MIXEDRP,validAngles=VALIDLHCXANGLES)
+    evMixTool=EventMixingTool(mixedRP=MIXEDRP,validAngles=VALIDLHCXANGLES,usePixelOnly=USESINGLERP)
     print 'Allowed pixel multiplicity is',ALLOWPIXMULT 
 
     #start histograms
@@ -941,10 +948,14 @@ def runAnalysisTasks(opt):
         runLumi={int(x[0]):x[1] for x in runLumi}
 
     global ALLOWPIXMULT
+    global USESINGLERP
     if opt.allowPix:
         print 'Updating the number of allowed pixels'
         ALLOWPIXMULT=[int(x) for x in opt.allowPix.split(',')]
-        print ALLOWPIXMULT 
+        if sum([x<0 for x in ALLOWPIXMULT]):
+            ALLOWPIXMULT=[abs(x) for x in ALLOWPIXMULT]
+            USESINGLERP=True
+        print 'Use singleRP=',USESINGLERP, 'with pix multiplicity in=',ALLOWPIXMULT
 
     #used to test inclusion of potential signal (test case from conveners request)
     global MIXEDRPSIG

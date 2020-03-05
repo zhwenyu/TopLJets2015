@@ -6,12 +6,16 @@ from random import shuffle
 
 class EventMixingTool:
 
-    def __init__(self, mixedRP,validAngles):
+    def __init__(self, mixedRP,validAngles,usePixelOnly=False):
 
         """ Reads the event mixing data from a pickle file and builds a list of crossing angle probabilities """
 
         self.mixedRP=mixedRP
         self.xangleRelFracs={}
+        self.usePixelOnly=usePixelOnly
+        if self.usePixelOnly:
+            print '[EventMixingTool] will veto strips and multiRP'
+
 
         try:
             #build the list of probabilities for the crossing angles in each era
@@ -82,6 +86,12 @@ class EventMixingTool:
                     mixed_pos_protons[mixEvCat][1].sort(reverse = True) 
                     mixed_neg_protons[mixEvCat][1].sort(reverse = True) 
 
+                if self.usePixelOnly:
+                    mixed_pos_protons[mixEvCat][0]=[]
+                    mixed_pos_protons[mixEvCat][2]=[]
+                    mixed_neg_protons[mixEvCat][0]=[]
+                    mixed_neg_protons[mixEvCat][2]=[]
+
         except Exception as e:
             print e  
             print evEra,beamXangle,mixEvCat,'->',mixedEvKey
@@ -122,6 +132,10 @@ class EventMixingTool:
                 else:
                     shuffle(merged_pos_protons[mixEvCat][i])                
                     shuffle(merged_neg_protons[mixEvCat][i])
+
+                if self.usePixelOnly and i!=1:            
+                    merged_pos_protons[mixEvCat][i]=[]
+                    merged_neg_protons[mixEvCat][i]=[]
 
                 if i==1: continue
 

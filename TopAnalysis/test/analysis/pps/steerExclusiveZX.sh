@@ -31,6 +31,10 @@ if [[ $ALLOWPIX == *"1,2"* ]]; then
 else
     pfix="_1exc"
 fi
+if [[ $ALLOWPIX == *"-"* ]]; then
+    pfix="${pfix}single"
+fi
+
 
 githash=2017_unblind_multi
 

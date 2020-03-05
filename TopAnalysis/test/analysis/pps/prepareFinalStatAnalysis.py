@@ -31,18 +31,25 @@ def main(args):
         requiresNvtx   = True if 'nvtx'   in ana else False
         requiresNch    = True if 'nch'    in ana else False
 
+        #ignore this
+        if 'nch>=' in ana : continue
+
         if not requiresXangle and not requiresNvtx and not requiresNch: 
             statAna['inc'].append(i)
             statAna[pcatRec].append(i)
+
         if     requiresXangle and not requiresNvtx and not requiresNch:
             statAna['inc_xangle'].append(i)
             statAna[pcatRec+'_xangle'].append(i)
+
         if not requiresXangle and     requiresNvtx and not requiresNch:
             statAna['inc_nvtx'].append(i)
             statAna[pcatRec+'_nvtx'].append(i)
+
         if     requiresXangle and     requiresNvtx and not requiresNch:
             statAna['inc_xangle_nvtx'].append(i)
             statAna[pcatRec+'_xangle_nvtx'].append(i)
+
         if not requiresXangle and not requiresNvtx and     requiresNch: 
             statAna['inc_nch'].append(i)
             statAna[pcatRec+'_nch'].append(i)
@@ -58,9 +65,9 @@ def main(args):
             f.write(key+' analysis\n')
             f.write('-'*50+'\n')
             for ioptim in optimPts:
-                f.write('%3d %s\n'%(ioptim,OPTIMLIST[ioptim]))
                 icat=len(baseDataCards)
-                baseDataCards.append('../optim_%d/shapes-parametric.datacard_{ch}.dat'%icat)
+                f.write('%3d == %3d %s\n'%(icat,ioptim,OPTIMLIST[ioptim]))
+                baseDataCards.append('../optim_%d/shapes-parametric.datacard_{ch}.dat'%ioptim)
             f.write('-'*50+'\n')
             f.write('Final statistical analysis will be composed for the different categories from\n')
             f.write(' '.join(baseDataCards))
