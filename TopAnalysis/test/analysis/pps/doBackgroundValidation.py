@@ -124,7 +124,7 @@ def fillShapes(inputDir,selCuts,proc='MuonEG'):
         #scale background estimates
         for tag in histos[dist]:
             if not 'bkg' in tag: continue
-            sf=histos[dist]['data'].Integral()/histos[dist][tag].Integral()
+            sf=histos[dist]['data'].Integral()/histos[dist][tag].Integral()            
             histos[dist][tag].Scale(sf)
 
         #mirror shapes
@@ -208,9 +208,15 @@ def main(args):
         titleCut=parseTitleFromCut(selCut)
         print '\t',i,selCut
 
+        try:
+            data=fillShapes(inputDir=opt.input,selCuts=selCut,proc='MuonEG')
+        except Exception as e:
+            print '-'*50
+            print 'Unable to fill shapes for',i,cat
+            print e
+            print '-'*50
+            continue
 
-        data=fillShapes(inputDir=opt.input,selCuts=selCut,proc='MuonEG')
-        
         for dist in data:
 
             pname='%s_%d'%(dist,i)

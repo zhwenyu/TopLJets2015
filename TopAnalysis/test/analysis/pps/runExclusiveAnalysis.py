@@ -95,7 +95,8 @@ def getTracksPerRomanPot(tree,mcTruth=False,minCsi=0,orderByDecreasingCsi=True):
             tkPos[idx].sort(reverse=True)
             tkNeg[idx].sort(reverse=True)
         
-    if USESINGLERP:
+    #reset multi and strips
+    if USESINGLERP and not mcTruth:
         tkPos[0]=[]
         tkPos[2]=[]
         tkNeg[0]=[]
@@ -182,7 +183,7 @@ def getRandomEra(isSignal,isPreTS2Signal):
     return era
 
 def isSignalFile(inFile):
-    isSignal=True if 'gamma_m_X_' in inFile or 'Z_m_X_' in inFile else False
+    isSignal=True if 'gamma_m_X_' in inFile or 'Z_m_X_' in inFile or 'Zee_m_X_' in inFile or 'Zmm_m_X_' in inFile else False
     isPreTS2Signal=True if 'preTS2' in inFile else False
     return isSignal,isPreTS2Signal
 

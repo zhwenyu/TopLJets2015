@@ -44,3 +44,4 @@ if len(toCheck)>0:
         f.write('queue idx in ( %s )\n'%' '.join(toCheck))
 
     print '%d resubmission jobs can be found in %s'%(len(toCheck),resub)
+    os.system('condor_submit %s'%resub)

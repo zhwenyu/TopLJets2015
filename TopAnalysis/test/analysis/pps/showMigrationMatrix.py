@@ -52,4 +52,5 @@ tex.DrawLatex(0.12,0.96,'#bf{CMS} #it{simulation preliminary}')
 c.Modified()
 c.Update()
 c.RedrawAxis()
-c.SaveAs('%s_mig.png'%tag)
+for ext in ['png','pdf']:
+    c.SaveAs('%s_mig.%s'%(tag,ext))

@@ -40,11 +40,11 @@ class PPSEfficiencyReader:
             raddam=self.allEffs['h%d_%s_%d_1D'%(sector,era,xangle)]
             raddamUnc=self.allEffs['h%derrors_%s_%d_1D'%(sector,era,xangle)]
             ibin=raddam.FindBin(xi)
-            ieff    = raddam.GetBinContent(ibin)
+            ieff = raddam.GetBinContent(ibin)
+            eff *= ieff
             if ieff>0:
-                eff    *= ieff
                 effUnc += (raddamUnc.GetBinError(ibin)/ieff)**2            
-                
+
         else:
 
             # FIXME

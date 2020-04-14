@@ -45,7 +45,10 @@ void RunExclusiveZX(const TString in_fname,
   const char* CMSSW_BASE = getenv("CMSSW_BASE");
   const TString filename(in_fname);
   bool vetoPromptPhotons = filename.Contains("_QCDEM_") || filename.Contains("_TTJets");
-  bool isFullSimSig   = filename.Contains("MC13TeV") && (filename.Contains("_Z_m_X") ||  filename.Contains("_gamma_m_X")) &&  filename.Contains("fullsim");
+  bool isFullSimSig   = filename.Contains("MC13TeV") &&  filename.Contains("fullsim") 
+    && ( filename.Contains("_Z_m_X") ||  filename.Contains("_Zee_m_X") ||  filename.Contains("_Zmm_m_X") ||  
+         filename.Contains("_gamma_m_X")
+         );
   int fullSimXangle(0);
   if(isFullSimSig){
     if(filename.Contains("_120")) fullSimXangle=120;

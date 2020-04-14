@@ -286,7 +286,8 @@ class Plot(object):
 
         for m in self.spimpose:
             if not m in self.mc:
-                leg.AddEntry(self.spimpose[m],self.spimpose[m].GetTitle(),'l')
+                legOpt='lp' if self.spimpose[m].GetMarkerSize()>0 else 'l'
+                leg.AddEntry(self.spimpose[m],self.spimpose[m].GetTitle(),legOpt)
                 nlegCols += 1
 
         if nlegCols ==0 :

@@ -92,24 +92,25 @@ case $WHAT in
 
     FULLSIMSIG )
 
-        inputfileTag=MC13TeV_Z_m_X_950_xangle_120_2017_postTS2_fullsim
-        inputfileTESTSEL=${datadir}/${inputfileTag}/Chunk_0_ext0.root
+        for ch in ee; do # ee mm; do
+            inputfileTag=MC13TeV_Z${ch}_m_X_950_xangle_120_2017_postTS2_fullsim
+            inputfileTESTSEL=${datadir}/${inputfileTag}/Chunk_0_ext0.root
+            selout=/eos/cms/${outdir}/Chunks/${inputfileTag}_0.root
 
-        selout=/eos/cms/${outdir}/Chunks/${inputfileTag}_0.root
-        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py \
-            -i ${inputfileTESTSEL} --tag ${inputfileTag} \
-            -o ${selout} --genWeights  genweights_f439f08_ul.root\
-            --njobs 1 -q local \
-            --era era2017 -m ExclusiveZX::RunExclusiveZX --ch 0 --runSysts;
+            python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py \
+                -i ${inputfileTESTSEL} --tag ${inputfileTag} \
+                -o ${selout} --genWeights  genweights_f439f08_ul.root \
+                --njobs 1 -q local \
+                --era era2017 -m ExclusiveZX::RunExclusiveZX --ch 0 --runSysts;
 
-        mix_file=/eos/cms/${anadir}/mixing/
-        anaout=./mixtest${pfix}
-        addOpt="--effDir test/analysis/pps"
-        python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 1 --jobs 1 \
-            --json ${fullsimsignaljson} --RPout ${RPout_json} -o ${anaout} \
-            --mix ${mix_file} -i `dirname ${selout}` --only ${inputfileTag}_0.root ${addOpt} \
-            --allowPix ${ALLOWPIX};
-
+            mix_file=/eos/cms/${anadir}/mixing/
+            anaout=./mixtest${pfix}
+            addOpt="--effDir test/analysis/pps"
+            python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 1 --jobs 1 \
+                --json ${fullsimsignaljson} --RPout ${RPout_json} -o ${anaout} \
+                --mix ${mix_file} -i `dirname ${selout}` --only ${inputfileTag}_0.root ${addOpt} \
+                --allowPix ${ALLOWPIX};
+        done
 
         ;;
     
@@ -551,6 +552,9 @@ case $WHAT in
         echo "[Additional supporting plots]"
         echo "python test/analysis/pps/compareNvtx.py"
         echo ""
+        echo "[Additional figures]"
+        echo "python test/analysis/pps/drawPPSEfficiency.py"
+        echo "python test/analysis/pps/showMigrationMatrix.py Z_m_X_1400_xangle_120_2017 /eos/cms/store/cmst3/user/psilva/ExclusiveAna/final/2017_unblind_multi/analysis_1exc/"
         echo "[Display fit shapes]"
         echo "python ${scriptDir}/showFitShapes.py ppvx_${githash}/optim_1 1200 z"
         echo ""

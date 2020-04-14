@@ -21,38 +21,45 @@ def main(args):
                         help='input directory with the files [default: %default]')
     opt=parser.parse_args(args)
 
+    isSingleRP=True if 'excsingle' in opt.input else False
+
 
     statAna=defaultdict(list)
     for i in range(len(OPTIMLIST)):
         ana=OPTIMLIST[i]
         protonCat      = int(re.search('protonCat==(\d+)',ana).group(1))
         pcatRec        = 'pcat%d'%protonCat
-        requiresXangle = True if 'xangle' in ana else False
-        requiresNvtx   = True if 'nvtx'   in ana else False
-        requiresNch    = True if 'nch'    in ana else False
+        requiresXangle      = True if 'xangle' in ana else False
+        requiresNvtx        = True if 'nvtx' in ana else False
+        requiresNjets       = True if 'njets'   in ana else False
+        requiresNch         = True if 'nch'    in ana else False
+        
+        if isSingleRP and protonCat!=4 : continue
 
-        #ignore this
-        if 'nch>=' in ana : continue
-
-        if not requiresXangle and not requiresNvtx and not requiresNch: 
+        if not requiresXangle and not requiresNvtx and not requiresNch and not requiresNjets:
             statAna['inc'].append(i)
             statAna[pcatRec].append(i)
 
-        if     requiresXangle and not requiresNvtx and not requiresNch:
+        if     requiresXangle and not requiresNvtx and not requiresNch and not requiresNjets:
             statAna['inc_xangle'].append(i)
             statAna[pcatRec+'_xangle'].append(i)
 
-        if not requiresXangle and     requiresNvtx and not requiresNch:
+        if not requiresXangle and     requiresNvtx and not requiresNch and not requiresNjets:
             statAna['inc_nvtx'].append(i)
             statAna[pcatRec+'_nvtx'].append(i)
 
-        if     requiresXangle and     requiresNvtx and not requiresNch:
+        if     requiresXangle and     requiresNvtx and not requiresNch and not requiresNjets:
             statAna['inc_xangle_nvtx'].append(i)
             statAna[pcatRec+'_xangle_nvtx'].append(i)
 
-        if not requiresXangle and not requiresNvtx and     requiresNch: 
-            statAna['inc_nch'].append(i)
-            statAna[pcatRec+'_nch'].append(i)
+        if not requiresXangle and not requiresNvtx and     requiresNch and not requiresNjets:
+            pfix='loose' if '15' in ana else '10'
+            statAna['inc_nch'+pfix].append(i)
+            statAna[pcatRec+'_nch'+pfix].append(i)
+
+        if not requiresXangle and not requiresNvtx and not requiresNch and requiresNjets:
+            statAna['inc_jveto'].append(i)
+            statAna[pcatRec+'_jveto'].append(i)
 
     for key,optimPts in statAna.items():
 

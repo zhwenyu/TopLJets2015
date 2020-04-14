@@ -9,8 +9,8 @@ KINEMATICS = '(((cat==169 || cat==121) && l1pt>30 && l2pt>20 && bosonpt>40) || (
 RPSEL      = 'csi1>0.035 && csi2>0.035'
 CATEGS     = [list(itertools.product( ['protonCat==%d'%protonCat],
                                       ['']+['xangle==%d'%x for x in VALIDLHCXANGLES],
-                                      ['']+['nvtx<20','nvtx>=20','nch<15','nch>=15']))
-                   for protonCat in [1,2,3,4] ]
+                                      ['']+['nvtx<20','nvtx>=20','nch<15','nch<10','njets==0']))
+              for protonCat in [1,2,3,4] ]
 CATEGS= [filter(None,list(y)) for x in CATEGS for y in x]
 OPTIMLIST=[ ' && '.join( [KINEMATICS]+[RPSEL]+x ) for x in CATEGS]
 
