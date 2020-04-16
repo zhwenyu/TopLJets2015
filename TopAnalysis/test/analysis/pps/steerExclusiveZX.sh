@@ -1,4 +1,3 @@
-
 #!/bin/bash
 
 WHAT=${1}; 
@@ -555,6 +554,8 @@ case $WHAT in
         echo "[Additional figures]"
         echo "python test/analysis/pps/drawPPSEfficiency.py"
         echo "python test/analysis/pps/showMigrationMatrix.py Z_m_X_1400_xangle_120_2017 /eos/cms/store/cmst3/user/psilva/ExclusiveAna/final/2017_unblind_multi/analysis_1exc/"
+        echo "python test/analysis/pps/checkPPSperEra.py fill"
+        echo "python test/analysis/pps/checkPPSperEra.py plot"
         echo "[Display fit shapes]"
         echo "python ${scriptDir}/showFitShapes.py ppvx_${githash}/optim_1 1200 z"
         echo ""
