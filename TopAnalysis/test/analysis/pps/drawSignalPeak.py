@@ -3,62 +3,108 @@ import os
 import sys
 import re
 from TopLJets2015.TopAnalysis.Plot import *
-from generateBinnedWorkspace import SIGNALXSECS
+from generateBinnedWorkspace import SIGNALXSECS,VALIDLHCXANGLES
 
-url=sys.argv[1]
-tkns=re.findall(r'\d+',os.path.basename(url))
-mass,xangle=tkns[0],tkns[1]
-print mass,xangle,url
-fIn=ROOT.TFile.Open(url)
-nopu=fIn.Get('mmass_eenopu')
-pu=fIn.Get('mmass_eerpin')
-puhpur=fIn.Get('mmass_eerpinhpur')
-data=fIn.Get('data')
+LUMI=37500.
+FPRETS2=14586.4464/41529.3
+FPOSTTS2=1.-FPRETS2
+FIDUCIALCUTS='gencsi1>0.02 & gencsi1<0.16 && gencsi2>0.03 && gencsi2<0.18 && !isOffZ && (cat==121 || cat==169)'
 
-ROOT.gStyle.SetOptStat(0)
-ROOT.gStyle.SetOptTitle(0)
-ROOT.gROOT.SetBatch(True)
+def main():
 
-#
-# in-fiducial vs out-fiducial components
-#
-fiducialCuts='gencsi1>0.03 & gencsi1<0.13 && gencsi2>0.03 && gencsi2<0.16'
-data.Draw("mmiss>>hout(50,0,2500)","ppsEff*wgt*(!(%s) && mmiss>0 && mixType==1)"%fiducialCuts,'goff')
-hout=ROOT.gDirectory.Get('hout')
-hout.SetDirectory(0)
-hout.Scale(SIGNALXSECS[int(xangle)]*37500.)
-hout.GetXaxis().SetTitle('Missing mass [GeV]')
-hout.GetYaxis().SetTitle('Events')
+    ROOT.gStyle.SetOptStat(0)
+    ROOT.gStyle.SetOptTitle(0)
+    ROOT.gROOT.SetBatch(True)
 
-data.Draw("mmiss>>hin(50,0,2500)","ppsEff*wgt*(%s && mmiss>0 && mixType==1)"%fiducialCuts,"goff")
-hin=ROOT.gDirectory.Get('hin')
-hin.SetDirectory(0)
-puhpur=hin.Clone()
-puhpur.SetDirectory(0)
-hin.Scale(SIGNALXSECS[int(xangle)]*37500.)
-hin.SetLineWidth(2)
-hin.GetXaxis().SetTitle('Missing mass [GeV]')
-hin.GetYaxis().SetTitle('Events')
+    
+    isSingleRP=True if 'single' in sys.argv[1] else False
+    isExc=True if '1exc' in sys.argv[1] else False
+    pfix='pxonly' if isSingleRP else ''
+    pfix += 'exc' if isExc else False
 
-p=Plot('mmass_{0}_xangle{1}_sigacc'.format(mass,xangle),com='13 TeV')
-p.add(hin,  title='in accept.',  color=ROOT.kRed,   isData=False, spImpose=False, isSyst=False)
-p.add(hout, title='out accept.', color=ROOT.kBlack, isData=False, spImpose=True,  isSyst=False)
-finalExtraText='#scale[0.8]{{m={0} GeV #alpha={1}#murad}}'.format(mass,xangle)
-p.show(outDir='./', lumi=37500, extraText=finalExtraText)
+    hnopu={}
+    hrpinhpur={}
+    hout={}
+    hin={}
+    for xangle in VALIDLHCXANGLES:
+        for era in 'preTS2','postTS2':
 
+            url=sys.argv[1].format(xangle,era)
+            mass=re.findall(r'\d+',os.path.basename(url))[0]
+            fEra=FPRETS2 if era=='preTS2' else FPOSTTS2
+            xsecWgt=SIGNALXSECS[xangle]*LUMI*fEra
+            print url
+            #determine analysis type
+            cats=[4] if isSingleRP else [1,2,3,4]
 
-#
-# before and after pileup mixing/selection
-#
-try:
-    p=Plot('mmass_{0}_xangle{1}_sig'.format(mass,xangle),com='13 TeV')
-    p.frameMin=0
-    p.add(nopu,   title='no pileup',   color=ROOT.kGray,   isData=False, spImpose=False, isSyst=False)
-    p.add(pu,     title='pileup',      color=ROOT.kOrange, isData=False, spImpose=True,  isSyst=False)
-    p.add(puhpur, title='pileup+cuts', color=1,            isData=False, spImpose=True,  isSyst=False)
-    finalExtraText='#scale[0.8]{{m={0} GeV #alpha={1}#murad}}'.format(mass,xangle)
-    p.show(outDir='./', lumi=37500,extraText=finalExtraText)
-except Exception as e:
-    print e
+            #open file and build te plots
+            fIn=ROOT.TFile.Open(url)
+            data=fIn.Get('data')
+            for icat in cats:
+                
+                if not icat in hnopu:
+                    hnopu[icat]=fIn.Get('mmass_mm%dnopu'%icat).Clone('hnopu%d'%icat)
+                    hnopu[icat].Reset('ICE')
+                    hnopu[icat].SetDirectory(0)
+                    hrpinhpur[icat]=fIn.Get('mmass_mmrpinhpur%d'%icat).Clone('hrpinhpur%d'%icat)
+                    hrpinhpur[icat].Reset('ICE')
+                    hrpinhpur[icat].SetDirectory(0)
+                for ch in ['ee','mm']:
+                    hnopu[icat].Add(fIn.Get('mmass_%s%dnopu'%(ch,icat)),xsecWgt)
+                    hrpinhpur[icat].Add(fIn.Get('mmass_%srpinhpur%d'%(ch,icat)),xsecWgt)
 
+                #
+                # project in-fiducial vs out-fiducial components
+                #
+                data.Draw("mmiss>>hout(50,0,2500)",
+                          "ppsEff*wgt*(!(%s) && protonCat==%d && mmiss>0 && mixType==1)"%(FIDUCIALCUTS,icat),
+                          'goff')
+                h=ROOT.gDirectory.Get('hout')
+                if not icat in hout:
+                    hout[icat]=h.Clone('hout%d'%icat)
+                    hout[icat].SetDirectory(0)
+                    hout[icat].Reset('ICE')
+                hout[icat].Add(h,xsecWgt)
+
+                data.Draw("mmiss>>hin(50,0,2500)",
+                          "ppsEff*wgt*(%s && protonCat==%d && mmiss>0 && mixType==1)"%(FIDUCIALCUTS,icat),
+                          "goff")
+                h=ROOT.gDirectory.Get('hin')
+                if not icat in hin:
+                    hin[icat]=h.Clone('hin%d'%icat)
+                    hin[icat].SetDirectory(0)
+                    hin[icat].Reset('ICE')
+                hin[icat].Add(h,xsecWgt)
+
+    #final plots
+    for icat in hin:
+
+        pcatTitle='single-single'
+        if not isSingleRP:
+            pcatTitle='multi-multi'
+            if icat==2: pcatTitle='multi-single'
+            if icat==3: pcatTitle='single-multi'
+            if icat==4: pcatTitle='single-single'
+        finalExtraText='m_{{X}}={0} GeV ({1})'.format(mass,pcatTitle)
+
+        p=Plot('mmass_{0}_sigacc_{1}{2}'.format(mass,icat,pfix),com='13 TeV')
+        p.saveLog=True
+        p.xtitle='Missing mass [GeV]'
+        p.ytitle='Events'
+        hin[icat].SetLineWidth(2)
+        p.add(hin[icat],  title='in accept.',  color=ROOT.kRed,   isData=False, spImpose=False, isSyst=False)
+        p.add(hout[icat], title='out accept.', color=ROOT.kBlack, isData=False, spImpose=True,  isSyst=False)
+        p.show(outDir='./', lumi=37500, extraText=finalExtraText)
+        
+        p=Plot('mmass_{0}_puonfidsig_{1}{2}'.format(mass,icat,pfix),com='13 TeV')
+        p.saveLog=True
+        p.xtitle='Missing mass [GeV]'
+        p.ytitle='Events'
+        p.add(hnopu[icat],      title='no pileup',   color=ROOT.kGray, isData=False, spImpose=False, isSyst=False)
+        p.add(hrpinhpur[icat],  title='pileup+cuts', color=1,          isData=False, spImpose=True,  isSyst=False)
+        p.show(outDir='./', lumi=37500,extraText=finalExtraText)
+    
+
+if __name__ == "__main__":
+    sys.exit(main())
 

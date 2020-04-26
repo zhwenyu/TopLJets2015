@@ -15,8 +15,7 @@ if [ "$#" -ne 2 ]; then
     echo "   ANA/ANASIG      - run analysis on the summary trees"
     echo "   CHECKANA        - check analysis integrity and re-run locally jobs which have failed"
     echo "   PLOTANA         - plot analysis results"
-    echo "   {PREPARE,CHECK,RUN}OPTIMSTATANA - optimize the statistical analysis"
-    echo "   FINALIZESTATANA - define the final datacards based on the results of the optimization"
+    echo "   {PREPARE,CHECK,RUN,SUMMARIZE}OPTIMSTATANA - optimize the statistical analysis"
     echo "   WWW             - move plots to web-based area"
     exit 1; 
 fi
@@ -434,13 +433,11 @@ case $WHAT in
         python test/analysis/pps/prepareFinalStatAnalysis.py -i ppvx_${githash}${pfix}
         ;;
 
-    FINALIZESTATANA )
+    SUMMARIZEOPTIMSTATANA )
         indirForPlots=/eos/cms/${anadir}${pfix}
         d=ppvx_${githash}${pfix}
-        python test/analysis/pps/compareOptimResults.py ${d}
-        mkdir -p ${indirForPlots}/${d}
-        mv *.{png,pdf,dat} ${indirForPlots}/${d}
-        mv limits*root ${indirForPlots}/${d} 
+        python test/analysis/pps/summarizeOptimScanResults.py ${d}
+        echo "You can now use the jupyter notebook to analyze the results of the statistical analysis"
         ;;
 
 
@@ -556,35 +553,19 @@ case $WHAT in
         echo "python test/analysis/pps/showMigrationMatrix.py Z_m_X_1400_xangle_120_2017 /eos/cms/store/cmst3/user/psilva/ExclusiveAna/final/2017_unblind_multi/analysis_1exc/"
         echo "python test/analysis/pps/checkPPSperEra.py fill"
         echo "python test/analysis/pps/checkPPSperEra.py plot"
-        echo "[Display fit shapes]"
-        echo "python ${scriptDir}/showFitShapes.py ppvx_${githash}/optim_1 1200 z"
-        echo ""
-        echo "[Signal injection studies]"
-        esStr=""
-        for m in 600 800 1200 1400; do
-            resStr="${resStr} PPgX:${m}:ppvx_${githash}_${m}_0.5/optim_2 PPzX:${m}:ppvx_${githash}_${m}_0.5/optim_10"
-        done
-        odir=${wwwdir}/stat/ppvx_${githash}
-        echo "python ${scriptDir}/drawPvalCurve.py ${resStr}"
-        echo "mv *.{png,pdf} ${odir}"
-        echo "mv limits*root ${odir}"
-        odir=${odir}_signed
-        resStr=${resStr//${githash}/${githash}_signed}
-        echo "python ${scriptDir}/drawPvalCurve.py ${resStr}"
-        echo "mv *.{png,pdf} ${odir}"
-        echo "mv limits*root ${odir}"
-        echo ""
-        echo "[High pT version]"
-        odir=${wwwdir}/stat/ppvx_${githash}/highpt
-        echo "python ${scriptDir}/drawPvalCurve.py PPzX:0:ppvx_${githash}/optim_46"
-        echo "mkdir -p ${odir}"
-        echo "mv *.{png,pdf} ${odir}"
-        echo "mv limits*root ${odir}"
-        echo ""
-        echo "[Limit comparison]"
-        odir=${wwwdir}/stat/ppvx_${githash}
-        echo "python ${scriptDir}/compareLimits.py 'baseline':${odir}/limits_PPzX_1200.root 'high p_{T}':${odir}/highpt/limits_PPzX_0.root '#eta signed':${odir}_signed/limits_PPzX_1200.root"
-        echo "mv limitcomp* ${odir}"
+        echo "python test/analysis/pps/drawSignalPeak.py /eos/cms//store/cmst3/user/psilva/ExclusiveAna/final/2017_unblind_multi/analysis/Z_m_X_1000_xangle_{0}_2017_{1}.root"
+        echo "[Display fit shapes/uncertainties]"
+        echo "python test/analysis/pps/showUncs.py ppvx_${githash}${pfix}/optim_0"
+        echo "python test/analysis/pps/showUncs.py ppvx_${githash}${pfix}/optim_14"
+        echo "python test/analysis/pps/showUncs.py ppvx_${githash}${pfix}/optim_28"
+        echo "python test/analysis/pps/showUncs.py ppvx_${githash}${pfix}/optim_42"
+        echo "python test/analysis/pps/showFitShapes.py ppvx_${githash}${pfix}/optim_0 1000 z mm"
+        echo "python test/analysis/pps/showFitShapes.py ppvx_${githash}${pfix}/optim_14 1000 z ms"
+        echo "python test/analysis/pps/showFitShapes.py ppvx_${githash}${pfix}/optim_28 1000 z sm"
+        echo "python test/analysis/pps/showFitShapes.py ppvx_${githash}${pfix}/optim_42 1000 z ss"
+        echo "[Nuisances post-fit]"
+        echo "Please use CMSSW_10_2_13 or higher"
+        echo "python test/analysis/pps/doNuisanceReport.py 1000 ppvx_${githash}${pfix}/pcat1/z_m1000_workspace.root"
         echo ""
         ;;
     

@@ -45,3 +45,4 @@ if len(toCheck)>0:
 
     print '%d resubmission jobs can be found in %s'%(len(toCheck),resub)
     os.system('condor_submit %s'%resub)
+    

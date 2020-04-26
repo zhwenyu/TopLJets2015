@@ -9,7 +9,7 @@ import copy
 #NB this does not sum to 1 as we don't use all crossing angles in the analysis
 SIGNALXSECS       = {120:0.269,130:0.273,140:0.143,150:0.293}
 PHOTONSIGNALXSECS = {120:0.372,130:0.295,140:0.162,150:0.171}
-VALIDLHCXANGLES   = [120,130,140,150]
+VALIDLHCXANGLES   = SIGNALXSECS.keys()
 CH_DICT           = {'169':'zmm','121':'zee','22':'g'}
 CH_TITLE_DICT     = {'169':'Z#rightarrow#mu#mu','121':'Z#rightarrowee','22':'#gamma'}
 

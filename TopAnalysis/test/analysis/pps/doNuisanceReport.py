@@ -20,9 +20,17 @@ def doNuisanceReport(url,npergroup=20,poi='r'):
         var = iter.Next()
         while var :
             name=var.GetName()
-            if 'prop_' in name:
-                name=name.replace('prop_bin','')
-                name=name.replace('_bin','')
+            name=name.replace('_bkgShapeSinglediffCat','Single diff. bkg cat')
+            name=name.replace('_bkgShapeCat','Bkg. shape cat')
+            name=name.replace('mu_outfidsig',"#mu(out-fid.)")
+            name=name.replace('mu_bkgCat',"#mu(bkg) cat")
+            name=name.replace('sigPzModel','p_{z} signal')
+            name=name.replace('eff_','eff.')
+            name=name.replace('sigPPSEff','PPS eff.')
+            name=name.replace('sigCalib','Time dependency')
+            name=name.replace('sigShape','Signal shape')            
+            name=name.replace('prop_bincat','stat. cat')
+            name=name.replace('_bin',' b')
             
             val=var.getVal()
             ehi=var.getErrorHi()
@@ -212,7 +220,7 @@ def doNuisanceReport(url,npergroup=20,poi='r'):
         c.Modified()
         c.Update()
 
-        for ext in ['png']: #,'pdf']:
+        for ext in ['png','pdf']:
             c.SaveAs('nuisances_%d.%s'%(ig,ext))
 
     return
@@ -223,8 +231,16 @@ def main():
     ROOT.gStyle.SetOptTitle(0)
     ROOT.gStyle.SetOptStat(0)
 
-    #os.system('combine %s -m %s --X-rtd MINIMIZER_analytic --cminDefaultMinimizerStrategy 0 -M FitDiagnostics'%(sys.argv[1],sys.argv[2]))
-    doNuisanceReport(url=sys.argv[1])
+    url=sys.argv[1]
+
+    #run fit diagnostics
+    if len(sys.argv)>2:
+        mass=sys.argv[1]
+        workspace=sys.argv[2]
+        os.system('combine {0} -m {1} --X-rtd MINIMIZER_analytic --cminDefaultMinimizerStrategy 0 -M FitDiagnostics'.format(workspace,mass))
+        url='fitDiagnostics.root'
+    
+    doNuisanceReport(url=url)
 
 
 if __name__ == "__main__":

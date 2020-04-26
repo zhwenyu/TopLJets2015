@@ -11,7 +11,7 @@ systList=['bkgShapeUp',           'bkgShapeDown',
           'sigPzModelUp',         'sigPzModelDown']
           
 
-def printUncertainties(flist,m=1200):
+def printUncertainties(flist,m=1000):
 
     uncVals={}
 
@@ -23,7 +23,7 @@ def printUncertainties(flist,m=1200):
 
             if 'data' in kname : continue
             if 'sig_' in kname:
-                sigm=int(kname.split('_')[4].replace('m',''))
+                sigm=int(kname.split('_')[2].replace('m',''))
                 if m!=sigm : continue
             
             isSigFid    = True if 'fidsig' in kname and not 'outfidsig' in kname else False
