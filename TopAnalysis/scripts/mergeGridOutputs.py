@@ -57,7 +57,7 @@ def main():
     condor.write('output = %s/job_$(ProcId).out\n'%FARMDIR)
     condor.write('error  = %s/job_$(ProcId).err\n'%FARMDIR)
     condor.write('log    = %s/job_$(ProcId).log\n'%FARMDIR)
-    condor.write('requirements = (OpSysAndVer =?= "SLCern6")\n') #SLC6
+    #condor.write('requirements = (OpSysAndVer =?= "SLCern6")\n') #SLC6
     condor.write('+JobFlavour ="%s"\n'%opt.queue)
 
     if not opt.localProd:
