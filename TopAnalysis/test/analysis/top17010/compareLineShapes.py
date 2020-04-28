@@ -17,7 +17,7 @@ simScenarios={
 
     (172.5,0.90) : '/eos/cms/store/cmst3/group/top/TOP17010/final_method1a/0c522df/MC13TeV_2016_tt2l_0p90.root',
     (172.5,1.10) : '/eos/cms/store/cmst3/group/top/TOP17010/final_method1a/0c522df/MC13TeV_2016_tt2l_1p10.root',
-    (172.5,1.31) : '/eos/cms/store/cmst3/group/top/TOP17010/final_method1a/0c522df/MC13TeV_2016_tt2l_1p31.root',
+    (172.5,1.31) : '/eos/cms/store/cmst3/group/top/TOP17010/final_method1a/0c522df/MC13TeV_2016_tt2l_1p31_psweights.root',
     (172.5,1.90) : '/eos/cms/store/cmst3/group/top/TOP17010/final_method1a/0c522df/MC13TeV_2016_tt2l_1p90.root',
     }
 rwScenarios=[ (172.5,0.90), (172.5,1.10), (172.5,1.31), (172.5,1.90)] 
