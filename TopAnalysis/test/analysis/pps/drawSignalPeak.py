@@ -20,7 +20,7 @@ def main():
     isSingleRP=True if 'single' in sys.argv[1] else False
     isExc=True if '1exc' in sys.argv[1] else False
     pfix='pxonly' if isSingleRP else ''
-    pfix += 'exc' if isExc else False
+    pfix += 'exc' if isExc else ''
 
     hnopu={}
     hrpinhpur={}
