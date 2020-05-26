@@ -45,6 +45,10 @@ mcjson=${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/pps/mcsamples.js
 zxjson=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/zx_samples.json
 genweights=genweights_ab05162.root
 
+sddir=/store/cmst3/group/top/RunIIReReco/2017/sdz
+sdjson=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/pps_sd_samples.json
+genweights_sd=genweights_sdz.root
+
 signaldir=/store/cmst3/group/top/RunIIReReco/2017/vxsimulations_21Jan
 signaljson=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/signal_samples.json
 signalpostts2json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/signal_samples_postTS2.json
@@ -111,6 +115,34 @@ case $WHAT in
         done
 
         ;;
+
+
+    FULLSIMSD )
+        
+        for tag in `ls /eos/cms/${sddir}`; do
+            echo ${tag};
+
+            inputfile=${sddir}/${tag}/Chunk_0_ext0.root
+            selout=/eos/cms/${outdir}/Chunks/${tag}_0.root
+
+            python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py \
+                -i ${inputfile} --tag ${tag} \
+                -o ${selout} --genWeights  ../../test/analysis/pps/genweights_sdz.root \
+                --njobs 1 -q local \
+                --era era2017 -m ExclusiveZX::RunExclusiveZX --ch 0 --runSysts;
+            break
+        done
+
+#            mix_file=/eos/cms/${anadir}/mixing/
+#            anaout=./mixtest${pfix}
+#            addOpt="--effDir test/analysis/pps"
+#            python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 1 --jobs 1 \
+#                --json ${fullsimsignaljson} --RPout ${RPout_json} -o ${anaout} \
+#                --mix ${mix_file} -i `dirname ${selout}` --only ${inputfileTag}_0.root ${addOpt} \
+#                --allowPix ${ALLOWPIX};
+#        done
+        ;;
+
     
     SEL )
         baseCmd="$CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py"

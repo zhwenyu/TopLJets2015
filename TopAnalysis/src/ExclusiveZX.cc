@@ -49,6 +49,8 @@ void RunExclusiveZX(const TString in_fname,
     && ( filename.Contains("_Z_m_X") ||  filename.Contains("_Zee_m_X") ||  filename.Contains("_Zmm_m_X") ||  
          filename.Contains("_gamma_m_X")
          );
+  isFullSimSig |= filename.Contains("MC13TeV_SDZ");
+
   int fullSimXangle(0);
   if(isFullSimSig){
     if(filename.Contains("_120")) fullSimXangle=120;
