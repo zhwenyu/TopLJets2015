@@ -49,7 +49,11 @@ void RunExclusiveZX(const TString in_fname,
     && ( filename.Contains("_Z_m_X") ||  filename.Contains("_Zee_m_X") ||  filename.Contains("_Zmm_m_X") ||  
          filename.Contains("_gamma_m_X")
          );
-  isFullSimSig |= filename.Contains("MC13TeV_SDZ");
+  bool isSDZ(false);
+  if(filename.Contains("MC13TeV_SDZ")){
+    isFullSimSig |= true;
+    isSDZ=true;
+  }
 
   int fullSimXangle(0);
   if(isFullSimSig){
@@ -331,7 +335,11 @@ void RunExclusiveZX(const TString in_fname,
       hasEMTrigger=(selector.hasTriggerBit("HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_v",    ev.triggerBits) ||
                     selector.hasTriggerBit("HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ_v", ev.triggerBits) ||
                     selector.hasTriggerBit("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_v",  ev.triggerBits) );
-      
+      if(isSDZ) {
+        hasMTrigger=true;
+        hasMMTrigger=true;
+        hasEETrigger=true;
+      }
       
       //trigger efficiency
       for(auto gen_cat : gen_cats) {

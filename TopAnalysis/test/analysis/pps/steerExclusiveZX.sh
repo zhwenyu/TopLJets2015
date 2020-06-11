@@ -49,7 +49,7 @@ sddir=/store/cmst3/group/top/RunIIReReco/2017/sdz
 sdjson=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/pps_sd_samples.json
 genweights_sd=genweights_sdz.root
 
-signaldir=/store/cmst3/group/top/RunIIReReco/2017/vxsimulations_21Jan
+signaldir=/store/cmst3/group/top/RunIIReReco/2017/vxsimulations_2Jun
 signaljson=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/signal_samples.json
 signalpostts2json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/signal_samples_postTS2.json
 fullsimsignaljson=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/signal_samples_fullsim.json
@@ -130,7 +130,6 @@ case $WHAT in
                 -o ${selout} --genWeights  ../../test/analysis/pps/genweights_sdz.root \
                 --njobs 1 -q local \
                 --era era2017 -m ExclusiveZX::RunExclusiveZX --ch 0 --runSysts;
-            break
         done
 
 #            mix_file=/eos/cms/${anadir}/mixing/
@@ -215,8 +214,8 @@ case $WHAT in
         predin=/eos/cms/${outdir}/Chunks
         file=Data13TeV_2017B_DoubleMuon_2.root
         
-        #predin=/eos/cms/${signaldir}
-        #file=Z_m_X_960_xangle_120_2017_preTS2.root
+        predin=/eos/cms/${signaldir}
+        file=Z_m_X_960_xangle_120_2017_preTS2.root
         #file=Z_m_X_960_xangle_120_2017_postTS2.root
         
         mix_file=/eos/cms/${anadir}/mixing/
@@ -462,6 +461,13 @@ case $WHAT in
         ;;
 
     RUNOPTIMSTATANA )
+
+        combJobs=(`ls ppvx_${githash}${pfix}/*/optimJob_combineCards.sh`)
+        echo "Combining cards before submitting jobs"
+        for job in ${combJobs[@]}; do 
+            sh ${job};
+        done
+
         python test/analysis/pps/prepareFinalStatAnalysis.py -i ppvx_${githash}${pfix}
         ;;
 

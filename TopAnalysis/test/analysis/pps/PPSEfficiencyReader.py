@@ -13,20 +13,50 @@ class PPSEfficiencyReader:
         self.allEffs={}
 
         for fIn in fList.split(','):
-            baseDir='Strips/%d'%year if 'MultiTrack' in fIn else 'Pixel/%d'%year
-            fIn=ROOT.TFile.Open(ROOT.gSystem.ExpandPathName(fIn))
-            for k in fIn.Get(baseDir).GetListOfKeys():
-                for kk in fIn.Get(baseDir+'/'+k.GetName()).GetListOfKeys():
-                    hname=kk.GetName()
-                    if '2D'in hname : continue
-                    self.allEffs[hname]=kk.ReadObj()
-                    self.allEffs[hname].SetDirectory(0)
-            fIn.Close()
+
+            if 'MultiTrack' in fIn:
+                baseDir='Strips/%d'%year
+                fIn=ROOT.TFile.Open(ROOT.gSystem.ExpandPathName(fIn))
+                for k in fIn.Get(baseDir).GetListOfKeys():
+                    for kk in fIn.Get(baseDir+'/'+k.GetName()).GetListOfKeys():
+                        hname=kk.GetName()
+                        if '2D' in hname : continue
+                        self.allEffs[hname]=kk.ReadObj()
+                        self.allEffs[hname].SetDirectory(0)
+                fIn.Close()
+                
+            else:
+                fIn=ROOT.TFile.Open(ROOT.gSystem.ExpandPathName(fIn))
+                for era in ['B','C1','C2','D','E','F1','F2','F3']:
+                    baseDir='Pixel/{0}/{0}{1}'.format(year,era)
+                    for k in fIn.Get(baseDir).GetListOfKeys():
+                        hname=k.GetName()
+                        if not '2D' in hname : continue
+                        self.allEffs[hname]=k.ReadObj()
+                        self.allEffs[hname].SetDirectory(0)
+
+                #compose lumi averaged for eras C and F
+                for era,eras in [ ('C',[('C1',0.62),('C2',0.38)]),
+                                  ('C',[('F1',0.13),('F2',0.59),('F3',0.28)]) ]:
+                    
+                    for rp in [45,56]:
+                        hname='h{0}_220_2017{1}_all_2D'
+                        firstSubEra=eras[0][0]
+                        inc_hname=hname.format(rp,era)
+                        self.allEffs[inc_hname]=self.allEffs[hname.format(rp,firstSubEra)].Clone(inc_hname)
+                        self.allEffs[inc_hname].Reset('ICE')
+                        self.allEffs[inc_hname].SetDirectory(0)
+
+                        for subEra,subEraWgt in eras:
+                            self.allEffs[inc_hname].Add(self.allEffs[hname.format(rp,subEra)],subEraWgt)
+            
+                fIn.Close()
+                
 
         print '[PPSEfficiencyReader] retrieved %d histograms'%len(self.allEffs)
 
 
-    def getPPSEfficiency(self,era,xangle,xi,rp,isMulti=True, applyMultiTrack=False):
+    def getPPSEfficiency(self,era,xangle,xi,x,y,rp,isMulti=True, applyMultiTrack=False, applyInterPot=False):
 
         sector=45 if rp<100 else 56
         eff,effUnc=1.0,0.0
@@ -45,6 +75,15 @@ class PPSEfficiencyReader:
             if ieff>0:
                 effUnc += (raddamUnc.GetBinError(ibin)/ieff)**2            
 
+            if applyInterPot:
+                interPot=self.allEffs['h{0}_220_2017{1}_all_2D'.format(sector,era)]
+                xbin=interPot.GetXaxis().FindBin(x)
+                ybin=interPot.GetYaxis().FindBin(y)
+                ieff = interPot.GetBinContent(xbin,ybin)
+                eff *=ieff
+                if ieff>0:
+                    effUnc += interPot.GetBinError(xbin,ybin)/ieff
+                
         else:
 
             # FIXME

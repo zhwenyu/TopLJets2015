@@ -472,6 +472,10 @@ def main(args):
                         default=False,
                         action='store_true',
                         help='Use non-mixed data in the final fit [default: %default]')
+    parser.add_argument('--finalStates',
+                        dest='finalStates',
+                        default=CH_DICT.keys(),
+                        help='Generate cards for these final states [default: %default]')
     opt=parser.parse_args(args)
 
     ROOT.gROOT.SetBatch(True)
@@ -496,8 +500,10 @@ def main(args):
     #prepare output
     os.system('mkdir -p %s'%opt.output)
 
+    opt.finalStates=opt.finalStates.split(',')
     task_list=[]
     for ch in CH_DICT.keys():
+        if not ch in opt.finalStates: continue
         task_list.append( (ch,copy.deepcopy(opt)) )
 
     import multiprocessing as MP

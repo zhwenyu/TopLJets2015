@@ -115,10 +115,11 @@ def getScanPoint(inDir,fitTag):
         shScript=shScript.replace('.root','.sh')
         return shScript
 
+#    print mt, gt, nll, url  # debug -wz
     return mt,gt,nll
         
 
-def profilePOI(data,outdir,axis=0,sigma=5):
+def profilePOI(data,outdir,axis=0,sigma=5,ylim=(0,20)):
 
     """ profiles in x and y the POI """
 
@@ -153,7 +154,7 @@ def profilePOI(data,outdir,axis=0,sigma=5):
             
         #minimize likelihood
         minResults = findLikelihoodMinimum(y_unif,2*z_filt)
-        bestFitX=minResults['polyfit'][1][0]
+        bestFitX=minResults['brute-force'][1][0] # polyfit -wz
         dX_up=minResults['brute-force'][2][0]-minResults['brute-force'][1][0]
         dX_lo=minResults['brute-force'][0][0]-minResults['brute-force'][1][0]
         dX_up=max(dX_up,minResults['polyfit'][2][0]-bestFitX)
@@ -171,7 +172,7 @@ def profilePOI(data,outdir,axis=0,sigma=5):
         plt.plot(y_unif, 2*z_filt-minLL, '--', label='likelihood')
         plt.xlabel(xtit)
         plt.ylabel(r'$-2\log(\lambda)$')
-        plt.ylim(0.,20.0)
+        plt.ylim(*ylim) # 20 -wz
         ax.text(0,1.02,'CMS preliminary', transform=ax.transAxes, fontsize=16)
         ax.text(1.0,1.02,r'%s=%3.2f 35.6 fb$^{-1}$ (13 TeV)'%(ytit,xi), transform=ax.transAxes,horizontalalignment='right',fontsize=14)
         ax.text(0.5, 0.94,r'Best fit: %s=$%3.2f^{+%3.2f}_{%3.2f}$ GeV'%(xvar,bestFitX,dX_up,dX_lo), transform=ax.transAxes,horizontalalignment='center',fontsize=14)
@@ -197,7 +198,7 @@ def profilePOI(data,outdir,axis=0,sigma=5):
     llvals_filt = filters.gaussian_filter1d(llvals_spline_val,sigma=5)
 
     minResults=findLikelihoodMinimum(xvals_unif,llvals_filt)
-    bestFitX=minResults['polyfit'][1][0]
+    bestFitX=minResults['brute-force'][1][0] # polyfit -wz
     dX_up=minResults['brute-force'][2][0]-minResults['brute-force'][1][0]
     dX_lo=minResults['brute-force'][0][0]-minResults['brute-force'][1][0]
     dX_up=max(dX_up,minResults['polyfit'][2][0]-bestFitX)
@@ -209,7 +210,7 @@ def profilePOI(data,outdir,axis=0,sigma=5):
     plt.plot(xvals_unif, llvals_filt-minLL, '--', label='interpolated')
     plt.xlabel(ytit)    
     plt.ylabel(r'$-2\Delta\log(\lambda)$')
-    plt.ylim(0.,20.0)
+    plt.ylim(*ylim) # 20 -wz
     ax.text(0,1.02,'CMS preliminary', transform=ax.transAxes, fontsize=16)
     ax.text(1.0,1.02,r'35.6 fb$^{-1}$ (13 TeV)', transform=ax.transAxes,horizontalalignment='right',fontsize=14)
     ax.text(0.5,0.94,r'Best fit: %s=$%3.2f^{+%3.2f}_{%3.2f}$ GeV'%(ytit,bestFitX,dX_up,dX_lo), transform=ax.transAxes,horizontalalignment='center',fontsize=12)
@@ -308,6 +309,11 @@ def main():
                       help='fit tag [%default]',  
                       default='_tbart',
                       type='string')
+    parser.add_option('--ylim',          
+                      dest='ylim',
+                      help='y-axis limits [%default]',  
+                      default='0,20',
+                      type='string')
     parser.add_option('--sigma',          
                       dest='filterSigma',
                       help='fiter sigma [%default]',  
@@ -320,6 +326,8 @@ def main():
                       action='store_true')
     (opt, args) = parser.parse_args()
 
+    ylim=[float(x) for x  in opt.ylim.split(',')]
+
 
     os.system('rm -rf {0} && mkdir -p {0}'.format(opt.outdir))
 
@@ -329,6 +337,7 @@ def main():
         toSub=[]
         print 'Scanning available results'
         for f in os.listdir(opt.input):
+	    if 'pck' in f: continue # ignore produced file  -wz
             scanRes=getScanPoint(inDir=os.path.join(opt.input,f),fitTag=opt.fitTag)
             if isinstance(scanRes,basestring):
                 toSub.append(scanRes)
@@ -371,8 +380,8 @@ def main():
     #plot the contour interpolating the available points
     try:
         fitres=np.array(fitres)
-        bestFitX=profilePOI(fitres,outdir=opt.outdir,axis=0,sigma=opt.filterSigma)
-        bestFitY=profilePOI(fitres,outdir=opt.outdir,axis=1,sigma=opt.filterSigma)
+        bestFitX=profilePOI(fitres,outdir=opt.outdir,axis=0,sigma=opt.filterSigma,ylim=ylim)
+        bestFitY=profilePOI(fitres,outdir=opt.outdir,axis=1,sigma=opt.filterSigma,ylim=ylim)
         doContour(fitres,bestFitX,bestFitY,outdir=opt.outdir)
     except Exception as e:
         print '<'*50

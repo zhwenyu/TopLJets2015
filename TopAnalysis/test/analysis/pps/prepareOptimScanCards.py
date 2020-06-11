@@ -52,22 +52,29 @@ def main(args):
     #build a list of the points to run
     if opt.just: opt.just=[int(x) for x in opt.just.split(',')]
 
+    finalOptimList=[]
     for ipt,ana in enumerate(OPTIMLIST):
+        for finalState in ['169','121','22']:
+            finalOptimList.append( (ipt,ana,finalState) )
+
+    optimJobs=[]
+    combJobs=[]
+    for ipt,ana,finalState in finalOptimList:
 
         if opt.just and not ipt in opt.just: continue
 
-
         workDir='%s/optim_%d'%(opt.output,ipt)
-        print workDir
-
         os.system('mkdir -p ' + workDir)
-        with open('%s/optimJob.sh'%workDir,'w') as script:
+
+        optimJobs.append((ipt,finalState))
+        with open('%s/optimJob_%s.sh'%(workDir,finalState),'w') as script:
             script.write('#!/bin/bash\n')
 
             #initialization
             script.write('\n')
             script.write('input=%s\n'%opt.input)
             script.write('cuts="%s"\n'%ana)
+            script.write('finalState="%s"\n'%finalState)
             if opt.injectMass:
                 script.write('injectMassOpt="--injectMass %s"\n'%opt.injectMass)
             else:
@@ -92,10 +99,25 @@ def main(args):
 
             #create datacard
             script.write('echo "Running datacard creation"\n')
-            script.write('python ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/pps/generateBinnedWorkspace.py -i ${input} -o ${output} --cuts "${cuts}" ${injectMassOpt} ${extraOpt}\n')
+            script.write('python ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/pps/generateBinnedWorkspace.py -i ${input} -o ${output} --cuts "${cuts}" ${injectMassOpt} ${extraOpt} --finalState ${finalState}\n')
             script.write('\n')
 
-            #combine cards
+        #combine cards
+        combJobs.append(ipt)
+        with open('%s/optimJob_combineCards.sh'%workDir,'w') as script:
+            script.write('#!/bin/bash\n')
+
+            script.write('output=%s\n'%os.path.abspath(workDir))     
+            script.write('\n')
+
+            #environment
+            script.write('echo "Setting up environment"\n')
+            script.write('cd %s/src\n'%os.environ['CMSSW_BASE'])
+            script.write('eval `scram r -sh`\n')
+            script.write('cd -\n')
+            script.write('\n')
+
+            script.write('\n')
             script.write('echo "Combining datacards"\n')
             script.write('cd $output\n')        
             script.write('for v in z zmm zee g; do\n')
@@ -113,14 +135,18 @@ def main(args):
     #submit optimization points to crab
     print 'Will submit %d optimization scan points'%len(OPTIMLIST)
     with open('%s/zxstatana_scan.sub'%opt.output,'w') as condor:
-        condor.write("executable  = %s/optim_$(ProcId)/optimJob.sh\n"%os.path.abspath(opt.output))
+        condor.write("executable  = %s/optim_$(optimId)/optimJob_$(finalState).sh\n"%os.path.abspath(opt.output))
         condor.write("output       = zxstatana_scan.out\n")
         condor.write("error        = zxstatana_scan.err\n")
         condor.write("log          = zxstatana_scan.log\n")
-        condor.write("+JobFlavour = \"tomorrow\"\n")
+        condor.write("+JobFlavour = \"nextweek\"\n")
         condor.write("request_cpus = 4\n")
-        condor.write("queue %d\n"%len(OPTIMLIST))
-    os.system('condor_submit %s/zxstatana_scan.sub'%opt.output)
+
+        for ipt,finalState in optimJobs:
+            condor.write("optimId  = %d\n"%ipt)
+            condor.write("finalState  = %s\n"%finalState)
+            condor.write("queue 1\n")
+    #os.system('condor_submit %s/zxstatana_scan.sub'%opt.output)
     
 
 if __name__ == "__main__":
