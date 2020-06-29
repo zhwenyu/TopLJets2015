@@ -190,9 +190,9 @@ case $WHAT in
 	commonOpts="-i /eos/cms/${outdir}/${githash} --puNormSF puwgtctr -l ${fulllumi} --saveLog --mcUnc ${lumiUnc}"
         commonOpts="${commonOpts} --procSF t#bar{t}:0.965"
 	python scripts/plotter.py ${commonOpts} -j ${json};
-        python scripts/plotter.py ${commonOpts} -j ${json}      --only evcount    --saveTeX  -o evcount_plotter.root;
-        python scripts/plotter.py ${commonOpts} -j ${json}      --only mlb,ptlb    --binWid  -o lb_plotter.root;
-        python scripts/plotter.py ${commonOpts} -j ${syst_json} --only mlb,evcount --silent  -o syst_plotter.root;
+        #python scripts/plotter.py ${commonOpts} -j ${json}      --only evcount    --saveTeX  -o evcount_plotter.root;
+        #python scripts/plotter.py ${commonOpts} -j ${json}      --only mlb,ptlb    --binWid  -o lb_plotter.root;
+        #python scripts/plotter.py ${commonOpts} -j ${syst_json} --only mlb,evcount --silent  -o syst_plotter.root;
         ;;
 
 
@@ -401,7 +401,7 @@ case $WHAT in
 	    cp test/index.php ${fdir};
 
             #additional plots
-            for e in localsens templates; do
+            for e in plots/plotter; do #localsens templates; do
                 mkdir -p ${fdir}/${e};
 	        mv ${pdir}/${e}/*.{png,pdf,dat} ${fdir}/${e};
 	        cp test/index.php ${fdir}/${e};
