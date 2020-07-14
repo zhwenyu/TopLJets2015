@@ -199,7 +199,15 @@ def getRandomEra(isSignal,isPreTS2Signal):
     return era
 
 def isSignalFile(inFile):
-    isSignal=True if 'gamma_m_X_' in inFile or 'Z_m_X_' in inFile or 'Zee_m_X_' in inFile or 'Zmm_m_X_' in inFile else False
+
+    isSignal=False
+    validTags=['gamma_m_X_','Z_m_X_',
+               'Zee_m_X_','Zmm_m_X_',
+               'SDZee','SDZmm']
+    for t in validTags:
+        if t in inFile:
+            isSignal=True
+            break
     isPreTS2Signal=True if 'preTS2' in inFile else False
     return isSignal,isPreTS2Signal
 
@@ -212,7 +220,9 @@ def isPhotonSignalFile(inFile):
     return isSignal
 
 def signalMassPoint(inFile):
-    return float(re.search('m_X_(\d+)', inFile).group(1))
+    if 'm_X_' in inFile : 
+        return float(re.search('m_X_(\d+)', inFile).group(1))
+    return 0.
 
 def isSignalFiducial(csiPos,csiNeg,gen_pzpp):
 
@@ -238,7 +248,11 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
     era=os.path.basename(inFile).split('_')[1] if isData else None
     isDY=isDYFile(inFile)
     isSignal,isPreTS2Signal=isSignalFile(inFile)
-    isFullSimSignal = True if isSignal and 'fullsim' in inFile else False
+    isFullSimSignal = False
+    isSDZSim = True if 'SDZ' in inFile else False
+    if isSignal:
+        if 'fullsim' in inFile or isSDZSim:
+            isFullSimSignal=True
     isPhotonSignal=isPhotonSignalFile(inFile)
     gen_mX=signalMassPoint(inFile) if isSignal else 0.
 
@@ -252,8 +266,11 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
         #open just the necessary for signal and data
         if isSignal or isData:
             allowedEras=['2017%s'%x for x in 'BCDEF']
-            if isSignal:
-                allowedAngle=re.search('xangle_(\d+)',inFile).group(1)
+            if isSignal: 
+                try:
+                    allowedAngle=re.search('xangle_(\d+)',inFile).group(1)
+                except:
+                    allowedAngle=re.search('_(\d+)_',inFile).group(1)
                 mixFiles=[f for f in mixFiles if allowedAngle in f]
                 if isPreTS2Signal : 
                     allowedEras=['2017%s'%x for x in 'BCD']
@@ -377,12 +394,14 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
 
     #compute number of events weighted by target pz spectrum
     nSignalWgtSum=0.
-    if isSignal:
+    if isSignal and not isSDZSim:
         print 'Checking how many events are in the fiducial RP area...'
         for i in xrange(0,nEntries):
             tree.GetEntry(i)
             nSignalWgtSum += ROOT.TMath.Gaus(tree.gen_pzpp,0,0.391*gen_mX+624)
         print '...signal weight sum set to',nSignalWgtSum,' from ',nEntries,'raw events'
+    else:
+        nSignalWgtSum=1
 
     #start output and tree
     fOut=ROOT.TFile.Open(outFileName,'RECREATE')
@@ -544,38 +563,36 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
             ppsPosEff,ppsPosEffUnc=0.0,0.0
             ppsPosEff_nip,ppsPosEffUnc_nip=0.0,0.0
             if len(ev_pos_protons[2])>0:
-
-                #use multiRP xy
-                x=[ev_pos_protons_xy[0][0][0]] if len(ev_pos_protons_xy[0])>0 else []
-                y=[ev_pos_protons_xy[0][0][1]] if len(ev_pos_protons_xy[0])>0 else []
+                x=[ev_pos_protons_xy[0][0][0]] if len(ev_pos_protons_xy[0])>0 else [-99]
+                y=[ev_pos_protons_xy[0][0][1]] if len(ev_pos_protons_xy[0])>0 else [-99]
                 ppsPosEff,ppsPosEffUnc=ppsEffReader.getPPSEfficiency(evEra,beamXangle,
                                                                      ev_pos_protons[2][0],
-                                                                     x,
-                                                                     y,
+                                                                     x[0],
+                                                                     y[0],
                                                                      rp=3)
                 ppsPosEff_nip,ppsPosEffUnc_nip=ppsEffReader.getPPSEfficiency(evEra,beamXangle,
                                                                              ev_pos_protons[2][0],
-                                                                             x,
-                                                                             y,
+                                                                             x[0],
+                                                                             y[0],
                                                                              rp=3,
-                                                                             applyInterPot=False)
+                                                                             applyInterPotAndPure0=False)
 
             ppsNegEff,ppsNegEffUnc=0.0,0.0
             ppsNegEff_nip,ppsNegEffUnc_nip=0.0,0.0
             if len(ev_neg_protons[2])>0:
-                x=[ev_pos_protons_xy[0][0][0]] if len(ev_pos_protons_xy[0])>0 else []
-                y=[ev_pos_protons_xy[0][0][1]] if len(ev_pos_protons_xy[0])>0 else []
+                x=[ev_neg_protons_xy[0][0][0]] if len(ev_neg_protons_xy[0])>0 else [-99]
+                y=[ev_neg_protons_xy[0][0][1]] if len(ev_neg_protons_xy[0])>0 else [-99]
                 ppsNegEff,ppsNegEffUnc=ppsEffReader.getPPSEfficiency(evEra,beamXangle,
                                                                      ev_neg_protons[2][0],
-                                                                     x,
-                                                                     y,
+                                                                     x[0],
+                                                                     y[0],
                                                                      rp=103)
                 ppsNegEff_nip,ppsNegEffUnc_nip=ppsEffReader.getPPSEfficiency(evEra,beamXangle,
                                                                              ev_neg_protons[2][0],
-                                                                             x,
-                                                                             y,
+                                                                             x[0],
+                                                                             y[0],
                                                                              rp=103,
-                                                                             applyInterPot=False)
+                                                                             applyInterPotAndPure0=False)
 
             rawSigHyp=0
             if len(ev_neg_protons[1])>0: rawSigHyp += 1
@@ -650,13 +667,14 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
             if len(true_neg_protons[0])>0 : gen_csiNeg=true_neg_protons[0][0]
             
             gen_pzpp     = tree.gen_pzpp
-            pzwid        = 0.391*gen_mX+624
-            gen_pzwgt[0] = ROOT.TMath.Gaus(gen_pzpp,0,pzwid)
-            gen_pzwgt[1] = ROOT.TMath.Gaus(gen_pzpp,0,pzwid*1.1)/gen_pzwgt[0]
-            gen_pzwgt[2] = ROOT.TMath.Gaus(gen_pzpp,0,pzwid*0.9)/gen_pzwgt[0]
+            if not isSDZSim:
+                pzwid        = 0.391*gen_mX+624
+                gen_pzwgt[0] = ROOT.TMath.Gaus(gen_pzpp,0,pzwid)
+                gen_pzwgt[1] = ROOT.TMath.Gaus(gen_pzpp,0,pzwid*1.1)/gen_pzwgt[0]
+                gen_pzwgt[2] = ROOT.TMath.Gaus(gen_pzpp,0,pzwid*0.9)/gen_pzwgt[0]
 
             #use the sum of pz weighted events as normalization factor
-            if not isFullSimSignal:
+            if not isFullSimSignal and not isSDZSim:
                 if isZ:
                     finalPlots=[ [wgt*ppsEff*gen_pzwgt[0]*mcEff['eez'].Eval(boson.Pt())/nSignalWgtSum , cats],
                                  [wgt*ppsEff*gen_pzwgt[0]*mcEff['mmz'].Eval(boson.Pt())/nSignalWgtSum, [c.replace(evcat,'mm') for c in cats if c[0:2]=='ee']] ]
@@ -979,7 +997,7 @@ def runAnalysisTasks(opt):
             for x in samples:
                 task_dict[str(x[0])]=[]
 
-    #group chunks matching the same name    
+    #group chunks matching the same name   
     for file_path in os.listdir(opt.input):
         
         if opt.only:
@@ -989,14 +1007,14 @@ def runAnalysisTasks(opt):
         file_name,ext=os.path.splitext(file_path)
         if ext != '.root' : continue
 
-
         #check if file tag is already in the list of samples to process
         isSignal,_=isSignalFile(file_name)
-        if isSignal and not 'fullsim' in file_name:
-            tag=file_name
-        else:
-            lastTkn=file_name.rfind('_')
-            tag=file_name[0:lastTkn]
+        lastTkn=file_name.rfind('_')
+        tag=file_name[0:lastTkn]
+        if isSignal:
+            if not 'fullsim' in file_name and not 'SDZ' in file_name:
+                tag=file_name
+            print 'This file will be treated as signal with tag=',tag
 
         if not tag in task_dict: continue
         task_dict[tag].append( os.path.join(opt.input,file_path) )

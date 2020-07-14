@@ -32,15 +32,16 @@ class PPSEfficiencyReader:
                     for k in fIn.Get(baseDir).GetListOfKeys():
                         hname=k.GetName()
                         if not '2D' in hname : continue
-                        self.allEffs[hname]=k.ReadObj()
-                        self.allEffs[hname].SetDirectory(0)
+                        self.allEffs[hname+"_ip"]=k.ReadObj()
+                        self.allEffs[hname+"_ip"].SetDirectory(0)
+                        self.allEffs[hname+"_ip"].SetName(hname+"_ip")
 
-                #compose lumi averaged for eras C and F
+                    #compose lumi averaged for eras C and F
                 for era,eras in [ ('C',[('C1',0.62),('C2',0.38)]),
-                                  ('C',[('F1',0.13),('F2',0.59),('F3',0.28)]) ]:
+                                  ('F',[('F1',0.13),('F2',0.59),('F3',0.28)]) ]:
                     
                     for rp in [45,56]:
-                        hname='h{0}_220_2017{1}_all_2D'
+                        hname='h{0}_220_2017{1}_all_2D_ip'
                         firstSubEra=eras[0][0]
                         inc_hname=hname.format(rp,era)
                         self.allEffs[inc_hname]=self.allEffs[hname.format(rp,firstSubEra)].Clone(inc_hname)
@@ -49,14 +50,58 @@ class PPSEfficiencyReader:
 
                         for subEra,subEraWgt in eras:
                             self.allEffs[inc_hname].Add(self.allEffs[hname.format(rp,subEra)],subEraWgt)
-            
+                        
                 fIn.Close()
-                
+        
+        #pure 0 strip tracks eff from J. Kaspar
+        e1f=7519./(7519.+1440.)
+        self.pure0Probs={
+            (45,120,'2017B'):0.8605,
+            (45,120,'2017C'):0.8687,
+            (45,120,'2017D'):0.8665,
+            (45,120,'2017E'):e1f*1.0+(1-e1f)*0.6945,
+            (45,120,'2017F'):0.6803,
+            (45,130,'2017B'):0.7749,
+            (45,130,'2017C'):0.7888,
+            (45,130,'2017D'):0.7920,
+            (45,130,'2017E'):e1f*1.0+(1-e1f)*0.4680,
+            (45,130,'2017F'):0.4667,
+            (45,140,'2017B'):0.7137,
+            (45,140,'2017C'):0.7181,
+            (45,140,'2017D'):0.7353,
+            (45,140,'2017E'):e1f*1.0+(1-e1f)*0.3556,
+            (45,140,'2017F'):0.3878,
+            (45,150,'2017B'):0.6359,
+            (45,150,'2017C'):0.6510,
+            (45,150,'2017D'):0.6713,
+            (45,150,'2017E'):e1f*1.0+(1-e1f)*0.3493,
+            (45,150,'2017F'):0.3593,
+            (56,120,'2017B'):0.8412,
+            (56,120,'2017C'):0.8370,
+            (56,120,'2017D'):0.8273,
+            (56,120,'2017E'):e1f*0.6572+(1-e1f)*0.6307,
+            (56,120,'2017F'):0.6053,
+            (56,130,'2017B'):0.7409,
+            (56,130,'2017C'):0.7400,
+            (56,130,'2017D'):0.7375,
+            (56,130,'2017E'):e1f*0.4822+(1-e1f)*0.3976,
+            (56,130,'2017F'):0.3813,
+            (56,140,'2017B'):0.6752,
+            (56,140,'2017C'):0.6607,
+            (56,140,'2017D'):0.6729,
+            (56,140,'2017E'):e1f*0.3791+(1-e1f)*0.2982,
+            (56,140,'2017F'):0.3100,
+            (56,150,'2017B'):0.5948,
+            (56,150,'2017C'):0.5896,
+            (56,150,'2017D'):0.6010,
+            (56,150,'2017E'):e1f*0.3467+(1-e1f)*0.2904,
+            (56,150,'2017F'):0.2862,
+            }
 
         print '[PPSEfficiencyReader] retrieved %d histograms'%len(self.allEffs)
 
 
-    def getPPSEfficiency(self,era,xangle,xi,x,y,rp,isMulti=True, applyMultiTrack=False, applyInterPot=False):
+    def getPPSEfficiency(self,era,xangle,xi,x,y,rp,isMulti=True, applyMultiTrack=False, applyInterPotAndPure0=True):
 
         sector=45 if rp<100 else 56
         eff,effUnc=1.0,0.0
@@ -75,15 +120,20 @@ class PPSEfficiencyReader:
             if ieff>0:
                 effUnc += (raddamUnc.GetBinError(ibin)/ieff)**2            
 
-            if applyInterPot:
-                interPot=self.allEffs['h{0}_220_2017{1}_all_2D'.format(sector,era)]
-                xbin=interPot.GetXaxis().FindBin(x)
-                ybin=interPot.GetYaxis().FindBin(y)
-                ieff = interPot.GetBinContent(xbin,ybin)
-                eff *=ieff
-                if ieff>0:
-                    effUnc += interPot.GetBinError(xbin,ybin)/ieff
-                
+            if applyInterPotAndPure0:
+
+                pure0Eff = self.pure0Probs[(sector,xangle,era)]
+                eff *= pure0Eff
+
+                if x>-90 and y>-90 : #-99 is the default for n/a
+                    interPot=self.allEffs['h{0}_220_{1}_all_2D_ip'.format(sector,era)]
+                    xbin=interPot.GetXaxis().FindBin(x)
+                    ybin=interPot.GetYaxis().FindBin(y)
+                    ieff = interPot.GetBinContent(xbin,ybin)
+                    eff *=ieff
+                    if ieff>0:
+                        effUnc += interPot.GetBinError(xbin,ybin)/ieff
+
         else:
 
             # FIXME

@@ -67,10 +67,12 @@ def main():
     #read list of signal samples
     signalSamplesList=None
     try:
-        jsonFile = open(opt.signalJson,'r')
-        signalSamplesList=json.load(jsonFile, encoding='utf-8', object_pairs_hook=OrderedDict).items()
+        for jsonURL in opt.signalJson.split(','):
+            jsonFile = open(jsonURL,'r')
+            if signalSamplesList is None: signalSamplesList=[]
+            signalSamplesList+=json.load(jsonFile, encoding='utf-8', object_pairs_hook=OrderedDict).items()
+            jsonFile.close()
         print signalSamplesList
-        jsonFile.close()
     except Exception as e:
         print e
         pass

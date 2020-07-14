@@ -146,7 +146,7 @@ def main(args):
             condor.write("optimId  = %d\n"%ipt)
             condor.write("finalState  = %s\n"%finalState)
             condor.write("queue 1\n")
-    #os.system('condor_submit %s/zxstatana_scan.sub'%opt.output)
+    os.system('condor_submit %s/zxstatana_scan.sub'%opt.output)
     
 
 if __name__ == "__main__":

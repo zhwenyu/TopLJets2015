@@ -61,6 +61,8 @@ wwwdir=/eos/user/p/psilva/www/ExclusiveAna_${githash}${pfix}
 
 plot_signal_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/plot_signal_samples.json
 plot_signal_ext_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/plot_signal_samples_ext.json
+plot_signal_sdz_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/plot_signal_sdz_samples.json
+
 
 
 zbias_samples_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/zbias_samples.json
@@ -124,22 +126,31 @@ case $WHAT in
 
             inputfile=${sddir}/${tag}/Chunk_0_ext0.root
             selout=/eos/cms/${outdir}/Chunks/${tag}_0.root
-
             python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/runLocalAnalysis.py \
                 -i ${inputfile} --tag ${tag} \
                 -o ${selout} --genWeights  ../../test/analysis/pps/genweights_sdz.root \
                 --njobs 1 -q local \
                 --era era2017 -m ExclusiveZX::RunExclusiveZX --ch 0 --runSysts;
+                    
         done
 
-#            mix_file=/eos/cms/${anadir}/mixing/
-#            anaout=./mixtest${pfix}
-#            addOpt="--effDir test/analysis/pps"
-#            python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 1 --jobs 1 \
-#                --json ${fullsimsignaljson} --RPout ${RPout_json} -o ${anaout} \
-#                --mix ${mix_file} -i `dirname ${selout}` --only ${inputfileTag}_0.root ${addOpt} \
-#                --allowPix ${ALLOWPIX};
-#        done
+        step=1
+        predin=/eos/cms/${outdir}/Chunks/
+        predout=/eos/cms/${anadir}${pfix}
+        condor_prep=runanasdsig${pfix}_condor.sub
+        mix_file=/eos/cms/${anadir}/mixing/
+        echo "executable  = ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/pps/wrapAnalysis.sh" > $condor_prep
+        echo "output      = ${condor_prep}.out" >> $condor_prep
+        echo "error       = ${condor_prep}.err" >> $condor_prep
+        echo "log         = ${condor_prep}.log" >> $condor_prep
+        echo "requirements = (OpSysAndVer =?= \"SLCern6\")" >> $condor_prep
+        echo "+AccountingGroup = \"group_u_CMST3.all\"" >> $condor_prep
+        echo "+JobFlavour = \"tomorrow\"">> $condor_prep
+        echo "request_cpus = 4" >> $condor_prep
+        echo "arguments   = ${CMSSW_BASE} ${step} ${predout} ${predin} \$(chunk) ${mix_file} ${ALLOWPIX}" >> $condor_prep
+        echo "queue chunk matching (${predin}/MC13TeV_SDZ*.root)" >> $condor_prep
+        condor_submit $condor_prep        
+
         ;;
 
     
@@ -431,7 +442,7 @@ case $WHAT in
 
 	    baseOpts="-i ${indirForPlots} --lumiSpecs a:${alumi} --procSF #gamma+jets:1.4 -l ${eralumi} --mcUnc ${lumiUnc} ${lumiSpecs} ${kFactorList}"
             era_json=test/analysis/pps/test_samples_${era}.json;
-            commonOpts="${baseOpts} -j ${era_json} --signalJson ${plot_signal_json} -O ${indirForPlots}/plots${era}"
+            commonOpts="${baseOpts} -j ${era_json} --signalJson ${plot_signal_sdz_json} -O ${indirForPlots}/plots${era}"
             python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py ${commonOpts} --only ${plots} --strictOnly;
         done
         ;;
