@@ -448,17 +448,19 @@ case $WHAT in
         ;;
 
 
-    TESTSTATANA)
+    TESTOPTIMSTATANA)
 
         indirForPlots=/eos/cms/${anadir}${pfix}
-        commonOpts="-i ${indirForPlots} --massList 960"
+        commonOpts="-i ${indirForPlots} --finalStates 22"
 
         echo "Generating a datacard takes a bit as it'll project the shapes for a given set of cuts"
         echo "You can run locally with python test/analysis/pps/generatedBinnedWorkspace.py and your preferred set of cuts"
         echo "Running with the default values for ${commonOpts} and output @ ppvx_${githash}${pfix}/test"
         
-        python test/analysis/pps/generateBinnedWorkspace.py ${commonOpts} -o ppvx_${githash}${pfix}/test &        
-        #python test/analysis/pps/generateBinnedWorkspace.py ${commonOpts} -o ppvx_${githash}${pfix}_signed/test --signed &
+        #python test/analysis/pps/generateBinnedWorkspace.py ${commonOpts} -o ppvx_${githash}${pfix}/test --doBackground    
+        #python test/analysis/pps/generateBinnedWorkspace.py ${commonOpts} -o ppvx_${githash}${pfix}/test --massList 960 
+
+        python test/analysis/pps/generateBinnedWorkspace.py ${commonOpts} -o ppvx_${githash}${pfix}/test --doDataCards 
 
         ;;
 

@@ -132,9 +132,8 @@ def fillBackgroundTemplates(opt):
               'goff')
     h=data.GetHistogram()
     totalBkg=h.Integral()
-    if opt.unblind:
-        data_obs=h.Clone('data_obs_'+catName)
-        data_obs.SetDirectory(0)
+    data_obs=h.Clone('data_obs_'+catName)
+    data_obs.SetDirectory(0)
     h.Reset('ICE')
 
     for name,mixType,pfix in [('bkg_'+catName,                          1, ''),
@@ -158,11 +157,6 @@ def fillBackgroundTemplates(opt):
         h.Scale(totalBkg/h.Integral())
         histos.append(h.Clone(name))
         histos[-1].SetDirectory(0)
-
-        #use first histogram in a category as pseudo-data in case we're blinded
-        if len(histos)==1 and not opt.unblind :
-            data_obs=h.Clone('data_obs_'+catName)
-            data_obs.SetDirectory(0)
 
         h.Reset('ICE')
 
@@ -266,7 +260,7 @@ def fillSignalTemplates(mass,signalFile,xsec,opt,fiducialCuts='gencsi1>0.02 && g
     return totalSig,templates,nom_templates
 
 
-def writeDataCards(opt,shapesURL):
+def writeDataCards(opt,shapesURL,tag,dataTag):
 
     """writes the datacard and the workspace"""
 
@@ -277,7 +271,7 @@ def writeDataCards(opt,shapesURL):
     #create a card per category
     dcList=[]
     cat=opt.chTag
-    dcTxt='%s/shapes-parametric.datacard_%s.dat'%(opt.output,cat)
+    dcTxt='%s/shapes-parametric.datacard_%s_%s.dat'%(opt.output,cat,tag)
     dcList.append(dcTxt)
     with open(dcTxt,'w') as dc:
         dc.write('#\n')
@@ -291,8 +285,8 @@ def writeDataCards(opt,shapesURL):
         dc.write('-'*50+'\n')
         dc.write('shapes fidsig    * {0} $PROCESS_{1}_m$MASS $PROCESS_{1}_m$MASS_$SYSTEMATIC\n'.format(shapesURL,cat))
         dc.write('shapes outfidsig * {0} $PROCESS_{1}_m$MASS $PROCESS_{1}_m$MASS_$SYSTEMATIC\n'.format(shapesURL,cat))
-        dc.write('shapes bkg       * {0} $PROCESS_{1}        $PROCESS_$SYSTEMATIC\n'.format(shapesURL,cat)) 
-        dc.write('shapes data_obs  * {0} $PROCESS_{1}\n'.format(shapesURL,cat))
+        dc.write('shapes bkg       * {0} $PROCESS_{1}        $PROCESS_$SYSTEMATIC\n'.format(shapesURL,cat))         
+        dc.write('shapes {0}       * {1} $PROCESS_{2}\n'.format(dataTag,shapesURL,cat))
         dc.write('-'*50+'\n')
         dc.write('bin %s\n'%cat)
         dc.write('observation -1\n')
@@ -327,9 +321,9 @@ def writeDataCards(opt,shapesURL):
     print '\tgenerated the following datacards',dcList
 
 
-def datacardTask(args):
+def shapesTask(args):
 
-    """ steering the operations needed for the datacard creation """
+    """ steering the operations needed for the creation of shapes files """
 
     #finalize configuration of this specific task
     ch,opt=args
@@ -339,77 +333,145 @@ def datacardTask(args):
     setattr(opt,'presel','cat==%s && %s'%(ch,opt.cuts))
     boson='gamma' if ch=='22' else 'Z'
 
+    doSignal=True if len(opt.massList)>0 else False
+
     #start the output
-    outName='shapes_%s.root'%ch
-    shapesURL=os.path.join(opt.output,outName)
-    fOut=ROOT.TFile.Open(shapesURL,'RECREATE')
+    fOut=None
+    if opt.doBackground or doSignal:
+
+        pfix=''
+        if opt.doBackground:
+            pfix+='_bkg'
+        if doSignal:
+            pfix+='_'+'_'.join(opt.massList)
+
+        outName='shapes_%s%s.root'%(ch,pfix)
+        shapesURL=os.path.join(opt.output,outName)
+        fOut=ROOT.TFile.Open(shapesURL,'RECREATE')
+
+        print '\t shapes for this job will be stored @',outName
+
 
     #define background templates
-    print '\t filling background templates and observed data'
-    bkgExp,bkgTemplates,data_obs=fillBackgroundTemplates(opt)    
-    for h in bkgTemplates:        
-        h.SetDirectory(fOut)
-        h.Write()
+    if opt.doBackground:
+        print '\t filling background templates and observed data'
+        bkgExp,bkgTemplates,data_obs=fillBackgroundTemplates(opt)    
+        if fOut:
+            for h in bkgTemplates:        
+                h.SetDirectory(fOut)
+                h.Write()
+
+            data_obs.SetDirectory(fOut)
+            data_obs.Write()
 
 
     #parametrize the signal
-    print '\t filling signal templates' 
-    for m in opt.massList:
-        try:
-            sigExp,sigTemplates,sigNomTemplates=None,None,None
-            for ixangle in VALIDLHCXANGLES:
-                print '\t @%durad'%ixangle
-                signalFile=opt.sig.format(boson=boson,xangle=ixangle,mass=m)
-                if sigExp is None:
-                    sigExp,sigTemplates,sigNomTemplates=fillSignalTemplates(mass=m,
-                                                                            signalFile=signalFile,
-                                                                            xsec=SIGNALXSECS[ixangle] if boson=='Z' else PHOTONSIGNALXSECS[ixangle],
-                                                                            opt=opt)
-                else:
-                    i_sigExp,i_sigTemplates,i_sigNomTemplates=fillSignalTemplates(mass=m,
-                                                                                  signalFile=signalFile,
-                                                                                  xsec=SIGNALXSECS[ixangle] if boson=='Z' else PHOTONSIGNALXSECS[ixangle],
-                                                                                  opt=opt,
-                                                                                  postfix='_add')
+    if doSignal:
+        print '\t filling signal templates' 
+        for m in opt.massList:
+            try:
+                sigExp,sigTemplates,sigNomTemplates=None,None,None
+                for ixangle in VALIDLHCXANGLES:
+                    print '\t @%durad'%ixangle
+                    signalFile=opt.sig.format(boson=boson,xangle=ixangle,mass=m)
+                    if sigExp is None:
+                        sigExp,sigTemplates,sigNomTemplates=fillSignalTemplates(mass=m,
+                                                                                signalFile=signalFile,
+                                                                                xsec=SIGNALXSECS[ixangle] if boson=='Z' else PHOTONSIGNALXSECS[ixangle],
+                                                                                opt=opt)
+                    else:
+                        i_sigExp,i_sigTemplates,i_sigNomTemplates=fillSignalTemplates(mass=m,
+                                                                                      signalFile=signalFile,
+                                                                                      xsec=SIGNALXSECS[ixangle] if boson=='Z' else PHOTONSIGNALXSECS[ixangle],
+                                                                                      opt=opt,
+                                                                                      postfix='_add')
+                        
+                        for k in sigTemplates:
+                            sigExp[k] += i_sigExp[k]
+                            for i in range(len(sigTemplates[k])):
+                                sigTemplates[k][i].Add(i_sigTemplates[k][i])
+                                i_sigTemplates[k][i].Delete()
+                            sigNomTemplates[k].Add(i_sigNomTemplates[k])
+                            i_sigNomTemplates[k].Delete()
 
-                    for k in sigTemplates:
-                        sigExp[k] += i_sigExp[k]
-                        for i in range(len(sigTemplates[k])):
-                            sigTemplates[k][i].Add(i_sigTemplates[k][i])
-                            i_sigTemplates[k][i].Delete()
-                        sigNomTemplates[k].Add(i_sigNomTemplates[k])
-                        i_sigNomTemplates[k].Delete()
+                print '\t Final total signal:',sigExp
+                if fOut:
+                    for key in sigTemplates:
+                        for h in sigTemplates[key]:
+                            h.SetDirectory(fOut)
+                            h.Write()
 
-            print '\t Final total signal:',sigExp
-
-            for key in sigTemplates:
-                for h in sigTemplates[key]:
-                    h.SetDirectory(fOut)
-                    h.Write()
-
-                #if blinded and signal injection required for this mass, add signal to pseudo-data 
-                if not opt.unblind and opt.injectMass==m and data_obs:
-                    data_obs.Add(sigNomTemplates[key],opt.injectMu)
-                    sigNomTemplates[key].Delete() 
-
-        except Exception as e:
-            print '-'*50
-            print 'Failed to generate templates at mass=',m,'for boson=',boson
-            print e
+            except Exception as e:
+                print '-'*50
+                print 'Failed to generate templates at mass=',m,'for boson=',boson
+                print e
             print '-'*50
 
-    #now write the data
-    if data_obs:
-        data_obs.SetDirectory(fOut)
-        data_obs.Write()
+    #close file if neede
+    if fOut:
+        fOut.Close()
 
-    #all done
-    fOut.Close()
 
-    #write summary in datacards
-    print '\t writing datacard'
-    writeDataCards(opt,os.path.basename(shapesURL))
+def datacardTask(args):
+
+    """ steering the operations needed for the final datacard creation """
+
+    #finalize configuration of this specific task
+    ch,opt=args
+
+    setattr(opt,'chTag',CH_DICT[ch])
+    setattr(opt,'chTitle',CH_TITLE_DICT[ch])
+    setattr(opt,'presel','cat==%s && %s'%(ch,opt.cuts))
+    boson='gamma' if ch=='22' else 'Z'
+
+    #hadd all the shapes files
+    print '\t hadding final shapes file'
+    os.system('hadd -f -k {0}/shapes_{1}.root {0}/shapes_{1}_*.root'.format(opt.output,ch))
     
+    #add pseudo-data with signal
+    fIn=ROOT.TFile.Open('{0}/shapes_{1}.root'.format(opt.output,ch),'UPDATE')
+    bkg=fIn.Get('bkg_{0}'.format(opt.chTag))
+    sigTag='fidsig_{0}_m'.format(opt.chTag)
+    massList=[]
+    for k in fIn.GetListOfKeys():
+
+        kname=k.GetName()
+        if kname.find(sigTag)!=0 : continue
+
+        try:
+            mass=int(kname.replace(sigTag,''))
+        except:
+            #ignore systs
+            continue
+
+        massList.append(mass)
+        print 'adding pseudo-data for m=',mass
+
+        sig=k.ReadObj().Clone('pseudodata_%d_obs'%mass)
+        sig.Add(fIn.Get('out'+kname))
+        sig.Scale(opt.injectMu)
+        sig.Add(bkg)
+        sig.SetDirectory(fIn)
+        sig.Write()
+
+    fIn.Close()
+
+    massList=list(set(massList))
+    print 'Available masses',massList
+
+    #generate different data variations
+    data=[('obs','data_obs_%s'%opt.chTag),
+          ('exp','bkg_%s'%opt.chTag)]
+    data += [ ('expm%d'%m, 'pseudodata_%d_obs_%s'%(m,opt.chTag)) for m in massList ]
+          
+    print '\t writing %d datacards for data and pseudo-data'%(len(data))
+    for tag,hdata in data:
+        writeDataCards(opt,
+                       '{0}/shapes_{1}.root'.format(opt.output,ch),
+                       tag,
+                       hdata)
+    
+
 
 def main(args):
 
@@ -418,18 +480,24 @@ def main(args):
                         dest='input',   
                         default='/eos/cms/store/cmst3/user/psilva/ExclusiveAna/final/ab05162/analysis_0p05/',
                         help='input directory with the files [default: %default]')
+    parser.add_argument('--doDataCards',
+                        dest='doDataCards',
+                        default=False,
+                        help='do final datacards [default %default]',
+                        action='store_true')
+    parser.add_argument('--doBackground',
+                        dest='doBackground',
+                        default=False,
+                        help='do background template [default %default]',
+                        action='store_true')
     parser.add_argument('--sig',
                         dest='sig',
                         default='{boson}_m_X_{mass}_xangle_{xangle}_2017_preTS2.root',
                         help='signal point [%default]')
     parser.add_argument('--massList',
                         dest='massList',
-                        default='600,660,720,780,800,840,900,960,1000,1020,1080,1140,1200,1260,1320,1380,1400,1440,1500,1560,1600',
-                        help='signal mass list (CSV) [%default]')
-    parser.add_argument('--injectMass',
-                        dest='injectMass',
-                        default=None,
-                        help='mass to inject in pseudo-data [%default]')
+                        default='',
+                        help='signal masses to make (CSV) [%default]')
     parser.add_argument('--injectMu',
                         dest='injectMu',
                         default=1.0,
@@ -467,11 +535,6 @@ def main(args):
                         dest='output', 
                         default='analysis/stat',
                         help='Output directory [default: %default]')
-    parser.add_argument('--unblind',
-                        dest='unblind', 
-                        default=False,
-                        action='store_true',
-                        help='Use non-mixed data in the final fit [default: %default]')
     parser.add_argument('--finalStates',
                         dest='finalStates',
                         default=CH_DICT.keys(),
@@ -483,19 +546,19 @@ def main(args):
     ROOT.gStyle.SetOptStat(0)
 
     #configuration
-    opt.massList=opt.massList.split(',')
+    opt.massList=opt.massList.split(',') if len(opt.massList)>0 else ''
     setattr(opt,'nbins', ROOT.TMath.FloorNint( (opt.mMax-opt.mMin)/(opt.mBin)) )
 
     print '[generateWorkspace]'
-    print '\t signal for masses=',opt.massList
-    print '\t will apply the following preselection:',opt.cuts
-    print '\t histograms defined as (%d,%f,%f)'%(opt.nbins,opt.mMin,opt.mMax)
-    if opt.unblind:
-        print '\t Analysis will be unblinded...'
-        print '\t ...how sure are you of what you did?'
-    elif opt.injectMass:
-        print '\t Pseudo-data built from background expectations'
-        print '\t Signal injected from mass=',opt.injectMass,'with mu=',opt.injectMu
+    if opt.doBackground:
+        print '\t background templates will be created'
+    if len(opt.massList)>0:
+        print '\t signal for masses=',opt.massList
+    if len(opt.massList)>0 or opt.doBackground:
+        print '\t will apply the following preselection:',opt.cuts
+        print '\t histograms defined as (%d,%f,%f)'%(opt.nbins,opt.mMin,opt.mMax)
+    if opt.doDataCards:
+        print '\t will print the final datacards and hadd shapes files'
 
     #prepare output
     os.system('mkdir -p %s'%opt.output)
@@ -507,8 +570,12 @@ def main(args):
         task_list.append( (ch,copy.deepcopy(opt)) )
 
     import multiprocessing as MP
-    pool = MP.Pool(8)
-    pool.map( datacardTask, task_list )
+    pool = MP.Pool(min(8,len(task_list)))
+    if opt.doBackground or len(opt.massList)>0:
+        pool.map( shapesTask, task_list )
+    if opt.doDataCards:
+        pool.map( datacardTask, task_list )
+
 
     print '\t all done, output can be found in',opt.output
 

@@ -13,6 +13,7 @@ CATEGS     = [list(itertools.product( ['protonCat==%d'%protonCat],
               for protonCat in [1,2,3,4] ]
 CATEGS= [filter(None,list(y)) for x in CATEGS for y in x]
 OPTIMLIST=[ ' && '.join( [KINEMATICS]+[RPSEL]+x ) for x in CATEGS]
+MASSPOINTS=[600,660,720,780,800,840,900,960,1000,1020,1080,1140,1200,1260,1320,1380,1400,1440,1500,1560,1600]
 
 def main(args):
 
@@ -21,14 +22,6 @@ def main(args):
                         dest='input',   
                         default='/eos/cms/store/cmst3/user/psilva/ExclusiveAna/final/ab05162/analysis_0p05',
                         help='input directory with the files [default: %default]')
-    parser.add_argument('--injectMass',
-                        dest='injectMass',
-                        default=None,
-                        help='mass to inject in pseudo-data [%default]')
-    parser.add_argument('--injectMu',
-                        dest='injectMu',
-                        default=1.0,
-                        help='signal strength of the mass to inject in pseudo-data [%default]')
     parser.add_argument('--signed',
                         dest='signed',
                         default=False,
@@ -42,11 +35,6 @@ def main(args):
                         dest='just',
                         default=None,
                         help='Run only this optimization points (CSV list) [default: %default]')
-    parser.add_argument('--unblind',
-                        dest='unblind', 
-                        default=False,
-                        action='store_true',
-                        help='Use non-mixed data in the final fit [default: %default]')
     opt=parser.parse_args(args)
 
     #build a list of the points to run
@@ -70,22 +58,28 @@ def main(args):
         with open('%s/optimJob_%s.sh'%(workDir,finalState),'w') as script:
             script.write('#!/bin/bash\n')
 
+            
+
             #initialization
             script.write('\n')
+            script.write('doBackground=${1}\n')
+            script.write('massList=${2}\n')
             script.write('input=%s\n'%opt.input)
             script.write('cuts="%s"\n'%ana)
             script.write('finalState="%s"\n'%finalState)
-            if opt.injectMass:
-                script.write('injectMassOpt="--injectMass %s"\n'%opt.injectMass)
-            else:
-                script.write('injectMassOpt=""\n')
+
             if opt.signed:
                 script.write('extraOpt=--signed\n')
             else:
                 script.write('extraOpt=""\n')
-            if opt.unblind:
-                print 'You\'re submitting unblinded jobs - how sure are you of what you did?'
-                script.write('extraOpt="${extraOpt} --unblind"\n')
+        
+            script.write('if [ "${doBackground}" == "1" ]; then\n')
+            script.write('\t extraOpt="${extraOpt} --doBackground"\n')
+            script.write('fi\n')
+
+            script.write('if [ "${massList}" != "-1" ]; then\n')
+            script.write('\t extraOpt="${extraOpt} --massList ${massList}"\n')
+            script.write('fi\n')
 
             script.write('output=%s\n'%os.path.abspath(workDir))     
             script.write('\n')
@@ -99,53 +93,37 @@ def main(args):
 
             #create datacard
             script.write('echo "Running datacard creation"\n')
-            script.write('python ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/pps/generateBinnedWorkspace.py -i ${input} -o ${output} --cuts "${cuts}" ${injectMassOpt} ${extraOpt} --finalState ${finalState}\n')
+            script.write('python ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/pps/generateBinnedWorkspace.py -i ${input} -o ${output} --cuts "${cuts}" ${extraOpt} --finalState ${finalState}\n')
             script.write('\n')
 
-        #combine cards
-        combJobs.append(ipt)
-        with open('%s/optimJob_combineCards.sh'%workDir,'w') as script:
-            script.write('#!/bin/bash\n')
-
-            script.write('output=%s\n'%os.path.abspath(workDir))     
-            script.write('\n')
-
-            #environment
-            script.write('echo "Setting up environment"\n')
-            script.write('cd %s/src\n'%os.environ['CMSSW_BASE'])
-            script.write('eval `scram r -sh`\n')
-            script.write('cd -\n')
-            script.write('\n')
-
-            script.write('\n')
-            script.write('echo "Combining datacards"\n')
-            script.write('cd $output\n')        
-            script.write('for v in z zmm zee g; do\n')
-            script.write('\ta=(`ls shapes-parametric.datacard_${v}*.dat`)\n')
-            script.write('\tcombstr=""\n')
-            script.write('\tncards=${#a[@]}\n')
-            script.write('\tfor (( i=0; i<${ncards}; i++ ));\n')
-            script.write('\tdo\n')
-            script.write('\t\tcombstr="${combstr} ${v}cat${i}=${a[$i]}"\n')
-            script.write('\tdone\n') 
-            script.write('\tcombineCards.py $combstr > ${v}_datacard.dat\n')
-            script.write('done\n')
-            script.write('\n')
 
     #submit optimization points to crab
     print 'Will submit %d optimization scan points'%len(OPTIMLIST)
     with open('%s/zxstatana_scan.sub'%opt.output,'w') as condor:
         condor.write("executable  = %s/optim_$(optimId)/optimJob_$(finalState).sh\n"%os.path.abspath(opt.output))
-        condor.write("output       = zxstatana_scan.out\n")
-        condor.write("error        = zxstatana_scan.err\n")
-        condor.write("log          = zxstatana_scan.log\n")
+        condor.write("arguments   = $(doBackground) $(massList)\n")
+        condor.write("output      = zxstatana_scan.out\n")
+        condor.write("error       = zxstatana_scan.err\n")
+        condor.write("log         = zxstatana_scan.log\n")
         condor.write("+JobFlavour = \"nextweek\"\n")
         condor.write("request_cpus = 4\n")
 
         for ipt,finalState in optimJobs:
+            condor.write("\n")
             condor.write("optimId  = %d\n"%ipt)
             condor.write("finalState  = %s\n"%finalState)
-            condor.write("queue 1\n")
+            
+            #do background
+            condor.write('doBackground = 1\n')
+            condor.write('massList     = -1\n')
+            condor.write("queue 1\n\n")
+
+            #do mass points
+            condor.write('doBackground = 0\n')
+            condor.write('queue massList from (\n') 
+            condor.write('\t' + ' '.join( [str(x) for x in MASSPOINTS] ) + '\n' )
+            condor.write(")\n")
+
     os.system('condor_submit %s/zxstatana_scan.sub'%opt.output)
     
 
