@@ -2,42 +2,66 @@ import ROOT
 import sys
 import os
 
+from prepareOptimScanCards import MASSPOINTS,OPTIMLIST
+
 baseDir=sys.argv[1]
 optimList=[os.path.join(baseDir,d) for d in os.listdir(baseDir) if 'optim_' in d] 
 toCheck=[]
 for d in optimList:
 
+    optimIdx=int(d.split('_')[-1])
+
     for ch in [121,169,22]:
 
-        try:
-            fIn=ROOT.TFile.Open(os.path.join(d,'shapes_%d.root'%ch))
-            if fIn.IsZombie():
-                raise Exception('corrupted')
-            elif fIn.TestBit(ROOT.TFile.kRecovered) : 
-                raise Exception('recovered')
-            else:
-                size=fIn.GetListOfKeys().GetSize()
-                if size==0: 
-                    raise Exception('no keys')
-            fIn.Close()
-        except Exception as e:
-            print 'Will submit',d,'for',ch,'error:',e
-            toCheck.append( '%s,%d'%(d.split('_')[-1],ch) )
+        allGoodToCombine=True
+        for tag in ['bkg']+['_'.join( [str(y) for y in x] ) for x in MASSPOINTS]:
+
+            try:
+                fIn=ROOT.TFile.Open(os.path.join(d,'shapes_%d_%s.root'%(ch,tag)))
+                if fIn.IsZombie():
+                    raise Exception('corrupted')
+                elif fIn.TestBit(ROOT.TFile.kRecovered) : 
+                    raise Exception('recovered')
+                else:
+                    size=fIn.GetListOfKeys().GetSize()
+                    if size==0: 
+                        raise Exception('no keys')
+                fIn.Close()
+
+            except Exception as e:
+                allGoodToCombine=False
+                print 'Will submit',d,'for',ch,'tag=',tag,'error:',e
+                doBackground=1 
+                massList=-1
+                if tag!='bkg': 
+                    doBackground = 0
+                    massList     = tag.replace('_',',')
+                toCheck.append( '%d,%d,%d,\\"%s\\"'%(optimIdx,ch,doBackground,massList) )
+
+        if not allGoodToCombine:
+            continue
+
+        if os.path.isfile(os.path.join(d,'shapes_{}.root'.format(ch))):
+            print ch,'already combined for',d
+        else:
+            print 'Will combine',d,'for',ch
+            cuts = OPTIMLIST[ optimIdx ]
+            os.system('python test/analysis/pps/generateBinnedWorkspace.py --doDataCards -o {} --finalStates {} --cuts "{}"'.format(d,ch,cuts))
 
 if len(toCheck)>0:
 
     resub=os.path.join(baseDir,'zxstatana_scan_resub.sub')
     with open(resub,'w') as f:
-        f.write('executable  = %s/optim_$(optimId)/optimJob_$(finalState).sh\n'%os.path.abspath(baseDir))
+        f.write('executable   = %s/optim_$(optimId)/optimJob_$(finalState).sh\n'%os.path.abspath(baseDir))
+        f.write('arguments    = $(doBackground) $(massList)\n')
         f.write('output       = zxstatana_scan_resub.out\n')
         f.write('error        = zxstatana_scan_resub.err\n')
         f.write('log          = zxstatana_scan_resub.log\n')
-        f.write('+JobFlavour = "tomorrow"\n')
+        f.write('+JobFlavour  = "tomorrow"\n')
         f.write('request_cpus = 4\n')
-        f.write('queue optimId,finalState from (\n')
+        f.write('queue optimId,finalState,doBackground,massList from (\n')
         for j in toCheck: f.write('\t%s\n'%j)
         f.write(')\n')
 
     print '%d resubmission jobs can be found in %s'%(len(toCheck),resub)
     os.system('condor_submit %s'%resub)
-    

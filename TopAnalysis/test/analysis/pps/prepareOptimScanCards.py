@@ -4,6 +4,7 @@ import sys
 import argparse
 import itertools
 from generateBinnedWorkspace import VALIDLHCXANGLES
+import numpy as np
 
 KINEMATICS = '(((cat==169 || cat==121) && l1pt>30 && l2pt>20 && bosonpt>40) || (cat==22 && bosonpt>95))'
 RPSEL      = 'csi1>0.035 && csi2>0.035'
@@ -13,7 +14,11 @@ CATEGS     = [list(itertools.product( ['protonCat==%d'%protonCat],
               for protonCat in [1,2,3,4] ]
 CATEGS= [filter(None,list(y)) for x in CATEGS for y in x]
 OPTIMLIST=[ ' && '.join( [KINEMATICS]+[RPSEL]+x ) for x in CATEGS]
-MASSPOINTS=[600,660,720,780,800,840,900,960,1000,1020,1080,1140,1200,1260,1320,1380,1400,1440,1500,1560,1600]
+MASSPOINTS=[ [600,660,720,780],
+             [800,840,900,960],
+             [1000,1020,1080,1140],
+             [1200,1260,1320,1380],
+             [1400,1440,1500,1560,1600] ]
 
 def main(args):
 
@@ -57,8 +62,6 @@ def main(args):
         optimJobs.append((ipt,finalState))
         with open('%s/optimJob_%s.sh'%(workDir,finalState),'w') as script:
             script.write('#!/bin/bash\n')
-
-            
 
             #initialization
             script.write('\n')
@@ -121,7 +124,9 @@ def main(args):
             #do mass points
             condor.write('doBackground = 0\n')
             condor.write('queue massList from (\n') 
-            condor.write('\t' + ' '.join( [str(x) for x in MASSPOINTS] ) + '\n' )
+            for x in MASSPOINTS:
+                xstr=','.join([ str(m) for m in x ])
+                condor.write('\t%s\n'%xstr)
             condor.write(")\n")
 
     os.system('condor_submit %s/zxstatana_scan.sub'%opt.output)

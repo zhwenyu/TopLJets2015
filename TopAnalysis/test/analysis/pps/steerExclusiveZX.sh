@@ -288,7 +288,7 @@ case $WHAT in
         echo "output      = ${condor_prep}.out" >> $condor_prep
         echo "error       = ${condor_prep}.err" >> $condor_prep
         echo "log         = ${condor_prep}.log" >> $condor_prep
-        echo "requirements = (OpSysAndVer =?= \"SLCern6\")" >> $condor_prep
+        #echo "requirements = (OpSysAndVer =?= \"SLCern6\")" >> $condor_prep
         echo "+AccountingGroup = \"group_u_CMST3.all\"" >> $condor_prep
         echo "+JobFlavour = \"tomorrow\"">> $condor_prep
         echo "request_cpus = 4" >> $condor_prep

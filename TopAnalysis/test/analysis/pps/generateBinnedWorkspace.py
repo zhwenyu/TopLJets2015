@@ -407,7 +407,7 @@ def shapesTask(args):
                 print e
             print '-'*50
 
-    #close file if neede
+    #close file if needed
     if fOut:
         fOut.Close()
 
