@@ -10,7 +10,12 @@ def showShapes(resultsDir,name,plotTitle,mass,boson,lumi,plotData=True,showPseud
 
     colors=[ROOT.kGreen+1,ROOT.kAzure+3,ROOT.kOrange+2,ROOT.kGray,ROOT.kRed+2]
     
-    shapeFiles=[os.path.join(resultsDir,f) for f in os.listdir(resultsDir) if 'shapes_' in f and '.root' in f]
+    shapeFiles=[]
+    for f in os.listdir(resultsDir):
+        if not '.root' in f : continue
+        if len(f.split('_'))!=2: continue
+        shapeFiles.append(os.path.join(resultsDir,f))
+    print shapeFiles
 
     for f in shapeFiles:
 
@@ -83,9 +88,9 @@ def showShapes(resultsDir,name,plotTitle,mass,boson,lumi,plotData=True,showPseud
             p.ytit='Events'
             p.add(bkgH, title='background', color=1, isData=True,spImpose=False, isSyst=False)
             ic=0
-            for syst,title in [('Up',            'e#mu mix'),
-                               ('SingleDiffUp',  'single arm mix')]:
-                h=fIn.Get('bkg_%s_bkgShape%s'%(v,syst))
+            for syst,title in [('bkgShapeEMUp',            'e#mu mix'),
+                               ('bkgShapeSingleDiffUp',  'single arm mix')]:
+                h=fIn.Get('bkg_%s_%s'%(v,syst))
                 p.add(h, title=title, color=colors[ic], isData=False, spImpose=False, isSyst=False)
                 ic+=1
             p.ratiorange=[0.76,1.24]                
@@ -101,7 +106,7 @@ def showShapes(resultsDir,name,plotTitle,mass,boson,lumi,plotData=True,showPseud
                 p.ytit='Events'
                 p.add(fidsigH, title='signal', color=1, isData=True,spImpose=False, isSyst=False)
                 ic=0
-                for syst,title in [('ShapeUp',   'e#mu mix.'),
+                for syst,title in [('ShapeEMUp',   'e#mu mix.'),
                                    ('CalibUp',   'Time dependence'),                     
                                    ('PPSEffUp',  'PPS efficiency'),
                                    ('PzModelUp', 'p_{z}(pp)')]:
@@ -122,7 +127,7 @@ def showShapes(resultsDir,name,plotTitle,mass,boson,lumi,plotData=True,showPseud
                 p.ytit='Events'
                 p.add(outfidsigH, title='out-fid. signal', color=1, isData=True,spImpose=False, isSyst=False)
                 ic=0
-                for syst,title in [('ShapeUp',   'e#mu mix.'),
+                for syst,title in [('ShapeEMUp',   'e#mu mix.'),
                                    ('CalibUp',   'Time dependence'),
                                    ('PPSEffUp',  'PPS efficiency'),
                                    ('PzModelUp', 'p_{z}(pp)')]:

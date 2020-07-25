@@ -14,41 +14,6 @@ CH_DICT           = {'169':'zmm','121':'zee','22':'g'}
 CH_TITLE_DICT     = {'169':'Z#rightarrow#mu#mu','121':'Z#rightarrowee','22':'#gamma'}
 
 
-def smoothMissingMass(h,smoothRanges=[#(-300,   300,  'pol2'),
-                                      ( 1500,  2500, 'gaus'),
-                                      (-2500, -1500, 'gaus')]):
-
-    """smooths missing mass spectrum in specified ranges"""
-
-    smoothH=h.Clone(h.GetName()+'_smooth')
-
-    hxmin=h.GetXaxis().GetXmin()
-    hxmax=h.GetXaxis().GetXmax()
-
-    for xran in smoothRanges:
-        
-        xmin,xmax,fname=xran
-        xmin=min(hxmax,max(hxmin,xmin))
-        xmax=min(hxmax,max(hxmin,xmax))
-
-        if xmin==xmax :
-            print 'Skipping', xran,'for',h.GetName()
-            continue
-
-        imin,imax=h.GetXaxis().FindBin(xmin),h.GetXaxis().FindBin(xmax)
-        h.Fit(fname,'RQM+','',xmin,xmax)
-        ffunc=h.GetFunction(fname)
-        try:        
-            for xbin in range(imin,imax) :
-                xcen=h.GetXaxis().GetBinCenter(xbin)
-                smoothH.SetBinContent(xbin,ffunc.Eval(xcen))
-            ffunc.Delete()
-        except:
-            print '[Warn] no smoothing applied in',xmin,xmax,'to',h.GetName()
-
-    return smoothH
-
-
 def defineProcessTemplates(histos,norm=False):
 
     """defines the nominal template and the variations and checks fo 0's in the histograms"""
@@ -286,7 +251,7 @@ def writeDataCards(opt,shapesURL,tag,dataTag):
         dc.write('shapes fidsig    * {0} $PROCESS_{1}_m$MASS $PROCESS_{1}_m$MASS_$SYSTEMATIC\n'.format(shapesURL,cat))
         dc.write('shapes outfidsig * {0} $PROCESS_{1}_m$MASS $PROCESS_{1}_m$MASS_$SYSTEMATIC\n'.format(shapesURL,cat))
         dc.write('shapes bkg       * {0} $PROCESS_{1}        $PROCESS_$SYSTEMATIC\n'.format(shapesURL,cat))         
-        dc.write('shapes {0}       * {1} $PROCESS_{2}\n'.format(dataTag,shapesURL,cat))
+        dc.write('shapes data_obs  * {0} {1}\n'.format(shapesURL,dataTag))
         dc.write('-'*50+'\n')
         dc.write('bin %s\n'%cat)
         dc.write('observation -1\n')
@@ -300,11 +265,11 @@ def writeDataCards(opt,shapesURL,tag,dataTag):
         #uncertainties
         dc.write('lumi                   %8s %15s %15s %15s\n'%('lnN',                '1.027', '-',  '-'))
         dc.write('eff_%s                 %8s %15s %15s %15s\n'%(finalState,  'lnN',   '1.03',  '-',  '-'))
-        dc.write('sigShape               %8s %15s %15s %15s\n'%('shape',              '1',     '1',  '-'))           
+        dc.write('sigShapeEM             %8s %15s %15s %15s\n'%('shape',              '1',     '1',  '-'))           
         dc.write('sigCalib               %8s %15s %15s %15s\n'%('shape',              '1',     '1',  '-'))
         dc.write('sigPPSEff              %8s %15s %15s %15s\n'%('shape',              '1',     '1',  '-'))
         dc.write('sigPzModel             %8s %15s %15s %15s\n'%('shape',              '1',     '1',  '-'))
-        dc.write('%s_bkgShape            %8s %15s %15s %15s\n'%(cat,'shape',          '-',     '-',  '1')) #uncorrelate background shapes
+        dc.write('%s_bkgShapeEM          %8s %15s %15s %15s\n'%(cat,'shape',          '-',     '-',  '1')) #uncorrelate background shapes
         dc.write('%s_bkgShapeSingleDiff  %8s %15s %15s %15s\n'%(cat,'shape',          '-',     '-',  '1'))
 
         #template statistics 
@@ -344,6 +309,7 @@ def shapesTask(args):
             pfix+='_bkg'
         if doSignal:
             pfix+='_'+'_'.join(opt.massList)
+        pfix=pfix.replace('"','')
 
         outName='shapes_%s%s.root'%(ch,pfix)
         shapesURL=os.path.join(opt.output,outName)
@@ -412,6 +378,37 @@ def shapesTask(args):
         fOut.Close()
 
 
+def smoothWithLowess(h,href,nbins):
+
+    """
+    applies a smoothing of the shape with the LOWESS algorithm
+    the smoothing is applied on the ratio
+    """
+
+    frac=float(nbins)/float(h.GetNbinsX())
+
+    #convert to a graph
+    hratio=h.Clone('ratio')
+    hratio.Divide(href)
+    gr=ROOT.TGraph()
+    for xbin in range(1,hratio.GetNbinsX()+1):
+        gr.SetPoint(xbin-1,hratio.GetXaxis().GetBinCenter(xbin),hratio.GetBinContent(xbin))
+    hratio.Delete()
+
+    #apply lowess
+    gs = ROOT.TGraphSmooth("normal") 
+    gr = gs.SmoothLowess(gr,"",frac)
+    
+    #substitute with smoothed values (scaling back with the ref histo)
+    for xbin in range(1,h.GetNbinsX()+1):
+        newRatioVal=gr.Eval( h.GetXaxis().GetBinCenter(xbin) ) 
+        hrefVal=href.GetBinContent(xbin)
+        h.SetBinContent(xbin, 
+                        newRatioVal*hrefVal)
+    
+    return h
+
+
 def datacardTask(args):
 
     """ steering the operations needed for the final datacard creation """
@@ -447,12 +444,37 @@ def datacardTask(args):
         massList.append(mass)
         print 'adding pseudo-data for m=',mass
 
-        sig=k.ReadObj().Clone('pseudodata_%d_obs'%mass)
+        sig=k.ReadObj().Clone('pseudodata_%d_obs_%s'%(mass,opt.chTag))
         sig.Add(fIn.Get('out'+kname))
         sig.Scale(opt.injectMu)
         sig.Add(bkg)
         sig.SetDirectory(fIn)
         sig.Write()
+
+    #smooth emu based alternatives
+    smooth_window=15
+    for name in ['Up','Down']:
+
+        #background
+        hnom=fIn.Get('bkg_%s'%opt.chTag)
+        newName='bkg_%s_bkgShapeEM%s'%(opt.chTag,name)
+        h=fIn.Get('bkg_%s_bkgShape%s'%(opt.chTag,name)).Clone(newName)
+        h=smoothWithLowess(h,hnom,smooth_window)
+        h.SetDirectory(fIn)
+        h.Write()
+
+        #signal
+        for m in massList:
+
+            for sig_tag in ['fid','outfid']:
+
+                hnom=fIn.Get('%ssig_%s_m%s'%(sig_tag,opt.chTag,m))
+
+                newName='%ssig_%s_m%s_sigShapeEM%s'%(sig_tag,opt.chTag,m,name)
+                h=fIn.Get('%ssig_%s_m%s_sigShape%s'%(sig_tag,opt.chTag,m,name)).Clone(newName)
+                h=smoothWithLowess(h,hnom,smooth_window)
+                h.SetDirectory(fIn)
+                h.Write()
 
     fIn.Close()
 
@@ -463,11 +485,11 @@ def datacardTask(args):
     data=[('obs','data_obs_%s'%opt.chTag),
           ('exp','bkg_%s'%opt.chTag)]
     data += [ ('expm%d'%m, 'pseudodata_%d_obs_%s'%(m,opt.chTag)) for m in massList ]
-          
+
     print '\t writing %d datacards for data and pseudo-data'%(len(data))
     for tag,hdata in data:
         writeDataCards(opt,
-                       '{0}/shapes_{1}.root'.format(opt.output,ch),
+                       'shapes_{}.root'.format(ch),
                        tag,
                        hdata)
     
@@ -547,6 +569,8 @@ def main(args):
 
     #configuration
     opt.massList=opt.massList.split(',') if len(opt.massList)>0 else ''
+    opt.massList=[x.replace('"','') for x in opt.massList]
+    opt.massList=[x for x in opt.massList if x.isdigit() and int(x)>0]
     setattr(opt,'nbins', ROOT.TMath.FloorNint( (opt.mMax-opt.mMin)/(opt.mBin)) )
 
     print '[generateWorkspace]'

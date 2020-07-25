@@ -63,17 +63,13 @@ plot_signal_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/plot
 plot_signal_ext_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/plot_signal_samples_ext.json
 plot_signal_sdz_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/plot_signal_sdz_samples.json
 
-
-
 zbias_samples_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/zbias_samples.json
-
 
 lumi=41529
 ppsLumi=37193
 lptalumi=2642
 lptappslumi=2288
 lumiUnc=0.025
-
 
 RED='\e[31m'
 NC='\e[0m'
@@ -293,7 +289,36 @@ case $WHAT in
         echo "+JobFlavour = \"tomorrow\"">> $condor_prep
         echo "request_cpus = 4" >> $condor_prep
         echo "arguments   = ${CMSSW_BASE} ${step} ${predout} ${predin} \$(chunk) ${mix_file} ${ALLOWPIX}" >> $condor_prep
-        echo "queue chunk matching (${predin}/*.root)" >> $condor_prep
+        #echo "queue chunk matching (${predin}/*.root)" >> $condor_prep
+        
+        a=(gamma_m_X_1320_xangle_140_2017_postTS2.root
+            gamma_m_X_1320_xangle_150_2017_postTS2.root
+            gamma_m_X_1400_xangle_150_2017_postTS2.root
+            gamma_m_X_1440_xangle_150_2017_postTS2.root
+            gamma_m_X_1380_xangle_120_2017_preTS2.root
+            gamma_m_X_1380_xangle_130_2017_preTS2.root
+            Z_m_X_1380_xangle_130_2017_postTS2.root
+            Z_m_X_1500_xangle_130_2017_postTS2.root
+            Z_m_X_1500_xangle_150_2017_postTS2.root
+            Z_m_X_1600_xangle_150_2017_postTS2.root
+            Z_m_X_1620_xangle_120_2017_postTS2.root
+            Z_m_X_1620_xangle_130_2017_postTS2.root
+            Z_m_X_1620_xangle_150_2017_postTS2.root
+            Z_m_X_1200_xangle_120_2017_preTS2.root
+            Z_m_X_1200_xangle_130_2017_preTS2.root
+            Z_m_X_1200_xangle_150_2017_preTS2.root
+            Z_m_X_1260_xangle_150_2017_preTS2.root
+            Z_m_X_1500_xangle_120_2017_preTS2.root
+            Z_m_X_1560_xangle_150_2017_preTS2.root
+            Z_m_X_1600_xangle_150_2017_preTS2.root
+        )
+
+        echo "queue chunk in (" >> $condor_prep
+        for i in ${a[@]}; do 
+            echo "${i}" >>$condor_prep
+        done
+        echo ")" >>$condor_prep
+
         condor_submit $condor_prep
 
         #run locally
@@ -474,20 +499,14 @@ case $WHAT in
         ;;
 
     RUNOPTIMSTATANA )
-
-        combJobs=(`ls ppvx_${githash}${pfix}/*/optimJob_combineCards.sh`)
-        echo "Combining cards before submitting jobs"
-        for job in ${combJobs[@]}; do 
-            sh ${job};
+        for t in expm1000 obs; do #exp
+            python test/analysis/pps/prepareFinalStatAnalysis.py -i ppvx_${githash}${pfix} -t ${t}
         done
-
-        python test/analysis/pps/prepareFinalStatAnalysis.py -i ppvx_${githash}${pfix}
         ;;
 
     SUMMARIZEOPTIMSTATANA )
-        indirForPlots=/eos/cms/${anadir}${pfix}
         d=ppvx_${githash}${pfix}
-        python test/analysis/pps/summarizeOptimScanResults.py ${d}
+        python test/analysis/pps/summarizeOptimScanResults.py ${d}/exp
         echo "You can now use the jupyter notebook to analyze the results of the statistical analysis"
         ;;
 
@@ -611,9 +630,9 @@ case $WHAT in
         echo "python test/analysis/pps/showUncs.py ppvx_${githash}${pfix}/optim_28"
         echo "python test/analysis/pps/showUncs.py ppvx_${githash}${pfix}/optim_42"
         echo "python test/analysis/pps/showFitShapes.py ppvx_${githash}${pfix}/optim_0 1000 z mm"
-        echo "python test/analysis/pps/showFitShapes.py ppvx_${githash}${pfix}/optim_14 1000 z ms"
-        echo "python test/analysis/pps/showFitShapes.py ppvx_${githash}${pfix}/optim_28 1000 z sm"
-        echo "python test/analysis/pps/showFitShapes.py ppvx_${githash}${pfix}/optim_42 1000 z ss"
+        echo "python test/analysis/pps/showFitShapes.py ppvx_${githash}${pfix}/optim_25 1000 z ms"
+        echo "python test/analysis/pps/showFitShapes.py ppvx_${githash}${pfix}/optim_50 1000 z sm"
+        echo "python test/analysis/pps/showFitShapes.py ppvx_${githash}${pfix}/optim_75 1000 z ss"
         echo "[Nuisances post-fit]"
         echo "Please use CMSSW_10_2_13 or higher"
         echo "python test/analysis/pps/doNuisanceReport.py 1000 ppvx_${githash}${pfix}/pcat1/z_m1000_workspace.root"

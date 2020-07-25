@@ -55,11 +55,11 @@ def main():
     results=[]
     toCheck=[]
     for ana in os.listdir(baseDir):
-
-        if 'optim_' in ana: continue
+        
+        #if 'optim_' in ana: continue
         anaDir=os.path.join(baseDir,ana)
         if not os.path.isdir(anaDir) : continue
-        
+        print anaDir
         limitFiles=[os.path.join(anaDir,x) for x in os.listdir(anaDir) if 'X.obs.AsymptoticLimits' in x]
         for f in limitFiles:
             ch        = re.search('PP([egmz]+)X', f).group(1)
@@ -83,9 +83,21 @@ def main():
 
     if len(toCheck)>0:
         print 'Recovering %d missing jobs'%len(toCheck)
-        for ch,m,anaDir in toCheck:
-            print ch,m,anaDir
-            os.system('sh %s/statAnaJob.sh %s %s'%(anaDir,m,ch))
+        #run with condor
+        with open('%s/zxstatana_resub_run.sub'%baseDir,'w') as condor:
+            condor.write("executable  = $(odir)/statAnaJob.sh\n")
+            condor.write("arguments   = $(mass) $(channel)\n")
+            condor.write("output       = zxstatana_run.out\n")
+            condor.write("error        = zxstatana_run.err\n")
+            condor.write("log          = zxstatana_run.log\n")
+            condor.write("+JobFlavour = \"longlunch\"\n")
+            condor.write("request_cpus = 4\n")        
+            for ch,m,odir in toCheck:
+                condor.write("odir =%s\n"%os.path.abspath(odir))
+                condor.write("mass = %s\n"%m)
+                condor.write("channel = %s\n"%ch)
+                condor.write("queue 1\n")
+        os.system('condor_submit %s/zxstatana_resub_run.sub'%baseDir)
 
 
 if __name__ == "__main__":

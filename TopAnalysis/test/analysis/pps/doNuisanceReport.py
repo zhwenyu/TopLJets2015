@@ -4,7 +4,7 @@ import ROOT
 from optparse import OptionParser
 from collections import defaultdict
 import numpy as np
-from TopLJets2015.TopAnalysis.rounding import *
+from rounding import *
 
 def doNuisanceReport(url,npergroup=20,poi='r'):
 

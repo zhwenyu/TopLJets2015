@@ -3,7 +3,7 @@ import os
 import sys
 import numpy as np
 
-systList=['bkgShapeUp',           'bkgShapeDown',
+systList=['mixShapeUp',           'mixShapeDown',
           'sigShapeUp',           'sigShapeDown',
           'bkgShapeSingleDiffUp', 'bkgShapeSingleDiffDown',
           'sigShapeSingleDiffUp', 'sigShapeSingleDiffDown',

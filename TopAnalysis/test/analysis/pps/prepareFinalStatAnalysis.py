@@ -15,6 +15,10 @@ def main(args):
                         dest='input',   
                         default=None,
                         help='input directory with the files [default: %default]')
+    parser.add_argument('-t', '--tag',
+                        dest='tag',   
+                        default='exp',
+                        help='cards tag [default: %default]')
     parser.add_argument('--cmssw',
                         dest='cmssw',   
                         default='/afs/cern.ch/work/p/psilva/HIN-19-001/CMSSW_10_2_13/src/',
@@ -30,8 +34,8 @@ def main(args):
         protonCat      = int(re.search('protonCat==(\d+)',ana).group(1))
         pcatRec        = 'pcat%d'%protonCat
         requiresXangle      = True if 'xangle' in ana else False
-        requiresNvtx        = True if 'nvtx' in ana else False
-        requiresNjets       = True if 'njets'   in ana else False
+        requiresNvtx        = True if 'nvtx'   in ana else False
+        requiresNjets       = True if 'njets'  in ana else False
         requiresNch         = True if 'nch'    in ana else False
         
         if isSingleRP and protonCat!=4 : continue
@@ -61,20 +65,25 @@ def main(args):
             statAna['inc_jveto'].append(i)
             statAna[pcatRec+'_jveto'].append(i)
 
+        if requiresXangle and not requiresNch and requiresNjets:
+            statAna['inc_xangle_jveto'].append(i)
+            statAna[pcatRec+'_xangle_jveto'].append(i)
+
     for key,optimPts in statAna.items():
 
-        odir='%s/%s'%(opt.input,key)
+        odir='%s/%s/%s'%(opt.input,opt.tag,key)
         os.system('mkdir -p '+odir)
-
+        
         #a human-readable summary
         baseDataCards=[]
         with open(os.path.join(odir,'info.dat'),'w') as f:
             f.write(key+' analysis\n')
+            f.write('tag={}\n'.format(opt.tag))
             f.write('-'*50+'\n')
             for ioptim in optimPts:
                 icat=len(baseDataCards)
                 f.write('%3d == %3d %s\n'%(icat,ioptim,OPTIMLIST[ioptim]))
-                baseDataCards.append('../optim_%d/shapes-parametric.datacard_{ch}.dat'%ioptim)
+                baseDataCards.append('../../optim_%d/shapes-parametric.datacard_{ch}_%s.dat'%(ioptim,opt.tag))
             f.write('-'*50+'\n')
             f.write('Final statistical analysis will be composed for the different categories from\n')
             f.write(' '.join(baseDataCards))
@@ -121,8 +130,16 @@ def main(args):
             script.write('     fi\n')
             script.write('     mod_dc=${b}_cards/datacard_cat${icat}.dat\n')
             script.write('     sed -e "s/mu_bkg/mu_bkgCat${icat}/" -e "s/shapes_/${full_dc}\/shapes_/" ${dc} > ${mod_dc}\n')
-            script.write('     echo "nuisance edit rename bkg * ${ch}_bkgShape           ${ch}_bkgShapeCat${icat}" >> ${mod_dc}\n')
-            script.write('     echo "nuisance edit rename bkg * ${ch}_bkgShapeSingleDiff ${ch}_bkgShapeSinglediffCat${icat}" >> ${mod_dc}\n')
+            script.write('     if [ "${b}" = "z" ]; then\n')
+            script.write('         for sb in ee mm; do\n')
+            script.write('             echo "nuisance edit rename bkg * ${b}${sb}_bkgShapeEM           ${b}_bkgShapeEMCat${icat}" >> ${mod_dc};\n')
+            script.write('             echo "nuisance edit rename bkg * ${b}${sb}_bkgShapeSingleDiff ${b}_bkgShapeSingleDiffCat${icat}" >> ${mod_dc};\n')
+            script.write('         done\n')
+            script.write('     else\n')
+            script.write('         echo "nuisance edit rename bkg * ${b}_bkgShapeEM           ${b}_bkgShapeEMCat${icat}" >> ${mod_dc}\n')
+            script.write('         echo "nuisance edit rename bkg * ${b}_bkgShapeSingleDiff ${b}_bkgShapeSingleDiffCat${icat}" >> ${mod_dc}\n')
+            script.write('fi\n')
+
             script.write('     combStr="${combStr} cat${icat}=${mod_dc}"\n')
             script.write('done\n')
             script.write('\n')
@@ -136,9 +153,9 @@ def main(args):
 
             script.write('baseCmd=\"combine ${pfix}_workspace.root -m ${m} --X-rtd MINIMIZER_analytic\"\n')
             script.write('${baseCmd} -n PP${b}X.obs   -M AsymptoticLimits\n')
-            script.write('${baseCmd} -n PP${b}X       -M AsymptoticLimits -t -1 --expectSignal=0.1 --setParameters mu_outfidsig=0.1\n')
+            script.write('${baseCmd} -n PP${b}X       -M AsymptoticLimits -t -1 --expectSignal=0.5 --setParameters mu_outfidsig=0.5\n')
             script.write('${baseCmd} -n PP${b}X.obs   -M Significance\n')
-            script.write('${baseCmd} -n PP${b}X       -M Significance     -t -1 --expectSignal=0.1 --setParameters mu_outfidsig=0.1\n')
+            script.write('${baseCmd} -n PP${b}X       -M Significance     -t -1 --expectSignal=0.5 --setParameters mu_outfidsig=0.5\n')
             script.write('#${baseCmd} -n PP${b}X.m${m} -M FitDiagnostics\n')
             script.write('cd -\n')
 
@@ -156,7 +173,7 @@ def main(args):
                     condor.write("queue 1\n")
         print 'Submitting jobs for',odir
         os.system('condor_submit %s/zxstatana_run.sub'%odir)
-
+        
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))
