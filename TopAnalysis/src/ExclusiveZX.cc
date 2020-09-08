@@ -837,7 +837,7 @@ void RunExclusiveZX(const TString in_fname,
           protonY[ift]         = ev.ppstrk_y[ift];   
           protonRecoInfo[ift]  = ev.ppstrk_recoInfo[ift];
           protonTX[ift]        = ev.fwdtrk_thetax[ift];   
-          protonTY[ift]        = ev.fwdtrk_tehtay[ift];   
+          protonTY[ift]        = ev.fwdtrk_thetay[ift];   
           if(isMultiRPProton[ift])    multiIds *= pot_raw_id;
           else if(isFarRPProton[ift]) farIds   *= pot_raw_id;
         }                      

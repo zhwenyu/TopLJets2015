@@ -599,9 +599,9 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
           ev_.fwdtrk_pot[ev_.nfwdtrk]       = 100*detid.arm()+10*detid.station()+detid.rp();
           ev_.fwdtrk_chisqnorm[ev_.nfwdtrk] = proton.fitChiSq;
           ev_.fwdtrk_method[ev_.nfwdtrk]    = proton.method;
-          ev_.fwdtrk_ex[ev_.nfwdtrk]        = proton.direction().x();
-          ev_.fwdtrk_ey[ev_.nfwdtrk]        = proton.direction().y();
-          ev_.fwdtrk_ez[ev_.nfwdtrk]        = proton.direction().z();
+          ev_.fwdtrk_vx[ev_.nfwdtrk]        = proton.direction().x();
+          ev_.fwdtrk_vy[ev_.nfwdtrk]        = proton.direction().y();
+          ev_.fwdtrk_vz[ev_.nfwdtrk]        = proton.direction().z();
           ev_.fwdtrk_y[ev_.nfwdtrk]         = proton.vertex().y();
 
           float xi=proton.xi();
