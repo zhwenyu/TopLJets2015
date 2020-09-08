@@ -289,36 +289,7 @@ case $WHAT in
         echo "+JobFlavour = \"tomorrow\"">> $condor_prep
         echo "request_cpus = 4" >> $condor_prep
         echo "arguments   = ${CMSSW_BASE} ${step} ${predout} ${predin} \$(chunk) ${mix_file} ${ALLOWPIX}" >> $condor_prep
-        #echo "queue chunk matching (${predin}/*.root)" >> $condor_prep
-        
-        a=(gamma_m_X_1320_xangle_140_2017_postTS2.root
-            gamma_m_X_1320_xangle_150_2017_postTS2.root
-            gamma_m_X_1400_xangle_150_2017_postTS2.root
-            gamma_m_X_1440_xangle_150_2017_postTS2.root
-            gamma_m_X_1380_xangle_120_2017_preTS2.root
-            gamma_m_X_1380_xangle_130_2017_preTS2.root
-            Z_m_X_1380_xangle_130_2017_postTS2.root
-            Z_m_X_1500_xangle_130_2017_postTS2.root
-            Z_m_X_1500_xangle_150_2017_postTS2.root
-            Z_m_X_1600_xangle_150_2017_postTS2.root
-            Z_m_X_1620_xangle_120_2017_postTS2.root
-            Z_m_X_1620_xangle_130_2017_postTS2.root
-            Z_m_X_1620_xangle_150_2017_postTS2.root
-            Z_m_X_1200_xangle_120_2017_preTS2.root
-            Z_m_X_1200_xangle_130_2017_preTS2.root
-            Z_m_X_1200_xangle_150_2017_preTS2.root
-            Z_m_X_1260_xangle_150_2017_preTS2.root
-            Z_m_X_1500_xangle_120_2017_preTS2.root
-            Z_m_X_1560_xangle_150_2017_preTS2.root
-            Z_m_X_1600_xangle_150_2017_preTS2.root
-        )
-
-        echo "queue chunk in (" >> $condor_prep
-        for i in ${a[@]}; do 
-            echo "${i}" >>$condor_prep
-        done
-        echo ")" >>$condor_prep
-
+        echo "queue chunk matching (${predin}/*.root)" >> $condor_prep
         condor_submit $condor_prep
 
         #run locally
@@ -499,14 +470,30 @@ case $WHAT in
         ;;
 
     RUNOPTIMSTATANA )
-        for t in expm1000 obs; do #exp
+        
+        tagList=(exp expm1000 obs)
+        if [[ $ALLOWPIX == *"1,2"* ]]; then
+            tagList=(exp)
+        elif [[ $ALLOWPIX == *"-"* ]]; then
+            tagList=(exp)
+        fi
+        for t in ${tagList[@]}; do
             python test/analysis/pps/prepareFinalStatAnalysis.py -i ppvx_${githash}${pfix} -t ${t}
         done
         ;;
 
     SUMMARIZEOPTIMSTATANA )
+
         d=ppvx_${githash}${pfix}
-        python test/analysis/pps/summarizeOptimScanResults.py ${d}/exp
+        tagList=(exp expm1000 obs)
+        if [[ $ALLOWPIX == *"1,2"* ]]; then
+            tagList=(exp)
+        elif [[ $ALLOWPIX == *"-"* ]]; then
+            tagList=(exp)
+        fi
+        for t in ${tagList[@]}; do
+            python test/analysis/pps/summarizeOptimScanResults.py ${d}/${t}
+        done
         echo "You can now use the jupyter notebook to analyze the results of the statistical analysis"
         ;;
 
@@ -540,15 +527,15 @@ case $WHAT in
 
         indirForPlots=/eos/cms/${anadir}${pfix}
         index=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php
+        cp ${index} ${wwwdir}
         
+
         #preselection
-	#cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}
-	#mkdir -p ${wwwdir}/presel
-	#cp /eos/cms/${outdir}/plots/*.{png,pdf,dat} ${wwwdir}/presel
-	#cp /eos/cms/${outdir}/plots/sel/*.{png,pdf,dat} ${wwwdir}/presel
-	#cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}/presel
-        #echo "CMSSW_BASE=$CMSSW_BASE"
-       
+	mkdir -p ${wwwdir}/presel
+	cp /eos/cms/${outdir}/plots/*.{png,pdf,dat} ${wwwdir}/presel
+	cp /eos/cms/${outdir}/plots/sel/*.{png,pdf,dat} ${wwwdir}/presel
+	cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}/presel
+        
         #analysis control plots
         mkdir -p ${wwwdir}/ana
         cp ${indirForPlots}/plots/*.{png,pdf,dat} ${wwwdir}/ana
@@ -581,16 +568,6 @@ case $WHAT in
         #cp /eos/cms/${anadir}/localsens/*.{png,pdf,dat} ${wwwdir}/localsens
         #cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}/localsens
 
-
-        #statistical analysis
-        #for d in ppvx_${githash} ppvx_${githash}_signed; do
-        #    odir=${wwwdir}/stat/${d}
-        #    mkdir -p ${odir}
-            #cp /eos/cms/${anadir}/${d}/* ${odir}
-            #cp /eos/cms/${anadir}/${d}/limits* ${odir}
-            #cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${odir}
-       # done
-        #cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}/stat
 
         ;;
 

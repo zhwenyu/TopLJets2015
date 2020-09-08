@@ -45,10 +45,6 @@ def readSignificanceFrom(url):
 
 def main():
 
-    ROOT.gStyle.SetOptStat(0)
-    ROOT.gStyle.SetOptTitle(0)
-    ROOT.gROOT.SetBatch(True)
-
     baseDir=sys.argv[1]
 
     #scan all results in directory
@@ -66,6 +62,7 @@ def main():
             mass      = int(re.search('.mH(\d+)', f).group(1))
             iresults  = [ana,ch,mass] 
             iresults += readLimitsFrom(f)
+            iresults += readLimitsFrom(f,True)[0:1]
             iresults += readSignificanceFrom(f.replace('X.obs.AsymptoticLimits','X.Significance'))
             if iresults[3]<900:
                 results.append( iresults )
@@ -74,7 +71,7 @@ def main():
 
     #save summary in a pandas dataformat
     import pandas as pd
-    columns=['ana','channel','mass','r95','drup68','drdn68','drup95','drdn95','sig','pval']
+    columns=['ana','channel','mass','r95','drup68','drdn68','drup95','drdn95','r95obs','sig','pval']
     df=pd.DataFrame(data=results, columns=columns)
     df.to_hdf('%s/summary.h5'%baseDir,key='scan')
 

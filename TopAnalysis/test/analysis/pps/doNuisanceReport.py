@@ -231,15 +231,7 @@ def main():
     ROOT.gStyle.SetOptTitle(0)
     ROOT.gStyle.SetOptStat(0)
 
-    url=sys.argv[1]
-
-    #run fit diagnostics
-    if len(sys.argv)>2:
-        mass=sys.argv[1]
-        workspace=sys.argv[2]
-        os.system('combine {0} -m {1} --X-rtd MINIMIZER_analytic --cminDefaultMinimizerStrategy 0 -M FitDiagnostics'.format(workspace,mass))
-        url='fitDiagnostics.root'
-    
+    url=sys.argv[1]    
     doNuisanceReport(url=url)
 
 

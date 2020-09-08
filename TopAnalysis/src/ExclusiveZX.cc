@@ -163,15 +163,20 @@ void RunExclusiveZX(const TString in_fname,
   
   int nProtons;
   Bool_t isFarRPProton[50], isMultiRPProton[50], isPosRPProton[50];
-  Int_t protonRPid[50];
-  Float_t protonCsi[50];
+  Int_t protonRPid[50],protonRecoInfo[50];
+  Float_t protonCsi[50],protonX[50],protonY[50],protonTX[50],protonTY[50];
   if(filename.Contains("Data13TeV") || isFullSimSig){
     outT->Branch("nProtons",       &nProtons,        "nProtons/I");
     outT->Branch("isFarRPProton",   isFarRPProton,   "isFarRPProton[nProtons]/O");
     outT->Branch("isPosRPProton",   isPosRPProton,   "isPosRPProton[nProtons]/O");
     outT->Branch("isMultiRPProton", isMultiRPProton, "isMultiRPProton[nProtons]/O");
     outT->Branch("protonRPid",      protonRPid,      "protonRPid[nProtons]/I");
+    outT->Branch("protonRecoInfo",  protonRecoInfo,  "protonRecoInfo[nProtons]/I");
     outT->Branch("protonCsi",       protonCsi,       "protonCsi[nProtons]/F");
+    outT->Branch("protonX",         protonX,         "protonX[nProtons]/F");
+    outT->Branch("protonY",         protonY,         "protonY[nProtons]/F");
+    outT->Branch("protonTX",        protonTX,        "protonTX[nProtons]/F");
+    outT->Branch("protonTY",        protonTY,        "protonTY[nProtons]/F");
   }
 
   outT->SetDirectory(fOut);
@@ -828,6 +833,11 @@ void RunExclusiveZX(const TString in_fname,
           isMultiRPProton[ift] = (ev.fwdtrk_method[ift]==1);
           isPosRPProton[ift]   = (pot_raw_id<100);
           protonCsi[ift]       = ev.fwdtrk_xi[ift];   
+          protonX[ift]         = ev.ppstrk_x[ift];   
+          protonY[ift]         = ev.ppstrk_y[ift];   
+          protonRecoInfo[ift]  = ev.ppstrk_recoInfo[ift];
+          protonTX[ift]        = ev.fwdtrk_thetax[ift];   
+          protonTY[ift]        = ev.fwdtrk_tehtay[ift];   
           if(isMultiRPProton[ift])    multiIds *= pot_raw_id;
           else if(isFarRPProton[ift]) farIds   *= pot_raw_id;
         }                      

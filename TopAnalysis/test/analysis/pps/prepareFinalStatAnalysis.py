@@ -4,7 +4,7 @@ import sys
 import argparse
 import itertools
 import re
-from prepareOptimScanCards import OPTIMLIST
+from prepareOptimScanCards import OPTIMLIST, MASSPOINTS
 from collections import defaultdict
 
 
@@ -124,22 +124,14 @@ def main(args):
             script.write('     full_dc=`readlink -f ${dc}`\n')
             script.write('     full_dc=`dirname ${full_dc}`\n')
             script.write('     full_dc=${full_dc//\//\\\\/}\n')
-            script.write('     regex="_(.+)\.dat"\n')
+            script.write('     regex="_(.+)_(.+)\.dat"\n')
             script.write('     if [[ "`basename $dc`" =~ $regex ]]; then\n')
             script.write('         ch="${BASH_REMATCH[1]}"\n')
             script.write('     fi\n')
             script.write('     mod_dc=${b}_cards/datacard_cat${icat}.dat\n')
             script.write('     sed -e "s/mu_bkg/mu_bkgCat${icat}/" -e "s/shapes_/${full_dc}\/shapes_/" ${dc} > ${mod_dc}\n')
-            script.write('     if [ "${b}" = "z" ]; then\n')
-            script.write('         for sb in ee mm; do\n')
-            script.write('             echo "nuisance edit rename bkg * ${b}${sb}_bkgShapeEM           ${b}_bkgShapeEMCat${icat}" >> ${mod_dc};\n')
-            script.write('             echo "nuisance edit rename bkg * ${b}${sb}_bkgShapeSingleDiff ${b}_bkgShapeSingleDiffCat${icat}" >> ${mod_dc};\n')
-            script.write('         done\n')
-            script.write('     else\n')
-            script.write('         echo "nuisance edit rename bkg * ${b}_bkgShapeEM           ${b}_bkgShapeEMCat${icat}" >> ${mod_dc}\n')
-            script.write('         echo "nuisance edit rename bkg * ${b}_bkgShapeSingleDiff ${b}_bkgShapeSingleDiffCat${icat}" >> ${mod_dc}\n')
-            script.write('fi\n')
-
+            script.write('     echo "nuisance edit rename bkg * ${ch}_bkgShapeEM         ${ch}_bkgShapeEMCat${icat}" >> ${mod_dc}\n')
+            script.write('     echo "nuisance edit rename bkg * ${ch}_bkgShapeSingleDiff ${ch}_bkgShapeSingleDiffCat${icat}" >> ${mod_dc}\n')
             script.write('     combStr="${combStr} cat${icat}=${mod_dc}"\n')
             script.write('done\n')
             script.write('\n')
@@ -153,10 +145,12 @@ def main(args):
 
             script.write('baseCmd=\"combine ${pfix}_workspace.root -m ${m} --X-rtd MINIMIZER_analytic\"\n')
             script.write('${baseCmd} -n PP${b}X.obs   -M AsymptoticLimits\n')
-            script.write('${baseCmd} -n PP${b}X       -M AsymptoticLimits -t -1 --expectSignal=0.5 --setParameters mu_outfidsig=0.5\n')
+            script.write('${baseCmd} -n PP${b}X       -M AsymptoticLimits -t -1 --expectSignal=0.1 --setParameters mu_outfidsig=0.5\n')
             script.write('${baseCmd} -n PP${b}X.obs   -M Significance\n')
-            script.write('${baseCmd} -n PP${b}X       -M Significance     -t -1 --expectSignal=0.5 --setParameters mu_outfidsig=0.5\n')
-            script.write('#${baseCmd} -n PP${b}X.m${m} -M FitDiagnostics\n')
+            script.write('${baseCmd} -n PP${b}X       -M Significance     -t -1 --expectSignal=0.1 --setParameters mu_outfidsig=0.5\n')
+            script.write('if [ "${m}" = "1000" ]; then\n')
+            script.write('  ${baseCmd} --cminDefaultMinimizerStrategy 0 -n PP${b}X.m${m} -M FitDiagnostics\n')
+            script.write('fi\n')
             script.write('cd -\n')
 
         #run with condor
@@ -167,7 +161,7 @@ def main(args):
             condor.write("log          = zxstatana_run.log\n")
             condor.write("+JobFlavour = \"longlunch\"\n")
             condor.write("request_cpus = 4\n")        
-            for mass in [600,660,720,780,800,840,900,960,1000,1020,1080,1140,1200,1260,1320,1380,1400,1440,1500,1560,1600]:
+            for mass in  [m for sublist in MASSPOINTS for m in sublist]:
                 for boson in ['z','g','zmm','zee']:
                     condor.write("arguments=%d %s\n"%(mass,boson))
                     condor.write("queue 1\n")
