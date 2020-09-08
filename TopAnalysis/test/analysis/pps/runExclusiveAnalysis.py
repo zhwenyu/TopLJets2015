@@ -17,7 +17,7 @@ from TopLJets2015.TopAnalysis.HistoTool import *
 from EventMixingTool import *
 from EventSummary import EventSummary
 from MixedEventSummary import MixedEventSummary
-from PPSEfficiencyReader import PPSEfficiencyReader
+from PPSEfficiencyReader import PPSEfficiencyReader,isPixelFiducial,vetoPixels2017
 from TopLJets2015.TopAnalysis.myProgressBar import *
 
 VALIDLHCXANGLES=[120,130,140,150]
@@ -58,7 +58,7 @@ def computeCosThetaStar(lm,lp):
     return costhetaCS
 
 
-def getTracksPerRomanPot(tree,era,mcTruth=False,minCsi=0,orderByDecreasingCsi=True,useXY=False,applyPxFid=True):
+def getTracksPerRomanPot(tree,era,run,mcTruth=False,minCsi=0,orderByDecreasingCsi=True,useXY=False,applyPxFid=True):
 
     """loops over the availabe tracks in the event and groups them by roman pot id"""
 
@@ -93,9 +93,16 @@ def getTracksPerRomanPot(tree,era,mcTruth=False,minCsi=0,orderByDecreasingCsi=Tr
 
         #fiducial cut
         if applyPxFid and (isMulti or isFar):
+
             sector=45 if isPosRP else 56
-            passPxFid=isPixelFiducial(era,sector,tree.protonX[itk],tree.protonTX[itk],proton.Y[itk],proton.TY[itk])
-            if not passPxFid:
+            passPxFid=isPixelFiducial(era,sector,tree.protonX[itk],tree.protonTX[itk],tree.protonY[itk],tree.protonTY[itk])
+
+            #if pixel only check that we are not using a 3+3 period
+            vetoThisEra=False
+            if not isMulti:
+                vetoThisEra=vetoPixels2017(run,era)        
+            
+            if not passPxFid or vetoThisEra:
                 continue
 
         idx     = (0 if isMulti else (1 if isFar else 2))
@@ -540,11 +547,11 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
         ppsPosEff,ppsPosEffUnc=1.0,0.0
         ppsNegEff,ppsNegEffUnc=1.0,0.0
         if isSignal or (isData and isRPIn):     
-            ev_pos_protons,ev_neg_protons  = getTracksPerRomanPot(tree,evEra,minCsi=MINCSI)              
+            ev_pos_protons,ev_neg_protons  = getTracksPerRomanPot(tree,evEra,tree.run if isData else -1,minCsi=MINCSI)              
             orig_ev_pos_protons = copy.deepcopy(ev_pos_protons)
             orig_ev_neg_protons = copy.deepcopy(ev_neg_protons)
 
-            ev_pos_protons_xy,ev_neg_protons_xy  = getTracksPerRomanPot(tree,evEra,minCsi=MINCSI,useXY=True)  
+            ev_pos_protons_xy,ev_neg_protons_xy  = getTracksPerRomanPot(tree,evEra,tree.run if isData else -1,minCsi=MINCSI,useXY=True)  
 
         #if data and there is nothing to mix store the main characteristics of the event and continue
         if evMixTool.isIdle():
@@ -669,7 +676,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
         gen_csiPos = 0.
         gen_csiNeg = 0.
         if isSignal:
-            true_pos_protons,true_neg_protons = getTracksPerRomanPot(tree,evEra,True)
+            true_pos_protons,true_neg_protons = getTracksPerRomanPot(tree,evEra,tree.run if isData else -1,True)
             if len(true_pos_protons[0])>0 : gen_csiPos=true_pos_protons[0][0]
             if len(true_neg_protons[0])>0 : gen_csiNeg=true_neg_protons[0][0]
             
@@ -1136,7 +1143,7 @@ def main():
                       help='directory with efficiency files for signal weighting')
     parser.add_option('--ppsEffFile',
                       dest='ppsEffFile', 
-                      default='${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/pps/PreliminaryEfficiencies_October92019_1D2DMultiTrack.root,${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/pps/pixelEfficiencies_multiRP.root',
+                      default='${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/pps/PreliminaryEfficiencies_October92019_1D2DMultiTrack.root,${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/pps/pixelEfficiencies_multiRP.root,${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/pps/pixelEfficiencies_radiation.root',
                       type='string',
                       help='file with PPS reconstructed efficiency')
     parser.add_option('--step',

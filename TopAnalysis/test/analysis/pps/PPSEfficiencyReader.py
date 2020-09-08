@@ -1,5 +1,6 @@
 import ROOT
 import sys
+import numpy as np
 
 def isPixelFiducial(era,sector,x,tx,y,ty):
 
@@ -35,6 +36,22 @@ def isPixelFiducial(era,sector,x,tx,y,ty):
     
     return True
 
+def vetoPixels2017(run,era):
+
+    #veto 'C2', 'D', 'F2', and 'F3' run ranges available in 
+    #https://twiki.cern.ch/twiki/bin/view/CMS/TaggedProtonsPixelEfficiencies
+    if 'D' in era: return True
+    if run<0:
+        #use random number assignment to throw away events in MC
+        subEra=np.random.uniform()
+        if 'C' in era and subEra>0.62 : return True
+        if 'F' in era and subEra>0.13 : return True
+    else:
+        if 'C' in era and run>=300806 and run<=302029 : return True
+        if 'F' in era and run>=305178 and run<=306462 : return True
+    
+    return False
+
 
 
 class PPSEfficiencyReader:
@@ -61,18 +78,24 @@ class PPSEfficiencyReader:
                         self.allEffs[hname].SetDirectory(0)
                 fIn.Close()
                 
-            else:
+            elif 'pixelEfficiencies_multiRP' in fIn:
+
                 fIn=ROOT.TFile.Open(ROOT.gSystem.ExpandPathName(fIn))
                 for era in ['B','C1','C2','D','E','F1','F2','F3']:
                     baseDir='Pixel/{0}/{0}{1}'.format(year,era)
-                    for k in fIn.Get(baseDir).GetListOfKeys():
-                        hname=k.GetName()
-                        if not '2D' in hname : continue
-                        self.allEffs[hname+"_ip"]=k.ReadObj()
-                        self.allEffs[hname+"_ip"].SetDirectory(0)
-                        self.allEffs[hname+"_ip"].SetName(hname+"_ip")
+                    eraDir=fIn.Get(baseDir)
+                    try:
 
-                    #compose lumi averaged for eras C and F
+                        for k in eraDir.GetListOfKeys():
+                            hname=k.GetName()
+                            if not '2D' in hname : continue
+                            self.allEffs[hname+"_ip"]=k.ReadObj()
+                            self.allEffs[hname+"_ip"].SetDirectory(0)
+                            self.allEffs[hname+"_ip"].SetName(hname+"_ip")
+                    except:
+                        print era,'not available as',baseDir
+
+                #compose lumi averaged for eras C and F
                 for era,eras in [ ('C',[('C1',0.62),('C2',0.38)]),
                                   ('F',[('F1',0.13),('F2',0.59),('F3',0.28)]) ]:
                     
@@ -87,6 +110,19 @@ class PPSEfficiencyReader:
                         for subEra,subEraWgt in eras:
                             self.allEffs[inc_hname].Add(self.allEffs[hname.format(rp,subEra)],subEraWgt)
                         
+                fIn.Close()
+
+            elif 'pixelEfficiencies_radiation' in fIn:
+
+                #pixel efficiencies from radiation (not all eras available due to 3+3 readout)
+
+                fIn=ROOT.TFile.Open(ROOT.gSystem.ExpandPathName(fIn))
+                for era1, era2 in [('B','B'),('C','C1'),('E','E'),('F','F1')]:
+                    for sector in [45,56]:
+                        hname='h{0}_220_2017{1}_all_2D_pxrad'.format(sector,era)
+                        self.allEffs[hname]=fIn.Get('Pixel/2017/2017{0}/h{1}_220_2017{0}_all_2D'.format(era2,sector))
+                        self.allEffs[hname].SetDirectory(0)
+                        self.allEffs[hname].SetName(hname+"_pxrad")
                 fIn.Close()
         
         #pure 0 strip tracks eff from J. Kaspar
@@ -168,14 +204,20 @@ class PPSEfficiencyReader:
                     ieff = interPot.GetBinContent(xbin,ybin)
                     eff *=ieff
                     if ieff>0:
-                        effUnc += interPot.GetBinError(xbin,ybin)/ieff
+                        effUnc += (interPot.GetBinError(xbin,ybin)/ieff)**2
 
         else:
 
-            # FIXME
-            # pixels are not  fully available yet so assume 100% eff
-            eff,effUnc=1.0,0.0
-
+            #check if era is available (if not do nothing)
+            hname='h{0}_220_2017{1}_all_2D_ip'.format(sector,era)
+            if hname in self.allEffs and  x>-90 and y>-90 :
+                pxrad=self.allEffs[hname]
+                xbin=pxrad.GetXaxis().FindBin(x)
+                ybin=pxrad.GetYaxis().FindBin(y)
+                ieff=pxrad.GetBinContent(xbin,ybin)
+                eff *=ieff
+                if ieff>0:
+                    effUnc += (pxrad.GetBinError(xbin,ybin)/ieff)**2
             
         effUnc=eff*ROOT.TMath.Sqrt(effUnc)
 
