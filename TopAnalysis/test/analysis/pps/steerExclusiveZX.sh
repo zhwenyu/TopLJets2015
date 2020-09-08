@@ -49,7 +49,8 @@ sddir=/store/cmst3/group/top/RunIIReReco/2017/sdz
 sdjson=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/pps_sd_samples.json
 genweights_sd=genweights_sdz.root
 
-signaldir=/store/cmst3/group/top/RunIIReReco/2017/vxsimulations_2Jun
+#signaldir=/store/cmst3/group/top/RunIIReReco/2017/vxsimulations_2Jun
+signaldir=/store/cmst3/group/top/RunIIReReco/2017/vxsimulations_7Sep2020 
 signaljson=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/signal_samples.json
 signalpostts2json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/signal_samples_postTS2.json
 fullsimsignaljson=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/signal_samples_fullsim.json
@@ -223,7 +224,6 @@ case $WHAT in
         
         predin=/eos/cms/${signaldir}
         file=Z_m_X_960_xangle_120_2017_preTS2.root
-        #file=Z_m_X_960_xangle_120_2017_postTS2.root
         
         mix_file=/eos/cms/${anadir}/mixing/
 

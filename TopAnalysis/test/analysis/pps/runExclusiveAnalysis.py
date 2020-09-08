@@ -58,7 +58,7 @@ def computeCosThetaStar(lm,lp):
     return costhetaCS
 
 
-def getTracksPerRomanPot(tree,mcTruth=False,minCsi=0,orderByDecreasingCsi=True,useXY=False):
+def getTracksPerRomanPot(tree,era,mcTruth=False,minCsi=0,orderByDecreasingCsi=True,useXY=False,applyPxFid=True):
 
     """loops over the availabe tracks in the event and groups them by roman pot id"""
 
@@ -89,10 +89,17 @@ def getTracksPerRomanPot(tree,mcTruth=False,minCsi=0,orderByDecreasingCsi=True,u
         #check how the track was reconstructed
         isFar   = tree.isFarRPProton[itk]
         isMulti = tree.isMultiRPProton[itk]
+        isPosRP = tree.isPosRPProton[itk]
+
+        #fiducial cut
+        if applyPxFid and (isMulti or isFar):
+            sector=45 if isPosRP else 56
+            passPxFid=isPixelFiducial(era,sector,tree.protonX[itk],tree.protonTX[itk],proton.Y[itk],proton.TY[itk])
+            if not passPxFid:
+                continue
+
         idx     = (0 if isMulti else (1 if isFar else 2))
         if mcTruth: idx=0
-
-        isPosRP = tree.isPosRPProton[itk]
 
         if isPosRP : tkPos[idx].append(csi)
         else       : tkNeg[idx].append(csi)
@@ -533,11 +540,11 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
         ppsPosEff,ppsPosEffUnc=1.0,0.0
         ppsNegEff,ppsNegEffUnc=1.0,0.0
         if isSignal or (isData and isRPIn):     
-            ev_pos_protons,ev_neg_protons  = getTracksPerRomanPot(tree,minCsi=MINCSI)              
+            ev_pos_protons,ev_neg_protons  = getTracksPerRomanPot(tree,evEra,minCsi=MINCSI)              
             orig_ev_pos_protons = copy.deepcopy(ev_pos_protons)
             orig_ev_neg_protons = copy.deepcopy(ev_neg_protons)
 
-            ev_pos_protons_xy,ev_neg_protons_xy  = getTracksPerRomanPot(tree,minCsi=MINCSI,useXY=True)  
+            ev_pos_protons_xy,ev_neg_protons_xy  = getTracksPerRomanPot(tree,evEra,minCsi=MINCSI,useXY=True)  
 
         #if data and there is nothing to mix store the main characteristics of the event and continue
         if evMixTool.isIdle():
@@ -662,7 +669,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
         gen_csiPos = 0.
         gen_csiNeg = 0.
         if isSignal:
-            true_pos_protons,true_neg_protons = getTracksPerRomanPot(tree,True)
+            true_pos_protons,true_neg_protons = getTracksPerRomanPot(tree,evEra,True)
             if len(true_pos_protons[0])>0 : gen_csiPos=true_pos_protons[0][0]
             if len(true_neg_protons[0])>0 : gen_csiNeg=true_neg_protons[0][0]
             

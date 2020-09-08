@@ -1,6 +1,42 @@
 import ROOT
 import sys
 
+def isPixelFiducial(era,sector,x,tx,y,ty):
+
+    """
+    check if the track is in the fiducial region
+    cf. https://twiki.cern.ch/twiki/bin/viewauth/CMS/TaggedProtonsPixelEfficiencies
+    """
+
+    #check angle of the track to be below 20mrad
+    if abs(tx)>0.02 : return False
+    if abs(ty)>0.02 : return False         
+        
+    xy_fid=None
+    if era in ['2017B','2017C','2017D']:
+        if sector==45:
+            xy_fid=[1.860,24.334,-11.098,4.298]
+            if era=='2017B' :
+                xy_fid[0]=1.995
+                xy_fid[1]=24.479
+        else:
+            xy_fid=[2.422,24.620,-10.698,4.698]
+    else:
+        if sector==45:
+            xy_fid=[1.995,24.479,-10.098,4.998]
+        else:
+            xy_fid=[2.422,24.620,-9.698,5.498]
+    px_x0_rotated = x * np.cos((-8. / 180.) * np.pi) - y * np.sin((-8. / 180.) * np.pi)
+    px_y0_rotated = x * np.sin((-8. / 180.) * np.pi) + y * np.cos((-8. / 180.) * np.pi)
+    if px_x0_rotated<xy_fid[0] : return False
+    if px_x0_rotated>xy_fid[1] : return False
+    if px_y0_rotated<xy_fid[2] : return False
+    if px_y0_rotated>xy_fid[3] : return False
+    
+    return True
+
+
+
 class PPSEfficiencyReader:
     
     """ 
@@ -99,44 +135,6 @@ class PPSEfficiencyReader:
             }
 
         print '[PPSEfficiencyReader] retrieved %d histograms'%len(self.allEffs)
-
-
-    def isPixelFiducial(self,era,rp,x,tx,y,ty):
-
-        """
-        check if the track is in the fiducial region
-        cf. https://twiki.cern.ch/twiki/bin/viewauth/CMS/TaggedProtonsPixelEfficiencies
-        """
-
-        #check angle of the track to be below 20mrad
-        if abs(tx)>0.02 : return False
-        if abs(ty)>0.02 : return False         
-        
-        xy_fid=None
-        if era in ['2017B','2017C','2017D']:
-            if rp==45:
-                xy_fid=[1.860,24.334,-11.098,4.298]
-                if era=='2017B' :
-                    xy_fid[0]=1.995
-                    xy_fid[1]=24.479
-            else:
-                xy_fid=[2.422,24.620,-10.698,4.698]
-        else:
-            if rp==45:
-                xy_fid=[1.995,24.479,-10.098,4.998]
-            else:
-                xy_fid=[2.422,24.620,-9.698,5.498]
-        px_x0_rotated = x * np.cos((-8. / 180.) * np.pi) - y * np.sin((-8. / 180.) * np.pi)
-        px_y0_rotated = x * np.sin((-8. / 180.) * np.pi) + y * np.cos((-8. / 180.) * np.pi)
-        if px_x0_rotated<xy_fid[0] : return False
-        if px_x0_rotated>xy_fid[1] : return False
-        if px_y0_rotated<xy_fid[2] : return False
-        if px_y0_rotated>xy_fid[3] : return False
-
-        return True
-
-
-
 
 
     def getPPSEfficiency(self,era,xangle,xi,x,y,rp,isMulti=True, applyMultiTrack=False, applyInterPotAndPure0=True):
