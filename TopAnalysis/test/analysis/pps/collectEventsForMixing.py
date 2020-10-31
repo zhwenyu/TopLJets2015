@@ -20,9 +20,11 @@ for era in 'BCDEF':
         print 'Checking and merging',len(fList),'files for',(era,xangle)
         for f in fList:
 
+            if '.root' in f : continue
             if 'ZeroBias' in f : continue
             if 'DoubleEG' in f : continue
             if 'Photon' in f : continue
+            if 'Single' in f : continue
 
             fullf=os.path.join(baseDir+'/mixing/Chunks',f)
 
@@ -34,6 +36,7 @@ for era in 'BCDEF':
                     if kera   != era    : continue
                     if kangle != xangle : continue
                     rpData[key] += evList
+                    break
             except Exception as e:
                 toCheck.append(f)
 
@@ -41,11 +44,11 @@ for era in 'BCDEF':
         for key in rpData:
             print '\t',key,len(rpData[key])
 
-        mixbank='%s/mixing/mixbank_%s_%d.pck'%(baseDir,era,xangle)
+        mixbank='mixbank_%s_%d.pck'%(era,xangle)
         print '\t writing mixing bank @',mixbank
-        with open('mixbank.pck','w') as cache:
+        with open(mixbank,'w') as cache:
             pickle.dump(rpData,cache)
-        os.system('mv mixbank.pck %s'%mixbank)
+        os.system('cp -v {0} {1}/mixing/{0}'.format(mixbank,baseDir))
 
 if len(toCheck)>0:
     print '-'*50

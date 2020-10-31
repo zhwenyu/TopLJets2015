@@ -3,7 +3,7 @@ import os
 import sys
 import argparse
 import itertools
-from generateBinnedWorkspace import defineProcessTemplates,smoothMissingMass
+from generateBinnedWorkspace import defineProcessTemplates,smoothWithLowess
 from TopLJets2015.TopAnalysis.Plot import *
 import numpy as np
 

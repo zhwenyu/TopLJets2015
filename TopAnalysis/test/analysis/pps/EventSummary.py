@@ -22,7 +22,7 @@ class EventSummary:
 
         for pfix in ['','syst']:
             self.vars['f'] += [pfix+'protonCat']
-            addVars='{0}ppsEff,{0}ppsEffUnc,{0}ppsEff_nip,{0}ppsEffUnc_nip,{0}csi1,{0}csi2,{0}mpp,{0}ypp,{0}pzpp,{0}mmiss,{0}ymmiss'.format(pfix)
+            addVars='{0}ppsEff,{0}ppsEffUnc,{0}csi1,{0}csi2,{0}mpp,{0}ypp,{0}pzpp,{0}mmiss,{0}ymmiss'.format(pfix)
             self.vars['f'] += addVars.split(',')
 
         self.vars['f'] += ['mmissvup','mmissvdn']

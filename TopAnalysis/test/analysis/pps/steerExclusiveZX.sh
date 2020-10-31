@@ -36,7 +36,7 @@ fi
 
 githash=2017_unblind_multi
 
-datadir=/store/cmst3/group/top/RunIIReReco/2017/f439f08_ul
+datadir=/store/cmst3/group/top/RunIIUL/2017/6bfa3f2e/
 datajson=${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/pps/datasamples.json
 RPout_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/golden_noRP.json
 
@@ -49,7 +49,6 @@ sddir=/store/cmst3/group/top/RunIIReReco/2017/sdz
 sdjson=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/pps_sd_samples.json
 genweights_sd=genweights_sdz.root
 
-#signaldir=/store/cmst3/group/top/RunIIReReco/2017/vxsimulations_2Jun
 signaldir=/store/cmst3/group/top/RunIIReReco/2017/vxsimulations_7Sep2020 
 signaljson=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/signal_samples.json
 signalpostts2json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/signal_samples_postTS2.json
@@ -140,7 +139,7 @@ case $WHAT in
         echo "output      = ${condor_prep}.out" >> $condor_prep
         echo "error       = ${condor_prep}.err" >> $condor_prep
         echo "log         = ${condor_prep}.log" >> $condor_prep
-        echo "requirements = (OpSysAndVer =?= \"SLCern6\")" >> $condor_prep
+        # echo "requirements = (OpSysAndVer =?= \"SLCern6\")" >> $condor_prep
         echo "+AccountingGroup = \"group_u_CMST3.all\"" >> $condor_prep
         echo "+JobFlavour = \"tomorrow\"">> $condor_prep
         echo "request_cpus = 4" >> $condor_prep
@@ -252,7 +251,7 @@ case $WHAT in
         echo "output       = ${condor_prep}.out" >> $condor_prep
         echo "error        = ${condor_prep}.err" >> $condor_prep
         echo "log          = ${condor_prep}.log" >> $condor_prep
-        echo "requirements = (OpSysAndVer =?= \"SLCern6\")" >> $condor_prep
+        #echo "requirements = (OpSysAndVer =?= \"SLCern6\")" >> $condor_prep
         echo "+AccountingGroup = \"group_u_CMST3.all\"" >> $condor_prep
         echo "+JobFlavour = \"tomorrow\"">> $condor_prep
         echo "request_cpus = 4" >> $condor_prep
@@ -471,7 +470,7 @@ case $WHAT in
 
     RUNOPTIMSTATANA )
         
-        tagList=(exp expm1000 obs)
+        tagList=(exp) # expm1000 obs)
         if [[ $ALLOWPIX == *"1,2"* ]]; then
             tagList=(exp)
         elif [[ $ALLOWPIX == *"-"* ]]; then

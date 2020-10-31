@@ -7,7 +7,6 @@
 #include <TLorentzVector.h>
 #include <TGraphAsymmErrors.h>
 
-//#include "TopLJets2015/TopAnalysis/interface/JSONWrapper.h"
 #include "TopLJets2015/TopAnalysis/interface/CommonTools.h"
 #include "TopLJets2015/TopAnalysis/interface/ExclusiveZX.h"
 #include "TopQuarkAnalysis/TopTools/interface/MEzCalculator.h"
