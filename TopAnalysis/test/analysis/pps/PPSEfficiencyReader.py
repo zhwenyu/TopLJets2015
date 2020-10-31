@@ -63,6 +63,9 @@ class PPSEfficiencyReader:
 
     def __init__(self, fList, year=2017):
 
+        #fix the seed for reproducible jobs
+        np.random.seed(1)
+
         self.allEffs={}
 
         for fIn in fList.split(','):
@@ -183,7 +186,9 @@ class PPSEfficiencyReader:
                 multiTrack=self.allEffs['h%dmultitrackeff_%s_avg_RP%d'%(sector,era,rp)]
                 ieff = multiTrack.GetBinContent(1)
                 eff *= ieff
-        
+                if ieff>0:
+                    effUnc += (multiTrack.GetBinError(1)/ieff)**2
+
             raddam=self.allEffs['h%d_%s_%d_1D'%(sector,era,xangle)]
             raddamUnc=self.allEffs['h%derrors_%s_%d_1D'%(sector,era,xangle)]
             ibin=raddam.FindBin(xi)
@@ -192,10 +197,13 @@ class PPSEfficiencyReader:
             if ieff>0:
                 effUnc += (raddamUnc.GetBinError(ibin)/ieff)**2            
 
+
             if applyInterPotAndPure0:
 
                 pure0Eff = self.pure0Probs[(sector,xangle,era)]
                 eff *= pure0Eff
+                if pure0Eff>0:
+                    effUnc *= 0.02**2 #ad-hoc
 
                 if x>-90 and y>-90 : #-99 is the default for n/a
                     interPot=self.allEffs['h{0}_220_{1}_all_2D_ip'.format(sector,era)]
@@ -203,21 +211,25 @@ class PPSEfficiencyReader:
                     ybin=interPot.GetYaxis().FindBin(y)
                     ieff = interPot.GetBinContent(xbin,ybin)
                     eff *=ieff
-                    if ieff>0:
-                        effUnc += (interPot.GetBinError(xbin,ybin)/ieff)**2
+                    #the errors in the histograms seem flawed, assign 2% ad-hoc
+                    effUnc += 0.02**2
+                    #if ieff>0:
+                    #    effUnc += (interPot.GetBinError(xbin,ybin)/ieff)**2
 
         else:
 
             #check if era is available (if not do nothing)
-            hname='h{0}_220_2017{1}_all_2D_ip'.format(sector,era)
+            hname='h{0}_220_{1}_all_2D_ip'.format(sector,era)       
             if hname in self.allEffs and  x>-90 and y>-90 :
                 pxrad=self.allEffs[hname]
                 xbin=pxrad.GetXaxis().FindBin(x)
                 ybin=pxrad.GetYaxis().FindBin(y)
                 ieff=pxrad.GetBinContent(xbin,ybin)
                 eff *=ieff
-                if ieff>0:
-                    effUnc += (pxrad.GetBinError(xbin,ybin)/ieff)**2
+                #the error in the histogram seems flawed, assign 2% ad-hoc
+                effUnc += 0.02**2
+                #if ieff>0:
+                #    effUnc += (pxrad.GetBinError(xbin,ybin)/ieff)**2
             
         effUnc=eff*ROOT.TMath.Sqrt(effUnc)
 
@@ -283,7 +295,7 @@ class PPSEfficiencyReader:
         if nMultiPosInSigHyp==1:
 
             #proton was already there, apply survival probability
-            if nMultiPos==1 and multiPosEff!=0.: 
+            if nMultiPos==1 and multiPosEff>0: 
                 ppsWgt        *= multiPosEff
                 ppsWgtUnc     += (multiPosEffUnc/multiPosEff)**2
 
@@ -299,10 +311,11 @@ class PPSEfficiencyReader:
             pos_protons[2] = []
 
             ppsWgt    *= pixelPosEff
-            ppsWgtUnc += (pixelPosEffUnc/pixelPosEff)**2
+            if pixelPosEff>0:
+                ppsWgtUnc += (pixelPosEffUnc/pixelPosEff)**2
 
             #in case one multiRP had been reconstructed downweight by inefficiency probability
-            if nMultiPos==1 and multiPosEff<1: 
+            if nMultiPos==1 and multiPosEff<1 and multiPosEff>0: 
                 ppsWgt        *= (1-multiPosEff)
                 ppsWgtUnc     += (multiPosEffUnc/(1-multiPosEff))**2
 
@@ -326,11 +339,11 @@ class PPSEfficiencyReader:
             neg_protons[2]=[]
 
             ppsWgt    *= pixelNegEff
-            ppsWgtUnc += (pixelNegEffUnc/pixelNegEff)**2
-
+            if pixelNegEff>0:                
+                ppsWgtUnc += (pixelNegEffUnc/pixelNegEff)**2
 
             #in case one had been reconstructed downeight by inefficiency probability
-            if nMultiNeg==1 and multiNegEff!=1.: 
+            if nMultiNeg==1 and multiNegEff<1 and multiNegEff>0: 
                 ppsWgt        *= (1-multiNegEff)
                 ppsWgtUnc     += (multiNegEffUnc/(1-multiNegEff))**2
 
@@ -338,7 +351,7 @@ class PPSEfficiencyReader:
         ppsWgtUnc= ppsWgt*ROOT.TMath.Sqrt(ppsWgtUnc)
 
         #return final result
-        return pos_protons,neg_protons,ppsWgt,ppsWgt
+        return pos_protons,neg_protons,ppsWgt,ppsWgtUnc
 
 
 

@@ -578,68 +578,62 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
         #prepare efficiencies per arm
         ppsEff,ppsEffUnc=1.0,0.0
         if isSignal:
-            
-            #multi-RP
-            ppsMultiPosEff,ppsMultiPosEffUnc=0.0,0.0
-            ppsMultiNegEff,ppsMultiNegEffUnc=0.0,0.0
-            if len(ev_pos_protons[0])>0 and len(ev_pos_protons[2])>0:
-                xy=ev_pos_protons_xy[0][0] if len(ev_pos_protons_xy[0])>0 else [-99,-99]
-                x=[xy[0]]
-                y=[xy[1]]
-                ppsMultiPosEff,ppsMultiPosEffUnc=ppsEffReader.getPPSEfficiency(evEra,beamXangle,
-                                                                               ev_pos_protons[2][0],
-                                                                               x[0],
-                                                                               y[0],
-                                                                               rp=3,
-                                                                               isMulti=True)
-            if len(ev_pos_protons[0])>0 and len(ev_neg_protons[2])>0:
-                xy=ev_neg_protons_xy[0][0] if len(ev_neg_protons_xy[0])>0 else [-99,-99]
-                x=[xy[0]]
-                y=[xy[1]]
-                ppsMultiNegEff,ppsMultiNegEffUnc=ppsEffReader.getPPSEfficiency(evEra,beamXangle,
-                                                                               ev_neg_protons[2][0],
-                                                                               x[0],
-                                                                               y[0],
-                                                                               rp=103,
-                                                                               isMulti=True)
-
-
-            #pixels
-            ppsPixelPosEff,ppsPixelPosEffUnc=0.0,0.0
-            ppsPixelNegEff,ppsPixelNegEffUnc=0.0,0.0
-            if len(ev_pos_protons[1])>0:
-                xy=ev_pos_protons_xy[1][0] if len(ev_pos_protons_xy[1])>0 else [-99,-99]
-                x=[xy[0]]
-                y=[xy[1]]
-                ppsPixelPosEff,ppsPixelPosEffUnc=ppsEffReader.getPPSEfficiency(evEra,beamXangle,
-                                                                               ev_pos_protons[1][0],
-                                                                               x[0],
-                                                                               y[0],
-                                                                               rp=3,
-                                                                               isMulti=False)
-            if len(ev_neg_protons[1])>0:
-                xy=ev_neg_protons_xy[1][0] if len(ev_neg_protons_xy[1])>0 else [-99,-99]
-                x=[xy[0]]
-                y=[xy[1]]
-                ppsPixelNegEff,ppsPixelNegEffUnc=ppsEffReader.getPPSEfficiency(evEra,beamXangle,
-                                                                               ev_neg_protons[1][0],
-                                                                               x[0],
-                                                                               y[0],
-                                                                               rp=103,
-                                                                               isMulti=False)
-
-
 
             rawSigHyp=0
             if len(ev_neg_protons[1])>0: rawSigHyp += 1
             if len(ev_neg_protons[0])>0: rawSigHyp += 2
             if len(ev_pos_protons[1])>0: rawSigHyp += 4
             if len(ev_pos_protons[0])>0: rawSigHyp += 8
+            print '\n'
+            print evEra,'{:b}'.format(rawSigHyp)
+            print '+',ev_pos_protons,ev_pos_protons_xy
+            print '-',ev_neg_protons,ev_neg_protons_xy
 
-            print rawSigHyp,'->',sighyp
-            print 'Raw state'
-            print '[+]',ev_pos_protons,ppsMultiPosEff, ppsMultiPosEffUnc, ppsPixelPosEff, ppsPixelPosEffUnc
-            print '[-]',ev_neg_protons,ppsMultiNegEff, ppsMultiNegEffUnc, ppsPixelNegEff, ppsPixelNegEffUnc
+            #multi-RP
+            ppsMultiPosEff,ppsMultiPosEffUnc=0.0,0.0
+            ppsMultiNegEff,ppsMultiNegEffUnc=0.0,0.0
+            if len(ev_pos_protons[0])>0 and len(ev_pos_protons[2])>0:
+                x,y=ev_pos_protons_xy[0][0] if len(ev_pos_protons_xy[0])>0 else [-99,-99]               
+                ppsMultiPosEff,ppsMultiPosEffUnc=ppsEffReader.getPPSEfficiency(evEra,beamXangle,
+                                                                               ev_pos_protons[2][0],
+                                                                               x,
+                                                                               y,
+                                                                               rp=3,
+                                                                               isMulti=True)
+                print '[+multi]',x,y,ev_pos_protons[0],ppsMultiPosEff,ppsMultiPosEffUnc
+            if len(ev_neg_protons[0])>0 and len(ev_neg_protons[2])>0:
+                x,y=ev_neg_protons_xy[0][0] if len(ev_neg_protons_xy[0])>0 else [-99,-99]                
+                ppsMultiNegEff,ppsMultiNegEffUnc=ppsEffReader.getPPSEfficiency(evEra,beamXangle,
+                                                                               ev_neg_protons[2][0],
+                                                                               x,
+                                                                               y,
+                                                                               rp=103,
+                                                                               isMulti=True)
+                print '[-multi]',x,y,ev_neg_protons[0],ppsMultiNegEff,ppsMultiNegEffUnc
+
+            #pixels
+            ppsPixelPosEff,ppsPixelPosEffUnc=0.0,0.0
+            ppsPixelNegEff,ppsPixelNegEffUnc=0.0,0.0
+            if len(ev_pos_protons[1])>0:
+                x,y=ev_pos_protons_xy[1][0] if len(ev_pos_protons_xy[1])>0 else [-99,-99]                
+                ppsPixelPosEff,ppsPixelPosEffUnc=ppsEffReader.getPPSEfficiency(evEra,beamXangle,
+                                                                               ev_pos_protons[1][0],
+                                                                               x,
+                                                                               y,
+                                                                               rp=3,
+                                                                               isMulti=False)
+                print '[+px]',x,y,ev_pos_protons[1],ppsPixelPosEff,ppsPixelPosEffUnc
+            if len(ev_neg_protons[1])>0:
+                x,y=ev_neg_protons_xy[1][0] if len(ev_neg_protons_xy[1])>0 else [-99,-99]                
+                ppsPixelNegEff,ppsPixelNegEffUnc=ppsEffReader.getPPSEfficiency(evEra,beamXangle,
+                                                                               ev_neg_protons[1][0],
+                                                                               x,
+                                                                               y,
+                                                                               rp=103,
+                                                                               isMulti=False)
+                print '[-px]',x,y,ev_neg_protons[1],ppsPixelNegEff,ppsPixelNegEffUnc
+
+            print '{:b} -> {:b}'.format(rawSigHyp,sighyp)
 
             #assign the final list of reconstructed protons depending on how the sighyp is requested
             ev_pos_protons,ev_neg_protons,ppsEff,ppsEffUnc = ppsEffReader.getProjectedFinalState( ev_pos_protons, ppsMultiPosEff, ppsMultiPosEffUnc, ppsPixelPosEff, ppsPixelPosEffUnc,
@@ -649,7 +643,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
             print '[+]',ev_pos_protons
             print '[-]',ev_neg_protons
             print 'Efficiency:',ppsEff,'+/-',ppsEffUnc
-
+            print '='*100
             #mixed_pos_protons={DIMUONS:ev_pos_protons,EMU:ev_pos_protons}
             #mixed_neg_protons={DIMUONS:ev_neg_protons,EMU:ev_neg_protons}
             mixed_pos_protons, mixed_neg_protons = evMixTool.mergeWithMixedEvent(ev_pos_protons, 
