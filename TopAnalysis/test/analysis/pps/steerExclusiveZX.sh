@@ -57,7 +57,7 @@ fullsimsignaljson=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/sig
 outdir=/store/cmst3/user/psilva/ExclusiveAna/final/${githash}
 
 anadir=${outdir}/analysis
-wwwdir=/eos/user/p/psilva/www/ExclusiveAna_${githash}${pfix}
+wwwdir=/eos/user/p/psilva/www/EXO-19-009/analysis${pfix}
 
 plot_signal_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/plot_signal_samples.json
 plot_signal_ext_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/plot_signal_samples_ext.json
@@ -223,6 +223,8 @@ case $WHAT in
         
         predin=/eos/cms/${signaldir}
         file=Z_m_X_960_xangle_120_2017_preTS2.root
+        #predin=/eos/cms/${signaldir}
+        #file=Z_m_X_960_xangle_120_2017_postTS2.root
         
         mix_file=/eos/cms/${anadir}/mixing/
 
@@ -230,7 +232,7 @@ case $WHAT in
         addOpt="--effDir test/analysis/pps"
         python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 1 --jobs 1 \
             --json ${mcjson},${datajson},${signaljson},${signalpostts2json} --RPout ${RPout_json} -o ${predout} \
-            --mix ${mix_file} -i ${predin} --only ${file} ${addOpt} --maxEvents 1000 \
+            --mix ${mix_file} -i ${predin} --only ${file} ${addOpt} --maxEvents 10000 \
             --allowPix ${ALLOWPIX};
 
         #predout=./mix1200
@@ -470,7 +472,7 @@ case $WHAT in
 
     RUNOPTIMSTATANA )
         
-        tagList=(exp) # expm1000 obs)
+        tagList=(expm1000 obs) #exp) # expm1000 obs)
         if [[ $ALLOWPIX == *"1,2"* ]]; then
             tagList=(exp)
         elif [[ $ALLOWPIX == *"-"* ]]; then
@@ -611,7 +613,7 @@ case $WHAT in
         echo "python test/analysis/pps/showFitShapes.py ppvx_${githash}${pfix}/optim_75 1000 z ss"
         echo "[Nuisances post-fit]"
         echo "Please use CMSSW_10_2_13 or higher"
-        echo "python test/analysis/pps/doNuisanceReport.py 1000 ppvx_${githash}${pfix}/pcat1/z_m1000_workspace.root"
+        echo "python test/analysis/pps/doNuisanceReport.py ppvx_${githash}${pfix}/exp/inc_xangle_nvtx/fitDiagnosticsPPzX.m1000.root"
         echo ""
         ;;
     

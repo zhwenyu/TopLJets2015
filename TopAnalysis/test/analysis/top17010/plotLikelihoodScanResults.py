@@ -95,7 +95,7 @@ def getScanPoint(inDir,fitTag):
         gt = (flag&mask)*0.01+0.7
         mt = (((flag>>16)&mask))*0.25+169        
     else:
-        return mt,gt,None
+        return {'full':(mt,gt,np.nan)}
 
     #read nll from fit
     nll={}
@@ -353,6 +353,10 @@ def main():
 
             scanRes=getScanPoint(inDir=os.path.join(opt.input,f),fitTag=opt.fitTag)
 
+            if '7bin' in opt.input and isinstance(scanRes,dict) and scanRes['full'][0]==170.5 : 
+                print('[WARN] Skipping 170.5 GeV for',f)
+                continue
+
             if isinstance(scanRes,basestring):
                 toSub.append(scanRes)
                 continue
@@ -395,14 +399,17 @@ def main():
     print len(fitres_dict),'fit results are available, using to find best fit points'
 
     #plot the contour interpolating the available points
-    fitTable=[]
-    try:
-        
-        for tag,vals in fitres_dict.items():
+    fitTable=[]        
+    import pandas as pd
+    for tag,vals in fitres_dict.items():
 
+        try:
             print 'Analysing',len(vals),',results for',tag
+            fitres=np.array(vals)            
+            
+            mask=pd.isnull(fitres).any(axis=1)
+            fitres=np.array(fitres[~mask],dtype=float)
 
-            fitres=np.array(vals)
             savePlot=True if tag=='full' else False
             bestFitX=profilePOI(fitres,outdir=opt.outdir,axis=0,sigma=opt.filterSigma,ylim=ylim,savePlot=savePlot)
             bestFitY=profilePOI(fitres,outdir=opt.outdir,axis=1,sigma=opt.filterSigma,ylim=ylim,savePlot=savePlot)
@@ -413,10 +420,10 @@ def main():
                             %(tag,bestFitX[0],bestFitX[1],bestFitX[2],bestFitY[0],bestFitY[1],bestFitY[2]))
             
 
-    except Exception as e:
-        print '<'*50
-        print e
-        print '<'*50
+        except Exception as e:
+            print '<'*50
+            print e
+            print '<'*50
 
     print '*'*50
     print 'Final fit results'

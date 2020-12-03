@@ -17,7 +17,7 @@ from TopLJets2015.TopAnalysis.HistoTool import *
 from EventMixingTool import *
 from EventSummary import EventSummary
 from MixedEventSummary import MixedEventSummary
-from PPSEfficiencyReader import PPSEfficiencyReader,isPixelFiducial,vetoPixels2017
+from PPSEfficiencyReader import PPSEfficiencyReader,isPixelFiducial,doFinalCheck2017
 from TopLJets2015.TopAnalysis.myProgressBar import *
 
 VALIDLHCXANGLES=[120,130,140,150]
@@ -99,20 +99,13 @@ def getTracksPerRomanPot(tree,era,run,mcTruth=False,minCsi=0,orderByDecreasingCs
 
             sector=45 if isPosRP else 56
             passPxFid=isPixelFiducial(era,sector,tree.protonX[itk],tree.protonTX[itk],tree.protonY[itk],tree.protonTY[itk])
-
-            #if pixel only check that we are not using a 3+3 period
-            vetoThisEra=False
-            if not isMulti:
-                vetoThisEra=vetoPixels2017(run,era)        
-            
-            if not passPxFid or vetoThisEra:
-                continue
+            if not passPxFid : continue
 
         idx = (0 if isMulti else (1 if isFar else 2))
         if mcTruth: idx=0
 
         if isPosRP : tkPos[idx].append(csi)
-        else       : tkNeg[idx].append(csi)
+        else :  tkNeg[idx].append(csi)
     
 
     if orderByDecreasingCsi:   
@@ -435,6 +428,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
     for i in xrange(0,nEntries):
 
         tree.GetEntry(i)
+        evRun=tree.run if isData else -1
 
         if i%500==0 : 
             drawProgressBar(float(i)/float(nEntries))
@@ -477,7 +471,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
 
         #check if RP is in (MC assume true by default)
         isRPIn=False if isData else True
-        if isData and beamXangle in VALIDLHCXANGLES and isValidRunLumi(tree.run,tree.lumi,runLumiList):
+        if isData and beamXangle in VALIDLHCXANGLES and isValidRunLumi(evRun,tree.lumi,runLumiList):
             isRPIn=True
         if not isRPIn : nfail[1]+=1
 
@@ -551,11 +545,11 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
         ppsPosEff,ppsPosEffUnc=1.0,0.0
         ppsNegEff,ppsNegEffUnc=1.0,0.0
         if isSignal or (isData and isRPIn):     
-            ev_pos_protons,ev_neg_protons  = getTracksPerRomanPot(tree,evEra,tree.run if isData else -1,minCsi=MINCSI)              
+            ev_pos_protons,ev_neg_protons  = getTracksPerRomanPot(tree,evEra,evRun if isData else -1,minCsi=MINCSI)              
             orig_ev_pos_protons = copy.deepcopy(ev_pos_protons)
             orig_ev_neg_protons = copy.deepcopy(ev_neg_protons)
 
-            ev_pos_protons_xy,ev_neg_protons_xy  = getTracksPerRomanPot(tree,evEra,tree.run if isData else -1,minCsi=MINCSI,useXY=True)  
+            ev_pos_protons_xy,ev_neg_protons_xy  = getTracksPerRomanPot(tree,evEra,evRun if isData else -1,minCsi=MINCSI,useXY=True)  
 
         #if data and there is nothing to mix store the main characteristics of the event and continue
         if evMixTool.isIdle():
@@ -578,16 +572,15 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
         #prepare efficiencies per arm
         ppsEff,ppsEffUnc=1.0,0.0
         if isSignal:
-
             rawSigHyp=0
             if len(ev_neg_protons[1])>0: rawSigHyp += 1
             if len(ev_neg_protons[0])>0: rawSigHyp += 2
             if len(ev_pos_protons[1])>0: rawSigHyp += 4
             if len(ev_pos_protons[0])>0: rawSigHyp += 8
-            print '\n'
-            print evEra,'{:b}'.format(rawSigHyp)
-            print '+',ev_pos_protons,ev_pos_protons_xy
-            print '-',ev_neg_protons,ev_neg_protons_xy
+            #print '\n'
+            #print evEra,'{:b}'.format(rawSigHyp)
+            #print '+',ev_pos_protons,ev_pos_protons_xy
+            #print '-',ev_neg_protons,ev_neg_protons_xy
 
             #multi-RP
             ppsMultiPosEff,ppsMultiPosEffUnc=0.0,0.0
@@ -600,7 +593,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
                                                                                y,
                                                                                rp=3,
                                                                                isMulti=True)
-                print '[+multi]',x,y,ev_pos_protons[0],ppsMultiPosEff,ppsMultiPosEffUnc
+                #print '[+multi]',x,y,ev_pos_protons[0],ppsMultiPosEff,ppsMultiPosEffUnc
             if len(ev_neg_protons[0])>0 and len(ev_neg_protons[2])>0:
                 x,y=ev_neg_protons_xy[0][0] if len(ev_neg_protons_xy[0])>0 else [-99,-99]                
                 ppsMultiNegEff,ppsMultiNegEffUnc=ppsEffReader.getPPSEfficiency(evEra,beamXangle,
@@ -609,7 +602,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
                                                                                y,
                                                                                rp=103,
                                                                                isMulti=True)
-                print '[-multi]',x,y,ev_neg_protons[0],ppsMultiNegEff,ppsMultiNegEffUnc
+                #print '[-multi]',x,y,ev_neg_protons[0],ppsMultiNegEff,ppsMultiNegEffUnc
 
             #pixels
             ppsPixelPosEff,ppsPixelPosEffUnc=0.0,0.0
@@ -622,7 +615,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
                                                                                y,
                                                                                rp=3,
                                                                                isMulti=False)
-                print '[+px]',x,y,ev_pos_protons[1],ppsPixelPosEff,ppsPixelPosEffUnc
+                #print '[+px]',x,y,ev_pos_protons[1],ppsPixelPosEff,ppsPixelPosEffUnc
             if len(ev_neg_protons[1])>0:
                 x,y=ev_neg_protons_xy[1][0] if len(ev_neg_protons_xy[1])>0 else [-99,-99]                
                 ppsPixelNegEff,ppsPixelNegEffUnc=ppsEffReader.getPPSEfficiency(evEra,beamXangle,
@@ -631,19 +624,19 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
                                                                                y,
                                                                                rp=103,
                                                                                isMulti=False)
-                print '[-px]',x,y,ev_neg_protons[1],ppsPixelNegEff,ppsPixelNegEffUnc
+                #print '[-px]',x,y,ev_neg_protons[1],ppsPixelNegEff,ppsPixelNegEffUnc
 
-            print '{:b} -> {:b}'.format(rawSigHyp,sighyp)
+            #print '{:b} -> {:b}'.format(rawSigHyp,sighyp)
 
             #assign the final list of reconstructed protons depending on how the sighyp is requested
             ev_pos_protons,ev_neg_protons,ppsEff,ppsEffUnc = ppsEffReader.getProjectedFinalState( ev_pos_protons, ppsMultiPosEff, ppsMultiPosEffUnc, ppsPixelPosEff, ppsPixelPosEffUnc,
                                                                                                   ev_neg_protons, ppsMultiNegEff, ppsMultiNegEffUnc, ppsPixelNegEff, ppsPixelNegEffUnc,
-                                                                                                  sighyp)
+                                                                                                  sighyp,evRun,evEra)
             
-            print '[+]',ev_pos_protons
-            print '[-]',ev_neg_protons
-            print 'Efficiency:',ppsEff,'+/-',ppsEffUnc
-            print '='*100
+            #print '[+]',ev_pos_protons
+            #print '[-]',ev_neg_protons
+            #print 'Efficiency:',ppsEff,'+/-',ppsEffUnc
+            #print '='*100
             #mixed_pos_protons={DIMUONS:ev_pos_protons,EMU:ev_pos_protons}
             #mixed_neg_protons={DIMUONS:ev_neg_protons,EMU:ev_neg_protons}
             mixed_pos_protons, mixed_neg_protons = evMixTool.mergeWithMixedEvent(ev_pos_protons, 
@@ -667,6 +660,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
         #kinematics using RP tracks
         pos_protons = ev_pos_protons if isData else mixed_pos_protons[DIMUONS]
         neg_protons = ev_neg_protons if isData else mixed_neg_protons[DIMUONS]        
+        _,pos_protons,neg_protons=doFinalCheck2017(pos_protons,neg_protons,evRun,evEra)
         proton_cat,csi_pos,csi_neg,ppSystem,mmassSystem = getDiProtonCategory(pos_protons,neg_protons,boson,ALLOWPIXMULT)
      
         #compare categorization with fully exclusive selection of pixels
@@ -678,7 +672,6 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
             ht.fill((0,1.),'catcount',['single'])
             if len(orig_mixed_pos_protons[DIMUONS][1]) in ALLOWPIXMULT and len(orig_mixed_neg_protons[DIMUONS][1]) in ALLOWPIXMULT:
                 ht.fill((1,1.),'catcount',['single'])
-
 
 
         #event categories
@@ -697,7 +690,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
         gen_csiPos = 0.
         gen_csiNeg = 0.
         if isSignal:
-            true_pos_protons,true_neg_protons = getTracksPerRomanPot(tree,evEra,tree.run if isData else -1,True)
+            true_pos_protons,true_neg_protons = getTracksPerRomanPot(tree,evEra,evRun if isData else -1,True)
             if len(true_pos_protons[0])>0 : gen_csiPos=true_pos_protons[0][0]
             if len(true_neg_protons[0])>0 : gen_csiNeg=true_neg_protons[0][0]
             
@@ -790,7 +783,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
                     ht.fill((mmass,pwgt), 'mmass',  pcats)
                     ht.fill((mmass,pwgt), 'mmass',  pcats, '%d'%proton_cat)
 
-            #signal characteristics in the absense of pileup
+            #signal characteristics in the absense of pileup and other effects
             if isSignal:
                 nopu_proton_cat,nopu_csi_pos,nopu_csi_neg,nopu_ppSystem,nopu_mmassSystem = getDiProtonCategory(ev_pos_protons,ev_neg_protons,boson,ALLOWPIXMULT)
                 if nopu_proton_cat>0:
@@ -866,7 +859,9 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
                     i_pos_protons_syst = copy.deepcopy(pos_protons)
                     i_neg_protons_syst = i_mixed_neg_protons[DIMUONS]                   
 
+            _,i_pos_protons,i_neg_protons=doFinalCheck2017(i_pos_protons,i_neg_protons,evRun,evEra)
             i_proton_cat,     i_csi_pos,     i_csi_neg,     i_ppSystem,     i_mmassSystem      = getDiProtonCategory(i_pos_protons,     i_neg_protons,      boson,ALLOWPIXMULT)
+            _,i_pos_protons_syst,i_neg_protons_syst=doFinalCheck2017(i_pos_protons_syst,i_neg_protons_syst,evRun,evEra)
             i_proton_cat_syst,i_csi_pos_syst,i_csi_neg_syst,i_ppSystem_syst,i_mmassSystem_syst = getDiProtonCategory(i_pos_protons_syst,i_neg_protons_syst, boson,ALLOWPIXMULT)
             
             #if itry>nMixTries:
@@ -882,7 +877,7 @@ def runExclusiveAnalysis(inFile,outFileName,runLumiList,effDir,ppsEffFile,maxEve
             evSummary.reset()
             evSummary.sighyp[0]=int(sighyp)
             if isData:
-                evSummary.run[0]=int(tree.run)
+                evSummary.run[0]=int(evRun)
                 evSummary.event[0]=long(tree.event)
                 evSummary.lumi[0]=int(tree.lumi)
 

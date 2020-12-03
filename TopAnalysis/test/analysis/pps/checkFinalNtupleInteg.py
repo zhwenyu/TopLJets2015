@@ -29,6 +29,9 @@ if len(sys.argv)>5:
 if len(sys.argv)>6:
     allowPix=sys.argv[6]
 stepDir='analysis' if step==1 else 'mixing'
+if step==0:
+    mix_file=''
+    allowPix=''
 
 toCheck=[]
 nTot=0

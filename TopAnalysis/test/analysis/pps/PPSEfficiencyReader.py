@@ -40,18 +40,30 @@ def vetoPixels2017(run,era):
 
     #veto 'C2', 'D', 'F2', and 'F3' run ranges available in 
     #https://twiki.cern.ch/twiki/bin/view/CMS/TaggedProtonsPixelEfficiencies
+
     if 'D' in era: return True
     if run<0:
         #use random number assignment to throw away events in MC
         subEra=np.random.uniform()
-        if 'C' in era and subEra<0.607 : return True
-        if 'F' in era and subEra<0.128 : return True
+        if 'C' in era and subEra>0.607 : return True
+        if 'F' in era and subEra>0.128 : return True
     else:
         if 'C' in era and run>=300806 and run<=302029 : return True
-        if 'F' in era and run>=305178 and run<=306462 : return True
+        if 'F' in era and run>=305178:                  return True
     
     return False
 
+
+def doFinalCheck2017(pos_protons,neg_protons,run,era):
+    hasVeto=False
+    if vetoPixels2017(run,era):
+        if len(pos_protons[0])==0 and len(pos_protons[1])>0:
+            pos_protons[1]=[]
+            hasVeto=True
+        if len(neg_protons[0])==0 and len(neg_protons[1])>0:
+            neg_protons[1]=[]
+            hasVeto=True
+    return hasVeto,pos_protons,neg_protons
 
 
 class PPSEfficiencyReader:
@@ -239,7 +251,7 @@ class PPSEfficiencyReader:
     def getProjectedFinalState(self,
                                pos_protons,multiPosEff,multiPosEffUnc,pixelPosEff,pixelPosEffUnc,
                                neg_protons,multiNegEff,multiNegEffUnc,pixelNegEff,pixelNegEffUnc,
-                               sighyp):
+                               sighyp,run,era):
 
         """
         it receives a candidate list of protons for the positive and negative side
@@ -350,8 +362,14 @@ class PPSEfficiencyReader:
         #finalize uncertainty on efficiency
         ppsWgtUnc= ppsWgt*ROOT.TMath.Sqrt(ppsWgtUnc)
 
+        
+        #final check, if only pixels remain ensure the run/era is not to be vetoed
+        hasVeto,pos_protons,neg_protons = doFinalCheck2017(pos_protons,neg_protons,run,era)
+        if hasVeto: ppsWgt,ppsWgtUnc=0.0,0.0
+
         #return final result
         return pos_protons,neg_protons,ppsWgt,ppsWgtUnc
+
 
 
 
