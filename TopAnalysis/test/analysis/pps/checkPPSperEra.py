@@ -7,12 +7,12 @@ from TopLJets2015.TopAnalysis.HistoTool import *
 from TopLJets2015.TopAnalysis.myProgressBar import *
 from TopLJets2015.TopAnalysis.Plot import *
 
-
 def buildControlPlots(args):
     
     """loop over data events and fill some basic control plots based on Z->mumu pT<10 GeV data"""
 
     tag,ch=args
+    evEra='2017'+tag
     baseDir='/eos/cms/store/cmst3/user/psilva/ExclusiveAna/final/2017_unblind_multi/Chunks/'
     tree=ROOT.TChain('tree')
     for f in os.listdir(baseDir):
@@ -47,10 +47,12 @@ def buildControlPlots(args):
         if abs(tree.l1id*tree.l2id)!=ch: continue
         if tree.bosonpt>10 : continue
 
+        evRun=tree.run
+
         #decode variables of interest
         boson=ROOT.TLorentzVector(0,0,0,0)
         boson.SetPtEtaPhiM(tree.bosonpt,tree.bosoneta,tree.bosonphi,tree.mboson)
-        tkPos,tkNeg=getTracksPerRomanPot(tree)
+        tkPos,tkNeg=getTracksPerRomanPot(tree,evEra,evRun)
         rue=tree.sumPVChPt/boson.Pt()-1
         dphimetz=abs(ROOT.TVector2.Phi_mpi_pi(tree.met_phi-boson.Phi()))
         xangle=tree.beamXangle
@@ -126,17 +128,17 @@ def drawPlots():
     perSide=product(perAlgo,['pos','posinc','neg','neginc'])
     
     colors=["#fdc086","#7fc97f","#DCDCDC",633,"#386cb0",9]
-    for d,tags in [#('n',        perSide),
-                   #('csi',       perSide),
-                   #('mpp',      perAlgo),
-                   ##('mmass',    perAlgo),
+    for d,tags in [('n',        perSide),
+                   ('csi',       perSide),
+                   ('mpp',      perAlgo),
+                   ('mmass',    perAlgo),
                    ('nvtx',     perAlgoPlusInc),
-                   #('xangle',   perAlgoPlusInc),
-                    ('ptll',     perAlgoPlusInc),
-                   #('nch',      perAlgoPlusInc),
-                   #('rue',      perAlgoPlusInc),
-                   #('met',      perAlgoPlusInc),
-                   #('dphimetz', perAlgoPlusInc),
+                   ('xangle',   perAlgoPlusInc),
+                   ('ptll',     perAlgoPlusInc),
+                   ('nch',      perAlgoPlusInc),
+                   ('rue',      perAlgoPlusInc),
+                   ('met',      perAlgoPlusInc),
+                   ('dphimetz', perAlgoPlusInc),
                    ]:
 
         hglobal=None
@@ -156,7 +158,6 @@ def drawPlots():
                     
                 #global inclusive histogram
                 if len(tag)==0:
-                    print key,eraKey
                     if hglobal is None:
                         hglobal=h.Clone(d+'_global')
                         hglobal.SetDirectory(0)
@@ -173,7 +174,6 @@ def drawPlots():
                 #per angle histos
                 if len(tag)==4 and tag[0]=='a':
                     xangle=tag[1:]
-                    print key,xangle
                     if not xangle in hperXangle:
                         hperXangle[xangle]=h.Clone(d+'_'+xangle)
                         hperXangle[xangle].SetDirectory(0)
@@ -241,6 +241,7 @@ def drawPlots():
         p.range=[1e-3,1]
         p.doPoissonErrorBars=False
         for i,xangle in enumerate(['120','130','140','150']):
+            if not xangle in hperXangle: continue
             hperXangle[xangle].Scale(1./hperXangle[xangle].Integral())
             spImpose=True if xangle=='' else False
             title='%s#murad'%xangle

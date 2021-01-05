@@ -14,18 +14,24 @@ ROOT.gStyle.SetOptTitle(0)
 ROOT.gStyle.SetPaintTextFormat("4.2f");
 
 
-for ppsEffFile in ['PreliminaryEfficiencies_October92019_1D2DMultiTrack.root', #'pixelEfficiencies.root'
+for ppsEffFile in ['pixelEfficiencies_radiation.root',
+                   'PreliminaryEfficiencies_October92019_1D2DMultiTrack.root'
                ]:
+
     ppsEffReader=PPSEfficiencyReader(os.path.join(baseDir,ppsEffFile))
+
+    det='px' if 'pixel' in ppsEffFile else 'st'
+    eras=['B','C','D','E','F']
+    if det=='px': eras=['B','C1','E','F1']
 
     for rp in [23,123]:
 
-        
-        p=Plot('raddameff_%d'%rp,com='13 TeV')
+
+        p=Plot('raddameff_%d_%s'%(rp,det),com='13 TeV')
         p.range=[0,1]
         p.xtit='#xi'
         p.ytit='Efficiency'
-        for i,era in enumerate(['B','C','D','E','F']):
+        for i,era in enumerate(eras):
             gr=ROOT.TGraphErrors()
             gr.SetMarkerStyle(20+i)
             gr.SetTitle('2017'+era)

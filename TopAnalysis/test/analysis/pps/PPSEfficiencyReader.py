@@ -264,113 +264,101 @@ class PPSEfficiencyReader:
         it returns the final list of protons in each side corresponding to the sighyp
         and the final combine efficiency and its uncertainty
         """
-           
-        ppsWgt,ppsWgtUnc=1.0,0.0
-        
+
         #check how many multi are required for the signal hypothesis
         nPixNegInSigHyp   = ((sighyp>>0) & 0x1)
         nMultiNegInSigHyp = ((sighyp>>1) & 0x1)
         nPixPosInSigHyp   = ((sighyp>>2) & 0x1)
         nMultiPosInSigHyp = ((sighyp>>3) & 0x1)
 
-        #impossible cases! a multiRP needs a pixel
-        if nMultiNegInSigHyp==1 and nPixNegInSigHyp==0:
-            ppsWgt, ppsWgtUnc = 0., 0.
-            pos_protons=[[],[],[]]
-            neg_protons=[[],[],[]]
-            return pos_protons,neg_protons,ppsWgt,ppsWgtUnc
-        if nMultiPosInSigHyp==1 and nPixPosInSigHyp==0:
-            ppsWgt, ppsWgtUnc = 0., 0.
-            pos_protons=[[],[],[]]
-            neg_protons=[[],[],[]]
-            return pos_protons,neg_protons,ppsWgt,ppsWgtUnc
-
         #check how many multi and pixels are available
-        nMultiPos = min(1,len(pos_protons[0]))
-        nPixPos   = min(1,len(pos_protons[1]))
-        nMultiNeg = min(1,len(neg_protons[0]))
         nPixNeg   = min(1,len(neg_protons[1]))
+        nMultiNeg = min(1,len(neg_protons[0]))
+        nPixPos   = min(1,len(pos_protons[1]))
+        nMultiPos = min(1,len(pos_protons[0]))
 
-        #number of pixels must match!
-        if nPixPosInSigHyp!=nPixPos:
-            ppsWgt, ppsWgtUnc = 0., 0.
-            pos_protons[1]=[]
-            return pos_protons,neg_protons,ppsWgt,ppsWgtUnc
-        if nPixNegInSigHyp!=nPixNeg :
-            ppsWgt, ppsWgtUnc = 0., 0.
-            neg_protons[1]=[]
-            return pos_protons,neg_protons,ppsWgt,ppsWgtUnc
+        #assign final proton multiplicities and compute efficiencies per arm
+        pos_ppsWgt,pos_ppsWgtUnc,pos_protons = self.assignFinalSignalHypothesisToArm(nMultiPosInSigHyp, nMultiPos, multiPosEff, multiPosEffUnc,
+                                                                                     nPixPosInSigHyp,   nPixPos,   pixelPosEff, pixelPosEffUnc,
+                                                                                     pos_protons)
 
-
-        #POSITIVE ARM
-        #cases where 1 multiRP proton is to be found on positive side
-        if nMultiPosInSigHyp==1:
-
-            #proton was already there, apply survival probability
-            if nMultiPos==1 and multiPosEff>0: 
-                ppsWgt        *= multiPosEff
-                ppsWgtUnc     += (multiPosEffUnc/multiPosEff)**2
-
-            elif nMultiPos==0:
-                ppsWgt, ppsWgtUnc = 0., 0.
-                pos_protons[0]=[]
-                pos_protons[2]=[]
-
-        #cases where no proton is to be found on the positive side
-        else:
-
-            pos_protons[0] = []
-            pos_protons[2] = []
-
-            ppsWgt    *= pixelPosEff
-            if pixelPosEff>0:
-                ppsWgtUnc += (pixelPosEffUnc/pixelPosEff)**2
-
-            #in case one multiRP had been reconstructed downweight by inefficiency probability
-            if nMultiPos==1 and multiPosEff<1 and multiPosEff>0: 
-                ppsWgt        *= (1-multiPosEff)
-                ppsWgtUnc     += (multiPosEffUnc/(1-multiPosEff))**2
-
-        #NEGATIVE ARM
-        #cases where 1 multiRP proton is to be found on negative side
-        if nMultiNegInSigHyp==1:
-
-            #proton was already there, apply survival probability
-            if nMultiNeg==1 and multiNegEff>0: 
-                ppsWgt        *= multiNegEff
-                ppsWgtUnc     += (multiNegEffUnc/multiNegEff)**2
-            elif nMultiNeg==0:
-                ppsWgt, ppsWgtUnc = 0., 0.
-                neg_protons[0]=[]
-                neg_protons[2]=[]
-
-        #cases where no proton is to be found on the negative side
-        else :
-
-            neg_protons[0]=[]
-            neg_protons[2]=[]
-
-            ppsWgt    *= pixelNegEff
-            if pixelNegEff>0:                
-                ppsWgtUnc += (pixelNegEffUnc/pixelNegEff)**2
-
-            #in case one had been reconstructed downeight by inefficiency probability
-            if nMultiNeg==1 and multiNegEff<1 and multiNegEff>0: 
-                ppsWgt        *= (1-multiNegEff)
-                ppsWgtUnc     += (multiNegEffUnc/(1-multiNegEff))**2
-
-        #finalize uncertainty on efficiency
-        ppsWgtUnc= ppsWgt*ROOT.TMath.Sqrt(ppsWgtUnc)
-
+        neg_ppsWgt,neg_ppsWgtUnc,neg_protons = self.assignFinalSignalHypothesisToArm(nMultiNegInSigHyp, nMultiNeg, multiNegEff, multiNegEffUnc,
+                                                                                     nPixNegInSigHyp,   nPixNeg,   pixelNegEff, pixelNegEffUnc,
+                                                                                     neg_protons)
         
-        #final check, if only pixels remain ensure the run/era is not to be vetoed
+        #global PPS efficienciy
+        ppsWgt    = pos_ppsWgt*neg_ppsWgt
+        ppsWgtUnc = ROOT.TMath.Sqrt(pos_ppsWgtUnc**2+neg_ppsWgtUnc**2)
+
+        #final check, if only pixels remain, ensure the run/era is not to be vetoed
         hasVeto,pos_protons,neg_protons = doFinalCheck2017(pos_protons,neg_protons,run,era)
-        if hasVeto: ppsWgt,ppsWgtUnc=0.0,0.0
+        if hasVeto: 
+            ppsWgt,ppsWgtUnc=0.0,0.0
 
         #return final result
         return pos_protons,neg_protons,ppsWgt,ppsWgtUnc
 
+    def assignFinalSignalHypothesisToArm(self,
+                                         nMultiInSigHyp, nMulti, multiEff, multiEffUnc,
+                                         nPixInSigHyp,   nPix,   pixelEff, pixelEffUnc,
+                                         protons):
 
+        """ applies the final signal reconstruction assignments and probabilities for one arm """
+
+        #kill protons in the list if needed
+        if nMultiInSigHyp==0:
+            protons[0]=[]
+            protons[2]=[]
+        if nPixInSigHyp==0:
+            protons[1]=[]
+
+        #compute arm weight (probability)
+        ppsArmWgt,ppsArmWgtUnc = 0.0, 0.0
+
+        #reconstructed |1 1>
+        if nMulti==1 and nPix==1:
+            
+            #target |1 1>
+            if nMultiInSigHyp==1 and nPixInSigHyp==1:
+                ppsArmWgt    = multiEff*pixelEff
+                ppsArmWgtUnc = (multiEffUnc/multiEff)**2 + (pixelEffUnc/pixelEff)**2
+
+            #target |0 1>
+            if nMultiInSigHyp==0 and nPixInSigHyp==1:
+                ppsArmWgt    = (1-multiEff)*pixelEff
+                ppsArmWgtUnc = (multiEffUnc/(1-multiEff))**2 + (pixelEffUnc/pixelEff)**2
+
+            #target |0 0>
+            if nMultiInSigHyp==0 and nPixInSigHyp==0:
+                ppsArmWgt    = (1-multiEff)*(1-pixelEff)
+                ppsArmWgtUnc = (multiEffUnc/(1-multiEff))**2 + (pixelEffUnc/(1-pixelEff))**2
+
+
+        #reconstructed |0 1>
+        if nMulti==0 and nPix==1:
+
+            #target |0 1>
+            if nMultiInSigHyp==0 and nPixInSigHyp==1:
+                ppsArmWgt    = pixelEff
+                ppsArmWgtUnc = (pixelEffUnc/pixelEff)**2
+
+            #target |0 0>
+            if nMultiInSigHyp==0 and nPixInSigHyp==0:
+                ppsArmWgt    = (1-pixelEff)
+                ppsArmWgtUnc = (pixelEffUnc/(1-pixelEff))**2
+
+        #reconstructed |0 0>
+        if nMulti==0 and nPix==0:
+
+            #target |0 0>
+            if nMultiInSigHyp==0 and nPixInSigHyp==0:
+                ppsArmWgt    = 1.
+                ppsArmWgtUnc = 0.
+
+        #finalize error
+        ppsArmWtUnc = ppsArmWgt*ROOT.TMath.Sqrt(ppsArmWgtUnc)
+
+        return ppsArmWgt,ppsArmWgtUnc,protons
 
 
 def main():

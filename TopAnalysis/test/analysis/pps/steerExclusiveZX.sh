@@ -232,7 +232,7 @@ case $WHAT in
         addOpt="--effDir test/analysis/pps"
         python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/runExclusiveAnalysis.py --step 1 --jobs 1 \
             --json ${mcjson},${datajson},${signaljson},${signalpostts2json} --RPout ${RPout_json} -o ${predout} \
-            --mix ${mix_file} -i ${predin} --only ${file} ${addOpt} --maxEvents 10000 \
+            --mix ${mix_file} -i ${predin} --only ${file} ${addOpt} --maxEvents 1000 \
             --allowPix ${ALLOWPIX};
 
         #predout=./mix1200
