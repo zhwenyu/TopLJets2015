@@ -21,7 +21,8 @@ def readLimitsFrom(url,getObs=False):
                 t.GetEntry(i)
                 vals.append(t.limit)
         fIn.Close()
-    except:
+    except Exception as e:
+        print(e,'@',url)
         vals=[999.]*5
 
     return [vals[2],vals[3]-vals[2],vals[1]-vals[2],vals[4]-vals[2],vals[0]-vals[2]]

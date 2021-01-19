@@ -48,11 +48,12 @@ def buildControlPlots(args):
         if tree.bosonpt>10 : continue
 
         evRun=tree.run
+        xangle=tree.beamXangle
 
         #decode variables of interest
         boson=ROOT.TLorentzVector(0,0,0,0)
         boson.SetPtEtaPhiM(tree.bosonpt,tree.bosoneta,tree.bosonphi,tree.mboson)
-        tkPos,tkNeg=getTracksPerRomanPot(tree,evEra,evRun)
+        tkPos,tkNeg=getTracksPerRomanPot(tree,evEra,evRun,xangle)
         rue=tree.sumPVChPt/boson.Pt()-1
         dphimetz=abs(ROOT.TVector2.Phi_mpi_pi(tree.met_phi-boson.Phi()))
         xangle=tree.beamXangle
@@ -129,7 +130,7 @@ def drawPlots():
     
     colors=["#fdc086","#7fc97f","#DCDCDC",633,"#386cb0",9]
     for d,tags in [('n',        perSide),
-                   ('csi',       perSide),
+                   ('csi',      perSide),
                    ('mpp',      perAlgo),
                    ('mmass',    perAlgo),
                    ('nvtx',     perAlgoPlusInc),

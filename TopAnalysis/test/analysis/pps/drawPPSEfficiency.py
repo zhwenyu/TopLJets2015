@@ -15,7 +15,7 @@ ROOT.gStyle.SetPaintTextFormat("4.2f");
 
 
 for ppsEffFile in ['pixelEfficiencies_radiation.root',
-                   'PreliminaryEfficiencies_October92019_1D2DMultiTrack.root'
+                   'PreliminaryEfficiencies_July132020_1D2DMultiTrack.root'
                ]:
 
     ppsEffReader=PPSEfficiencyReader(os.path.join(baseDir,ppsEffFile))

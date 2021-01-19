@@ -12,12 +12,16 @@ tag=sys.argv[1]
 inDir=sys.argv[2]
 files=[os.path.join(inDir,f) for f in os.listdir(inDir) if tag in f] 
 m=None
+nfiles=0
 for f in files:
 
     xangle=int(re.search('xangle_(\d+)',f).group(1))
 
     inF=ROOT.TFile.Open(f)
     im=inF.Get('sighyp_wgt')
+
+    nfiles+=1
+
     if m is None:
         m=im.Clone('migmatrix')
         m.Reset('ICE')
@@ -29,6 +33,8 @@ for f in files:
     m.Add(im,sf)
         
     inF.Close()
+
+print 'Using the results of',nfiles,'files'
 
 ROOT.gROOT.SetBatch(True)
 ROOT.gStyle.SetOptStat(0)

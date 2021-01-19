@@ -1,8 +1,22 @@
 import ROOT
 import sys
 import numpy as np
+import re
 
-def isPixelFiducial(era,sector,x,tx,y,ty):
+#see https://twiki.cern.ch/twiki/bin/view/CMS/TaggedProtonsFiducialCuts
+APPERTUREPARAMS={
+    'preTS2':{
+        45:ROOT.TF1("prets2_45","-(8.71198E-07*[xangle]-0.000134726)+((x<(0.000264704*[xangle]+0.081951))*-(4.32065E-05*[xangle]-0.0130746)+(x>=(0.000264704*[xangle]+0.081951))*-(0.000183472*[xangle]-0.0395241))*(x-(0.000264704*[xangle]+0.081951))"),
+        56:ROOT.TF1("prets2_56","3.43116E-05+((x<(0.000626936*[xangle]+0.061324))*0.00654394+(x>=(0.000626936*[xangle]+0.061324))*-(0.000145164*[xangle]-0.0272919))*(x-(0.000626936*[xangle]+0.061324))")
+    },
+    'postTS2':{
+        45:ROOT.TF1("postts2_45","-(8.92079E-07*[xangle]-0.000150214)+((x<(0.000278622*[xangle]+0.0964383))*-(3.9541e-05*[xangle]-0.0115104)+(x>=(0.000278622*[xangle]+0.0964383))*-(0.000108249*[xangle]-0.0249303))*(x-(0.000278622*[xangle]+0.0964383))"),
+        56:ROOT.TF1("postts2_56","4.56961E-05+((x<(0.00075625*[xangle]+0.0643361))*-(3.01107e-05*[xangle]-0.00985126)+(x>=(0.00075625*[xangle]+0.0643361))*-(8.95437e-05*[xangle]-0.0169474))*(x-(0.00075625*[xangle]+0.0643361))")
+    },
+}
+
+
+def isPixelFiducial(era,sector,x,tx,y,ty,xi,xangle):
 
     """
     check if the track is in the fiducial region
@@ -34,6 +48,12 @@ def isPixelFiducial(era,sector,x,tx,y,ty):
     if px_y0_rotated<xy_fid[2] : return False
     if px_y0_rotated>xy_fid[3] : return False
     
+    #apperture cuts
+    if not xi is None:
+        eraKey='preTS2' if era in ['2017B','2017C'] else 'postTS2'
+        APPERTUREPARAMS[eraKey][sector].SetParameter('xangle',xangle)
+        max_tx = (-1)*APPERTUREPARAMS[eraKey][sector].Eval(xi)
+        if tx > max_tx : return False
     return True
 
 def vetoPixels2017(run,era):
@@ -83,61 +103,86 @@ class PPSEfficiencyReader:
         for fIn in fList.split(','):
 
             if 'MultiTrack' in fIn:
+
+                #search only for 1D radiation damage efficiency vs proton xi
+                regexp=re.compile(r'h(\d*)(.*)_(2017\w*)_(\d*)_1D')
+
                 baseDir='Strips/%d'%year
                 fIn=ROOT.TFile.Open(ROOT.gSystem.ExpandPathName(fIn))
                 for k in fIn.Get(baseDir).GetListOfKeys():
                     for kk in fIn.Get(baseDir+'/'+k.GetName()).GetListOfKeys():
                         hname=kk.GetName()
-                        if '2D' in hname : continue
-                        self.allEffs[hname]=kk.ReadObj()
-                        self.allEffs[hname].SetDirectory(0)
+                        try:
+                            tokens=re.match(regexp,hname)
+                            rp=int(tokens.group(1))
+                            htype=tokens.group(2)
+                            era=tokens.group(3)
+                            xangle=int(tokens.group(4))
+                            key=('strip_raddam',rp,era,xangle,htype)
+                            self.allEffs[key]=kk.ReadObj()
+                            self.allEffs[key].SetDirectory(0)
+                        except:
+                            pass
                 fIn.Close()
                 
             elif 'pixelEfficiencies_multiRP' in fIn:
 
-                fIn=ROOT.TFile.Open(ROOT.gSystem.ExpandPathName(fIn))
-                for era in ['B','C1','C2','D','E','F1','F2','F3']:
-                    baseDir='Pixel/{0}/{0}{1}'.format(year,era)
-                    eraDir=fIn.Get(baseDir)
-                    try:
+                #search only for 2D interpot efficiencies
+                regexp=re.compile(r'h(\d*)_220_(2017\w*)_all_2D')
 
-                        for k in eraDir.GetListOfKeys():
-                            hname=k.GetName()
-                            if not '2D' in hname : continue
-                            self.allEffs[hname+"_ip"]=k.ReadObj()
-                            self.allEffs[hname+"_ip"].SetDirectory(0)
-                            self.allEffs[hname+"_ip"].SetName(hname+"_ip")
-                    except:
-                        print era,'not available as',baseDir
+                baseDir='Pixel/%d'%year
+                fIn=ROOT.TFile.Open(ROOT.gSystem.ExpandPathName(fIn))
+                for k in fIn.Get(baseDir).GetListOfKeys():
+                    for kk in fIn.Get(baseDir+'/'+k.GetName()).GetListOfKeys():
+                        hname=kk.GetName()
+                        try:
+                            tokens=re.match(regexp,hname)
+                            rp=int(tokens.group(1))                            
+                            era=tokens.group(2)
+                            key=('multi_ip',rp,era)
+                            self.allEffs[key]=kk.ReadObj()
+                            self.allEffs[key].SetDirectory(0)
+                        except:
+                            pass
 
                 #compose lumi averaged for eras C and F
-                for era,eras in [ ('C',[('C1',0.62),('C2',0.38)]),
-                                  ('F',[('F1',0.13),('F2',0.59),('F3',0.28)]) ]:
+                for era,sub_eras in [ ('C',[('C1',0.62),('C2',0.38)]),
+                                      ('F',[('F1',0.13),('F2',0.59),('F3',0.28)]) ]:
                     
                     for rp in [45,56]:
-                        hname='h{0}_220_2017{1}_all_2D_ip'
-                        firstSubEra=eras[0][0]
-                        inc_hname=hname.format(rp,era)
-                        self.allEffs[inc_hname]=self.allEffs[hname.format(rp,firstSubEra)].Clone(inc_hname)
-                        self.allEffs[inc_hname].Reset('ICE')
-                        self.allEffs[inc_hname].SetDirectory(0)
-
-                        for subEra,subEraWgt in eras:
-                            self.allEffs[inc_hname].Add(self.allEffs[hname.format(rp,subEra)],subEraWgt)
+                        key=('multi_ip',rp,'2017'+era)
+                        first_subera=sub_eras[0][0]
+                        first_key=('multi_ip',rp,'2017'+first_subera)
+                        self.allEffs[key]=self.allEffs[first_key].Clone('multi_ip_{}_2017{}'.format(rp,era))
+                        self.allEffs[key].Reset('ICE')
+                        self.allEffs[key].SetDirectory(0)
+                        for subera,suberaWgt in sub_eras:
+                            subera_key=('multi_ip',rp,'2017'+subera)
+                            self.allEffs[key].Add(self.allEffs[subera_key],suberaWgt)
                         
                 fIn.Close()
 
             elif 'pixelEfficiencies_radiation' in fIn:
 
-                #pixel efficiencies from radiation (not all eras available due to 3+3 readout)
+                #search only for 2D interpot efficiencies
+                regexp=re.compile(r'h(\d*)_220_(2017\w*)_all_2D')
 
+                baseDir='Pixel/%d'%year
                 fIn=ROOT.TFile.Open(ROOT.gSystem.ExpandPathName(fIn))
-                for era1, era2 in [('B','B'),('C','C1'),('E','E'),('F','F1')]:
-                    for sector in [45,56]:
-                        hname='h{0}_220_2017{1}_all_2D_pxrad'.format(sector,era)
-                        self.allEffs[hname]=fIn.Get('Pixel/2017/2017{0}/h{1}_220_2017{0}_all_2D'.format(era2,sector))
-                        self.allEffs[hname].SetDirectory(0)
-                        self.allEffs[hname].SetName(hname+"_pxrad")
+                for k in fIn.Get(baseDir).GetListOfKeys():
+                    for kk in fIn.Get(baseDir+'/'+k.GetName()).GetListOfKeys():
+                        hname=kk.GetName()
+                        try:
+                            tokens=re.match(regexp,hname)
+                            rp=int(tokens.group(1))                            
+                            era=tokens.group(2)
+                            if era[-1].isdigit(): era=era[:-1]
+                            key=('px_raddam',rp,era)
+                            self.allEffs[key]=kk.ReadObj()
+                            self.allEffs[key].SetDirectory(0)
+                        except:
+                            pass
+
                 fIn.Close()
         
         #pure 0 strip tracks eff from J. Kaspar
@@ -186,64 +231,60 @@ class PPSEfficiencyReader:
             }
 
         print '[PPSEfficiencyReader] retrieved %d histograms'%len(self.allEffs)
+        #print self.allEffs.keys()
 
-
-    def getPPSEfficiency(self,era,xangle,xi,x,y,rp,isMulti=True, applyMultiTrack=False, applyInterPotAndPure0=True):
+    def getPPSEfficiency(self,era,xangle,xi,x,y,rp,isMulti=True):
 
         sector=45 if rp<100 else 56
         eff,effUnc=1.0,0.0
+        #print era,xangle,xi,isMulti,'|',
         if isMulti:
-
-            if applyMultiTrack:
-                multiTrack=self.allEffs['h%dmultitrackeff_%s_avg_RP%d'%(sector,era,rp)]
-                ieff = multiTrack.GetBinContent(1)
-                eff *= ieff
-                if ieff>0:
-                    effUnc += (multiTrack.GetBinError(1)/ieff)**2
-
-            raddam=self.allEffs['h%d_%s_%d_1D'%(sector,era,xangle)]
-            raddamUnc=self.allEffs['h%derrors_%s_%d_1D'%(sector,era,xangle)]
+            
+            #strip radiation damage
+            key=('strip_raddam', sector, era, xangle, '')
+            key_unc=('strip_raddam', sector, era, xangle, 'errors')
+            raddam=self.allEffs[key]
+            raddamUnc=self.allEffs[key_unc]
             ibin=raddam.FindBin(xi)
             ieff = raddam.GetBinContent(ibin)
             eff *= ieff
             if ieff>0:
                 effUnc += (raddamUnc.GetBinError(ibin)/ieff)**2            
+            #print 'raddam=',ieff,
 
+            if x>-90 and y>-90 : #-99 is the default for n/a
+                key=('multi_ip',sector,era)
+                interPot=self.allEffs[key]
+                xbin=interPot.GetXaxis().FindBin(x)
+                ybin=interPot.GetYaxis().FindBin(y)
+                ieff = interPot.GetBinContent(xbin,ybin)
+                eff *=ieff
+                effUnc += 0.02**2 #the errors in the histograms seem flawed, assign 2% ad-hoc
+                #print 'interpot=',ieff,
 
-            if applyInterPotAndPure0:
+            #pure 0 efficiency
+            pure0Eff = self.pure0Probs[(sector,xangle,era)]
+            eff *= pure0Eff
+            if pure0Eff>0:
+                effUnc *= 0.02**2 #ad-hoc
+            #print 'pure0=',pure0Eff,
 
-                pure0Eff = self.pure0Probs[(sector,xangle,era)]
-                eff *= pure0Eff
-                if pure0Eff>0:
-                    effUnc *= 0.02**2 #ad-hoc
-
-                if x>-90 and y>-90 : #-99 is the default for n/a
-                    interPot=self.allEffs['h{0}_220_{1}_all_2D_ip'.format(sector,era)]
-                    xbin=interPot.GetXaxis().FindBin(x)
-                    ybin=interPot.GetYaxis().FindBin(y)
-                    ieff = interPot.GetBinContent(xbin,ybin)
-                    eff *=ieff
-                    #the errors in the histograms seem flawed, assign 2% ad-hoc
-                    effUnc += 0.02**2
-                    #if ieff>0:
-                    #    effUnc += (interPot.GetBinError(xbin,ybin)/ieff)**2
 
         else:
 
-            #check if era is available (if not do nothing)
-            hname='h{0}_220_{1}_all_2D_ip'.format(sector,era)       
-            if hname in self.allEffs and  x>-90 and y>-90 :
-                pxrad=self.allEffs[hname]
+            #check if era is available (if not do nothing as it will be vetoed later)    
+            key=('px_raddam',sector,era)
+            if key in self.allEffs and x>-90 and y>-90 :
+                pxrad=self.allEffs[key]
                 xbin=pxrad.GetXaxis().FindBin(x)
                 ybin=pxrad.GetYaxis().FindBin(y)
                 ieff=pxrad.GetBinContent(xbin,ybin)
                 eff *=ieff
-                #the error in the histogram seems flawed, assign 2% ad-hoc
-                effUnc += 0.02**2
-                #if ieff>0:
-                #    effUnc += (pxrad.GetBinError(xbin,ybin)/ieff)**2
+                effUnc += 0.02**2  #the errors in the histograms seem flawed, assign 2% ad-hoc
+                #print 'px raddam=',ieff,
             
         effUnc=eff*ROOT.TMath.Sqrt(effUnc)
+        #print ' ====> eff=',eff,'+/-',effUnc
 
         return eff,effUnc
 
@@ -320,32 +361,51 @@ class PPSEfficiencyReader:
             
             #target |1 1>
             if nMultiInSigHyp==1 and nPixInSigHyp==1:
-                ppsArmWgt    = multiEff*pixelEff
-                ppsArmWgtUnc = (multiEffUnc/multiEff)**2 + (pixelEffUnc/pixelEff)**2
+                if multiEff>0 and pixelEff>0:
+                    ppsArmWgt    = multiEff*pixelEff
+                    ppsArmWgtUnc = (multiEffUnc/multiEff)**2 + (pixelEffUnc/pixelEff)**2
+                else:
+                    ppsArmWgt    = 0.
+                    ppsArmWgtUnc = 0.
 
             #target |0 1>
             if nMultiInSigHyp==0 and nPixInSigHyp==1:
-                ppsArmWgt    = (1-multiEff)*pixelEff
-                ppsArmWgtUnc = (multiEffUnc/(1-multiEff))**2 + (pixelEffUnc/pixelEff)**2
+                if multiEff<1. and pixelEff>0.:
+                    ppsArmWgt    = (1-multiEff)*pixelEff
+                    ppsArmWgtUnc = (multiEffUnc/(1-multiEff))**2 + (pixelEffUnc/pixelEff)**2
+                else:
+                    ppsArmWgt    = 0.
+                    ppsArmWgtUnc = 0.
 
             #target |0 0>
             if nMultiInSigHyp==0 and nPixInSigHyp==0:
-                ppsArmWgt    = (1-multiEff)*(1-pixelEff)
-                ppsArmWgtUnc = (multiEffUnc/(1-multiEff))**2 + (pixelEffUnc/(1-pixelEff))**2
-
+                if multiEff<1. and pixelEff<1.:
+                    ppsArmWgt    = (1-multiEff)*(1-pixelEff)
+                    ppsArmWgtUnc = (multiEffUnc/(1-multiEff))**2 + (pixelEffUnc/(1-pixelEff))**2
+                else:
+                    ppsArmWgt    = 0.
+                    ppsArmWgtUnc = 0.
 
         #reconstructed |0 1>
         if nMulti==0 and nPix==1:
 
             #target |0 1>
             if nMultiInSigHyp==0 and nPixInSigHyp==1:
-                ppsArmWgt    = pixelEff
-                ppsArmWgtUnc = (pixelEffUnc/pixelEff)**2
+                if pixelEff>0.:            
+                    ppsArmWgt    = pixelEff
+                    ppsArmWgtUnc = (pixelEffUnc/pixelEff)**2
+                else:
+                    ppsArmWgt    = 0.
+                    ppsArmWgtUnc = 0.
 
             #target |0 0>
             if nMultiInSigHyp==0 and nPixInSigHyp==0:
-                ppsArmWgt    = (1-pixelEff)
-                ppsArmWgtUnc = (pixelEffUnc/(1-pixelEff))**2
+                if pixelEff<1.:
+                    ppsArmWgt    = (1-pixelEff)
+                    ppsArmWgtUnc = (pixelEffUnc/(1-pixelEff))**2
+                else:
+                    ppsArmWgt    = 0.
+                    ppsArmWgtUnc = 0.
 
         #reconstructed |0 0>
         if nMulti==0 and nPix==0:
@@ -363,14 +423,11 @@ class PPSEfficiencyReader:
 
 def main():
 
-    ppEffReader=PPSEfficiencyReader(fList='test/analysis/pps/PreliminaryEfficiencies_October92019_1D2DMultiTrack.root')
+    fList=['test/analysis/pps/PreliminaryEfficiencies_July132020_1D2DMultiTrack.root',
+           'test/analysis/pps/pixelEfficiencies_multiRP.root',
+           'test/analysis/pps/pixelEfficiencies_radiation.root']
 
-    #test for different conditions
-    for era in ['2017B','2017C','2017D','2017E','2017F']:
-        for xangle in [120,130,140,150]:
-            for rp in [3,103]:
-                eff=ppEffReader.getPPSEfficiency(era,xangle,0.035,rp)
-                print '%6s %d %3d %3.3f +/- %3.3f'%(era,xangle,rp,eff[0],eff[1])
+    ppEffReader=PPSEfficiencyReader(fList=','.join(fList))
 
 
 if __name__ == "__main__":

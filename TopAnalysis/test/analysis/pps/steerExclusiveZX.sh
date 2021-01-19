@@ -155,8 +155,9 @@ case $WHAT in
         baseCmd="${baseCmd} --genWeights ${genweights} --era era2017 -m ExclusiveZX::RunExclusiveZX --ch 0 --runSysts"
         baseCmd="${baseCmd} -o ${outdir} -q ${queue}"
         
-	python ${baseCmd} --farmappendix ZXData -i ${datadir} --only ${datajson};
-	python ${baseCmd} --farmappendix ZXMC   -i ${mcdir}   --only ${mcjson},${zxjson};
+	python ${baseCmd} --farmappendix ZXData2017BSinglePhoton -i ${datadir} --only 2017B_SinglePhoton;
+	#python ${baseCmd} --farmappendix ZXData -i ${datadir} --only ${datajson};
+	#python ${baseCmd} --farmappendix ZXMC   -i ${mcdir}   --only ${mcjson},${zxjson};
 	;;
 
     CHECKSELINTEG )
@@ -223,8 +224,8 @@ case $WHAT in
         
         predin=/eos/cms/${signaldir}
         file=Z_m_X_960_xangle_120_2017_preTS2.root
-        #predin=/eos/cms/${signaldir}
-        #file=Z_m_X_960_xangle_120_2017_postTS2.root
+        predin=/eos/cms/${signaldir}
+        file=Z_m_X_960_xangle_120_2017_postTS2.root
         
         mix_file=/eos/cms/${anadir}/mixing/
 
@@ -253,8 +254,7 @@ case $WHAT in
         echo "output       = ${condor_prep}.out" >> $condor_prep
         echo "error        = ${condor_prep}.err" >> $condor_prep
         echo "log          = ${condor_prep}.log" >> $condor_prep
-        #echo "requirements = (OpSysAndVer =?= \"SLCern6\")" >> $condor_prep
-        echo "+AccountingGroup = \"group_u_CMST3.all\"" >> $condor_prep
+        #echo "+AccountingGroup = \"group_u_CMST3.all\"" >> $condor_prep
         echo "+JobFlavour = \"tomorrow\"">> $condor_prep
         echo "request_cpus = 4" >> $condor_prep
         echo "arguments    = ${CMSSW_BASE} ${step} ${predout} ${predin} \$(chunk) ${mix_file} ${ALLOWPIX}" >> $condor_prep
@@ -397,7 +397,7 @@ case $WHAT in
             #fi
 
             python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py \
-                ${finalPlotOpts} --only ${plots} --strictOnly  -o plotter_${ch}.root  # --saveLog &
+                ${finalPlotOpts} --only ${plots} --strictOnly  -o plotter_${ch}.root --saveLog &
         done        
         ;;
 
@@ -435,6 +435,7 @@ case $WHAT in
                 alumi=`echo ${alumi}*0.329 | bc`
                 eralumi=`echo ${eralumi}*0.329 | bc`
             fi
+            echo $alumi $eralumi
 
 
 	    baseOpts="-i ${indirForPlots} --lumiSpecs a:${alumi} --procSF #gamma+jets:1.4 -l ${eralumi} --mcUnc ${lumiUnc} ${lumiSpecs} ${kFactorList}"
@@ -472,7 +473,7 @@ case $WHAT in
 
     RUNOPTIMSTATANA )
         
-        tagList=(expm1000 obs) #exp) # expm1000 obs)
+        tagList=(exp expm1000 obs)
         if [[ $ALLOWPIX == *"1,2"* ]]; then
             tagList=(exp)
         elif [[ $ALLOWPIX == *"-"* ]]; then
@@ -520,7 +521,6 @@ case $WHAT in
         python test/analysis/pps/prepareOptimScanCards.py -o ppvx_${githash}_obs        --unblind  -i /eos/cms/${anadir} --just 2,10,46;
         python test/analysis/pps/prepareOptimScanCards.py -o ppvx_${githash}_signed_obs --unblind  -i /eos/cms/${anadir}  --just 2,10,46 --signed;
         
-
         ;;
 
 
@@ -528,14 +528,13 @@ case $WHAT in
 
         indirForPlots=/eos/cms/${anadir}${pfix}
         index=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php
-        cp ${index} ${wwwdir}
-        
-
+        #cp ${index} ${wwwdir}
+       
         #preselection
-	mkdir -p ${wwwdir}/presel
-	cp /eos/cms/${outdir}/plots/*.{png,pdf,dat} ${wwwdir}/presel
-	cp /eos/cms/${outdir}/plots/sel/*.{png,pdf,dat} ${wwwdir}/presel
-	cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}/presel
+	#mkdir -p ${wwwdir}/presel
+	#cp /eos/cms/${outdir}/plots/*.{png,pdf,dat} ${wwwdir}/presel
+	#cp /eos/cms/${outdir}/plots/sel/*.{png,pdf,dat} ${wwwdir}/presel
+	#cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}/presel
         
         #analysis control plots
         mkdir -p ${wwwdir}/ana
@@ -550,7 +549,7 @@ case $WHAT in
             cp ${index} ${odir};
         done
 
-        #signal acceptance plots
+        #signal-related plots
         mkdir -p ${wwwdir}/signal
         cp ${indirForPlots}/plots_signal/*.{png,pdf,dat} ${wwwdir}/signal
         cp ${index} ${wwwdir}/signal
@@ -563,12 +562,6 @@ case $WHAT in
             cp ${pdir}/*.{png,pdf,dat} ${odir}
             cp ${index} ${odir}
         done
-
-        #local sensitivity
-        #mkdir -p ${wwwdir}/localsens
-        #cp /eos/cms/${anadir}/localsens/*.{png,pdf,dat} ${wwwdir}/localsens
-        #cp $CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/index.php ${wwwdir}/localsens
-
 
         ;;
 

@@ -145,9 +145,9 @@ def main(args):
 
             script.write('baseCmd=\"combine ${pfix}_workspace.root -m ${m} --X-rtd MINIMIZER_analytic\"\n')
             script.write('${baseCmd} -n PP${b}X.obs   -M AsymptoticLimits\n')
-            script.write('${baseCmd} -n PP${b}X       -M AsymptoticLimits -t -1 --expectSignal=0.1 --setParameters mu_outfidsig=0.5\n')
+            script.write('${baseCmd} -n PP${b}X       -M AsymptoticLimits --run blind\n')
             script.write('${baseCmd} -n PP${b}X.obs   -M Significance\n')
-            script.write('${baseCmd} -n PP${b}X       -M Significance     -t -1 --expectSignal=0.1 --setParameters mu_outfidsig=0.5\n')
+            script.write('${baseCmd} -n PP${b}X       -M Significance     -t -1 --expectSignal=0.5 --setParameters mu_outfidsig=0.5\n')
             script.write('if [ "${m}" = "1000" ]; then\n')
             script.write('  ${baseCmd} --cminDefaultMinimizerStrategy 0 -n PP${b}X.m${m} -M FitDiagnostics\n')
             script.write('fi\n')
