@@ -125,9 +125,9 @@ def getSelectedXsec(shapes):
                     nevts=-1
                 fIn.Close()
 
-                summary.append( [boson,m,xangle,nvtx,nevts,nevts/lumi] )
+                summary.append( [boson,m,xangle,nvtx,protonCat,nevts,nevts/lumi] )
         
-    return pd.DataFrame( np.array(summary), columns=['boson','mX','xangle','nvtx','n_sel','xsec_sel'])
+    return pd.DataFrame( np.array(summary), columns=['boson','mX','xangle','nvtx','protonCat','n_sel','xsec_sel'])
                 
 
                
