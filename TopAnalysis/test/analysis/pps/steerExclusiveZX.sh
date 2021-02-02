@@ -372,7 +372,7 @@ case $WHAT in
                 #proton-related plots
                 if [[ $evcat == *"rpin"* ]]; then
 
-                    for p in mmass_full mmass ppcount ypp mpp pzpp; do
+                    for p in mmass_full mmass ppcount ypp mpp pzpp met njets mpf zjb zj2b nch; do
                         plots="${p}_${evcat},${plots}"
                     done
 
@@ -591,15 +591,12 @@ case $WHAT in
         echo ""
         echo "[Additional figures]"
         echo "python test/analysis/pps/drawPPSEfficiency.py"
-        echo "python test/analysis/pps/showMigrationMatrix.py Z_m_X_1400_xangle_120_2017 /eos/cms/store/cmst3/user/psilva/ExclusiveAna/final/2017_unblind_multi/analysis_1exc/"
+        echo "for m in 800 1000 1400 1600; do python test/analysis/pps/showMigrationMatrix.py Z_m_X_${m} /eos/cms/store/cmst3/user/psilva/ExclusiveAna/final/2017_unblind_multi/analysis_1exc/; done"
         echo "python test/analysis/pps/checkPPSperEra.py fill"
         echo "python test/analysis/pps/checkPPSperEra.py plot"
-        echo "python test/analysis/pps/drawSignalPeak.py /eos/cms//store/cmst3/user/psilva/ExclusiveAna/final/2017_unblind_multi/analysis/Z_m_X_1000_xangle_{0}_2017_{1}.root"
+        echo "for m in 600 800 1000 1200 1400; do python test/analysis/pps/drawSignalPeak.py /eos/cms//store/cmst3/user/psilva/ExclusiveAna/final/2017_unblind_multi/analysis_1exc/Z_m_X_${m}_xangle_{0}_2017_{1}.root; done"
         echo "[Display fit shapes/uncertainties]"
-        echo "python test/analysis/pps/showUncs.py ppvx_${githash}${pfix}/optim_0"
-        echo "python test/analysis/pps/showUncs.py ppvx_${githash}${pfix}/optim_14"
-        echo "python test/analysis/pps/showUncs.py ppvx_${githash}${pfix}/optim_28"
-        echo "python test/analysis/pps/showUncs.py ppvx_${githash}${pfix}/optim_42"
+        echo "python test/analysis/pps/showUncs.py > statana_zmm_m1000_uncs.dat"
         echo "python test/analysis/pps/showFitShapes.py ppvx_${githash}${pfix}/optim_0 1000 z mm"
         echo "python test/analysis/pps/showFitShapes.py ppvx_${githash}${pfix}/optim_25 1000 z ms"
         echo "python test/analysis/pps/showFitShapes.py ppvx_${githash}${pfix}/optim_50 1000 z sm"
@@ -607,7 +604,9 @@ case $WHAT in
         echo "[Nuisances post-fit]"
         echo "Please use CMSSW_10_2_13 or higher"
         echo "python test/analysis/pps/doNuisanceReport.py ppvx_${githash}${pfix}/exp/inc_xangle_nvtx/fitDiagnosticsPPzX.m1000.root"
-        echo ""
+        echo "[Acceptance plots inputs]"
+        echo "python test/analysis/pps/computeFinalAEff.py test/analysis/pps/acc_summary.dat (takes ~1h to loop over original signal files)"
+        echo "python test/analysis/pps/computeFinalAEff.py test/analysis/pps/acc_summary.dat ppvx_2017_unblind_multi_1exc/exp/inc_xangle_nvtx/info.dat"
         ;;
     
 

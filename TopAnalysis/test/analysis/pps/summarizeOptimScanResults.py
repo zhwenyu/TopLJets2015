@@ -13,14 +13,17 @@ def readLimitsFrom(url,getObs=False):
     try:
         t=fIn.Get('limit')
         vals=[]
-        if getObs:
-            t.GetEntry(t.GetEntriesFast()-1)
-            vals=[t.limit]*5
-        else:
-            for i in range(5):
-                t.GetEntry(i)
+        for i in range(t.GetEntriesFast()):
+            t.GetEntry(i)
+            if getObs and t.quantileExpected<0:
+                vals=[t.limit]*5
+            elif not getObs and t.quantileExpected>0:
                 vals.append(t.limit)
         fIn.Close()
+
+        if len(vals)<5:
+            raise Exception('Could not recover 5 limit quantiles')
+
     except Exception as e:
         print(e,'@',url)
         vals=[999.]*5

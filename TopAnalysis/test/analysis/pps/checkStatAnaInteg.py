@@ -43,7 +43,6 @@ for d in optimList:
                     if size==0: 
                         raise Exception('no keys')
 
-
                 #check histograms are there
                 b='zee'
                 if ch==169:  b='zmm'
@@ -83,7 +82,10 @@ for d in optimList:
 
             except Exception as e:
                 
-                #corrupted file? submit all
+                #corrupted file? submit all and remove file
+
+                print('Removing corrupted file')
+                os.system('rm -v {}'.format(os.path.join(d,'shapes_%d_%s.root'%(ch,tag))))
 
                 allGoodToCombine=False
                 print 'Will submit',d,'for',ch,'tag=',tag,'error:',e
@@ -96,7 +98,8 @@ for d in optimList:
 
 
         if not allGoodToCombine:
-            continue
+            print 'Some masses missing ({}) but will still combine'.format(missMasses)
+            #continue
 
         if os.path.isfile(os.path.join(d,'shapes_{}.root'.format(ch))) and not _forceRecreateDataCards:
             print ch,'already combined for',d

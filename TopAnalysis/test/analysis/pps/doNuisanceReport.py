@@ -6,6 +6,8 @@ from collections import defaultdict
 import numpy as np
 from rounding import *
 
+_skipstat=True
+
 def doNuisanceReport(url,npergroup=20,poi='r'):
 
     """compare postfit nuisances"""
@@ -20,6 +22,11 @@ def doNuisanceReport(url,npergroup=20,poi='r'):
         var = iter.Next()
         while var :
             name=var.GetName()
+
+            if _skipstat and name.find('prop_bincat')==0:
+                var = iter.Next()
+                continue
+           
             name=name.replace('_bkgShapeSinglediffCat','Single diff. bkg cat')
             name=name.replace('_bkgShapeCat','Bkg. shape cat')
             name=name.replace('mu_outfidsig',"#mu(out-fid.)")
@@ -75,12 +82,13 @@ def doNuisanceReport(url,npergroup=20,poi='r'):
     ngroups=len(varNames)/npergroup
     if ngroups*npergroup<len(varNames) : 
         ngroups+=1
+
     for ig in range(ngroups):
 
         first=npergroup*ig
         last=min(npergroup*(ig+1),len(varNames))
         varList=varNames[first:last]
-
+        print(varList)
         #prepare a frame
         npars=len(varList)
 
