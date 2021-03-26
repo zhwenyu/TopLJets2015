@@ -34,7 +34,7 @@ void TOP17010::init(UInt_t scenario){
   cout << "[TOP17010::init] will analyze " << filename_ << endl;
   f_           = TFile::Open(filename_);
 
-  isSignal_    = filename_.Contains("_TT");
+  isSignal_    = (filename_.Contains("_TT") || filename_.Contains("_tt2l"));  // private sample
   triggerList_ = (TH1F *)f_->Get("analysis/triggerList");
 
   if(filename_.Contains("MC")) {
@@ -109,6 +109,7 @@ void TOP17010::init(UInt_t scenario){
   t_ = (TTree*)f_->Get("analysis/data");
   attachToMiniEventTree(t_,ev_,true);
   nentries_ = t_->GetEntriesFast();
+//  nentries_ = 1000; // debug-wz
   if (debug_) nentries_ = 10000; //restrict number of entries for testing
   t_->GetEntry(0);
 
@@ -402,13 +403,40 @@ void TOP17010::runAnalysis()
         //for signal top pt weights        
         if(isSignal_) {
           std::vector<float> genmt;
+
+	  int numtop(0), numantitop(0); // private fullsim
           for(Int_t igen=0; igen<ev_.ngtop; igen++)
             {
-              if(abs(ev_.gtop_id[igen])!=6) continue;
-              double topsf=TMath::Exp(0.156-0.00137*ev_.gtop_pt[igen]);
-              topptWgts[0] *= topsf;
-              topptWgts[1] *= 1./topsf;
-              genmt.push_back(ev_.gtop_m[igen]);
+//		if (abs(ev_.gtop_id[igen])==6) {
+//	            cout << " gtop_id " << ev_.gtop_id[igen] << " gtop_pt " << ev_.gtop_pt[igen] << endl;// debug -wz
+//		}
+//              if(abs(ev_.gtop_id[igen])!=6) continue;
+//              double topsf=TMath::Exp(0.156-0.00137*ev_.gtop_pt[igen]);
+//              topptWgts[0] *= topsf;
+//              topptWgts[1] *= 1./topsf;
+//              genmt.push_back(ev_.gtop_m[igen]);
+
+	     // for private fullsim files
+	     
+	      if(ev_.gtop_id[igen] == 6 && numtop < 1) {
+		if ( !(ev_.gtop_pt[igen] >0)) continue;
+		double topsf=TMath::Exp(0.156-0.00137*ev_.gtop_pt[igen]);
+                topptWgts[0] *= topsf;
+                topptWgts[1] *= 1./topsf;
+                genmt.push_back(ev_.gtop_m[igen]);
+		numtop += 1;
+		//cout << " 1st top gtop_pt " << ev_.gtop_pt[igen] << endl; // debug -wz
+	      }
+              if(ev_.gtop_id[igen] == -6 && numantitop < 1) {
+		if ( !(ev_.gtop_pt[igen] >0)) continue;
+                double topsf=TMath::Exp(0.156-0.00137*ev_.gtop_pt[igen]);
+                topptWgts[0] *= topsf;
+                topptWgts[1] *= 1./topsf;
+                genmt.push_back(ev_.gtop_m[igen]);
+                numantitop += 1;
+	  	//cout << " 1st tbar gtop_pt " << ev_.gtop_pt[igen] << endl; // debug -wz
+              }
+
             }
           if(genmt.size()==2 
              && rbwigner_ 
@@ -424,6 +452,8 @@ void TOP17010::runAnalysis()
             bwWgts[0]=widthWgt;
             ht_->fill("genmass",  genm, bwWgts,"rwgt");
           }          
+//	  cout << "topptwgts "<< topptWgts[0] << " and " <<topptWgts[1] << endl; // debug -wz
+
         }
 
         //b-fragmentation and semi-leptonic branching fractions
