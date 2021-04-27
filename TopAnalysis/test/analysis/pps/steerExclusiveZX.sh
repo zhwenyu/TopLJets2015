@@ -42,6 +42,7 @@ RPout_json=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/golden_noR
 
 mcdir=/store/cmst3/group/top/RunIIReReco/ab05162
 mcjson=${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/pps/mcsamples.json
+cleanmcjson=${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/pps/mcsamples_nowqcd.json
 zxjson=$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/pps/zx_samples.json
 genweights=genweights_ab05162.root
 
@@ -313,7 +314,7 @@ case $WHAT in
     BKGVALIDATION )       
 
         indirForPlots=/eos/cms/${anadir}${pfix}
-        ptlist=(0 50)        
+        ptlist=(0 40)        
         baseOpts="-i ${indirForPlots} --doPerEra --doPerPU --doPerAngle --doPerNch"
         for pt in ${ptlist[@]}; do 
             output=${indirForPlots}/bkg_ptll${pt}
@@ -346,14 +347,14 @@ case $WHAT in
         done
 
 	baseOpts="-i ${indirForPlots} --lumiSpecs ${lumiSpecs} --procSF #gamma+jets:1.4 -l ${lumi} --mcUnc ${lumiUnc} ${lumiSpecs} ${kFactorList}"
-        commonOpts="${baseOpts} -j ${mcjson},${datajson} --signalJson ${plot_signal_json} -O ${indirForPlots}/plots"
+        commonOpts="${baseOpts} -j ${cleanmcjson},${datajson} --signalJson ${plot_signal_json} -O ${indirForPlots}/plots"
 
         plots=xangle_arpinhpur,xangle_eerpinhpur,xangle_mmrpinhpur,xangle_emrpinhpur,xangle_arpinhpur
         python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py ${commonOpts} --only ${plots} --strictOnly --saveTeX --rebin 4;
 
         python $CMSSW_BASE/src/TopLJets2015/TopAnalysis/scripts/plotter.py ${commonOpts} --only catcount --saveTeX;
 
-        commonOpts="${baseOpts} -j ${mcjson},${datajson} --signalJson ${plot_signal_json} -O ${indirForPlots}/plots"
+        commonOpts="${baseOpts} -j ${cleanmcjson},${datajson} --signalJson ${plot_signal_json} -O ${indirForPlots}/plots"
         cats=(
             "" 
             "rpinhpur"      
@@ -555,7 +556,7 @@ case $WHAT in
         cp ${index} ${wwwdir}/signal
 
         #background closure plots
-        for pt in 0 50; do
+        for pt in 0 40; do
             pdir=${indirForPlots}/bkg_ptll${pt}
             odir=${wwwdir}/bkg/emu_ptll${pt}
             mkdir -p ${odir}

@@ -27,13 +27,13 @@ def showShapes(resultsDir,name,plotTitle,mass,boson,lumi,plotData=True,showPseud
             channel='#gamma'
         elif 'shapes_169' in f and boson=='z': 
             v='zmm'
-            channel='Z#rightarrow#mu#mu'
+            channel='Z(#mu#mu)'
         elif 'shapes_121' in f and boson=='z': 
             v='zee'
-            channel='Z#rightarrowee'
+            channel='Z(ee)'
         else:
             continue
-        
+        extraText=plotTitle.format(channel)
 
         bkgH       = fIn.Get('bkg_%s'%v)
         fidsigH    = fIn.Get('fidsig_%s_m%d'%(v,mass))
@@ -53,11 +53,11 @@ def showShapes(resultsDir,name,plotTitle,mass,boson,lumi,plotData=True,showPseud
             p.xtit='Missing mass [GeV]'
             p.ytit='Events'
             if fidsigH:
-                p.add(fidsigH,            title='fiducial #scale[0.8]{(%d)}'%mass, color=ROOT.TColor.GetColor('#fdc086'), isData=False, spImpose=False, isSyst=False)
+                p.add(fidsigH,            title='fiducial', color=ROOT.TColor.GetColor('#fdc086'), isData=False, spImpose=False, isSyst=False)
     
             if showAllBkgs:
                 if outfidsigH:
-                    p.add(outfidsigH,         title='non-fiducial',  color=ROOT.TColor.GetColor('#a6cee3'), isData=False, spImpose=False, isSyst=False)
+                    p.add(outfidsigH,     title='non-fiducial',  color=ROOT.TColor.GetColor('#a6cee3'), isData=False, spImpose=False, isSyst=False)
                 p.add(bkgH,               title='background',    color=ROOT.TColor.GetColor('#1f78b4'), isData=False, spImpose=False, isSyst=False)
             else:
                 allBkg=bkgH.Clone('allbkg')
@@ -70,13 +70,13 @@ def showShapes(resultsDir,name,plotTitle,mass,boson,lumi,plotData=True,showPseud
                 p.add(dataH, title=dtitle,   color=1, isData=True, spImpose=False, isSyst=False)
 
             if fidsigH:
-                p.add(fidsigH.Clone(),    title=plotTitle+'#scale[0.8]{(%d)}'%mass, color=ROOT.TColor.GetColor('#fdc086'), isData=False, spImpose=True,  isSyst=False)
+                p.add(fidsigH.Clone(),    title='fiducial', color=ROOT.TColor.GetColor('#fdc086'), isData=False, spImpose=True,  isSyst=False)
 
             if showAllBkgs and outfidsigH:
                 p.add(outfidsigH.Clone(), title='non-fiducial',  color=ROOT.TColor.GetColor('#a6cee3'), isData=False, spImpose=True,  isSyst=False)
             
             p.ratiorange=[0.68,1.32]
-            p.show('./',lumi*1000,extraText=plotTitle)
+            p.show('./',lumi*1000,extraText=extraText)
 
             
 
@@ -155,29 +155,30 @@ def main():
     optimPt=int(re.search('optim_(\d+)',sys.argv[1]).group(1))-1
     cuts=OPTIMLIST[optimPt][2].split(',')
 
-    lumi=37.5
+    lumi=37.193
     bosonName=sys.argv[3]
     bosonName=bosonName.replace('mm','#mu#mu')
     bosonName=bosonName.replace('z','Z')
     if bosonName=='g' : 
         bosonName='#gamma'
-        lumi=2.76
+        lumi=2.288
     plotpfix=sys.argv[4] if len(sys.argv)>4 else ''
+    mass=int(sys.argv[2])
 
-    title='pp%sX'%bosonName
+    title='pp#rightarrowpp{}X(%d)'%(mass)
     if plotpfix=='mm':
-        title+= ' (multi-multi)'
+        title+='\\multi-multi'
     if plotpfix=='ms':
-        title+= ' (multi-single)'
+        title+='\\multi-single'
     if plotpfix=='sm':
-        title+= ' (single-multi)'
+        title+='\\single-multi'
     if plotpfix=='ss':
-        title+= ' (single-single)'
+        title+='\\single-single'
 
     showShapes(resultsDir=sys.argv[1],
                name='shapes',
                plotTitle=title,
-               mass=int(sys.argv[2]),
+               mass=mass,
                boson=sys.argv[3],
                lumi=lumi,
                plotData=False,

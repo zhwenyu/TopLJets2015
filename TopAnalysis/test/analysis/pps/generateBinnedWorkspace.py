@@ -272,11 +272,12 @@ def writeDataCards(opt,shapesURL,tag,dataTag):
         dc.write('%s_bkgShapeEM          %8s %15s %15s %15s\n'%(cat,'shape',          '-',     '-',  '1')) #uncorrelate background shapes
         dc.write('%s_bkgShapeSingleDiff  %8s %15s %15s %15s\n'%(cat,'shape',          '-',     '-',  '1'))
 
-        #template statistics 
+        # template statistics - disabled for the moment following discussion in
+        # https://gitlab.cern.ch/cms-exo-mci/exo-datacards/-/merge_requests/63
         # threshold=effective entries (neff~1600 is approximately 2% relative unc.
         # but it's safer to leave it to 0 as this is a bump hunt and any stat effect matters...)
         # include signal=0 (1 would count also the signal entries but it has unknown normalization at start in a search)
-        dc.write('{0} autoMCStats 0.0 0\n'.format(cat))
+        #dc.write('{0} autoMCStats 0.0 0\n'.format(cat))
         
         #float the background normalization as well as the signal
         dc.write('mu_bkg_%s       rateParam * bkg       1\n'%cat)

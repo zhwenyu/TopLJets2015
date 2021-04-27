@@ -98,7 +98,7 @@ for d in optimList:
 
 
         if not allGoodToCombine:
-            print 'Some masses missing ({}) but will still combine'.format(missMasses)
+            print 'Some masses missing but will still combine'
             #continue
 
         if os.path.isfile(os.path.join(d,'shapes_{}.root'.format(ch))) and not _forceRecreateDataCards:
