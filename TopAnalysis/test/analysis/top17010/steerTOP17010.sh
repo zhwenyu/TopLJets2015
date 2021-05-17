@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ERA=2016
-STORAGE="/store/cmst3/group/top/TOP17010/final_method1a"
+STORAGE="/store/cmst3/group/top/TOP17010/final_3bin"
 FITTYPE="em_inc"
 COMBINE=`dirname ${CMSSW_BASE}`/CMSSW_10_3_0_pre4
 while getopts "o:y:s:f:c:" opt; do
@@ -53,8 +53,6 @@ fi
 gtList=(0.7 0.8 0.9 1.0 1.05 1.1 1.15 1.2 1.23 1.25 1.28 1.3 1.31 1.32 1.34 1.36 1.38 1.39 1.4 1.45 1.5 1.55 1.6 1.65 1.7 1.75 1.85 1.9 1.95 2.0 2.2 2.4 2.6 2.8 3.0 3.5 4.0 5.0)
 mtList=(169.5 170 170.5 170.7 170.9 171.1 171.3 171.5 171.7 171.9 172.1 172.2 172.3 172.5 172.7 172.9 173.1 173.3 173.5 174.0 174.5 175.0 175.5)
 
-gtList=(5.24)
-mtList=(172.5)
 
 dists=em_mlb,ee_mlb,mm_mlb
 dists=${dists},emhighpt_mlb,emhighpt1b_mlb,emhighpt2b_mlb
@@ -77,6 +75,7 @@ echo "Output directory is ${outdir}"
 
 json=test/analysis/top17010/samples_${ERA}.json
 syst_json=test/analysis/top17010/syst_samples_${ERA}.json
+width_json=test/analysis/top17010/width_samples_${ERA}.json  # for width scan
 wwwdir=/eos/user/p/psilva/www/top17010/
 
 RED='\e[31m'
@@ -97,9 +96,9 @@ case $WHAT in
         ;;
 
     TESTSEL )               
-        tag=MC13TeV_${ERA}_TTJets
-        input=/store/cmst3/group/top/psilva/4835852/TT_TuneCUETP8M2T4_PSweights_13TeV-powheg-pythia8/crab_MC13TeV_2016_TTJets_psweights/190907_151653/0000/MiniEvents_10.root
-        #input=${eosdir}/${tag}/Chunk_0_ext1.root
+        tag=MC13TeV_${ERA}_tt2l_1p31_psweights
+        #input=/store/cmst3/group/top/psilva/4835852/TT_TuneCUETP8M2T4_PSweights_13TeV-powheg-pythia8/crab_MC13TeV_2016_TTJets_psweights/190907_151653/0000/MiniEvents_10.root
+        input=${eosdir}/${tag}/Chunk_1_ext0.root
         output=${tag}.root 
 
         gidx=`python -c "print int((2-0.7)/0.01)"`
@@ -119,7 +118,7 @@ case $WHAT in
             -o ${outdir}/${githash} \
             --farmappendix ${githash} \
             -q ${queue} --genWeights genweights_${githash}.root \
-            --era era${ERA} -m  TOP17010::TOP17010 --ch 0 --runSysts;
+            --era era${ERA} -m TOP17010::TOP17010 --ch 0 --runSysts;
 	;;
 
     CHECKSELINTEG )
@@ -132,6 +131,8 @@ case $WHAT in
     
     SELSCAN )
         
+       # mtList=(172.5)
+	#gtList=(0.9 1.1 1.9)
         for g in ${gtList[@]}; do
             gidx=`python -c "print int(($g-0.7)/0.01)"`
             for m in ${mtList[@]}; do
@@ -139,7 +140,7 @@ case $WHAT in
                 flag=`python -c "print (($midx<<16)|($gidx))"`
 
 	        python scripts/runLocalAnalysis.py \
-	            -i ${eosdir} --only MC13TeV_${ERA}_TTJets_psweights --exactonly --flag ${flag} \
+		    -i ${eosdir} --only MC13TeV_${ERA}_tt2l_1p31_psweights --exactonly --flag ${flag} \
                     -o ${outdir}/${githash}/scenario${flag} \
                     --farmappendix ${githash}SCAN${flag} \
                     -q ${queue} --genWeights genweights_${githash}.root \
@@ -147,7 +148,7 @@ case $WHAT in
 
             done
 
-            sleep 15
+            sleep 1
         done
 	;;
     
@@ -170,13 +171,13 @@ case $WHAT in
             for m in ${mtList[@]}; do
                 midx=`python -c "print int(($m-169)/0.25)"`
                 flag=`python -c "print (($midx<<16)|($gidx))"`
-                ls -ltrh /eos/cms/${outdir}/${githash}/scenario${flag}/*.root;
+           #     ls -ltrh /eos/cms/${outdir}/${githash}/scenario${flag}/*.root;
 	        ./scripts/mergeOutputs.py /eos/cms/${outdir}/${githash}/scenario${flag};
             done
         done
 
         #local sensitivities
-        python test/analysis/top17010/estimateLocalSensitivity.py -i /eos/cms/${outdir}/${githash} -o /eos/cms/${outdir}/${githash}/localsens/
+#        python test/analysis/top17010/estimateLocalSensitivity.py -i /eos/cms/${outdir}/${githash} -o /eos/cms/${outdir}/${githash}/localsens/
 	;;
 
 
@@ -254,10 +255,12 @@ case $WHAT in
 
     DATACARD )
 
+	dists=emhighpt1b_mlb,emhighpt2b_mlb,emlowpt1b_mlb,emlowpt2b_mlb,eehighpt1b_mlb,eehighpt2b_mlb,eelowpt1b_mlb,eelowpt2b_mlb,mmhighpt1b_mlb,mmhighpt2b_mlb,mmlowpt1b_mlb,mmlowpt2b_mlb
+
         python test/analysis/top17010/submitPrepareDataCard.py --dists ${dists} \
             --systs ${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/top17010/systs_dict.json \
             --templ /eos/cms/${outdir}/${githash}/templates \
-            --nom MC13TeV_${ERA}_TTJets_psweights.root \
+            --nom MC13TeV_${ERA}_tt2l_1p31_psweights.root \
             -o /eos/cms/${outdir}/${githash}/datacards
         ;;
 
