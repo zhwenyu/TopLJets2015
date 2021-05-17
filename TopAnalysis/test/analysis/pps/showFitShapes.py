@@ -4,7 +4,7 @@ import re
 import os
 from TopLJets2015.TopAnalysis.Plot import *
 
-def showShapes(resultsDir,name,plotTitle,mass,boson,lumi,plotData=True,showPseudoData=True,showAllBkgs=True,plotpfix=''):
+def showShapes(resultsDir,name,plotTitle,mass,boson,lumi,plotData=True,showSysts=True,showAllBkgs=True,plotpfix=''):
 
     """ show the shapes corresponding to a given analysis """
 
@@ -15,7 +15,7 @@ def showShapes(resultsDir,name,plotTitle,mass,boson,lumi,plotData=True,showPseud
         if not '.root' in f : continue
         if len(f.split('_'))!=2: continue
         shapeFiles.append(os.path.join(resultsDir,f))
-    print shapeFiles
+    print shapeFiles,boson
 
     for f in shapeFiles:
 
@@ -40,33 +40,25 @@ def showShapes(resultsDir,name,plotTitle,mass,boson,lumi,plotData=True,showPseud
         outfidsigH = fIn.Get('outfidsig_%s_m%d'%(v,mass))
         dataH      = fIn.Get('data_obs_%s'%(v))
 
-        if showPseudoData:
-            dataH.Reset('ICE')
-            nexp=bkgH.Integral()
-            if fidsigH: nexp+=bkgH.Integral()
-            if outfidsigH: nexp+=outfidsigH.Integral()
-            for iev in range( ROOT.gRandom.Poisson( nexp ) ):
-                dataH.Fill( bkgH.GetRandom() )
-       
         try:
             p=Plot('%s_%s_inc%s'%(name,v,plotpfix))
             p.xtit='Missing mass [GeV]'
             p.ytit='Events'
-            if fidsigH:
+            if fidsigH and not plotData:
                 p.add(fidsigH,            title='fiducial', color=ROOT.TColor.GetColor('#fdc086'), isData=False, spImpose=False, isSyst=False)
     
             if showAllBkgs:
-                if outfidsigH:
+                if outfidsigH and not plotData:
                     p.add(outfidsigH,     title='non-fiducial',  color=ROOT.TColor.GetColor('#a6cee3'), isData=False, spImpose=False, isSyst=False)
-                p.add(bkgH,               title='background',    color=ROOT.TColor.GetColor('#1f78b4'), isData=False, spImpose=False, isSyst=False)
+                p.add(bkgH,               title='background',    color=ROOT.TColor.GetColor('#1f78b4'), isData=False, spImpose=False,    isSyst=False)
             else:
                 allBkg=bkgH.Clone('allbkg')
-                if outfidsigH : 
+                if outfidsigH and not plotData: 
                     allBkg.Add(outfidsigH)
                 p.add(allBkg,               title='background',    color=ROOT.TColor.GetColor('#1f78b4'), isData=False, spImpose=False, isSyst=False)
 
             if plotData:
-                dtitle='pseudo-data' if showPseudoData else 'Data'
+                dtitle='Data'
                 p.add(dataH, title=dtitle,   color=1, isData=True, spImpose=False, isSyst=False)
 
             if fidsigH:
@@ -78,7 +70,24 @@ def showShapes(resultsDir,name,plotTitle,mass,boson,lumi,plotData=True,showPseud
             p.ratiorange=[0.68,1.32]
             p.show('./',lumi*1000,extraText=extraText)
 
-            
+
+            if plotData:
+                dataSubH=dataH.Clone(dataH.GetName()+'_sub')
+                dataSubH.Add(bkgH,-1)
+                p=Plot('%s_%s_sub_inc%s'%(name,v,plotpfix))
+                p.frameMin=None
+                p.frameMax=None
+                p.doPoissonErrorBars=False
+                p.xtit='Missing mass [GeV]'
+                p.ytit='Events'
+                p.add(dataSubH, title='Data-bkg',   color=1, isData=True, spImpose=False, isSyst=False)
+                if fidsigH:
+                    p.add(fidsigH.Clone(),    title='fiducial', color=ROOT.TColor.GetColor('#fdc086'), isData=False, spImpose=True,  isSyst=False)
+                if outfidsigH:
+                    p.add(outfidsigH.Clone(), title='non-fiducial',  color=ROOT.TColor.GetColor('#a6cee3'), isData=False, spImpose=True,  isSyst=False)
+                p.show('./',lumi*1000,extraText=extraText,noRatio=True)
+
+            if not showSysts: continue
 
             #background systs
             p=Plot('%s_%s_inc_bkgunc%s'%(name,v,plotpfix))
@@ -151,38 +160,78 @@ def main():
     ROOT.gStyle.SetOptTitle(0)
     ROOT.gROOT.SetBatch(True)
 
-    from prepareOptimScanCards import OPTIMLIST
-    optimPt=int(re.search('optim_(\d+)',sys.argv[1]).group(1))-1
-    cuts=OPTIMLIST[optimPt][2].split(',')
+    import optparse
+    usage = 'usage: %prog [options]'
+    parser = optparse.OptionParser(usage)
+    parser.add_option('-b', '--boson',
+                      dest='boson',   
+                      default='zmm',
+                      help='boson name [default: %default]')
+    parser.add_option('-m', '--mass',
+                      dest='mass',   
+                      default=1000,
+                      type=int,
+                      help='mass [default: %default]')
+    parser.add_option('-t', '--tag',
+                      dest='tag', 
+                      default='',
+                      help='tag [default: %default]')
+    parser.add_option('-u', '--unblind',
+                      dest='unblind', 
+                      default=False,
+                      action='store_true',
+                      help='unblind [default: %default]')
+    parser.add_option('-s', '--showSysts',
+                      dest='showSysts', 
+                      default=False,
+                      action='store_true',
+                      help='showSysts [default: %default]')
+    (options, args) = parser.parse_args()
 
+    #from prepareOptimScanCards import OPTIMLIST
+    #optimPt=int(re.search('optim_(\d+)',args[0]).group(1))
+    #cuts=OPTIMLIST[optimPt][2].split(',')
+    
     lumi=37.193
-    bosonName=sys.argv[3]
+    bosonName=options.boson
     bosonName=bosonName.replace('mm','#mu#mu')
     bosonName=bosonName.replace('z','Z')
     if bosonName=='g' : 
         bosonName='#gamma'
         lumi=2.288
-    plotpfix=sys.argv[4] if len(sys.argv)>4 else ''
-    mass=int(sys.argv[2])
+    plotpfix=options.tag
+    mass=options.mass
 
-    title='pp#rightarrowpp{}X(%d)'%(mass)
-    if plotpfix=='mm':
+    plotData=options.unblind
+    if plotData:
+        plotpfix += 'obs'
+
+
+    title='pp#rightarrowpp%sX(%d)'%(bosonName,mass)
+    if 'mm' in plotpfix:
         title+='\\multi-multi'
-    if plotpfix=='ms':
+    if 'ms' in plotpfix:
         title+='\\multi-single'
-    if plotpfix=='sm':
+    if 'sm' in plotpfix:
         title+='\\single-multi'
-    if plotpfix=='ss':
+    if 'ss' in  plotpfix:
         title+='\\single-single'
+    if 'exc' in plotpfix: title += ', N_{{jets}}=0'
+    if '120' in plotpfix: title += ', 120 #murad'
+    if '130' in plotpfix: title += ', 130 #murad'
+    if '140' in plotpfix: title += ', 140 #murad'
+    if '150' in plotpfix: title += ', 150 #murad'
+    if 'lowpu' in plotpfix: title += ', N_{{vtx}}<20'
+    if 'highpu' in plotpfix: title += ', N_{{vtx}}>20'
 
-    showShapes(resultsDir=sys.argv[1],
+    showShapes(resultsDir=args[0],
                name='shapes',
                plotTitle=title,
                mass=mass,
-               boson=sys.argv[3],
+               boson=options.boson,
                lumi=lumi,
-               plotData=False,
-               showPseudoData=False,
+               plotData=plotData,
+               showSysts=options.showSysts,
                showAllBkgs=True, 
                plotpfix=plotpfix)
 

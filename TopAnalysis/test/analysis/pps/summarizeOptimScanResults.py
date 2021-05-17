@@ -67,7 +67,8 @@ def main():
             iresults  = [ana,ch,mass] 
             iresults += readLimitsFrom(f)
             iresults += readLimitsFrom(f,True)[0:1]
-            iresults += readSignificanceFrom(f.replace('X.obs.AsymptoticLimits','X.Significance'))
+            sigFile='X.Significance' if not '/obs/' in anaDir else 'X.obs.Significance'
+            iresults += readSignificanceFrom(f.replace('X.obs.AsymptoticLimits',sigFile))
             if iresults[3]<900:
                 results.append( iresults )
             else:
@@ -98,7 +99,7 @@ def main():
                 condor.write("mass = %s\n"%m)
                 condor.write("channel = %s\n"%ch)
                 condor.write("queue 1\n")
-        os.system('condor_submit %s/zxstatana_resub_run.sub'%baseDir)
+        #os.system('condor_submit %s/zxstatana_resub_run.sub'%baseDir)
 
 
 if __name__ == "__main__":
