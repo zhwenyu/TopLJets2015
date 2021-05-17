@@ -149,7 +149,9 @@ def main(args):
             script.write('${baseCmd} -n PP${b}X.obs   -M Significance\n')
             script.write('${baseCmd} -n PP${b}X       -M Significance     -t -1 --expectSignal=0.5 --setParameters mu_outfidsig=0.5\n')
             script.write('if [ "${m}" = "1000" ]; then\n')
-            script.write('  ${baseCmd} --cminDefaultMinimizerStrategy 0 -n PP${b}X.m${m} -M FitDiagnostics\n')
+            script.write('  ${baseCmd} --cminDefaultMinimizerStrategy 0 -n PP${b}X.m${m} -M FitDiagnostics --saveShapes --saveWithUncertainties\n')
+            script.write('  ${baseCmd} --cminDefaultMinimizerStrategy 0 -n PP${b}X.m${m}.gof -M GoodnessOfFit --algo=saturated\n')
+            script.write('  ${baseCmd} --cminDefaultMinimizerStrategy 0 -n PP${b}X.m${m}.gof.toy -M GoodnessOfFit --algo=saturated --toysFrequentist -t 500\n')
             script.write('fi\n')
             script.write('cd -\n')
 

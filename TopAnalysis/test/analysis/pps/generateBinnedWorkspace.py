@@ -103,8 +103,8 @@ def fillBackgroundTemplates(opt):
 
     for name,mixType,pfix in [('bkg_'+catName,                          1, ''),
                               ('bkg_%s_bkgShape'%catName,               1, 'syst'),
-                              ('bkg_%s_bkgShapeSingleDiffUp'%catName,   2, ''),
-                              ('bkg_%s_bkgShapeSingleDiffDown'%catName, 2, 'syst'), ]:
+                              ('bkg_%s_bkgShapeSingleDiffRawUp'%catName,   2, ''),
+                              ('bkg_%s_bkgShapeSingleDiffRawDown'%catName, 2, 'syst'), ]:
         templCuts=categCut.replace('csi1',pfix+'csi1')
         templCuts=templCuts.replace('csi2',pfix+'csi2')
         if pfix=='syst':
@@ -452,14 +452,21 @@ def datacardTask(args):
         sig.SetDirectory(fIn)
         sig.Write()
 
-    #smooth emu based alternatives
+    #smooth alternatives
     smooth_window=15
     for name in ['Up','Down']:
 
-        #background
+        #background (emu)
         hnom=fIn.Get('bkg_%s'%opt.chTag)
         newName='bkg_%s_bkgShapeEM%s'%(opt.chTag,name)
         h=fIn.Get('bkg_%s_bkgShape%s'%(opt.chTag,name)).Clone(newName)
+        h=smoothWithLowess(h,hnom,smooth_window)
+        h.SetDirectory(fIn)
+        h.Write()
+
+        #background (single diff)
+        newName='bkg_%s_bkgShapeSingleDiff%s'%(opt.chTag,name)
+        h=fIn.Get('bkg_%s_bkgShapeSingleDiffRaw%s'%(opt.chTag,name)).Clone(newName)
         h=smoothWithLowess(h,hnom,smooth_window)
         h.SetDirectory(fIn)
         h.Write()
