@@ -26,8 +26,12 @@ gr=ROOT.TGraph()
 for i in range(len(p)):
     gr.SetPoint(i,q[i],p[i])
 pval=gr.Eval(obs)
-if pval>0.5: pval=100-pval
+gr.Print('v')
+print(pval)
+if pval>50.: pval=100-pval
+print(pval)
 pval/=100.
+print(pval)
 
 title='pp#rightarrow ppZX'
 if 'PPzmmX' in url: title='pp#rightarrow ppZ#mu#muX'
@@ -35,7 +39,7 @@ if 'PPzeeX' in url: title='pp#rightarrow ppZeeX'
 if 'PPgX' in url  : title='pp#rightarrow pp#gammaX'
 
 
-htstat=ROOT.TH1F('tstat',';Test statistics;Toys',25,q[0],q[-1])
+htstat=ROOT.TH1F('tstat',';Test statistics;Toys',25,q[0]*0.95,q[-1]*1.05)
 for t in exp: htstat.Fill(t)
 
 ROOT.gStyle.SetOptStat(0)

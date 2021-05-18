@@ -1,12 +1,12 @@
 import pickle
 import ROOT
 
-with open('/eos/user/p/psilva/www/TOP-17-010/TT2l_npsysts.pck','rb') as fin:
+with open('test/analysis/top17010/TT2l_npsysts.pck','rb') as fin:
     np_weights=pickle.load(fin)
 
 
 cat=('2b','hpt')
-var_list=['CRerd','CRgmove','CRqcd']
+var_list=['CRerd','CRgmove','CRqcd','UEup','UEdown']
 
 print('Weights for cat=',cat)
 print('m(l,b)\t {}'.format('\t\t'.join(var_list)))

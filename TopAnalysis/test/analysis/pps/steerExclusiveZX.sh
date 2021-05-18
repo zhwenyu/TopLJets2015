@@ -474,7 +474,7 @@ case $WHAT in
 
     RUNOPTIMSTATANA )
         
-        tagList=(obs) #exp expm1000 obs)
+        tagList=(exp) #exp expm1000 obs)
         if [[ $ALLOWPIX == *"1,2"* ]]; then
             tagList=(exp)
         elif [[ $ALLOWPIX == *"-"* ]]; then
