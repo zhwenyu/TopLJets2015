@@ -6,11 +6,11 @@ with open('test/analysis/top17010/TT2l_npsysts.pck','rb') as fin:
 
 
 cat=('2b','hpt')
-var_list=['CRerd','CRgmove','CRqcd','UEup','UEdown']
+var_list=['CRerd','CRgmove','CRqcd','UEup','UEdown','hdampup','hdampdown']
 
 print('Weights for cat=',cat)
 print('m(l,b)\t {}'.format('\t\t'.join(var_list)))
-print('='*50)
+print('='*110)
 for mlb in [20,60,100,150,200]:
     line='{:d}\t'.format(mlb)
     for var in var_list:

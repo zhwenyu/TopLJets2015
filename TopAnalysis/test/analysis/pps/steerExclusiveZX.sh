@@ -474,7 +474,7 @@ case $WHAT in
 
     RUNOPTIMSTATANA )
         
-        tagList=(exp) #exp expm1000 obs)
+        tagList=(obs exp) #(exp expm1000 obs)
         if [[ $ALLOWPIX == *"1,2"* ]]; then
             tagList=(exp)
         elif [[ $ALLOWPIX == *"-"* ]]; then
@@ -488,7 +488,7 @@ case $WHAT in
     SUMMARIZEOPTIMSTATANA )
 
         d=ppvx_${githash}${pfix}
-        tagList=(obs) #exp expm1000 obs)
+        tagList=(obs exp) #(exp expm1000 obs)
         if [[ $ALLOWPIX == *"1,2"* ]]; then
             tagList=(exp)
         elif [[ $ALLOWPIX == *"-"* ]]; then

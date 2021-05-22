@@ -138,15 +138,13 @@ def plotShapes(categs_dict,categ_group,lumi):
         if icat==0:
             tex.SetTextAlign(ROOT.kHAlignLeft+ROOT.kVAlignCenter)
             tex.DrawLatex(0.14,0.96,'#bf{CMS}')            
-            tex.SetTextAlign(ROOT.kHAlignRight+ROOT.kVAlignCenter)
+            tex.SetTextAlign(ROOT.kHAlignLeft+ROOT.kVAlignCenter)
             tex.SetTextSize(0.06)
             for it,txt in enumerate(title):
-                tex.DrawLatex(0.93,0.86-it*0.06,'%s'%txt)
-            tex.DrawLatex(0.93,0.86-0.06*len(title),sub_categ_txt)
-        else:
-            tex.SetTextAlign(ROOT.kHAlignRight+ROOT.kVAlignCenter)
-            tex.SetTextSize(0.06)
-            tex.DrawLatex(0.93,0.86,sub_categ_txt)
+                tex.DrawLatex(0.16,0.86-it*0.06,'%s'%txt)
+        tex.SetTextAlign(ROOT.kHAlignRight+ROOT.kVAlignCenter)
+        tex.SetTextSize(0.06)
+        tex.DrawLatex(0.93,0.86,sub_categ_txt)
         if icat==3:
             tex.SetTextSize(0.07)
             tex.SetTextAlign(ROOT.kHAlignRight+ROOT.kVAlignCenter)
@@ -502,8 +500,8 @@ if __name__ == "__main__":
     ROOT.gStyle.SetOptTitle(0)
     ROOT.gStyle.SetOptStat(0)
     ROOT.gROOT.SetBatch(True)
-    #for cg in categ_groups:
-    #    plotShapes(categs_dict,categ_groups[cg],lumi)
+    for cg in categ_groups:
+        plotShapes(categs_dict,categ_groups[cg],lumi)
 
     for cg in merged_categ_groups:
         plotShapes( merged_categs_dict, merged_categ_groups[cg], lumi )

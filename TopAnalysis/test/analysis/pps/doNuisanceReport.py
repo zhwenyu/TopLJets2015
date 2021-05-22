@@ -5,17 +5,18 @@ from optparse import OptionParser
 from collections import defaultdict
 import numpy as np
 from rounding import *
+import optparse
 
 _skipstat=True
 
-def doNuisanceReport(url,npergroup=20,poi='r'):
+def doNuisanceReport(url_list,fit='s',npergroup=20,poi='r'):
 
     """compare postfit nuisances"""
 
-    fitResults=defaultdict(list)
+    fitResults=defaultdict(dict)
     poiResults={}
-    inF=ROOT.TFile.Open(url)
-    for fit in ['b','s']:
+    for title,url in url_list:
+        inF=ROOT.TFile.Open(url)
         fres=inF.Get('fit_%s'%fit)
         pars=fres.floatParsFinal()
         iter = pars.createIterator()
@@ -27,31 +28,38 @@ def doNuisanceReport(url,npergroup=20,poi='r'):
                 var = iter.Next()
                 continue
            
-            name=name.replace('_bkgShapeSinglediffCat','Single diff. bkg cat')
-            name=name.replace('_bkgShapeCat','Bkg. shape cat')
-            name=name.replace('mu_outfidsig',"#mu(out-fid.)")
-            name=name.replace('mu_bkgCat',"#mu(bkg) cat")
-            name=name.replace('sigPzModel','p_{z} signal')
-            name=name.replace('eff_','eff.')
-            name=name.replace('sigPPSEff','PPS eff.')
-            name=name.replace('sigCalib','Time dependency')
-            name=name.replace('sigShape','Signal shape')            
-            name=name.replace('prop_bincat','stat. cat')
-            name=name.replace('_bin',' b')
+            for t,rt in [
+                    ('_',' '),
+                    ('prop bincat','stat. cat'),
+                    ('zmm','#mu#mu'),
+                    ('zee','ee'),
+                    ('mm','#mu#mu'),
+                    ('bkgShapeEM','shape HP'),
+                    ('bkgShapeSingleDiff','shape SD'),
+                    ('mu bkg',' #lambda(bkg)'),
+                    ('Cat',' cat'),
+                    ('sigPPSEff','PPS eff.'),
+                    ('sigCalib','Time dependency'),
+                    ('sigShapeEM','Signal shape HP'),
+            ]:
+                name=name.replace(t,rt)
             
             val=var.getVal()
             ehi=var.getErrorHi()
             elo=var.getErrorLo()
             if name!=poi:
                 corr=fres.correlation(var.GetName(),poi) if fit=='s' else 0.
-                fitResults[fit].append((name,val,ehi,elo,corr))
+                fitResults[title][name]=(val,ehi,elo,corr)
             else:
-                poiResults[fit]=(val,ehi,elo)
+                poiResults[title]=(val,ehi,elo)
 
             var = iter.Next()
-        
-        #sort by constraining power
-        fitResults[fit] = sorted(fitResults[fit], key=lambda x: (x[2]*x[2]+x[3]*x[3]))
+
+    varNames=[]
+    for title,url in url_list:
+        varNames += [x for x in fitResults[title].keys()]
+    varNames=sorted(list(set(varNames)))
+    print('{} nuisances to be plotted',len(varNames))
 
     #show nuisances
     c=ROOT.TCanvas('c','c',500,500)
@@ -63,7 +71,7 @@ def doNuisanceReport(url,npergroup=20,poi='r'):
     c.cd()
     p1=ROOT.TPad('p1','p1',0,0,0.7,1)
     p1.SetLeftMargin(0.3)
-    p1.SetTopMargin(0.1)
+    p1.SetTopMargin(0.15)
     p1.SetRightMargin(0.03)
     p1.SetBottomMargin(1.0)
     p1.SetGridy(True)    
@@ -72,13 +80,12 @@ def doNuisanceReport(url,npergroup=20,poi='r'):
     c.cd()
     p2=ROOT.TPad('p2','p2',0.7,0,1.0,1)
     p2.SetLeftMargin(0.02)
-    p2.SetTopMargin(0.1)
+    p2.SetTopMargin(0.15)
     p2.SetRightMargin(0.03)
     p2.SetBottomMargin(1.0)
     p2.SetGridy(True)    
     p2.Draw()
     
-    varNames=[x[0] for x in fitResults['s']]
     ngroups=len(varNames)/npergroup
     if ngroups*npergroup<len(varNames) : 
         ngroups+=1
@@ -89,6 +96,7 @@ def doNuisanceReport(url,npergroup=20,poi='r'):
         last=min(npergroup*(ig+1),len(varNames))
         varList=varNames[first:last]
         print(varList)
+    
         #prepare a frame
         npars=len(varList)
 
@@ -96,7 +104,8 @@ def doNuisanceReport(url,npergroup=20,poi='r'):
         frame=ROOT.TH2F('frame',';#hat{#theta};Nuisance parameter',1,-3,3,npars,0,npars)
         frame.SetDirectory(0)
         for ybin in range(npars):
-            frame.GetYaxis().SetBinLabel(ybin+1,'#color[%d]{%s}'%((ybin%2)*10+1,varList[ybin]))
+            label=varList[ybin]
+            frame.GetYaxis().SetBinLabel(ybin+1,'#color[%d]{%s}'%((ybin%2)*10+1,label))
         frame.Draw()
         frame.GetXaxis().SetTitleSize(0.05)
         frame.GetYaxis().SetTitleSize(0.05)
@@ -141,7 +150,7 @@ def doNuisanceReport(url,npergroup=20,poi='r'):
         txt.SetTextColor(ROOT.kGray+3)
         txt.SetNDC(True)
         for delta,title in [(0.72,'-1#sigma'),(0.82,'+2#sigma'),(0.5,'-1#sigma'),(0.4,'-2#sigma')]:
-            txt.DrawLatex(delta,0.91,title)
+            txt.DrawLatex(delta,0.87,title)
 
         txt=ROOT.TLatex()
         txt.SetNDC(True)
@@ -152,51 +161,51 @@ def doNuisanceReport(url,npergroup=20,poi='r'):
         
         nuisGrs={}
         corrGrs={}
-        for iv in range(len(varList)):
+        markers=[20,24]
+        colors=[1,ROOT.kGreen+2]
+        for iv,v in enumerate(varList):
 
-            v=varList[iv]
-
-            for fit in fitResults:
+            for it,(title,url) in enumerate(url_list):
 
                 #start graph if needed
-                if not fit in nuisGrs:
-                    nuisGrs[fit]=ROOT.TGraphAsymmErrors()
-                    nuisGrs[fit].SetTitle(fit)
-                    marker=20 if fit=='s' else 24
-                    ci=1 if fit=='s' else ROOT.kGreen+2
-                    nuisGrs[fit].SetMarkerStyle(marker)
-                    nuisGrs[fit].SetMarkerColor(ci)
-                    nuisGrs[fit].SetLineColor(ci)
-                    nuisGrs[fit].SetLineWidth(2)
-                    nuisGrs[fit].SetFillStyle(0)
-                    corrGrs[fit]=nuisGrs[fit].Clone(fit+'corr')
-                    corrGrs[fit].SetFillStyle(1001)
-                    corrGrs[fit].SetFillColor(ROOT.kGray)
+                if not title in nuisGrs:
+                    nuisGrs[title]=ROOT.TGraphAsymmErrors()
+                    nuisGrs[title].SetTitle(title)
+                    marker=markers[it]
+                    ci=colors[it]
+                    nuisGrs[title].SetMarkerStyle(marker)
+                    nuisGrs[title].SetMarkerColor(ci)
+                    nuisGrs[title].SetLineColor(ci)
+                    nuisGrs[title].SetLineWidth(2)
+                    nuisGrs[title].SetFillStyle(0)
+                    corrGrs[title]=nuisGrs[title].Clone('corr_{}'.format(it))
+                    corrGrs[title].SetFillStyle(1001)
+                    corrGrs[title].SetFillColor(ci) #ROOT.kGray)
 
-                npts=nuisGrs[fit].GetN()
-                val,uncLo,uncHi,rho = [x[1:] for x in fitResults[fit] if x[0]==v][0]
+                npts=nuisGrs[title].GetN()
+
+                val,uncLo,uncHi,rho=-99,0,0,0
+                if v in fitResults[title]:
+                    val,uncLo,uncHi,rho =fitResults[title][v]
                 y0=frame.GetYaxis().GetBinCenter(iv+1)
                 dy=frame.GetYaxis().GetBinWidth(iv)
 
-                corrGrs[fit].SetPoint(npts,rho,y0)
-                corrGrs[fit].SetPointError(npts,rho,0,0.5*dy,0.5*dy)
+                corrGrs[title].SetPoint(npts,rho,y0+it*0.5)
+                corrGrs[title].SetPointError(npts,rho,0,0.25*dy,0.25*dy)
 
-                if fit=='s': y0-=0.1*dy
-                if fit=='b': y0+=0.1*dy
-                nuisGrs[fit].SetPoint(npts,val,y0)
-                nuisGrs[fit].SetPointError(npts,abs(uncLo),abs(uncHi),0.,0.)
+                y0=y0+0.2*it-0.1*dy
+                nuisGrs[title].SetPoint(npts,val,y0)
+                nuisGrs[title].SetPointError(npts,abs(uncLo),abs(uncHi),0.,0.)
 
-
-
-        leg=ROOT.TLegend(0.6,0.94,0.95,0.97)
+        leg=ROOT.TLegend(0.6,0.9,0.95,0.97)
         leg.SetTextFont(42)
-        leg.SetNColumns(2)
         leg.SetTextSize(0.035)
         leg.SetBorderSize(0)
         leg.SetFillStyle(0)
-        for fit in nuisGrs:
-            nuisGrs[fit].Draw('p')
-            leg.AddEntry(nuisGrs[fit],fit,'p')
+        leg.SetHeader('#bf{B-only fit}' if fit=='b' else '#bf{S+B fit}')
+        for title in nuisGrs:
+            nuisGrs[title].Draw('p')
+            leg.AddEntry(nuisGrs[title],title,'p')
         leg.Draw()
         p1.RedrawAxis()
 
@@ -211,16 +220,17 @@ def doNuisanceReport(url,npergroup=20,poi='r'):
         frame2.GetXaxis().SetLabelOffset(-0.04)
         frame2.GetXaxis().SetNdivisions(5)
         frame2.GetXaxis().CenterTitle()
-        corrGrs['s'].Draw('2')
-
+        for title in corrGrs:
+            corrGrs[title].Draw('2')
 
         txt2=ROOT.TLatex()
         txt2.SetNDC(True)
         txt2.SetTextFont(42)
         txt2.SetTextSize(0.09)
         txt2.SetTextAlign(22)
-        poiFit,uncUp,uncDown=poiResults['s']
-        txt2.DrawLatex(0.5,0.95,'#hat{%s} = %s'%(poi,toROOTRounded(poiFit,((uncUp,uncDown),))))
+        for it,title in enumerate(poiResults):
+            poiFit,uncUp,uncDown=poiResults[title]
+            txt2.DrawLatex(0.5,0.95-0.05*it,'#hat{%s}_{%s} = %s'%(poi,title,toROOTRounded(poiFit,((uncUp,uncDown),))))
 
         p2.RedrawAxis()
 
@@ -239,8 +249,15 @@ def main():
     ROOT.gStyle.SetOptTitle(0)
     ROOT.gStyle.SetOptStat(0)
 
-    url=sys.argv[1]    
-    doNuisanceReport(url=url)
+    parser = optparse.OptionParser(usage='usage: %prog [opts] ', version='%prog 1.0')
+    parser.add_option('--fit',    type='string'       , default='s'    , help='fit type to plot')
+    (opt, args) = parser.parse_args()
+
+    url_list=[]
+    for a in args:
+        url_list.append(a.split('='))
+
+    doNuisanceReport(url_list,opt.fit)
 
 
 if __name__ == "__main__":

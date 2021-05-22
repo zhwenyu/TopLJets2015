@@ -143,7 +143,7 @@ def main(args):
             script.write('text2workspace.py ${b}_datacard.dat -m ${m} -o ${pfix}_workspace.root --channel-masks\n')
             script.write('\n')
 
-            script.write('baseCmd=\"combine ${pfix}_workspace.root -m ${m} --X-rtd MINIMIZER_analytic\"\n')
+            script.write('baseCmd=\"combine ${pfix}_workspace.root -m ${m} --X-rtd MINIMIZER_analytic --setParameterRanges mu_outfidsig=0,10\"\n')
             script.write('${baseCmd} -n PP${b}X.obs   -M AsymptoticLimits\n')
             script.write('${baseCmd} -n PP${b}X       -M AsymptoticLimits --run blind\n')
             script.write('${baseCmd} -n PP${b}X.obs   -M Significance\n')
