@@ -34,7 +34,7 @@ void TOP17010::init(UInt_t scenario){
   cout << "[TOP17010::init] will analyze " << filename_ << endl;
   f_           = TFile::Open(filename_);
 
-  isSignal_    = (filename_.Contains("_TT") || filename_.Contains("_tt2l"));  // private sample
+  isSignal_    = filename_.Contains("_TT") || filename_.Contains("_tt2l");
   triggerList_ = (TH1F *)f_->Get("analysis/triggerList");
 
   if(filename_.Contains("MC")) {
@@ -57,6 +57,14 @@ void TOP17010::init(UInt_t scenario){
     if ( filename_.Contains("173v5") ){ origMt_=173.5; origGt_=1.34; targetMt_=origMt_; targetGt_=origGt_;}
     if ( filename_.Contains("175v5") ){ origMt_=175.5; origGt_=1.39; targetMt_=origMt_; targetGt_=origGt_;}
     if ( filename_.Contains("178v5") ){ origMt_=178.5; origGt_=1.48; targetMt_=origMt_; targetGt_=origGt_;}
+
+    if ( filename_.Contains("tt2l_0p90") ) { origMt_=172.5; origGt_=0.90; targetMt_=origMt_; targetGt_=origGt_;}
+    if ( filename_.Contains("tt2l_1p10") ) { origMt_=172.5; origGt_=1.10; targetMt_=origMt_; targetGt_=origGt_;}
+    if ( filename_.Contains("tt2l_1p31") ) { origMt_=172.5; origGt_=1.31; targetMt_=origMt_; targetGt_=origGt_;}
+    if ( filename_.Contains("tt2l_1p50") ) { origMt_=172.5; origGt_=1.50; targetMt_=origMt_; targetGt_=origGt_;}
+    if ( filename_.Contains("tt2l_2p10") ) { origMt_=172.5; origGt_=2.10; targetMt_=origMt_; targetGt_=origGt_;}
+    if ( filename_.Contains("tt2l_2p50") ) { origMt_=172.5; origGt_=2.50; targetMt_=origMt_; targetGt_=origGt_;}
+
     rbwigner_=getRBW(origMt_,origGt_);
     
     if(scenario!=0){
@@ -266,6 +274,7 @@ void TOP17010::runAnalysis()
   ///////////////////////
   // LOOP OVER EVENTS //
   /////////////////////
+  Int_t failedGenTopAnalysis(0);
   for (Int_t iev=0;iev<nentries_;iev++)
     {
       t_->GetEntry(iev);
@@ -417,7 +426,6 @@ void TOP17010::runAnalysis()
 //              genmt.push_back(ev_.gtop_m[igen]);
 
 	     // for private fullsim files
-	     
 	      if(ev_.gtop_id[igen] == 6 && numtop < 1) {
 		if ( !(ev_.gtop_pt[igen] >0)) continue;
 		double topsf=TMath::Exp(0.156-0.00137*ev_.gtop_pt[igen]);
@@ -438,12 +446,6 @@ void TOP17010::runAnalysis()
               }
 
             }
-          if(genmt.size()==2 
-             && rbwigner_ 
-             && targetGt_>0 && targetMt_>0 && origGt_>0  && origMt_>0
-             && (targetGt_!=origGt_ || targetMt_ != origMt_) ) {
-            widthWgt=weightBW(rbwigner_,genmt,targetGt_,targetMt_,origGt_,origMt_); 
-          }
 
           //control the re-weighted BW
           for(auto genm:genmt) {
@@ -690,6 +692,13 @@ void TOP17010::runAnalysis()
       selector_->setDebug(debug_);
     }
   
+  if(failedGenTopAnalysis){
+    cout << "****************************" << endl
+         << "I have failed to read correctly the MC truth regarding the ttbar system in "
+         << failedGenTopAnalysis << " events" << endl
+         << "****************************" << endl;
+  }
+
   //close input file
   f_->Close();
 

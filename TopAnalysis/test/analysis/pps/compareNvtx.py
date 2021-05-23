@@ -1,7 +1,7 @@
 import ROOT
 import os
 
-BASEDIR='/eos/cms/store/cmst3/user/psilva/ExclusiveAna/final/2017_unblind/Chunks/'
+BASEDIR='/eos/cms/store/cmst3/user/psilva/ExclusiveAna/final/ab05162/Chunks/'
 colors=[ROOT.kBlack,ROOT.kGreen+1,ROOT.kAzure+1,ROOT.kRed+1,ROOT.kGray]
 
 def cmsHeader():
@@ -29,10 +29,10 @@ def main():
         if '2017F' in f : era='F'
         treePerEra[era].AddFile(f)
 
+
     ROOT.gStyle.SetOptTitle(0)
     ROOT.gStyle.SetOptStat(0)
-    ROOT.gROOT.SetBatch(True)
-    
+    #ROOT.gROOT.SetBatch(True)
     c=ROOT.TCanvas('c','c',500,500)
     c.SetRightMargin(0.02)
     c.SetTopMargin(0.05)
@@ -56,7 +56,8 @@ def main():
 
         cmsHeader()
         c.Modified()
-        c.Update()        
+        c.Update()
+        raw_input(pname)
         for ext in ['png','pdf']:
             c.SaveAs(pname+'.'+ext)
 

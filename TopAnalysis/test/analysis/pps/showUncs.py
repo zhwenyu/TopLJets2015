@@ -2,81 +2,119 @@ import ROOT
 import os
 import sys
 import numpy as np
+import argparse
 
-systList=['bkgShapeUp',           'bkgShapeDown',
-          'sigShapeUp',           'sigShapeDown',
-          'bkgShapeSingleDiffUp', 'bkgShapeSingleDiffDown',
-          'sigShapeSingleDiffUp', 'sigShapeSingleDiffDown',
-          'sigCalibUp',           'sigCalibDown',
-          'sigPzModelUp',         'sigPzModelDown']
-          
+systList=[
+    'bkgShapeEMUp',         'bkgShapeEMDown',
+    'bkgShapeSingleDiffUp', 'bkgShapeSingleDiffDown',
+    'sigShapeEMUp',         'sigShapeEMDown',
+    'sigCalibUp',           'sigCalibDown',
+    'sigPzModelUp',         'sigPzModelDown',
+    'sigPPSEffUp',          'sigPPSEffDown',
+]
 
-def printUncertainties(flist,m=1200):
+
+tableList=[x.replace('Up','') for x in systList[::2]]
+tableList += ['mcstats']
+           
+
+def printUncertainties(flist,m=1000,bosonTag='zmm'):
 
     uncVals={}
 
     for f in flist:
         r=ROOT.TFile.Open(f)
-        baseH={}
+        baseH={'bkg'       : r.Get('bkg_{}'.format(bosonTag)),
+               'fidsig'    : r.Get('fidsig_{}_m{}'.format(bosonTag,m)),
+               'outfidsig' : r.Get('outfidsig_{}_m{}'.format(bosonTag,m))}
         for k in r.GetListOfKeys():
             kname=k.GetName()
-
+            
             if 'data' in kname : continue
             if 'sig_' in kname:
-                sigm=int(kname.split('_')[4].replace('m',''))
+                sigm=int(kname.split('_')[2].replace('m',''))
                 if m!=sigm : continue
-            
+                
             isSigFid    = True if 'fidsig' in kname and not 'outfidsig' in kname else False
-            isSigOutFid = True if 'outfidsig' in kname else False
+            isSigOutFid = True if 'outfidsig' in kname else False            
+            proc='bkg'
+            if isSigFid:
+                proc='fidsig'
+            elif isSigOutFid:
+                proc='outfidsig'
+            
+            if not proc in uncVals: uncVals[proc]={}
+            
             sname       = kname.split('_')[-1]
             if not sname in systList: sname='mcstats'
             sname=sname.replace('Up','')
             sname=sname.replace('Down','')
-
-            key=None
-            if isSigFid:
-                key=('sigfid',sname)
-            elif isSigOutFid:
-                key=('sigoutfid',sname)
-            else:
-                key=('bkg',sname)
-            if not key in uncVals:
-                uncVals[key]=[]
+            if not sname in uncVals[proc]: uncVals[proc][sname]=[]           
 
             h=k.ReadObj()
-            if key[1]=='mcstats':
-                baseH[key[0]]=k.ReadObj()
-            else:
-                h.Divide(baseH[key[0]])
+            if sname!='mcstats':
+                h.Divide(baseH[proc])
                 
+            vals=[]
             for xbin in xrange(1,h.GetNbinsX()):
                 val=h.GetBinContent(xbin)
-                if key[1]=='mcstats':
+                if sname=='mcstats':
                     if val<=0.01 :continue
-                    uncVals[key].append( h.GetBinError(xbin)/val )
+                    vals.append( h.GetBinError(xbin)/val )
                 else:
-                    uncVals[key].append( h.GetBinContent(xbin)-1 )
+                    vals.append( h.GetBinContent(xbin)-1 )
+            uncVals[proc][sname].append( vals )
 
         r.Close()
+    
+    for s in tableList:
+        print s,
+        for p in ['bkg','fidsig','outfidsig']:
+            if not s in uncVals[p]: continue
+            
+            for i in range(len(flist)):
 
-    for key in uncVals:
-        print '%30s %30s \t\t %3.3f~~{\small $]%3.3f,%3.3f[$}'%(key[0],
-                                                    key[1],
-                                                    np.percentile(uncVals[key], 50),
-                                                    np.percentile(uncVals[key], 10),
-                                                    np.percentile(uncVals[key], 90))
+                q=np.percentile( uncVals[p][s][i], [50,10,90])
+                
+                if i==0: print '\n\t & %10s'%p,
+                print ' & %3.3f~~$]%3.3f,%3.3f[$'%(q[0],q[1],q[2]),
+                print '\\\\',
+        print '\n'
 
-url=sys.argv[1]
+def main(args):
 
-f=[(x.split('_')[1],os.path.join(url,x)) for x in os.listdir(url) if 'shapes_' in x]
-chf={}
-for ch,r in f:
-    if not ch in chf: chf[ch]=[]
-    chf[ch].append(r)
+    parser = argparse.ArgumentParser(description='usage: %prog [options]')
+    parser.add_argument('-i', '--input',
+                        dest='input',   
+                        default='ppvx_2017_unblind_multi_1exc/',
+                        help='input directory with the optim directories [default: %default]')
+    parser.add_argument('--optimPoints',
+                        dest='optimPoints',
+                        default='0,25,50,75',
+                        help='optim points to compare [default %default]')
+    parser.add_argument('-b','--boson',
+                        dest='boson',
+                        default=169,
+                        help='boson code [default %default]')
+    parser.add_argument('-m',
+                        dest='massPoint',
+                        default=1000,
+                        help='signal point [%default]')
+    opt=parser.parse_args(args)
 
-for ch in chf:
 
-    print '-'*50
-    print ch
-    print '-'*50
-    printUncertainties(chf[ch])
+    flist=[]
+    for pt in opt.optimPoints.split(','):
+        optim_url='{}/optim_{}/shapes_{}.root'.format(opt.input,pt,opt.boson)
+        flist.append(optim_url)
+
+    bosonTag='zmm'
+    if opt.boson==121 : bosonTag='zee'
+    if opt.boson==22  : bosonTag='g'
+
+    printUncertainties(flist,opt.massPoint,bosonTag)
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
+

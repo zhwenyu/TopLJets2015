@@ -286,7 +286,8 @@ class Plot(object):
 
         for m in self.spimpose:
             if not m in self.mc:
-                leg.AddEntry(self.spimpose[m],self.spimpose[m].GetTitle(),'l')
+                legOpt='lp' if self.spimpose[m].GetMarkerSize()>0 else 'l'
+                leg.AddEntry(self.spimpose[m],self.spimpose[m].GetTitle(),legOpt)
                 nlegCols += 1
 
         if nlegCols ==0 :
@@ -392,17 +393,24 @@ class Plot(object):
 
         if frame.InheritsFrom('TH1'):
             maxY=frame.GetMaximum()
+            minY=frame.GetMinimum()
             if noStack:
                 if self.dataH:   maxY=self.dataH.GetMaximum()*1.25 
                 elif stack: maxY=stack.GetStack().At(0).GetMaximum()/1.25
                 else:       maxY=frame.GetMaximum()*1.25
             elif totalMC:
+                minY = totalMC.GetMinimum()
                 maxY = totalMC.GetMaximum()
                 if self.dataH:
                     if maxY<self.dataH.GetMaximum():
-                        maxY=self.dataH.GetMaximum()                                     
+                        maxY=self.dataH.GetMaximum()
+                    if minY>self.dataH.GetMinimum():
+                        minY=self.dataH.GetMinimum()
             frame.Draw()
-            frame.GetYaxis().SetRangeUser(self.frameMin,self.frameMax*maxY)
+            if self.frameMin is None and self.frameMax is None:
+                frame.GetYaxis().SetRangeUser(minY*1.5,maxY*1.5)
+            else:
+                frame.GetYaxis().SetRangeUser(self.frameMin,self.frameMax*maxY)
             frame.SetDirectory(0)
             frame.Reset('ICE')
 

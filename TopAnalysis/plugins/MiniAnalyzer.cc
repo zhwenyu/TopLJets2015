@@ -49,7 +49,7 @@
 #include "DataFormats/PatCandidates/interface/PackedGenParticle.h"
 #include "DataFormats/CTPPSReco/interface/CTPPSLocalTrackLite.h"
 #include "DataFormats/CTPPSDetId/interface/CTPPSDetId.h"
-#include "DataFormats/ProtonReco/interface/ProtonTrack.h"
+//#include "DataFormats/ProtonReco/interface/ProtonTrack.h"
 #include "JetMETCorrections/Modules/interface/JetResolution.h"
 #include "CondFormats/JetMETObjects/interface/JetResolutionObject.h"
 #include "CondFormats/JetMETObjects/interface/FactorizedJetCorrector.h"
@@ -150,7 +150,7 @@ private:
   edm::EDGetTokenT<pat::METCollection> metToken_;
   edm::EDGetTokenT<pat::PackedCandidateCollection> pfToken_;
   edm::EDGetTokenT<std::vector<CTPPSLocalTrackLite> > ctppsToken_;
-  edm::EDGetTokenT<std::vector<reco::ProtonTrack>> tokenRecoProtons_;
+  //  edm::EDGetTokenT<std::vector<reco::ProtonTrack>> tokenRecoProtons_;
 
   //
   edm::EDGetTokenT<bool> BadChCandFilterToken_,BadPFMuonFilterToken_;
@@ -218,7 +218,7 @@ MiniAnalyzer::MiniAnalyzer(const edm::ParameterSet& iConfig) :
   metToken_(consumes<pat::METCollection>(iConfig.getParameter<edm::InputTag>("mets"))),  
   pfToken_(consumes<pat::PackedCandidateCollection>(iConfig.getParameter<edm::InputTag>("pfCands"))),
   ctppsToken_(consumes<std::vector<CTPPSLocalTrackLite> >(iConfig.getParameter<edm::InputTag>("ctppsLocalTracks"))),
-  tokenRecoProtons_(consumes<std::vector<reco::ProtonTrack>>(iConfig.getParameter<InputTag>("tagRecoProtons"))),
+//tokenRecoProtons_(consumes<std::vector<reco::ProtonTrack>>(iConfig.getParameter<InputTag>("tagRecoProtons"))),
   BadChCandFilterToken_(consumes<bool>(iConfig.getParameter<edm::InputTag>("badChCandFilter"))),
   BadPFMuonFilterToken_(consumes<bool>(iConfig.getParameter<edm::InputTag>("badPFMuonFilter"))),
   saveTree_( iConfig.getParameter<bool>("saveTree") ),
@@ -587,6 +587,7 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
   //CTPPS local tracks (only present in data)
   //
   ev_.nfwdtrk=0;
+  /*
   edm::Handle<vector<reco::ProtonTrack>> recoProtons;
   iEvent.getByToken(tokenRecoProtons_, recoProtons);
   if(recoProtons.isValid()){
@@ -599,9 +600,9 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
           ev_.fwdtrk_pot[ev_.nfwdtrk]       = 100*detid.arm()+10*detid.station()+detid.rp();
           ev_.fwdtrk_chisqnorm[ev_.nfwdtrk] = proton.fitChiSq;
           ev_.fwdtrk_method[ev_.nfwdtrk]    = proton.method;
-          ev_.fwdtrk_ex[ev_.nfwdtrk]        = proton.direction().x();
-          ev_.fwdtrk_ey[ev_.nfwdtrk]        = proton.direction().y();
-          ev_.fwdtrk_ez[ev_.nfwdtrk]        = proton.direction().z();
+          ev_.fwdtrk_vx[ev_.nfwdtrk]        = proton.direction().x();
+          ev_.fwdtrk_vy[ev_.nfwdtrk]        = proton.direction().y();
+          ev_.fwdtrk_vz[ev_.nfwdtrk]        = proton.direction().z();
           ev_.fwdtrk_y[ev_.nfwdtrk]         = proton.vertex().y();
 
           float xi=proton.xi();
@@ -622,6 +623,7 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
     catch(...){
     }
   }
+  */
 
   //
   //LEPTON SELECTION 

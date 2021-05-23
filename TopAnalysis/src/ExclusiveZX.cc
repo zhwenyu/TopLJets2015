@@ -7,7 +7,6 @@
 #include <TLorentzVector.h>
 #include <TGraphAsymmErrors.h>
 
-//#include "TopLJets2015/TopAnalysis/interface/JSONWrapper.h"
 #include "TopLJets2015/TopAnalysis/interface/CommonTools.h"
 #include "TopLJets2015/TopAnalysis/interface/ExclusiveZX.h"
 #include "TopQuarkAnalysis/TopTools/interface/MEzCalculator.h"
@@ -45,7 +44,26 @@ void RunExclusiveZX(const TString in_fname,
   const char* CMSSW_BASE = getenv("CMSSW_BASE");
   const TString filename(in_fname);
   bool vetoPromptPhotons = filename.Contains("_QCDEM_") || filename.Contains("_TTJets");
-  
+  bool isFullSimSig   = filename.Contains("MC13TeV") &&  filename.Contains("fullsim") 
+    && ( filename.Contains("_Z_m_X") ||  filename.Contains("_Zee_m_X") ||  filename.Contains("_Zmm_m_X") ||  
+         filename.Contains("_gamma_m_X")
+         );
+  bool isSDZ(false);
+  if(filename.Contains("MC13TeV_SDZ")){
+    isFullSimSig |= true;
+    isSDZ=true;
+  }
+
+  int fullSimXangle(0);
+  if(isFullSimSig){
+    if(filename.Contains("_120")) fullSimXangle=120;
+    if(filename.Contains("_130")) fullSimXangle=130;
+    if(filename.Contains("_140")) fullSimXangle=140;
+    if(filename.Contains("_150")) fullSimXangle=150;
+  }
+
+
+
   //RP in json
   /*
   std::string RPoutFile(Form("%s/src/TopLJets2015/TopAnalysis/test/analysis/pps/golden_noRP.json", CMSSW_BASE));
@@ -99,17 +117,18 @@ void RunExclusiveZX(const TString in_fname,
   outT->Branch("hasATrigger",  &hasATrigger,  "hasATrigger/O");
   outT->Branch("hasZBTrigger", &hasZBTrigger, "hasZBTrigger/O");
 
-  bool isSS,isSF,isZ,isA;
+  bool isSS,isSF,isZ,isoffZ,isA;
   outT->Branch("isSS",&isSS,"isSS/O");
   outT->Branch("isSF",&isSF,"isSF/O");
   outT->Branch("isZ",&isZ,"isZ/O");
+  outT->Branch("isoffZ",&isoffZ,"isoffZ/O");
   outT->Branch("isA",&isA,"isA/O");
   
   ADDVAR(&ev.rho,"rho","F",outT);
   ADDVAR(&ev.met_pt,"met_pt","F",outT);
   ADDVAR(&ev.met_phi,"met_phi","F",outT);
   ADDVAR(&ev.met_sig,"met_sig","F",outT);
-  TString fvars[]={"evwgt", "evcat", 
+  TString fvars[]={"evwgt", "evcat","gen_pzpp", 
                    "l1pt", "l1eta", "l1phi", "ml1", "l1id", 
                    "l2pt", "l2eta", "l2phi", "ml2", "l2id", 
                    "bosonpt","bosoneta", "bosonphi", "mboson", 
@@ -143,16 +162,22 @@ void RunExclusiveZX(const TString in_fname,
   
   int nProtons;
   Bool_t isFarRPProton[50], isMultiRPProton[50], isPosRPProton[50];
-  Int_t protonRPid[50];
-  Float_t protonCsi[50];
-  if(filename.Contains("Data13TeV")){
+  Int_t protonRPid[50],protonRecoInfo[50];
+  Float_t protonCsi[50],protonX[50],protonY[50],protonTX[50],protonTY[50];
+  if(filename.Contains("Data13TeV") || isFullSimSig){
     outT->Branch("nProtons",       &nProtons,        "nProtons/I");
     outT->Branch("isFarRPProton",   isFarRPProton,   "isFarRPProton[nProtons]/O");
     outT->Branch("isPosRPProton",   isPosRPProton,   "isPosRPProton[nProtons]/O");
     outT->Branch("isMultiRPProton", isMultiRPProton, "isMultiRPProton[nProtons]/O");
     outT->Branch("protonRPid",      protonRPid,      "protonRPid[nProtons]/I");
+    outT->Branch("protonRecoInfo",  protonRecoInfo,  "protonRecoInfo[nProtons]/I");
     outT->Branch("protonCsi",       protonCsi,       "protonCsi[nProtons]/F");
+    outT->Branch("protonX",         protonX,         "protonX[nProtons]/F");
+    outT->Branch("protonY",         protonY,         "protonY[nProtons]/F");
+    outT->Branch("protonTX",        protonTX,        "protonTX[nProtons]/F");
+    outT->Branch("protonTY",        protonTY,        "protonTY[nProtons]/F");
   }
+
   outT->SetDirectory(fOut);
   
   //LUMINOSITY+PILEUP
@@ -314,7 +339,11 @@ void RunExclusiveZX(const TString in_fname,
       hasEMTrigger=(selector.hasTriggerBit("HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_v",    ev.triggerBits) ||
                     selector.hasTriggerBit("HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ_v", ev.triggerBits) ||
                     selector.hasTriggerBit("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_v",  ev.triggerBits) );
-      
+      if(isSDZ) {
+        hasMTrigger=true;
+        hasMMTrigger=true;
+        hasEETrigger=true;
+      }
       
       //trigger efficiency
       for(auto gen_cat : gen_cats) {
@@ -441,6 +470,7 @@ void RunExclusiveZX(const TString in_fname,
       if(!selector.isZeroBiasPD()) {
         if(selCode!=22 && mass<20) continue;
         isZ=( isSF && !isSS && fabs(mass-91)<10);
+        isoffZ=( isSF && !isSS && mass>101);
         isA=(selCode==22);
       }
       else {
@@ -516,6 +546,7 @@ void RunExclusiveZX(const TString in_fname,
       ////////////////////
       // EVENT WEIGHTS //
       //////////////////
+      float gen_pzpp(0.);
       if (!ev.isData) {
         
         // norm weight
@@ -541,6 +572,19 @@ void RunExclusiveZX(const TString in_fname,
         
         //update weight for plotter
         plotwgts[0]=wgt;
+
+        TLorentzVector pp(0,0,0,0);
+        for(int ig=0; ig<ev.ngtop; ig++) {
+          if(ev.g_id[ig]!=2212) continue;
+          float pz(ev.g_eta[ig]);
+          float m(0.938);
+          float en(sqrt(pz*pz+m*m));
+          TLorentzVector p4(0,0,0,0);
+          p4.SetPz(pz);
+          p4.SetE(en);
+          pp+=p4;
+        }
+        gen_pzpp=pp.Pz();
       }
 
       //baseline categories and additional stuff produced with the dilepton
@@ -621,6 +665,8 @@ void RunExclusiveZX(const TString in_fname,
       outVars["evwgt"]=plotwgts[0];
       if(selector.isZeroBiasPD()) outVars["evwgt"]=float(ev.zeroBiasPS);
       outVars["evcat"]=float(selCode);
+
+      outVars["gen_pzpp"]=gen_pzpp;
 
       outVars["l1pt"]=lm.Pt();
       outVars["l1eta"]=lm.Eta();
@@ -761,35 +807,40 @@ void RunExclusiveZX(const TString in_fname,
       //fill data with roman pot information
       nProtons=0;
       int multiIds(1),farIds(1);
-      if (ev.isData) {
-        
+      if (ev.isData) { 
         try{
           const edm::EventID ev_id( ev.run, ev.lumi, ev.event );        
           const ctpps::conditions_t lhc_cond = lhc_conds.get( ev_id );
           beamXangle = std::round(lhc_cond.crossing_angle);
           outVars["lumiDeliv"] = lhc_cond.luminosity.delivered;
           outVars["lumiReco"]  = lhc_cond.luminosity.recorded;
-          ht.fill("beamXangle", beamXangle, plotwgts, selCat);
-          
-          if(beamXangle==120 || beamXangle==130 || beamXangle==140 || beamXangle==150) {           
-
-            nProtons=ev.nfwdtrk;
-            for (int ift=0; ift<ev.nfwdtrk; ift++) {
-             
-              const unsigned short pot_raw_id = ev.fwdtrk_pot[ift];             
-              protonRPid[ift]      = pot_raw_id;
-              isFarRPProton[ift]   = (pot_raw_id==123 || pot_raw_id==23);
-              isMultiRPProton[ift] = (ev.fwdtrk_method[ift]==1);
-              isPosRPProton[ift]   = (pot_raw_id<100);
-              protonCsi[ift]       = ev.fwdtrk_xi[ift];   
-              if(isMultiRPProton[ift])    multiIds *= pot_raw_id;
-              else if(isFarRPProton[ift]) farIds *= pot_raw_id;
-            }                      
-          }
-          
         }catch(...){
         }
+      }          
+      else if(isFullSimSig){
+        beamXangle=fullSimXangle;
       }
+
+      //save RP info
+      if((ev.isData || isFullSimSig) && (beamXangle==120 || beamXangle==130 || beamXangle==140 || beamXangle==150)) {
+        ht.fill("beamXangle", beamXangle, plotwgts, selCat);
+        nProtons=ev.nfwdtrk;
+        for (int ift=0; ift<ev.nfwdtrk; ift++) {
+          const unsigned short pot_raw_id = ev.fwdtrk_pot[ift];             
+          protonRPid[ift]      = pot_raw_id;
+          isFarRPProton[ift]   = (pot_raw_id==123 || pot_raw_id==23);
+          isMultiRPProton[ift] = (ev.fwdtrk_method[ift]==1);
+          isPosRPProton[ift]   = (pot_raw_id<100);
+          protonCsi[ift]       = ev.fwdtrk_xi[ift];   
+          protonX[ift]         = ev.ppstrk_x[ift];   
+          protonY[ift]         = ev.ppstrk_y[ift];   
+          protonRecoInfo[ift]  = ev.ppstrk_recoInfo[ift];
+          protonTX[ift]        = ev.fwdtrk_thetax[ift];   
+          protonTY[ift]        = ev.fwdtrk_thetay[ift];   
+          if(isMultiRPProton[ift])    multiIds *= pot_raw_id;
+          else if(isFarRPProton[ift]) farIds   *= pot_raw_id;
+        }                      
+      }      
 
       //training category
       float trainCatVal=-1;
