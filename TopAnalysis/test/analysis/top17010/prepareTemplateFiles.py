@@ -8,6 +8,37 @@ from collections import OrderedDict
 from TopLJets2015.TopAnalysis.Plot import fixExtremities
 from TopLJets2015.TopAnalysis.gaussianFilterSmoother import GFSmoother
 
+def smoothWithLowess(h,href,nbins):
+
+    """
+    applies a smoothing of the shape with the LOWESS algorithm
+    the smoothing is applied on the ratio
+    """
+
+    frac=float(nbins)/float(h.GetNbinsX())
+
+    #convert to a graph
+    hratio=h.Clone('ratio')
+    hratio.Divide(href)
+    gr=ROOT.TGraph()
+    for xbin in range(1,hratio.GetNbinsX()+1):
+        gr.SetPoint(xbin-1,hratio.GetXaxis().GetBinCenter(xbin),hratio.GetBinContent(xbin))
+    hratio.Delete()
+
+    #apply lowess
+    gs = ROOT.TGraphSmooth("normal")
+    gr = gs.SmoothLowess(gr,"",frac)
+
+    #substitute with smoothed values (scaling back with the ref histo)
+    for xbin in range(1,h.GetNbinsX()+1):
+        newRatioVal=gr.Eval( h.GetXaxis().GetBinCenter(xbin) )
+        hrefVal=href.GetBinContent(xbin)
+        h.SetBinContent(xbin,
+                        newRatioVal*hrefVal)
+
+    return h
+
+
 def showVariation(h,varList,warns,output):
     
     """a plot with the relative variations"""
@@ -47,7 +78,10 @@ def showVariation(h,varList,warns,output):
         ratios[-1].SetLineWidth(2)
         ratios[-1].SetLineStyle(linestyles[int(i/len(colors))])
         ratios[-1].SetLineColor(colors[i%len(colors)])
-        ratios[-1].Draw('histsame')
+        if 'bbb' in output:
+            ratios[-1].Draw('histsame')
+	else:
+	    ratios[-1].Draw('e1histsame')  # -wz
         leg.AddEntry(ratios[-1],ratios[-1].GetTitle(),'l')
         
     leg.Draw()
@@ -169,6 +203,7 @@ def getBinByBinUncertaintiesForSysts(h,hvars,method=2):
         #assign an uncertainty based on the max. found
         unc=0
         for ihvar in hvars:
+            if 'CR' in ihvar.GetName() and 'Down' in ihvar.GetName(): continue # remove mirrored templates
             ival = ihvar.GetBinContent(xbin+1)
             if ival==0: continue
             relUnc = ihvar.GetBinError(xbin+1)/ival
@@ -300,11 +335,11 @@ def getUncertaintiesFromProjection(opt,fIn,d,proc_systs,hnom):
             histos.append(varDn)
 
         #show plot with warnings found
-        if opt.debug: 
-            showVariation(hnom,
-                          [varUp,varDn],
-                          checkReport.split('\n'),
-                          os.path.join(opt.output,'{0}_{1}_{2}'.format(hnom.GetTitle(),d,s)))
+#        if opt.debug: 
+#            showVariation(hnom,
+#                          [varUp,varDn],
+#                          checkReport.split('\n'),
+#                          os.path.join(opt.output,'{0}_{1}_{2}'.format(hnom.GetTitle(),d,s)))
 
     #print errors/warnings found
     if len(errors) or len(warns):
@@ -315,6 +350,135 @@ def getUncertaintiesFromProjection(opt,fIn,d,proc_systs,hnom):
         for w in warns  : print w
         print '-'*50
             
+    return histos,normVars
+
+def applyIncVariation(hnom, h_inc, hnom_inc):
+    
+    tfH = h_inc.Clone('tf')
+    tfH.Divide(hnom_inc)
+    tfH.SetDirectory(0)
+    h = hnom.Clone('tmp')
+    h.SetDirectory(0)
+
+    for xbin in range(hnom.GetNbinsX()):
+#	print hnom.GetBinContent(xbin+1), h_inc.GetBinContent(xbin+1), hnom_inc.GetBinContent(xbin+1)
+   	h.SetBinContent(xbin+1, hnom.GetBinContent(xbin+1)*tfH.GetBinContent(xbin+1))
+
+    return h
+
+def getDirectUncertainties_signal(opt,fIn,d,proc_systs,hnom,hnom_inc):
+
+    """ reads directly from the histograms and eventually normalizes, mirrors or takes an envelope """
+
+    histos=[]
+    errors=[]
+    warns=[]
+    normVars=[]
+
+    d_inc = 'mlb'
+#    if 'ee' in d:
+#        d_inc = 'ee_mlb'
+#    elif 'em' in d:
+#        d_inc = 'em_mlb'
+#    elif 'mm' in d:
+#        d_inc = 'mm_mlb'
+
+    #get systematics
+    fIn.cd()
+    for s in proc_systs['dir']:
+
+        slist,norm,doEnvelope,smooth=proc_systs['dir'][s]
+
+        varH=[]
+        try:
+            for s_i in slist:
+
+                h=None
+		h_inc = None
+                #check if there is some placeholder to substitute
+                if '{0}' in s_i:
+                    hname=s_i.format(d_inc)
+                    hname='{0}/{0}_{1}'.format(hname,proc_systs["title"])
+                    h_inc = fIn.Get(hname)
+
+                #otherwise look in the sub-directories
+                elif d_inc == 'mlb':
+		    h_inc1, h_inc2 = None, None
+                    for k in fIn.GetListOfKeys():
+                        if k.GetName() == 'ee_mlb': 
+                          for kk in k.ReadObj().GetListOfKeys():
+                            if kk.GetName()!= 'ee_mlb'+'_'+ s_i: continue
+                            h_inc = kk.ReadObj()
+                            break
+		        elif k.GetName() == 'em_mlb':
+                          for kk in k.ReadObj().GetListOfKeys():
+                            if kk.GetName()!= 'em_mlb'+'_'+ s_i: continue
+                            h_inc1 = kk.ReadObj()
+                            break
+                        elif k.GetName() == 'mm_mlb':
+                          for kk in k.ReadObj().GetListOfKeys():
+                            if kk.GetName()!= 'mm_mlb'+'_'+ s_i: continue
+                            h_inc2 = kk.ReadObj()
+                            break
+		    if h_inc and h_inc1 and h_inc2:		    
+		        h_inc.Add(h_inc1)
+		        h_inc.Add(h_inc2)
+		    else: print " not found h_inc ---"
+
+                else:                    
+                    for k in fIn.GetListOfKeys():
+                        if k.GetName() != d_inc: continue
+                        for kk in k.ReadObj().GetListOfKeys():
+                            if kk.GetName()!= d_inc +'_'+ s_i: continue
+                            h_inc = kk.ReadObj()
+		            break
+
+                if not h_inc: continue
+                h_inc.GetName()
+		h = applyIncVariation(hnom, h_inc, hnom_inc)
+                if smooth: applySmoothing(h)
+                if "DY" not in proc_systs["title"]:  # lowess smoothing for syst sample -wz
+                    h=smoothWithLowess(h,hnom,6)
+                    h.SetDirectory(fIn)
+
+                varH.append(h)
+
+        except Exception as e:
+            print s_i
+            print e
+            pass
+        if len(varH)==0 : continue
+
+        #mirror the shape if only one variation is available
+        if len(varH)==1:
+            varH.append( getMirrored(varH[0],hnom,'vardn') )
+
+        #add to the histograms
+        delta=[]
+        for i in xrange(0,2):
+            pfix='Up' if i==0 else 'Down'
+
+            if norm:
+                delta.append(varH[i].Integral()/hnom.Integral()-1)
+            formatTemplate(varH[i],s.format(d)+pfix,norm=hnom.Integral() if norm else None)
+            histos.append(varH[i])
+        
+        if len(delta)==2:
+            normVars.append( (s,delta) )
+
+        #show plot with warnings found
+        if opt.debug: 
+            pfix=s.format(d) if '{0}' in s else s
+            showVariation(hnom,
+                          varH,
+                          '',
+                          os.path.join(opt.output,'{0}_{1}_{2}'.format(hnom.GetTitle(),d,pfix)))
+        
+
+    #if nothing found
+    if len(histos)==0:
+        raise Exception('No direct histograms were retrieved from {0} for {1} {2}'.format(fIn.GetName(),proc_systs["title"],d))
+
     return histos,normVars
 
 
@@ -403,13 +567,28 @@ def getTemplateHistos(opt,d,proc,proc_systs):
     
     histos=[]
     bbbUncHistos=[]
-    systbbbUncHistos=[]
-    
+#    systbbbUncHistos=[]
+    hnom_inc = None 
+    d_inc = 'mlb'
+#    if 'ee' in d:  # split by dilep -wz 
+#	d_inc = 'ee_mlb'
+#    elif 'em' in d:
+#        d_inc = 'em_mlb'
+#    elif 'mm' in d:
+#        d_inc = 'mm_mlb'   
+ 
     #nominal histogram (use first found in inputs)
     for url in opt.input.split(','):        
         if not os.path.isfile(url) : continue
         fIn=ROOT.TFile.Open(url)
         h=fIn.Get('{0}/{0}_{1}'.format(d,proc_systs['title']))
+	if d_inc == 'mlb':
+	    hnom_inc = fIn.Get('ee_mlb/ee_mlb_{0}'.format(proc_systs['title']))
+	    hnom_inc.Add(fIn.Get('em_mlb/em_mlb_{0}'.format(proc_systs['title'])))
+            hnom_inc.Add(fIn.Get('mm_mlb/mm_mlb_{0}'.format(proc_systs['title'])))
+	else:
+	    hnom_inc = fIn.Get('{0}/{0}_{1}'.format(d_inc,proc_systs['title']))
+        hnom_inc.SetDirectory(0)
         try:
             formatTemplate(h,'central',proc)
             if 'smooth' in proc_systs and proc_systs['smooth']: applySmoothing(h)
@@ -424,6 +603,7 @@ def getTemplateHistos(opt,d,proc,proc_systs):
         print 'Error: unable to find histogram',d,'for',proc
         return histos
 
+    if not hnom_inc: print "check hnom_inc"  # -wz debug 
     #associated experimental/weighted theory uncertainties (use first found in inputs)
     projFound=False
     dirFound=False
@@ -440,10 +620,13 @@ def getTemplateHistos(opt,d,proc,proc_systs):
                 projFound=True
 
             if 'dir' in proc_systs and not dirFound:
-                ih,ivar=getDirectUncertainties(opt,fIn,d,proc_systs,histos[0])
+		if proc == "ttbar":
+		    ih,ivar=getDirectUncertainties_signal(opt,fIn,d,proc_systs,histos[0], hnom_inc)
+		else:
+                    ih,ivar=getDirectUncertainties(opt,fIn,d,proc_systs,histos[0])
                 histos+=ih
                 normVars+=ivar
-                systbbbUncHistos=getBinByBinUncertaintiesForSysts(histos[0],ih)
+               # systbbbUncHistos=getBinByBinUncertaintiesForSysts(histos[0],ih)
                 dirFound=True
 
         except Exception as e:
@@ -453,7 +636,7 @@ def getTemplateHistos(opt,d,proc,proc_systs):
 
 
     #finalize bin-by bin uncertainties: if max. variation does not exceed threshold discard it
-    for bbbColl,tag in [(bbbUncHistos,'cen'),(systbbbUncHistos,'sys')]:
+    for bbbColl,tag in [(bbbUncHistos,'cen')]: # ,(systbbbUncHistos,'sys')]:
 
         nHistos=len(histos)
         for xbin in range(0,len(bbbColl)):
@@ -559,6 +742,9 @@ def main():
     #prepare the output
     os.system('mkdir -p %s'%opt.output)
 
+    # do final category -wz
+    opt.distList = 'emhighpt1b_mlb,emhighpt2b_mlb,emlowpt1b_mlb,emlowpt2b_mlb,eehighpt1b_mlb,eehighpt2b_mlb,eelowpt1b_mlb,eelowpt2b_mlb,mmhighpt1b_mlb,mmhighpt2b_mlb,mmlowpt1b_mlb,mmlowpt2b_mlb'
+
     #decode systematics map from the json file
     with open(opt.systs,'r') as cache:
         syst_dict=json.load( cache, encoding='utf-8', object_pairs_hook=OrderedDict ).items()
@@ -566,7 +752,7 @@ def main():
     #loop over processes
     for proc,proc_systs in syst_dict:
         prepareTemplateFile(opt,proc,proc_systs)
-
+	break # only run ttbar -wz
 
 
 if __name__ == "__main__":

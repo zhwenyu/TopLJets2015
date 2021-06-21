@@ -15,6 +15,7 @@ def getBaseNames(dirname):
     names = set()
     for item in os.listdir(dirname):
         filename, ext = os.path.splitext(item)
+#        if not ('tt2l' in filename): continue  # for priv sample only -wz
         if not ext == '.root': continue
         try:
             #if not ('MC13TeV' in filename or 'Data13TeV' in filename) : continue
@@ -68,6 +69,7 @@ os.system('mkdir -p %s' % chunkdir)
 
 for basename, files in counters.iteritems():
 
+#    if "tt2l" in basename: continue  # -wz
     filenames = " ".join(files)
     target = os.path.join(outputdir,"%s.root" % basename)
 

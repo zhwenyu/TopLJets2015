@@ -72,15 +72,19 @@ c.SetRightMargin(0.04)
 c.SetLogy(True)
 
 #compute quantiles and fill distributions
-nq=20
+nq=7 #20
+#pList = [0.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 95.0, 100.0]  # 14bin
+pList = [0.0, 10.0, 20.0, 30.0, 50.0, 70.0, 90.0, 100.0]
 summary=np.array(summary)
-xq=np.percentile(summary, [i*100./nq for i in xrange(0,nq+1)], axis=0)
+#xq=np.percentile(summary, [i*100./nq for i in xrange(0,nq+1)], axis=0)
+xq=np.percentile(summary, pList, axis=0)
 xq[0][0]=0.
 xq[0][1]=0.
 xq[-1][0]=400.
 xq[-1][1]=200.
 
-fOut=ROOT.TFile.Open('mlbresol.root','RECREATE')
+
+fOut=ROOT.TFile.Open('mlbresol_tt2l1p31.root','RECREATE')
 for i,obs,title in [(0,'ptlb','p_{T}(lb) [GeV]'),
                     (1,'mlb', 'm(lb) [GeV]')]:
 
@@ -109,46 +113,47 @@ for i,obs,title in [(0,'ptlb','p_{T}(lb) [GeV]'),
         resolH.SetBinContent(iq+1,effWid)
         fcorrH.SetBinContent(iq+1,fcor)
         obsH.SetBinContent(iq+1,(totalPass/totalPairs)*1./(maxx-minx))
+#	print iq+1, "binCenter ", resolH.GetBinCenter(iq+1), " binWidth ", resolH.GetBinWidth(iq+1)," effWid ", effWid, " median ", rq[1][2]
 
     #plot distribution
-    c.cd()
-    c.Clear()
-    obsH.SetFillStyle(3004)
-    obsH.SetFillColor(ROOT.kGray)
-    obsH.SetLineColor(1)
-    obsH.SetMarkerColor(ROOT.kGray)
-    obsH.GetYaxis().SetTitle('Percentage')
-    obsH.Draw('hist')
-    obsH.SetTitle('PDF (a.u.)')
-    obsH.Scale( 40./obsH.GetMaximum() )
-    obsH.GetYaxis().SetRangeUser(1,100.)
-    resolH.SetLineColor(ROOT.kMagenta+1)
-    resolH.SetLineWidth(2)
-    resolH.SetLineStyle(9)
-    resolH.SetFillStyle(0)
-    resolH.Scale(100.)
-    resolH.Draw('histsame')    
-    fcorrH.SetLineColor(ROOT.kAzure+3)
-    fcorrH.SetLineWidth(2)
-    fcorrH.SetFillStyle(0)
-    fcorrH.Scale(100.)
-    fcorrH.Draw('histsame')    
-    leg=c.BuildLegend(0.15,0.35,0.4,0.15)
-    leg.SetBorderSize(0)
-    leg.SetTextSize(0.05)
-    leg.SetFillStyle(0)
-    tex=ROOT.TLatex()
-    tex.SetTextFont(42)
-    tex.SetTextSize(0.04)
-    tex.SetNDC()
-    tex.DrawLatex(0.12,0.96,'#bf{CMS} #it{simulation preliminary}')
-    tex.SetTextAlign(31)
-    tex.DrawLatex(0.97,0.96,'13 TeV')  
-    c.Modified()
-    c.Update()
-    c.RedrawAxis()
-    for ext in ['png','pdf']:
-        c.SaveAs('mlbresol_%s.%s'%(obs,ext))
+#    c.cd()
+#    c.Clear()
+#    obsH.SetFillStyle(3004)
+#    obsH.SetFillColor(ROOT.kGray)
+#    obsH.SetLineColor(1)
+#    obsH.SetMarkerColor(ROOT.kGray)
+#    obsH.GetYaxis().SetTitle('Percentage')
+#    obsH.Draw('hist')
+#    obsH.SetTitle('PDF (a.u.)')
+#    obsH.Scale( 40./obsH.GetMaximum() )
+#    obsH.GetYaxis().SetRangeUser(1,100.)
+#    resolH.SetLineColor(ROOT.kMagenta+1)
+#    resolH.SetLineWidth(2)
+#    resolH.SetLineStyle(9)
+#    resolH.SetFillStyle(0)
+#    resolH.Scale(100.)
+#    resolH.Draw('histsame')    
+#    fcorrH.SetLineColor(ROOT.kAzure+3)
+#    fcorrH.SetLineWidth(2)
+#    fcorrH.SetFillStyle(0)
+#    fcorrH.Scale(100.)
+#    fcorrH.Draw('histsame')    
+#    leg=c.BuildLegend(0.15,0.35,0.4,0.15)
+#    leg.SetBorderSize(0)
+#    leg.SetTextSize(0.05)
+#    leg.SetFillStyle(0)
+#    tex=ROOT.TLatex()
+#    tex.SetTextFont(42)
+#    tex.SetTextSize(0.04)
+#    tex.SetNDC()
+#    tex.DrawLatex(0.12,0.96,'#bf{CMS} #it{simulation preliminary}')
+#    tex.SetTextAlign(31)
+#    tex.DrawLatex(0.97,0.96,'13 TeV')  
+#    c.Modified()
+#    c.Update()
+#    c.RedrawAxis()
+#    for ext in ['png','pdf']:
+#        c.SaveAs('mlbresol_%s.%s'%(obs,ext))
 
     fOut.cd()
     obsH.Write()
