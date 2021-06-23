@@ -560,8 +560,64 @@ def getDirectUncertainties(opt,fIn,d,proc_systs,hnom):
 
     return histos,normVars
 
+def getDirectUncertaintiesFromWeights(opt,d,hnom):
+
+    with open('test/analysis/top17010/TT2l_npsysts.pck','rb') as fin:
+       np_weights=pickle.load(fin)
+
+    histos = []
+    normVars = []
+
+    cat=('inc',)
+
+    varList = ['CRerd', 'CRqcd', 'CRgmove']
+    for var in varList:
+        varH = []
+        delta = []
+        for ik in ['Up', 'Down']:
+           wgtGr = np_weights[var][cat][ik]
+           hvar = hnom.Clone()
+           for ibin in range(1, hvar.GetNbinsX()+1):
+              xcen=hvar.GetBinCenter(ibin)
+              val=hvar.GetBinContent(ibin)
+              new_val = val*wgtGr.Eval(xcen)
+              hvar.SetBinContent(ibin, new_val)
+           delta.append(hvar.Integral()/hnom.Integral()-1)
+           formatTemplate(hvar, var+ik, norm=hnom.Integral())
+           varH.append(hvar)
+	   histos.append(hvar)
+
+	normVars.append( (var, delta) )
+        showVariation(hnom, varH, '', '{0}_{1}_{2}'.format(hnom.GetTitle(),d,var))
+
+    ## proc with up/down two samples
+    varList = ['UE', 'hdamp']
+    for var in varList:
+        varH = []
+        delta = []
+        for isample in ['up', 'down']:
+           wgtGr = np_weights[var + isample][cat]['Up'] # Up is the original shape
+           hvar = hnom.Clone()
+           for ibin in range(1, hvar.GetNbinsX()+1):
+              xcen=hvar.GetBinCenter(ibin)
+              val=hvar.GetBinContent(ibin)
+              new_val = val*wgtGr.Eval(xcen)
+              hvar.SetBinContent(ibin, new_val)
+           delta.append(hvar.Integral()/hnom.Integral()-1)
+	   pfix = 'Down'
+	   if isample == 'up': 
+		pfix = 'Up'
+           formatTemplate(hvar, var+pfix, norm=hnom.Integral())
+           varH.append(hvar)
+           histos.append(hvar)
+
+        normVars.append( (var, delta) )
+        showVariation(hnom, varH, '', '{0}_{1}_{2}'.format(hnom.GetTitle(),d,var))
+
+    return histos,normVars
+
             
-def getTemplateHistos(opt,d,proc,proc_systs):
+def getTemplateHistos1(opt,d,proc,proc_systs): # use inclusive shape variation of direct unc, taking reco shapes
 
     """parses the input files for a specific distribution and builds the necessary templates for systematics"""
     
@@ -670,6 +726,60 @@ def getTemplateHistos(opt,d,proc,proc_systs):
                           os.path.join(opt.output,'{0}_{1}_{2}bbb'.format(proc,d,tag)))
                       
     return histos,normVars
+
+def getTemplateHistos(opt,d,proc,proc_systs):
+
+    """parses the input files for a specific distribution and builds the necessary templates for systematics"""
+    
+    histos=[]
+
+    #nominal histogram (use first found in inputs)
+    for url in opt.input.split(','):        
+        if not os.path.isfile(url) : continue
+        fIn=ROOT.TFile.Open(url)
+        h=fIn.Get('{0}/{0}_{1}'.format(d,proc_systs['title']))
+        try:
+            formatTemplate(h,'central',proc)
+            if 'smooth' in proc_systs and proc_systs['smooth']: applySmoothing(h)
+            histos.append(h)
+            break
+        except:
+            pass
+        fIn.Close()
+
+    if len(histos)==0:
+        print 'Error: unable to find histogram',d,'for',proc
+        return histos
+
+    #associated experimental/weighted theory uncertainties (use first found in inputs)
+    projFound=False
+    dirFound=False
+    normVars=[]
+    for url in opt.input.split(','):        
+        if not os.path.isfile(url) : continue
+        fIn=ROOT.TFile.Open(url)
+        try:
+
+            if 'proj' in proc_systs and not projFound:
+                ih,ivar=getUncertaintiesFromProjection(opt,fIn,d,proc_systs,histos[0])
+                histos+=ih
+                normVars+=ivar
+                projFound=True
+
+            if 'dir' in proc_systs and not dirFound:
+                ih,ivar=getDirectUncertaintiesFromWeights(opt,d,histos[0])
+                histos+=ih
+                normVars+=ivar
+                dirFound=True
+
+        except Exception as e:
+            print e
+            pass
+        fIn.Close()
+
+
+    return histos,normVars
+
 
 def prepareTemplateFile(opt,proc,proc_systs):
 
